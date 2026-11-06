@@ -223,6 +223,12 @@
       "cardSlug": "need-to-stretch-my-legs",
       "abilityIndex": 1,
       "markupToken": "[keyword:optional-ko-hand-discard]"
+    },
+    {
+      "heroSlug": "viv-vision",
+      "cardSlug": "expanding-neural-network",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:next-hand-extra-draw:1]"
     }
   ],
   "co2e": [
@@ -315,6 +321,12 @@
       "cardSlug": "witty-banter",
       "abilityIndex": 0,
       "markupToken": "[keyword:gain-sidekick:1]"
+    },
+    {
+      "heroSlug": "spider-man-miles-morales",
+      "cardSlug": "web-trap",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:next-hand-extra-draw:1]"
     }
   ],
   "core": [
@@ -691,6 +703,12 @@
       "cardSlug": "regenerative-cocoon",
       "abilityIndex": 0,
       "markupToken": "[keyword:discard-to-play:1]"
+    },
+    {
+      "heroSlug": "adam-warlock",
+      "cardSlug": "regenerative-cocoon",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:next-hand-extra-draw:2]"
     }
   ],
   "cvwr": [
@@ -1257,6 +1275,12 @@
       "cardSlug": "silk-stalking",
       "abilityIndex": 0,
       "markupToken": "[keyword:reveal-ko-or-draw:2]"
+    },
+    {
+      "heroSlug": "captain-britain",
+      "cardSlug": "lead-the-captain-britain-corps",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:next-hand-extra-draw:3]"
     }
   ],
   "ssw1": [
@@ -1387,6 +1411,12 @@
       "cardSlug": "gritty-scavenger",
       "abilityIndex": 0,
       "markupToken": "[keyword:optional-discard-draw:1]"
+    },
+    {
+      "heroSlug": "groot",
+      "cardSlug": "surviving-sprig",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:next-hand-extra-draw:1]"
     }
   ],
   "wwhk": [
@@ -1678,6 +1708,12 @@
       "cardSlug": "surprise-attack",
       "abilityIndex": 0,
       "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "bruce-banner",
+      "cardSlug": "solve-the-impossible",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:next-hand-extra-draw:1]"
     }
   ],
   "amwp": [
@@ -1741,6 +1777,18 @@
       "cardSlug": "up-the-ante",
       "abilityIndex": 0,
       "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "wasp",
+      "cardSlug": "infiltrate",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:next-hand-extra-draw:1]"
+    },
+    {
+      "heroSlug": "freedom-fighters",
+      "cardSlug": "mystics",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:next-hand-extra-draw:1]"
     }
   ],
   "anni": [
@@ -2100,6 +2148,12 @@
       "cardSlug": "gladiators-blades",
       "abilityIndex": 2,
       "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "warpath",
+      "cardSlug": "endless-endurance",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:next-hand-extra-draw:2]"
     }
   ],
   "mdns": [
@@ -2246,6 +2300,12 @@
       "cardSlug": "master-the-four-elements",
       "abilityIndex": 1,
       "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "karnak",
+      "cardSlug": "brilliant-strategist",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:next-hand-extra-draw:1]"
     }
   ],
   "rvlt": [
@@ -2428,6 +2488,12 @@
       "cardSlug": "electroshock-therapy",
       "abilityIndex": 1,
       "markupToken": "[keyword:reveal-top-may-ko]"
+    },
+    {
+      "heroSlug": "dr-octopus",
+      "cardSlug": "brilliant-research",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:next-hand-extra-draw:1]"
     }
   ],
   "vnom": [
@@ -2697,6 +2763,12 @@
       "cardSlug": "life-death-incarnate",
       "abilityIndex": 1,
       "markupToken": "[keyword:optional-ko-hand-discard]"
+    },
+    {
+      "heroSlug": "polaris",
+      "cardSlug": "ride-the-magnetic-waves",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:next-hand-extra-draw:1]"
     }
   ],
   "_deferred": [
@@ -2915,14 +2987,6 @@
       "abilityIndex": 1,
       "abilityText": "If there are no Villains on the Rooftops, draw a card.",
       "reason": "D-22501 — game-state-conditional draw: the draw is gated on a board-state predicate (no Villains on the Rooftops) that is not a [hc:X]:/[team:X]: condition the parser evaluates."
-    },
-    {
-      "setAbbr": "chmp",
-      "heroSlug": "viv-vision",
-      "cardSlug": "expanding-neural-network",
-      "abilityIndex": 1,
-      "abilityText": "[hc:tech]: When you draw a new hand of cards at the end of this turn, draw an extra card.",
-      "reason": "D-22501 — draw-a-new-hand replacement trigger: an end-of-turn draw-hand-replacement effect, not an onPlay draw; no timing dispatch exists for it."
     },
     {
       "setAbbr": "wpnx",

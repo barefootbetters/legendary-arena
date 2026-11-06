@@ -1439,7 +1439,7 @@
           "recruit": "2",
           "abilities": [
             "[keyword:Soaring Flight]",
-            "[hc:covert]: When you draw a new hand of cards at the end of this turn, draw an extra card."
+            "[hc:covert]: When you draw a new hand of cards at the end of this turn, draw an extra card. [keyword:next-hand-extra-draw:1]"
           ]
         },
         {

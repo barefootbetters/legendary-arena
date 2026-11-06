@@ -150,7 +150,8 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // WP-857 / D-24793 added the feast handler (hero Feast reuses heroEffectRevealTopMayKo) (70 → 71).
     // WP-862 / D-24804 added the hq-hero-gains-size-changing-tech handler (Pym Particles) (71 → 72).
     // WP-865 / D-24808 added the heist handler (heroEffectHeist readies a Heist card) (72 → 73).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 73);
+    // WP-866 / D-24809 added the next-hand-extra-draw handler (the additive next-hand write) (73 → 74).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 74);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -8118,8 +8119,9 @@ describe('executeHeroEffects X-Gene discard-pile gate (WP-723 / D-24544)', () =>
     // why: WP-857 / D-24793 — feast added (70 → 71).
     // why: WP-862 / D-24804 — hq-hero-gains-size-changing-tech added (71 → 72).
     // why: WP-865 / D-24808 — heist added (72 → 73).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 73,
-      'HERO_EFFECT_HANDLERS stays 73 (WP-865 / D-24808 heist; X-Gene is not an effect handler; WP-844 / D-24778 gain-sidekick, WP-850 / D-24786 discard-top-printed-attack + ko-discarded-this-way WP-860 / D-24796 discard-artifact-or-three-then-ko, WP-857 / D-24793 feast and WP-862 / D-24804 hq-hero-gains-size-changing-tech added)');
+    // why: WP-866 / D-24809 — next-hand-extra-draw added (73 → 74).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 74,
+      'HERO_EFFECT_HANDLERS stays 74 (WP-866 / D-24809 next-hand-extra-draw; WP-865 / D-24808 heist; X-Gene is not an effect handler; WP-844 / D-24778 gain-sidekick, WP-850 / D-24786 discard-top-printed-attack + ko-discarded-this-way WP-860 / D-24796 discard-artifact-or-three-then-ko, WP-857 / D-24793 feast and WP-862 / D-24804 hq-hero-gains-size-changing-tech added)');
   });
 });
 

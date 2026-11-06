@@ -7,22 +7,22 @@
   },
   "summary": {
     "distinctMechanics": 77,
-    "totalObservations": 7677,
+    "totalObservations": 7662,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 521,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 7156
+      "parse-unrecognized": 7141
     }
   },
   "byMechanic": {
     "\"when-recruited\"-abilities": {
-      "hitCount": 131,
+      "hitCount": 119,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 131
+        "parse-unrecognized": 119
       },
       "examples": [
         {
@@ -58,12 +58,12 @@
       ]
     },
     "abomination": {
-      "hitCount": 34,
+      "hitCount": 32,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 34
+        "parse-unrecognized": 32
       },
       "examples": [
         {
@@ -181,12 +181,12 @@
       ]
     },
     "artifact--": {
-      "hitCount": 98,
-      "lastSeenTurn": 30,
+      "hitCount": 111,
+      "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 98
+        "parse-unrecognized": 111
       },
       "examples": [
         {
@@ -208,13 +208,13 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "gotg/drax-the-destroyer/knives-of-the-hunter#0",
+          "cardId": "gotg/drax-the-destroyer/knives-of-the-hunter#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "gotg/drax-the-destroyer/knives-of-the-hunter#0",
+          "cardId": "gotg/drax-the-destroyer/knives-of-the-hunter#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -386,12 +386,12 @@
       ]
     },
     "burn-2-shards": {
-      "hitCount": 44,
+      "hitCount": 41,
       "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 44
+        "parse-unrecognized": 41
       },
       "examples": [
         {
@@ -468,12 +468,12 @@
       ]
     },
     "cheering-crowds": {
-      "hitCount": 90,
+      "hitCount": 83,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 90
+        "parse-unrecognized": 83
       },
       "examples": [
         {
@@ -667,16 +667,22 @@
       ]
     },
     "cross-dimensional-hulk-rampage": {
-      "hitCount": 4,
-      "lastSeenTurn": 25,
+      "hitCount": 6,
+      "lastSeenTurn": 20,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 4
+        "parse-unrecognized": 6
       },
       "examples": [
         {
-          "cardId": "wwhk/gladiator-hulk/the-green-scar#1",
+          "cardId": "wwhk/gladiator-hulk/the-green-scar#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "wwhk/gladiator-hulk/the-green-scar#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -743,12 +749,12 @@
       ]
     },
     "danger-sense": {
-      "hitCount": 344,
+      "hitCount": 359,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 344
+        "parse-unrecognized": 359
       },
       "examples": [
         {
@@ -1181,12 +1187,12 @@
       ]
     },
     "gate-only": {
-      "hitCount": 421,
+      "hitCount": 361,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 421
+        "parse-unrecognized": 361
       },
       "examples": [
         {
@@ -1222,14 +1228,20 @@
       ]
     },
     "heist": {
-      "hitCount": 1,
-      "lastSeenTurn": 24,
+      "hitCount": 2,
+      "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 1
+        "parse-unrecognized": 2
       },
       "examples": [
+        {
+          "cardId": "amwp/ant-army/revolutionary-anthem#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
         {
           "cardId": "amwp/ant-army/revolutionary-anthem#0",
           "cardType": "hero",
@@ -1239,12 +1251,12 @@
       ]
     },
     "highest-abomination": {
-      "hitCount": 15,
+      "hitCount": 13,
       "lastSeenTurn": 27,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 15
+        "parse-unrecognized": 13
       },
       "examples": [
         {
@@ -1789,12 +1801,12 @@
       ]
     },
     "recruit-no-magnitude": {
-      "hitCount": 417,
+      "hitCount": 426,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 417
+        "parse-unrecognized": 426
       },
       "examples": [
         {
@@ -1953,12 +1965,12 @@
       ]
     },
     "rule:shard": {
-      "hitCount": 424,
+      "hitCount": 456,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 424
+        "parse-unrecognized": 456
       },
       "examples": [
         {
@@ -2286,20 +2298,14 @@
       ]
     },
     "streets-abomination": {
-      "hitCount": 2,
-      "lastSeenTurn": 24,
+      "hitCount": 1,
+      "lastSeenTurn": 6,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 2
+        "parse-unrecognized": 1
       },
       "examples": [
-        {
-          "cardId": "rlmk/gorgon/stomping-shockwave#2",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
         {
           "cardId": "rlmk/gorgon/stomping-shockwave#3",
           "cardType": "hero",
@@ -2473,12 +2479,12 @@
       ]
     },
     "teleport": {
-      "hitCount": 205,
+      "hitCount": 213,
       "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 205
+        "parse-unrecognized": 213
       },
       "examples": [
         {
@@ -2514,12 +2520,12 @@
       ]
     },
     "thrones-favor": {
-      "hitCount": 100,
+      "hitCount": 93,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 100
+        "parse-unrecognized": 93
       },
       "examples": [
         {
@@ -2596,12 +2602,12 @@
       ]
     },
     "transform": {
-      "hitCount": 122,
-      "lastSeenTurn": 28,
+      "hitCount": 109,
+      "lastSeenTurn": 27,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 122
+        "parse-unrecognized": 109
       },
       "examples": [
         {
@@ -2736,12 +2742,12 @@
       ]
     },
     "versatile": {
-      "hitCount": 193,
+      "hitCount": 207,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 193
+        "parse-unrecognized": 207
       },
       "examples": [
         {
@@ -2900,22 +2906,22 @@
       ]
     },
     "wounded-fury": {
-      "hitCount": 9,
-      "lastSeenTurn": 25,
+      "hitCount": 7,
+      "lastSeenTurn": 20,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 9
+        "parse-unrecognized": 7
       },
       "examples": [
         {
-          "cardId": "wwhk/gladiator-hulk/the-green-scar#1",
+          "cardId": "wwhk/gladiator-hulk/the-green-scar#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "wwhk/gladiator-hulk/the-green-scar#1",
+          "cardId": "wwhk/gladiator-hulk/the-green-scar#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"

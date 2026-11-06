@@ -1220,6 +1220,28 @@
       "hidden": true
     },
     {
+      "slug": "next-hand-extra-draw",
+      "label": "Next Hand Extra Draw",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 12,
+      "cardIds": [
+        "amwp/freedom-fighters",
+        "amwp/wasp",
+        "chmp/viv-vision",
+        "co2e/spider-man-miles-morales",
+        "cosm/adam-warlock",
+        "gotg/groot",
+        "msmc/warpath",
+        "rlmk/karnak",
+        "ssw2/captain-britain",
+        "vill/dr-octopus",
+        "wwhk/bruce-banner",
+        "xmen/polaris"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "no-more-draws",
       "label": "No More Draws",
       "scope": "hero",
@@ -2411,12 +2433,11 @@
       "label": "Unmarked",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 24,
+      "cardCount": 22,
       "cardIds": [
         "3dtc/deadpool",
         "3dtc/man-thing",
         "co2e/nick-fury",
-        "co2e/spider-man-miles-morales",
         "co2e/storm",
         "cosm/nebula",
         "cvwr/daredevil",
@@ -2424,7 +2445,6 @@
         "dkcy/angel",
         "dkcy/blade",
         "dkcy/daredevil",
-        "gotg/groot",
         "nmut/karma",
         "rvlt/hellcat",
         "shld/leo-fitz-and-jemma-simmons",
@@ -2745,7 +2765,8 @@
     },
     "amwp/freedom-fighters": {
       "mechanics": [
-        "draw"
+        "draw",
+        "next-hand-extra-draw"
       ]
     },
     "amwp/janet-van-dyne": {
@@ -2770,6 +2791,7 @@
       "mechanics": [
         "first-hero-condition",
         "microscopic-size-changing",
+        "next-hand-extra-draw",
         "size-changing"
       ]
     },
@@ -3042,6 +3064,7 @@
     "chmp/viv-vision": {
       "mechanics": [
         "cheering-crowds",
+        "next-hand-extra-draw",
         "size-changing",
         "versatile"
       ]
@@ -3118,7 +3141,7 @@
     },
     "co2e/spider-man-miles-morales": {
       "mechanics": [
-        "unmarked"
+        "next-hand-extra-draw"
       ]
     },
     "co2e/storm": {
@@ -3251,7 +3274,8 @@
     "cosm/adam-warlock": {
       "mechanics": [
         "burn-shards",
-        "discard-to-play"
+        "discard-to-play",
+        "next-hand-extra-draw"
       ]
     },
     "cosm/captain-mar-vell": {
@@ -3665,7 +3689,7 @@
     },
     "gotg/groot": {
       "mechanics": [
-        "unmarked"
+        "next-hand-extra-draw"
       ]
     },
     "gotg/rocket-raccoon": {
@@ -3843,6 +3867,7 @@
     "msmc/warpath": {
       "mechanics": [
         "investigate",
+        "next-hand-extra-draw",
         "tactical-formation"
       ]
     },
@@ -4007,6 +4032,7 @@
     },
     "rlmk/karnak": {
       "mechanics": [
+        "next-hand-extra-draw",
         "when-recruited-abilities"
       ]
     },
@@ -4294,6 +4320,7 @@
     },
     "ssw2/captain-britain": {
       "mechanics": [
+        "next-hand-extra-draw",
         "patrol"
       ]
     },
@@ -4367,7 +4394,8 @@
     },
     "vill/dr-octopus": {
       "mechanics": [
-        "draw"
+        "draw",
+        "next-hand-extra-draw"
       ]
     },
     "vill/electro": {
@@ -4577,6 +4605,7 @@
     },
     "wwhk/bruce-banner": {
       "mechanics": [
+        "next-hand-extra-draw",
         "outwit",
         "reveal-ko",
         "smash",
@@ -4778,6 +4807,7 @@
     "xmen/polaris": {
       "mechanics": [
         "draw",
+        "next-hand-extra-draw",
         "piercing-energy",
         "soaring-flight",
         "x-gene"
