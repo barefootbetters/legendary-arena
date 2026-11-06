@@ -50364,4 +50364,23 @@ All three appeared as their first variant's art, with no abilities on any copy. 
 **Reserved by:** NUMBER-LEDGER D-24808 (#3171). Related: D-24556 / D-24560 (Excessive Violence and its projection), D-24794 (Ritual Artifact move), D-24529 ("Heroes you have"), D-24673 (Diving Block Wound logging), D-24157 (VP fallback), D-12803 (UIState five-step contract), D-24372 (runtime drift pins), D-24026.
 
 ---
+
+### D-24811 — Attempt Heist lives in the turn-action bar, not the played-cards heading (direct fix, no WP; amends D-24808 §7) (Active 2026-11-06)
+
+**Context.** D-24808 §7 put the `Attempt Heist (Heist Count N)` button in the "Played This Turn" heading. In operator match `OZLV05npDB8` (Fin Fang Foom / Midtown Bank Robbery, 2 players, server and client `af4efcab`) the operator readied a Heist card on about 20 turns and never attempted a Heist: the log has 82 Heist lines and no attempt, and the operator reports never seeing the button. Every layer was verified to work: the real Master + `playerView` on the real registry and that loadout project `heistAvailable: true` (Heist Count 4) from the first readied card through the rest of the turn, to the active seat only; `attemptHeist` through the Master resolves; the deployed bundle carries the button; the client stores the projection verbatim; nothing overlays it. The button sat in a small, muted, uppercase zone heading, away from where the turn's actions are.
+
+**Decision.**
+1. The Attempt Heist button moves to `TurnActionBar` Step 2 (the sticky bottom bar with Heal Wounds and End turn), shown only while `economy.heistAvailable` holds on the viewer's turn (the Heal Wounds "only when usable" rule). It keeps the Heist Count in its label, the Heist purple accent, `data-testid="attempt-heist"`, and dispatches `attemptHeist` with `{}`.
+2. It sits above the Step 2 hint, so on a phone-width board it stays level with Reveal and End turn; below the hint it wrapped under the fixed audio controls.
+3. `PlayedCardsRow` no longer renders a Heist control and no longer takes `heistAvailable` / `heistCount`.
+
+**Consequences.** Client-only. No engine, UIState, filter or move change; D-24808 §1–§6 stand. No sentinel, hash or PAR pin is affected.
+
+**Gates.** arena-client `test` 2554 / 0 (was 2552: the two PlayedCardsRow Heist tests become one no-button regression; three TurnActionBar tests; the PlayDesktop / PlayMobile tests pin the button inside the turn bar and out of the played row); `typecheck` 0; `pnpm -r build` 0. Browser check on the `?fixture=mid-turn&play=1` route at 2487×1267, 1600×900 and 375×812: the button is in the turn bar, in view without scrolling, and the topmost element at its centre is the button itself.
+
+**Live re-check (after deploy).** In a new match with Wasp or Scott Lang, Cat Burglar, play a Heist card: Attempt Heist appears in the Step 2 box of the bottom turn bar. This also completes the D-24808 live check (won, tied and lost Heists, one attempt per turn).
+
+Related: D-24808 (Heist), D-24026 (live-verify).
+
+---
 Protect this file.

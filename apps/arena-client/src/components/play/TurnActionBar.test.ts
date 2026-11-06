@@ -326,6 +326,39 @@ describe('TurnActionBar — Heal Wounds (shown only when usable)', () => {
   });
 });
 
+// D-24811 (amends D-24808 §7): Attempt Heist lives in the always-visible sticky bar,
+// shown only while the engine projects heistAvailable — the Heal Wounds "only when usable" rule.
+describe('TurnActionBar — Attempt Heist (D-24811)', () => {
+  test('shows the Heist Count in Step 2 and dispatches attemptHeist with no args', () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: { currentStage: 'main', isViewerTurn: true, heistAvailable: true, heistCount: 3, submitMove },
+    });
+    const step2 = wrapper.find('[data-testid="play-turn-step-2"]');
+    const button = step2.find('[data-testid="attempt-heist"]');
+    assert.equal(button.exists(), true, 'Attempt Heist sits in the Step 2 box');
+    assert.equal(button.text(), 'Attempt Heist (Heist Count 3)');
+    void button.trigger('click');
+    assert.deepEqual(calls, [{ name: 'attemptHeist', args: {} }]);
+  });
+
+  test('is hidden when no Heist is available', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: { currentStage: 'main', isViewerTurn: true, submitMove },
+    });
+    assert.equal(wrapper.find('[data-testid="attempt-heist"]').exists(), false);
+  });
+
+  test('is hidden off the viewer\'s turn even if the flag is set', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: { currentStage: 'main', isViewerTurn: false, heistAvailable: true, heistCount: 2, submitMove },
+    });
+    assert.equal(wrapper.find('[data-testid="attempt-heist"]').exists(), false);
+  });
+});
+
 // Jeff feedback: highlight is STAGE-BASED — exactly one Step box active at a time,
 // matching the stage. Right after Reveal (main) only Step 2 is active; Step 3 is
 // grayed even though End turn is usable from main.

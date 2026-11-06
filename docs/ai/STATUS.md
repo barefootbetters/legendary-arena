@@ -10,6 +10,13 @@
 
 ## Current State
 
+### Attempt Heist moves to the bottom turn bar (D-24811, amends D-24808 §7) (2026-11-06)
+
+**User-visible on `play.legendary-arena.com` after deploy.** The **Attempt Heist (Heist Count N)** button now appears in Step 2 of the bottom turn bar, beside Heal Wounds and End turn, whenever a Heist can be attempted. It used to sit in the "Played This Turn" heading, where operator match `OZLV05npDB8` readied a Heist card on about 20 turns without the button ever being noticed. The engine path was re-verified end to end; this is a client placement fix only.
+
+- **Tests.** arena-client 2552 -> 2554 / 0; `typecheck` 0.
+- **Live re-check:** operator-pending, combined with the D-24808 Heist live check.
+
 ### Heist: Attempt a Heist fires the readied Heist abilities, and Heist lines stop granting at play (WP-865 / EC-903, D-24808) (2026-11-06)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Ant-Man and the Wasp's Heist now plays by the rule (v23 p.26-27). Playing a Heist card grants nothing and logs it readied for a Heist. Once per turn, while a card is readied, an **Attempt Heist (Heist Count N)** button appears in the played-cards heading. Pressing it counts the different non-zero printed costs among the Heroes you have (hand plus cards still in play), reveals the Villain Deck top card (it stays on top), and compares with its printed VP: higher fires every readied Heist ability, tied does nothing, lower gains a Wound. Before this, six Heist lines paid out on every play (Infiltrate's +3 decided a Fin Fang Foom fight in `vZXSkk4xJNC`) and four did nothing.
