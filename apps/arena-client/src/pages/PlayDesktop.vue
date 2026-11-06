@@ -1004,6 +1004,8 @@ export default defineComponent({
                     :out-of-time-cards="viewer.outOfTimeCards ?? []"
                     :controlled-artifacts="viewer.controlledArtifacts ?? []"
                     :ritual-card-ids="snapshot.economy.ritualArtifactOptions ?? []"
+                    :heist-available="snapshot.economy.heistAvailable === true"
+                    :heist-count="snapshot.economy.heistCount"
                     :submit-move="submitMove"
                   />
                   <HandRow

@@ -226,3 +226,37 @@ describe('PlayedCardsRow — controlled Artifacts and the Ritual Use button (WP-
     assert.equal(empty.find('[data-testid="play-played-empty"]').exists(), true);
   });
 });
+
+describe('PlayedCardsRow — the Attempt Heist button (WP-865 / D-24808)', () => {
+  const INFILTRATE = 'amwp/wasp/infiltrate#0';
+
+  test('renders Attempt Heist with the Heist Count and dispatches attemptHeist with no args', async () => {
+    const calls: Array<{ name: string; args: unknown }> = [];
+    const wrapper = mount(PlayedCardsRow, {
+      props: {
+        inPlayCards: [INFILTRATE],
+        heistAvailable: true,
+        heistCount: 3,
+        submitMove: (name: string, args?: unknown) => {
+          calls.push({ name, args });
+        },
+      },
+    });
+    const button = wrapper.find('[data-testid="attempt-heist"]');
+    assert.equal(button.exists(), true);
+    assert.equal(button.text(), 'Attempt Heist (Heist Count 3)');
+    await button.trigger('click');
+    assert.deepEqual(calls, [{ name: 'attemptHeist', args: {} }]);
+  });
+
+  test('renders no Attempt Heist button when no Heist is available or no submitMove is given', () => {
+    const unavailable = mount(PlayedCardsRow, {
+      props: { inPlayCards: [INFILTRATE], submitMove: () => {} },
+    });
+    assert.equal(unavailable.find('[data-testid="attempt-heist"]').exists(), false);
+    const readOnly = mount(PlayedCardsRow, {
+      props: { inPlayCards: [INFILTRATE], heistAvailable: true, heistCount: 2 },
+    });
+    assert.equal(readOnly.find('[data-testid="attempt-heist"]').exists(), false);
+  });
+});

@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "cardType": "villain",
   "summary": {
-    "totalRows": 740,
+    "totalRows": 761,
     "byStatus": {
-      "executable": 184,
+      "executable": 224,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 553,
+      "unmarked": 534,
       "subsystem": 2
     },
     "distinctMechanics": 47
@@ -172,11 +172,11 @@
       "cardName": "City Defense System",
       "set": "amwp",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "amwp-villain-ghost-chasers-corrupted-government-agents",
@@ -432,6 +432,61 @@
       "handler": ""
     },
     {
+      "extId": "henchman-tardigrade-tardigrade-covert",
+      "cardName": "Tardigrade (Covert)",
+      "set": "amwp",
+      "cardType": "henchman",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "henchman-tardigrade-tardigrade-instinct",
+      "cardName": "Tardigrade (Instinct)",
+      "set": "amwp",
+      "cardType": "henchman",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "henchman-tardigrade-tardigrade-ranged",
+      "cardName": "Tardigrade (Ranged)",
+      "set": "amwp",
+      "cardType": "henchman",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "henchman-tardigrade-tardigrade-strength",
+      "cardName": "Tardigrade (Strength)",
+      "set": "amwp",
+      "cardType": "henchman",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "henchman-tardigrade-tardigrade-tech",
+      "cardName": "Tardigrade (Tech)",
+      "set": "amwp",
+      "cardType": "henchman",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
       "extId": "amwp-villain-armada-of-kang-troop-ships-of-kang",
       "cardName": "Troop Ships of Kang",
       "set": "amwp",
@@ -458,11 +513,11 @@
       "cardName": "Yellowjacket Prototype",
       "set": "amwp",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "anni-villain-annihilation-wave-annihilation-armada",
@@ -524,11 +579,11 @@
       "cardName": "Ravenous",
       "set": "anni",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "anni-villain-timelines-of-kang-scarlet-centurion",
@@ -579,11 +634,11 @@
       "cardName": "Brutish Ultron-14",
       "set": "antm",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "antm-villain-ultrons-legacy-crimson-cowl",
@@ -634,11 +689,11 @@
       "cardName": "Iron Knight",
       "set": "antm",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "antm-villain-ultrons-legacy-legions-of-ultron",
@@ -975,11 +1030,11 @@
       "cardName": "Blue Talon",
       "set": "bkwd",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "bkwd-villain-taskmasters-thunderbolts-bullseye",
@@ -1250,11 +1305,11 @@
       "cardName": "Monsteroso",
       "set": "chmp",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "add-next-hand-size",
+      "status": "executable",
+      "wp": "WP-543",
+      "decision": "D-24352",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#add-next-hand-size"
     },
     {
       "extId": "chmp-villain-monsters-unleashed-orrgo",
@@ -2394,11 +2449,11 @@
       "cardName": "Proxima Midnight",
       "set": "cosm",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "henchman-sidera-maris-bridge-builders",
@@ -2537,11 +2592,11 @@
       "cardName": "Big Bertha",
       "set": "cvwr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "cvwr-villain-registration-enforcers-blade",
@@ -2669,11 +2724,11 @@
       "cardName": "Mach-IV",
       "set": "cvwr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "henchman-mandroid",
@@ -3186,11 +3241,11 @@
       "cardName": "Tombstone",
       "set": "dkcy",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "dkcy-villain-marauders-vertigo",
@@ -3428,22 +3483,22 @@
       "cardName": "Firelord",
       "set": "ff04",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "ff04-villain-subterranea-giganto",
       "cardName": "Giganto",
       "set": "ff04",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "add-next-hand-size",
+      "status": "executable",
+      "wp": "WP-543",
+      "decision": "D-24352",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#add-next-hand-size"
     },
     {
       "extId": "ff04-villain-subterranea-megataur",
@@ -4495,11 +4550,11 @@
       "cardName": "Frost Giant",
       "set": "msp1",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "msp1-villain-hydra-hydra-motorcycle-squad",
@@ -4583,11 +4638,11 @@
       "cardName": "Laufey, Frost Giant King",
       "set": "msp1",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "msp1-villain-gamma-hunters-lt-gen-thunderbolt-ross",
@@ -4638,11 +4693,11 @@
       "cardName": "Whiplash",
       "set": "msp1",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "nmut-villain-hellions-catseye",
@@ -4979,11 +5034,11 @@
       "cardName": "Sandman",
       "set": "pttr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "pttr-villain-sinister-six-shocker",
@@ -5012,11 +5067,11 @@
       "cardName": "Vulture",
       "set": "pttr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "rlmk-villain-shiar-imperial-elite-gladiator",
@@ -5184,6 +5239,17 @@
       "handler": ""
     },
     {
+      "extId": "henchman-mandarins-rings-daimonic-the-white-light",
+      "cardName": "Daimonic, The White Light",
+      "set": "rvlt",
+      "cardType": "henchman",
+      "mechanic": "draw-cards-current",
+      "status": "executable",
+      "wp": "WP-485",
+      "decision": "D-24290",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#draw-cards-current"
+    },
+    {
       "extId": "rvlt-villain-dark-avengers-dark-hawkeye-bullseye",
       "cardName": "Dark Hawkeye (Bullseye)",
       "set": "rvlt",
@@ -5221,11 +5287,11 @@
       "cardName": "Dark Wolverine (Daken)",
       "set": "rvlt",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "rvlt-villain-army-of-evil-dome-of-darkforce",
@@ -5250,6 +5316,28 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
+      "extId": "henchman-mandarins-rings-incandescence-the-flame-blast",
+      "cardName": "Incandescence, The Flame Blast",
+      "set": "rvlt",
+      "cardType": "henchman",
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "wp": "WP-760",
+      "decision": "D-24589",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current"
+    },
+    {
+      "extId": "henchman-mandarins-rings-influence-the-impact-beam",
+      "cardName": "Influence, The Impact Beam",
+      "set": "rvlt",
+      "cardType": "henchman",
+      "mechanic": "gain-recruit-current",
+      "status": "executable",
+      "wp": "WP-541",
+      "decision": "D-24350",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current"
+    },
+    {
       "extId": "rvlt-villain-army-of-evil-klaw",
       "cardName": "Klaw",
       "set": "rvlt",
@@ -5272,15 +5360,37 @@
       "handler": ""
     },
     {
-      "extId": "rvlt-villain-lethal-legion-living-laser",
-      "cardName": "Living Laser",
+      "extId": "henchman-mandarins-rings-liar-the-mento-intensifier",
+      "cardName": "Liar, The Mento-Intensifier",
       "set": "rvlt",
-      "cardType": "villain",
+      "cardType": "henchman",
       "mechanic": "(unmarked)",
       "status": "unmarked",
       "wp": "",
       "decision": "",
       "handler": ""
+    },
+    {
+      "extId": "henchman-mandarins-rings-lightning-the-electro-blast",
+      "cardName": "Lightning, The Electro-Blast",
+      "set": "rvlt",
+      "cardType": "henchman",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "rvlt-villain-lethal-legion-living-laser",
+      "cardName": "Living Laser",
+      "set": "rvlt",
+      "cardType": "villain",
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "rvlt-villain-lethal-legion-mbaku",
@@ -5316,10 +5426,32 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
+      "extId": "henchman-mandarins-rings-nightbringer-the-black-light",
+      "cardName": "Nightbringer, The Black Light",
+      "set": "rvlt",
+      "cardType": "henchman",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
       "extId": "rvlt-villain-lethal-legion-power-man-erik-josten",
       "cardName": "Power Man (Erik Josten)",
       "set": "rvlt",
       "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "henchman-mandarins-rings-remaker-the-matter-rearranger",
+      "cardName": "Remaker, The Matter Rearranger",
+      "set": "rvlt",
+      "cardType": "henchman",
       "mechanic": "(unmarked)",
       "status": "unmarked",
       "wp": "",
@@ -5342,6 +5474,28 @@
       "cardName": "Sentry's Watchtower",
       "set": "rvlt",
       "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "henchman-mandarins-rings-spectral-the-disintegration-beam",
+      "cardName": "Spectral, The Disintegration Beam",
+      "set": "rvlt",
+      "cardType": "henchman",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "henchman-mandarins-rings-spin-the-vortex-beam",
+      "cardName": "Spin, The Vortex Beam",
+      "set": "rvlt",
+      "cardType": "henchman",
       "mechanic": "(unmarked)",
       "status": "unmarked",
       "wp": "",
@@ -5386,6 +5540,17 @@
       "cardName": "White Gorilla Cult",
       "set": "rvlt",
       "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "henchman-mandarins-rings-zero-the-ice-blast",
+      "cardName": "Zero, The Ice Blast",
+      "set": "rvlt",
+      "cardType": "henchman",
       "mechanic": "(unmarked)",
       "status": "unmarked",
       "wp": "",
@@ -5562,11 +5727,11 @@
       "cardName": "Tinkerer",
       "set": "smhc",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "smhc-villain-vulture-tech-turbine-powered",
@@ -6618,11 +6783,11 @@
       "cardName": "Agony",
       "set": "vnom",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "vnom-villain-life-foundation-dr-carlton-drake",
@@ -6893,11 +7058,11 @@
       "cardName": "Captain Marvel, End of the Party",
       "set": "wtif",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "wtif-villain-black-order-guards-corvus-glaive",
@@ -7151,6 +7316,61 @@
       "wp": "",
       "decision": "",
       "handler": ""
+    },
+    {
+      "extId": "henchman-ultron-sentries-ultron-sentries-covert",
+      "cardName": "Ultron Sentries (Covert)",
+      "set": "wtif",
+      "cardType": "henchman",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "henchman-ultron-sentries-ultron-sentries-instinct",
+      "cardName": "Ultron Sentries (Instinct)",
+      "set": "wtif",
+      "cardType": "henchman",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "henchman-ultron-sentries-ultron-sentries-ranged",
+      "cardName": "Ultron Sentries (Ranged)",
+      "set": "wtif",
+      "cardType": "henchman",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "henchman-ultron-sentries-ultron-sentries-strength",
+      "cardName": "Ultron Sentries (Strength)",
+      "set": "wtif",
+      "cardType": "henchman",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "henchman-ultron-sentries-ultron-sentries-tech",
+      "cardName": "Ultron Sentries (Tech)",
+      "set": "wtif",
+      "cardType": "henchman",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
       "extId": "wtif-villain-rival-overlords-ulysses-klaue",
@@ -7597,11 +7817,11 @@
       "cardName": "Red She-Hulk",
       "set": "wwhk",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "henchman-sakaaran-hivelings",
@@ -7663,11 +7883,11 @@
       "cardName": "Vapor",
       "set": "wwhk",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "wwhk-villain-u-foes-vector",
@@ -7899,6 +8119,17 @@
       "wp": "WP-185",
       "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "xmen-villain-sisterhood-of-mutants-lady-deathstrike",
+      "cardName": "Lady Deathstrike",
+      "set": "xmen",
+      "cardType": "villain",
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "xmen-villain-sisterhood-of-mutants-lady-mastermind",

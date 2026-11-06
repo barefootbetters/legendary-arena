@@ -694,8 +694,8 @@
           "imageUrl": "https://images.legendary-arena.com/ff04/ff04-vi-heralds-of-galactus-firelord.webp",
           "abilities": [
             "[keyword:Cosmic Threat]: [hc:ranged]",
-            "Fight: Each player reveals a [hc:ranged] Hero or gains a Wound.",
-            "Escape: Same effect."
+            "Fight: Each player reveals a [hc:ranged] Hero or gains a Wound. [effect:reveal-or-wound:hc:ranged]",
+            "Escape: Same effect. [effect:reveal-or-wound:hc:ranged]"
           ],
           "copies": 2
         },
@@ -752,7 +752,7 @@
           "vAttack": "7",
           "imageUrl": "https://images.legendary-arena.com/ff04/ff04-vi-subterranea-giganto.webp",
           "abilities": [
-            "Fight: When you draw a new hand of cards at the end of this turn, draw two extra cards.",
+            "Fight: When you draw a new hand of cards at the end of this turn, draw two extra cards. [effect:add-next-hand-size:2]",
             "[keyword:Burrow]"
           ],
           "copies": 2

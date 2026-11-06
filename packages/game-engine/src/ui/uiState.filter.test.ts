@@ -3907,6 +3907,39 @@ describe('filterUIStateForAudience — Ritual Artifact options (WP-858 / D-24794
 });
 
 // ---------------------------------------------------------------------------
+// WP-865 / D-24808 — heistAvailable + heistCount (active player only)
+// ---------------------------------------------------------------------------
+
+describe('filterUIStateForAudience — Heist availability and Heist Count (WP-865 / D-24808)', () => {
+  it('passes heistAvailable and heistCount through for the active player', () => {
+    const uiState = createTestUIState();
+    uiState.economy.heistAvailable = true;
+    uiState.economy.heistCount = 3;
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.equal(result.economy.heistAvailable, true);
+    assert.equal(result.economy.heistCount, 3);
+  });
+
+  it('omits both fields for the active player when no Heist is available (omit-when-absent)', () => {
+    const uiState = createTestUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.ok(!('heistAvailable' in result.economy));
+    assert.ok(!('heistCount' in result.economy));
+  });
+
+  it('never exposes heistAvailable or heistCount to a non-active player or a spectator', () => {
+    const uiState = createTestUIState();
+    uiState.economy.heistAvailable = true;
+    uiState.economy.heistCount = 3;
+    for (const audience of [PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.ok(!('heistAvailable' in result.economy), `${audience.kind} sees no Heist availability`);
+      assert.ok(!('heistCount' in result.economy), `${audience.kind} never sees the Heist Count`);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // D-24801 — `hq.recruitCosts` (the Size-Changing recruit prices) is PUBLIC shared-board
 // information. It is optional, so a missed filter pass-through would silently drop it (the
 // EC-206 failure mode). Five-step Board-Visible Field contract: declared, built, passed

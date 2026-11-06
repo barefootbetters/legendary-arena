@@ -760,7 +760,7 @@
           "imageUrl": "https://images.legendary-arena.com/chmp/chmp-vi-monsters-unleashed-monsteroso.webp",
           "abilities": [
             "[keyword:Size-Changing]: [hc:strength], [hc:instinct]",
-            "Fight: When you draw a new hand of cards at the end of this turn, draw an extra card."
+            "Fight: When you draw a new hand of cards at the end of this turn, draw an extra card. [effect:add-next-hand-size:1]"
           ],
           "copies": 1
         },

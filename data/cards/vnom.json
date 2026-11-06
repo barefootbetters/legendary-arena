@@ -728,7 +728,7 @@
           "imageUrl": "https://images.legendary-arena.com/vnom/vnom-vi-life-foundation-agony.webp",
           "abilities": [
             "Ambush: Reveal the top three cards of the Villain Deck. A Villain you revealed [keyword:Symbiote Bonds] with Agony. Put the rest back in any order.",
-            "Escape: Each player reveals a [hc:covert] Hero or gains a Wound."
+            "Escape: Each player reveals a [hc:covert] Hero or gains a Wound. [effect:reveal-or-wound:hc:covert]"
           ],
           "copies": 1
         },

@@ -43,7 +43,7 @@
           "recruit": "1+",
           "abilities": [
             "Whenever you gain a Wound this turn, return that Wound to the Wound Deck.",
-            "Heist: Rescue a Bystander."
+            "Heist: Rescue a Bystander. [keyword:rescue:1]"
           ]
         },
         {
@@ -245,7 +245,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:covert][hc:covert][hc:covert]",
-            "[keyword:Heist]: Draw two cards."
+            "[keyword:Heist]: Draw two cards. [keyword:draw:2]"
           ]
         },
         {
@@ -1129,7 +1129,7 @@
           "attack": "1",
           "recruit": null,
           "abilities": [
-            "[keyword:Heist]: Draw a card."
+            "[keyword:Heist]: Draw a card. [keyword:draw:1]"
           ]
         },
         {
@@ -1560,8 +1560,8 @@
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-vi-cross-technologies-yellowjacket-prototype.webp",
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:instinct][hc:instinct][hc:instinct][hc:instinct]",
-            "Ambush: Each player reveals a [hc:instinct] Hero or gains a Wound.",
-            "Escape: Same effect."
+            "Ambush: Each player reveals a [hc:instinct] Hero or gains a Wound. [effect:reveal-or-wound:hc:instinct]",
+            "Escape: Same effect. [effect:reveal-or-wound:hc:instinct]"
           ],
           "copies": 1
         },
@@ -1726,8 +1726,8 @@
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-vi-armada-of-kang-city-defense-system.webp",
           "abilities": [
             "[keyword:Streets Conqueror 2]",
-            "Ambush: Each player reveals a [hc:ranged] Hero or gains a Wound.",
-            "Escape: Same effect."
+            "Ambush: Each player reveals a [hc:ranged] Hero or gains a Wound. [effect:reveal-or-wound:hc:ranged]",
+            "Escape: Same effect. [effect:reveal-or-wound:hc:ranged]"
           ],
           "copies": 1
         },
@@ -1942,7 +1942,7 @@
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-covert.webp",
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:covert][hc:covert][hc:covert]",
-            "Fight: KO one of your Heroes."
+            "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ]
         },
         {
@@ -1951,7 +1951,7 @@
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-instinct.webp",
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:instinct][hc:instinct][hc:instinct]",
-            "Fight: KO one of your Heroes."
+            "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ]
         },
         {
@@ -1960,7 +1960,7 @@
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-ranged.webp",
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:ranged][hc:ranged][hc:ranged]",
-            "Fight: KO one of your Heroes."
+            "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ]
         },
         {
@@ -1969,7 +1969,7 @@
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-strength.webp",
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:strength][hc:strength][hc:strength]",
-            "Fight: KO one of your Heroes."
+            "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ]
         },
         {
@@ -1978,7 +1978,7 @@
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-tech.webp",
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:tech][hc:tech][hc:tech]",
-            "Fight: KO one of your Heroes."
+            "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ]
         }
       ],

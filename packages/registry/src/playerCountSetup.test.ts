@@ -260,7 +260,7 @@ describe('resolveEffectiveHenchmenCount (D-24666)', () => {
 });
 
 /**
- * The 27 printed Hero Deck count rows (D-24672), in source order, each with its
+ * The 28 printed Hero Deck count rows (D-24672; WP-863 / D-24805 adds the Microverse row), in source order, each with its
  * locked effective hero count at 1..5 players (base 3/5/5/5/6). Written-out
  * literals — never computed from the rule under test.
  */
@@ -279,6 +279,8 @@ const EXPECTED_HERO_COUNTS_BY_SCHEME: readonly (readonly [string, readonly numbe
   ['wpnx/go-after-heroes-loved-ones', [4, 6, 6, 6, 7]],
   ['mdns/wager-at-blackjack-for-heroes-souls', [5, 7, 7, 7, 8]],
   ['antm/age-of-ultron', [3, 5, 5, 6, 7]],
+  // why: WP-863 / D-24805 — the trapped extra Hero (Villain Deck) is supplied through heroDeckIds.
+  ['antm/trap-heroes-in-the-microverse', [4, 6, 6, 6, 7]],
   ['bkwd/frame-heroes-for-murder', [6, 6, 6, 6, 6]],
   ['dkcy/detonate-the-helicarrier', [6, 6, 6, 6, 6]],
   ['rvlt/house-of-m', [6, 6, 6, 6, 6]],
@@ -311,13 +313,13 @@ function effectiveHeroCountsAtEveryPlayerCount(schemeId: string): number[] {
 }
 
 describe('SCHEME_HERO_COUNT_RULES (D-24672)', () => {
-  it('holds exactly the 27 printed Hero Deck count rows, in order', () => {
+  it('holds exactly the 28 printed Hero Deck count rows, in order', () => {
     // why: D-24372 runtime drift pin — the closed table is a locked value.
     assert.deepEqual(
       Object.keys(SCHEME_HERO_COUNT_RULES),
       EXPECTED_HERO_COUNTS_BY_SCHEME.map((entry) => entry[0]),
     );
-    assert.equal(Object.keys(SCHEME_HERO_COUNT_RULES).length, 27);
+    assert.equal(Object.keys(SCHEME_HERO_COUNT_RULES).length, 28);
   });
 
   it('names only schemes that exist in data/cards', () => {

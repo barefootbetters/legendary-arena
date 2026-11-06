@@ -152,6 +152,10 @@ export type UiMoveName =
   // as { cardId } from the Use button on a played or controlled Ritual Artifact listed in
   // economy.ritualArtifactOptions; the engine decides legality.
   | 'useRitualArtifact'
+  // why: WP-865 / D-24808 — surfaces the once-per-turn Heist attempt (engine attemptHeist).
+  // Dispatched with no payload from the Attempt Heist button, shown only while
+  // economy.heistAvailable is set; the engine decides legality.
+  | 'attemptHeist'
   // why: WP-502 / D-24306 — surfaces the "End Game" control (engine endMatchEarly).
   // Dispatched with an empty payload; the move takes no arguments. Latches the
   // MATCH_ENDED_EARLY endgame counter so the match ends for every seat.

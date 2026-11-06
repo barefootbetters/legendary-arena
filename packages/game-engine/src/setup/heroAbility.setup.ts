@@ -851,6 +851,31 @@ const EXCESSIVE_VIOLENCE_CARDS: ReadonlySet<string> = new Set<string>([
   'mgtg/drax/remove-his-spine',
 ]);
 
+// why: WP-865 / D-24808 — identifies a printed Heist line. The cards print it two ways: plain
+// "Heist:" text (Scott Lang, Wasp) and the "[keyword:Heist]:" display token (Ant-Man, Ant Army),
+// so both forms match. Anchored to the line start (the Heist ability always leads its line) and
+// non-global so `.test` / `.replace` are stateless. The matched prefix is STRIPPED before the
+// line body is parsed: unlike the spaced Excessive Violence token, `[keyword:Heist]` matches
+// KEYWORD_PATTERN, and left in place it would become a nested 'heist' inner effect that readies
+// the card again when the Heist fires.
+const HEIST_LINE_PATTERN = /^\s*(?:\[keyword:Heist\]|Heist):/i;
+
+// why: WP-865 / D-24808 — the Honest-Partial allowlist of Heist cards whose WHOLE Heist ability
+// maps to a shipped executor (+recruit / +attack / rescue / draw), so their Heist line fuses into
+// an EXECUTABLE heist hook. Keyed by the canonical `{setAbbr}/{heroSlug}/{cardSlug}` key (the
+// EXCESSIVE_VIOLENCE_CARDS precedent). Every OTHER Heist line (The Big Score's Master Strike KO,
+// Revolutionary Anthem's Scheme Twist bonus, Putting a Crew Together's every-card count, X-Con
+// Security Van's move-a-Villain) does more than any executor models, so it becomes an honest
+// 'heist' hollow that grants nothing and readies nothing. Resolve ONLY the listed cards.
+const HEIST_CARDS: ReadonlySet<string> = new Set<string>([
+  'amwp/scott-lang-cat-burglar/petty-larceny',
+  'amwp/scott-lang-cat-burglar/anything-for-cassie',
+  'amwp/scott-lang-cat-burglar/shocking-support',
+  'amwp/wasp/infiltrate',
+  'amwp/ant-man/tiny-little-risk',
+  'amwp/ant-army/up-the-ante',
+]);
+
 // why: WP-668 / D-24481, D-24670 — keywords whose handler computes the line's own
 // "+[icon:attack] equal to …" amount. The printed icon on such a line is that grant, not
 // a separate flat attack, so the icon-suppression in the keyword pass drops the plain
@@ -4479,6 +4504,52 @@ function buildExcessiveViolenceFusion(
 }
 
 /**
+ * Fuses one allowlisted card's Heist line into a single heist hook (WP-865 / D-24808).
+ *
+ * Strips the HEIST_LINE_PATTERN prefix ("Heist:" or "[keyword:Heist]:"), parses the rest of the
+ * line through the shared parseAbilityText (its +recruit / +attack icon or its draw / rescue
+ * marker becomes the Heist ability's inner effects), and returns ONE hook whose wrapper descriptor
+ * carries those effects in `heistEffects`. Because the prefix is stripped first, `heistEffects`
+ * never holds a 'heist' descriptor. Non-mutating.
+ *
+ * @param cardId - The hero card copy's CardExtId (the hook's cardId).
+ * @param abilityLine - The card's Heist ability line.
+ * @returns The fused heist hook.
+ */
+function buildHeistFusion(cardId: CardExtId, abilityLine: string): HeroAbilityHook {
+  const heistBody = abilityLine.replace(HEIST_LINE_PATTERN, '');
+  const heistEffects = parseAbilityText(heistBody).effects;
+  const effect: HeroEffectDescriptor = { type: 'heist', heistEffects };
+  return {
+    cardId,
+    // why: WP-865 / D-24808 — onPlay is the true readying moment: the hook fires at play, where
+    // its handler only readies the card. The inner effects fire later from attemptHeist.
+    timing: 'onPlay',
+    keywords: ['heist'],
+    effects: [effect],
+  };
+}
+
+/**
+ * Builds the honest hollow hook for a Heist line that is not on the HEIST_CARDS allowlist
+ * (WP-865 / D-24808).
+ *
+ * The hook carries no keyword and no effect, only a 'heist' unresolved marker, so the card grants
+ * nothing at play, never readies a Heist, and still reads as hollow in the runtime ledger.
+ *
+ * @param cardId - The hero card copy's CardExtId (the hook's cardId).
+ * @returns The hollow hook.
+ */
+function buildHeistHollow(cardId: CardExtId): HeroAbilityHook {
+  return {
+    cardId,
+    timing: 'onPlay',
+    keywords: [],
+    unresolvedMarkers: ['heist'],
+  };
+}
+
+/**
  * Fuses an allowlisted card's "[keyword:Sunlight]: … / [keyword:Moonlight]: … / [X]: Instead,
  * you get both." lines into one day-night-both hook (WP-765 / D-24598).
  *
@@ -4702,6 +4773,22 @@ export function buildHeroAbilityHooks(
         }
         const abilityText = abilityLines[lineIndex]!;
         if (typeof abilityText !== 'string' || abilityText.trim() === '') {
+          previousLineHook = null;
+          continue;
+        }
+
+        // why: WP-865 / D-24808 — a Heist line is consumed here, at its own line index (never
+        // prepended like the fusions above), so hook order still follows line order. An
+        // allowlisted card's line becomes ONE heist hook that readies the card at play; every
+        // other Heist line becomes an honest 'heist' hollow, which stops the play-time payout
+        // its body would otherwise parse to (The Big Score's +4, Putting a Crew Together's +1,
+        // Revolutionary Anthem's +2). Resetting previousLineHook keeps a later line from
+        // widen-fusing into either hook (WP-790).
+        if (HEIST_LINE_PATTERN.test(abilityText)) {
+          const heistHook = HEIST_CARDS.has(`${parsed.setAbbr}/${parsed.slug}/${instance.cardSlug}`)
+            ? buildHeistFusion(instance.extId, abilityText)
+            : buildHeistHollow(instance.extId);
+          hooks.push(heistHook);
           previousLineHook = null;
           continue;
         }

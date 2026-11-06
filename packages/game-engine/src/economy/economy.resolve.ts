@@ -386,6 +386,14 @@ function resolveBaseFightCost(
     return (G.cardStats[villainCardId]?.cost ?? 0) + 2;
   }
 
+  // why: WP-863 / D-24805 — a Trap Heroes in the Microverse Micro-Sized Villain (a Hero card in the
+  // Villain Deck) has "Attack equal to [its] printed cost": the Hero's cost from G.cardStats (a split
+  // card's primary face). Checked OVERLAY-FIRST beside the Skrull branch, because a Hero's
+  // fightCost row is 0.
+  if (G.convertedVillainOrigins?.[villainCardId] === 'micro-sized') {
+    return G.cardStats[villainCardId]?.cost ?? 0;
+  }
+
   // why: WP-823 / D-24756 — a Brainwash the Military Officer's Attack "is 3 plus the
   // number of Twists stacked next to this Scheme" (the Traitor Battalion). Checked
   // OVERLAY-FIRST, beside the Killbot / Skrull branches, because a converted Officer
