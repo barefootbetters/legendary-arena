@@ -351,7 +351,7 @@
       "wp": "WP-247",
       "state": "verified",
       "date": "2026-10-05",
-      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): Arc Reactor +1 and +2 with other Tech Heroes; blocked line when no other Tech Hero (6.2.6, 9.2.10, 12.2.4).",
+      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): Arc Reactor +1 and +2 with other Tech Heroes; blocked line when no other Tech Hero (6.2.6, 9.2.10, 12.2.4). Re-checked on 2p Operator match lxbKxcgUvPk (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers; Sentinel; Hulk, Iron Man, Wasp, Iceman, Bishop; Final Blow on; server build 4d474e93, which contains #3064, #3150, #3155 and #3159; created 2026-11-06T14:24:46Z after boot, isMatchOlderThanServer false) for the #3150 \"+0\" log: led with no other Tech Hero, Arc Reactor logged \"scaled to +0 Attack\" instead of \"did not activate\" (20.2.2, 24.2.2, 26.2.2, 32.2.4); with others it logged +1, +2 and +3 (20.2.4, 28.2.9, 16.2.11).",
       "note": ""
     },
     {
@@ -802,7 +802,7 @@
       "wp": "WP-185",
       "state": "verified",
       "date": "2026-10-19",
-      "evidence": "D-24687 hand + play default seen live: 2p bot-ally Loki / Negative Zone Prison Breakout (Enemies of Asgard + Radiation; Sentinel + Hand Ninjas), match 7iXjqwi3OQ4 (build 3aaf7b3) — five Sentinel fights (2.2.7, 5.2.7, 13.2.10, 24.2.6, 26.2.15), each KO resolved from \"the cards they played this turn\", none from the discard pile; Player 0's two KOs (5.2.9, 13.2.13) were picked through the KO-choice move. Repeated in match nNR91fCRKsX (build 17ccd6b): eight more Sentinel fights, all from played cards. Earlier: solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff). Hand side: 2p bot-ally operator match 4-YFzCBfK9L (server 58169eef, client 70754d9), Loki / Negative Zone Prison Breakout (Enemies of Asgard + Masters of Evil; Sentinel + Hand Ninjas; Captain America, Black Widow, Hawkeye, Iron Man, Wolverine; Final Blow on) — Player 0 fought Sentinel after playing two cards with the rest of the hand still held (17.2.6) and KO'd Covering Fire from their hand (17.2.8).",
+      "evidence": "D-24687 hand + play default seen live: 2p bot-ally Loki / Negative Zone Prison Breakout (Enemies of Asgard + Radiation; Sentinel + Hand Ninjas), match 7iXjqwi3OQ4 (build 3aaf7b3) — five Sentinel fights (2.2.7, 5.2.7, 13.2.10, 24.2.6, 26.2.15), each KO resolved from \"the cards they played this turn\", none from the discard pile; Player 0's two KOs (5.2.9, 13.2.13) were picked through the KO-choice move. Repeated in match nNR91fCRKsX (build 17ccd6b): eight more Sentinel fights, all from played cards. Earlier: solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff). Hand side: 2p bot-ally operator match 4-YFzCBfK9L (server 58169eef, client 70754d9), Loki / Negative Zone Prison Breakout (Enemies of Asgard + Masters of Evil; Sentinel + Hand Ninjas; Captain America, Black Widow, Hawkeye, Iron Man, Wolverine; Final Blow on) — Player 0 fought Sentinel after playing two cards with the rest of the hand still held (17.2.6) and KO'd Covering Fire from their hand (17.2.8). Log order (#3064) seen on 2p Operator match lxbKxcgUvPk (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers; Sentinel; Hulk, Iron Man, Wasp, Iceman, Bishop; Final Blow on; server build 4d474e93, which contains #3064, #3150, #3155 and #3159; created 2026-11-06T14:24:46Z after boot, isMatchOlderThanServer false): each \"fought Sentinel\" line came before its \"Fight effect\" KO line (6.2.9-6.2.11, 11.2.12-11.2.15, 13.2.7-13.2.9, 15.2.22-15.2.24, 17.2.11-17.2.14, 21.2.22-21.2.24, 27.2.21-27.2.23).",
       "note": "Both sides seen: KO from the cards played this turn and KO from hand."
     },
     {
@@ -1700,12 +1700,12 @@
       "key": "amwp/wasp|size-changing",
       "kind": "hero",
       "card": "Wasp",
-      "ability": "Size-Changing [Ranged] / [Tech] (Follow my Lead, Flitting Sting, Master Physicist, Positive Ions)",
-      "wp": "#3151",
-      "state": "partial",
-      "date": "2026-11-05",
-      "evidence": "2p Operator match PAwTxk88LRy (Magneto / Midtown Bank Robbery; Storm, Iron Man, Cyclops, Wasp, Janet van Dyne; server build 96855eb0, which contains the #3151 fix d5b9113f; created 2026-11-05T11:43:20Z after boot, isMatchOlderThanServer false): the Size-Changing line logged no gate and no hollow on Follow my Lead (14.2.6, 20.2.11), Flitting Sting (5.2.5, 22.2.10, 26.2.14), Master Physicist (12.2.4, 14.2.1, 18.2.3, 20.2.13, 22.2.13, 26.2.7) or Positive Ions (8.2.1, 12.2.12, 20.2.9, 26.2.12, 26.2.17, 26.2.26), and none of them is in the hollow panel. Flitting Sting's Ranged line fired after another Ranged Hero (Tidal Wave 22.2.7, then 22.2.11-22.2.12; Positive Ions 26.2.12, then 26.2.15-26.2.16) and logged blocked without one (5.2.6, 9.2.6, 19.2.10). Not verified: the rulebook Size-Changing recruit discount (v23 p.33) was not in this build. This build modelled D-24074's class grant instead, which adds the card's own printed class and has no visible effect. D-24801 (#3155) replaced it with the discount after this match, so the discount needs a new match on a build with #3155. Every recruit in this match used the Operator +20 Recruit setter.",
-      "note": "The false gate-only hollow is gone (#3151). The recruit discount (D-24801, #3155) landed after this match and needs a new match."
+      "ability": "Size-Changing [Ranged] / [Tech] recruit discount (Follow my Lead, Flitting Sting, Master Physicist, Positive Ions)",
+      "wp": "D-24801 (#3155)",
+      "state": "verified",
+      "date": "2026-11-06",
+      "evidence": "2p Operator match lxbKxcgUvPk (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers; Sentinel; Hulk, Iron Man, Wasp, Iceman, Bishop; Final Blow on; server build 4d474e93, which contains #3064, #3150, #3155 and #3159; created 2026-11-06T14:24:46Z after boot, isMatchOlderThanServer false): each recruit after a matching class cost 2 less and logged the price: Master Physicist (Tech) \"cost 4, paid 2\" after Tech cards (16.2.34); Follow my Lead (Ranged) \"cost 2, paid 0\" after Repulsor Rays and Flitting Sting (22.2.33); Flitting Sting \"cost 3, paid 1\" twice and Positive Ions \"cost 5, paid 3\" after Repulsor Rays (28.2.36-28.2.38). With no matching class played, Wasp's cards recruited at the printed price with no note (2.2.10-2.2.15). The HQ projection carries recruitCosts. Earlier, operator match PAwTxk88LRy on server 96855eb0 (marker fix #3151, before the discount existed): the Size-Changing line logged no gate and no hollow on Follow my Lead (14.2.6, 20.2.11), Flitting Sting (5.2.5, 22.2.10, 26.2.14), Master Physicist (12.2.4, 14.2.1, 18.2.3, 20.2.13, 22.2.13, 26.2.7) or Positive Ions (8.2.1, 12.2.12, 20.2.9, 26.2.12, 26.2.17, 26.2.26), and none of them is in the hollow panel. Flitting Sting's Ranged line fired after another Ranged Hero (Tidal Wave 22.2.7, then 22.2.11-22.2.12; Positive Ions 26.2.12, then 26.2.15-26.2.16) and logged blocked without one (5.2.6, 9.2.6, 19.2.10).",
+      "note": "Recruit price is 2 less per listed class played this turn; full price and no note otherwise. D-24801."
     },
     {
       "key": "amwp/janet-van-dyne|size-changing",
@@ -1717,6 +1717,127 @@
       "date": "2026-11-05",
       "evidence": "2p Operator match PAwTxk88LRy (Magneto / Midtown Bank Robbery; Storm, Iron Man, Cyclops, Wasp, Janet van Dyne; server build 96855eb0, which contains the #3151 fix d5b9113f; created 2026-11-05T11:43:20Z after boot, isMatchOlderThanServer false): Wasp of Another Generation's Size-Changing line logged no gate and no hollow (12.2.10, 14.2.8, 22.2.5, 24.2.5). Its Covert line fired after Finally Found You (12.2.8, then 12.2.11; 22.2.3, then 22.2.6) and logged blocked with no other Covert Hero played (14.2.9, 24.2.6). Not verified: the rulebook Size-Changing recruit discount (v23 p.33) was not in this build. This build modelled D-24074's class grant instead, which adds the card's own printed class and has no visible effect. D-24801 (#3155) replaced it with the discount after this match, so the discount needs a new match on a build with #3155. Every recruit in this match used the Operator +20 Recruit setter.",
       "note": "The false gate-only hollow is gone (#3151). The recruit discount (D-24801, #3155) landed after this match and needs a new match."
+    },
+    {
+      "key": "amwp/wasp|microscopic-size-changing",
+      "kind": "hero",
+      "card": "Wasp",
+      "ability": "Microscopic Size-Changing (Infiltrate [Tech]x3, Hope Returns [Ranged]x5)",
+      "wp": "D-24801 (#3155)",
+      "state": "partial",
+      "date": "2026-11-06",
+      "evidence": "2p Operator match lxbKxcgUvPk (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers; Sentinel; Hulk, Iron Man, Wasp, Iceman, Bishop; Final Blow on; server build 4d474e93, which contains #3064, #3150, #3155 and #3159; created 2026-11-06T14:24:46Z after boot, isMatchOlderThanServer false): Infiltrate \"cost 6, paid 0\" after three or more Tech cards (Endless Invention 22.2.4, 22.2.7, Quantum Breakthrough 22.2.12, Arc Reactor 22.2.15; recruit 22.2.31). Player 1's Hope Returns \"cost 9, paid 1\" after four Ranged cards, one per icon (Deep Freeze 15.2.3, 15.2.7, 15.2.10, Whatever the Cost 15.2.17; recruit 15.2.28). Not observed live: a price below 0 gaining Recruit, and a partial match (e.g. two Tech cards making Infiltrate cost 2).",
+      "note": "2 less per matching card, one card per icon. The below-zero Recruit gain is covered by tests only. D-24801."
+    },
+    {
+      "key": "mastermind:chmp/fin-fang-foom|size-changing",
+      "kind": "mastermind",
+      "card": "Fin Fang Foom",
+      "ability": "Size-Changing [Strength], [Instinct], [Covert], [Tech], [Ranged]",
+      "wp": "D-24802 (#3159)",
+      "state": "verified",
+      "date": "2026-11-06",
+      "evidence": "2p Operator match lxbKxcgUvPk (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers; Sentinel; Hulk, Iron Man, Wasp, Iceman, Bishop; Final Blow on; server build 4d474e93, which contains #3064, #3150, #3155 and #3159; created 2026-11-06T14:24:46Z after boot, isMatchOlderThanServer false): each fight logged \"fights Fin Fang Foom (20 Attack) for N\", 2 less per class played: 16 with Tech + Ranged (16.2.27, 28.2.32); 14 with Instinct (Unstoppable Hulk 22.2.1, 32.2.15) + Tech + Ranged (22.2.34, and the final blow 32.2.36); 12 for Player 1 with Ranged (Whatever the Cost, Ice Slide, Deep Freeze) + Covert (Absorb Energies 25.2.7) + Instinct (Unstoppable Hulk 25.2.9) + Strength (Growing Anger 25.2.16) (25.2.18). Each fight was followed by the tactic or final-blow line.",
+      "note": "Fight price is 20 minus 2 per distinct class played this turn. D-24802."
+    },
+    {
+      "key": "cvwr-villain-great-lakes-avengers-flatman|size-changing",
+      "kind": "villain",
+      "card": "Flatman",
+      "ability": "Size-Changing [Covert]",
+      "wp": "D-24802 (#3159)",
+      "state": "verified",
+      "date": "2026-11-06",
+      "evidence": "2p Operator match lxbKxcgUvPk (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers; Sentinel; Hulk, Iron Man, Wasp, Iceman, Bishop; Final Blow on; server build 4d474e93, which contains #3064, #3150, #3155 and #3159; created 2026-11-06T14:24:46Z after boot, isMatchOlderThanServer false): fought for 3 instead of 5 after Absorb Energies (Covert, 7.2.6) and logged \"fights Flatman (5 Attack) for 3\" (7.2.8-7.2.9).",
+      "note": "Fight price 2 less after a Covert card. D-24802."
+    },
+    {
+      "key": "chmp-villain-monsters-unleashed-zzutak|size-changing",
+      "kind": "villain",
+      "card": "Zzutak",
+      "ability": "Size-Changing [Ranged], [Instinct]",
+      "wp": "D-24802 (#3159)",
+      "state": "verified",
+      "date": "2026-11-06",
+      "evidence": "2p Operator match lxbKxcgUvPk (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers; Sentinel; Hulk, Iron Man, Wasp, Iceman, Bishop; Final Blow on; server build 4d474e93, which contains #3064, #3150, #3155 and #3159; created 2026-11-06T14:24:46Z after boot, isMatchOlderThanServer false): fought for 7 instead of 9 after Ranged cards (Flitting Sting 10.2.6, Positive Ions 10.2.8) and no Instinct card (10.2.14-10.2.15).",
+      "note": "One class matched, one 2-less step. D-24802."
+    },
+    {
+      "key": "chmp-villain-monsters-unleashed-trull-the-unhuman|size-changing",
+      "kind": "villain",
+      "card": "Trull the Unhuman",
+      "ability": "Size-Changing [Covert], [Tech]",
+      "wp": "D-24802 (#3159)",
+      "state": "verified",
+      "date": "2026-11-06",
+      "evidence": "2p Operator match lxbKxcgUvPk (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers; Sentinel; Hulk, Iron Man, Wasp, Iceman, Bishop; Final Blow on; server build 4d474e93, which contains #3064, #3150, #3155 and #3159; created 2026-11-06T14:24:46Z after boot, isMatchOlderThanServer false): fought for 6 instead of 8 after Master Physicist (Tech, 18.2.1) and no Covert card (18.2.12-18.2.13).",
+      "note": "One class matched, one 2-less step. D-24802. Its Ambush (capture + Demolish) is a separate hollow (18.1.5), WP-864."
+    },
+    {
+      "key": "chmp-villain-monsters-unleashed-sporr|size-changing",
+      "kind": "villain",
+      "card": "Sporr",
+      "ability": "Size-Changing [Tech], [Ranged]",
+      "wp": "D-24802 (#3159)",
+      "state": "verified",
+      "date": "2026-11-06",
+      "evidence": "2p Operator match lxbKxcgUvPk (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers; Sentinel; Hulk, Iron Man, Wasp, Iceman, Bishop; Final Blow on; server build 4d474e93, which contains #3064, #3150, #3155 and #3159; created 2026-11-06T14:24:46Z after boot, isMatchOlderThanServer false): fought for 3 instead of 7 after Tech (Arc Reactor 24.2.1, Endless Invention 24.2.3) and Ranged cards (Repulsor Rays 24.2.11, Positive Ions 24.2.15) (24.2.23-24.2.24).",
+      "note": "Both classes matched, two 2-less steps. D-24802."
+    },
+    {
+      "key": "cvwr-villain-great-lakes-avengers-big-bertha|size-changing",
+      "kind": "villain",
+      "card": "Big Bertha",
+      "ability": "Size-Changing [Strength]",
+      "wp": "D-24802 (#3159)",
+      "state": "partial",
+      "date": "2026-11-06",
+      "evidence": "2p Operator match lxbKxcgUvPk (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers; Sentinel; Hulk, Iron Man, Wasp, Iceman, Bishop; Final Blow on; server build 4d474e93, which contains #3064, #3150, #3155 and #3159; created 2026-11-06T14:24:46Z after boot, isMatchOlderThanServer false): fought twice at the printed 7 with no Size-Changing line, both times with no Strength card played (12.2.21, 30.2.14; Unstoppable Hulk is Instinct). Not observed live: the 2-less fight after a Strength card. Her Fight effect was hollow both times (12.2.22, 30.2.15); #3170 implements it.",
+      "note": "Full price with no match seen; the discount path is covered by tests only. D-24802."
+    },
+    {
+      "key": "chmp-villain-monsters-unleashed-monsteroso|size-changing",
+      "kind": "villain",
+      "card": "Monsteroso",
+      "ability": "Size-Changing [Strength], [Instinct]",
+      "wp": "D-24802 (#3159)",
+      "state": "partial",
+      "date": "2026-11-06",
+      "evidence": "2p Operator match lxbKxcgUvPk (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers; Sentinel; Hulk, Iron Man, Wasp, Iceman, Bishop; Final Blow on; server build 4d474e93, which contains #3064, #3150, #3155 and #3159; created 2026-11-06T14:24:46Z after boot, isMatchOlderThanServer false): fought at the printed 5 with no Size-Changing line after only a Covert Hero (Absorb Energies 5.2.5; fight 5.2.8). Not observed live: the discount.",
+      "note": "Full price with no match seen. D-24802."
+    },
+    {
+      "key": "chmp-villain-monsters-unleashed-groot-from-planet-x|size-changing",
+      "kind": "villain",
+      "card": "Groot from Planet X",
+      "ability": "Size-Changing [Strength], [Covert]",
+      "wp": "D-24802 (#3159)",
+      "state": "partial",
+      "date": "2026-11-06",
+      "evidence": "2p Operator match lxbKxcgUvPk (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers; Sentinel; Hulk, Iron Man, Wasp, Iceman, Bishop; Final Blow on; server build 4d474e93, which contains #3064, #3150, #3155 and #3159; created 2026-11-06T14:24:46Z after boot, isMatchOlderThanServer false): fought at the printed 6 with no Size-Changing line after only Tech and Ranged Heroes (20.2.1-20.2.8; fight 20.2.11). Not observed live: the discount.",
+      "note": "Full price with no match seen. D-24802."
+    },
+    {
+      "key": "dkcy/iceman|recruit-per-count",
+      "kind": "hero",
+      "card": "Iceman",
+      "ability": "Deep Freeze (+1 Recruit per other Ranged Hero played this turn)",
+      "wp": "WP-674; #3150",
+      "state": "verified",
+      "date": "2026-11-06",
+      "evidence": "2p Operator match lxbKxcgUvPk (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers; Sentinel; Hulk, Iron Man, Wasp, Iceman, Bishop; Final Blow on; server build 4d474e93, which contains #3064, #3150, #3155 and #3159; created 2026-11-06T14:24:46Z after boot, isMatchOlderThanServer false): with no other Ranged Hero, Deep Freeze logged \"scaled one of its abilities to +0 Recruit\" (9.2.9, 11.2.9, 15.2.5, 21.2.3, 27.2.4, 29.2.5); with others it logged +1, +2, +3 and +4 (15.2.9, 15.2.12, 21.2.16, 27.2.18).",
+      "note": "Count 0 logs \"+0\", not \"did not activate\" (#3150)."
+    },
+    {
+      "key": "dkcy/iceman|attack-per-count",
+      "kind": "hero",
+      "card": "Iceman",
+      "ability": "Ice Slide (+1 Attack per other Ranged Hero played this turn)",
+      "wp": "WP-247; #3150",
+      "state": "verified",
+      "date": "2026-11-06",
+      "evidence": "2p Operator match lxbKxcgUvPk (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers; Sentinel; Hulk, Iron Man, Wasp, Iceman, Bishop; Final Blow on; server build 4d474e93, which contains #3064, #3150, #3155 and #3159; created 2026-11-06T14:24:46Z after boot, isMatchOlderThanServer false): with no other Ranged Hero, Ice Slide logged \"scaled to +0 Attack\" (17.2.2, 23.2.3, 31.2.4); after Whatever the Cost (Ranged) it logged +1 (25.2.5-25.2.6).",
+      "note": "Count 0 logs \"+0\", not \"did not activate\" (#3150)."
     }
   ]
 }
