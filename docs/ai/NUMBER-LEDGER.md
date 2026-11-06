@@ -507,6 +507,7 @@ high-water: 422
 - WP-866 — hero-next-hand-extra-draw (hero lines that read "When you draw a new hand (of cards at the end of) this turn, draw an extra card" / "draw two/three extra cards": a hero-side [keyword:next-hand-extra-draw:N] that adds N to the playing player's G.handSizeOverrides end-of-turn fill, the hero sibling of the D-24352 villain primitive; first slice Wasp's Infiltrate and the plain or [hc:X]:/[team:X]:-gated lines. reserved 2026-11-05, claude/wp866-reserve; LANDED 2026-11-06)
 - WP-867 — unresolved-master-strike-diagnostic (a Master Strike whose mastermind has no strike resolver is flagged — a hollow-effect record and a visible log line — instead of silently doing nothing; strike-provenance coverage feed. reserved 2026-11-06, claude/wp867-reserve)
 - WP-869 — converted-bystander-villain-split-groot (chmp Groot from Planet X Fight: two Bystanders from the Bystander Stack enter the city as 3-Attack "Splintered Half-Groot" Villains; fighting one rescues it as a Bystander. reserved 2026-11-06, claude/wp869-reserve)
+- WP-871 — villain-fight-restriction-gate (Orrgo "unless you have already defeated another Villain this turn", Squirrel Girl "if you played more than one card this turn", Doop "if there is a Villain in an adjacent city space": a state-only fight precondition gating fightVillain, getLegalMoves and the City Fight button. reserved 2026-11-06, claude/wp871-reserve)
 
 ## EC
 
@@ -976,6 +977,7 @@ high-water: 457
 - EC-904 — hero-next-hand-extra-draw (WP-866. reserved 2026-11-05, claude/wp866-reserve; LANDED 2026-11-06)
 - EC-905 — unresolved-master-strike-diagnostic (WP-867. reserved 2026-11-06, claude/wp867-reserve)
 - EC-907 — converted-bystander-villain-split-groot (WP-869. reserved 2026-11-06, claude/wp869-reserve)
+- EC-909 — villain-fight-restriction-gate (WP-871. reserved 2026-11-06, claude/wp871-reserve)
 
 ## D
 
@@ -1566,3 +1568,4 @@ section below) and the allocation protocol in
 - D-24810 — unresolved-master-strike-diagnostic (WP-867; how an unresolved Master Strike is recorded and surfaced, and its replay-hash consequence. reserved 2026-11-06, claude/wp867-reserve)
 - D-24813 — tactic-next-hand-extra-cards (direct fix, no WP — four mastermind tactics that print "draw two/three extra cards" on your next hand (cvwr Cursed Dynasty, mgtg I'm a Celestial, Sweetheart, msis Hear Me and Rejoice, co2e Treasures of Latveria) dispatch to the core Treasures of Latveria additive handSizeOverrides writer; Ego's destroy-a-city-space line and Ebony Maw's Endgame +3 stay deferred. reserved 2026-11-06, claude/vigorous-heisenberg-54acc4)
 - D-24814 — converted-bystander-villain-split-groot (WP-869; a Villain Fight that turns Bystander Stack cards into fixed-Attack Villains entering the city, and their defeat routing (rescued as a Bystander) and escape routing. reserved 2026-11-06, claude/wp869-reserve)
+- D-24816 — villain-fight-restriction-gate (WP-871; the [fight-restriction:<kind>] marker, the G.villainFightRestrictions table, the three kinds and their turn reads, the fight-only scope, and the public UICityCard projection. reserved 2026-11-06, claude/wp871-reserve)
