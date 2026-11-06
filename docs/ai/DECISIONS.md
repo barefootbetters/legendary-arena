@@ -50276,7 +50276,7 @@ Protect this file.
 
 ### D-24803 — A henchman group printed as variant cards maps its 10 copies onto the variants in contiguous blocks; each copy reads its own name, image, abilities, Fight effect and Size-Changing discount (Active 2026-11-05 — direct fix, no WP)
 
-**Status:** Active 2026-11-05. Closes the Tardigrade follow-up D-24802 listed. Live-verify (D-24026) operator-pending.
+**Status:** Active 2026-11-05. Closes the Tardigrade follow-up D-24802 listed. Live-verified 2026-11-06 (D-24026) on server `69f9719b`, operator matches `yTdbv34zeV6`, `marWQ0Au-EN` and `kqMw86CWof_`; see the D-24803 STATUS entry.
 
 **Context.** The engine built every henchman group as 10 identical virtual copies, `henchman-{group}-00..09`. Each copy read the group-level `abilities`, `name` and `imageUrl` (`villainDeck/villainDeck.setup.ts`, `setup/villainAbility.setup.ts`, `setup/buildCardDisplayData.ts`). Three groups are not printed as identical copies. Their entries carry a `cards[]` list of variants, and their group-level `abilities` are `[]`:
 - **amwp Tardigrade:** 5 variants, one per class. Each prints `[keyword:Microscopic Size-Changing] [hc:X][hc:X][hc:X]` plus "Fight: KO one of your Heroes."

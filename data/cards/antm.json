@@ -796,8 +796,8 @@
           "imageUrl": "https://images.legendary-arena.com/antm/antm-vi-ultrons-legacy-brutish-ultron-14.webp",
           "abilities": [
             "[keyword:Empowered] by [hc:strength]",
-            "Fight: Each player reveals a [hc:strength] Hero or gains a Wound.",
-            "Escape: Same effect."
+            "Fight: Each player reveals a [hc:strength] Hero or gains a Wound. [effect:reveal-or-wound:hc:strength]",
+            "Escape: Same effect. [effect:reveal-or-wound:hc:strength]"
           ],
           "copies": 1
         },
@@ -867,7 +867,7 @@
           "imageUrl": "https://images.legendary-arena.com/antm/antm-vi-queens-vengeance-iron-knight.webp",
           "abilities": [
             "[keyword:Chivalrous Duel]",
-            "Escape: Each player reveals a [hc:tech] Hero or gains a Wound."
+            "Escape: Each player reveals a [hc:tech] Hero or gains a Wound. [effect:reveal-or-wound:hc:tech]"
           ],
           "copies": 1
         },
