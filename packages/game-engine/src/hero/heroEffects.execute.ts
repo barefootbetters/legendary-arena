@@ -51,7 +51,7 @@ import type { ShuffleProvider } from '../setup/shuffle.js';
 import { shuffleDeck } from '../setup/shuffle.js';
 import { moveCardFromZone, moveAllCards } from '../moves/zoneOps.js';
 import { reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
-import { addResources, enableRecruitSpendableAsAttack, enableDrawLock, enrollExcessiveViolenceCard, enablePlayBothSides, addRestrictedAttack, formatAttackTargets, addFightCostReduction, recordOutOfTimePlayed } from '../economy/economy.logic.js';
+import { addResources, enableRecruitSpendableAsAttack, enableDrawLock, enrollExcessiveViolenceCard, enrollHeistCard, enablePlayBothSides, addRestrictedAttack, formatAttackTargets, addFightCostReduction, recordOutOfTimePlayed } from '../economy/economy.logic.js';
 import type { AttackTargetName } from '../economy/economy.types.js';
 import { countDistinctVictoryPointValues } from '../economy/bloodFrenzy.logic.js';
 // why: D-24741 — Pure Fury reads a target's current Attack from the single fight-cost authorities.
@@ -296,6 +296,12 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // so it belongs here (the bidirectional handler-completeness authority). Carries NO top-level
   // magnitude → also in NO_MAGNITUDE_KEYWORDS.
   'excessive-violence',
+  // why: WP-865 / D-24808 — the Ant-Man and the Wasp "Heist" keyword; has a HERO_EFFECT_HANDLERS
+  // entry (heroEffectHeist) that READIES the played card into the turn's Heist crew (the inner
+  // effects fire later from the attemptHeist move's fireHeistPlays), so it belongs here (the
+  // bidirectional handler-completeness authority). Carries NO top-level magnitude → also in
+  // NO_MAGNITUDE_KEYWORDS.
+  'heist',
   // why: WP-753 / D-24580 — "Reveal the top three cards of your deck. Draw one of them, discard
   // one, and KO one." (Crystal of Kadavus, Interplanetary Visitor); has a HERO_EFFECT_HANDLERS
   // entry (heroEffectRevealThreeAssign) that snapshots the top three and parks a
@@ -686,6 +692,10 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // markers inside excessiveViolenceEffects). The magnitude pre-gate must not drop it, or
   // heroEffectExcessiveViolence never fires and the card is never enrolled.
   'excessive-violence',
+  // why: WP-865 / D-24808 — heist carries NO top-level magnitude (the wrapper only readies the
+  // card; the inner +recruit / +attack / rescue:N / draw:N ride heistEffects). The magnitude
+  // pre-gate must not drop it, or heroEffectHeist never fires and the card is never readied.
+  'heist',
   // why: WP-753 / D-24580 — both reveal-three-assign keywords carry NO magnitude: the outcome is
   // a per-card draw / discard / KO assignment (and a repeat counter), not a count. The revealed
   // set is snapshotted from the deck top at play time, so the magnitude pre-gate must not drop
@@ -7236,6 +7246,108 @@ export function fireExcessiveViolencePlays(
   refreshStaleKoOrKeepFront(G, ctx as ShuffleProvider);
 }
 
+/**
+ * Hero handler for the `heist` keyword (WP-865 / D-24808).
+ *
+ * Ant-Man and the Wasp's "Heist" (rules v23 p.26-27). `executeHeroEffects` fires this at PLAY
+ * time (it does not filter by hook timing), and its ONLY job at play is to READY the played card
+ * into the turn's Heist crew (`G.turnEconomy.heistCrewCards`). It applies NONE of the inner
+ * effects; those fire later, and only if the player's Heist succeeds, from the attemptHeist
+ * move's `fireHeistPlays`.
+ *
+ * A Heist card played after this turn's attempt is too late (rules v23 p.27): it is not readied,
+ * and a `blocked` line says so. Safe-skips (no readying, no throw) when the wrapper has no inner
+ * effects.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Context (unused — readying reads/writes only G.turnEconomy).
+ * @param playerID - Active player ID (the crew is the active player's).
+ * @param cardId - The played Heist card's CardExtId.
+ * @param effect - The 'heist' wrapper descriptor { heistEffects }.
+ */
+function heroEffectHeist(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  // why: WP-865 / D-24808 — safe-skip a wrapper with no inner effects (a malformed descriptor);
+  // readying it would offer a Heist that fires nothing.
+  if (effect.heistEffects === undefined) {
+    return;
+  }
+  // why: WP-865 / D-24808 — rules v23 p.27: once this turn's Heist was attempted, a Heist card
+  // played afterwards is too late. It is not readied, so it can never fire.
+  if (G.turnEconomy.hasAttemptedHeistThisTurn === true) {
+    pushLog(G,
+      `Player ${playerID} played ${formatCardRef(G.cardDisplayData, cardId)} after this turn's Heist, so it is too late for its Heist ability.`,
+      'blocked',
+      cardId,
+    );
+    return;
+  }
+  // why: WP-865 / D-24808 — READY only. The inner effects fire from attemptHeist's
+  // fireHeistPlays on a successful Heist, never here. enrollHeistCard appends the card to the
+  // turn's crew (materializing it on the first Heist play), carried by carryConversionFlag.
+  G.turnEconomy = enrollHeistCard(G.turnEconomy, cardId);
+  // why: WP-434 — readying is `applied` (green): it changed turn state (the card is now armed
+  // to fire on a successful Heist) even though no resource total moved.
+  pushLog(G,
+    `Player ${playerID} readied ${formatCardRef(G.cardDisplayData, cardId)} for a Heist — its Heist ability fires if a Heist you attempt this turn succeeds.`,
+    'applied',
+    cardId,
+  );
+}
+
+/**
+ * Fires every readied Heist ability, in readying (play) order (WP-865 / D-24808).
+ *
+ * Called only from the attemptHeist move, after a successful Heist. For each card in the turn's
+ * Heist crew it finds that card's `heist` hook in `G.heroAbilityHooks` and dispatches each
+ * descriptor in its `heistEffects` through the reentrant `executeSingleEffect`.
+ *
+ * Deterministic: fixed readying order, `for...of` loops (no `.reduce()`), no `ctx.random` beyond
+ * what an inner draw already uses through the forwarded context. Never throws; a missing hook or
+ * an empty crew is a silent no-op.
+ *
+ * @param G - Game state (mutated by each fired inner effect).
+ * @param ctx - Move context, forwarded to each inner effect's handler (draws reshuffle through it).
+ * @param playerID - The player whose Heist succeeded.
+ * @returns The number of readied cards that fired at least one inner effect.
+ */
+export function fireHeistPlays(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+): number {
+  const crewCards = G.turnEconomy.heistCrewCards ?? [];
+  // why: WP-865 / D-24808 — a G that predates the hooks (narrow test fixtures) has no
+  // heroAbilityHooks; `?? []` keeps this a silent no-op rather than iterating undefined.
+  const allHooks = G.heroAbilityHooks ?? [];
+  let firedCardCount = 0;
+  // why: WP-865 / D-24808 — the rule lets the player use the Heist abilities "in any order";
+  // readying (play) order is the deterministic stand-in, so a replay fires them identically.
+  for (const cardId of crewCards) {
+    let cardFiredAny = false;
+    for (const hook of getHooksForCard(allHooks, cardId)) {
+      for (const effect of hook.effects ?? []) {
+        if (effect.type !== 'heist') {
+          continue;
+        }
+        for (const innerEffect of effect.heistEffects ?? []) {
+          executeSingleEffect(G, ctx, playerID, cardId, innerEffect);
+          cardFiredAny = true;
+        }
+      }
+    }
+    if (cardFiredAny) {
+      firedCardCount += 1;
+    }
+  }
+  return firedCardCount;
+}
+
 export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler>> = {
   draw: heroEffectDraw,
   attack: heroEffectAttack,
@@ -7384,6 +7496,11 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // (draw / +recruit / rescue / optional-ko) at fight resolution when the player spends the extra
   // [attack]. Carries NO top-level magnitude → in NO_MAGNITUDE_KEYWORDS.
   'excessive-violence': heroEffectExcessiveViolence,
+  // why: WP-865 / D-24808 — the Ant-Man and the Wasp "Heist" keyword: heroEffectHeist READIES the
+  // played card into the turn's Heist crew at play time; a successful attemptHeist fires each
+  // readied card's heistEffects through fireHeistPlays. Carries NO top-level magnitude → in
+  // NO_MAGNITUDE_KEYWORDS.
+  heist: heroEffectHeist,
   // why: WP-753 / D-24580 — "Reveal the top three cards of your deck. Draw one of them, discard
   // one, and KO one.": tops up (D-24285), snapshots the top three and parks a block-all
   // PendingRevealThreeAssign resolved by resolveRevealThreeAssign. NO magnitude.

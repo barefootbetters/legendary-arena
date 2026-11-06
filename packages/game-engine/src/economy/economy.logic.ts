@@ -494,6 +494,8 @@ type CarriedTurnFields = Partial<
     | 'sidekicksReturnedThisTurn'
     | 'highestRecruitedHeroCost'
     | 'ritualUsedPlayedCardIds'
+    | 'heistCrewCards'
+    | 'hasAttemptedHeistThisTurn'
   >
 >;
 
@@ -590,6 +592,17 @@ function carryConversionFlag(economy: TurnEconomy): CarriedTurnFields {
   }
   if (economy.ritualUsedPlayedCardIds !== undefined) {
     carried.ritualUsedPlayedCardIds = economy.ritualUsedPlayedCardIds;
+  }
+  // why: WP-865 / D-24808 — carry the Heist crew and the once-per-turn attempt latch beside the
+  // Excessive Violence ledger, ONLY when present (omit-when-absent keeps both hash oracles
+  // byte-stable). Without the carry, the very next addResources rebuild (a later play, or the
+  // Heist's own +Attack) would drop the crew (nothing left to fire) or the latch (a second
+  // attempt would be allowed).
+  if (economy.heistCrewCards !== undefined) {
+    carried.heistCrewCards = economy.heistCrewCards;
+  }
+  if (economy.hasAttemptedHeistThisTurn !== undefined) {
+    carried.hasAttemptedHeistThisTurn = economy.hasAttemptedHeistThisTurn;
   }
   return carried;
 }
@@ -1137,6 +1150,62 @@ export function recordRitualUsedPlayed(economy: TurnEconomy, cardId: CardExtId):
     // never drops another lazy field set earlier this turn.
     ...carryConversionFlag(economy),
     ritualUsedPlayedCardIds: nextRitualUsedPlayed,
+  };
+}
+
+/**
+ * Readies a Heist card into the current turn's Heist crew (WP-865 / D-24808).
+ *
+ * Called by the `heist` hero handler when an allowlisted Heist card is played before this turn's
+ * attempt. Appends `cardId` to `heistCrewCards`, materializing the array on the first call.
+ * Append order is fire order; duplicates are kept. Every other field is carried unchanged.
+ * `resetTurnEconomy` drops the crew at the next turn start.
+ *
+ * @param economy - Current turn economy state.
+ * @param cardId - The played Heist card's CardExtId.
+ * @returns New TurnEconomy with `cardId` appended to `heistCrewCards`.
+ */
+export function enrollHeistCard(economy: TurnEconomy, cardId: CardExtId): TurnEconomy {
+  // why: WP-865 / D-24808 — build a NEW array (mirrors enrollExcessiveViolenceCard) so the
+  // rebuild never aliases the prior economy's crew.
+  const nextHeistCrew = [...(economy.heistCrewCards ?? []), cardId];
+  return {
+    attack: economy.attack,
+    recruit: economy.recruit,
+    spentAttack: economy.spentAttack,
+    spentRecruit: economy.spentRecruit,
+    piercing: economy.piercing,
+    woundsDrawn: economy.woundsDrawn,
+    cardsDrawn: economy.cardsDrawn,
+    // why: WP-865 / D-24808 — spread the single carry chokepoint so readying a Heist card never
+    // drops another lazy field set earlier this turn.
+    ...carryConversionFlag(economy),
+    heistCrewCards: nextHeistCrew,
+  };
+}
+
+/**
+ * Marks that the current player has attempted this turn's Heist (WP-865 / D-24808).
+ *
+ * Called by `attemptHeist` before the outcome resolves. Every other field, including the Heist
+ * crew, is carried unchanged. `resetTurnEconomy` clears the latch at the next turn start.
+ *
+ * @param economy - Current turn economy state.
+ * @returns New TurnEconomy with `hasAttemptedHeistThisTurn` set true.
+ */
+export function markHeistAttempted(economy: TurnEconomy): TurnEconomy {
+  return {
+    attack: economy.attack,
+    recruit: economy.recruit,
+    spentAttack: economy.spentAttack,
+    spentRecruit: economy.spentRecruit,
+    piercing: economy.piercing,
+    woundsDrawn: economy.woundsDrawn,
+    cardsDrawn: economy.cardsDrawn,
+    // why: WP-865 / D-24808 — spread the single carry chokepoint so setting the latch never
+    // drops the crew the attempt is about to fire.
+    ...carryConversionFlag(economy),
+    hasAttemptedHeistThisTurn: true,
   };
 }
 

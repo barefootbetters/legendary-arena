@@ -43,7 +43,7 @@
           "recruit": "1+",
           "abilities": [
             "Whenever you gain a Wound this turn, return that Wound to the Wound Deck.",
-            "Heist: Rescue a Bystander."
+            "Heist: Rescue a Bystander. [keyword:rescue:1]"
           ]
         },
         {
@@ -245,7 +245,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:covert][hc:covert][hc:covert]",
-            "[keyword:Heist]: Draw two cards."
+            "[keyword:Heist]: Draw two cards. [keyword:draw:2]"
           ]
         },
         {
@@ -1129,7 +1129,7 @@
           "attack": "1",
           "recruit": null,
           "abilities": [
-            "[keyword:Heist]: Draw a card."
+            "[keyword:Heist]: Draw a card. [keyword:draw:1]"
           ]
         },
         {

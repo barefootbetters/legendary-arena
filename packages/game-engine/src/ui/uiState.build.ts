@@ -129,6 +129,7 @@ import { getEligibleCopyPowersCards } from '../moves/copyPowersChoice.resolve.js
 // move validates against (one legality authority), so the button never offers a no-op.
 import { phasingOptions } from '../moves/phaseCard.js';
 import { ritualArtifactOptions } from '../moves/ritualArtifact.js';
+import { heistCount, isHeistAvailable } from '../moves/attemptHeist.js';
 // why: WP-258 — the projected hollow-effect record type is the engine's
 // canonical HollowEffectRecord (WP-257), reused directly, not a parallel UI type.
 import type { HollowEffectRecord, EffectTrace, EffectTraceResolution } from '../diagnostics/hollowEffect.types.js';
@@ -1146,6 +1147,7 @@ export function buildUIState(
   const woundsDrawn = gameState.turnEconomy.woundsDrawn;
   const currentPhasingOptions = phasingOptions(gameState, ctx.currentPlayer);
   const currentRitualArtifactOptions = ritualArtifactOptions(gameState, ctx.currentPlayer);
+  const isCurrentHeistAvailable = isHeistAvailable(gameState, ctx.currentPlayer);
   // why: WP-790 / D-24652 — project the restricted-attack grants that still have attack left
   // (Board-Visible Field Rule step 2), with copied `targets` so the projection never aliases G,
   // and the display label the economy bar shows. availableAttack (getSpendableAttack) excludes
@@ -1205,6 +1207,13 @@ export function buildUIState(
     // why: WP-858 / D-24794 — project the usable Ritual Artifacts omit-when-absent (the
     // phasingOptions posture), so the client shows Use only when the move would be accepted.
     ...(currentRitualArtifactOptions.length > 0 ? { ritualArtifactOptions: currentRitualArtifactOptions } : {}),
+    // why: WP-865 / D-24808 — project the Heist availability and the current Heist Count
+    // omit-when-absent (present only while isHeistAvailable holds), so every turn without a
+    // readied Heist keeps the economy block byte-identical and the client shows Attempt Heist
+    // only when the move would be accepted.
+    ...(isCurrentHeistAvailable
+      ? { heistAvailable: true as const, heistCount: heistCount(gameState, ctx.currentPlayer) }
+      : {}),
     // why: WP-790 / D-24652 — omit-when-absent, so a turn with no restricted grant keeps the
     // economy block byte-identical.
     ...(restrictedAttack.length > 0 ? { restrictedAttack } : {}),

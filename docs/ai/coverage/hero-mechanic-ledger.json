@@ -2,13 +2,13 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 848,
+    "totalRows": 849,
     "byStatus": {
-      "executable": 465,
+      "executable": 469,
       "deferred": 16,
       "condition": 58,
-      "unsupported": 281,
-      "unmarked": 25,
+      "unsupported": 279,
+      "unmarked": 24,
       "subsystem": 3
     },
     "distinctMechanics": 179
@@ -441,6 +441,10 @@
         {
           "slug": "anticipate",
           "name": "Anticipate"
+        },
+        {
+          "slug": "up-the-ante",
+          "name": "Up the Ante"
         }
       ]
     },
@@ -449,10 +453,10 @@
       "heroName": "Ant Army",
       "set": "amwp",
       "mechanic": "heist",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#heist",
       "designs": [
         {
           "slug": "revolutionary-anthem",
@@ -532,11 +536,27 @@
       "extId": "amwp/ant-man",
       "heroName": "Ant-Man",
       "set": "amwp",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "designs": [
+        {
+          "slug": "tiny-little-risk",
+          "name": "Tiny little Risk"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/ant-man",
+      "heroName": "Ant-Man",
+      "set": "amwp",
       "mechanic": "heist",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#heist",
       "designs": [
         {
           "slug": "tiny-little-risk",
@@ -800,12 +820,17 @@
       "extId": "amwp/scott-lang-cat-burglar",
       "heroName": "Scott Lang, Cat Burglar",
       "set": "amwp",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": []
+      "mechanic": "rescue",
+      "status": "executable",
+      "wp": "WP-215",
+      "decision": "D-21501",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
+      "designs": [
+        {
+          "slug": "anything-for-cassie",
+          "name": "Anything for Cassie"
+        }
+      ]
     },
     {
       "extId": "amwp/wasp",

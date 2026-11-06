@@ -661,10 +661,16 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // (+1: totalObs sums each mechanic's max(baseline, live) peak, so the gate-only / recruit rises
   // count and the falls under their baseline peaks do not). resolvedObs stays 1091, so
   // percentResolved stays 12.6 (1091 / 8687). A trajectory re-pin; no mechanic changed status.
+  // 2026-11-06 (WP-865 / D-24808, re-pin): Heist is implemented. Six allowlisted amwp Heist lines
+  // fuse into an executable `heist` hook, so the hero ledger's heist rows flip to executable and the
+  // sweep's heist hollow falls 48 -> 1 (only Revolutionary Anthem's deferred line is left; feed
+  // regenerated: 7724 -> 7677 raw observations). The denominator holds at 8687 (heist's baseline
+  // peak keeps it), and heist's obs MOVE into resolvedObs: 1091 -> 1141, so percentResolved
+  // 12.6 -> 13.1 (1141 / 8687). A mechanic-status re-pin, the invariant the next test asserts.
   const view = useInPlayCoverage();
   assert.equal(view.totalObs.value, 8687);
-  assert.equal(view.resolvedObs.value, 1091);
-  assert.equal(view.percentResolved.value, 12.6);
+  assert.equal(view.resolvedObs.value, 1141);
+  assert.equal(view.percentResolved.value, 13.1);
   assert.ok(view.remaining.value.length > 0);
 });
 
