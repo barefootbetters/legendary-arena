@@ -30,6 +30,7 @@ import { composeDeckReshuffledNarrative } from '../events/notableEvents.compose.
 import { isRitualArtifact } from './ritualArtifact.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
+import { clearExpiredHqSizeChangingGrants } from '../hero/sizeChangingGrant.logic.js';
 
 /**
  * Moves the player's in-play Ritual Artifacts into their controlled Artifacts (WP-858 / D-24794).
@@ -83,6 +84,7 @@ function keepControlledArtifacts(G: LegendaryGameState, playerID: string): void 
  *      top of the fresh hand.
  *   6. Return teleport-on-discard cards set aside this turn (D-24526).
  *   7. Delete this turn's Copy Powers copied-class / copied-team grants (D-24730).
+ *   8. Drop "this turn" HQ Size-Changing grants and grants whose card left the HQ (D-24804).
  *
  * // why: D-24520 — the draw is at END of turn (this function), not the former
  * start-of-turn onBegin auto-draw, so a player holds their hand during
@@ -161,6 +163,10 @@ export function applyEndOfTurnCleanup(
 
   // Step 7: end every Copy Powers copy made this turn (D-24730).
   clearCopyPowersGrants(G);
+
+  // Step 8: end every "this turn" HQ Size-Changing grant, and drop grants whose card left the
+  // HQ (WP-862 / D-24804); Shrinking Research Budget's lasting grants stay while the card does.
+  clearExpiredHqSizeChangingGrants(G);
 }
 
 /**

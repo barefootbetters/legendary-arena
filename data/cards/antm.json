@@ -76,7 +76,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:tech][hc:tech][hc:tech][hc:tech][hc:tech]",
-            "A hero in the HQ with no Size-Changing abilities gain [keyword:Size-Changing] [hc:tech] this turn."
+            "A hero in the HQ with no Size-Changing abilities gain [keyword:Size-Changing] [hc:tech] this turn. [keyword:hq-hero-gains-size-changing-tech]"
           ]
         }
       ],
@@ -772,7 +772,7 @@
           "imageUrl": "https://images.legendary-arena.com/antm/antm-vi-ultrons-legacy-ultron-pym.webp",
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:tech][hc:tech][hc:tech][hc:tech][hc:tech]",
-            "Fight: A Hero in the HQ with no Size-Changing abilites gains [keyword:Size-Changing] [hc:tech] this turn."
+            "Fight: A Hero in the HQ with no Size-Changing abilites gains [keyword:Size-Changing] [hc:tech] this turn. [effect:hq-hero-gains-size-changing:if-none:tech]"
           ],
           "copies": 1
         },

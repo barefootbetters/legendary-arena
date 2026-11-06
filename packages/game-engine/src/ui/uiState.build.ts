@@ -680,7 +680,10 @@ function buildHqProjection(
 function matchHasSizeChangingCard(gameState: LegendaryGameState): boolean {
   const sizeChangingCount = Object.keys(gameState.cardSizeChangingClasses ?? {}).length;
   const microscopicCount = Object.keys(gameState.cardMicroscopicSizeChangingClasses ?? {}).length;
-  return sizeChangingCount > 0 || microscopicCount > 0;
+  // why: WP-862 / D-24804 — a Size-Changing granted during play can discount an HQ Hero in a
+  // match with no printed Size-Changing card, so an open grant also puts recruitCosts on the board.
+  const hasGrant = gameState.hqSizeChangingGrants !== undefined;
+  return sizeChangingCount > 0 || microscopicCount > 0 || hasGrant;
 }
 
 /**
