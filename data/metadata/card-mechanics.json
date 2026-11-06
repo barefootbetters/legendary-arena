@@ -615,10 +615,11 @@
       "label": "Draw",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 102,
+      "cardCount": 103,
       "cardIds": [
         "3dtc/black-widow",
         "amwp/ant-army",
+        "amwp/ant-man",
         "amwp/freedom-fighters",
         "amwp/janet-van-dyne",
         "anni/fantastic-four-united",
@@ -950,7 +951,7 @@
       "slug": "heist",
       "label": "Heist",
       "scope": "hero",
-      "source": "free-text",
+      "source": "keyword",
       "cardCount": 2,
       "cardIds": [
         "amwp/ant-army",
@@ -1593,9 +1594,10 @@
       "label": "Rescue",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 17,
+      "cardCount": 18,
       "cardIds": [
         "3dtc/black-widow",
+        "amwp/scott-lang-cat-burglar",
         "ca75/captain-america-1941",
         "ca75/captain-america-falcon",
         "ca75/steve-rogers-director-of-shield",
@@ -2409,11 +2411,10 @@
       "label": "Unmarked",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 25,
+      "cardCount": 24,
       "cardIds": [
         "3dtc/deadpool",
         "3dtc/man-thing",
-        "amwp/scott-lang-cat-burglar",
         "co2e/nick-fury",
         "co2e/spider-man-miles-morales",
         "co2e/storm",
@@ -2727,6 +2728,7 @@
     "amwp/ant-man": {
       "mechanics": [
         "antics",
+        "draw",
         "heist",
         "microscopic-size-changing",
         "optional-ko-hand-discard",
@@ -2761,7 +2763,7 @@
     },
     "amwp/scott-lang-cat-burglar": {
       "mechanics": [
-        "unmarked"
+        "rescue"
       ]
     },
     "amwp/wasp": {

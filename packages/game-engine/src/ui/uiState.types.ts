@@ -934,6 +934,20 @@ export interface UITurnEconomyState {
    */
   ritualArtifactOptions?: CardExtId[];
   /**
+   * WP-865 / D-24808 — true iff the active player may attempt a Heist right now, exactly
+   * `isHeistAvailable(G, currentPlayer)` from `moves/attemptHeist.ts` — the same predicate the
+   * `attemptHeist` move validates against. Drives the client **Attempt Heist** button.
+   * Omit-when-absent (present only when true) and active-player-only (absent from
+   * `REDACTED_ECONOMY`, the `excessiveViolenceAvailable` disposition).
+   */
+  heistAvailable?: true;
+  /**
+   * WP-865 / D-24808 — the active player's current Heist Count (distinct non-zero printed costs
+   * among the Heroes they have), shown on the Attempt Heist button. Present only with
+   * `heistAvailable`; active-player-only.
+   */
+  heistCount?: number;
+  /**
    * WP-790 / D-24652 — the active player's unspent "usable only against …"
    * attack, one entry per grant with `remaining > 0`, in grant order: the
    * amount, where it may be spent, and a display label (e.g. `"Rooftops"`).

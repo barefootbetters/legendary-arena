@@ -1,9 +1,9 @@
 {
   "corpus": {
-    "executable": 3885,
+    "executable": 3888,
     "heroes": 324,
-    "hooks": 6395,
-    "noEffect": 2406,
+    "hooks": 6397,
+    "noEffect": 2405,
     "parsedNotExecuted": 104
   },
   "perSet": {
@@ -18,9 +18,9 @@
       "noEffect": 34
     },
     "amwp": {
-      "executable": 135,
-      "hooks": 193,
-      "noEffect": 58
+      "executable": 138,
+      "hooks": 195,
+      "noEffect": 57
     },
     "anni": {
       "executable": 45,
@@ -255,7 +255,6 @@
     "fated-future": 6,
     "focus": 25,
     "fortify": 1,
-    "heist": 3,
     "highest-abomination": 1,
     "hunt-for-victims": 1,
     "hyperspeed": 14,

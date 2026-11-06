@@ -559,6 +559,17 @@ export function filterUIStateForAudience(
       ...(uiState.economy.ritualArtifactOptions !== undefined && uiState.economy.ritualArtifactOptions.length > 0
         ? { ritualArtifactOptions: [...uiState.economy.ritualArtifactOptions] }
         : {}),
+      // why: WP-865 / D-24808 — pass the Heist availability and Heist Count through for the ACTIVE
+      // player only (the excessiveViolenceAvailable disposition), omit-when-absent. The filter is a
+      // whitelist: a field it does not name is silently dropped (EC-206), and the Attempt Heist
+      // button would never appear. REDACTED_ECONOMY (non-active players + spectators) never
+      // carries them, so opponents never see the Heist Count.
+      ...(uiState.economy.heistAvailable === true
+        ? {
+          heistAvailable: true as const,
+          ...(uiState.economy.heistCount !== undefined ? { heistCount: uiState.economy.heistCount } : {}),
+        }
+        : {}),
       // why: WP-790 / D-24652 — pass the restricted-attack grants through for the ACTIVE player
       // only (Board-Visible Field Rule step 3), beside the recruit-as-attack cue, omit-when-absent,
       // copying each entry and its `targets`. REDACTED_ECONOMY (non-active players + spectators)

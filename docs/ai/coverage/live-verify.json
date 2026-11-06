@@ -1838,6 +1838,72 @@
       "date": "2026-11-06",
       "evidence": "2p Operator match lxbKxcgUvPk (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers; Sentinel; Hulk, Iron Man, Wasp, Iceman, Bishop; Final Blow on; server build 4d474e93, which contains #3064, #3150, #3155 and #3159; created 2026-11-06T14:24:46Z after boot, isMatchOlderThanServer false): with no other Ranged Hero, Ice Slide logged \"scaled to +0 Attack\" (17.2.2, 23.2.3, 31.2.4); after Whatever the Cost (Ranged) it logged +1 (25.2.5-25.2.6).",
       "note": "Count 0 logs \"+0\", not \"did not activate\" (#3150)."
+    },
+    {
+      "key": "amwp/scott-lang-cat-burglar|heist",
+      "kind": "hero",
+      "card": "Scott Lang, Cat Burglar",
+      "ability": "Petty Larceny — Heist: +2 Recruit",
+      "wp": "WP-865",
+      "state": "pending",
+      "date": "2026-11-06",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy): playing the card grants nothing and logs it readied for a Heist; Attempt Heist (Heist Count N) appears once; a won Heist fires the ability, a tie does nothing, a lost Heist gains a Wound; the button is gone after one attempt. D-24808."
+    },
+    {
+      "key": "amwp/scott-lang-cat-burglar|heist",
+      "kind": "hero",
+      "card": "Scott Lang, Cat Burglar",
+      "ability": "Anything for Cassie — Heist: rescue a Bystander",
+      "wp": "WP-865",
+      "state": "pending",
+      "date": "2026-11-06",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy): playing the card grants nothing and logs it readied for a Heist; Attempt Heist (Heist Count N) appears once; a won Heist fires the ability, a tie does nothing, a lost Heist gains a Wound; the button is gone after one attempt. D-24808."
+    },
+    {
+      "key": "amwp/scott-lang-cat-burglar|heist",
+      "kind": "hero",
+      "card": "Scott Lang, Cat Burglar",
+      "ability": "Shocking Support — Heist: +2 Attack",
+      "wp": "WP-865",
+      "state": "pending",
+      "date": "2026-11-06",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy): playing the card grants nothing and logs it readied for a Heist; Attempt Heist (Heist Count N) appears once; a won Heist fires the ability, a tie does nothing, a lost Heist gains a Wound; the button is gone after one attempt. D-24808."
+    },
+    {
+      "key": "amwp/wasp|heist",
+      "kind": "hero",
+      "card": "Wasp",
+      "ability": "Infiltrate — Heist: +3 Attack",
+      "wp": "WP-865",
+      "state": "pending",
+      "date": "2026-11-06",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy): playing the card grants nothing and logs it readied for a Heist; Attempt Heist (Heist Count N) appears once; a won Heist fires the ability, a tie does nothing, a lost Heist gains a Wound; the button is gone after one attempt. D-24808."
+    },
+    {
+      "key": "amwp/ant-man|heist",
+      "kind": "hero",
+      "card": "Ant-Man",
+      "ability": "Tiny little Risk — Heist: draw two cards",
+      "wp": "WP-865",
+      "state": "pending",
+      "date": "2026-11-06",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy): playing the card grants nothing and logs it readied for a Heist; Attempt Heist (Heist Count N) appears once; a won Heist fires the ability, a tie does nothing, a lost Heist gains a Wound; the button is gone after one attempt. D-24808."
+    },
+    {
+      "key": "amwp/ant-army|heist",
+      "kind": "hero",
+      "card": "Ant Army",
+      "ability": "Up the Ante — Heist: draw a card",
+      "wp": "WP-865",
+      "state": "pending",
+      "date": "2026-11-06",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy): playing the card grants nothing and logs it readied for a Heist; Attempt Heist (Heist Count N) appears once; a won Heist fires the ability, a tie does nothing, a lost Heist gains a Wound; the button is gone after one attempt. D-24808."
     }
   ]
 }

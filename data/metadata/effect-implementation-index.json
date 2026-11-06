@@ -3,18 +3,18 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2064,
+    "totalEntries": 2065,
     "byScope": {
-      "hero": 848,
+      "hero": 849,
       "villain": 760,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 690,
+      "executable": 694,
       "deferred": 16,
       "condition": 58,
-      "unsupported": 282,
-      "unmarked": 1013,
+      "unsupported": 280,
+      "unmarked": 1012,
       "subsystem": 5
     }
   },
@@ -1227,6 +1227,10 @@
         {
           "slug": "anticipate",
           "name": "Anticipate"
+        },
+        {
+          "slug": "up-the-ante",
+          "name": "Up the Ante"
         }
       ]
     },
@@ -1236,8 +1240,8 @@
       "set": "amwp",
       "scope": "hero",
       "mechanic": "heist",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#heist",
       "wp": "",
       "decision": "",
       "designs": [
@@ -1323,9 +1327,26 @@
       "name": "Ant-Man",
       "set": "amwp",
       "scope": "hero",
+      "mechanic": "draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "designs": [
+        {
+          "slug": "tiny-little-risk",
+          "name": "Tiny little Risk"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/ant-man",
+      "name": "Ant-Man",
+      "set": "amwp",
+      "scope": "hero",
       "mechanic": "heist",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#heist",
       "wp": "",
       "decision": "",
       "designs": [
@@ -1605,11 +1626,17 @@
       "name": "Scott Lang, Cat Burglar",
       "set": "amwp",
       "scope": "hero",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "rescue",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
+      "wp": "WP-215",
+      "decision": "D-21501",
+      "designs": [
+        {
+          "slug": "anything-for-cassie",
+          "name": "Anything for Cassie"
+        }
+      ]
     },
     {
       "extId": "amwp/wasp",
@@ -30131,6 +30158,7 @@
       "scope": "hero",
       "mechanics": [
         "antics",
+        "draw",
         "heist",
         "microscopic-size-changing",
         "optional-ko-hand-discard",
@@ -30170,7 +30198,7 @@
     "amwp/scott-lang-cat-burglar": {
       "scope": "hero",
       "mechanics": [
-        "(unmarked)"
+        "rescue"
       ]
     },
     "amwp/wasp": {
