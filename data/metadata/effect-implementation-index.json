@@ -10,11 +10,11 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 719,
+      "executable": 720,
       "deferred": 16,
       "condition": 58,
       "unsupported": 280,
-      "unmarked": 988,
+      "unmarked": 987,
       "subsystem": 5
     }
   },
@@ -9396,11 +9396,11 @@
       "name": "Big Bertha",
       "set": "cvwr",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "cvwr-villain-great-lakes-avengers-flatman",
@@ -32520,7 +32520,7 @@
     "cvwr-villain-great-lakes-avengers-big-bertha": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "cvwr-villain-great-lakes-avengers-flatman": {

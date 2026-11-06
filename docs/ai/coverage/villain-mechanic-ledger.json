@@ -4,10 +4,10 @@
   "summary": {
     "totalRows": 761,
     "byStatus": {
-      "executable": 223,
+      "executable": 224,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 535,
+      "unmarked": 534,
       "subsystem": 2
     },
     "distinctMechanics": 47
@@ -2592,11 +2592,11 @@
       "cardName": "Big Bertha",
       "set": "cvwr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "cvwr-villain-registration-enforcers-blade",
