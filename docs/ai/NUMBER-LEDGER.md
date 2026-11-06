@@ -503,6 +503,7 @@ high-water: 422
 - WP-863 — trap-heroes-in-the-microverse (antm scheme: an extra Hero's 14 cards shuffle into the Villain Deck as Micro-Sized Villains, Attack = printed cost, Size-Changing for their color via G.fightSizeChanging; fight one and a chosen player gains it as a Hero; Twist plays two Villain Deck cards; Evil Wins at 3 escaped per player or an empty Villain Deck. reserved 2026-11-05, claude/wp863-reserve)
 - WP-862 — size-changing-runtime-grants (card effects that grant or remove Size-Changing on an HQ Hero during play — Pym Particles, Ultron-Pym, Shrinksperiments, Sporr, Fin Fang Foom's Alien Dragon Technology, Darren Cross's Shrinking Research Budget — read by the recruit-price authority. reserved 2026-11-05, claude/wp862-reserve; LANDED 2026-11-05)
 - WP-864 — demolish-keyword (the Demolish keyword: reveal the Hero Deck top, note its cost, put it on the bottom, each player discards a card of that cost; Fin Fang Foom's Master Strike Demolishes once plus once per Monsters Unleashed Villain in the city and Escape Pile; Trull the Unhuman Ambush, Zzutak and Piledriver Escape. reserved 2026-11-05, claude/wp864-reserve)
+- WP-866 — hero-next-hand-extra-draw (hero lines that read "When you draw a new hand (of cards at the end of) this turn, draw an extra card" / "draw two/three extra cards": a hero-side [keyword:next-hand-extra-draw:N] that adds N to the playing player's G.handSizeOverrides end-of-turn fill, the hero sibling of the D-24352 villain primitive; first slice Wasp's Infiltrate and the plain or [hc:X]:/[team:X]:-gated lines. reserved 2026-11-05, claude/wp866-reserve)
 
 ## EC
 
@@ -968,6 +969,7 @@ high-water: 457
 - EC-901 — trap-heroes-in-the-microverse (WP-863. reserved 2026-11-05, claude/wp863-reserve)
 - EC-900 — size-changing-runtime-grants (WP-862. reserved 2026-11-05, claude/wp862-reserve; LANDED 2026-11-05)
 - EC-902 — demolish-keyword (WP-864. reserved 2026-11-05, claude/wp864-reserve)
+- EC-904 — hero-next-hand-extra-draw (WP-866. reserved 2026-11-05, claude/wp866-reserve)
 
 ## D
 
@@ -1552,3 +1554,4 @@ section below) and the allocation protocol in
 - D-24806 — size-changing-reveal-criterion (direct fix, no WP — Look Out for the Little Guy's "If it's [Strength] or has Size-Changing, draw it" reveal: a hero-class-or-size-changing reveal predicate, and the line's printed Size-Changing token stops parsing as the card's own Size-Changing. reserved 2026-11-05, claude/d24806-reserve; LANDED 2026-11-05)
 - D-24804 — size-changing-runtime-grants (WP-862; an HQ Size-Changing grant overlay keyed by the copy-unique Hero id, read by resolveRecruitCost while the card is in the HQ, cleared at end of turn or when the card leaves the HQ. reserved 2026-11-05, claude/wp862-reserve; LANDED 2026-11-05)
 - D-24807 — demolish-keyword (WP-864; one shared Demolish resolver, its auto-picked discard, the Fin Fang Foom repeat count, and the demolish-each-player villain primitive. reserved 2026-11-05, claude/wp864-reserve)
+- D-24809 — hero-next-hand-extra-draw (WP-866; the hero next-hand-extra-draw keyword writes (handSizeOverrides[player] ?? HAND_SIZE) + N at play, consumed by the existing end-of-turn fill, no new G field; keyword-timed lines stay out of scope. reserved 2026-11-05, claude/wp866-reserve)
