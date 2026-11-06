@@ -1,9 +1,9 @@
 {
   "corpus": {
-    "executable": 3888,
+    "executable": 3939,
     "heroes": 324,
     "hooks": 6397,
-    "noEffect": 2405,
+    "noEffect": 2354,
     "parsedNotExecuted": 104
   },
   "perSet": {
@@ -18,9 +18,9 @@
       "noEffect": 34
     },
     "amwp": {
-      "executable": 138,
+      "executable": 143,
       "hooks": 195,
-      "noEffect": 57
+      "noEffect": 52
     },
     "anni": {
       "executable": 45,
@@ -53,14 +53,14 @@
       "noEffect": 0
     },
     "chmp": {
-      "executable": 70,
+      "executable": 75,
       "hooks": 143,
-      "noEffect": 73
+      "noEffect": 68
     },
     "co2e": {
-      "executable": 199,
+      "executable": 204,
       "hooks": 241,
-      "noEffect": 42
+      "noEffect": 37
     },
     "core": {
       "executable": 229,
@@ -68,9 +68,9 @@
       "noEffect": 3
     },
     "cosm": {
-      "executable": 49,
+      "executable": 54,
       "hooks": 212,
-      "noEffect": 163
+      "noEffect": 158
     },
     "cvwr": {
       "executable": 316,
@@ -108,9 +108,9 @@
       "noEffect": 43
     },
     "gotg": {
-      "executable": 27,
+      "executable": 32,
       "hooks": 105,
-      "noEffect": 78
+      "noEffect": 73
     },
     "mdns": {
       "executable": 80,
@@ -128,9 +128,9 @@
       "noEffect": 25
     },
     "msmc": {
-      "executable": 69,
+      "executable": 74,
       "hooks": 182,
-      "noEffect": 113
+      "noEffect": 108
     },
     "msp1": {
       "executable": 95,
@@ -153,9 +153,9 @@
       "noEffect": 25
     },
     "rlmk": {
-      "executable": 45,
+      "executable": 50,
       "hooks": 132,
-      "noEffect": 87
+      "noEffect": 82
     },
     "rvlt": {
       "executable": 74,
@@ -178,14 +178,14 @@
       "noEffect": 65
     },
     "ssw2": {
-      "executable": 187,
+      "executable": 188,
       "hooks": 271,
-      "noEffect": 84
+      "noEffect": 83
     },
     "vill": {
-      "executable": 199,
+      "executable": 204,
       "hooks": 288,
-      "noEffect": 89
+      "noEffect": 84
     },
     "vnom": {
       "executable": 70,
@@ -203,14 +203,14 @@
       "noEffect": 53
     },
     "wwhk": {
-      "executable": 249,
+      "executable": 254,
       "hooks": 341,
-      "noEffect": 92
+      "noEffect": 87
     },
     "xmen": {
-      "executable": 153,
+      "executable": 158,
       "hooks": 372,
-      "noEffect": 219
+      "noEffect": 214
     }
   },
   "schemaVersion": 1,

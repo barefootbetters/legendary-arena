@@ -1569,7 +1569,7 @@
           "attack": "1",
           "recruit": null,
           "abilities": [
-            "[hc:instinct]: When you draw a new hand this turn, draw an extra card."
+            "[hc:instinct]: When you draw a new hand this turn, draw an extra card. [keyword:next-hand-extra-draw:1]"
           ]
         },
         {

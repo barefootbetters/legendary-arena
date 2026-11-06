@@ -10,6 +10,20 @@
 
 ## Current State
 
+### Next-hand extra draw: twelve hero lines that print "When you draw a new hand this turn, draw an extra card" now draw it (WP-866 / EC-904, D-24809) (2026-11-06)
+
+**User-visible on `play.legendary-arena.com` after deploy (new matches only).** Playing Wasp's *Infiltrate* logs `Player 0 will draw 7 cards on their next hand (+1 extra, Infiltrate (…)).` and the end-of-turn hand has seven cards; a second copy makes eight. Captain Britain's *Lead the Captain Britain Corps* adds three, Adam Warlock's *Regenerative Cocoon* and Warpath's *Endless Endurance* two. Gated lines add only when the gate is met: Viv Vision and Dr. Octopus (`[hc:tech]`), Miles Morales (`[hc:instinct]`), Karnak and Polaris (`[hc:covert]`), Bruce Banner (Outwit). Before this the lines did nothing (operator match `vZXSkk4xJNC`: six Infiltrates, no extra card).
+
+- **Engine.** New magnitude hero keyword `next-hand-extra-draw`; `heroEffectNextHandExtraDraw` writes `(G.handSizeOverrides[player] ?? HAND_SIZE) + N` at play (the D-24352 additive write), consumed by the shipped end-of-turn cleanup. No new `G` field, no parser edit. It stacks with Savage Land Mutates.
+- **Data + feeds.** 12 curated markers in 11 sets; the stale `_deferred` viv-vision entry removed. Hero ledger (12 executable rows), effect index, card mechanics, coverage baseline (executable +51) and runtime-observed hollows (7677 -> 7662, a trajectory shift; the WP's predicted -23 was measured before WP-865 landed) regenerated. Dashboard in-play `totalObs` 8687 -> 8686, 13.1% unchanged. The ewiki `turn-system` page documents the effect.
+- **Tests.** game-engine 6442 -> 6453 / 0 (+11); dashboard 594, arena-client 2552, registry 311, server 1847 (207 DB-backed skipped) all 0 fail. Only the five lockstep pins and the dashboard pin moved; no hash oracle moved.
+- **Follow-ups (not covered).** dead Slapstick *Surprise Chainsaw* (enrol in `EXCESSIVE_VIOLENCE_CARDS` with a fused-hook dispatch test); the five keyword-timed lines (anni Super-Skrull and ff04 Mr. Fantastic Focus, shld Coulson S.H.I.E.L.D. Level 3, xmen Dazzler Lightshow, ssw2 Time-Traveling Jean Grey Patrol the Bridge), each when its keyword dispatch lands; wpnx Fantomex *Misdirection*'s put-on-top rider; the msp1 Hydra Spies `[keyword:Fight]:` prefix in the villain marker pass; the four tactic `Fight:` lines (cvwr *Cursed Dynasty*, mgtg *I'm a Celestial Sweetheart*, msis *Hear Me and Rejoice*, co2e *Treasures of Latveria*); override ordering (hero +N then core Doctor Octopus's absolute 8 loses the +N; needs a rules ruling); cosm Moondragon *Peaceful Meditation* (cleanup-time condition) and co2e Miles Morales *Jump Dimensions* / *Spider Camouflage*; the Deck Probability Panel's next-hand projection still assumes six (needs a UIState field).
+- **Live-verify (D-24026): operator-pending.** In a NEW match created after the deploy (deployed gitSha checked) with amwp Wasp in the Hero Deck and no core Doctor Octopus, Savage Land Mutates, Dr. Doom / co2e Doc Ock mastermind or Magneto:
+  1. Operator match via `?route=workshop`, paste a loadout with `amwp/wasp`; give +6 Recruit, place Infiltrate in the HQ, recruit it, move it to hand, play it.
+  2. The log shows "will draw 7 cards on their next hand (+1 extra, Infiltrate …)" (`applied`).
+  3. Fight nothing, end the turn: `uiState.snapshot.players[0].handDisplay.length` is 7. Optional: two copies → 8.
+  4. After the ewiki deploy, `ewiki.legendary-arena.com/turn-system/` returns 200 and contains `next-hand-extra-draw` (CF Access service-token headers).
+
 ### Each-player KO log line says every player KOs (D-24644 amendment) (2026-11-06)
 
 **User-visible in the game log after deploy.** Super-Skrull's Fight, Juggernaut's Ambush / Escape and Destroyer's KO now log "Fight effect: each player KOs a hero: Player 0 must choose which; Player 1 KO’d S.H.I.E.L.D. Agent from their hand." instead of "the active player must KO a hero; …", which read as if only the active player loses a Hero (Jeff's match `yTdbv34zeV6`, 7.2.6). Engine behavior is unchanged. A current-player KO keeps "the active player must KO a hero".

@@ -34,7 +34,9 @@ source:
   - ../docs/ai/work-packets/WP-007B-turn-loop-implementation.md
   - ../docs/ai/REFERENCE/00.2-data-requirements.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-09-10
+  - ../packages/game-engine/src/hero/heroEffects.execute.ts
+  - ../scripts/convert-cards/inputs/hero-ability-markers.json
+last-reviewed: 2026-11-06
 ---
 
 # Turn System
@@ -165,6 +167,17 @@ The new hand is drawn at the **END** of a turn, matching the tabletop rule
   cleanup branch), so the cleanup is identical however the turn ends, and the
   three bgio-bypassing harnesses (simulation runner, PAR aggregator, replay
   `runFixture`) run the same cleanup for byte-consistent replays.
+- **"Draw an extra card" on the new hand** (WP-866 / D-24809). Hero lines that
+  print "When you draw a new hand (of cards at the end of) this turn, draw an
+  extra card" (Wasp's *Infiltrate*; "two" / "three extra cards" on Adam
+  Warlock, Warpath and Captain Britain) carry the
+  `[keyword:next-hand-extra-draw:N]` marker. At play the keyword adds N to the
+  playing seat's one-shot `handSizeOverrides` entry (`?? HAND_SIZE` + N, the
+  same additive write as the Savage Land Mutates villain line, D-24352), so two
+  copies, or a copy plus Savage Land Mutates, stack. That turn's cleanup fills
+  to the raised target and consumes the entry. A gated line (`[hc:tech]:`,
+  `[keyword:Outwit]:`) adds only when its gate is met. An absolute override
+  written later in the same turn (core Doctor Octopus) still replaces the total.
 - **`onBegin` no longer draws** — it only resets the per-turn allowance flags.
   The incoming seat already holds the hand it drew at the end of its own
   previous turn.
@@ -348,6 +361,7 @@ they can never drift from the canonical arrays.
 - WP-007B: Turn-loop implementation; `getNextTurnStage`, `advanceTurnStage`, `// why:` discipline on `setPhase` / `endTurn` enforced
 - PR #2023 (2026-09-10): client turn-flow bug fix — `<TurnActionBar>` no longer suppresses the enabled "Pass priority" (`advanceStage`) control with a whole-step `opacity`, so leaving the `start` stage is legible; turn-action buttons also blur after firing so a consumed control stops reading as stuck-active. The same PR then wires the client-side auto-advance: revealing at `start` fires `advanceStage` (bot parity, double-click-latched) so the human lands in `main` in one click. Engine turn contract unchanged.
 - D-24515 (2026-09-10): the reveal-first fairness guard — `advanceStage` now enforces the mandatory start-of-turn reveal (no-op at `start` until `villainRevealedThisTurn`), closing the skip hole that PR #2023's un-dim exposed. `ai.legalMoves` in lockstep (PAR-neutral); `UIState.game.villainRevealedThisTurn` projected so the client gates Reveal (disabled once spent) and Pass priority (blocked at `start` until revealed) with tooltips instead of silent no-ops.
+- WP-866 / D-24809 (2026-11-06): the `next-hand-extra-draw` hero keyword. Twelve hero lines that print "When you draw a new hand … this turn, draw an extra card" (Wasp's *Infiltrate* first, seen doing nothing in operator match `vZXSkk4xJNC`) now raise the next hand by their printed one, two or three cards through the existing `handSizeOverrides` fill. Only matches created after the deploy get it (hooks are captured at setup).
 
 ## References
 
@@ -369,3 +383,7 @@ they can never drift from the canonical arrays.
 - [WP-002](../docs/ai/work-packets/WP-002-game-skeleton.md),
   [WP-007A](../docs/ai/work-packets/WP-007A-turn-structure-phases-contracts.md),
   [WP-007B](../docs/ai/work-packets/WP-007B-turn-loop-implementation.md)
+- [`docs/ai/DECISIONS.md`](../docs/ai/DECISIONS.md) — D-24520 (new hand drawn
+  at end of turn), D-24352 (the additive next-hand writer), D-24809 (the hero
+  `next-hand-extra-draw` keyword);
+  [WP-866](../docs/ai/work-packets/WP-866-hero-next-hand-extra-draw.md)

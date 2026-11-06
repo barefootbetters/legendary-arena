@@ -630,7 +630,7 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "When you draw a new hand of cards at the end of this turn, draw three extra cards."
+            "When you draw a new hand of cards at the end of this turn, draw three extra cards. [keyword:next-hand-extra-draw:3]"
           ]
         }
       ],
