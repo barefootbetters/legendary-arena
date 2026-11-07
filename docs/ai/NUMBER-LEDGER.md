@@ -511,6 +511,7 @@ high-water: 422
 - WP-871 — villain-fight-restriction-gate (Orrgo "unless you have already defeated another Villain this turn", Squirrel Girl "if you played more than one card this turn", Doop "if there is a Villain in an adjacent city space": a state-only fight precondition gating fightVillain, getLegalMoves and the City Fight button. reserved 2026-11-06, claude/wp871-reserve; LANDED 2026-11-06)
 - WP-872 — villain-fight-cross-player-and-villain-deck (Mandarin's Rings henchman variants Liar, Nightbringer and Remaker Fight lines: another player's deck top to your discard or theirs, reveal three Villain Deck cards and may defeat one worth 2VP or less, give a hand/discard card to the player on your right. reserved 2026-11-06, claude/wp872-reserve)
 - WP-873 — fortify-keyword (the Civil War Fortify keyword: a Villain Escape / Ambush line parks the Villain at a place (Sidekick / Wound / Bystander / Officer Stack, the Mastermind, an HQ space, the Hero or Villain Deck, a player deck) instead of the Escape Pile; the place is locked or modified until any player fights that Villain there; one Fortify per place. Squirrel Girl Escape fortifies the Sidekick Stack. reserved 2026-11-07, claude/wp873-reserve)
+- WP-870 — villain-fight-own-deck-reveal-and-set-aside (Mandarin's Rings variant Fight lines that log unmarked-ability hollows: Lightning (and antm Daystar) reveal your deck top and may KO it, Spin reveals six and discards the 0-cost ones then reorders the rest, Zero sets aside a 0-cost card you played to add to your next hand; villain primitives that reuse the reveal-top-dispose queue, the reorder choice and a seat choice. reserved 2026-11-06, claude/wp870-reserve)
 
 ## EC
 
@@ -984,6 +985,7 @@ high-water: 457
 - EC-909 — villain-fight-restriction-gate (WP-871. reserved 2026-11-06, claude/wp871-reserve; LANDED 2026-11-06)
 - EC-910 — villain-fight-cross-player-and-villain-deck (WP-872. reserved 2026-11-06, claude/wp872-reserve)
 - EC-911 — fortify-keyword (WP-873. reserved 2026-11-07, claude/wp873-reserve)
+- EC-908 — villain-fight-own-deck-reveal-and-set-aside (WP-870. reserved 2026-11-06, claude/wp870-reserve)
 
 ## D
 
@@ -1578,3 +1580,4 @@ section below) and the allocation protocol in
 - D-24816 — villain-fight-restriction-gate (WP-871; the [fight-restriction:<kind>] marker, the G.villainFightRestrictions table, the three kinds and their turn reads, the fight-only scope, and the public UICityCard projection. reserved 2026-11-06, claude/wp871-reserve; LANDED 2026-11-06)
 - D-24817 — villain-fight-cross-player-and-villain-deck (WP-872; the three Mandarin's Rings variant primitives, the non-active seat choice reuse, the Villain Deck reveal-defeat-reorder, and the solo and Good/Bad rulings. reserved 2026-11-06, claude/wp872-reserve)
 - D-24818 — fortify-keyword (WP-873; the Fortify marker, the fortified-target table, each target's lock semantics, and how a Fortify ends. reserved 2026-11-07, claude/wp873-reserve)
+- D-24815 — villain-fight-own-deck-reveal-and-set-aside (WP-870; three villain-effect primitives appended after hq-hero-gains-size-changing, which existing pending queues each one parks, and how Zero's set-aside card returns at end of turn. reserved 2026-11-06, claude/wp870-reserve)
