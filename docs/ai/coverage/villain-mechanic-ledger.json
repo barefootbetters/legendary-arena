@@ -4,13 +4,13 @@
   "summary": {
     "totalRows": 761,
     "byStatus": {
-      "executable": 242,
+      "executable": 245,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 514,
+      "unmarked": 511,
       "subsystem": 4
     },
-    "distinctMechanics": 52
+    "distinctMechanics": 53
   },
   "rows": [
     {
@@ -1294,11 +1294,11 @@
       "cardName": "Groot from Planet X",
       "set": "chmp",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "stack-cards-enter-city-as-villains",
+      "status": "executable",
+      "wp": "WP-869",
+      "decision": "D-24814",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#stack-cards-enter-city-as-villains"
     },
     {
       "extId": "chmp-villain-monsters-unleashed-monsteroso",
@@ -2570,22 +2570,22 @@
       "cardName": "Agent Eric Marshall",
       "set": "cvwr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "stack-cards-enter-city-as-villains",
+      "status": "executable",
+      "wp": "WP-869",
+      "decision": "D-24814",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#stack-cards-enter-city-as-villains"
     },
     {
       "extId": "cvwr-villain-shield-elite-agent-gabe-jones",
       "cardName": "Agent Gabe Jones",
       "set": "cvwr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "stack-cards-enter-city-as-villains",
+      "status": "executable",
+      "wp": "WP-869",
+      "decision": "D-24814",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#stack-cards-enter-city-as-villains"
     },
     {
       "extId": "cvwr-villain-great-lakes-avengers-big-bertha",

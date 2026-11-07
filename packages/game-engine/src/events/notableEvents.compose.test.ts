@@ -28,6 +28,7 @@ import {
   composeHeroRevealTopNarrative,
   composeNoOtherDeckNarrative,
   composeExcessiveViolenceFiredNarrative,
+  composeStackVillainEntryClause,
 } from './notableEvents.compose.js';
 
 describe('composeFightNarrative (WP-319 — names the effect targets)', () => {
@@ -669,6 +670,43 @@ describe('composeNoOtherDeckNarrative (D-24639)', () => {
     assert.equal(
       composeNoOtherDeckNarrative('Hypnotic Charm'),
       "\"Hypnotic Charm\" had no other player's deck to reveal.",
+    );
+  });
+});
+
+describe('composeStackVillainEntryClause and the stack-villain narrative clause (WP-869 / D-24814)', () => {
+  it('names one entering card by its display name, and more with a count', () => {
+    assert.equal(composeStackVillainEntryClause(1, 'S.H.I.E.L.D. Officer'), 'S.H.I.E.L.D. Officer enters the city');
+    assert.equal(
+      composeStackVillainEntryClause(2, 'Splintered Half-Groot'),
+      '2 Splintered Half-Groot Villains enter the city',
+    );
+  });
+
+  it('composeFightNarrative appends the clause before the final period', () => {
+    assert.equal(
+      composeFightNarrative('Groot from Planet X', 0, [], false, '2 Splintered Half-Groot Villains enter the city'),
+      'Fought "Groot from Planet X"; 2 Splintered Half-Groot Villains enter the city.',
+    );
+  });
+
+  it('composeAmbushNarrative adds the clause as one more clause', () => {
+    assert.equal(
+      composeAmbushNarrative('Agent Eric Marshall', [], 0, 'S.H.I.E.L.D. Officer enters the city'),
+      '"Agent Eric Marshall" ambushed: S.H.I.E.L.D. Officer enters the city.',
+    );
+  });
+
+  it('both narratives are byte-identical without the clause', () => {
+    assert.equal(composeFightNarrative('Groot from Planet X', 1, [], false), 'Fought "Groot from Planet X" and rescued 1 bystander(s).');
+    assert.equal(
+      composeFightNarrative('Groot from Planet X', 1, [], false, undefined),
+      composeFightNarrative('Groot from Planet X', 1, [], false),
+    );
+    assert.equal(composeAmbushNarrative('Agent Eric Marshall', [], 0), '"Agent Eric Marshall" entered the city with no Ambush effect.');
+    assert.equal(
+      composeAmbushNarrative('Agent Eric Marshall', [], 0, undefined),
+      composeAmbushNarrative('Agent Eric Marshall', [], 0),
     );
   });
 });

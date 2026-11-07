@@ -47,7 +47,12 @@ import {
   resolveEffectResultNames,
   villainCardEscapeTriggersSchemeTwist,
   villainCardPlaysVillainDeckCards,
+  villainCardStackVillainEntry,
+  resolveCardDisplayName,
 } from '../villain/villainEffects.execute.js';
+import type { StackVillainEntry } from '../villain/villainEffects.execute.js';
+import type { VillainAbilityTiming } from '../rules/villainAbility.types.js';
+import { listFreeStackVillainIds } from '../rules/stackVillain.logic.js';
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
 import { hasPendingMelterKoChoice } from '../moves/melterKoChoice.resolve.js';
@@ -78,6 +83,7 @@ import {
   composeAmbushNarrative,
   composeBystanderRevealedNarrative,
   composeEffectResultLogLine,
+  composeStackVillainEntryClause,
   composeVillainDeckPlayClause,
 } from '../events/notableEvents.compose.js';
 import { pushLog } from '../log/logPush.js';
@@ -395,6 +401,26 @@ export function performVillainReveal(
           'threat',
         );
       }
+      // why: WP-869 / D-24814 — Agent Eric Marshall's Ambush Officer entry is performed below by
+      // enterStackCardsAsVillains, not the executor (a deliberate no-op), so the clause count is
+      // read BEFORE the ambushResolved push (D-24703): the cards that will enter are the fewest of
+      // the marked count, the stack and the free ids. 0 → no clause.
+      const ambushStackEntry = villainCardStackVillainEntry(G, cardId, 'onAmbush');
+      let ambushStackVillainClause: string | undefined;
+      if (ambushStackEntry !== null) {
+        let ambushStack = G.piles.bystanders;
+        if (ambushStackEntry.kind === 'officer') {
+          ambushStack = G.piles.officers;
+        }
+        const ambushFreeIds = listFreeStackVillainIds(G, cardId, ambushStackEntry.count);
+        const ambushEntryCount = Math.min(ambushStackEntry.count, ambushStack.length, ambushFreeIds.length);
+        if (ambushEntryCount > 0) {
+          ambushStackVillainClause = composeStackVillainEntryClause(
+            ambushEntryCount,
+            resolveCardDisplayName(G, ambushFreeIds[0]!),
+          );
+        }
+      }
       G.notableEvents.push({
         type: 'ambushResolved',
         revealedCardId: cardId,
@@ -403,7 +429,12 @@ export function performVillainReveal(
         // why: WP-319 — the narrative now names the captured HQ hero / KO'd hero
         // (etc.) via the resolved results, so the center-screen overlay announces
         // the specific hero. `appliedEffects` stays the keyword array (badges).
-        narrative: composeAmbushNarrative(ambushCardName, resolvedAmbushResults, ambushPlayCount),
+        narrative: composeAmbushNarrative(
+          ambushCardName,
+          resolvedAmbushResults,
+          ambushPlayCount,
+          ambushStackVillainClause,
+        ),
       });
 
       // why: WP-542 / D-24351 — The Leader's "Ambush: Play the top card of the Villain
@@ -415,6 +446,12 @@ export function performVillainReveal(
       // master-strike, recursing through the rule pipeline). N is the marked count.
       if (ambushPlayCount > 0) {
         playTopVillainDeckCards(G, context, implementationMap, ambushPlayCount);
+      }
+      // why: WP-869 / D-24814 — the Ambush-site bridge (D-24351), after The Leader's play block:
+      // the stack cards enter the City here, where the RevealContext and implementationMap are in
+      // scope for any escape the entry causes.
+      if (ambushStackEntry !== null) {
+        enterStackCardsAsVillains(G, context, implementationMap, cardId, ambushStackEntry, 'onAmbush');
       }
     }
 
@@ -748,6 +785,105 @@ export function resolveVillainEscape(
   // PAR / fixture loops and replay all count it the same way, and a third capital latches before
   // the escape-procedure opener runs. No-op until a country has been invaded.
   settleWwiiConquest(G);
+}
+
+/**
+ * Sends stack cards into the City as Villains (WP-869 / D-24814): Groot from Planet X's two
+ * Splintered Half-Groots from the Bystander Stack, Agent Gabe Jones's / Agent Eric Marshall's one
+ * S.H.I.E.L.D. Officer from the Officer Stack.
+ *
+ * The bridge for the `stack-cards-enter-city-as-villains` executor no-op, called as the last step
+ * of defeatCityVillainCore (onFight) and after The Leader's play block in performVillainReveal
+ * (onAmbush). For each of `entry.count` cards, in order: an empty stack logs the shortfall and
+ * stops; no free id logs the shortfall and stops (nothing leaves the stack); otherwise the stack's
+ * top token (index 0) leaves the stack, the next free id gets its overlay entry and the runtime
+ * `'villain'` type, enters City space 0, is logged, and any card it pushes out escapes through the
+ * full escape procedure.
+ *
+ * // why: D-24351 — the executor cannot reach the escape procedure (no RevealContext and no
+ * implementationMap), so the work runs here. Entering is NOT a reveal: no Ambush and no
+ * onCardRevealed hooks. The runtime `'villain'` type follows the Secret Invasion precedent
+ * (schemeTwistResolvers writes a Skrull's type at runtime), so the City, fight and escape paths
+ * treat the converted card as a Villain and the UIState shows `type: 'villain'`. Lives here, not
+ * in villainDeck.enterCity.ts: that module imports this one, so the Ambush call site above would
+ * close an import cycle; and enterCityIgnoringAmbush's fixed log line says "exorcised".
+ *
+ * @param G - The game state to mutate.
+ * @param context - Narrow reveal context (random + ctx) for an escape the entry causes.
+ * @param implementationMap - Handler map for the escape→Scheme-Twist branch.
+ * @param sourceCardId - The marked villain instance whose effect fired.
+ * @param entry - The stack, count and name token from villainCardStackVillainEntry.
+ * @param timing - 'onFight' or 'onAmbush', for the log label.
+ */
+export function enterStackCardsAsVillains(
+  G: LegendaryGameState,
+  context: RevealContext,
+  implementationMap: ImplementationMap,
+  sourceCardId: CardExtId,
+  entry: StackVillainEntry,
+  timing: VillainAbilityTiming,
+): void {
+  let label = 'Fight';
+  if (timing === 'onAmbush') {
+    label = 'Ambush';
+  }
+  let stackName = 'Bystander Stack';
+  let origin: 'bystander-stack-villain' | 'officer-stack-villain' = 'bystander-stack-villain';
+  if (entry.kind === 'officer') {
+    stackName = 'S.H.I.E.L.D. Officer Stack';
+    origin = 'officer-stack-villain';
+  }
+  const sourceRef = formatCardRef(G.cardDisplayData, sourceCardId);
+  for (let entered = 0; entered < entry.count; entered++) {
+    let stack = G.piles.bystanders;
+    if (entry.kind === 'officer') {
+      stack = G.piles.officers;
+    }
+    if (stack.length === 0) {
+      pushLog(G, `${label} effect: the ${stackName} is empty, so ${entered} of ${entry.count} entered the city (${sourceRef}).`, 'blocked');
+      return;
+    }
+    const freeIds = listFreeStackVillainIds(G, sourceCardId, entry.count);
+    const villainId = freeIds[0];
+    if (villainId === undefined) {
+      pushLog(G, `${label} effect: no unused card remains, so ${entered} of ${entry.count} entered the city (${sourceRef}).`, 'blocked');
+      return;
+    }
+    // why: the top of a stack is index 0 (D-21501, the applyRescueOnFight convention).
+    if (entry.kind === 'officer') {
+      G.piles.officers = stack.slice(1);
+    } else {
+      G.piles.bystanders = stack.slice(1);
+    }
+    const escapedCardId = placeStackVillainInCity(G, villainId, origin);
+    pushLog(G, `${label} effect: ${formatCardRef(G.cardDisplayData, villainId)} enters the city from the ${stackName} (${sourceRef}).`, 'threat');
+    if (escapedCardId !== null) {
+      resolveVillainEscape(G, context, implementationMap, escapedCardId);
+    }
+  }
+}
+
+/**
+ * Converts one stack card's unique id into a City Villain and places it in City space 0 (WP-869 /
+ * D-24814): the overlay entry (materializing the lazy map), the runtime `'villain'` type, then the
+ * push. The caller logs the entry and resolves the returned escape, in that order.
+ *
+ * @param G - The game state to mutate.
+ * @param villainId - The free `stack-villain-…` id taking the stack card's place.
+ * @param origin - The converted-villain origin for the stack it came from.
+ * @returns The card pushed out of the City, or null.
+ */
+function placeStackVillainInCity(
+  G: LegendaryGameState,
+  villainId: CardExtId,
+  origin: 'bystander-stack-villain' | 'officer-stack-villain',
+): CardExtId | null {
+  G.convertedVillainOrigins ??= {};
+  G.convertedVillainOrigins[villainId] = origin;
+  G.villainDeckCardTypes[villainId] = 'villain';
+  const pushResult = pushVillainIntoCity(G.city, villainId);
+  G.city = pushResult.city;
+  return pushResult.escapedCard;
 }
 
 /**

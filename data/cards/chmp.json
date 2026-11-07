@@ -748,7 +748,7 @@
           "imageUrl": "https://images.legendary-arena.com/chmp/chmp-vi-monsters-unleashed-groot-from-planet-x.webp",
           "abilities": [
             "[keyword:Size-Changing]: [hc:strength], [hc:covert]",
-            "Fight: Two Bystanders from the Bystander Stack enter the city as 3[icon:attack] “Splintered Half-Groot“ Villains. When you fight one, rescue it as a Bystander."
+            "Fight: Two Bystanders from the Bystander Stack enter the city as 3[icon:attack] “Splintered Half-Groot“ Villains. When you fight one, rescue it as a Bystander. [effect:stack-cards-enter-city-as-villains:bystander:2:splintered_half-groot]"
           ],
           "copies": 1
         },

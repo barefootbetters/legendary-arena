@@ -70,8 +70,20 @@ export { REVEALED_CARD_TYPES } from './villainDeck/villainDeck.types.js';
 // in the Villain Deck are Villains, gained as a Hero on defeat); 'micro-sized' (Trap Heroes in the
 // Microverse, WP-863 / D-24805 — an extra Hero's cards in the Villain Deck are Micro-Sized Villains,
 // gained as a Hero by a player the defeater chooses).
+// why: WP-869 / D-24814 — 'bystander-stack-villain' (Groot from Planet X's Splintered Half-Groots:
+// Bystander Stack cards that enter the City as Villains, rescued as a Bystander when fought) and
+// 'officer-stack-villain' (Agent Gabe Jones / Agent Eric Marshall: a S.H.I.E.L.D. Officer Stack card
+// that enters the City as a Villain, gained as a Hero when fought). The stacks hold identical token
+// ids ('pile-bystander' / 'pile-shield-officer'), and an overlay entry keyed by a token id would
+// convert every copy, so each converted stack card takes its own unique `stack-villain-…` id.
 /** Converted-card villain origin — the named villain group a card "counts as". */
-export type ConvertedVillainOrigin = 'killbot' | 'skrull' | 'shield-officer' | 'micro-sized';
+export type ConvertedVillainOrigin =
+  | 'killbot'
+  | 'skrull'
+  | 'shield-officer'
+  | 'micro-sized'
+  | 'bystander-stack-villain'
+  | 'officer-stack-villain';
 
 // why: D-24802 — a Villain or Mastermind's printed Size-Changing fight discount. `classes`
 // are the "Size-Changing [Class]" classes (2 less each when a matching card was played this

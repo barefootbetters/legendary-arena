@@ -849,6 +849,10 @@ const DELIBERATE_NO_OP_VILLAIN_PRIMITIVES: ReadonlySet<VillainEffectPrimitive> =
     // why: WP-868 / D-24811 — Mr. Immortal's reenter mutates nothing in the executor (the bridge
     // at the end of defeatCityVillainCore reveals and moves him), so its trace must read `no-op`.
     'reenter-sewers-if-villain-deck-top',
+    // why: WP-869 / D-24814 — the stack entry mutates nothing in the executor (the bridge at the
+    // end of defeatCityVillainCore and in performVillainReveal moves the cards), so its trace must
+    // read `no-op`, not `fired`.
+    'stack-cards-enter-city-as-villains',
   ]);
 
 /**
@@ -2048,6 +2052,60 @@ export function villainCardReenterSewersKinds(
     for (const descriptor of hook.effects ?? []) {
       if (descriptor.primitive === 'reenter-sewers-if-villain-deck-top' && descriptor.reenterRevealKinds !== undefined) {
         return descriptor.reenterRevealKinds;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * What a card's `stack-cards-enter-city-as-villains` descriptor sends into the City at the given
+ * timing (WP-869 / D-24814).
+ */
+export interface StackVillainEntry {
+  /** Which stack the cards come from. */
+  kind: 'bystander' | 'officer';
+  /** How many cards enter (the descriptor's `magnitude`). */
+  count: number;
+  /** The marker's name token, or null when the line names none. */
+  nameToken: string | null;
+}
+
+/**
+ * Returns the first `stack-cards-enter-city-as-villains` descriptor a card carries at the given
+ * timing as `{ kind, count, nameToken }`, or null when it carries none there (WP-869 / D-24814:
+ * Groot from Planet X's Fight, Agent Gabe Jones's Fight, Agent Eric Marshall's Ambush).
+ *
+ * Read by the Fight bridge at the end of defeatCityVillainCore and the Ambush bridge in
+ * performVillainReveal; the executor handler is a deliberate no-op. Mirrors
+ * villainCardPlaysVillainDeckCards's guards. Pure lookup over G.villainAbilityHooks; no mutation.
+ *
+ * @param G - Game state (read-only).
+ * @param cardId - The triggering card's zone-instance ext_id.
+ * @param timing - The timing to inspect ('onFight' or 'onAmbush').
+ * @returns The entry, or null.
+ */
+export function villainCardStackVillainEntry(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+): StackVillainEntry | null {
+  // why: guard against G states / test mocks lacking villainAbilityHooks (the
+  // villainCardPlaysVillainDeckCards guard) — getVillainHooksForCard would throw on undefined.
+  if (!G.villainAbilityHooks || G.villainAbilityHooks.length === 0) {
+    return null;
+  }
+  const hooks = getVillainHooksForCard(G.villainAbilityHooks, cardId, timing);
+  for (const hook of hooks) {
+    for (const descriptor of hook.effects ?? []) {
+      if (descriptor.primitive === 'stack-cards-enter-city-as-villains' && descriptor.stackVillainKind !== undefined) {
+        // why: the parser always sets `magnitude` (the `:N` count); a hand-built test hook
+        // lacking it falls back to 1 (the villainCardPlaysVillainDeckCards precedent).
+        return {
+          kind: descriptor.stackVillainKind,
+          count: descriptor.magnitude ?? 1,
+          nameToken: descriptor.stackVillainName ?? null,
+        };
       }
     }
   }
@@ -3552,6 +3610,21 @@ function villainEffectReenterSewersIfVillainDeckTop(): VillainEffectApplication 
 }
 
 /**
+ * stack-cards-enter-city-as-villains primitive — Groot from Planet X's Fight, Agent Gabe Jones's
+ * Fight and Agent Eric Marshall's Ambush (WP-869 / D-24814). A DELIBERATE NO-OP here (the WP-542
+ * secondary-fire-site pattern, D-24351).
+ *
+ * // why: City entry can push a card out through the escape procedure, which takes a
+ * `RevealContext` and an `implementationMap` the executor does not receive, so the work runs in
+ * `enterStackCardsAsVillains` (villainDeck.reveal.ts), called from the end of defeatCityVillainCore
+ * (onFight) and from performVillainReveal (onAmbush), read through `villainCardStackVillainEntry`.
+ * Listed in DELIBERATE_NO_OP_VILLAIN_PRIMITIVES so its trace reads `no-op`; the bridge narrates.
+ */
+function villainEffectStackCardsEnterCityAsVillains(): VillainEffectApplication {
+  return { targets: [] };
+}
+
+/**
  * hq-heroes-to-hero-deck-bottom primitive — every HQ Hero goes to the bottom of the Hero
  * Deck in slot order, then the HQ refills (co2e Juggernaut's Ambush, second half,
  * D-24770 / WP-837). Auto-resolves; keyword-less, self-narrates.
@@ -4994,6 +5067,10 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   // why: WP-873 / D-24818 — position 43: Squirrel Girl and Colleen Wing's Escape Fortify.
   // Keyword-less, self-narrating. Moves the escaped Villain into G.fortifications.
   fortify: villainEffectFortify,
+  // why: WP-869 / D-24814 — position 44: Groot from Planet X / Agent Gabe Jones / Agent Eric
+  // Marshall's stack cards entering the City as Villains (a deliberate no-op; the Fight and Ambush
+  // bridges act).
+  'stack-cards-enter-city-as-villains': villainEffectStackCardsEnterCityAsVillains,
 };
 
 /**

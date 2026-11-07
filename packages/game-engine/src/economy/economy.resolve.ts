@@ -25,6 +25,7 @@ import { KILLBOT_TWISTS_NEXT_TO_SCHEME, DARK_PORTAL_COUNT } from '../types.js';
 // drive a Brainwash the Military Officer's fight cost.
 import { TRAITOR_BATTALION_TWISTS } from '../types.js';
 import { BRAINWASHED_OFFICER_BASE_ATTACK } from '../rules/brainwashTheMilitary.logic.js';
+import { STACK_VILLAIN_ATTACK } from '../rules/stackVillain.logic.js';
 // why: WP-728 / D-24549 — the fixed City space count bounds the Dark-Portal
 // location scan; CITY_SPACE_NAMES is the single source of the 5-space board.
 import { CITY_SPACE_NAMES, citySpaceNameForIndex } from '../board/citySpaceNames.js';
@@ -400,6 +401,15 @@ function resolveBaseFightCost(
   // carries no cardStats row (the guard below would return 0).
   if (G.convertedVillainOrigins?.[villainCardId] === 'shield-officer') {
     return BRAINWASHED_OFFICER_BASE_ATTACK + (G.counters[TRAITOR_BATTALION_TWISTS] ?? 0);
+  }
+
+  // why: WP-869 / D-24814 — a stack card that entered the City as a Villain (Groot from Planet X's
+  // Splintered Half-Groots, the S.H.I.E.L.D. Elite Officers) attacks for a fixed 3, the Attack
+  // every marked line prints. Checked OVERLAY-FIRST beside the Officer branch, because a converted
+  // stack card carries no cardStats row (the guard below would return 0).
+  const stackOrigin = G.convertedVillainOrigins?.[villainCardId];
+  if (stackOrigin === 'bystander-stack-villain' || stackOrigin === 'officer-stack-villain') {
+    return STACK_VILLAIN_ATTACK;
   }
 
   const villainStats = G.cardStats[villainCardId];

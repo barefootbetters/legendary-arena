@@ -383,7 +383,8 @@ export type VillainEffectPrimitive =
   | 'hq-heroes-cost-change'
   | 'ko-from-discard-current'
   | 'reenter-sewers-if-villain-deck-top'
-  | 'fortify';
+  | 'fortify'
+  | 'stack-cards-enter-city-as-villains';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -547,6 +548,14 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   // Keyword-less, so it self-narrates. The marker script's hand-synced copy
   // (`scripts/convert-cards/apply-effect-markers.mjs`) appends it at the same position.
   'fortify',
+  // why: WP-869 / D-24814 — appended at position 44. Groot from Planet X's Fight, Agent Gabe Jones's
+  // Fight and Agent Eric Marshall's Ambush (`stack-cards-enter-city-as-villains:<bystander|officer>:
+  // <N>[:<name>]`): N cards leave the Bystander Stack or the S.H.I.E.L.D. Officer Stack and enter the
+  // City as 3-Attack Villains. A DELIBERATE NO-OP in the executor; the bridge at the end of
+  // defeatCityVillainCore (onFight) and in performVillainReveal (onAmbush) does the work (D-24351).
+  // Keyword-less, the fire sites narrate. The marker script's hand-synced copy
+  // (`scripts/convert-cards/apply-effect-markers.mjs`) appends it at the same position.
+  'stack-cards-enter-city-as-villains',
 ] as const;
 
 /**
@@ -788,6 +797,14 @@ export interface VillainEffectDescriptor {
   // `descriptorKey` — the primitive is keyword-less, so it self-narrates regardless.
   fortifyPlace?: FortifyPlace;
   fortifyLock?: FortifyLock;
+  // why: WP-869 / D-24814 — present ONLY on `{ primitive: 'stack-cards-enter-city-as-villains' }`
+  // descriptors: the stack the cards come from (Groot from Planet X: 'bystander'; Agent Gabe Jones
+  // and Agent Eric Marshall: 'officer') and the optional marker name token the converted cards are
+  // displayed under (Groot: 'splintered_half-groot'; absent means the stack token's own name). The
+  // count is `magnitude`. Written only when present (never `undefined`). Deliberately NOT part of
+  // `descriptorKey` — the primitive is keyword-less, so the fire sites narrate regardless.
+  stackVillainKind?: 'bystander' | 'officer';
+  stackVillainName?: string;
 }
 
 // why: D-24023 — the frozen legacy-keyword → descriptor translation table. The
