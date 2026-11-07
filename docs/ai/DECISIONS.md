@@ -50526,3 +50526,24 @@ Protect this file.
 
 ---
 Protect this file.
+
+### D-24819 — A fortifying Villain is drawn on the place it fortifies, never in the City row (Active 2026-11-07 — fix to WP-873 / EC-911)
+
+**Status:** Active. Landed 2026-11-07 as a post-merge fix to WP-873 / EC-911 (no new WP). It replaces D-24818 item 9's placement clause, WP-873 §I's `CityRow` mount and test T29, and the EC-911 Files-to-Produce wording "mounted by `CityRow` under `EscapedPile`". WP-873 and EC-911 are complete and stay unedited; this entry is the record. The live check (D-24026) rides the open WP-873 rows in `live-verify.json`.
+
+**Context.** WP-873 drew each fortifier as a four-line tile (name, "Fortifying <place>", lock text, `Fight N`) in the Escaped Pile cell of the City row. That cell is the narrow fixed edge column and `.city-space` lays its children out in a row, so the lock sentence wrapped over several lines and two fortifiers stacked. The cell, and with it the whole City row, grew taller, and the scale-to-fit board (D-24505) shrank everything to fit the 1280×720 mat. The operator saw it in live matches CAb0Dfc0M4- and 3E3IU6V-YIJ ("messes up the city display so its depth increases"). No WP-873 test measured layout.
+
+**Decision.**
+1. **On the place, not the City.** Rules v23 L1454 puts a fortifying Villain "on or near" the place. `SharedDecks` draws the Sidekick Stack fortifier on the Sidekicks cell and `MastermindTile` draws the Mastermind fortifier on the Mastermind tile. `CityRow` draws none, and its escaped cell holds only the Escaped Pile.
+2. **A chip that adds no height.** `FortifiedVillains` renders one compact chip per fortifier (the Villain's name and `Fight N`), absolutely positioned over the host's card. The host gives the positioning context (`.mastermind-tile` already has one; `.shared-decks__cell` gains `position: relative`). The place and lock text move to the chip's `title` ("<Villain> fortifies <place>: <lock text>. Fight <Villain> to end it.") and to screen-reader text. The chip is a sibling of the host's own button, since a button cannot hold a button.
+3. **Routing by place.** `FortifiedVillains` gains a required `place` prop, and each host passes the one it draws. The component shows only fortifiers whose `place` matches. This is presentation routing only. The gate (stage → heal → cost at `UNNAMED_CITY_SPACE_TARGET` → restriction), the submitted `fightVillain({ fortifiedPlace })` and the projected lock reasons on the hosts' own buttons are unchanged. No gate reads the place or the lock; that is the D-24818 item 9 rule this narrows. A future place (Follow-ups A-F) mounts the component in its own host with its own `place`.
+4. **Data path.** `PlayDesktop` and `PlayMobile` pass `snapshot.city.fortifiers ?? []` to both hosts (new optional `fortifiers` prop, default `[]`). No engine, `UIState`, filter, move or bot change.
+
+**Consequences.** The City row, adversary band and HQ keep their measured sizes with two fortifiers on the board (play-fixture route, 1440×900: City 1006×85, band 975×128, HQ 1041×98, Mastermind tile 135×122, Sidekicks cell 98×105, before and after). On the 375-wide mobile layout each chip stays inside its host, and the page does not scroll sideways. The chip covers the middle of a card whose own button is locked while the Villain fortifies it.
+
+**Gates.** `pnpm -r build` 0; arena-client typecheck 0; arena-client tests 2568 -> 2571 / 0 (+3: one in `FortifiedVillains`, one each in `MastermindTile` and `SharedDecks`; T29 inverted to "never in the City row", an intentional behavior change). Five revert proofs each fail at least one test: dropping the place filter (3 fail), the `SharedDecks` mount (1), the `MastermindTile` mount (1), nesting the chip inside the Mastermind Fight button (1), and restoring the `CityRow` mount (1).
+
+**Reserved by:** NUMBER-LEDGER D-24819. Related: D-24818 (Fortify; item 9 narrowed here), D-24505 (scale-to-fit board), D-24502 (playmat), D-24574 (client gates on projected data), D-24026.
+
+---
+Protect this file.
