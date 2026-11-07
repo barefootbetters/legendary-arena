@@ -262,6 +262,18 @@ describe('WP-868 RS-1 HQ cost change (D-24811)', () => {
     assert.equal(resolveRecruitCost(G, '0', SIZE_CHANGER), 1);
   });
 
+  it('a "less" change floors at 0 before a Microscopic discount takes the price below 0', () => {
+    // why: Inspector P2 — the floor matters only when Size-Changing can then go negative
+    // (Microscopic, rules v23 p.30). Printed 0, 1 less: floor-first gives 0, then the one matched
+    // icon takes 2 off for -2. An unfloored sum would give -3.
+    const G = makeState();
+    G.hq = [ZERO_COST_HERO, null, null, null, null] as LegendaryGameState['hq'];
+    G.cardMicroscopicSizeChangingClasses = { [ZERO_COST_HERO]: ['strength'] };
+    G.playerZones['0']!.inPlay = [PLAYED_STRENGTH];
+    executeVillainAbilities(G, VILLAIN_CTX, TIM_BOO_BA, 'onFight');
+    assert.equal(resolveRecruitCost(G, '0', ZERO_COST_HERO), -2);
+  });
+
   it('a recruited Hero leaves the overlay inert', () => {
     const G = makeState();
     executeVillainAbilities(G, VILLAIN_CTX, TIM_BOO_BA, 'onFight');

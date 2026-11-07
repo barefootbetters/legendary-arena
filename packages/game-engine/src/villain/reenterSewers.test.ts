@@ -87,8 +87,8 @@ function makeState(topType: RevealedCardType | null): LegendaryGameState {
   G.villainAbilityHooks = HOOKS;
   G.cardDisplayData = {
     ...G.cardDisplayData,
-    [MR_IMMORTAL]: { name: 'Mr. Immortal', imageUrl: '', cost: 0 },
-    [TOP_CARD]: { name: 'Top Card', imageUrl: '', cost: 0 },
+    [MR_IMMORTAL]: { extId: MR_IMMORTAL, name: 'Mr. Immortal', imageUrl: '', cost: 0 },
+    [TOP_CARD]: { extId: TOP_CARD, name: 'Top Card', imageUrl: '', cost: 0 },
   };
   if (topType === null) {
     G.villainDeck = { deck: [], discard: [] };

@@ -22,7 +22,7 @@ import { executeVillainAbilities } from './villainEffects.execute.js';
 import { resolveKoDiscardChoice, hasPendingKoDiscardChoice } from '../moves/koDiscardChoice.resolve.js';
 import { selectDefaultKoDiscardCardIds } from '../simulation/ai.legalMoves.js';
 import { OWNED_CARD_KOED_CONDITION_TYPE } from '../hero/heroConditions.evaluate.js';
-import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { SHIELD_OFFICER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 import type { LegendaryGameState, PendingKoDiscardChoice } from '../types.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type { CardExtId } from '../state/zones.types.js';
@@ -298,6 +298,18 @@ describe('WP-868 RS-2 mandatory KO from your discard pile (D-24811)', () => {
     assert.deepStrictEqual(pick, [WOUND_EXT_ID, WOUND_EXT_ID, HERO_A]);
     resolveKoDiscardChoice(moveContext(G), { cardIds: pick });
     assert.equal(hasPendingKoDiscardChoice(G), false, 'the resolve accepts the three-card answer');
+  });
+
+  it('the bot top-up takes repeated non-cullable copies by position, not by id', () => {
+    // why: Inspector P2 — two S.H.I.E.L.D. Officers share one id and neither pass takes them (an
+    // Officer is never culled), so the top-up must take BOTH copies. An id-based "already chosen"
+    // skip would stop at one card, the resolve would reject it, and the block-all guard would stall.
+    const G = makeState([SHIELD_OFFICER_EXT_ID, SHIELD_OFFICER_EXT_ID]);
+    G.pendingKoDiscardChoices = [{ choiceType: 'ko-from-discard', playerID: '0', maxCount: 2, minCount: 2 }];
+    const pick = selectDefaultKoDiscardCardIds(G);
+    assert.deepStrictEqual(pick, [SHIELD_OFFICER_EXT_ID, SHIELD_OFFICER_EXT_ID]);
+    resolveKoDiscardChoice(moveContext(G), { cardIds: pick });
+    assert.equal(hasPendingKoDiscardChoice(G), false, 'the resolve accepts both copies');
   });
 
   it('the required count is clamped by the discard size', () => {
