@@ -1836,3 +1836,67 @@ describe('WP-871 getLegalMoves — villain fight restrictions mirror the move gu
     ]);
   });
 });
+
+describe('WP-873 getLegalMoves — Fortify mirrors the fortifier fight and the Mastermind lock (D-24818)', () => {
+  const SQUIRREL_GIRL = 'cvwr-villain-great-lakes-avengers-squirrel-girl-00' as CardExtId;
+  const COLLEEN_WING = 'cvwr-villain-heroes-for-hire-colleen-wing-00' as CardExtId;
+  const PLAIN = 'core-villain-hydra-hydra-kidnappers-00' as CardExtId;
+
+  /** A state with Squirrel Girl fortifying the Sidekick Stack, her restriction, and a fightable Mastermind. */
+  function makeFortifiedG(options: { inPlay?: CardExtId[]; attack?: number; currentStage?: LegendaryGameState['currentStage'] }): LegendaryGameState {
+    const gameState = makeG({ inPlay: options.inPlay ?? [], currentStage: options.currentStage ?? 'main' });
+    gameState.turnEconomy = makeTurnEconomy({ attack: options.attack ?? 3 });
+    gameState.cardStats = {
+      [SQUIRREL_GIRL]: makeCardStatEntry({ fightCost: 3 }),
+      [COLLEEN_WING]: makeCardStatEntry({ fightCost: 9 }),
+      [PLAIN]: makeCardStatEntry({ fightCost: 1 }),
+      'm-base': makeCardStatEntry({ fightCost: 3 }),
+    } as LegendaryGameState['cardStats'];
+    gameState.villainFightRestrictions = { [SQUIRREL_GIRL]: { kind: 'at-most-one-card-played' } };
+    gameState.mastermind = { baseCardId: 'm-base', tacticsDeck: ['tactic-1'] } as unknown as LegendaryGameState['mastermind'];
+    gameState.fortifications = { 'sidekick-stack': { villainCardId: SQUIRREL_GIRL, lock: 'no-recruit-or-gain' } };
+    return gameState;
+  }
+
+  /** Returns whether the fortifier intent for a place is offered. */
+  function hasFortifierIntent(gameState: LegendaryGameState, place: string): boolean {
+    return getLegalMoves(gameState, CONTEXT).some(
+      (move) => move.name === 'fightVillain' && JSON.stringify(move.args) === JSON.stringify({ fortifiedPlace: place }),
+    );
+  }
+
+  test('T22: the fortifier intent is offered only when the move would commit', () => {
+    assert.equal(hasFortifierIntent(makeFortifiedG({ inPlay: ['hero-a'] as CardExtId[] }), 'sidekick-stack'), true, 'one card played');
+    assert.equal(
+      hasFortifierIntent(makeFortifiedG({ inPlay: ['hero-a', 'hero-b'] as CardExtId[] }), 'sidekick-stack'),
+      false,
+      'two cards played: her restriction blocks',
+    );
+    assert.equal(hasFortifierIntent(makeFortifiedG({ currentStage: 'start' }), 'sidekick-stack'), false, 'start stage');
+    assert.equal(hasFortifierIntent(makeFortifiedG({ attack: 2 }), 'sidekick-stack'), false, 'attack 2');
+  });
+
+  test('T22: a fortified Mastermind offers no fightMastermind intent; unfortified it does', () => {
+    const fortified = makeFortifiedG({ attack: 20 });
+    fortified.fortifications = { mastermind: { villainCardId: COLLEEN_WING, lock: 'no-fight' } };
+    const names = getLegalMoves(fortified, CONTEXT).map((move) => move.name);
+    assert.equal(names.includes('fightMastermind'), false);
+    assert.equal(hasFortifierIntent(fortified, 'mastermind'), true, 'Colleen Wing herself is offered at 9');
+    const open = makeFortifiedG({ attack: 20 });
+    delete open.fortifications;
+    assert.equal(getLegalMoves(open, CONTEXT).some((move) => move.name === 'fightMastermind'), true);
+  });
+
+  test('T23: with no fortification the intents equal the pre-WP output exactly', () => {
+    const gameState = makeFortifiedG({ attack: 5, inPlay: ['hero-a'] as CardExtId[] });
+    delete gameState.fortifications;
+    gameState.city = [PLAIN, null, null, null, null];
+    gameState.playerZones['0']!.hand = ['hand-card-1'] as CardExtId[];
+    assert.deepStrictEqual(getLegalMoves(gameState, CONTEXT), [
+      { name: 'playCard', args: { cardId: 'hand-card-1' } },
+      { name: 'fightVillain', args: { cityIndex: 0 } },
+      { name: 'fightMastermind', args: {} },
+      { name: 'advanceStage', args: {} },
+    ]);
+  });
+});

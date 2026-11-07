@@ -75,6 +75,11 @@ import {
   SAVIOR_BYSTANDER_THRESHOLD,
 } from '../board/bystanders.logic.js';
 import { captureHeroFromHq } from '../board/heroCapture.logic.js';
+// why: WP-873 / D-24818 — the Fortify escape handler writes G.fortifications only through the
+// fortify helpers (pure, type-only imports back into the engine; no cycle).
+import { fortifyWithEscapedVillain, getFortification } from '../board/fortify.logic.js';
+import { demolishEachPlayer } from '../board/demolish.logic.js';
+import { FORTIFY_LOCK_TEXT, FORTIFY_PLACE_LABELS } from '../board/fortify.types.js';
 import type { CaptureHeroResult } from '../board/heroCapture.logic.js';
 // why: WP-522 / D-24335 — give-hq-hero-by-trait-to-current refills the vacated HQ slot
 // from G.heroDeck after removing the gifted Hero, the same refill contract
@@ -4987,7 +4992,99 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'hq-heroes-cost-change': villainEffectHqHeroesCostChange,
   'ko-from-discard-current': villainEffectKoFromDiscardCurrent,
   'reenter-sewers-if-villain-deck-top': villainEffectReenterSewersIfVillainDeckTop,
+  // why: WP-873 / D-24818 — position 43: Squirrel Girl and Colleen Wing's Escape Fortify.
+  // Keyword-less, self-narrating. Moves the escaped Villain into G.fortifications.
+  fortify: villainEffectFortify,
+  // why: WP-864 / D-24807 — position 44: Trull the Unhuman's Ambush, Zzutak's and Piledriver's
+  // Escape Demolish. Keyword-less, self-narrating through the shared demolishEachPlayer.
+  'demolish-each-player': villainEffectDemolishEachPlayer,
 };
+
+/**
+ * demolish-each-player primitive — "[Demolish] each player" (WP-864 / D-24807: Trull the
+ * Unhuman's Ambush after its Bystander capture, Zzutak's and Piledriver's Escape). Rules v23 p.24.
+ *
+ * Delegates to the shared `demolishEachPlayer` resolver: one Hero Deck reveal, bottomed, and
+ * each player, current player first, discards the earliest hand card of its cost. No params;
+ * keyword-less, so the resolver's own lines narrate it. Never throws.
+ *
+ * @param G - Game state (mutated: Hero Deck order, hands, discards, messages).
+ * @param currentPlayer - The active player; the discard loop starts with them (D-24780).
+ * @param _cardId - Unused.
+ * @param timing - The timing that fired (for the "<Ambush|Escape> effect:" label).
+ * @returns `{ targets: [] }` always — a keyword-less result is never recorded.
+ */
+function villainEffectDemolishEachPlayer(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+): VillainEffectApplication {
+  demolishEachPlayer(G, currentPlayer, `${villainEffectTimingLabel(timing)} effect:`);
+  return { targets: [] };
+}
+
+/**
+ * fortify primitive — the escaped Villain leaves the Escape Pile and fortifies a place until a
+ * player fights it there (WP-873 / D-24818: cvwr Squirrel Girl fortifies the Sidekick Stack,
+ * Colleen Wing the Mastermind). Rules v23 L1454-1466.
+ *
+ * One Villain per place: when another Villain already fortifies the place, this one stays in
+ * the Escape Pile and the log says why. Keyword-less, so it self-narrates.
+ */
+function villainEffectFortify(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  // why: WP-873 / D-24818 — Fortify is printed only as an Escape effect, and only the escape
+  // site has just put the Villain in the Escape Pile, so any other timing is a no-op (no
+  // write, no log) even when the card happens to sit in the pile.
+  if (timing !== 'onEscape') {
+    return { targets: [] };
+  }
+  const place = descriptor.fortifyPlace;
+  const lock = descriptor.fortifyLock;
+  if (place === undefined || lock === undefined) {
+    return { targets: [] };
+  }
+  // why: D-24656 — the HQ KO and Bystander discard this escape owes were enqueued before this
+  // Escape effect and still resolve after the move; Fortify takes only the Villain card out of
+  // the Escape Pile, and the escape counter keeps counting the escape.
+  const outcome = fortifyWithEscapedVillain(G, place, lock, cardId);
+  const villainName = resolveCardDisplayName(G, cardId);
+  const placeLabel = FORTIFY_PLACE_LABELS[place];
+  switch (outcome) {
+    case 'fortified':
+      pushLog(
+        G,
+        `${villainName} fortifies ${placeLabel}: ${FORTIFY_LOCK_TEXT[lock]} until a player fights ${villainName}.`,
+        'threat',
+      );
+      return { targets: [] };
+    case 'already-fortified': {
+      const existing = getFortification(G, place);
+      const otherName = existing !== null ? resolveCardDisplayName(G, existing.villainCardId) : 'another Villain';
+      pushLog(
+        G,
+        `${villainName} can't fortify ${placeLabel}: ${otherName} already fortifies it, so ${villainName} stays in the Escape Pile.`,
+        'blocked',
+      );
+      return { targets: [] };
+    }
+    case 'not-in-escape-pile':
+      return { targets: [] };
+    default: {
+      // why: compile-time exhaustiveness (the WP-871 isFightRestrictionBlocking precedent) — an
+      // outcome added to FortifyOutcome without its arm here fails `tsc` instead of silently
+      // skipping its log line. Intentionally unused (no tsconfig sets noUnusedLocals).
+      const unhandledOutcome: never = outcome;
+      return { targets: [] };
+    }
+  }
+}
 
 /**
  * Applies one villain effect descriptor deterministically by dispatching to its

@@ -11,6 +11,7 @@
 import type { MatchSetupConfig } from './matchSetup.types.js';
 import type { LogEntry } from './log/logOutcome.types.js';
 import type { BoardKeyword } from './board/boardKeywords.types.js';
+import type { FortifyPlace, Fortification } from './board/fortify.types.js';
 import type { SchemeSetupInstruction } from './scheme/schemeSetup.types.js';
 import type { ChooseOneOption } from './rules/heroCountSource.js';
 
@@ -2167,6 +2168,15 @@ export interface LegendaryGameState {
   // Haunting Villain stays in that HQ space and Haunts the new Hero").
   /** Per-HQ-slot haunter, index-aligned with `hq` (lazy; WP-757 / D-24587). */
   hqHaunters?: (HqHaunter | null)[];
+
+  // why: WP-873 / D-24818 — the Fortify keyword (rules v23 L1454-1466). One entry per
+  // fortified place, holding the fortifying Villain's CardExtId and the lock it applies.
+  // Created lazily by the first Fortify, an entry removed when its Villain is fought, and
+  // the key deleted when the last entry goes, so a match that never fortifies omits it
+  // from canonical JSON and every hash oracle stays byte-stable. Written only by
+  // fortifyWithEscapedVillain / removeFortification (board/fortify.logic.ts).
+  /** Per-place fortifying Villain (lazy; WP-873 / D-24818). */
+  fortifications?: Partial<Record<FortifyPlace, Fortification>>;
 
   // why: WP-695 / D-24512 — per-player deferred SPECIFIC-card hand injections, keyed by
   // PlayerID; value = the ext_ids to add to that player's hand as extra cards at their

@@ -167,6 +167,13 @@ export default defineComponent({
       if (!healLock.allowed) {
         return healLock;
       }
+      // why: WP-873 / D-24818 — while a Villain fortifies the Sidekick Stack (Squirrel Girl)
+      // the engine's recruitSidekick refuses (isSidekickStackFortified). A structural Stack
+      // gate, so it sits with this cell's other structural gates (which precede the cost check
+      // here), right after the heal lock; the engine writes the reason.
+      if (props.piles.sidekickStackFortifiedReason !== undefined) {
+        return { allowed: false, reason: props.piles.sidekickStackFortifiedReason };
+      }
       if (props.economy.hasRecruitedSidekickThisTurn === true) {
         return { allowed: false, reason: 'You already recruited a Sidekick this turn.' };
       }

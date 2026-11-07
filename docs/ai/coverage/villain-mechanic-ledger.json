@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "cardType": "villain",
   "summary": {
-    "totalRows": 761,
+    "totalRows": 763,
     "byStatus": {
-      "executable": 240,
+      "executable": 246,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 516,
+      "unmarked": 512,
       "subsystem": 4
     },
-    "distinctMechanics": 51
+    "distinctMechanics": 53
   },
   "rows": [
     {
@@ -1327,6 +1327,17 @@
       "cardName": "Piledriver",
       "set": "chmp",
       "cardType": "villain",
+      "mechanic": "demolish-each-player",
+      "status": "executable",
+      "wp": "WP-864",
+      "decision": "D-24807",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#demolish-each-player"
+    },
+    {
+      "extId": "chmp-villain-wrecking-crew-piledriver",
+      "cardName": "Piledriver",
+      "set": "chmp",
+      "cardType": "villain",
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
@@ -1382,22 +1393,33 @@
       "cardName": "Trull the Unhuman",
       "set": "chmp",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "captureBystander",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18506",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander"
+    },
+    {
+      "extId": "chmp-villain-monsters-unleashed-trull-the-unhuman",
+      "cardName": "Trull the Unhuman",
+      "set": "chmp",
+      "cardType": "villain",
+      "mechanic": "demolish-each-player",
+      "status": "executable",
+      "wp": "WP-864",
+      "decision": "D-24807",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#demolish-each-player"
     },
     {
       "extId": "chmp-villain-monsters-unleashed-zzutak",
       "cardName": "Zzutak",
       "set": "chmp",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "demolish-each-player",
+      "status": "executable",
+      "wp": "WP-864",
+      "decision": "D-24807",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#demolish-each-player"
     },
     {
       "extId": "co2e-villain-radiation-abomination",
@@ -2647,11 +2669,11 @@
       "cardName": "Colleen Wing",
       "set": "cvwr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "fortify",
+      "status": "executable",
+      "wp": "WP-873",
+      "decision": "D-24818",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#fortify"
     },
     {
       "extId": "cvwr-villain-registration-enforcers-deadpool",
@@ -2856,11 +2878,11 @@
       "cardName": "Squirrel Girl",
       "set": "cvwr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "fortify",
+      "status": "executable",
+      "wp": "WP-873",
+      "decision": "D-24818",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#fortify"
     },
     {
       "extId": "cvwr-villain-heroes-for-hire-tarantula",
