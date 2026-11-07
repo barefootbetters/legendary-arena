@@ -874,3 +874,107 @@ describe('MastermindTile — band stand-up (WP-854 / D-24790)', () => {
     assert.ok(guessPicker(wrapper).exists(), 'the picker is present');
   });
 });
+
+describe('MastermindTile — Haunt blocks the Fight (WP-757 / D-24587)', () => {
+  // why: the engine's fightMastermind refuses the fight while the Mastermind haunts an
+  // HQ Hero (isMastermindHaunting); the tile must not offer a dead button on any path.
+  const hauntReason = /The Mastermind is haunting a Hero in the HQ\. Exorcise that Hero first\./;
+
+  test('while haunting, Fight is disabled with the haunt tooltip and a click submits nothing', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive({ isHaunting: true }),
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    const button = wrapper.find('[data-testid="play-mastermind-button"]');
+    assert.equal(button.attributes('disabled'), '');
+    assert.match(button.attributes('title')!, hauntReason);
+    assert.match(button.find('[data-testid="card-tile"]').attributes('title')!, hauntReason);
+    await button.trigger('click');
+    assert.equal(calls.length, 0);
+  });
+
+  test('while haunting, the Excessive Violence button is not offered', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive({ isHaunting: true }),
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9, excessiveViolenceAvailable: true }),
+        submitMove,
+      },
+    });
+    assert.equal(wrapper.find('[data-testid="play-mastermind-ev"]').exists(), false);
+  });
+
+  test('while haunting, Fight does not open the Enigma guess picker', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive({ isHaunting: true }),
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+        enigmaCode: { isRevealed: false, cards: [{ peekedBy: [] }] },
+      },
+    });
+    await wrapper.find('[data-testid="play-mastermind-button"]').trigger('click');
+    assert.equal(calls.length, 0);
+    assert.ok(!guessPicker(wrapper).exists(), 'no picker while haunting');
+  });
+
+  test('precedence: an unaffordable fight shows the cost reason, not the haunt reason', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive({ isHaunting: true }),
+        currentStage: 'main',
+        economy: economy({ attack: 4, availableAttack: 4 }),
+        submitMove,
+      },
+    });
+    assert.match(wrapper.find('[data-testid="play-mastermind-button"]').attributes('title')!, /Needs 6 attack, you have 4\./);
+  });
+
+  test('a picker opened before the haunt closes once the Mastermind starts haunting', async () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive(),
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+        enigmaCode: { isRevealed: false, cards: [{ peekedBy: [] }] },
+      },
+    });
+    await wrapper.find('[data-testid="play-mastermind-button"]').trigger('click');
+    assert.ok(guessPicker(wrapper).exists(), 'precondition: the picker is open');
+    await wrapper.setProps({ mastermind: mastermindLive({ isHaunting: true }) });
+    assert.ok(!guessPicker(wrapper).exists(), 'the picker closes');
+  });
+});
+
+describe('MastermindTile — Fortify blocks the Fight (WP-873 / D-24818)', () => {
+  const fortifiedReason = 'Colleen Wing fortifies the Mastermind. Fight Colleen Wing first.';
+
+  test('T30: with fortifiedReason set and enough attack, Fight is disabled with that reason and submits nothing', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive({ fortifiedReason }),
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    const button = wrapper.find('[data-testid="play-mastermind-button"]');
+    assert.equal(button.attributes('disabled'), '');
+    assert.equal(button.attributes('title'), fortifiedReason);
+    await button.trigger('click');
+    assert.equal(calls.length, 0);
+  });
+});

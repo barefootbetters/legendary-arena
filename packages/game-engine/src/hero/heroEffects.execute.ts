@@ -84,6 +84,7 @@ import { queueOutOfTimeGrant } from '../moves/outOfTimeGrant.logic.js';
 // why: WP-844 / D-24778 — a type-import-only module, so the executor stays off recruitSidekick.ts's
 // pending-choice guard graph and no cycle is added.
 import { gainSidekickToDiscard } from '../moves/gainSidekick.logic.js';
+import { buildFortifyBlockReason, isSidekickStackFortified } from '../board/fortify.logic.js';
 import {
   revealTopThreeForAssign,
   buildAllRevealThreeAssignDispositions,
@@ -2204,6 +2205,19 @@ function heroEffectGainSidekick(
   // pattern never emits one; a request below 1 is a defensive silent no-op.
   const requestedCount = effect.magnitude ?? 0;
   if (requestedCount < 1) {
+    return;
+  }
+
+  // why: WP-873 / D-24818 — "Sidekicks can't be recruited or gained" while a Villain fortifies
+  // the Sidekick Stack. gainSidekickToDiscard refuses too, but the line here names the
+  // fortifier (D-24017: a silent skip reads as "the card did nothing").
+  if (isSidekickStackFortified(G)) {
+    pushLog(
+      G,
+      `Player ${playerID} could not gain a Sidekick — ${buildFortifyBlockReason(G, 'sidekick-stack')} (${formatCardRef(G.cardDisplayData, cardId)})`,
+      'blocked',
+      cardId,
+    );
     return;
   }
 

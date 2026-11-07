@@ -28,6 +28,14 @@ import {
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { cardHasTeamWhenPlayed } from '../hero/effectiveTeams.logic.js';
 import type { CardTraitEntry } from '../state/cardTraits.types.js';
+// why: WP-873 / D-24818 — findFightableFortifier prices the fortifier fight and checks the
+// spendable Attack. This adds a cycle (economy.resolve -> ... -> rules/mastermindHandlers ->
+// this module); it is runtime-safe because every imported binding is read inside a function
+// and both modules hold only literals at top level (the villainEscapeProcedure.ts precedent).
+import { resolveFightPrice } from '../economy/economy.resolve.js';
+import { getSpendableAttackForTarget } from '../economy/economy.logic.js';
+import { UNNAMED_CITY_SPACE_TARGET } from '../economy/economy.types.js';
+import { getFortification, isFortifyPlace } from '../board/fortify.logic.js';
 
 /**
  * Returns the defeat requirement for a villain instance, or null when it has
@@ -327,14 +335,15 @@ export function matchHasFightRestrictionKind(
  *
  * @param state - The runtime game state.
  * @param playerId - The player attempting the fight (`ctx.currentPlayer`).
- * @param cityIndex - The City index of the restricted villain.
+ * @param cityIndex - The City index of the restricted villain, or null for a villain that
+ *   is not in the City (a fortifier, WP-873 / D-24818).
  * @param restriction - The villain's fight restriction.
  * @returns True when the fight is blocked.
  */
 export function isFightRestrictionBlocking(
   state: LegendaryGameState,
   playerId: string,
-  cityIndex: number,
+  cityIndex: number | null,
   restriction: VillainFightRestriction,
 ): boolean {
   switch (restriction.kind) {
@@ -350,6 +359,11 @@ export function isFightRestrictionBlocking(
       // a played card that left play another way (e.g. a self-KO) stops counting.
       return playedCardIdsThisTurn(state, state.playerZones[playerId]?.inPlay ?? []).length > 1;
     case 'no-adjacent-villain':
+      // why: WP-873 / D-24818 — a null index is a villain outside the City (a fortifier),
+      // which has no City neighbours, so the adjacency restriction never blocks it.
+      if (cityIndex === null) {
+        return false;
+      }
       return isAdjacentCitySpaceOccupied(state, cityIndex);
     default: {
       // why: compile-time exhaustiveness — a future kind added to
@@ -424,4 +438,70 @@ export function getFightRestrictionBlockReason(
     return null;
   }
   return FIGHT_RESTRICTION_REASONS[restriction.kind];
+}
+
+// ---------------------------------------------------------------------------
+// Fortifier fight (WP-873 / D-24818)
+// ---------------------------------------------------------------------------
+
+/** A fortifying Villain the current player can fight right now, with its price. */
+export interface FightableFortifier {
+  cardId: CardExtId;
+  /** The Size-Changing fight price (may be negative under Microscopic). */
+  price: number;
+  /** The Attack the fight debits: the price floored at 0. */
+  required: number;
+}
+
+/**
+ * Returns the Villain fortifying a place when a player can fight it there right now, or
+ * null when any state check refuses the fight.
+ *
+ * The SINGLE authority for the fortifier fight's state checks: fightFortifyingVillain and
+ * the getLegalMoves mirror both call it, and neither re-tests any check inline. In order:
+ * the place is a FortifyPlace; it is fortified; the spendable Attack at the unnamed target
+ * covers the price; the D-24076 defeat requirement is met; the WP-871 fight restriction
+ * does not block (with no City index); the Villain has no fight discard cost.
+ *
+ * @param state - The runtime game state.
+ * @param playerId - The player attempting the fight (`ctx.currentPlayer`).
+ * @param fortifiedPlace - The requested place (an untrusted move argument).
+ * @returns The fightable fortifier with its price, or null.
+ */
+export function findFightableFortifier(
+  state: LegendaryGameState,
+  playerId: string,
+  fortifiedPlace: unknown,
+): FightableFortifier | null {
+  if (!isFortifyPlace(fortifiedPlace)) {
+    return null;
+  }
+  const fortification = getFortification(state, fortifiedPlace);
+  if (fortification === null) {
+    return null;
+  }
+  const cardId = fortification.villainCardId;
+  // why: D-24802 — the fight is paid at the Size-Changing price, floored at 0 for the debit.
+  // A fortifier is not on a named City space, so restricted Attack ("usable only against …")
+  // never counts: UNNAMED_CITY_SPACE_TARGET is the target no restricted grant names.
+  const price = resolveFightPrice(state, cardId, playerId);
+  const required = Math.max(0, price);
+  if (getSpendableAttackForTarget(state.turnEconomy, UNNAMED_CITY_SPACE_TARGET) < required) {
+    return null;
+  }
+  const defeatRequirement = getDefeatRequirement(state, cardId);
+  if (defeatRequirement !== null && !playerMeetsDefeatRequirement(state, playerId, defeatRequirement)) {
+    return null;
+  }
+  const restriction = getFightRestriction(state, cardId);
+  if (restriction !== null && isFightRestrictionBlocking(state, playerId, null, restriction)) {
+    return null;
+  }
+  // why: WP-873 / D-24818 — fail closed: no in-scope fortifier has a fight discard cost, and
+  // the fortifier fight takes no discard argument, so a fortifier that had one is refused
+  // rather than fought without paying it.
+  if (getFightDiscardCost(state, cardId) !== null) {
+    return null;
+  }
+  return { cardId, price, required };
 }

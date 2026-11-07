@@ -3,18 +3,18 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2076,
+    "totalEntries": 2078,
     "byScope": {
       "hero": 859,
-      "villain": 761,
+      "villain": 763,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 751,
+      "executable": 757,
       "deferred": 17,
       "condition": 58,
       "unsupported": 280,
-      "unmarked": 963,
+      "unmarked": 959,
       "subsystem": 7
     }
   },
@@ -5389,22 +5389,33 @@
       "name": "Trull the Unhuman",
       "set": "chmp",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "captureBystander",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander",
+      "wp": "WP-185",
+      "decision": "D-18506"
+    },
+    {
+      "extId": "chmp-villain-monsters-unleashed-trull-the-unhuman",
+      "name": "Trull the Unhuman",
+      "set": "chmp",
+      "scope": "villain",
+      "mechanic": "demolish-each-player",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#demolish-each-player",
+      "wp": "WP-864",
+      "decision": "D-24807"
     },
     {
       "extId": "chmp-villain-monsters-unleashed-zzutak",
       "name": "Zzutak",
       "set": "chmp",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "demolish-each-player",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#demolish-each-player",
+      "wp": "WP-864",
+      "decision": "D-24807"
     },
     {
       "extId": "chmp-villain-wrecking-crew-bulldozer",
@@ -5416,6 +5427,17 @@
       "handler": "",
       "wp": "",
       "decision": ""
+    },
+    {
+      "extId": "chmp-villain-wrecking-crew-piledriver",
+      "name": "Piledriver",
+      "set": "chmp",
+      "scope": "villain",
+      "mechanic": "demolish-each-player",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#demolish-each-player",
+      "wp": "WP-864",
+      "decision": "D-24807"
     },
     {
       "extId": "chmp-villain-wrecking-crew-piledriver",
@@ -9503,22 +9525,22 @@
       "name": "Squirrel Girl",
       "set": "cvwr",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "fortify",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#fortify",
+      "wp": "WP-873",
+      "decision": "D-24818"
     },
     {
       "extId": "cvwr-villain-heroes-for-hire-colleen-wing",
       "name": "Colleen Wing",
       "set": "cvwr",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "fortify",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#fortify",
+      "wp": "WP-873",
+      "decision": "D-24818"
     },
     {
       "extId": "cvwr-villain-heroes-for-hire-humbug",
@@ -10056,8 +10078,8 @@
       "mechanic": "fortify",
       "status": "unsupported",
       "handler": "",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-873",
+      "decision": "D-24818",
       "designs": [
         {
           "slug": "unbreakable-skin",
@@ -31413,13 +31435,14 @@
     "chmp-villain-monsters-unleashed-trull-the-unhuman": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "captureBystander",
+        "demolish-each-player"
       ]
     },
     "chmp-villain-monsters-unleashed-zzutak": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "demolish-each-player"
       ]
     },
     "chmp-villain-wrecking-crew-bulldozer": {
@@ -31431,6 +31454,7 @@
     "chmp-villain-wrecking-crew-piledriver": {
       "scope": "villain",
       "mechanics": [
+        "demolish-each-player",
         "koHeroCurrentPlayer"
       ]
     },
@@ -32724,13 +32748,13 @@
     "cvwr-villain-great-lakes-avengers-squirrel-girl": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "fortify"
       ]
     },
     "cvwr-villain-heroes-for-hire-colleen-wing": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "fortify"
       ]
     },
     "cvwr-villain-heroes-for-hire-humbug": {

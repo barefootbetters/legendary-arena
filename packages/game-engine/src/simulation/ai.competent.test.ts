@@ -620,3 +620,24 @@ describe('First-Hero cards lead the turn (D-24706)', () => {
     assert.match(intent.decisionLog![0]!, /\(score 200\)/, 'both plays tie at the base score');
   });
 });
+
+describe('WP-873 competent policy — a fortifier fightVillain intent (D-24818)', () => {
+  const FORTIFIER_FIGHT: LegalMove = { name: 'fightVillain', args: { fortifiedPlace: 'sidekick-stack' } };
+
+  test('T24: a { fortifiedPlace } intent scores as a plain fight, finite and without throwing', () => {
+    const view = buildSyntheticUIState(emptyCitySpaces());
+    const policy = createCompetentHeuristicPolicy('wp873-fortify');
+    // why: the fight base outranks a recruit, so a finite base score wins this pair; a NaN or
+    // throwing score could not be chosen over the recruit.
+    const intent = policy.decideTurn(view, [{ name: 'recruitHero', args: { hqIndex: 0 } }, FORTIFIER_FIGHT]);
+    assert.deepStrictEqual(intent.move, FORTIFIER_FIGHT);
+    // why: a City fight on a Bystander carrier scores strictly above the base, so it beats the
+    // fortifier: the fortifier scores exactly the plain base, with no bonus.
+    const carrier: UICityCard = { ...makeUICityCard(), extId: 'villain-carrier', type: 'villain', keywords: ['bystander'] };
+    const spaces = emptyCitySpaces();
+    spaces[0] = carrier;
+    const cityFight: LegalMove = { name: 'fightVillain', args: { cityIndex: 0 } };
+    const second = createCompetentHeuristicPolicy('wp873-fortify').decideTurn(buildSyntheticUIState(spaces), [FORTIFIER_FIGHT, cityFight]);
+    assert.deepStrictEqual(second.move, cityFight);
+  });
+});

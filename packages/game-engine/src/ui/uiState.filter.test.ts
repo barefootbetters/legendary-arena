@@ -4084,3 +4084,71 @@ describe('WP-871 fightRestrictionReason projection (D-24816)', () => {
     assert.equal(filtered.city.spaces[2]!.fightRestrictionReason, DOOP_REASON, 'build → filter end to end');
   });
 });
+
+describe('WP-873 Fortify projection (D-24818)', () => {
+  const SQUIRREL_GIRL = 'cvwr-villain-great-lakes-avengers-squirrel-girl-00' as CardExtId;
+  const COLLEEN_WING = 'cvwr-villain-heroes-for-hire-colleen-wing-00' as CardExtId;
+  const SIDEKICK_REASON = 'Squirrel Girl fortifies the Sidekick Stack. Fight Squirrel Girl first.';
+  const MASTERMIND_REASON = 'Colleen Wing fortifies the Mastermind. Fight Colleen Wing first.';
+
+  /** Squirrel Girl fortifies the Sidekick Stack (two cards played) and Colleen Wing the Mastermind. */
+  function createFortifiedUIState(): UIState {
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    gameState.cardStats[SQUIRREL_GIRL] = makeCardStatEntry({ fightCost: 3 });
+    gameState.cardStats[COLLEEN_WING] = makeCardStatEntry({ fightCost: 9 });
+    gameState.cardDisplayData = {
+      ...gameState.cardDisplayData,
+      [SQUIRREL_GIRL]: { extId: SQUIRREL_GIRL, name: 'Squirrel Girl', imageUrl: '', cost: 3 },
+      [COLLEEN_WING]: { extId: COLLEEN_WING, name: 'Colleen Wing', imageUrl: '', cost: 9 },
+    };
+    gameState.villainFightRestrictions = { [SQUIRREL_GIRL]: { kind: 'at-most-one-card-played' } };
+    gameState.playerZones['0']!.inPlay = ['hero-played-1', 'hero-played-2'] as CardExtId[];
+    gameState.fortifications = {
+      'sidekick-stack': { villainCardId: SQUIRREL_GIRL, lock: 'no-recruit-or-gain' },
+      mastermind: { villainCardId: COLLEEN_WING, lock: 'no-fight' },
+    };
+    return buildUIState(gameState, mockCtx);
+  }
+
+  it('T25: the three fields survive the filter for both players and a spectator; absent stays absent', () => {
+    const uiState = createFortifiedUIState();
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const result = JSON.parse(JSON.stringify(filterUIStateForAudience(uiState, audience))) as UIState;
+      const label = JSON.stringify(audience);
+      assert.deepStrictEqual(result.city.fortifiers, uiState.city.fortifiers, `${label}: city.fortifiers`);
+      assert.equal(result.mastermind.fortifiedReason, MASTERMIND_REASON, `${label}: mastermind.fortifiedReason`);
+      assert.equal(result.piles.sidekickStackFortifiedReason, SIDEKICK_REASON, `${label}: piles.sidekickStackFortifiedReason`);
+    }
+    const filtered = filterUIStateForAudience(uiState, SPECTATOR);
+    assert.notEqual(filtered.city.fortifiers![0]!.display, uiState.city.fortifiers![0]!.display, 'display is a fresh copy');
+    const plain = buildUIState(buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx()), mockCtx);
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(plain, audience);
+      assert.equal('fortifiers' in result.city, false);
+      assert.equal('fortifiedReason' in result.mastermind, false);
+      assert.equal('sidekickStackFortifiedReason' in result.piles, false);
+    }
+    assert.equal('fortifiers' in plain.city, false, 'buildUIState omits the key without a fortification');
+  });
+
+  it('T26: buildUIState projects the fortifier tiles and both reasons verbatim', () => {
+    const uiState = createFortifiedUIState();
+    const fortifiers = uiState.city.fortifiers!;
+    assert.equal(fortifiers.length, 2);
+    const squirrelGirlTile = fortifiers[0]!;
+    assert.deepStrictEqual(Object.keys(squirrelGirlTile).sort(), [
+      'display', 'extId', 'fightCost', 'fightRestrictionReason', 'lockText', 'place', 'placeLabel',
+    ]);
+    assert.equal(squirrelGirlTile.place, 'sidekick-stack');
+    assert.equal(squirrelGirlTile.extId, SQUIRREL_GIRL);
+    assert.equal(squirrelGirlTile.fightCost, 3);
+    assert.equal(squirrelGirlTile.placeLabel, 'the Sidekick Stack');
+    assert.equal(squirrelGirlTile.lockText, "Sidekicks can't be recruited or gained");
+    assert.equal(squirrelGirlTile.fightRestrictionReason, 'You played more than one card this turn');
+    assert.equal(fortifiers[1]!.place, 'mastermind');
+    assert.equal(fortifiers[1]!.fightCost, 9);
+    assert.equal('fightRestrictionReason' in fortifiers[1]!, false, 'Colleen Wing has no restriction');
+    assert.equal(uiState.mastermind.fortifiedReason, MASTERMIND_REASON);
+    assert.equal(uiState.piles.sidekickStackFortifiedReason, SIDEKICK_REASON);
+  });
+});

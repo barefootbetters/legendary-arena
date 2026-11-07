@@ -190,6 +190,11 @@ function isLockedEffectKeyword(keyword) {
 // `reenter-sewers-if-villain-deck-top` (`:<villain|bystander|villain+bystander>`) appended at
 // positions 40, 41 and 42 by WP-868 (D-24811 — Tim Boo Ba / Jormungand / Dr. Carlton Drake / The
 // Mind Stone, Flatman and six siblings, and Mr. Immortal; each validates via its own branch below).
+// `fortify` (`:<place>:<lock>`) appended at position 43 by WP-873 (D-24818 — cvwr Squirrel Girl
+// and Colleen Wing's Escape; validates via its own place + allowed-lock branch below).
+// `demolish-each-player` (no-param) appended at position 44 by WP-864 (D-24807 — chmp Trull the
+// Unhuman's Ambush, Zzutak's and Piledriver's Escape "[Demolish] each player"; validates via the
+// terminal no-param `parts.length === 1` branch).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -233,6 +238,8 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'hq-heroes-cost-change',
   'ko-from-discard-current',
   'reenter-sewers-if-villain-deck-top',
+  'fortify',
+  'demolish-each-player',
 ];
 
 // why: WP-836 / D-24769 — hand-synced local copy of the engine's HERO_CLASSES
@@ -257,6 +264,15 @@ const VILLAIN_EFFECT_CONDITIONS = ['savior', 'another-group-villain-in-city'];
 // this list, so a mistyped space in the marker map is rejected (never a silent
 // accept) and any engine-side rename breaks this script until it is updated here.
 const CITY_SPACE_NAMES = ['sewers', 'bank', 'rooftops', 'streets', 'bridge'];
+
+// why: WP-873 / D-24818 — hand-synced local copy of the engine's FORTIFY_ALLOWED_LOCKS
+// (packages/game-engine/src/board/fortify.types.ts); its keys are FORTIFY_PLACES. Same
+// no-import-from-packages discipline: a fortify marker whose place or lock is not listed here
+// is rejected, and a place the engine appends breaks nothing until it is appended here too.
+const FORTIFY_ALLOWED_LOCKS = {
+  'sidekick-stack': ['no-recruit-or-gain'],
+  mastermind: ['no-fight'],
+};
 
 /**
  * Returns true when a `@<space>[+<space>…]` gate suffix (the text after the `@`)
@@ -468,6 +484,14 @@ function isValidParameterizedEffectToken(token) {
     // Immortal: :villain+bystander). Mirrors the engine parser's three accepted kind tokens.
     const kinds = ['villain', 'bystander', 'villain+bystander'];
     return parts.length === 2 && kinds.includes(parts[1]);
+  }
+  if (primitive === 'fortify') {
+    // why: D-24818 — grammar fortify:<place>:<lock> (exactly 3 tokens; Squirrel Girl:
+    // :sidekick-stack:no-recruit-or-gain, Colleen Wing: :mastermind:no-fight). The lock must be
+    // one FORTIFY_ALLOWED_LOCKS lists for the place. Mirrors the engine parser's fortify branch.
+    if (parts.length !== 3) return false;
+    if (!Object.hasOwn(FORTIFY_ALLOWED_LOCKS, parts[1])) return false;
+    return FORTIFY_ALLOWED_LOCKS[parts[1]].includes(parts[2]);
   }
   if (primitive === 'play-villain-deck-cards') {
     // why: D-24351 — grammar play-villain-deck-cards:<N> (exactly 2 tokens); N is the

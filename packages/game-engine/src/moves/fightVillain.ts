@@ -107,6 +107,10 @@ import { pushLog } from '../log/logPush.js';
 import { queueEnigmaPeekOffer } from '../rules/enigmaCode.logic.js';
 // why: WP-863 / D-24805 — the Micro-Sized Villain defeat route (gain + the recipient seat choice).
 import { gainDefeatedMicroSizedHero } from '../rules/trapHeroesInTheMicroverse.logic.js';
+// why: WP-873 / D-24818 — the fortifier fight. fortifyFight.ts imports buildFightSizeChangingLine
+// back from this module; the cycle is runtime-safe (bindings are read only inside functions).
+import type { FortifyPlace } from '../board/fortify.types.js';
+import { fightFortifyingVillain } from './fortifyFight.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -137,6 +141,12 @@ interface FightVillainArgs {
    * when the fought villain has a fight discard cost; ignored otherwise.
    */
   discardCardId?: CardExtId;
+  /**
+   * WP-873 / D-24818 — fight the Villain fortifying this place (Squirrel Girl at the Sidekick
+   * Stack, Colleen Wing at the Mastermind) instead of a City Villain. When present the move
+   * fights that fortifier and every other argument is ignored.
+   */
+  fortifiedPlace?: FortifyPlace;
 }
 
 /**
@@ -150,7 +160,7 @@ interface FightVillainArgs {
  */
 export function fightVillain(
   { G, ...context }: MoveContext,
-  { cityIndex, useExcessiveViolence, discardCardId, payToRescueBystander }: FightVillainArgs,
+  { cityIndex, useExcessiveViolence, discardCardId, payToRescueBystander, fortifiedPlace }: FightVillainArgs,
 ): void {
   // why: WP-754 / D-24581 — take the spread move context (the playCard shape) so the Excessive
   // Violence fire below hands hero handlers the context they expect, with `random` on it. Passing
@@ -158,6 +168,15 @@ export function fightVillain(
   // Claws' draw, Gruesome Feast's reveal) call `.random.Shuffle` on undefined and throw in a move.
   const ctx = context.ctx;
   const random = context.random;
+  // why: WP-873 / D-24818 — a fortifier is fought through this move with a new optional
+  // argument rather than a new move, because fightVillain is already registered on every
+  // move surface (game.ts, index.ts, replay, the simulation runner, PAR, the dispatch drift
+  // test, the client move-name union, the server autoplay filter). The branch runs before any
+  // City read and returns, so with the argument absent every City fight is byte-identical.
+  if (fortifiedPlace !== undefined) {
+    fightFortifyingVillain(G, context, fortifiedPlace);
+    return;
+  }
   // Step 1: Validate args
   if (
     typeof cityIndex !== 'number' ||
