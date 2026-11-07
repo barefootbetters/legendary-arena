@@ -650,3 +650,51 @@ describe('recruitHero — Size-Changing recruit discount (D-24801)', () => {
     assert.match(moveContext.G.messages.at(-1)!.text, / \(Size-Changing: cost 2, paid 0 and gained 2 recruit\)$/);
   });
 });
+
+describe('recruitHero — HQ cost change price note (D-24811)', () => {
+  /**
+   * Builds a recruit state with one HQ Hero carrying a "this turn" HQ cost change.
+   *
+   * @param printedCost - The Hero's printed cost.
+   * @param amount - The signed HQ cost change on the Hero.
+   * @param recruit - The recruit player 0 has.
+   * @returns A state ready for recruitHero({ hqIndex: 0 }).
+   */
+  function makeCostChangeState(printedCost: number, amount: number, recruit: number): LegendaryGameState {
+    const gameState = createMockGameState({ hq: ['core/hulk/crazed-rampage#1', null, null, null, null] });
+    gameState.cardStats = { 'core/hulk/crazed-rampage#1': makeCardStatEntry({ cost: printedCost }) };
+    gameState.cardTraits = {
+      'core/hulk/crazed-rampage#1': { heroClass: 'strength', team: 'avengers' },
+      'core/hulk/hulk-smash#0': { heroClass: 'strength', team: 'avengers' },
+    } as LegendaryGameState['cardTraits'];
+    gameState.hqCostChanges = [{ cardId: 'core/hulk/crazed-rampage#1', amount }];
+    gameState.turnEconomy = { ...gameState.turnEconomy, recruit };
+    return gameState;
+  }
+
+  it('names a Tim Boo Ba discount "HQ cost change", not Size-Changing (live match sU1EWDfnPVj 4.2.8)', () => {
+    const moveContext = createMockMoveContext(makeCostChangeState(5, -1, 4));
+    recruitHero(moveContext, { hqIndex: 0 });
+    assert.equal(moveContext.G.turnEconomy.spentRecruit, 4);
+    const text = moveContext.G.messages.at(-1)!.text;
+    assert.match(text, / \(HQ cost change: cost 5, paid 4\)$/);
+    assert.doesNotMatch(text, /Size-Changing/);
+  });
+
+  it('names a Mind Stone increase "HQ cost change" too', () => {
+    const moveContext = createMockMoveContext(makeCostChangeState(3, 2, 5));
+    recruitHero(moveContext, { hqIndex: 0 });
+    assert.equal(moveContext.G.turnEconomy.spentRecruit, 5);
+    assert.match(moveContext.G.messages.at(-1)!.text, / \(HQ cost change: cost 3, paid 5\)$/);
+  });
+
+  it('names both when Size-Changing also discounted the changed price', () => {
+    const gameState = makeCostChangeState(5, -1, 2);
+    gameState.cardSizeChangingClasses = { 'core/hulk/crazed-rampage#1': ['strength'] };
+    gameState.playerZones['0']!.inPlay = ['core/hulk/hulk-smash#0'];
+    const moveContext = createMockMoveContext(gameState);
+    recruitHero(moveContext, { hqIndex: 0 });
+    assert.equal(moveContext.G.turnEconomy.spentRecruit, 2, 'printed 5, 1 less, then 2 less');
+    assert.match(moveContext.G.messages.at(-1)!.text, / \(HQ cost change and Size-Changing: cost 5, paid 2\)$/);
+  });
+});

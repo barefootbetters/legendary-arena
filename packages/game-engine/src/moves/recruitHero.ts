@@ -16,6 +16,7 @@ import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
 import { addResources, getAvailableRecruit, recordRecruitedHeroCost, spendRecruit } from '../economy/economy.logic.js';
 import { resolveRecruitCost } from '../hero/sizeChanging.logic.js';
+import { getHqCostChange } from '../hero/hqCostChange.logic.js';
 import { matchHasRecruitedHeroRitual } from './ritualArtifact.js';
 import { refillHqSlot } from '../board/city.logic.js';
 import { isHqSlotHaunted } from '../board/haunt.logic.js';
@@ -111,6 +112,9 @@ export function recruitHero(
   // take it below 0: the player pays nothing and gains the difference as Recruit (p.30).
   const printedCost = G.cardStats[cardId]?.cost ?? 0;
   const recruitCost = resolveRecruitCost(G, ctx.currentPlayer, cardId);
+  // why: D-24811 — read the "this turn" HQ cost change now, while the card is still in the HQ
+  // (getHqCostChange is 0 once it leaves), so the log note can name what changed the price.
+  const hqCostChange = getHqCostChange(G, cardId);
   const requiredCost = Math.max(0, recruitCost);
   const availableRecruit = getAvailableRecruit(G.turnEconomy);
   if (availableRecruit < requiredCost) {
@@ -247,27 +251,54 @@ export function recruitHero(
   // why: D-24049 — append a Wall-Crawl placement note ONLY on the deck-top branch;
   // the discard branch's line is byte-identical to the pre-WP-273 WP-135 format.
   const placementNote = placeOnDeckTop ? ' (Wall-Crawl: placed on top of deck)' : '';
-  // why: D-24801 — a Size-Changing note ONLY when the discount changed the price, so every
+  // why: D-24801 — a price note ONLY when the price differs from the printed cost, so every
   // full-price recruit's line stays byte-identical to the WP-135 format.
-  const sizeChangingNote = buildSizeChangingNote(printedCost, recruitCost);
+  const priceNote = buildRecruitPriceNote(printedCost, recruitCost, hqCostChange);
   pushLog(G,
-    `Player ${ctx.currentPlayer} recruited ${formatCardRef(G.cardDisplayData, cardId)}; HQ slot ${String(hqIndex)} refilled from heroDeck ${refillSuffix}${placementNote}${sizeChangingNote}`,
+    `Player ${ctx.currentPlayer} recruited ${formatCardRef(G.cardDisplayData, cardId)}; HQ slot ${String(hqIndex)} refilled from heroDeck ${refillSuffix}${placementNote}${priceNote}`,
   );
 }
 
 /**
- * Builds the recruit log note for a Size-Changing price, or '' when the price is the printed cost.
+ * Names what changed a recruit price: Size-Changing, this turn's HQ cost change, or both.
+ *
+ * // why: D-24811 — a "Heroes currently in the HQ cost N less / more this turn" change (Tim Boo
+ * Ba, The Mind Stone) is not Size-Changing; labelling it so misreads the log (live match
+ * sU1EWDfnPVj 4.2.8). With no HQ cost change the label is "Size-Changing", byte-identical to
+ * D-24801. The change applies first (floored at 0), so Size-Changing took part exactly when the
+ * final price differs from the changed price.
  *
  * @param printedCost - The Hero's printed cost.
- * @param recruitCost - The Size-Changing-reduced cost; negative when Microscopic went below 0.
+ * @param recruitCost - The final recruit price.
+ * @param hqCostChange - The summed HQ cost change on the card when it was recruited.
+ * @returns The label.
+ */
+function describeRecruitPriceSource(printedCost: number, recruitCost: number, hqCostChange: number): string {
+  if (hqCostChange === 0) {
+    return 'Size-Changing';
+  }
+  const changedCost = Math.max(0, printedCost + hqCostChange);
+  if (recruitCost === changedCost) {
+    return 'HQ cost change';
+  }
+  return 'HQ cost change and Size-Changing';
+}
+
+/**
+ * Builds the recruit log note for a changed price, or '' when the price is the printed cost.
+ *
+ * @param printedCost - The Hero's printed cost.
+ * @param recruitCost - The final recruit price; negative when Microscopic went below 0.
+ * @param hqCostChange - The summed HQ cost change on the card when it was recruited.
  * @returns The note, starting with a space, or an empty string.
  */
-function buildSizeChangingNote(printedCost: number, recruitCost: number): string {
+function buildRecruitPriceNote(printedCost: number, recruitCost: number, hqCostChange: number): string {
   if (recruitCost === printedCost) {
     return '';
   }
+  const source = describeRecruitPriceSource(printedCost, recruitCost, hqCostChange);
   if (recruitCost < 0) {
-    return ` (Size-Changing: cost ${String(printedCost)}, paid 0 and gained ${String(-recruitCost)} recruit)`;
+    return ` (${source}: cost ${String(printedCost)}, paid 0 and gained ${String(-recruitCost)} recruit)`;
   }
-  return ` (Size-Changing: cost ${String(printedCost)}, paid ${String(recruitCost)})`;
+  return ` (${source}: cost ${String(printedCost)}, paid ${String(recruitCost)})`;
 }
