@@ -10056,8 +10056,8 @@
       "mechanic": "fortify",
       "status": "unsupported",
       "handler": "",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-873",
+      "decision": "D-24818",
       "designs": [
         {
           "slug": "unbreakable-skin",
