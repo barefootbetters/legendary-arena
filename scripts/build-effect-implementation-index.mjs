@@ -30,6 +30,10 @@
  *   6. Default mode: write the file. --check mode: regenerate in memory and exit
  *      non-zero if the committed file drifts (the CI freshness gate).
  *
+ * WP-867 / D-24810 adds a Master Strike feed beside the tactic feed: one mastermind-scoped
+ * row per Mastermind (mechanic 'master-strike'), identity from the card data and
+ * status/handler/wp/decision from scripts/coverage/strike-provenance.json, absent = 'unmarked'.
+ *
  * Deterministic: identical inputs always yield byte-identical output. No wall-clock
  * reads — see resolveGeneratedAt below. This transform is a pure re-projection; it
  * fabricates nothing.
@@ -59,6 +63,9 @@ const VILLAIN_LEDGER_PATH = join(REPO_ROOT, 'docs', 'ai', 'coverage', 'villain-m
 // (tactic identity) and the committed provenance overlay (curated status/handler/wp/decision).
 const CARD_DATA_DIRECTORY = join(REPO_ROOT, 'data', 'cards');
 const TACTIC_PROVENANCE_PATH = join(REPO_ROOT, 'scripts', 'coverage', 'tactic-provenance.json');
+// why: WP-867 / D-24810 — the Master Strike feed's curated overlay (status/handler/wp/decision
+// for the Masterminds whose strike has a dispatcher arm); identity comes from the card data.
+const STRIKE_PROVENANCE_PATH = join(REPO_ROOT, 'scripts', 'coverage', 'strike-provenance.json');
 const OUTPUT_DIRECTORY = join(REPO_ROOT, 'data', 'metadata');
 const OUTPUT_PATH = join(OUTPUT_DIRECTORY, 'effect-implementation-index.json');
 
@@ -182,6 +189,32 @@ function readTacticProvenance() {
 }
 
 /**
+ * Reads the committed Master Strike provenance overlay (WP-867 / D-24810). Mirrors
+ * readTacticProvenance: the overlay carries ONLY status/handler/wp/decision for Masterminds
+ * whose strike has a dispatcher arm; a missing or malformed overlay is a transform failure.
+ *
+ * @returns {Record<string, object>} the `strikes` map (ext_id -> overlay).
+ */
+function readStrikeProvenance() {
+  let parsed;
+  try {
+    parsed = JSON.parse(readFileSync(STRIKE_PROVENANCE_PATH, 'utf8'));
+  } catch (error) {
+    throw new TransformFailure(
+      `Cannot read the Master Strike provenance overlay at ${STRIKE_PROVENANCE_PATH}. It supplies status/handler/wp/decision ` +
+        `for Masterminds whose Master Strike is resolved. Restore the committed file. Underlying error: ${error.message}`,
+    );
+  }
+  if (parsed === null || typeof parsed !== 'object' || typeof parsed.strikes !== 'object' || parsed.strikes === null) {
+    throw new TransformFailure(
+      `The Master Strike provenance overlay at ${STRIKE_PROVENANCE_PATH} has no "strikes" object. ` +
+        `Expected { schemaVersion, _comment, strikes: { "<ext_id>": { status, handler, wp, decision } } }.`,
+    );
+  }
+  return parsed.strikes;
+}
+
+/**
  * Normalizes one mastermind tactic into a mastermind-scoped effect-index entry in the
  * locked property order. Identity (extId/name/set/mechanic) comes from the card data;
  * status/handler/wp/decision come from the provenance overlay VERBATIM, or the
@@ -301,6 +334,121 @@ export function readMastermindTactics(provenance) {
         const extId = `${setAbbr}-mastermind-${mastermindSlug}-${tacticSlug}`;
         entries.push(normalizeTactic(extId, tacticName, setAbbr, tacticSlug, provenance[extId]));
       }
+    }
+  }
+  return entries;
+}
+
+/**
+ * Reads every card-data set file that carries masterminds, in sorted file order, with its
+ * file-level abbr (WP-867). Mirrors readMastermindTactics' read and validation so the strike
+ * feed enumerates exactly the same Masterminds.
+ *
+ * @returns {{ filePath: string, setAbbr: string, masterminds: object[] }[]} the mastermind-bearing sets.
+ */
+function readMastermindSets() {
+  let fileNames;
+  try {
+    fileNames = readdirSync(CARD_DATA_DIRECTORY)
+      .filter((name) => name.endsWith('.json'))
+      .sort();
+  } catch (error) {
+    throw new TransformFailure(
+      `Cannot read the card-data directory at ${CARD_DATA_DIRECTORY}. It supplies Master Strike identity ` +
+        `for the effect index. Underlying error: ${error.message}`,
+    );
+  }
+
+  const sets = [];
+  for (const fileName of fileNames) {
+    const filePath = join(CARD_DATA_DIRECTORY, fileName);
+    let setData;
+    try {
+      setData = JSON.parse(readFileSync(filePath, 'utf8'));
+    } catch (error) {
+      throw new TransformFailure(
+        `Cannot read or parse the card-data set at ${filePath}. Re-check the card data before regenerating ` +
+          `the effect index. Underlying error: ${error.message}`,
+      );
+    }
+    if (!Array.isArray(setData.masterminds) || setData.masterminds.length === 0) {
+      continue;
+    }
+    const setAbbr = setData.abbr;
+    if (typeof setAbbr !== 'string' || setAbbr.length === 0) {
+      throw new TransformFailure(
+        `The card-data set at ${filePath} carries masterminds but no file-level "abbr" string. ` +
+          `The Master Strike ext_id grammar "\${setAbbr}-mastermind-\${slug}-master-strike" needs it; add the "abbr" field.`,
+      );
+    }
+    sets.push({ filePath, setAbbr, masterminds: setData.masterminds });
+  }
+  return sets;
+}
+
+/**
+ * Enumerates one Master Strike row per Mastermind across all card-data sets (WP-867 /
+ * D-24810). Identity comes from the card data (`${setAbbr}-mastermind-${slug}-master-strike`,
+ * name `${mastermind.name} Master Strike`, mechanic 'master-strike'); status/handler/wp/decision
+ * come from the strike provenance overlay or the 'unmarked' default. Stays engine-free.
+ *
+ * Fails (TransformFailure) when an overlay key matches no enumerated Mastermind (a stale or
+ * misspelled row would otherwise vanish silently), or when a strike ext_id equals a tactic
+ * entry's ext_id.
+ *
+ * @param {Record<string, object>} provenance - the strike provenance overlay map.
+ * @param {object[]} tacticEntries - the mastermind-scoped tactic entries (readMastermindTactics).
+ * @returns {object[]} the mastermind-scoped Master Strike entries (unsorted).
+ */
+export function readMastermindStrikes(provenance, tacticEntries) {
+  const tacticExtIds = new Set();
+  for (const tacticEntry of tacticEntries) {
+    tacticExtIds.add(tacticEntry.extId);
+  }
+
+  const entries = [];
+  const enumeratedExtIds = new Set();
+  for (const mastermindSet of readMastermindSets()) {
+    for (const mastermind of mastermindSet.masterminds) {
+      const mastermindSlug = mastermind.slug;
+      const mastermindName = mastermind.name;
+      if (
+        typeof mastermindSlug !== 'string' ||
+        mastermindSlug.length === 0 ||
+        typeof mastermindName !== 'string' ||
+        mastermindName.length === 0
+      ) {
+        continue;
+      }
+      const extId = `${mastermindSet.setAbbr}-mastermind-${mastermindSlug}-master-strike`;
+      // why: WP-867 — the strike and tactic feeds are both scope 'mastermind', so buildCards
+      // would merge a shared ext_id silently into one card with two mechanics (its scope
+      // check only catches cross-scope collisions). Fail loudly instead.
+      if (tacticExtIds.has(extId)) {
+        throw new TransformFailure(
+          `The Master Strike ext_id "${extId}" from ${mastermindSet.filePath} is also a mastermind tactic ext_id. ` +
+            `Both feeds are scope "mastermind", so the index would merge them silently; rename the tactic slug or the strike ext_id grammar.`,
+        );
+      }
+      enumeratedExtIds.add(extId);
+      // why: WP-867 / D-24810 — reuse normalizeTactic (the WP-507 row shape, mechanic = its
+      // fourth argument) rather than a second normalizer; a Mastermind absent from the
+      // overlay is 'unmarked' with blank handler/wp/decision, never a fabricated attribution.
+      entries.push(
+        normalizeTactic(extId, `${mastermindName} Master Strike`, mastermindSet.setAbbr, 'master-strike', provenance[extId]),
+      );
+    }
+  }
+
+  // why: WP-867 — unlike the tactic feed (which ignores orphan overlay keys), an overlay row
+  // that names no enumerated Mastermind is a failure: it is a stale or misspelled claim that
+  // a strike resolves, and it would otherwise drop out of the index without a trace.
+  for (const overlayExtId of Object.keys(provenance).sort()) {
+    if (!enumeratedExtIds.has(overlayExtId)) {
+      throw new TransformFailure(
+        `The Master Strike provenance overlay row "${overlayExtId}" matches no Mastermind in the card data. ` +
+          `Fix the key to "\${setAbbr}-mastermind-\${mastermindSlug}-master-strike" for an existing Mastermind, or remove the row.`,
+      );
     }
   }
   return entries;
@@ -527,7 +675,12 @@ function main() {
   const villainLedger = readLedger(VILLAIN_LEDGER_PATH, 'villain');
   const tacticProvenance = readTacticProvenance();
   const tacticEntries = readMastermindTactics(tacticProvenance);
-  const index = buildIndex(heroLedger, villainLedger, tacticEntries);
+  const strikeProvenance = readStrikeProvenance();
+  const strikeEntries = readMastermindStrikes(strikeProvenance, tacticEntries);
+  // why: WP-867 / D-24810 — the Master Strike rows join the tactic rows in the mastermind
+  // input; collectEntries sorts every entry, so concatenation order is not load-bearing.
+  const mastermindEntries = [...tacticEntries, ...strikeEntries];
+  const index = buildIndex(heroLedger, villainLedger, mastermindEntries);
   const freshText = serializeJson(index);
 
   if (mode === '--check') {
