@@ -15,6 +15,8 @@ import {
   buildVillainFightDiscardCosts,
   buildVillainVariableAttack,
   parseVariableAttackLine,
+  buildVillainFightRestrictions,
+  parseFightRestrictionLine,
 } from './villainDefeatRequirement.setup.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 
@@ -399,5 +401,72 @@ describe('WP-841 buildVillainVariableAttack (D-24774)', () => {
 
   it('returns an empty record for a registry that is not a reader', () => {
     assert.deepStrictEqual(buildVillainVariableAttack({}, makeConfig(['co2e/hydra'])), {});
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-871 — parseFightRestrictionLine / buildVillainFightRestrictions (D-24816)
+// ---------------------------------------------------------------------------
+
+// why: the three restriction lines copied verbatim from the regenerated
+// data/cards/chmp.json, cvwr.json and ssw2.json (the overlay's output).
+const ORRGO_LINE =
+  "You can't fight Orrgo unless you have already defeated another Villain this turn. [fight-restriction:requires-villain-defeated-this-turn]";
+const SQUIRREL_GIRL_LINE =
+  "You can't fight Squirrel Girl if you played more than one card this turn. [fight-restriction:at-most-one-card-played]";
+const DOOP_LINE =
+  "You can't fight Doop if there is a Villain in an adjacent city space. [fight-restriction:no-adjacent-villain]";
+
+describe('WP-871 parseFightRestrictionLine (D-24816)', () => {
+  it('T2: parses each regenerated line into its kind', () => {
+    assert.deepStrictEqual(parseFightRestrictionLine(ORRGO_LINE), { kind: 'requires-villain-defeated-this-turn' });
+    assert.deepStrictEqual(parseFightRestrictionLine(SQUIRREL_GIRL_LINE), { kind: 'at-most-one-card-played' });
+    assert.deepStrictEqual(parseFightRestrictionLine(DOOP_LINE), { kind: 'no-adjacent-villain' });
+  });
+
+  it('T3: an empty, unknown or extra-segment marker and a line with no marker are inert and never throw', () => {
+    const inertLines = [
+      "You can't fight X. [fight-restriction:]",
+      "You can't fight X. [fight-restriction:nope]",
+      "You can't fight X. [fight-restriction:no-adjacent-villain:1]",
+      "You can't fight Orrgo unless you have already defeated another Villain this turn.",
+    ];
+    for (const line of inertLines) {
+      assert.strictEqual(parseFightRestrictionLine(line), null, `${line} must parse to null`);
+    }
+  });
+});
+
+describe('WP-871 buildVillainFightRestrictions (D-24816)', () => {
+  it('T4: fans Doop out to both copies and Orrgo to its one copy as fresh objects; a plain villain is absent', () => {
+    const registry = makeRegistry('ssw2', [
+      {
+        slug: 'mixed-restrictions',
+        cards: [
+          { slug: 'doop', copies: 2, abilities: [DOOP_LINE] },
+          { slug: 'orrgo', copies: 1, abilities: [ORRGO_LINE] },
+          { slug: 'plain-villain', copies: 2, abilities: ['Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]'] },
+        ],
+      },
+    ]);
+    const restrictions = buildVillainFightRestrictions(registry, makeConfig(['ssw2/mixed-restrictions']));
+    assert.deepStrictEqual(Object.keys(restrictions).sort(), [
+      'ssw2-villain-mixed-restrictions-doop-00',
+      'ssw2-villain-mixed-restrictions-doop-01',
+      'ssw2-villain-mixed-restrictions-orrgo-00',
+    ]);
+    const firstDoop = restrictions['ssw2-villain-mixed-restrictions-doop-00']!;
+    const secondDoop = restrictions['ssw2-villain-mixed-restrictions-doop-01']!;
+    assert.deepStrictEqual(firstDoop, { kind: 'no-adjacent-villain' });
+    assert.deepStrictEqual(secondDoop, { kind: 'no-adjacent-villain' });
+    assert.notEqual(firstDoop, secondDoop, 'copies must not alias one object');
+    assert.deepStrictEqual(restrictions['ssw2-villain-mixed-restrictions-orrgo-00'], {
+      kind: 'requires-villain-defeated-this-turn',
+    });
+    assert.deepStrictEqual(buildVillainFightRestrictions(registry, makeConfig([])), {}, 'an empty group list');
+  });
+
+  it('returns an empty record for a registry that is not a reader', () => {
+    assert.deepStrictEqual(buildVillainFightRestrictions({}, makeConfig(['ssw2/mixed-restrictions'])), {});
   });
 });

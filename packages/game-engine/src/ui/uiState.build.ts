@@ -156,6 +156,9 @@ import { getEligibleKoDiscardCards } from '../moves/koDiscardChoice.resolve.js';
 // why: WP-817 / D-24750 — handCosts projects the same off-play cost the fight-discard
 // gate reads (isHandCardCostOneOf), so the client and the engine agree on eligibility.
 import { offPlayCardStats } from '../hero/splitCard.logic.js';
+// why: WP-871 / D-24816 — the City projection asks the one fight-restriction authority
+// (shared with fightVillain and getLegalMoves) whether, and why, a fight is blocked.
+import { getFightRestrictionBlockReason } from '../moves/villainDefeatRequirement.logic.js';
 import { enigmaColorsOf } from '../rules/enigmaCode.logic.js';
 
 // why: exact structural contract — do not widen or add optional fields.
@@ -922,7 +925,8 @@ export function buildUIState(
   // why: city projection includes type and keywords for display without
   // exposing the raw villainDeckCardTypes or cardKeywords maps
   const citySpaces: (UICityCard | null)[] = [];
-  for (const space of gameState.city) {
+  for (let cityIndex = 0; cityIndex < gameState.city.length; cityIndex++) {
+    const space = gameState.city[cityIndex]!;
     if (space === null) {
       citySpaces.push(null);
     } else {
@@ -938,6 +942,10 @@ export function buildUIState(
       // count only (D-24311); it is still never flattened onto the mastermind.
       const spaceAttachedBystanders = gameState.attachedBystanders?.[space] ?? [];
       const spaceFightDiscardCosts = gameState.villainFightDiscardCosts?.[space];
+      // why: WP-871 / D-24816 — every input of the restriction predicate is public, so the
+      // reason ships to every audience; it is computed for ctx.currentPlayer, the only
+      // player who can fight, exactly like fightCost below.
+      const fightRestrictionReason = getFightRestrictionBlockReason(gameState, ctx.currentPlayer, cityIndex);
       citySpaces.push({
         extId: space,
         type: gameState.villainDeckCardTypes[space] ?? 'unknown',
@@ -969,6 +977,9 @@ export function buildUIState(
         ...(spaceFightDiscardCosts !== undefined
           ? { fightDiscardCosts: [...spaceFightDiscardCosts.eligibleCosts] }
           : {}),
+        // why: WP-871 / D-24816 — present only while the restriction blocks, so every
+        // unrestricted City card keeps a byte-identical projection.
+        ...(fightRestrictionReason !== null ? { fightRestrictionReason } : {}),
       });
     }
   }

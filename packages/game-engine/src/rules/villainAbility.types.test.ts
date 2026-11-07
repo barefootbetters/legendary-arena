@@ -15,6 +15,7 @@ import {
   VILLAIN_EFFECT_KEYWORDS,
   VILLAIN_EFFECT_PRIMITIVES,
   VILLAIN_DEFEAT_REQUIREMENT_KINDS,
+  VILLAIN_FIGHT_RESTRICTION_KINDS,
   VILLAIN_EFFECT_CONDITIONS,
   LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR,
   descriptorToLegacyKeyword,
@@ -28,6 +29,7 @@ import type {
   VillainEffectPrimitive,
   VillainEffectDescriptor,
   VillainDefeatRequirementKind,
+  VillainFightRestrictionKind,
   VillainEffectCondition,
 } from './villainAbility.types.js';
 import type { CardExtId } from '../state/zones.types.js';
@@ -775,5 +777,23 @@ describe('WP-837 co2e each-player discard and reveal-gated Ambush types (D-24770
     for (const descriptor of keywordLess) {
       assert.equal(descriptorToLegacyKeyword(descriptor), undefined, `${descriptor.primitive} must self-narrate`);
     }
+  });
+});
+
+describe('WP-871 VILLAIN_FIGHT_RESTRICTION_KINDS drift-detection (D-24816)', () => {
+  it('T1: the array holds exactly the three kinds in canonical order and matches the union', () => {
+    assert.deepStrictEqual(
+      [...VILLAIN_FIGHT_RESTRICTION_KINDS],
+      ['requires-villain-defeated-this-turn', 'at-most-one-card-played', 'no-adjacent-villain'],
+    );
+    // why: a runtime parity pin (WP-563 / D-24372) — the Record literal must list every
+    // union member (tsc enforces that only on a typecheck run), and its keys must equal
+    // the array exactly at runtime.
+    const unionMembers: Record<VillainFightRestrictionKind, true> = {
+      'requires-villain-defeated-this-turn': true,
+      'at-most-one-card-played': true,
+      'no-adjacent-villain': true,
+    };
+    assert.deepStrictEqual(Object.keys(unionMembers), [...VILLAIN_FIGHT_RESTRICTION_KINDS]);
   });
 });

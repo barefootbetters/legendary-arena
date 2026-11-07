@@ -1999,3 +1999,126 @@ describe('fightVillain — Size-Changing fight discount (D-24802)', () => {
     assert.ok(moveContext.G.messages.every((entry) => !entry.text.startsWith('Size-Changing')));
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-871 / D-24816 — villain fight restrictions (Orrgo, Squirrel Girl, Doop)
+// ---------------------------------------------------------------------------
+
+describe('WP-871 fightVillain — villain fight restrictions (D-24816)', () => {
+  const ORRGO = 'chmp-villain-monsters-unleashed-orrgo-00';
+  const SQUIRREL_GIRL = 'cvwr-villain-great-lakes-avengers-squirrel-girl-00';
+  const DOOP = 'ssw2-villain-deadpools-secret-secret-wars-doop-00';
+  const PLAIN = 'core-villain-hydra-hydra-kidnappers-00';
+  const OTHER_PLAIN = 'core-villain-hydra-endless-armies-of-hydra-00';
+  const shuffleContext = { random: makeMockCtx({ numPlayers: 1 }).random };
+
+  /**
+   * A fight state with the given City, attack and cards in play; the restriction
+   * table is set only when `restrictions` is given (the omit-when-empty shape).
+   */
+  function restrictionState(options: {
+    city: LegendaryGameState['city'];
+    attack: number;
+    inPlay?: string[];
+    restrictions?: LegendaryGameState['villainFightRestrictions'];
+  }): LegendaryGameState {
+    const gameState = createMockGameState({ city: options.city, inPlay: options.inPlay ?? [] });
+    gameState.cardStats[ORRGO as CardExtId] = makeCardStatEntry({ fightCost: 2 });
+    gameState.cardStats[SQUIRREL_GIRL as CardExtId] = makeCardStatEntry({ fightCost: 3 });
+    gameState.cardStats[DOOP as CardExtId] = makeCardStatEntry({ fightCost: 2 });
+    gameState.cardStats[PLAIN as CardExtId] = makeCardStatEntry({ fightCost: 1 });
+    gameState.cardStats[OTHER_PLAIN as CardExtId] = makeCardStatEntry({ fightCost: 1 });
+    if (options.restrictions !== undefined) {
+      gameState.villainFightRestrictions = options.restrictions;
+    }
+    gameState.turnEconomy = makeTurnEconomy({ attack: options.attack });
+    return gameState;
+  }
+
+  /** Fights a City index and asserts G is deep-equal before and after (a silent refusal). */
+  function assertFightRefused(gameState: LegendaryGameState, args: { cityIndex: number; useExcessiveViolence?: boolean }): void {
+    const before = JSON.parse(JSON.stringify(gameState)) as unknown;
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, args);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(moveContext.G)), before, `${JSON.stringify(args)} must not mutate G`);
+  }
+
+  const ORRGO_TABLE = { [ORRGO]: { kind: 'requires-villain-defeated-this-turn' as const } };
+
+  it('T11: Orrgo with no prior defeat this turn is refused silently', () => {
+    assertFightRefused(restrictionState({ city: [null, ORRGO, null, null, null], attack: 5, restrictions: ORRGO_TABLE }), {
+      cityIndex: 1,
+    });
+  });
+
+  it('T12: fighting another Villain first sets the flag (surviving the cost spend) and Orrgo is then fightable', () => {
+    const moveContext = createMockMoveContext(
+      restrictionState({ city: [PLAIN, ORRGO, null, null, null], attack: 5, restrictions: ORRGO_TABLE }),
+    );
+    fightVillain(moveContext, { cityIndex: 0 });
+    assert.equal(moveContext.G.turnEconomy.hasDefeatedVillainThisTurn, true, 'the core set the flag and the spend kept it');
+    fightVillain(moveContext, { cityIndex: 1 });
+    const victory = moveContext.G.playerZones['0']!.victory;
+    assert.ok(victory.includes(PLAIN), 'the plain villain is defeated');
+    assert.ok(victory.includes(ORRGO), 'Orrgo is defeated');
+  });
+
+  it('T13: a free defeat through defeatCityVillainCore counts as the earlier defeat', () => {
+    const moveContext = createMockMoveContext(
+      restrictionState({ city: [PLAIN, ORRGO, null, null, null], attack: 5, restrictions: ORRGO_TABLE }),
+    );
+    defeatCityVillainCore(moveContext.G, { currentPlayer: '0' }, 0, shuffleContext);
+    fightVillain(moveContext, { cityIndex: 1 });
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes(ORRGO), 'Orrgo is defeated');
+  });
+
+  it('T14: Squirrel Girl is fought after one played card and refused after two', () => {
+    const table = { [SQUIRREL_GIRL]: { kind: 'at-most-one-card-played' as const } };
+    const oneCard = createMockMoveContext(
+      restrictionState({ city: [SQUIRREL_GIRL, null, null, null, null], attack: 3, inPlay: ['hero-a'], restrictions: table }),
+    );
+    fightVillain(oneCard, { cityIndex: 0 });
+    assert.ok(oneCard.G.playerZones['0']!.victory.includes(SQUIRREL_GIRL), 'fought with one card played');
+    assertFightRefused(
+      restrictionState({
+        city: [SQUIRREL_GIRL, null, null, null, null],
+        attack: 3,
+        inPlay: ['hero-a', 'hero-b'],
+        restrictions: table,
+      }),
+      { cityIndex: 0 },
+    );
+  });
+
+  it('T15: Doop is fought with empty neighbours and refused beside a Villain, with or without Excessive Violence', () => {
+    const table = { [DOOP]: { kind: 'no-adjacent-villain' as const } };
+    const alone = createMockMoveContext(restrictionState({ city: [null, null, DOOP, null, null], attack: 2, restrictions: table }));
+    fightVillain(alone, { cityIndex: 2 });
+    assert.ok(alone.G.playerZones['0']!.victory.includes(DOOP), 'fought with empty neighbours');
+    assertFightRefused(restrictionState({ city: [null, null, DOOP, PLAIN, null], attack: 2, restrictions: table }), {
+      cityIndex: 2,
+    });
+    assertFightRefused(restrictionState({ city: [null, null, DOOP, PLAIN, null], attack: 5, restrictions: table }), {
+      cityIndex: 2,
+      useExcessiveViolence: true,
+    });
+  });
+
+  it('T16: a blocked Doop is still defeated by a free defeat (D-24737)', () => {
+    const table = { [DOOP]: { kind: 'no-adjacent-villain' as const } };
+    const gameState = restrictionState({ city: [null, null, DOOP, PLAIN, null], attack: 0, restrictions: table });
+    defeatCityVillainCore(gameState, { currentPlayer: '0' }, 2, shuffleContext);
+    assert.equal(gameState.city[2], null, 'Doop left the City');
+    assert.ok(gameState.playerZones['0']!.victory.includes(DOOP), 'Doop is defeated');
+  });
+
+  it('T17: a match with only Doop never writes the Orrgo flag', () => {
+    const table = { [DOOP]: { kind: 'no-adjacent-villain' as const } };
+    const moveContext = createMockMoveContext(
+      restrictionState({ city: [PLAIN, null, null, DOOP, OTHER_PLAIN], attack: 5, restrictions: table }),
+    );
+    fightVillain(moveContext, { cityIndex: 0 });
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes(PLAIN), 'the plain villain is defeated');
+    assert.equal('hasDefeatedVillainThisTurn' in moveContext.G.turnEconomy, false, 'no flag key without an Orrgo-kind entry');
+  });
+});
