@@ -395,6 +395,37 @@ describe('fightVillain — WP-316 Fight: effect log narration', () => {
     );
   });
 
+  // why: D-24644 amendment (2026-11-06) — Super-Skrull's "Each player KOs one of their
+  // Heroes" logged "the active player must KO a hero; Player 1 KO’d …" (Jeff's match
+  // yTdbv34zeV6, 7.2.6), which read as if only the active player loses a Hero.
+  it('an each-player KO (Super-Skrull) logs that every player KOs and who is still choosing', () => {
+    const gameState = createMockGameState({
+      city: ['villain-super-skrull', null, null, null, null],
+      hand: ['core-hero-a', 'core-hero-b'],
+      villainAbilityHooks: [fightHook('villain-super-skrull', 'koHeroEachPlayer')],
+      cardDisplayData: {
+        'starting-shield-agent': { name: 'S.H.I.E.L.D. Agent' },
+      } as unknown as LegendaryGameState['cardDisplayData'],
+    });
+    gameState.playerZones['1'] = {
+      ...makePlayerZones(),
+      hand: ['starting-shield-agent'] as LegendaryGameState['playerZones']['1']['hand'],
+    };
+    const moveContext = createMockMoveContext(gameState);
+
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    const fightLines = moveContext.G.messages
+      .map((entry) => entry.text)
+      .filter((text) => text.startsWith('Fight effect:'));
+    assert.deepStrictEqual(fightLines, [
+      'Fight effect: each player KOs a hero: Player 0 must choose which; '
+        + 'Player 1 KO’d S.H.I.E.L.D. Agent from their hand.',
+    ]);
+    assert.deepStrictEqual(moveContext.G.pendingKoHeroChoices, [{ choiceType: 'ko-hero', playerID: '0' }]);
+    assert.deepStrictEqual(moveContext.G.playerZones['1']!.hand, [], 'the other player auto-KO’d their only Hero');
+  });
+
   it('an effectless fight pushes no Fight effect line', () => {
     const gameState = createMockGameState({
       city: ['villain-a', null, null, null, null],

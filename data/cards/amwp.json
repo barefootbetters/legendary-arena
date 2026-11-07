@@ -402,7 +402,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:tech][hc:tech][hc:tech]",
-            "When you draw a new hand this turn, draw an extra card.",
+            "When you draw a new hand this turn, draw an extra card. [keyword:next-hand-extra-draw:1]",
             "Heist: You get +3[icon:attack]."
           ]
         },
@@ -830,7 +830,7 @@
           "attack": null,
           "recruit": "1",
           "abilities": [
-            "When you draw a new hand this turn, draw an extra card."
+            "When you draw a new hand this turn, draw an extra card. [keyword:next-hand-extra-draw:1]"
           ]
         },
         {

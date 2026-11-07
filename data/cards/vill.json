@@ -135,7 +135,7 @@
           "attack": null,
           "recruit": "2",
           "abilities": [
-            "[hc:tech]: When you draw a new hand of cards at the end of this turn, draw an extra card."
+            "[hc:tech]: When you draw a new hand of cards at the end of this turn, draw an extra card. [keyword:next-hand-extra-draw:1]"
           ]
         },
         {

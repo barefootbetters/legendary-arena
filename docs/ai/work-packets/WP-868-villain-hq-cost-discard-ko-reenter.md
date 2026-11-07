@@ -45,9 +45,11 @@ Live-on-surface is operator-pending (D-24026).
   (Monsteroso's Fight `add-next-hand-size:1`, plus 23 reveal-or-wound lines) are **merged**. cvwr now has a
   `great-lakes-avengers` object in the marker map holding Big Bertha; Flatman and Mr. Immortal join that object. WP-864 (drafted)
   owns Trull the Unhuman's Ambush and Zzutak's Escape. It edits the same marker map and feeds, so whichever of WP-864 and WP-868
-  executes later rebases and regenerates; no line overlaps.
+  executes later rebases and regenerates; no line overlaps. WP-869 (Groot's stack villains, drafted #3199) and WP-871 (Orrgo /
+  Squirrel Girl / Doop fight restriction, drafted #3198) also edit `defeatCityVillainCore`; WP-869 puts its stack bridge after this
+  WP's reenter bridge. Whichever executes later rebases; no card line overlaps.
 - **Primitive positions are not locked.** `VILLAIN_EFFECT_PRIMITIVES` (`rules/villainAbility.types.ts` ~449) ends at position 39,
-  `hq-hero-gains-size-changing`, at draft. WP-864 appends `demolish-each-player` at 40. This WP appends its three primitives after
+  `hq-hero-gains-size-changing`, at draft. WP-864 appends `demolish-each-player` and WP-869 `stack-cards-enter-city-as-villains`. This WP appends its three primitives after
   whatever is last at HEAD, in the order of RS-1, RS-2, RS-3. The length pins in `rules/villainAbility.types.test.ts` (~363,
   ~407-413, ~632, ~667, ~692, ~745) and the marker script's hand-synced copy
   (`scripts/convert-cards/apply-effect-markers.mjs` ~189-228) move with them.

@@ -163,6 +163,30 @@
       "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveShrinkingResearchBudget",
       "wp": "WP-862",
       "decision": "D-24804"
+    },
+    "co2e-mastermind-doctor-doom-treasures-of-latveria": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveTreasuresOfLatveria",
+      "wp": "",
+      "decision": "D-24813"
+    },
+    "cvwr-mastermind-baron-helmut-zemo-cursed-dynasty": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveNextHandExtraCardsTactic",
+      "wp": "",
+      "decision": "D-24813"
+    },
+    "msis-mastermind-ebony-maw-hear-me-and-rejoice": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveNextHandExtraCardsTactic",
+      "wp": "",
+      "decision": "D-24813"
+    },
+    "mgtg-mastermind-ego-the-living-planet-im-a-celestial-sweetheart": {
+      "status": "deferred",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveNextHandExtraCardsTactic",
+      "wp": "",
+      "decision": "D-24813"
     }
   }
 }

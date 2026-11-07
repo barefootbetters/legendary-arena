@@ -504,9 +504,11 @@ high-water: 422
 - WP-865 — heist-keyword (the Heist keyword: a once-per-turn "Attempt a Heist" action counts the different non-zero printed costs among the Heroes you played, reveals the Villain Deck's top card, and on a higher count fires every enrolled Heist ability, on a tie nothing, on a lower count you gain a Wound; Heist lines stop granting their reward at play. reserved 2026-11-05, claude/wp865-reserve; LANDED 2026-11-06)
 - WP-862 — size-changing-runtime-grants (card effects that grant or remove Size-Changing on an HQ Hero during play — Pym Particles, Ultron-Pym, Shrinksperiments, Sporr, Fin Fang Foom's Alien Dragon Technology, Darren Cross's Shrinking Research Budget — read by the recruit-price authority. reserved 2026-11-05, claude/wp862-reserve; LANDED 2026-11-05)
 - WP-864 — demolish-keyword (the Demolish keyword: reveal the Hero Deck top, note its cost, put it on the bottom, each player discards a card of that cost; Fin Fang Foom's Master Strike Demolishes once plus once per Monsters Unleashed Villain in the city and Escape Pile; Trull the Unhuman Ambush, Zzutak and Piledriver Escape. reserved 2026-11-05, claude/wp864-reserve)
-- WP-866 — hero-next-hand-extra-draw (hero lines that read "When you draw a new hand (of cards at the end of) this turn, draw an extra card" / "draw two/three extra cards": a hero-side [keyword:next-hand-extra-draw:N] that adds N to the playing player's G.handSizeOverrides end-of-turn fill, the hero sibling of the D-24352 villain primitive; first slice Wasp's Infiltrate and the plain or [hc:X]:/[team:X]:-gated lines. reserved 2026-11-05, claude/wp866-reserve)
+- WP-866 — hero-next-hand-extra-draw (hero lines that read "When you draw a new hand (of cards at the end of) this turn, draw an extra card" / "draw two/three extra cards": a hero-side [keyword:next-hand-extra-draw:N] that adds N to the playing player's G.handSizeOverrides end-of-turn fill, the hero sibling of the D-24352 villain primitive; first slice Wasp's Infiltrate and the plain or [hc:X]:/[team:X]:-gated lines. reserved 2026-11-05, claude/wp866-reserve; LANDED 2026-11-06)
 - WP-867 — unresolved-master-strike-diagnostic (a Master Strike whose mastermind has no strike resolver is flagged — a hollow-effect record and a visible log line — instead of silently doing nothing; strike-provenance coverage feed. reserved 2026-11-06, claude/wp867-reserve)
 - WP-868 — villain-hq-cost-discard-ko-reenter (villain Fight/Ambush lines that log unmarked-ability hollows: Heroes in the HQ cost N less or more this turn, a mandatory KO from your discard pile, and Mr. Immortal reentering the Sewers off a Villain Deck reveal. reserved 2026-11-06, claude/wp868-reserve)
+- WP-869 — converted-bystander-villain-split-groot (chmp Groot from Planet X Fight: two Bystanders from the Bystander Stack enter the city as 3-Attack "Splintered Half-Groot" Villains; fighting one rescues it as a Bystander. reserved 2026-11-06, claude/wp869-reserve)
+- WP-871 — villain-fight-restriction-gate (Orrgo "unless you have already defeated another Villain this turn", Squirrel Girl "if you played more than one card this turn", Doop "if there is a Villain in an adjacent city space": a state-only fight precondition gating fightVillain, getLegalMoves and the City Fight button. reserved 2026-11-06, claude/wp871-reserve)
 
 ## EC
 
@@ -973,9 +975,11 @@ high-water: 457
 - EC-903 — heist-keyword (WP-865. reserved 2026-11-05, claude/wp865-reserve; LANDED 2026-11-06)
 - EC-900 — size-changing-runtime-grants (WP-862. reserved 2026-11-05, claude/wp862-reserve; LANDED 2026-11-05)
 - EC-902 — demolish-keyword (WP-864. reserved 2026-11-05, claude/wp864-reserve)
-- EC-904 — hero-next-hand-extra-draw (WP-866. reserved 2026-11-05, claude/wp866-reserve)
+- EC-904 — hero-next-hand-extra-draw (WP-866. reserved 2026-11-05, claude/wp866-reserve; LANDED 2026-11-06)
 - EC-905 — unresolved-master-strike-diagnostic (WP-867. reserved 2026-11-06, claude/wp867-reserve)
 - EC-906 — villain-hq-cost-discard-ko-reenter (WP-868. reserved 2026-11-06, claude/wp868-reserve)
+- EC-907 — converted-bystander-villain-split-groot (WP-869. reserved 2026-11-06, claude/wp869-reserve)
+- EC-909 — villain-fight-restriction-gate (WP-871. reserved 2026-11-06, claude/wp871-reserve)
 
 ## D
 
@@ -1561,7 +1565,10 @@ section below) and the allocation protocol in
 - D-24808 — heist-keyword (WP-865; Heist lines fuse into an enrol-at-play hook fired by the attemptHeist move, the Heist Count and revealed-card VP rules, the allowlisted cards, and the non-allowlisted Heist lines as honest hollows. reserved 2026-11-05, claude/wp865-reserve; LANDED 2026-11-06)
 - D-24804 — size-changing-runtime-grants (WP-862; an HQ Size-Changing grant overlay keyed by the copy-unique Hero id, read by resolveRecruitCost while the card is in the HQ, cleared at end of turn or when the card leaves the HQ. reserved 2026-11-05, claude/wp862-reserve; LANDED 2026-11-05)
 - D-24807 — demolish-keyword (WP-864; one shared Demolish resolver, its auto-picked discard, the Fin Fang Foom repeat count, and the demolish-each-player villain primitive. reserved 2026-11-05, claude/wp864-reserve)
-- D-24809 — hero-next-hand-extra-draw (WP-866; the hero next-hand-extra-draw keyword writes (handSizeOverrides[player] ?? HAND_SIZE) + N at play, consumed by the existing end-of-turn fill, no new G field; keyword-timed lines stay out of scope. reserved 2026-11-05, claude/wp866-reserve)
+- D-24809 — hero-next-hand-extra-draw (WP-866; the hero next-hand-extra-draw keyword writes (handSizeOverrides[player] ?? HAND_SIZE) + N at play, consumed by the existing end-of-turn fill, no new G field; keyword-timed lines stay out of scope. reserved 2026-11-05, claude/wp866-reserve; LANDED 2026-11-06)
 - D-24803 — henchman-variant-copies (direct fix, no WP — a henchman group printed as per-class or unique variant cards maps its 10 copies to the variants in contiguous blocks, so each copy carries its own name, image, abilities and Size-Changing fight discount; ext_ids unchanged. reserved 2026-11-05, claude/henchman-variants-reserve; LANDED 2026-11-05)
 - D-24810 — unresolved-master-strike-diagnostic (WP-867; how an unresolved Master Strike is recorded and surfaced, and its replay-hash consequence. reserved 2026-11-06, claude/wp867-reserve)
 - D-24811 — villain-hq-cost-discard-ko-reenter (WP-868; the HQ cost-change overlay and its recruit-price order, the mandatory KO-from-discard minimum, and the reenter-the-Sewers fire-site bridge. reserved 2026-11-06, claude/wp868-reserve)
+- D-24813 — tactic-next-hand-extra-cards (direct fix, no WP — four mastermind tactics that print "draw two/three extra cards" on your next hand (cvwr Cursed Dynasty, mgtg I'm a Celestial, Sweetheart, msis Hear Me and Rejoice, co2e Treasures of Latveria) dispatch to the core Treasures of Latveria additive handSizeOverrides writer; Ego's destroy-a-city-space line and Ebony Maw's Endgame +3 stay deferred. reserved 2026-11-06, claude/vigorous-heisenberg-54acc4)
+- D-24814 — converted-bystander-villain-split-groot (WP-869; a Villain Fight that turns Bystander Stack cards into fixed-Attack Villains entering the city, and their defeat routing (rescued as a Bystander) and escape routing. reserved 2026-11-06, claude/wp869-reserve)
+- D-24816 — villain-fight-restriction-gate (WP-871; the [fight-restriction:<kind>] marker, the G.villainFightRestrictions table, the three kinds and their turn reads, the fight-only scope, and the public UICityCard projection. reserved 2026-11-06, claude/wp871-reserve)

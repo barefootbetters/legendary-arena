@@ -3,18 +3,18 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2066,
+    "totalEntries": 2076,
     "byScope": {
-      "hero": 849,
+      "hero": 859,
       "villain": 761,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 720,
-      "deferred": 16,
+      "executable": 735,
+      "deferred": 17,
       "condition": 58,
       "unsupported": 280,
-      "unmarked": 987,
+      "unmarked": 981,
       "subsystem": 5
     }
   },
@@ -1525,6 +1525,23 @@
       ]
     },
     {
+      "extId": "amwp/freedom-fighters",
+      "name": "Freedom Fighters",
+      "set": "amwp",
+      "scope": "hero",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "designs": [
+        {
+          "slug": "mystics",
+          "name": "Mystics"
+        }
+      ]
+    },
+    {
       "extId": "amwp/janet-van-dyne",
       "name": "Janet van Dyne",
       "set": "amwp",
@@ -1670,6 +1687,23 @@
           "slug": "hope-returns",
           "name": "Hope Returns"
         },
+        {
+          "slug": "infiltrate",
+          "name": "Infiltrate"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/wasp",
+      "name": "Wasp",
+      "set": "amwp",
+      "scope": "hero",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "designs": [
         {
           "slug": "infiltrate",
           "name": "Infiltrate"
@@ -5801,6 +5835,23 @@
       "name": "Viv Vision",
       "set": "chmp",
       "scope": "hero",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "designs": [
+        {
+          "slug": "expanding-neural-network",
+          "name": "Expanding Neural Network"
+        }
+      ]
+    },
+    {
+      "extId": "chmp/viv-vision",
+      "name": "Viv Vision",
+      "set": "chmp",
+      "scope": "hero",
       "mechanic": "size-changing",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
@@ -5873,10 +5924,10 @@
       "set": "co2e",
       "scope": "mastermind",
       "mechanic": "treasures-of-latveria",
-      "status": "unmarked",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveTreasuresOfLatveria",
       "wp": "",
-      "decision": ""
+      "decision": "D-24813"
     },
     {
       "extId": "co2e-mastermind-doctor-octopus-absolute-octarchy",
@@ -7018,11 +7069,17 @@
       "name": "Spider-Man (Miles Morales)",
       "set": "co2e",
       "scope": "hero",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "designs": [
+        {
+          "slug": "web-trap",
+          "name": "Web-Trap"
+        }
+      ]
     },
     {
       "extId": "co2e/storm",
@@ -8898,6 +8955,23 @@
       ]
     },
     {
+      "extId": "cosm/adam-warlock",
+      "name": "Adam Warlock",
+      "set": "cosm",
+      "scope": "hero",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "designs": [
+        {
+          "slug": "regenerative-cocoon",
+          "name": "Regenerative Cocoon"
+        }
+      ]
+    },
+    {
       "extId": "cosm/captain-mar-vell",
       "name": "Captain Mar-Vell",
       "set": "cosm",
@@ -9188,10 +9262,10 @@
       "set": "cvwr",
       "scope": "mastermind",
       "mechanic": "cursed-dynasty",
-      "status": "unmarked",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveNextHandExtraCardsTactic",
       "wp": "",
-      "decision": ""
+      "decision": "D-24813"
     },
     {
       "extId": "cvwr-mastermind-baron-helmut-zemo-endless-minions",
@@ -13333,11 +13407,17 @@
       "name": "Groot",
       "set": "gotg",
       "scope": "hero",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "designs": [
+        {
+          "slug": "surviving-sprig",
+          "name": "Surviving Sprig"
+        }
+      ]
     },
     {
       "extId": "gotg/rocket-raccoon",
@@ -14813,10 +14893,10 @@
       "set": "mgtg",
       "scope": "mastermind",
       "mechanic": "im-a-celestial-sweetheart",
-      "status": "unmarked",
-      "handler": "",
+      "status": "deferred",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveNextHandExtraCardsTactic",
       "wp": "",
-      "decision": ""
+      "decision": "D-24813"
     },
     {
       "extId": "mgtg-mastermind-ego-the-living-planet-the-expansion-is-my-purpose",
@@ -15405,10 +15485,10 @@
       "set": "msis",
       "scope": "mastermind",
       "mechanic": "hear-me-and-rejoice",
-      "status": "unmarked",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveNextHandExtraCardsTactic",
       "wp": "",
-      "decision": ""
+      "decision": "D-24813"
     },
     {
       "extId": "msis-mastermind-ebony-maw-smile-even-in-death",
@@ -16805,6 +16885,23 @@
         {
           "slug": "superhuman-senses",
           "name": "Superhuman Senses"
+        }
+      ]
+    },
+    {
+      "extId": "msmc/warpath",
+      "name": "Warpath",
+      "set": "msmc",
+      "scope": "hero",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "designs": [
+        {
+          "slug": "endless-endurance",
+          "name": "Endless Endurance"
         }
       ]
     },
@@ -19113,6 +19210,23 @@
         {
           "slug": "trample-underhoof",
           "name": "Trample Underhoof"
+        }
+      ]
+    },
+    {
+      "extId": "rlmk/karnak",
+      "name": "Karnak",
+      "set": "rlmk",
+      "scope": "hero",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "designs": [
+        {
+          "slug": "brilliant-strategist",
+          "name": "Brilliant Strategist"
         }
       ]
     },
@@ -22701,6 +22815,23 @@
       "name": "Captain Britain",
       "set": "ssw2",
       "scope": "hero",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "designs": [
+        {
+          "slug": "lead-the-captain-britain-corps",
+          "name": "Lead the Captain Britain Corps"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/captain-britain",
+      "name": "Captain Britain",
+      "set": "ssw2",
+      "scope": "hero",
       "mechanic": "patrol",
       "status": "unsupported",
       "handler": "",
@@ -23694,6 +23825,23 @@
         {
           "slug": "crazed-experiments",
           "name": "Crazed Experiments"
+        }
+      ]
+    },
+    {
+      "extId": "vill/dr-octopus",
+      "name": "Dr. Octopus",
+      "set": "vill",
+      "scope": "hero",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "designs": [
+        {
+          "slug": "brilliant-research",
+          "name": "Brilliant Research"
         }
       ]
     },
@@ -26925,6 +27073,23 @@
       "name": "Bruce Banner",
       "set": "wwhk",
       "scope": "hero",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "designs": [
+        {
+          "slug": "solve-the-impossible",
+          "name": "Solve the Impossible"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/bruce-banner",
+      "name": "Bruce Banner",
+      "set": "wwhk",
+      "scope": "hero",
       "mechanic": "outwit",
       "status": "condition",
       "handler": "",
@@ -29453,6 +29618,23 @@
       "name": "Polaris",
       "set": "xmen",
       "scope": "hero",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "designs": [
+        {
+          "slug": "ride-the-magnetic-waves",
+          "name": "Ride the Magnetic Waves"
+        }
+      ]
+    },
+    {
+      "extId": "xmen/polaris",
+      "name": "Polaris",
+      "set": "xmen",
+      "scope": "hero",
       "mechanic": "piercing-energy",
       "status": "unsupported",
       "handler": "",
@@ -30188,7 +30370,8 @@
     "amwp/freedom-fighters": {
       "scope": "hero",
       "mechanics": [
-        "draw"
+        "draw",
+        "next-hand-extra-draw"
       ]
     },
     "amwp/janet-van-dyne": {
@@ -30217,6 +30400,7 @@
       "mechanics": [
         "first-hero-condition",
         "microscopic-size-changing",
+        "next-hand-extra-draw",
         "size-changing"
       ]
     },
@@ -31305,6 +31489,7 @@
       "scope": "hero",
       "mechanics": [
         "cheering-crowds",
+        "next-hand-extra-draw",
         "size-changing",
         "versatile"
       ]
@@ -31718,7 +31903,7 @@
     "co2e/spider-man-miles-morales": {
       "scope": "hero",
       "mechanics": [
-        "(unmarked)"
+        "next-hand-extra-draw"
       ]
     },
     "co2e/storm": {
@@ -32318,7 +32503,8 @@
       "scope": "hero",
       "mechanics": [
         "burn-shards",
-        "discard-to-play"
+        "discard-to-play",
+        "next-hand-extra-draw"
       ]
     },
     "cosm/captain-mar-vell": {
@@ -33870,7 +34056,7 @@
     "gotg/groot": {
       "scope": "hero",
       "mechanics": [
-        "(unmarked)"
+        "next-hand-extra-draw"
       ]
     },
     "gotg/rocket-raccoon": {
@@ -35026,6 +35212,7 @@
       "scope": "hero",
       "mechanics": [
         "investigate",
+        "next-hand-extra-draw",
         "tactical-formation"
       ]
     },
@@ -35852,6 +36039,7 @@
     "rlmk/karnak": {
       "scope": "hero",
       "mechanics": [
+        "next-hand-extra-draw",
         "when-recruited-abilities"
       ]
     },
@@ -37116,6 +37304,7 @@
     "ssw2/captain-britain": {
       "scope": "hero",
       "mechanics": [
+        "next-hand-extra-draw",
         "patrol"
       ]
     },
@@ -37483,7 +37672,8 @@
     "vill/dr-octopus": {
       "scope": "hero",
       "mechanics": [
-        "draw"
+        "draw",
+        "next-hand-extra-draw"
       ]
     },
     "vill/electro": {
@@ -38644,6 +38834,7 @@
     "wwhk/bruce-banner": {
       "scope": "hero",
       "mechanics": [
+        "next-hand-extra-draw",
         "outwit",
         "reveal-ko",
         "smash",
@@ -39232,6 +39423,7 @@
       "scope": "hero",
       "mechanics": [
         "draw",
+        "next-hand-extra-draw",
         "piercing-energy",
         "soaring-flight",
         "x-gene"

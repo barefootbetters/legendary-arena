@@ -11,7 +11,7 @@ prompt; no auth, money, persistence or server surface
       (cvwr `great-lakes-avengers` holds Big Bertha); if WP-864 merged too, rebase and leave its marker lines as they are.
 - [ ] `pnpm -r build`, game-engine / arena-client / dashboard `test` exit 0 (game-engine 6387 / 0 at draft); then 0:
       `pnpm --filter @legendary-arena/arena-client typecheck`
-- [ ] Re-read at HEAD: `VILLAIN_EFFECT_PRIMITIVES` (39 at draft; 40 if WP-864 landed) and its length pins; the marker script's
+- [ ] Re-read at HEAD: `VILLAIN_EFFECT_PRIMITIVES` (39 at draft; +1 each for WP-864 / WP-869 if landed) and its length pins; the marker script's
       copy and `isValidParameterizedEffectToken`; `resolveRecruitCost`; `matchHasSizeChangingCard`; `resolveKoDiscardChoice`;
       `selectDefaultKoDiscardCardIds`; `DELIBERATE_NO_OP_VILLAIN_PRIMITIVES`; the end of `defeatCityVillainCore`.
 
