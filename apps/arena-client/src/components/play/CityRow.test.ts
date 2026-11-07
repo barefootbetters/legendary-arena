@@ -1598,6 +1598,7 @@ describe('WP-871 CityRow — fight restriction (D-24816)', () => {
     });
   }
 
+  /** Finds Doop's villain button in a mounted row. */
   function doopButton(wrapper: ReturnType<typeof mount>) {
     return wrapper.find('[data-testid="play-city-villain"][data-card-id="doop"]');
   }

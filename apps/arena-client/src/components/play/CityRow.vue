@@ -301,6 +301,12 @@ export default defineComponent({
       return eligibleDiscardCards(fightDiscardCosts).length === 0;
     }
 
+    /**
+     * Whether the fight-restriction cue shows on a cell (WP-871 / D-24816).
+     *
+     * @param cell - The City cell.
+     * @returns True for a restricted villain in the viewer's Main stage with no heal lock.
+     */
     function isFightRestricted(cell: CityCell): boolean {
       // why (Jeff feedback, match OSth9-iV03C): a reason only in the tooltip is not
       // enough. WP-871 / D-24816 — the restriction cue shows in the window where it
@@ -659,7 +665,12 @@ export default defineComponent({
             <span
               v-if="isFightRestricted(cell)"
               class="city-space__fight-restriction"
-              :class="{ 'city-space__fight-restriction--stacked': hasFightCostBadge(cell) }"
+              :class="{
+                'city-space__fight-restriction--stacked':
+                  hasFightCostBadge(cell) !== (cell.card.fightDiscardCosts !== undefined),
+                'city-space__fight-restriction--stacked-twice':
+                  hasFightCostBadge(cell) && cell.card.fightDiscardCosts !== undefined,
+              }"
               data-testid="play-city-fight-restriction"
               :title="cell.card.fightRestrictionReason"
             >Can't fight yet</span>
@@ -1004,9 +1015,14 @@ export default defineComponent({
   animation: city-space__fight-cost-pulse 700ms ease-out 1;
 }
 
-/* why: clears the Fight N badge below it, including its larger loud state. */
+/* why: clears one pill below it (the Fight N badge or the Discard cue), including the
+   badge's larger loud state; --stacked-twice clears both. */
 .city-space__fight-restriction--stacked {
   bottom: 1.45rem;
+}
+
+.city-space__fight-restriction--stacked-twice {
+  bottom: 2.85rem;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -926,7 +926,7 @@ export function buildUIState(
   // exposing the raw villainDeckCardTypes or cardKeywords maps
   const citySpaces: (UICityCard | null)[] = [];
   for (let cityIndex = 0; cityIndex < gameState.city.length; cityIndex++) {
-    const space = gameState.city[cityIndex]!;
+    const space = gameState.city[cityIndex] ?? null;
     if (space === null) {
       citySpaces.push(null);
     } else {
