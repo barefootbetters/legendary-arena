@@ -2054,7 +2054,7 @@
           "vAttack": "2",
           "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-vi-deadpools-secret-secret-wars-doop.webp",
           "abilities": [
-            "You can't fight Doop if there is a Villain in an adjacent city space."
+            "You can't fight Doop if there is a Villain in an adjacent city space. [fight-restriction:no-adjacent-villain]"
           ],
           "copies": 2
         },

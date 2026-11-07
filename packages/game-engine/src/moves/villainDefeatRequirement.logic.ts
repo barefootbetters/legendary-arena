@@ -16,11 +16,14 @@ import type { CardExtId } from '../state/zones.types.js';
 import type {
   VillainDefeatRequirement,
   VillainFightDiscardCost,
+  VillainFightRestriction,
+  VillainFightRestrictionKind,
 } from '../rules/villainAbility.types.js';
 import {
   offPlayCardStats,
   offPlayCardTraits,
   playedCardIdsStillInPlay,
+  playedCardIdsThisTurn,
 } from '../hero/splitCard.logic.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { cardHasTeamWhenPlayed } from '../hero/effectiveTeams.logic.js';
@@ -268,4 +271,157 @@ export function formatEligibleCostList(eligibleCosts: readonly number[]): string
   }
   const leadingCosts = eligibleCosts.slice(0, -1).map((cost) => String(cost)).join(', ');
   return `${leadingCosts}, or ${eligibleCosts[eligibleCosts.length - 1]}`;
+}
+
+// ---------------------------------------------------------------------------
+// Fight restriction (WP-871 / D-24816)
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the fight restriction for a villain instance, or null when it has none
+ * (the common case — only Orrgo, Squirrel Girl and Doop are marked).
+ *
+ * @param state - The runtime game state.
+ * @param cardId - The villain instance ext_id being fought.
+ * @returns The fight restriction, or null.
+ */
+export function getFightRestriction(
+  state: LegendaryGameState,
+  cardId: CardExtId,
+): VillainFightRestriction | null {
+  // why: D-24816 — villainFightRestrictions is omitted entirely when no marked villain
+  // is in the match, so a missing table OR a missing entry both mean "no restriction".
+  return state.villainFightRestrictions?.[cardId] ?? null;
+}
+
+/**
+ * Returns whether any villain in the match carries a fight restriction of a kind.
+ *
+ * @param state - The runtime game state.
+ * @param kind - The restriction kind to look for.
+ * @returns True when any entry of G.villainFightRestrictions has that kind.
+ */
+export function matchHasFightRestrictionKind(
+  state: LegendaryGameState,
+  kind: VillainFightRestrictionKind,
+): boolean {
+  const restrictions = state.villainFightRestrictions;
+  if (restrictions === undefined) {
+    return false;
+  }
+  for (const restriction of Object.values(restrictions)) {
+    if (restriction.kind === kind) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Returns whether a villain's printed fight restriction blocks a player's fight
+ * of the villain at a City index right now.
+ *
+ * The SINGLE authority for the three restriction predicates: fightVillain,
+ * getLegalMoves and the UIState City projection all call it, and none re-tests
+ * adjacency, a played-card count or the defeat flag inline.
+ *
+ * @param state - The runtime game state.
+ * @param playerId - The player attempting the fight (`ctx.currentPlayer`).
+ * @param cityIndex - The City index of the restricted villain.
+ * @param restriction - The villain's fight restriction.
+ * @returns True when the fight is blocked.
+ */
+export function isFightRestrictionBlocking(
+  state: LegendaryGameState,
+  playerId: string,
+  cityIndex: number,
+  restriction: VillainFightRestriction,
+): boolean {
+  switch (restriction.kind) {
+    case 'requires-villain-defeated-this-turn':
+      // why: D-24816 — the flag is set only by defeatCityVillainCore (a fought OR a
+      // free-defeated City Villain); a Mastermind defeat never sets it, because the
+      // Mastermind is not a Villain ("defeated another Villain").
+      return state.turnEconomy.hasDefeatedVillainThisTurn !== true;
+    case 'at-most-one-card-played':
+      // why: D-24776 / D-24794 — "played more than one card this turn" reads the one
+      // played-this-turn authority, not inPlay.length: a returned Sidekick, an Out of Time
+      // card or a used Ritual Artifact still counts as played. Inherited residual (D-24692):
+      // a played card that left play another way (e.g. a self-KO) stops counting.
+      return playedCardIdsThisTurn(state, state.playerZones[playerId]?.inPlay ?? []).length > 1;
+    case 'no-adjacent-villain':
+      return isAdjacentCitySpaceOccupied(state, cityIndex);
+    default: {
+      // why: compile-time exhaustiveness — a future kind added to
+      // VillainFightRestrictionKind without its arm here fails `tsc` on this
+      // assignment instead of silently never blocking. Intentionally unused (no
+      // tsconfig sets noUnusedLocals).
+      const unhandledKind: never = restriction.kind;
+      return false;
+    }
+  }
+}
+
+/**
+ * Returns whether either neighbouring City space of an index holds a Villain.
+ *
+ * @param state - The runtime game state.
+ * @param cityIndex - The City index whose neighbours are read.
+ * @returns True when the space at `cityIndex - 1` or `cityIndex + 1` is occupied.
+ */
+function isAdjacentCitySpaceOccupied(state: LegendaryGameState, cityIndex: number): boolean {
+  // why: WP-831 / D-24764 — the City may be longer than five spaces; adjacency is
+  // index ± 1 bounded inside G.city.length, so a read past either end never counts.
+  if (cityIndex > 0) {
+    const leftCardId = state.city[cityIndex - 1];
+    if (leftCardId !== null && leftCardId !== undefined) {
+      return true;
+    }
+  }
+  if (cityIndex + 1 < state.city.length) {
+    const rightCardId = state.city[cityIndex + 1];
+    if (rightCardId !== null && rightCardId !== undefined) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// why: D-24816 — engine-owned public copy: every predicate input (cards played, the
+// City, Villains defeated) is public, so the engine projects the reason to every
+// audience and the client renders it verbatim (D-24574: gate on projected data).
+/** The player-facing reason shown while each fight restriction blocks. */
+export const FIGHT_RESTRICTION_REASONS: Readonly<Record<VillainFightRestrictionKind, string>> = {
+  'requires-villain-defeated-this-turn': 'Defeat another Villain first this turn',
+  'at-most-one-card-played': 'You played more than one card this turn',
+  'no-adjacent-villain': 'A Villain is in an adjacent city space',
+};
+
+/**
+ * Returns the reason a player can't fight the City card at an index right now,
+ * or null when its fight restriction does not block.
+ *
+ * @param state - The runtime game state.
+ * @param playerId - The player attempting the fight (`ctx.currentPlayer`).
+ * @param cityIndex - The City index to read.
+ * @returns The locked reason string while the restriction blocks; null for an
+ *   empty space, an unrestricted villain, or a restriction that does not block.
+ */
+export function getFightRestrictionBlockReason(
+  state: LegendaryGameState,
+  playerId: string,
+  cityIndex: number,
+): string | null {
+  const cardId = state.city[cityIndex];
+  if (cardId === null || cardId === undefined) {
+    return null;
+  }
+  const restriction = getFightRestriction(state, cardId);
+  if (restriction === null) {
+    return null;
+  }
+  if (!isFightRestrictionBlocking(state, playerId, cityIndex, restriction)) {
+    return null;
+  }
+  return FIGHT_RESTRICTION_REASONS[restriction.kind];
 }

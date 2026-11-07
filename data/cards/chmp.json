@@ -771,7 +771,7 @@
           "vAttack": "2",
           "imageUrl": "https://images.legendary-arena.com/chmp/chmp-vi-monsters-unleashed-orrgo.webp",
           "abilities": [
-            "You can't fight Orrgo unless you have already defeated another Villain this turn."
+            "You can't fight Orrgo unless you have already defeated another Villain this turn. [fight-restriction:requires-villain-defeated-this-turn]"
           ],
           "copies": 1
         },

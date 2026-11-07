@@ -122,6 +122,12 @@ function deepCopyCitySpaces(
         ...(space.fightDiscardCosts !== undefined
           ? { fightDiscardCosts: [...space.fightDiscardCosts] }
           : {}),
+        // why: WP-871 / D-24816 — the public fight-restriction reason MUST pass through
+        // here or the whitelist drops it (five-step contract, step 3): the Fight button
+        // would look enabled while the engine refuses the fight. Every audience.
+        ...(space.fightRestrictionReason !== undefined
+          ? { fightRestrictionReason: space.fightRestrictionReason }
+          : {}),
       });
     }
   }

@@ -34,6 +34,8 @@ import {
   recordRitualUsedPlayed,
   enrollHeistCard,
   markHeistAttempted,
+  recordVillainDefeated,
+  spendFightCostForTarget,
 } from './economy.logic.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 
@@ -970,5 +972,26 @@ describe('enrollHeistCard / markHeistAttempted (WP-865 / D-24808)', () => {
     const roundTripped = JSON.parse(JSON.stringify(spendRecruit(addResources(base, 1, 1), 1))) as Record<string, unknown>;
     assert.strictEqual(Object.keys(roundTripped).includes('heistCrewCards'), false);
     assert.strictEqual(Object.keys(roundTripped).includes('hasAttemptedHeistThisTurn'), false);
+  });
+});
+
+describe('WP-871 recordVillainDefeated (D-24816)', () => {
+  it('T5: the flag is set, other lazy fields are kept, it survives the fight-cost spend, and reset drops it', () => {
+    const before = {
+      ...addResources(resetTurnEconomy(), 5, 0),
+      sidekicksReturnedThisTurn: 1,
+      restrictedAttack: [{ remaining: 2, targets: ['bridge' as const], sourceCardId: 'hero-a' }],
+    };
+    const recorded = recordVillainDefeated(before);
+    assert.strictEqual(recorded.hasDefeatedVillainThisTurn, true);
+    assert.strictEqual(recorded.sidekicksReturnedThisTurn, 1, 'the returned-Sidekick count is carried');
+    assert.deepStrictEqual(recorded.restrictedAttack, before.restrictedAttack, 'the restricted ledger is carried');
+    assert.strictEqual('hasDefeatedVillainThisTurn' in before, false, 'the input is not mutated');
+    // why: fightVillain rebuilds the economy with spendFightCostForTarget AFTER the defeat
+    // core records the flag; the carry chokepoint is what keeps it.
+    const afterSpend = spendFightCostForTarget(recorded, 2, 'sewers');
+    assert.strictEqual(afterSpend.hasDefeatedVillainThisTurn, true, 'the flag survives the fight-cost spend');
+    const reset = resetTurnEconomy();
+    assert.strictEqual('hasDefeatedVillainThisTurn' in reset, false, 'resetTurnEconomy drops the flag');
   });
 });

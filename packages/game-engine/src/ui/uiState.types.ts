@@ -668,6 +668,14 @@ export interface UICityCard {
    * without a fight discard cost.
    */
   fightDiscardCosts?: number[];
+  /**
+   * WP-871 / D-24816 — present only while the villain's printed fight restriction
+   * (Orrgo, Squirrel Girl, Doop) blocks the current player's fight; the
+   * engine-written reason the client shows as the Fight button's tooltip. Built
+   * from public state (cards played this turn, the City, Villains defeated this
+   * turn), so every audience sees it.
+   */
+  fightRestrictionReason?: string;
 }
 
 /**

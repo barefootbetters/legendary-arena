@@ -21,7 +21,7 @@ import { formatCardRef } from '../log/logDisplay.js';
 import { SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
 import { awardAttachedBystanders } from '../board/bystanders.logic.js';
 import { awardAttachedHeroes } from '../board/heroCapture.logic.js';
-import { getSpendableAttackForTarget, spendFightCostForTarget, markExcessiveViolenceUsed, spendRecruit, addResources } from '../economy/economy.logic.js';
+import { getSpendableAttackForTarget, spendFightCostForTarget, markExcessiveViolenceUsed, spendRecruit, addResources, recordVillainDefeated } from '../economy/economy.logic.js';
 import type { AttackTargetName } from '../economy/economy.types.js';
 import { UNNAMED_CITY_SPACE_TARGET } from '../economy/economy.types.js';
 import {
@@ -42,6 +42,9 @@ import {
   playerMeetsDefeatRequirement,
   getFightDiscardCost,
   isHandCardCostOneOf,
+  getFightRestriction,
+  isFightRestrictionBlocking,
+  matchHasFightRestrictionKind,
 } from './villainDefeatRequirement.logic.js';
 // why: WP-817 / D-24750 — Primus's fight discard cost goes through the one card-effect
 // hand→discard chokepoint, so return-on-discard and the discarded-this-turn counter fire.
@@ -218,6 +221,15 @@ export function fightVillain(
     defeatRequirement !== null &&
     !playerMeetsDefeatRequirement(G, ctx.currentPlayer, defeatRequirement)
   ) {
+    return;
+  }
+
+  // why: WP-871 / D-24816 — the villain's printed fight restriction (Orrgo, Squirrel
+  // Girl, Doop) is a state-only pre-commit precondition (no move argument): a silent
+  // return before any G write, no message, no throw. isFightRestrictionBlocking is the
+  // single authority, shared with getLegalMoves and the City projection.
+  const fightRestriction = getFightRestriction(G, cardId);
+  if (fightRestriction !== null && isFightRestrictionBlocking(G, ctx.currentPlayer, cityIndex, fightRestriction)) {
     return;
   }
 
@@ -578,6 +590,14 @@ export function defeatCityVillainCore(
   // why: MVP has no attack point check; WP-018 adds the economy. Any player
   // can fight any occupied City space without spending attack points.
   G.city[cityIndex] = null;
+  // why: WP-871 / D-24816 — record "defeated a Villain this turn" for Orrgo's fight
+  // restriction. Lazy: only in a match with that restriction, so every other match keeps
+  // the key absent. Here in the core, so a free defeat (Silent Sniper, Cruel Ruler) counts
+  // as a defeat too, while the restriction itself is never checked here (D-24737: a free
+  // defeat ignores fight restrictions).
+  if (matchHasFightRestrictionKind(G, 'requires-villain-defeated-this-turn')) {
+    G.turnEconomy = recordVillainDefeated(G.turnEconomy);
+  }
   // why: WP-514 / D-24327 — Secret Invasion "If you defeat that Hero, you gain it":
   // a defeated Skrull (a Hero acting as a villain) routes to the defeating player's
   // DISCARD instead of the victory pile, and its conversion overlay is cleared (it is
