@@ -1173,6 +1173,31 @@ describe('filterUIStateForAudience — pendingKoDiscardChoice redaction (D-24510
     assert.equal(Object.hasOwn(plainChoice, 'isLimitedToDiscardedThisWay'), false,
       'no isLimitedToDiscardedThisWay key on a Loki / Salomé / grey entry');
   });
+
+  it('WP-868 / D-24811: minCount survives for the chooser only; absent on an "up to" entry', () => {
+    const config = createTestConfig();
+    const gameState = buildInitialGameState(config, createMockRegistry(), makeMockCtx());
+    gameState.playerZones['0']!.discard = ['flatman-discard-a' as CardExtId, 'flatman-discard-b' as CardExtId];
+    gameState.pendingKoDiscardChoices = [{
+      choiceType: 'ko-from-discard', playerID: '0', maxCount: 1, minCount: 1,
+      sourceCardId: 'cvwr-villain-great-lakes-avengers-flatman-00' as CardExtId,
+    }];
+    const mandatoryUIState = buildUIState(gameState, mockCtx);
+    assert.equal(mandatoryUIState.pendingKoDiscardChoice!.minCount, 1, 'buildUIState projects minCount');
+    const chooserChoice = filterUIStateForAudience(mandatoryUIState, PLAYER_0).pendingKoDiscardChoice!;
+    assert.equal(chooserChoice.minCount, 1, 'the filter passes minCount through to the chooser');
+    assert.equal(chooserChoice.maxCount, 1);
+    assert.equal(Object.hasOwn(filterUIStateForAudience(mandatoryUIState, PLAYER_1), 'pendingKoDiscardChoice'), false);
+    assert.equal(Object.hasOwn(filterUIStateForAudience(mandatoryUIState, SPECTATOR), 'pendingKoDiscardChoice'), false);
+
+    // why: the WP-850 omit-when-absent precedent — a Salomé "up to" entry carries no minCount key.
+    gameState.pendingKoDiscardChoices = [{
+      choiceType: 'ko-from-discard', playerID: '0', maxCount: 2,
+      sourceCardId: 'mdns-villain-fallen-salom-sorceress-supreme-00' as CardExtId,
+    }];
+    const salomeChoice = filterUIStateForAudience(buildUIState(gameState, mockCtx), PLAYER_0).pendingKoDiscardChoice!;
+    assert.equal(Object.hasOwn(salomeChoice, 'minCount'), false, 'no minCount key on an "up to" entry');
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -378,7 +378,10 @@ export type VillainEffectPrimitive =
   | 'discard-hero-or-wound-each-player-by-trait'
   | 'discard-hand-matching-hq-card-names-each-player'
   | 'hq-heroes-to-hero-deck-bottom'
-  | 'hq-hero-gains-size-changing';
+  | 'hq-hero-gains-size-changing'
+  | 'hq-heroes-cost-change'
+  | 'ko-from-discard-current'
+  | 'reenter-sewers-if-villain-deck-top';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -524,6 +527,18 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   // price. Keyword-less, so it self-narrates. The marker script's hand-synced copy
   // (`scripts/convert-cards/apply-effect-markers.mjs`) appends it at the same position.
   'hq-hero-gains-size-changing',
+  // why: WP-868 / D-24811 — appended at positions 40, 41 and 42. Tim Boo Ba / Jormungand /
+  // Dr. Carlton Drake Fight and The Mind Stone Ambush (`hq-heroes-cost-change:<less|more>:<N>
+  // [:<c>[+<c>…]]`: the Heroes in the HQ when it fires cost N less or more to recruit this turn),
+  // Flatman and six siblings' Fight (`ko-from-discard-current:<N>`: the mandatory "KO a card from
+  // your discard pile") and Mr. Immortal's Fight (`reenter-sewers-if-villain-deck-top:<kinds>`: a
+  // DELIBERATE NO-OP in the executor; the bridge at the end of defeatCityVillainCore reveals the
+  // Villain Deck top and moves him back into the Sewers on a match). All three keyword-less. The
+  // marker script's hand-synced copy (`scripts/convert-cards/apply-effect-markers.mjs`) appends
+  // them at the same positions.
+  'hq-heroes-cost-change',
+  'ko-from-discard-current',
+  'reenter-sewers-if-villain-deck-top',
 ] as const;
 
 /**
@@ -747,6 +762,18 @@ export interface VillainEffectDescriptor {
   // is keyword-less, so it reverse-maps to `undefined` and self-narrates regardless.
   sizeChangingGrantMode?: 'if-none' | 'add' | 'replace';
   sizeChangingGrantClasses?: readonly HeroClass[];
+  // why: WP-868 / D-24811 — present ONLY on `{ primitive: 'hq-heroes-cost-change' }` descriptors:
+  // whether the Heroes in the HQ cost `magnitude` less (Tim Boo Ba, Jormungand, Dr. Carlton Drake)
+  // or more (The Mind Stone) this turn, and the optional Hero Classes the change is limited to (Dr.
+  // Carlton Drake: ['instinct', 'tech']; absent means every Hero). Deliberately NOT part of
+  // `descriptorKey` — the primitive is keyword-less, so it self-narrates regardless.
+  costChangeDirection?: 'less' | 'more';
+  costChangeClasses?: readonly HeroClass[];
+  // why: WP-868 / D-24811 — present ONLY on `{ primitive: 'reenter-sewers-if-villain-deck-top' }`
+  // descriptors (Mr. Immortal: ['villain', 'bystander']): the revealed Villain Deck card kinds that
+  // send the defeated card back into the Sewers. `villain` also matches a Henchman (Henchmen are
+  // Villains). Deliberately NOT part of `descriptorKey` — the primitive is keyword-less.
+  reenterRevealKinds?: readonly ('villain' | 'bystander')[];
 }
 
 // why: D-24023 — the frozen legacy-keyword → descriptor translation table. The

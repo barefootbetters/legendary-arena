@@ -1959,6 +1959,39 @@
       "date": "2026-11-06",
       "evidence": "",
       "note": "Live check (NEW match after the deploy): playing Infiltrate logs \"will draw 7 cards on their next hand (+1 extra, Infiltrate …)\"; with nothing else changing the hand size, the end-of-turn hand holds 7 cards (two copies: 8). D-24809."
+    },
+    {
+      "key": "chmp-villain-monsters-unleashed-tim-boo-ba|hq-heroes-cost-change",
+      "kind": "villain",
+      "card": "Tim Boo Ba",
+      "ability": "Fight: All Heroes currently in the HQ cost 1 less this turn.",
+      "wp": "WP-868",
+      "state": "pending",
+      "date": "2026-11-07",
+      "evidence": "",
+      "note": "Live check (NEW match with Monsters Unleashed after the deploy): fighting Tim Boo Ba logs \"Heroes in the HQ cost 1 less this turn (Tim Boo Ba): …\", every HQ price drops by 1 and Recruit unlocks at the lower price; a Hero that refills the HQ later that turn pays full price; prices are printed again next turn. D-24811."
+    },
+    {
+      "key": "cvwr-villain-great-lakes-avengers-flatman|ko-from-discard-current",
+      "kind": "villain",
+      "card": "Flatman",
+      "ability": "Fight: KO a card from your discard pile.",
+      "wp": "WP-868",
+      "state": "pending",
+      "date": "2026-11-07",
+      "evidence": "",
+      "note": "Live check (NEW match with Great Lakes Avengers after the deploy): with two or more distinct cards in the discard, fighting Flatman opens \"KO 1 card from your discard pile\" with no \"KO None\" and submit disabled until a card is picked; Play Diagnostics uiStateSnapshot shows pendingKoDiscardChoice.minCount = 1 while it is open. With one card (or only Wounds) it is KO'd at once. D-24811."
+    },
+    {
+      "key": "cvwr-villain-great-lakes-avengers-mr-immortal|reenter-sewers-if-villain-deck-top",
+      "kind": "villain",
+      "card": "Mr. Immortal",
+      "ability": "Fight: Reveal the top card of the Villain Deck. If it's a Villain or Bystander, Mr. Immortal reenters the Sewers.",
+      "wp": "WP-868",
+      "state": "pending",
+      "date": "2026-11-07",
+      "evidence": "",
+      "note": "Live check (NEW match with Great Lakes Avengers after the deploy): fighting Mr. Immortal logs \"Mr. Immortal revealed <card> from the Villain Deck.\" and the card stays on top; on a Villain, Henchman or Bystander the log adds \"Mr. Immortal reenters the Sewers.\" and he is in the Sewers (not the Victory Pile); otherwise he stays defeated. D-24811."
     }
   ]
 }

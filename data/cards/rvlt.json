@@ -1463,7 +1463,7 @@
           "imageUrl": "https://images.legendary-arena.com/rvlt/rvlt-vi-hoods-gang-the-brothers-grimm.webp",
           "abilities": [
             "To fight The Brothers Grimm, you must also discard two identical cards.",
-            "Fight: You may KO a card from your discard pile."
+            "Fight: You may KO a card from your discard pile. [effect:ko-up-to-from-discard-current:1]"
           ],
           "copies": 1
         },

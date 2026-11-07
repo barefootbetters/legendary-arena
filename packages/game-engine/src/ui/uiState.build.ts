@@ -684,7 +684,12 @@ function matchHasSizeChangingCard(gameState: LegendaryGameState): boolean {
   // why: WP-862 / D-24804 — a Size-Changing granted during play can discount an HQ Hero in a
   // match with no printed Size-Changing card, so an open grant also puts recruitCosts on the board.
   const hasGrant = gameState.hqSizeChangingGrants !== undefined;
-  return sizeChangingCount > 0 || microscopicCount > 0 || hasGrant;
+  // why: WP-868 / D-24811 — a "Heroes currently in the HQ cost N less / more this turn" change
+  // moves an HQ price in a match with no Size-Changing card at all; without recruitCosts the
+  // client prices the slot at its printed cost and gates Recruit wrongly, so an open change also
+  // puts recruitCosts on the board (it is deleted at end-of-turn cleanup, and so is the field).
+  const hasCostChange = gameState.hqCostChanges !== undefined;
+  return sizeChangingCount > 0 || microscopicCount > 0 || hasGrant || hasCostChange;
 }
 
 /**
@@ -1723,6 +1728,10 @@ export function buildUIState(
         // why: WP-850 / D-24786 — tells the prompt the list is "the cards you just discarded";
         // omitted (never an `undefined` or `false` literal) on every other entry.
         ...(frontChoice.eligibleCardIds !== undefined ? { isLimitedToDiscardedThisWay: true } : {}),
+        // why: WP-868 / D-24811 — a mandatory "KO a card from your discard pile" (Flatman) tells
+        // the prompt it cannot submit fewer than the required count or offer "KO None"; omitted
+        // (never an `undefined` literal) on every "up to N" entry.
+        ...(frontChoice.minCount !== undefined ? { minCount: frontChoice.minCount } : {}),
         discard,
       };
     }

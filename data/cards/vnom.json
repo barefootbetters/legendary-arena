@@ -739,7 +739,7 @@
           "vAttack": "5",
           "imageUrl": "https://images.legendary-arena.com/vnom/vnom-vi-life-foundation-dr-carlton-drake.webp",
           "abilities": [
-            "Fight: Each [hc:instinct] and [hc:tech] Hero currently in the HQ costs 1 less this turn."
+            "Fight: Each [hc:instinct] and [hc:tech] Hero currently in the HQ costs 1 less this turn. [effect:hq-heroes-cost-change:less:1:instinct+tech]"
           ],
           "copies": 1
         },

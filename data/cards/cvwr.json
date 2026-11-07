@@ -2495,7 +2495,7 @@
           "imageUrl": "https://images.legendary-arena.com/cvwr/cvwr-vi-great-lakes-avengers-flatman.webp",
           "abilities": [
             "[keyword:Size-Changing]: [hc:covert]",
-            "Fight: KO a card from your discard pile."
+            "Fight: KO a card from your discard pile. [effect:ko-from-discard-current:1]"
           ],
           "copies": 2
         },
@@ -2506,7 +2506,7 @@
           "vAttack": "2",
           "imageUrl": "https://images.legendary-arena.com/cvwr/cvwr-vi-great-lakes-avengers-mr-immortal.webp",
           "abilities": [
-            "Fight: Reveal the top card of the Villain Deck. If it's a Villain or Bystander, Mr. Immortal reenters the Sewers."
+            "Fight: Reveal the top card of the Villain Deck. If it's a Villain or Bystander, Mr. Immortal reenters the Sewers. [effect:reenter-sewers-if-villain-deck-top:villain+bystander]"
           ],
           "copies": 2
         },
@@ -2836,7 +2836,7 @@
       "imageUrl": "https://images.legendary-arena.com/cvwr/cvwr-hm-cape-killers.webp",
       "abilities": [
         "[keyword:S.H.I.E.L.D. Clearance]",
-        "Fight: KO a card from your discard pile."
+        "Fight: KO a card from your discard pile. [effect:ko-from-discard-current:1]"
       ],
       "vAttack": "3",
       "vp": 1

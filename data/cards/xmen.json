@@ -2636,7 +2636,7 @@
           "imageUrl": "https://images.legendary-arena.com/xmen/xmen-vi-shiar-imperial-guard-smasher.webp",
           "abilities": [
             "Ambush: Each player reveals a [hc:strength] Hero or discards a card.",
-            "Fight: KO a card from your discard pile."
+            "Fight: KO a card from your discard pile. [effect:ko-from-discard-current:1]"
           ],
           "copies": 2
         }

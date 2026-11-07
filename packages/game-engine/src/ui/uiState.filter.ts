@@ -1168,6 +1168,12 @@ export function filterUIStateForAudience(
       ...(uiState.pendingKoDiscardChoice.isLimitedToDiscardedThisWay === true
         ? { isLimitedToDiscardedThisWay: true }
         : {}),
+      // why: WP-868 / D-24811 — pass the mandatory minimum through to the chooser (the whitelist
+      // drops any field it does not name, and a dropped minCount would offer "KO None" on
+      // Flatman's mandatory KO); omitted on every "up to N" entry.
+      ...(uiState.pendingKoDiscardChoice.minCount !== undefined
+        ? { minCount: uiState.pendingKoDiscardChoice.minCount }
+        : {}),
       discard: discardCopy,
     };
   }

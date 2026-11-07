@@ -795,7 +795,7 @@
           "imageUrl": "https://images.legendary-arena.com/chmp/chmp-vi-monsters-unleashed-tim-boo-ba.webp",
           "abilities": [
             "[keyword:Size-Changing]: [hc:strength], [hc:instinct], [hc:covert], [hc:tech], [hc:ranged]",
-            "Fight: All Heroes currently in the HQ cost 1 less this turn."
+            "Fight: All Heroes currently in the HQ cost 1 less this turn. [effect:hq-heroes-cost-change:less:1]"
           ],
           "copies": 1
         },

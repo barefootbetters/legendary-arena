@@ -2222,7 +2222,7 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-vi-monster-metropolis-bug-shiklahs-dragon.webp",
           "abilities": [
-            "Fight: KO a card from your discard pile.",
+            "Fight: KO a card from your discard pile. [effect:ko-from-discard-current:1]",
             "[keyword:Fateful Resurrection]"
           ],
           "copies": 2

@@ -512,6 +512,11 @@ function parseLocationGatedEffect(
  *   - `reveal-top-ko-grey-or-draw-by-class:<c>[+<c>…]`  (Hero Classes that draw; D-24769)
  *   - `hq-hero-gains-size-changing:<if-none|add|replace>:<c>[+<c>…]`  (a chosen HQ Hero gains
  *     Size-Changing for the classes this turn; D-24804)
+ *   - `hq-heroes-cost-change:<less|more>:<N>[:<c>[+<c>…]]`  (the Heroes in the HQ cost N less or
+ *     more this turn, optionally only the listed classes; D-24811)
+ *   - `ko-from-discard-current:<N>`  (the mandatory KO of N cards from your discard; D-24811)
+ *   - `reenter-sewers-if-villain-deck-top:<villain|bystander|villain+bystander>`  (the defeated
+ *     card reenters the Sewers on a matching Villain Deck top; D-24811)
  *   - `discard-hero-each-player-by-trait:<kind>:<value>` and
  *     `discard-hero-or-wound-each-player-by-trait:<kind>:<value>`  (each player discards a
  *     matching Hero, or may gain a Wound instead; D-24770)
@@ -818,6 +823,63 @@ function parseUngatedEffect(
       return null;
     }
     return { primitive: 'hq-hero-gains-size-changing', sizeChangingGrantMode: mode, sizeChangingGrantClasses };
+  }
+  if (primitiveToken === 'hq-heroes-cost-change') {
+    // why: WP-868 / D-24811 — grammar `hq-heroes-cost-change:<less|more>:<N>[:<c>[+<c>…]]` (Tim
+    // Boo Ba `:less:1`, The Mind Stone `:more:2`, Dr. Carlton Drake `:less:1:instinct+tech`). 3 or 4
+    // colon-parts; N is a positive integer carried as `magnitude`; the optional class list reuses
+    // parseHeroClassList. Anything else returns null (→ unresolvedMarkers), never a partial descriptor.
+    if (parts.length !== 3 && parts.length !== 4) {
+      return null;
+    }
+    const direction = parts[1]!;
+    if (direction !== 'less' && direction !== 'more') {
+      return null;
+    }
+    const magnitude = parsePositiveInteger(parts[2]!);
+    if (magnitude === null) {
+      return null;
+    }
+    if (parts.length === 3) {
+      return { primitive: 'hq-heroes-cost-change', costChangeDirection: direction, magnitude };
+    }
+    const costChangeClasses = parseHeroClassList(parts[3]!);
+    if (costChangeClasses === null) {
+      return null;
+    }
+    return { primitive: 'hq-heroes-cost-change', costChangeDirection: direction, magnitude, costChangeClasses };
+  }
+  if (primitiveToken === 'ko-from-discard-current') {
+    // why: WP-868 / D-24811 — grammar `ko-from-discard-current:<N>` (exactly 2 colon-parts; Flatman
+    // `:1`), the mandatory "KO a card from your discard pile". N is a positive integer carried as
+    // `magnitude`; a missing or non-positive count returns null (→ unresolvedMarkers).
+    if (parts.length !== 2) {
+      return null;
+    }
+    const magnitude = parsePositiveInteger(parts[1]!);
+    if (magnitude === null) {
+      return null;
+    }
+    return { primitive: 'ko-from-discard-current', magnitude };
+  }
+  if (primitiveToken === 'reenter-sewers-if-villain-deck-top') {
+    // why: WP-868 / D-24811 — grammar `reenter-sewers-if-villain-deck-top:<kinds>` (exactly 2
+    // colon-parts; Mr. Immortal `:villain+bystander`), kinds `villain`, `bystander` or
+    // `villain+bystander`. Anything else (a Scheme Twist kind, a repeat, the wrong order) returns null.
+    if (parts.length !== 2) {
+      return null;
+    }
+    const kindsToken = parts[1]!;
+    if (kindsToken === 'villain') {
+      return { primitive: 'reenter-sewers-if-villain-deck-top', reenterRevealKinds: ['villain'] };
+    }
+    if (kindsToken === 'bystander') {
+      return { primitive: 'reenter-sewers-if-villain-deck-top', reenterRevealKinds: ['bystander'] };
+    }
+    if (kindsToken === 'villain+bystander') {
+      return { primitive: 'reenter-sewers-if-villain-deck-top', reenterRevealKinds: ['villain', 'bystander'] };
+    }
+    return null;
   }
   if (primitiveToken === 'play-villain-deck-cards') {
     // why: D-24351 — grammar `play-villain-deck-cards:<N>` (exactly 2 tokens); N is the

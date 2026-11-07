@@ -186,6 +186,10 @@ function isLockedEffectKeyword(keyword) {
 // `hq-hero-gains-size-changing` (`:<if-none|add|replace>:<c>[+<c>…]`) appended at position 39
 // by WP-862 (D-24804 — antm Ultron-Pym, amwp Shrinksperiments and chmp Sporr Fights; validates via
 // its own mode + Hero Class list branch below).
+// `hq-heroes-cost-change` (`:<less|more>:<N>[:<c>[+<c>…]]`), `ko-from-discard-current` (`:<N>`) and
+// `reenter-sewers-if-villain-deck-top` (`:<villain|bystander|villain+bystander>`) appended at
+// positions 40, 41 and 42 by WP-868 (D-24811 — Tim Boo Ba / Jormungand / Dr. Carlton Drake / The
+// Mind Stone, Flatman and six siblings, and Mr. Immortal; each validates via its own branch below).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -226,6 +230,9 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'discard-hand-matching-hq-card-names-each-player',
   'hq-heroes-to-hero-deck-bottom',
   'hq-hero-gains-size-changing',
+  'hq-heroes-cost-change',
+  'ko-from-discard-current',
+  'reenter-sewers-if-villain-deck-top',
 ];
 
 // why: WP-836 / D-24769 — hand-synced local copy of the engine's HERO_CLASSES
@@ -442,6 +449,25 @@ function isValidParameterizedEffectToken(token) {
     // 3 tokens; Sporr: :add:tech+ranged). Mirrors the engine parser so producer + consumer agree.
     const modes = ['if-none', 'add', 'replace'];
     return parts.length === 3 && modes.includes(parts[1]) && isValidHeroClassList(parts[2]);
+  }
+  if (primitive === 'hq-heroes-cost-change') {
+    // why: D-24811 — grammar hq-heroes-cost-change:<less|more>:<N>[:<c>[+<c>…]] (3 or 4 tokens; Dr.
+    // Carlton Drake: :less:1:instinct+tech). Mirrors the engine parser so producer + consumer agree.
+    if (parts.length !== 3 && parts.length !== 4) return false;
+    if (parts[1] !== 'less' && parts[1] !== 'more') return false;
+    if (!/^[1-9][0-9]*$/.test(parts[2])) return false;
+    return parts.length === 3 || isValidHeroClassList(parts[3]);
+  }
+  if (primitive === 'ko-from-discard-current') {
+    // why: D-24811 — grammar ko-from-discard-current:<N> (exactly 2 tokens; Flatman: :1), the
+    // mandatory KO. Same strict positive-integer grammar as the "up to" sibling.
+    return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
+  }
+  if (primitive === 'reenter-sewers-if-villain-deck-top') {
+    // why: D-24811 — grammar reenter-sewers-if-villain-deck-top:<kinds> (exactly 2 tokens; Mr.
+    // Immortal: :villain+bystander). Mirrors the engine parser's three accepted kind tokens.
+    const kinds = ['villain', 'bystander', 'villain+bystander'];
+    return parts.length === 2 && kinds.includes(parts[1]);
   }
   if (primitive === 'play-villain-deck-cards') {
     // why: D-24351 — grammar play-villain-deck-cards:<N> (exactly 2 tokens); N is the

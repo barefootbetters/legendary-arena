@@ -50,8 +50,11 @@ import {
   executeVillainAbilities,
   resolveEffectResultNames,
   villainCardPlaysVillainDeckCards,
+  villainCardReenterSewersKinds,
   readTurnNumber,
 } from '../villain/villainEffects.execute.js';
+// why: WP-868 / D-24811 — Mr. Immortal's reenter bridge (the last step of defeatCityVillainCore).
+import { reenterSewersOnVillainDeckReveal } from '../villainDeck/villainDeck.enterCity.js';
 // why: WP-542 / D-24351 — the onFight fire site for Endless Armies of HYDRA plays the top
 // two Villain Deck cards. The reveal machinery lives in villainDeck.reveal.ts; this move
 // imports the shared loop + the RevealContext shape (the move builds one — see below).
@@ -773,5 +776,28 @@ export function defeatCityVillainCore(
       ctx: { currentPlayer, turn: readTurnNumber(ctx) },
     };
     playTopVillainDeckCards(G, revealContext, DEFAULT_IMPLEMENTATION_MAP, fightPlayCount);
+  }
+
+  // why: WP-868 / D-24811 — Mr. Immortal's "Reveal the top card of the Villain Deck. If it's a
+  // Villain or Bystander, Mr. Immortal reenters the Sewers." The executor's
+  // reenter-sewers-if-villain-deck-top handler is a deliberate no-op (the D-24351 executor-no-op
+  // plus fire-site-bridge pattern), so the reveal and the City entry run HERE as the last step,
+  // after the defeat has fully settled. Reentering is not a reveal: no Ambush, no onCardRevealed
+  // hooks. Henchmen count as Villains. The RevealContext is built as the Endless Armies block above
+  // builds one, for any escape the entry causes.
+  const reenterKinds = villainCardReenterSewersKinds(G, cardId, 'onFight');
+  if (reenterKinds !== null) {
+    const reenterRevealContext: RevealContext = {
+      random: shuffleContext.random,
+      ctx: { currentPlayer, turn: readTurnNumber(ctx) },
+    };
+    reenterSewersOnVillainDeckReveal(
+      G,
+      reenterRevealContext,
+      DEFAULT_IMPLEMENTATION_MAP,
+      currentPlayer,
+      cardId,
+      reenterKinds,
+    );
   }
 }

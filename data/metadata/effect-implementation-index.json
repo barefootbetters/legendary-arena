@@ -10,11 +10,11 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 735,
+      "executable": 751,
       "deferred": 17,
       "condition": 58,
       "unsupported": 280,
-      "unmarked": 981,
+      "unmarked": 965,
       "subsystem": 5
     }
   },
@@ -2359,11 +2359,11 @@
       "name": "Star-Knight",
       "set": "antm",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-from-discard-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-from-discard-current",
+      "wp": "WP-868",
+      "decision": "D-24811"
     },
     {
       "extId": "antm-villain-queens-vengeance-yeoman-america",
@@ -2381,11 +2381,11 @@
       "name": "Alkhema",
       "set": "antm",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-from-discard-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-from-discard-current",
+      "wp": "WP-868",
+      "decision": "D-24811"
     },
     {
       "extId": "antm-villain-ultrons-legacy-brutish-ultron-14",
@@ -3012,11 +3012,11 @@
       "name": "Jormungand, The World-Serpent",
       "set": "asrd",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "hq-heroes-cost-change",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hq-heroes-cost-change",
+      "wp": "WP-868",
+      "decision": "D-24811"
     },
     {
       "extId": "asrd-villain-omens-of-ragnarok-skurge-the-executioner",
@@ -5378,11 +5378,11 @@
       "name": "Tim Boo Ba",
       "set": "chmp",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "hq-heroes-cost-change",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hq-heroes-cost-change",
+      "wp": "WP-868",
+      "decision": "D-24811"
     },
     {
       "extId": "chmp-villain-monsters-unleashed-trull-the-unhuman",
@@ -8763,11 +8763,11 @@
       "name": "Supergiant",
       "set": "cosm",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current",
+      "wp": "WP-760",
+      "decision": "D-24589"
     },
     {
       "extId": "cosm-villain-celestials-arishem-the-judge",
@@ -9481,22 +9481,22 @@
       "name": "Flatman",
       "set": "cvwr",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-from-discard-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-from-discard-current",
+      "wp": "WP-868",
+      "decision": "D-24811"
     },
     {
       "extId": "cvwr-villain-great-lakes-avengers-mr-immortal",
       "name": "Mr. Immortal",
       "set": "cvwr",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reenter-sewers-if-villain-deck-top",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reenter-sewers-if-villain-deck-top",
+      "wp": "WP-868",
+      "decision": "D-24811"
     },
     {
       "extId": "cvwr-villain-great-lakes-avengers-squirrel-girl",
@@ -13505,11 +13505,11 @@
       "name": "Cape-Killers",
       "set": "cvwr",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-from-discard-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-from-discard-current",
+      "wp": "WP-868",
+      "decision": "D-24811"
     },
     {
       "extId": "henchman-circus-of-crime",
@@ -14407,11 +14407,11 @@
       "name": "Meatmarket",
       "set": "mdns",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current",
+      "wp": "WP-760",
+      "decision": "D-24589"
     },
     {
       "extId": "mdns-villain-lilin-outcast",
@@ -15638,11 +15638,11 @@
       "name": "Outriders",
       "set": "msis",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current",
+      "wp": "WP-760",
+      "decision": "D-24589"
     },
     {
       "extId": "msis-villain-children-of-thanos-proxima-midnight",
@@ -15682,11 +15682,11 @@
       "name": "The Mind Stone",
       "set": "msis",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "hq-heroes-cost-change",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hq-heroes-cost-change",
+      "wp": "WP-868",
+      "decision": "D-24811"
     },
     {
       "extId": "msis-villain-infinity-stones-the-power-stone",
@@ -16197,11 +16197,11 @@
       "name": "Silver Samurai",
       "set": "msmc",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-from-discard-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-from-discard-current",
+      "wp": "WP-868",
+      "decision": "D-24811"
     },
     {
       "extId": "msmc-villain-purifiers-cameron-hodge",
@@ -19630,11 +19630,11 @@
       "name": "The Brothers Grimm",
       "set": "rvlt",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current",
+      "wp": "WP-760",
+      "decision": "D-24589"
     },
     {
       "extId": "rvlt-villain-hoods-gang-the-dark-dimension",
@@ -22421,11 +22421,11 @@
       "name": "Bug, Shiklah's Dragon",
       "set": "ssw2",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-from-discard-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-from-discard-current",
+      "wp": "WP-868",
+      "decision": "D-24811"
     },
     {
       "extId": "ssw2-villain-monster-metropolis-ghost-deadpool",
@@ -24251,11 +24251,11 @@
       "name": "Dr. Carlton Drake",
       "set": "vnom",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "hq-heroes-cost-change",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hq-heroes-cost-change",
+      "wp": "WP-868",
+      "decision": "D-24811"
     },
     {
       "extId": "vnom-villain-life-foundation-lasher",
@@ -28787,11 +28787,11 @@
       "name": "Smasher",
       "set": "xmen",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-from-discard-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-from-discard-current",
+      "wp": "WP-868",
+      "decision": "D-24811"
     },
     {
       "extId": "xmen-villain-sisterhood-of-mutants-lady-deathstrike",
@@ -30625,7 +30625,7 @@
     "antm-villain-queens-vengeance-star-knight": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-from-discard-current"
       ]
     },
     "antm-villain-queens-vengeance-yeoman-america": {
@@ -30637,7 +30637,7 @@
     "antm-villain-ultrons-legacy-alkhema": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-from-discard-current"
       ]
     },
     "antm-villain-ultrons-legacy-brutish-ultron-14": {
@@ -30815,7 +30815,7 @@
     "asrd-villain-omens-of-ragnarok-jormungand-the-world-serpent": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "hq-heroes-cost-change"
       ]
     },
     "asrd-villain-omens-of-ragnarok-skurge-the-executioner": {
@@ -31407,7 +31407,7 @@
     "chmp-villain-monsters-unleashed-tim-boo-ba": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "hq-heroes-cost-change"
       ]
     },
     "chmp-villain-monsters-unleashed-trull-the-unhuman": {
@@ -32418,7 +32418,7 @@
     "cosm-villain-black-order-of-thanos-supergiant": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-up-to-from-discard-current"
       ]
     },
     "cosm-villain-celestials-arishem-the-judge": {
@@ -32712,13 +32712,13 @@
     "cvwr-villain-great-lakes-avengers-flatman": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-from-discard-current"
       ]
     },
     "cvwr-villain-great-lakes-avengers-mr-immortal": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reenter-sewers-if-villain-deck-top"
       ]
     },
     "cvwr-villain-great-lakes-avengers-squirrel-girl": {
@@ -34087,7 +34087,7 @@
     "henchman-cape-killers": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-from-discard-current"
       ]
     },
     "henchman-circus-of-crime": {
@@ -34524,7 +34524,7 @@
     "mdns-villain-lilin-meatmarket": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-up-to-from-discard-current"
       ]
     },
     "mdns-villain-lilin-outcast": {
@@ -34863,7 +34863,7 @@
     "msis-villain-children-of-thanos-outriders": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-up-to-from-discard-current"
       ]
     },
     "msis-villain-children-of-thanos-proxima-midnight": {
@@ -34887,7 +34887,7 @@
     "msis-villain-infinity-stones-the-mind-stone": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "hq-heroes-cost-change"
       ]
     },
     "msis-villain-infinity-stones-the-power-stone": {
@@ -35074,7 +35074,7 @@
     "msmc-villain-clan-yashida-silver-samurai": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-from-discard-current"
       ]
     },
     "msmc-villain-purifiers-cameron-hodge": {
@@ -36221,7 +36221,7 @@
     "rvlt-villain-hoods-gang-the-brothers-grimm": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-up-to-from-discard-current"
       ]
     },
     "rvlt-villain-hoods-gang-the-dark-dimension": {
@@ -37193,7 +37193,7 @@
     "ssw2-villain-monster-metropolis-bug-shiklahs-dragon": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-from-discard-current"
       ]
     },
     "ssw2-villain-monster-metropolis-ghost-deadpool": {
@@ -37816,7 +37816,7 @@
     "vnom-villain-life-foundation-dr-carlton-drake": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "hq-heroes-cost-change"
       ]
     },
     "vnom-villain-life-foundation-lasher": {
@@ -39288,7 +39288,7 @@
     "xmen-villain-shiar-imperial-guard-smasher": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-from-discard-current"
       ]
     },
     "xmen-villain-sisterhood-of-mutants-lady-deathstrike": {
