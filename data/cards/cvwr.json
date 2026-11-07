@@ -2518,7 +2518,7 @@
           "imageUrl": "https://images.legendary-arena.com/cvwr/cvwr-vi-great-lakes-avengers-squirrel-girl.webp",
           "abilities": [
             "You can't fight Squirrel Girl if you played more than one card this turn. [fight-restriction:at-most-one-card-played]",
-            "Escape: [keyword:Fortify] the Sidekick Stack. While it's fortified, [rule:Sidekicks] can't be recruited or gained."
+            "Escape: [keyword:Fortify] the Sidekick Stack. While it's fortified, [rule:Sidekicks] can't be recruited or gained. [effect:fortify:sidekick-stack:no-recruit-or-gain]"
           ],
           "copies": 2
         }
@@ -2540,7 +2540,7 @@
           "imageUrl": "https://images.legendary-arena.com/cvwr/cvwr-vi-heroes-for-hire-colleen-wing.webp",
           "abilities": [
             "[keyword:Bribe]",
-            "Escape: [keyword:Fortify] the Mastermind. While it's fortified, the Mastermind can't be fought."
+            "Escape: [keyword:Fortify] the Mastermind. While it's fortified, the Mastermind can't be fought. [effect:fortify:mastermind:no-fight]"
           ],
           "copies": 2
         },

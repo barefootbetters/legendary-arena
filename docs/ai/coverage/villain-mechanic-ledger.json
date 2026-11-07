@@ -4,13 +4,13 @@
   "summary": {
     "totalRows": 761,
     "byStatus": {
-      "executable": 240,
+      "executable": 242,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 516,
+      "unmarked": 514,
       "subsystem": 4
     },
-    "distinctMechanics": 51
+    "distinctMechanics": 52
   },
   "rows": [
     {
@@ -2647,11 +2647,11 @@
       "cardName": "Colleen Wing",
       "set": "cvwr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "fortify",
+      "status": "executable",
+      "wp": "WP-873",
+      "decision": "D-24818",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#fortify"
     },
     {
       "extId": "cvwr-villain-registration-enforcers-deadpool",
@@ -2856,11 +2856,11 @@
       "cardName": "Squirrel Girl",
       "set": "cvwr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "fortify",
+      "status": "executable",
+      "wp": "WP-873",
+      "decision": "D-24818",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#fortify"
     },
     {
       "extId": "cvwr-villain-heroes-for-hire-tarantula",

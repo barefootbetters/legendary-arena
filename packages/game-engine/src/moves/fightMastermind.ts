@@ -18,6 +18,7 @@
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
 import { isMastermindHaunting } from '../board/haunt.logic.js';
+import { isMastermindFortified } from '../board/fortify.logic.js';
 import { getSpendableAttackForTarget, spendFightCostForTarget, markExcessiveViolenceUsed } from '../economy/economy.logic.js';
 // why: WP-736 / D-24556 — the fight-time driver that fires every enrolled Excessive Violence
 // ability. Called from THIS move body (never the shared defeatMastermindTacticCore, which non-fight
@@ -154,6 +155,14 @@ export function fightMastermind(
   // isMastermindHaunting is the single predicate shared with both free-defeat target
   // builders and the bot legal intents.
   if (isMastermindHaunting(G)) {
+    return;
+  }
+
+  // why: WP-873 / D-24818 — while a Villain fortifies the Mastermind (Colleen Wing), "the
+  // Mastermind can't be fought". A board-state step-1 return like the Haunt lock above; the
+  // same predicate gates the getLegalMoves mirror. Free defeats ignore it (D-24737: a card
+  // that defeats ignores fight restrictions, and the Mastermind is still in place).
+  if (isMastermindFortified(G)) {
     return;
   }
 

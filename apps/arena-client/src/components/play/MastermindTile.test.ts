@@ -957,3 +957,24 @@ describe('MastermindTile — Haunt blocks the Fight (WP-757 / D-24587)', () => {
     assert.ok(!guessPicker(wrapper).exists(), 'the picker closes');
   });
 });
+
+describe('MastermindTile — Fortify blocks the Fight (WP-873 / D-24818)', () => {
+  const fortifiedReason = 'Colleen Wing fortifies the Mastermind. Fight Colleen Wing first.';
+
+  test('T30: with fortifiedReason set and enough attack, Fight is disabled with that reason and submits nothing', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive({ fortifiedReason }),
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    const button = wrapper.find('[data-testid="play-mastermind-button"]');
+    assert.equal(button.attributes('disabled'), '');
+    assert.equal(button.attributes('title'), fortifiedReason);
+    await button.trigger('click');
+    assert.equal(calls.length, 0);
+  });
+});

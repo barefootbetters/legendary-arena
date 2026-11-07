@@ -9,6 +9,7 @@ import type {
   UICityCard,
   UICityState,
   UIDecksState,
+  UIFortifier,
   UITurnEconomyState,
 } from '@legendary-arena/game-engine';
 import type { SubmitMove, UiMoveName } from './uiMoveName.types';
@@ -1664,5 +1665,38 @@ describe('WP-871 CityRow — fight restriction (D-24816)', () => {
     row.dispatchEvent(pointerEvent('pointerup', 490, 150));
     assert.deepEqual(calls, [{ name: 'fightVillain', args: { cityIndex: 3 } }]);
     wrapper.unmount();
+  });
+});
+
+describe('CityRow — fortifying Villains under the Escaped Pile (WP-873 / D-24818)', () => {
+  const fortifier: UIFortifier = {
+    place: 'sidekick-stack',
+    placeLabel: 'the Sidekick Stack',
+    extId: 'cvwr-villain-great-lakes-avengers-squirrel-girl-00',
+    display: { extId: 'cvwr-villain-great-lakes-avengers-squirrel-girl-00', name: 'Squirrel Girl', imageUrl: '', cost: 3 },
+    fightCost: 3,
+    lockText: "Sidekicks can't be recruited or gained",
+  };
+
+  test('T29: a fortifier renders in the escaped cell; without one nothing renders', () => {
+    const { submitMove } = recorder();
+    const withFortifier = mount(CityRow, {
+      props: {
+        city: { ...fullCity(), fortifiers: [fortifier] },
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy({ attack: 3, availableAttack: 3 }),
+        submitMove,
+      },
+    });
+    const tile = withFortifier.find('[data-testid="play-fortifier"]');
+    assert.ok(tile.exists(), 'the fortifier tile renders');
+    const escapedCell = withFortifier.find('[data-testid="play-escaped-pile"]').element.parentElement!;
+    assert.ok(escapedCell.contains(tile.element), 'it sits in the escaped cell');
+    assert.match(tile.text(), /Squirrel Girl/);
+    const plain = mount(CityRow, {
+      props: { city: fullCity(), decks: DECKS, currentStage: 'main', economy: economy(), submitMove },
+    });
+    assert.equal(plain.find('[data-testid="play-fortifier"]').exists(), false);
   });
 });

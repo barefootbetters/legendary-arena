@@ -296,7 +296,7 @@ cvwr/hercules,Hercules,cvwr,reveal-ko,executable,WP-253,D-24024,packages/game-en
 cvwr/hulkling,Hulkling,cvwr,gain-wound-self,executable,WP-364,D-24156,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self,half-kree
 cvwr/hulkling,Hulkling,cvwr,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,cellular-regeneration
 cvwr/hulkling,Hulkling,cvwr,size-changing,executable,,D-24801,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,cellular-regeneration|enormous-shapeshifter|half-kree|half-skrull|impersonate
-cvwr/luke-cage,Luke Cage,cvwr,fortify,unsupported,,,,unbreakable-skin
+cvwr/luke-cage,Luke Cage,cvwr,fortify,unsupported,WP-873,D-24818,,unbreakable-skin
 cvwr/luke-cage,Luke Cage,cvwr,gain-wound-self,executable,WP-364,D-24156,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self,reckless
 cvwr/patriot,Patriot,cvwr,(unmarked),unmarked,,,,
 cvwr/peter-parker,Peter Parker,cvwr,gain-sidekick,executable,WP-844,D-24778,packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick,spider-man-unmasked

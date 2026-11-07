@@ -238,7 +238,7 @@ cvwr-villain-registration-enforcers-blade,Blade,cvwr,villain,(unmarked),unmarked
 cvwr-villain-csa-special-marshals-bullseye,Bullseye,cvwr,villain,(unmarked),unmarked,,,
 henchman-cape-killers,Cape-Killers,cvwr,henchman,ko-from-discard-current,executable,WP-868,D-24811,packages/game-engine/src/villain/villainEffects.execute.ts#ko-from-discard-current
 cvwr-villain-registration-enforcers-captain-marvel,Captain Marvel,cvwr,villain,(unmarked),unmarked,,,
-cvwr-villain-heroes-for-hire-colleen-wing,Colleen Wing,cvwr,villain,(unmarked),unmarked,,,
+cvwr-villain-heroes-for-hire-colleen-wing,Colleen Wing,cvwr,villain,fortify,executable,WP-873,D-24818,packages/game-engine/src/villain/villainEffects.execute.ts#fortify
 cvwr-villain-registration-enforcers-deadpool,Deadpool,cvwr,villain,(unmarked),unmarked,,,
 cvwr-villain-shield-elite-dum-dum-dugan,Dum Dum Dugan,cvwr,villain,(unmarked),unmarked,,,
 cvwr-villain-thunderbolts-fixer,Fixer,cvwr,villain,(unmarked),unmarked,,,
@@ -257,7 +257,7 @@ cvwr-villain-heroes-for-hire-shang-chi,Shang-Chi,cvwr,villain,(unmarked),unmarke
 cvwr-villain-shield-elite-sharon-carter-agent-13,"Sharon Carter, Agent 13",cvwr,villain,(unmarked),unmarked,,,
 cvwr-villain-superhuman-registration-act-she-hulk,She-Hulk,cvwr,villain,(unmarked),unmarked,,,
 cvwr-villain-thunderbolts-songbird,Songbird,cvwr,villain,(unmarked),unmarked,,,
-cvwr-villain-great-lakes-avengers-squirrel-girl,Squirrel Girl,cvwr,villain,(unmarked),unmarked,,,
+cvwr-villain-great-lakes-avengers-squirrel-girl,Squirrel Girl,cvwr,villain,fortify,executable,WP-873,D-24818,packages/game-engine/src/villain/villainEffects.execute.ts#fortify
 cvwr-villain-heroes-for-hire-tarantula,Tarantula,cvwr,villain,(unmarked),unmarked,,,
 cvwr-villain-csa-special-marshals-venom,Venom,cvwr,villain,(unmarked),unmarked,,,
 cvwr-villain-superhuman-registration-act-yellowjacket,Yellowjacket,cvwr,villain,(unmarked),unmarked,,,

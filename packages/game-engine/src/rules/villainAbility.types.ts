@@ -13,6 +13,7 @@
 import type { CardExtId } from '../state/zones.types.js';
 import type { CitySpaceName } from '../board/citySpaceNames.js';
 import type { HeroClass } from '../content/content.schemas.js';
+import type { FortifyLock, FortifyPlace } from '../board/fortify.types.js';
 
 // ---------------------------------------------------------------------------
 // VillainAbilityTiming
@@ -381,7 +382,8 @@ export type VillainEffectPrimitive =
   | 'hq-hero-gains-size-changing'
   | 'hq-heroes-cost-change'
   | 'ko-from-discard-current'
-  | 'reenter-sewers-if-villain-deck-top';
+  | 'reenter-sewers-if-villain-deck-top'
+  | 'fortify';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -539,6 +541,12 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'hq-heroes-cost-change',
   'ko-from-discard-current',
   'reenter-sewers-if-villain-deck-top',
+  // why: WP-873 / D-24818 — appended at position 43. Squirrel Girl and Colleen Wing's Escape
+  // (`fortify:<place>:<lock>`): the escaped Villain leaves the Escape Pile and fortifies the
+  // Sidekick Stack or the Mastermind in G.fortifications until a player fights it there.
+  // Keyword-less, so it self-narrates. The marker script's hand-synced copy
+  // (`scripts/convert-cards/apply-effect-markers.mjs`) appends it at the same position.
+  'fortify',
 ] as const;
 
 /**
@@ -774,6 +782,12 @@ export interface VillainEffectDescriptor {
   // send the defeated card back into the Sewers. `villain` also matches a Henchman (Henchmen are
   // Villains). Deliberately NOT part of `descriptorKey` — the primitive is keyword-less.
   reenterRevealKinds?: readonly ('villain' | 'bystander')[];
+  // why: WP-873 / D-24818 — present ONLY on `{ primitive: 'fortify' }` descriptors (Squirrel Girl:
+  // 'sidekick-stack' + 'no-recruit-or-gain'; Colleen Wing: 'mastermind' + 'no-fight'): the place the
+  // escaped Villain fortifies and the lock it applies there. Deliberately NOT part of
+  // `descriptorKey` — the primitive is keyword-less, so it self-narrates regardless.
+  fortifyPlace?: FortifyPlace;
+  fortifyLock?: FortifyLock;
 }
 
 // why: D-24023 — the frozen legacy-keyword → descriptor translation table. The

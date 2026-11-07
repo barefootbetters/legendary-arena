@@ -1,6 +1,6 @@
 # WP-873 — Fortify: Squirrel Girl and Colleen Wing escape onto the Sidekick Stack or the Mastermind and lock it until a player fights them there (Game Engine + Arena Client + card data)
 
-**Status:** Draft 2026-11-07 — READY TO EXECUTE (EC-911; **D-24818** reserved (#3204); pre-flight READY TO EXECUTE, copilot PASS (CONFIRM), 00.3 PASS — see §Gate Record).
+**Status:** Done 2026-11-07 (EC-911 `EC-911:`; **D-24818 Active**; drafted #3206; pre-flight READY TO EXECUTE, copilot PASS (CONFIRM), 00.3 PASS — see §Gate Record; inline amendments in §Execution Amendments).
 **Primary Layer:** Game Engine (+ three Arena Client consumers of new UIState fields, card-data markers and the derived coverage feeds)
 **Dependencies:** none open. Builds on WP-793 / D-24656 (the escape procedure and its step-3 Escape-effect fire site), WP-757 / D-24587 (Haunt: a Villain parked off the City in a lazy `G` table, and the `isMastermindHaunting` "the Mastermind can't be fought" predicate shared by the move, the bot and the projection), WP-871 / D-24816 (fight restrictions; Squirrel Girl's restriction still applies when she is fought at the Stack), WP-842 / D-24776 + WP-844 / D-24778 (the Sidekick Stack, `recruitSidekick`, `gainSidekickToDiscard`), WP-868 / D-24811 (the latest appended villain primitives and the hand-synced marker-script list), D-24076 (defeat requirements), D-24737 (a free defeat ignores fight restrictions), D-24802 (the Size-Changing fight price), WP-790 / D-24652 (target-aware Attack), WP-750 / D-24574 (the client gates on projected data), D-24364 (a move precondition ships with its `getLegalMoves` mirror).
 **User-Visible Surface:** `play.legendary-arena.com`
@@ -348,6 +348,15 @@ Minimal-`G` fixtures in each file's existing style, except T9-T13 which read the
   - The Play Diagnostics `uiStateSnapshot` shows `city.fortifiers`, `mastermind.fortifiedReason` and `piles.sidekickStackFortifiedReason` (five-step step 5).
 
   Record this as operator-pending until seen.
+
+## Execution Amendments (2026-11-07)
+
+Inline amendments found during execution, each outside the drafted allowlist only where noted:
+
+1. **`docs/ai/coverage/hero-mechanic-ledger.{json,csv}` regenerated.** The required `fortify` row in `scripts/coverage/mechanic-provenance.json` is keyed by mechanic, and the hero ledger already lists cvwr Luke Cage's *Unbreakable Skin* under `fortify` (`unsupported`). The row now carries `WP-873` / `D-24818` as its provenance; its status stays `unsupported` (Follow-up A). `ledger:heroes:check` fails until it is regenerated, so the two files join the allowlist. No other hero row moved.
+2. **`MastermindTile` arm position.** Between drafting and execution `main` gained a Haunt arm in `gateForFight` (#3207, stage → heal → cost → haunt → tactics). The Fortify arm sits right after the Haunt arm, still after the cost gate and before the tactics check as locked; both are structural locks.
+3. **Projection switch.** The `never`-default `switch` over `FortifyPlace` lives in `buildFortifyProjection` (`ui/uiState.build.ts`), where each place's lock reason is projected: a place appended without its projected reason fails `tsc`. The engine predicates read `FORTIFY_*` records keyed by the unions (already exhaustive at compile time) and need no switch.
+4. **`fightFortifyingVillain` context type.** The function is boardgame.io-free, so its context is typed structurally (`{ ctx: { currentPlayer }, random }`); `fightVillain` passes its spread move context unchanged.
 
 ## Reserved Decision (lands at execution)
 

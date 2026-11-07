@@ -5402,8 +5402,8 @@
       "set": "cvwr",
       "mechanic": "fortify",
       "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-873",
+      "decision": "D-24818",
       "handler": "",
       "designs": [
         {
