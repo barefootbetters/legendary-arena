@@ -118,13 +118,15 @@ chmp-villain-monsters-unleashed-goom,Goom,chmp,villain,koHeroCurrentPlayer,execu
 chmp-villain-monsters-unleashed-groot-from-planet-x,Groot from Planet X,chmp,villain,stack-cards-enter-city-as-villains,executable,WP-869,D-24814,packages/game-engine/src/villain/villainEffects.execute.ts#stack-cards-enter-city-as-villains
 chmp-villain-monsters-unleashed-monsteroso,Monsteroso,chmp,villain,add-next-hand-size,executable,WP-543,D-24352,packages/game-engine/src/villain/villainEffects.execute.ts#add-next-hand-size
 chmp-villain-monsters-unleashed-orrgo,Orrgo,chmp,villain,setup:fight-restriction,subsystem,WP-871,D-24816,
+chmp-villain-wrecking-crew-piledriver,Piledriver,chmp,villain,demolish-each-player,executable,WP-864,D-24807,packages/game-engine/src/villain/villainEffects.execute.ts#demolish-each-player
 chmp-villain-wrecking-crew-piledriver,Piledriver,chmp,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 chmp-villain-monsters-unleashed-sporr,Sporr,chmp,villain,hq-hero-gains-size-changing,executable,WP-862,D-24804,packages/game-engine/src/villain/villainEffects.execute.ts#hq-hero-gains-size-changing
 chmp-villain-wrecking-crew-the-wrecker,The Wrecker,chmp,villain,(unmarked),unmarked,,,
 chmp-villain-wrecking-crew-thunderball,Thunderball,chmp,villain,(unmarked),unmarked,,,
 chmp-villain-monsters-unleashed-tim-boo-ba,Tim Boo Ba,chmp,villain,hq-heroes-cost-change,executable,WP-868,D-24811,packages/game-engine/src/villain/villainEffects.execute.ts#hq-heroes-cost-change
-chmp-villain-monsters-unleashed-trull-the-unhuman,Trull the Unhuman,chmp,villain,(unmarked),unmarked,,,
-chmp-villain-monsters-unleashed-zzutak,Zzutak,chmp,villain,(unmarked),unmarked,,,
+chmp-villain-monsters-unleashed-trull-the-unhuman,Trull the Unhuman,chmp,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
+chmp-villain-monsters-unleashed-trull-the-unhuman,Trull the Unhuman,chmp,villain,demolish-each-player,executable,WP-864,D-24807,packages/game-engine/src/villain/villainEffects.execute.ts#demolish-each-player
+chmp-villain-monsters-unleashed-zzutak,Zzutak,chmp,villain,demolish-each-player,executable,WP-864,D-24807,packages/game-engine/src/villain/villainEffects.execute.ts#demolish-each-player
 co2e-villain-radiation-abomination,Abomination,co2e,villain,gain-recruit-current-count-by-trait,executable,WP-836,D-24769,packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current-count-by-trait
 co2e-villain-hydra-baron-strucker-supreme-hydra,"Baron Strucker, Supreme Hydra",co2e,villain,(unmarked),unmarked,,,
 co2e-villain-masters-of-evil-baron-zemo,Baron Zemo,co2e,villain,capture-bystanders-plus-per-hq-hero-by-trait,executable,WP-521,D-24334,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystanders-plus-per-hq-hero-by-trait

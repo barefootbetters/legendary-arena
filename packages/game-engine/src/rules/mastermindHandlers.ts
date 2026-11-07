@@ -52,6 +52,7 @@ import { BARON_ZEMO_MASTERMIND_ID } from '../economy/rescueOnFight.logic.js';
 import { ARNIM_ZOLA_MASTERMIND_ID, listZolaWeakHqSlots } from '../mastermind/arnimZola.logic.js';
 import { refillHqSlot } from '../board/city.logic.js';
 import { selectDefaultCostDiscardCard } from '../moves/villainDefeatRequirement.logic.js';
+import { demolishEachPlayer } from '../board/demolish.logic.js';
 
 // why: mastermind ext_id constants — matching against
 // G.selection.mastermindId for per-mastermind dispatch. Strings come from
@@ -126,6 +127,14 @@ const DOOM_STRIKE_HAND_GATE = 6;
 // [Cross-Dimensional Hulk Rampage]" and Red Hulk's flips back — resolveGeneralRossStrike
 // flips the boss face. The named ride-along effect is honest-partial (logged) this slice.
 const MASTERMIND_GENERAL_ROSS = 'wwhk/general-thunderbolt-ross';
+// why: WP-864 / D-24807 — Fin Fang Foom (chmp) prints "[Demolish] each player, then do it
+// again for each Monsters Unleashed Villain in the city and Escape Pile." The id is the
+// match LAGN `setup.mastermind.id`; setup takes the non-Epic face (D-24193).
+const MASTERMIND_FIN_FANG_FOOM = 'chmp/fin-fang-foom';
+// why: WP-864 / D-24807 — villain instance ids are `{setAbbr}-villain-{groupSlug}-{cardSlug}-{NN}`
+// (villainDeck.setup.ts), so every Monsters Unleashed card starts with this prefix. The Escape
+// Pile's other contents (Bystanders, captured Heroes) never match it.
+const MONSTERS_UNLEASHED_EXT_ID_PREFIX = 'chmp-villain-monsters-unleashed-';
 // why: the printed penalty puts exactly this many cards on top of the deck.
 const DOOM_PUT_ON_DECK_COUNT = 2;
 
@@ -1014,6 +1023,57 @@ function discardCardOfCostForEachPlayer(
 }
 
 /**
+ * Counts the Monsters Unleashed Villains in the City and the Escape Pile.
+ *
+ * @param gameState - The game state to read.
+ * @returns How many City spaces and Escape Pile entries hold a Monsters Unleashed Villain.
+ */
+function countMonstersUnleashedInCityAndEscapePile(gameState: LegendaryGameState): number {
+  let count = 0;
+  for (const cityCardId of gameState.city) {
+    if (cityCardId !== null && cityCardId.startsWith(MONSTERS_UNLEASHED_EXT_ID_PREFIX)) {
+      count = count + 1;
+    }
+  }
+  for (const escapedCardId of gameState.escapedPile) {
+    if (escapedCardId.startsWith(MONSTERS_UNLEASHED_EXT_ID_PREFIX)) {
+      count = count + 1;
+    }
+  }
+  return count;
+}
+
+/**
+ * Resolves Fin Fang Foom's Master Strike (WP-864 / D-24807): "[Demolish] each player, then do
+ * it again for each Monsters Unleashed Villain in the city and Escape Pile."
+ *
+ * Demolishes each player once, plus once per Monsters Unleashed Villain in the City and the
+ * Escape Pile. Each Demolish reveals the then-top Hero Deck card. Never throws.
+ *
+ * @param gameState - The game state to mutate.
+ * @param currentPlayer - The active player (null in stub contexts → sorted order); each
+ *   Demolish's discard loop starts with them (D-24780).
+ */
+function resolveFinFangFoomStrike(
+  gameState: LegendaryGameState,
+  currentPlayer: string | null,
+): void {
+  // why: D-24807 interpretation, flagged for the operator — "do it again for each" reads as
+  // 1 + N Demolishes. The count is taken once, when the strike starts: a Demolish moves no
+  // Villain, so recounting between repeats could never change it.
+  const count = countMonstersUnleashedInCityAndEscapePile(gameState);
+  const total = 1 + count;
+  pushLog(
+    gameState,
+    `[Fin Fang Foom Master Strike] Demolish each player ${total} time(s): once, plus once for each of the ${count} Monsters Unleashed Villain(s) in the city and Escape Pile.`,
+    'neutral',
+  );
+  for (let demolishIndex = 0; demolishIndex < total; demolishIndex++) {
+    demolishEachPlayer(gameState, currentPlayer, '[Fin Fang Foom Master Strike]');
+  }
+}
+
+/**
  * Resolves co2e Loki's Master Strike: "Each player discards a
  * [hc:strength] Hero or stacks a non-grey Hero from their hand next to Loki
  * as a Hypno-Thrall."
@@ -1412,6 +1472,10 @@ export function mastermindStrikeHandler(
     // [icon:attack], put that Hero on the bottom of the Hero Deck, and each player discards
     // a card of that Hero's cost."
     resolveArnimZolaStrike(gameState, resolveCurrentPlayer(strikeContext));
+  } else if (mastermindId === MASTERMIND_FIN_FANG_FOOM) {
+    // why: WP-864 / D-24807 — "[Demolish] each player, then do it again for each Monsters
+    // Unleashed Villain in the city and Escape Pile."
+    resolveFinFangFoomStrike(gameState, resolveCurrentPlayer(strikeContext));
   }
 
   // why: WP-200 — terminal emission AFTER the per-mastermind text effect

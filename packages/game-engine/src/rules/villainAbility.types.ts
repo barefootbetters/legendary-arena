@@ -384,6 +384,7 @@ export type VillainEffectPrimitive =
   | 'ko-from-discard-current'
   | 'reenter-sewers-if-villain-deck-top'
   | 'fortify'
+  | 'demolish-each-player'
   | 'stack-cards-enter-city-as-villains';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
@@ -548,7 +549,15 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   // Keyword-less, so it self-narrates. The marker script's hand-synced copy
   // (`scripts/convert-cards/apply-effect-markers.mjs`) appends it at the same position.
   'fortify',
-  // why: WP-869 / D-24814 — appended at position 44. Groot from Planet X's Fight, Agent Gabe Jones's
+  // why: WP-864 / D-24807 — appended at position 44. Trull the Unhuman's Ambush (after its
+  // Bystander capture), Zzutak's Escape and Piledriver's Escape ("[Demolish] each player"): one
+  // Hero Deck reveal, bottomed, and each player discards a card of its cost, through the shared
+  // `demolishEachPlayer` resolver (`board/demolish.logic.ts`). No params, so the terminal
+  // `parts.length === 1` branch parses it. Keyword-less, so it self-narrates. The marker
+  // script's hand-synced copy (`scripts/convert-cards/apply-effect-markers.mjs`) appends it at
+  // the same position.
+  'demolish-each-player',
+  // why: WP-869 / D-24814 — appended at position 45. Groot from Planet X's Fight, Agent Gabe Jones's
   // Fight and Agent Eric Marshall's Ambush (`stack-cards-enter-city-as-villains:<bystander|officer>:
   // <N>[:<name>]`): N cards leave the Bystander Stack or the S.H.I.E.L.D. Officer Stack and enter the
   // City as 3-Attack Villains. A DELIBERATE NO-OP in the executor; the bridge at the end of

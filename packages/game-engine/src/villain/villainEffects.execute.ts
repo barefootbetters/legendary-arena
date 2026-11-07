@@ -78,6 +78,7 @@ import { captureHeroFromHq } from '../board/heroCapture.logic.js';
 // why: WP-873 / D-24818 — the Fortify escape handler writes G.fortifications only through the
 // fortify helpers (pure, type-only imports back into the engine; no cycle).
 import { fortifyWithEscapedVillain, getFortification } from '../board/fortify.logic.js';
+import { demolishEachPlayer } from '../board/demolish.logic.js';
 import { FORTIFY_LOCK_TEXT, FORTIFY_PLACE_LABELS } from '../board/fortify.types.js';
 import type { CaptureHeroResult } from '../board/heroCapture.logic.js';
 // why: WP-522 / D-24335 — give-hq-hero-by-trait-to-current refills the vacated HQ slot
@@ -5067,11 +5068,38 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   // why: WP-873 / D-24818 — position 43: Squirrel Girl and Colleen Wing's Escape Fortify.
   // Keyword-less, self-narrating. Moves the escaped Villain into G.fortifications.
   fortify: villainEffectFortify,
-  // why: WP-869 / D-24814 — position 44: Groot from Planet X / Agent Gabe Jones / Agent Eric
+  // why: WP-864 / D-24807 — position 44: Trull the Unhuman's Ambush, Zzutak's and Piledriver's
+  // Escape Demolish. Keyword-less, self-narrating through the shared demolishEachPlayer.
+  'demolish-each-player': villainEffectDemolishEachPlayer,
+  // why: WP-869 / D-24814 — position 45: Groot from Planet X / Agent Gabe Jones / Agent Eric
   // Marshall's stack cards entering the City as Villains (a deliberate no-op; the Fight and Ambush
   // bridges act).
   'stack-cards-enter-city-as-villains': villainEffectStackCardsEnterCityAsVillains,
 };
+
+/**
+ * demolish-each-player primitive — "[Demolish] each player" (WP-864 / D-24807: Trull the
+ * Unhuman's Ambush after its Bystander capture, Zzutak's and Piledriver's Escape). Rules v23 p.24.
+ *
+ * Delegates to the shared `demolishEachPlayer` resolver: one Hero Deck reveal, bottomed, and
+ * each player, current player first, discards the earliest hand card of its cost. No params;
+ * keyword-less, so the resolver's own lines narrate it. Never throws.
+ *
+ * @param G - Game state (mutated: Hero Deck order, hands, discards, messages).
+ * @param currentPlayer - The active player; the discard loop starts with them (D-24780).
+ * @param _cardId - Unused.
+ * @param timing - The timing that fired (for the "<Ambush|Escape> effect:" label).
+ * @returns `{ targets: [] }` always — a keyword-less result is never recorded.
+ */
+function villainEffectDemolishEachPlayer(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+): VillainEffectApplication {
+  demolishEachPlayer(G, currentPlayer, `${villainEffectTimingLabel(timing)} effect:`);
+  return { targets: [] };
+}
 
 /**
  * fortify primitive — the escaped Villain leaves the Escape Pile and fortifies a place until a

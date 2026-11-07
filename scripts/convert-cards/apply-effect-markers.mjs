@@ -192,8 +192,11 @@ function isLockedEffectKeyword(keyword) {
 // Mind Stone, Flatman and six siblings, and Mr. Immortal; each validates via its own branch below).
 // `fortify` (`:<place>:<lock>`) appended at position 43 by WP-873 (D-24818 — cvwr Squirrel Girl
 // and Colleen Wing's Escape; validates via its own place + allowed-lock branch below).
+// `demolish-each-player` (no-param) appended at position 44 by WP-864 (D-24807 — chmp Trull the
+// Unhuman's Ambush, Zzutak's and Piledriver's Escape "[Demolish] each player"; validates via the
+// terminal no-param `parts.length === 1` branch).
 // `stack-cards-enter-city-as-villains` (`:<bystander|officer>:<N>[:<name>]`) appended at position
-// 44 by WP-869 (D-24814 — chmp Groot from Planet X's Fight, cvwr Agent Gabe Jones's Fight and Agent
+// 45 by WP-869 (D-24814 — chmp Groot from Planet X's Fight, cvwr Agent Gabe Jones's Fight and Agent
 // Eric Marshall's Ambush; validates via its own branch below).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
@@ -239,6 +242,7 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-from-discard-current',
   'reenter-sewers-if-villain-deck-top',
   'fortify',
+  'demolish-each-player',
   'stack-cards-enter-city-as-villains',
 ];
 
