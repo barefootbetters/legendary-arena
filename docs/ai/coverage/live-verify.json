@@ -1966,9 +1966,9 @@
       "card": "Tim Boo Ba",
       "ability": "Fight: All Heroes currently in the HQ cost 1 less this turn.",
       "wp": "WP-868",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-07",
-      "evidence": "",
+      "evidence": "2p Operator match sU1EWDfnPVj (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers; Cape-Killers; Wolverine, Spider-Man, Hulk, Cyclops, Black Widow; Final Blow on; server build e6ec91f5 = the WP-868 merge, created 2026-11-07T18:34:12Z after boot, isMatchOlderThanServer false): fighting Tim Boo Ba logged \"Fight effect: Heroes in the HQ cost 1 less this turn (Tim Boo Ba): Mission Accomplished, Optic Blast, Crazed Rampage, Astonishing Strength, Covert Operation.\" (4.2.6, applied); Crazed Rampage then recruited for 4 instead of 5 and Astonishing Strength for 1 instead of 2 (4.2.8, 4.2.9). Not observed live: a later HQ refill paying full price, and the Recruit gate at the lower price (the operator had added +20 Recruit); both covered by tests. The recruit log note labels the reduced price \"Size-Changing\" (recruitHero.ts buildSizeChangingNote), a cosmetic mislabel.",
       "note": "Live check (NEW match with Monsters Unleashed after the deploy): fighting Tim Boo Ba logs \"Heroes in the HQ cost 1 less this turn (Tim Boo Ba): …\", every HQ price drops by 1 and Recruit unlocks at the lower price; a Hero that refills the HQ later that turn pays full price; prices are printed again next turn. D-24811."
     },
     {
@@ -1977,9 +1977,9 @@
       "card": "Flatman",
       "ability": "Fight: KO a card from your discard pile.",
       "wp": "WP-868",
-      "state": "pending",
+      "state": "partial",
       "date": "2026-11-07",
-      "evidence": "",
+      "evidence": "2p Operator match sU1EWDfnPVj (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers; Cape-Killers; Wolverine, Spider-Man, Hulk, Cyclops, Black Widow; Final Blow on; server build e6ec91f5 = the WP-868 merge, created 2026-11-07T18:34:12Z after boot, isMatchOlderThanServer false): Flatman with several distinct cards in the discard parked the mandatory choice (6.2.21, \"KO 1 card(s) from your discard pile (Flatman).\") and Player 0 KO'd Growing Anger through it (6.2.22); the second Flatman, with only a Wound to take, KO'd it at once with no prompt (23.2.13). The same primitive on Cape-Killers: the bot answered every mandatory prompt with a card (15.2.12, 27.2.11, 33.2.14 Wounds; 18.2.19, 18.2.22, 30.2.21 S.H.I.E.L.D. cards), one direct KO (31.2.14), and an empty discard logged the blocked no-op (34.2.22). Not observed in the export: pendingKoDiscardChoice.minCount in the Play Diagnostics uiStateSnapshot (captured after the prompt closed) and the prompt text itself; covered by tests.",
       "note": "Live check (NEW match with Great Lakes Avengers after the deploy): with two or more distinct cards in the discard, fighting Flatman opens \"KO 1 card from your discard pile\" with no \"KO None\" and submit disabled until a card is picked; Play Diagnostics uiStateSnapshot shows pendingKoDiscardChoice.minCount = 1 while it is open. With one card (or only Wounds) it is KO'd at once. D-24811."
     },
     {
@@ -1988,9 +1988,9 @@
       "card": "Mr. Immortal",
       "ability": "Fight: Reveal the top card of the Villain Deck. If it's a Villain or Bystander, Mr. Immortal reenters the Sewers.",
       "wp": "WP-868",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-07",
-      "evidence": "",
+      "evidence": "2p Operator match sU1EWDfnPVj (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers; Cape-Killers; Wolverine, Spider-Man, Hulk, Cyclops, Black Widow; Final Blow on; server build e6ec91f5 = the WP-868 merge, created 2026-11-07T18:34:12Z after boot, isMatchOlderThanServer false): Mr. Immortal revealed Zzutak (6.2.24) and Sporr twice (7.2.11, 7.2.14) and reentered the Sewers each time (6.2.25, 7.2.12, 7.2.15, threat); the revealed card stayed on top (Zzutak entered the City from the Villain Deck at 7.1.1); on a Master Strike he stayed defeated (8.2.18-8.2.19). Not observed live: a Henchman or Bystander top card, or a full-City push (covered by tests).",
       "note": "Live check (NEW match with Great Lakes Avengers after the deploy): fighting Mr. Immortal logs \"Mr. Immortal revealed <card> from the Villain Deck.\" and the card stays on top; on a Villain, Henchman or Bystander the log adds \"Mr. Immortal reenters the Sewers.\" and he is in the Sewers (not the Victory Pile); otherwise he stays defeated. D-24811."
     }
   ]
