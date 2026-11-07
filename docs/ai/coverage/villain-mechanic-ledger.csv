@@ -115,7 +115,7 @@ ca75-villain-masters-of-evil-wwii-radioactive-man,Radioactive Man,ca75,villain,g
 chmp-villain-wrecking-crew-bulldozer,Bulldozer,chmp,villain,(unmarked),unmarked,,,
 chmp-villain-monsters-unleashed-goom,Goom,chmp,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
 chmp-villain-monsters-unleashed-goom,Goom,chmp,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
-chmp-villain-monsters-unleashed-groot-from-planet-x,Groot from Planet X,chmp,villain,(unmarked),unmarked,,,
+chmp-villain-monsters-unleashed-groot-from-planet-x,Groot from Planet X,chmp,villain,stack-cards-enter-city-as-villains,executable,WP-869,D-24814,packages/game-engine/src/villain/villainEffects.execute.ts#stack-cards-enter-city-as-villains
 chmp-villain-monsters-unleashed-monsteroso,Monsteroso,chmp,villain,add-next-hand-size,executable,WP-543,D-24352,packages/game-engine/src/villain/villainEffects.execute.ts#add-next-hand-size
 chmp-villain-monsters-unleashed-orrgo,Orrgo,chmp,villain,setup:fight-restriction,subsystem,WP-871,D-24816,
 chmp-villain-wrecking-crew-piledriver,Piledriver,chmp,villain,demolish-each-player,executable,WP-864,D-24807,packages/game-engine/src/villain/villainEffects.execute.ts#demolish-each-player
@@ -233,8 +233,8 @@ cosm-villain-from-beyond-the-shaper-of-worlds,The Shaper of Worlds,cosm,villain,
 cosm-villain-elders-of-the-universe-the-trader,The Trader,cosm,villain,(unmarked),unmarked,,,
 cosm-villain-celestials-tiamut-the-dreaming-celestial,"Tiamut, The Dreaming Celestial",cosm,villain,(unmarked),unmarked,,,
 henchman-universal-church-of-truth,Universal Church of Truth,cosm,henchman,(unmarked),unmarked,,,
-cvwr-villain-shield-elite-agent-eric-marshall,Agent Eric Marshall,cvwr,villain,(unmarked),unmarked,,,
-cvwr-villain-shield-elite-agent-gabe-jones,Agent Gabe Jones,cvwr,villain,(unmarked),unmarked,,,
+cvwr-villain-shield-elite-agent-eric-marshall,Agent Eric Marshall,cvwr,villain,stack-cards-enter-city-as-villains,executable,WP-869,D-24814,packages/game-engine/src/villain/villainEffects.execute.ts#stack-cards-enter-city-as-villains
+cvwr-villain-shield-elite-agent-gabe-jones,Agent Gabe Jones,cvwr,villain,stack-cards-enter-city-as-villains,executable,WP-869,D-24814,packages/game-engine/src/villain/villainEffects.execute.ts#stack-cards-enter-city-as-villains
 cvwr-villain-great-lakes-avengers-big-bertha,Big Bertha,cvwr,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 cvwr-villain-registration-enforcers-blade,Blade,cvwr,villain,(unmarked),unmarked,,,
 cvwr-villain-csa-special-marshals-bullseye,Bullseye,cvwr,villain,(unmarked),unmarked,,,

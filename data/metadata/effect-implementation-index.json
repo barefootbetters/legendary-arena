@@ -10,11 +10,11 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 757,
+      "executable": 760,
       "deferred": 17,
       "condition": 58,
       "unsupported": 280,
-      "unmarked": 959,
+      "unmarked": 956,
       "subsystem": 7
     }
   },
@@ -5334,11 +5334,11 @@
       "name": "Groot from Planet X",
       "set": "chmp",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "stack-cards-enter-city-as-villains",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#stack-cards-enter-city-as-villains",
+      "wp": "WP-869",
+      "decision": "D-24814"
     },
     {
       "extId": "chmp-villain-monsters-unleashed-monsteroso",
@@ -9624,22 +9624,22 @@
       "name": "Agent Eric Marshall",
       "set": "cvwr",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "stack-cards-enter-city-as-villains",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#stack-cards-enter-city-as-villains",
+      "wp": "WP-869",
+      "decision": "D-24814"
     },
     {
       "extId": "cvwr-villain-shield-elite-agent-gabe-jones",
       "name": "Agent Gabe Jones",
       "set": "cvwr",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "stack-cards-enter-city-as-villains",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#stack-cards-enter-city-as-villains",
+      "wp": "WP-869",
+      "decision": "D-24814"
     },
     {
       "extId": "cvwr-villain-shield-elite-dum-dum-dugan",
@@ -31405,7 +31405,7 @@
     "chmp-villain-monsters-unleashed-groot-from-planet-x": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "stack-cards-enter-city-as-villains"
       ]
     },
     "chmp-villain-monsters-unleashed-monsteroso": {
@@ -32802,13 +32802,13 @@
     "cvwr-villain-shield-elite-agent-eric-marshall": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "stack-cards-enter-city-as-villains"
       ]
     },
     "cvwr-villain-shield-elite-agent-gabe-jones": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "stack-cards-enter-city-as-villains"
       ]
     },
     "cvwr-villain-shield-elite-dum-dum-dugan": {

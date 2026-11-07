@@ -93,6 +93,7 @@
     "reenter-sewers-if-villain-deck-top": { "wp": "WP-868", "decision": "D-24811" },
     "fortify": { "wp": "WP-873", "decision": "D-24818" },
     "demolish-each-player": { "wp": "WP-864", "decision": "D-24807" },
+    "stack-cards-enter-city-as-villains": { "wp": "WP-869", "decision": "D-24814" },
     "draw": { "wp": "WP-022", "decision": "D-2201" },
     "rescue": { "wp": "WP-215", "decision": "D-21501" },
     "undercover": { "wp": "WP-282", "decision": "D-24060" },

@@ -98,6 +98,7 @@
     "chmp": {
       "monsters-unleashed": {
         "goom": { "ambush": ["captureBystander"], "fight": ["koHeroCurrentPlayer"] },
+        "groot-from-planet-x": { "fight": ["stack-cards-enter-city-as-villains:bystander:2:splintered_half-groot"] },
         "monsteroso": { "fight": ["add-next-hand-size:1"] },
         "sporr": { "fight": ["hq-hero-gains-size-changing:add:tech+ranged"] },
         "tim-boo-ba": { "fight": ["hq-heroes-cost-change:less:1"] },
@@ -218,6 +219,10 @@
       },
       "registration-enforcers": {
         "micromax": { "fight": ["koHeroCurrentPlayer"] }
+      },
+      "shield-elite": {
+        "agent-eric-marshall": { "ambush": ["stack-cards-enter-city-as-villains:officer:1"] },
+        "agent-gabe-jones": { "fight": ["stack-cards-enter-city-as-villains:officer:1"] }
       },
       "thunderbolts": {
         "mach-iv": { "fight": ["reveal-or-wound:hc:tech"], "escape": ["reveal-or-wound:hc:tech"] }

@@ -2058,6 +2058,39 @@
       "date": "2026-11-07",
       "evidence": "",
       "note": "Live check (NEW match with Wrecking Crew after the deploy): when Piledriver escapes the log shows \"Escape effect: Demolish revealed <Hero> (cost C) and put it on the bottom of the Hero Deck.\" and each player's discard line; his Fight still KOs one of your Heroes. D-24807."
+    },
+    {
+      "key": "chmp-villain-monsters-unleashed-groot-from-planet-x|stack-cards-enter-city-as-villains",
+      "kind": "villain",
+      "card": "Groot from Planet X",
+      "ability": "Fight: Two Bystanders from the Bystander Stack enter the city as 3 Attack “Splintered Half-Groot” Villains. When you fight one, rescue it as a Bystander.",
+      "wp": "WP-869",
+      "state": "pending",
+      "date": "2026-11-07",
+      "evidence": "",
+      "note": "Live check (NEW match with Monsters Unleashed after the deploy): fighting Groot from Planet X logs \"Fight effect: Splintered Half-Groot (stack-villain-…) enters the city from the Bystander Stack (Groot from Planet X (…)).\" twice; two 3-Attack Splintered Half-Groots (Bystander art) stand in the Sewers and the Bank, and the fight overlay says \"2 Splintered Half-Groot Villains enter the city\". Fighting one adds a Bystander to the Victory Pile and logs \"rescued 1 bystander(s)\". Play Diagnostics uiStateSnapshot shows each with type \"villain\" and fightCost 3. D-24814."
+    },
+    {
+      "key": "cvwr-villain-shield-elite-agent-gabe-jones|stack-cards-enter-city-as-villains",
+      "kind": "villain",
+      "card": "Agent Gabe Jones",
+      "ability": "Fight: A S.H.I.E.L.D. Officer enters the city as a 3 Attack Villain. When you fight it, gain it as a Hero.",
+      "wp": "WP-869",
+      "state": "pending",
+      "date": "2026-11-07",
+      "evidence": "",
+      "note": "Live check (NEW match with S.H.I.E.L.D. Elite after the deploy): fighting Agent Gabe Jones puts a 3-Attack S.H.I.E.L.D. Officer in the Sewers (the log names it entering from the S.H.I.E.L.D. Officer Stack); fighting it puts the S.H.I.E.L.D. Officer in your discard pile, not the Victory Pile. Play Diagnostics uiStateSnapshot shows it with type \"villain\" and fightCost 3. D-24814."
+    },
+    {
+      "key": "cvwr-villain-shield-elite-agent-eric-marshall|stack-cards-enter-city-as-villains",
+      "kind": "villain",
+      "card": "Agent Eric Marshall",
+      "ability": "Ambush: A S.H.I.E.L.D. Officer enters the city as a 3 Attack Villain. When you fight it, gain it as a Hero.",
+      "wp": "WP-869",
+      "state": "pending",
+      "date": "2026-11-07",
+      "evidence": "",
+      "note": "Live check (NEW match with S.H.I.E.L.D. Elite after the deploy): when Agent Eric Marshall is revealed, a 3-Attack S.H.I.E.L.D. Officer enters the Sewers after him (Officer in the Sewers, Eric in the Bank) and the Ambush overlay reads \"S.H.I.E.L.D. Officer enters the city\", not \"no Ambush effect\"; fighting the Officer puts it in your discard pile. D-24814."
     }
   ]
 }
