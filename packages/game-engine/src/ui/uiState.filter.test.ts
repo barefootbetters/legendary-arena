@@ -4016,3 +4016,71 @@ describe('filterUIStateForAudience — Size-Changing hq.recruitCosts (D-24801)',
     assert.deepStrictEqual(snapshot.hq.recruitCosts, [2, null, null, null, null]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-871 / D-24816 — fightRestrictionReason public pass-through (five-step rule)
+// ---------------------------------------------------------------------------
+
+describe('WP-871 fightRestrictionReason projection (D-24816)', () => {
+  const DOOP = 'ssw2-villain-deadpools-secret-secret-wars-doop-00' as CardExtId;
+  const SQUIRREL_GIRL = 'cvwr-villain-great-lakes-avengers-squirrel-girl-00' as CardExtId;
+  const PLAIN = 'plain-villain-01' as CardExtId;
+  const DOOP_REASON = 'A Villain is in an adjacent city space';
+
+  /** Squirrel Girl (not blocked: no card played) at City 0; Doop at City 2, blocked by a villain at City 3. */
+  function createRestrictionUIState(): UIState {
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    gameState.city = [SQUIRREL_GIRL, null, DOOP, PLAIN, null] as LegendaryGameState['city'];
+    for (const cardId of [SQUIRREL_GIRL, DOOP, PLAIN]) {
+      gameState.villainDeckCardTypes[cardId] = 'villain';
+    }
+    gameState.villainFightRestrictions = {
+      [SQUIRREL_GIRL]: { kind: 'at-most-one-card-played' },
+      [DOOP]: { kind: 'no-adjacent-villain' },
+    };
+    return buildUIState(gameState, mockCtx);
+  }
+
+  it('T20: a card with fightRestrictionReason keeps it for every audience; a card without it has no key', () => {
+    const uiState = createTestUIState();
+    uiState.city.spaces[0] = {
+      extId: DOOP,
+      type: 'villain',
+      keywords: [],
+      display: { extId: DOOP, name: 'Doop', imageUrl: 'https://images.legendary-arena.com/doop.png', cost: null },
+      attachedHeroes: [],
+      attachedHeroDisplay: [],
+      attachedBystanderCount: 0,
+      fightCost: 2,
+      fightRestrictionReason: DOOP_REASON,
+    };
+    uiState.city.spaces[1] = {
+      extId: PLAIN,
+      type: 'villain',
+      keywords: [],
+      display: { extId: PLAIN, name: 'Plain', imageUrl: 'https://images.legendary-arena.com/plain.png', cost: null },
+      attachedHeroes: [],
+      attachedHeroDisplay: [],
+      attachedBystanderCount: 0,
+      fightCost: 1,
+    };
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.equal(result.city.spaces[0]!.fightRestrictionReason, DOOP_REASON, `${JSON.stringify(audience)} sees the reason`);
+      assert.equal('fightRestrictionReason' in result.city.spaces[1]!, false, 'no key on an unrestricted card');
+      const serialized = JSON.parse(JSON.stringify(result)) as UIState;
+      assert.equal(serialized.city.spaces[0]!.fightRestrictionReason, DOOP_REASON, 'survives the JSON round-trip');
+    }
+  });
+
+  it('T21: buildUIState writes the reason on blocked Doop only; Squirrel Girl (not blocked) carries no key', () => {
+    const uiState = createRestrictionUIState();
+    const doopCard = uiState.city.spaces[2]!;
+    assert.equal(doopCard.fightRestrictionReason, DOOP_REASON);
+    assert.ok(Object.keys(doopCard).includes('fightRestrictionReason'), 'keyset pin on the built projection');
+    assert.equal('fightRestrictionReason' in uiState.city.spaces[0]!, false, 'Squirrel Girl is not blocked');
+    assert.equal('fightRestrictionReason' in uiState.city.spaces[3]!, false, 'an unrestricted villain');
+    const filtered = filterUIStateForAudience(uiState, SPECTATOR);
+    assert.equal(filtered.city.spaces[2]!.fightRestrictionReason, DOOP_REASON, 'build → filter end to end');
+  });
+});

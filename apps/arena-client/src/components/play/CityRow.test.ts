@@ -1543,3 +1543,126 @@ describe('CityRow — table-perspective hover lift (WP-852 / D-24788)', () => {
     wrapper.unmount();
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-871 / D-24816 — villain fight restrictions (Orrgo, Squirrel Girl, Doop): the
+// engine-projected reason disables Fight, EV, Fight + Rescue and the slash gesture,
+// and the loud "Can't fight yet" cue explains it in the viewer's Main stage.
+// ---------------------------------------------------------------------------
+
+describe('WP-871 CityRow — fight restriction (D-24816)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    __resetSlashGestureSettingForTests();
+    __resetSlashGestureSignalsForTests();
+  });
+
+  const DOOP_REASON = 'A Villain is in an adjacent city space';
+
+  /** A City with Doop (cost 2, restricted) at index 2 and Electro (cost 5) beside it at index 3. */
+  function restrictedCity(doopCost = 2): UICityState {
+    return {
+      spaces: [
+        null,
+        null,
+        { ...villain('doop', doopCost), fightRestrictionReason: DOOP_REASON },
+        villain('electro', 5),
+        null,
+      ],
+      escapedPile: [],
+    };
+  }
+
+  /** Mounts the row with EV and the rescue cue on, so every Fight affordance could show. */
+  function mountRestricted(
+    submitMove: SubmitMove,
+    over: { isViewerTurn?: boolean; attack?: number; doopCost?: number } = {},
+  ) {
+    const attack = over.attack ?? 9;
+    return mount(CityRow, {
+      props: {
+        city: restrictedCity(over.doopCost),
+        decks: DECKS,
+        currentStage: 'main',
+        isViewerTurn: over.isViewerTurn ?? true,
+        economy: economy({
+          attack,
+          availableAttack: attack,
+          recruit: 2,
+          availableRecruit: 2,
+          excessiveViolenceAvailable: true,
+          rescueOnFightAvailable: true,
+        }),
+        submitMove,
+      },
+    });
+  }
+
+  /** Finds Doop's villain button in a mounted row. */
+  function doopButton(wrapper: ReturnType<typeof mount>) {
+    return wrapper.find('[data-testid="play-city-villain"][data-card-id="doop"]');
+  }
+
+  test('T22: a restricted, affordable cell in the viewer Main stage disables Fight with the reason and shows the cue', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mountRestricted(submitMove);
+    const button = doopButton(wrapper);
+    assert.equal(button.attributes('disabled'), '');
+    assert.equal(button.attributes('title'), DOOP_REASON);
+    const cue = button.find('[data-testid="play-city-fight-restriction"]');
+    assert.equal(cue.exists(), true);
+    assert.equal(cue.text(), "Can't fight yet");
+    assert.equal(cue.attributes('title'), DOOP_REASON);
+    assert.equal(
+      wrapper.find('[data-testid="play-city-villain-ev"][data-city-index="2"]').exists(),
+      false,
+      'no Excessive Violence button on the restricted villain',
+    );
+    assert.equal(
+      wrapper.find('[data-testid="play-city-villain-rescue"][data-city-index="2"]').exists(),
+      false,
+      'no Fight + Rescue button on the restricted villain',
+    );
+    assert.equal(
+      wrapper.find('[data-testid="play-city-villain-ev"][data-city-index="3"]').exists(),
+      true,
+      'the unrestricted neighbour still offers EV',
+    );
+    await button.trigger('click');
+    assert.deepEqual(calls, [], 'clicking the restricted villain submits nothing');
+    assert.equal(
+      wrapper.find('[data-testid="play-city-villain"][data-card-id="electro"]').find('[data-testid="play-city-fight-restriction"]').exists(),
+      false,
+      'an unrestricted villain never shows the cue',
+    );
+  });
+
+  test('T23: no cue during another player turn; an unaffordable restricted cell reports the cost reason first', () => {
+    const { submitMove } = recorder();
+    const otherTurn = mountRestricted(submitMove, { isViewerTurn: false });
+    assert.equal(otherTurn.find('[data-testid="play-city-fight-restriction"]').exists(), false);
+    assert.equal(doopButton(otherTurn).attributes('disabled'), '');
+    assert.notEqual(doopButton(otherTurn).attributes('title'), DOOP_REASON, 'the stage reason wins');
+
+    const unaffordable = mountRestricted(submitMove, { attack: 1 });
+    const button = doopButton(unaffordable);
+    assert.equal(button.attributes('disabled'), '');
+    assert.notEqual(button.attributes('title'), DOOP_REASON, 'cost gates before the restriction');
+    assert.match(button.attributes('title') ?? '', /attack/i);
+  });
+
+  test('T24: a slash stroke across the restricted cell and its neighbour fights only the neighbour', async () => {
+    useSlashGestureSetting().setEnabled(true);
+    const { calls, submitMove } = recorder();
+    const wrapper = mountRestricted(submitMove);
+    await nextTick();
+    stubVillainRects(wrapper.element);
+    const row = wrapper.find('ol.city-spaces').element;
+    // why: engine index 2 (Doop) spans x 300-380 and index 3 (Electro) x 400-480.
+    row.dispatchEvent(pointerEvent('pointerdown', 260, 150));
+    row.dispatchEvent(pointerEvent('pointermove', 490, 150));
+    row.dispatchEvent(pointerEvent('pointerup', 490, 150));
+    assert.deepEqual(calls, [{ name: 'fightVillain', args: { cityIndex: 3 } }]);
+    wrapper.unmount();
+  });
+});

@@ -14,8 +14,8 @@
       "deferred": 17,
       "condition": 58,
       "unsupported": 280,
-      "unmarked": 965,
-      "subsystem": 5
+      "unmarked": 963,
+      "subsystem": 7
     }
   },
   "entries": [
@@ -5356,11 +5356,11 @@
       "name": "Orrgo",
       "set": "chmp",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "setup:fight-restriction",
+      "status": "subsystem",
       "handler": "",
-      "wp": "",
-      "decision": ""
+      "wp": "WP-871",
+      "decision": "D-24816"
     },
     {
       "extId": "chmp-villain-monsters-unleashed-sporr",
@@ -22289,11 +22289,11 @@
       "name": "Doop",
       "set": "ssw2",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "setup:fight-restriction",
+      "status": "subsystem",
       "handler": "",
-      "wp": "",
-      "decision": ""
+      "wp": "WP-871",
+      "decision": "D-24816"
     },
     {
       "extId": "ssw2-villain-deadpools-secret-secret-wars-howard-the-duck",
@@ -31395,7 +31395,7 @@
     "chmp-villain-monsters-unleashed-orrgo": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "setup:fight-restriction"
       ]
     },
     "chmp-villain-monsters-unleashed-sporr": {
@@ -37121,7 +37121,7 @@
     "ssw2-villain-deadpools-secret-secret-wars-doop": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "setup:fight-restriction"
       ]
     },
     "ssw2-villain-deadpools-secret-secret-wars-howard-the-duck": {

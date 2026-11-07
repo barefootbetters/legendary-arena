@@ -496,6 +496,7 @@ type CarriedTurnFields = Partial<
     | 'ritualUsedPlayedCardIds'
     | 'heistCrewCards'
     | 'hasAttemptedHeistThisTurn'
+    | 'hasDefeatedVillainThisTurn'
   >
 >;
 
@@ -603,6 +604,13 @@ function carryConversionFlag(economy: TurnEconomy): CarriedTurnFields {
   }
   if (economy.hasAttemptedHeistThisTurn !== undefined) {
     carried.hasAttemptedHeistThisTurn = economy.hasAttemptedHeistThisTurn;
+  }
+  // why: WP-871 / D-24816 — carry Orrgo's "defeated a Villain this turn" flag ONLY when
+  // present (omit-when-absent keeps both hash oracles byte-stable). fightVillain rebuilds
+  // the economy (spendFightCostForTarget) AFTER the defeat core sets the flag, so without
+  // the carry the very fight that set it would drop it and Orrgo would stay unfightable.
+  if (economy.hasDefeatedVillainThisTurn !== undefined) {
+    carried.hasDefeatedVillainThisTurn = economy.hasDefeatedVillainThisTurn;
   }
   return carried;
 }
@@ -1054,6 +1062,34 @@ export function recordSidekickReturned(economy: TurnEconomy): TurnEconomy {
     // ledger set earlier this turn. The explicit assignment then sets this one.
     ...carryConversionFlag(economy),
     sidekicksReturnedThisTurn: (economy.sidekicksReturnedThisTurn ?? 0) + 1,
+  };
+}
+
+/**
+ * Records that the current player defeated a City Villain this turn (WP-871 / D-24816).
+ *
+ * Called by `defeatCityVillainCore` only in a match with a
+ * `requires-villain-defeated-this-turn` fight restriction (Orrgo), so every other match
+ * keeps the key absent. Sets `hasDefeatedVillainThisTurn: true`; every other field is
+ * carried unchanged through the single carry chokepoint. `resetTurnEconomy` drops the flag
+ * at the next turn start.
+ *
+ * @param economy - Current turn economy state.
+ * @returns New TurnEconomy with `hasDefeatedVillainThisTurn: true`.
+ */
+export function recordVillainDefeated(economy: TurnEconomy): TurnEconomy {
+  return {
+    attack: economy.attack,
+    recruit: economy.recruit,
+    spentAttack: economy.spentAttack,
+    spentRecruit: economy.spentRecruit,
+    piercing: economy.piercing,
+    woundsDrawn: economy.woundsDrawn,
+    cardsDrawn: economy.cardsDrawn,
+    // why: spread the single carry chokepoint so recording the defeat never drops a flag or
+    // ledger set earlier this turn. The explicit assignment then sets this one.
+    ...carryConversionFlag(economy),
+    hasDefeatedVillainThisTurn: true,
   };
 }
 

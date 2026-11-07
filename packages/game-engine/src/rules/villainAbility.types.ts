@@ -909,6 +909,47 @@ export interface VillainFightDiscardCost {
 }
 
 // ---------------------------------------------------------------------------
+// Villain fight restriction (WP-871 / D-24816)
+// ---------------------------------------------------------------------------
+
+/**
+ * The closed set of printed "You can't fight X unless / if …" conditions on City
+ * Villains (WP-871 / D-24816). Each kind is a state-only predicate (no move
+ * argument) read by the fightVillain gate, getLegalMoves and the City projection.
+ *
+ * - `requires-villain-defeated-this-turn` — Orrgo: the current player has already
+ *   defeated another Villain this turn.
+ * - `at-most-one-card-played` — Squirrel Girl: the current player has played at
+ *   most one card this turn.
+ * - `no-adjacent-villain` — Doop: neither neighbouring City space holds a Villain.
+ */
+export type VillainFightRestrictionKind =
+  | 'requires-villain-defeated-this-turn'
+  | 'at-most-one-card-played'
+  | 'no-adjacent-villain';
+
+/**
+ * Canonical array of every {@link VillainFightRestrictionKind}, in canonical
+ * order. The closed set of printed "You can't fight X unless / if …" conditions
+ * on City Villains; built at setup from `[fight-restriction:<kind>]`; immutable
+ * during play. A drift test asserts it matches the union exactly.
+ */
+export const VILLAIN_FIGHT_RESTRICTION_KINDS: readonly VillainFightRestrictionKind[] = [
+  'requires-villain-defeated-this-turn',
+  'at-most-one-card-played',
+  'no-adjacent-villain',
+] as const;
+
+/**
+ * A villain's printed fight restriction (WP-871 / D-24816). Built at setup from
+ * the `[fight-restriction:<kind>]` marker, stored per villain instance in
+ * G.villainFightRestrictions; immutable during gameplay.
+ */
+export interface VillainFightRestriction {
+  kind: VillainFightRestrictionKind;
+}
+
+// ---------------------------------------------------------------------------
 // VillainAbilityHook — data-only descriptor
 // ---------------------------------------------------------------------------
 

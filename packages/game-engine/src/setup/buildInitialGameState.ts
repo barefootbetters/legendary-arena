@@ -80,6 +80,7 @@ import { buildVillainAbilityHooks } from './villainAbility.setup.js';
 import {
   buildVillainDefeatRequirements,
   buildVillainFightDiscardCosts,
+  buildVillainFightRestrictions,
   buildVillainVariableAttack,
 } from './villainDefeatRequirement.setup.js';
 import { buildVillainBloodFrenzy } from './buildVillainBloodFrenzy.js';
@@ -482,6 +483,16 @@ export function buildInitialGameState(
   // table of villainDefeatRequirements, built from the same registry read. Narrow
   // test mocks → empty record (omitted below).
   const villainFightDiscardCosts = buildVillainFightDiscardCosts(
+    registry as unknown,
+    villainBuildConfig,
+  );
+
+  // why: WP-871 / D-24816 — per-villain fight restrictions (Orrgo, Squirrel Girl, Doop),
+  // the third sibling table, built from the same registry read. villainBuildConfig (not
+  // the raw config) so the chmp/monsters-unleashed group the Clash of the Monsters
+  // Unleashed Monster Pit adds is covered and a Monster Pit Orrgo is restricted. Narrow
+  // test mocks → empty record (omitted below).
+  const villainFightRestrictions = buildVillainFightRestrictions(
     registry as unknown,
     villainBuildConfig,
   );
@@ -996,6 +1007,10 @@ export function buildInitialGameState(
     // on G ONLY when a selected villain carries a [discard-to-fight:...] marker, so every
     // match without Primus keeps a byte-identical finalStateHash.
     ...(Object.keys(villainFightDiscardCosts).length > 0 ? { villainFightDiscardCosts } : {}),
+    // why: WP-871 / D-24816 — same hash-stability discipline: villainFightRestrictions is
+    // on G ONLY when a selected villain carries a [fight-restriction:...] marker, so every
+    // match without Orrgo / Squirrel Girl / Doop keeps a byte-identical finalStateHash.
+    ...(Object.keys(villainFightRestrictions).length > 0 ? { villainFightRestrictions } : {}),
     // why: WP-841 / D-24774 — same hash-stability discipline: villainVariableAttack is
     // on G ONLY when a selected villain carries a [variable-attack:...] marker, so every
     // match without those four co2e villains keeps a byte-identical finalStateHash.

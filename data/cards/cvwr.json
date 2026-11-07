@@ -2517,7 +2517,7 @@
           "vAttack": "3",
           "imageUrl": "https://images.legendary-arena.com/cvwr/cvwr-vi-great-lakes-avengers-squirrel-girl.webp",
           "abilities": [
-            "You can't fight Squirrel Girl if you played more than one card this turn.",
+            "You can't fight Squirrel Girl if you played more than one card this turn. [fight-restriction:at-most-one-card-played]",
             "Escape: [keyword:Fortify] the Sidekick Stack. While it's fortified, [rule:Sidekicks] can't be recruited or gained."
           ],
           "copies": 2

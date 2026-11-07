@@ -904,7 +904,10 @@ validation-phase silent return (no throw), it runs before the `G` mutation, and
 it exists precisely so the base power is not granted on a play the player cannot
 afford. The same precondition MAY apply to the specific villain being fought,
 whose cost is named by a validated move argument (`fightVillain.discardCardId`,
-WP-817 / D-24750). A pre-commit precondition is distinct from the pending-choice pattern
+WP-817 / D-24750). A fight MAY also be refused on a state-only precondition of the
+fought villain read from a setup-built table — its defeat requirement (D-24076) or its
+fight restriction (WP-871 / D-24816) — mirrored in `getLegalMoves`. A pre-commit
+precondition is distinct from the pending-choice pattern
 (which fires AFTER the card commits); use it only when the outcome must be
 withheld unless the cost is payable.
 

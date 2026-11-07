@@ -471,6 +471,7 @@ import type {
   VillainAbilityHook,
   VillainDefeatRequirement,
   VillainFightDiscardCost,
+  VillainFightRestriction,
 } from './rules/villainAbility.types.js';
 import type { NotableGameEvent, StrikeBlockThreatKind } from './events/notableEvents.types.js';
 // why: WP-815 / D-24747 — G.cardAbomination values are the closed AbominationKind
@@ -3119,6 +3120,17 @@ export interface LegendaryGameState {
   // the match, so every other match keeps a byte-identical G shape (determinism).
   /** Per-villain fight discard costs. Built at setup, read-only; absent when none. */
   villainFightDiscardCosts?: Record<CardExtId, VillainFightDiscardCost>;
+
+  // why: WP-871 / D-24816 — per-villain-instance fight restriction ("You can't fight
+  // Orrgo unless …", "… Squirrel Girl if …", "… Doop if …"). A sibling of
+  // villainDefeatRequirements / villainFightDiscardCosts: a state-only fight
+  // precondition read by the fightVillain gate, getLegalMoves and the UIState City
+  // projection. Built once at setup from the [fight-restriction:<kind>] marker, keyed
+  // by copy-suffixed instance ext_id, never written by a move. OMITTED ENTIRELY when
+  // no marked villain is in the match, so every other match keeps a byte-identical G
+  // shape (determinism).
+  /** Per-villain fight restrictions. Built at setup, read-only; absent when none. */
+  villainFightRestrictions?: Record<CardExtId, VillainFightRestriction>;
 
   // why: WP-841 / D-24774 — per-villain-instance variable-Attack passive (Baron
   // Strucker, Paibok, Super-Skrull, Hydro-Man: "<Villain> gets +N Attack …"). Read by

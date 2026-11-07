@@ -27,6 +27,8 @@ import {
   playerMeetsDefeatRequirement,
   getFightDiscardCost,
   selectDefaultCostDiscardCard,
+  getFightRestriction,
+  isFightRestrictionBlocking,
 } from '../moves/villainDefeatRequirement.logic.js';
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
@@ -1142,6 +1144,18 @@ export function getLegalMoves(
       if (
         defeatRequirement !== null &&
         !playerMeetsDefeatRequirement(gameState, activePlayer, defeatRequirement)
+      ) {
+        continue;
+      }
+      // why: WP-871 / D-24816 — mirror the fightVillain move's fight-restriction gate
+      // (Orrgo, Squirrel Girl, Doop) with the same helper at the same position (D-24364:
+      // every move precondition ships with its enumeration mirror). Offering a fight the
+      // move refuses is a no-op the bot re-picks every step until the 100-step cap faults
+      // the turn.
+      const fightRestriction = getFightRestriction(gameState, cityCard);
+      if (
+        fightRestriction !== null &&
+        isFightRestrictionBlocking(gameState, activePlayer, cityIndex, fightRestriction)
       ) {
         continue;
       }

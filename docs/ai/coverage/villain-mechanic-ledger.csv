@@ -117,7 +117,7 @@ chmp-villain-monsters-unleashed-goom,Goom,chmp,villain,captureBystander,executab
 chmp-villain-monsters-unleashed-goom,Goom,chmp,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 chmp-villain-monsters-unleashed-groot-from-planet-x,Groot from Planet X,chmp,villain,(unmarked),unmarked,,,
 chmp-villain-monsters-unleashed-monsteroso,Monsteroso,chmp,villain,add-next-hand-size,executable,WP-543,D-24352,packages/game-engine/src/villain/villainEffects.execute.ts#add-next-hand-size
-chmp-villain-monsters-unleashed-orrgo,Orrgo,chmp,villain,(unmarked),unmarked,,,
+chmp-villain-monsters-unleashed-orrgo,Orrgo,chmp,villain,setup:fight-restriction,subsystem,WP-871,D-24816,
 chmp-villain-wrecking-crew-piledriver,Piledriver,chmp,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 chmp-villain-monsters-unleashed-sporr,Sporr,chmp,villain,hq-hero-gains-size-changing,executable,WP-862,D-24804,packages/game-engine/src/villain/villainEffects.execute.ts#hq-hero-gains-size-changing
 chmp-villain-wrecking-crew-the-wrecker,The Wrecker,chmp,villain,(unmarked),unmarked,,,
@@ -559,7 +559,7 @@ ssw2-villain-guardians-of-knowhere-angela,Angela,ssw2,villain,(unmarked),unmarke
 ssw2-villain-monster-metropolis-bug-shiklahs-dragon,"Bug, Shiklah's Dragon",ssw2,villain,ko-from-discard-current,executable,WP-868,D-24811,packages/game-engine/src/villain/villainEffects.execute.ts#ko-from-discard-current
 ssw2-villain-deadpools-secret-secret-wars-deadpool,Deadpool,ssw2,villain,(unmarked),unmarked,,,
 ssw2-villain-utopolis-doctor-spectrum,Doctor Spectrum,ssw2,villain,(unmarked),unmarked,,,
-ssw2-villain-deadpools-secret-secret-wars-doop,Doop,ssw2,villain,(unmarked),unmarked,,,
+ssw2-villain-deadpools-secret-secret-wars-doop,Doop,ssw2,villain,setup:fight-restriction,subsystem,WP-871,D-24816,
 ssw2-villain-guardians-of-knowhere-drax-the-destroyer,Drax the Destroyer,ssw2,villain,(unmarked),unmarked,,,
 ssw2-villain-guardians-of-knowhere-gamora,Gamora,ssw2,villain,gainWoundEachPlayer,executable,WP-185,D-18502,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 ssw2-villain-monster-metropolis-ghost-deadpool,Ghost Deadpool,ssw2,villain,(unmarked),unmarked,,,

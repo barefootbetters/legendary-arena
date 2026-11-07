@@ -1770,3 +1770,69 @@ describe('getLegalMoves — Size-Changing fight price matches the move guard (D-
     assert.equal(legalMoves.filter((move) => move.name === 'fightMastermind').length, 1);
   });
 });
+
+describe('WP-871 getLegalMoves — villain fight restrictions mirror the move guard (D-24816)', () => {
+  const ORRGO = 'chmp-villain-monsters-unleashed-orrgo-00' as CardExtId;
+  const SQUIRREL_GIRL = 'cvwr-villain-great-lakes-avengers-squirrel-girl-00' as CardExtId;
+  const DOOP = 'ssw2-villain-deadpools-secret-secret-wars-doop-00' as CardExtId;
+  const PLAIN = 'core-villain-hydra-hydra-kidnappers-00' as CardExtId;
+
+  /** A main-stage state with the given City, cards in play and attack; all three restrictions in the table. */
+  function makeRestrictedG(options: {
+    city: (CardExtId | null)[];
+    inPlay?: CardExtId[];
+    attack?: number;
+    hasDefeatedVillainThisTurn?: boolean;
+  }): LegendaryGameState {
+    const gameState = makeG({ inPlay: options.inPlay ?? [], currentStage: 'main' });
+    gameState.turnEconomy = makeTurnEconomy({ attack: options.attack ?? 9 });
+    if (options.hasDefeatedVillainThisTurn === true) {
+      gameState.turnEconomy.hasDefeatedVillainThisTurn = true;
+    }
+    gameState.city = options.city;
+    gameState.cardStats = {
+      [ORRGO]: makeCardStatEntry({ fightCost: 2 }),
+      [SQUIRREL_GIRL]: makeCardStatEntry({ fightCost: 3 }),
+      [DOOP]: makeCardStatEntry({ fightCost: 2 }),
+      [PLAIN]: makeCardStatEntry({ fightCost: 1 }),
+    } as LegendaryGameState['cardStats'];
+    gameState.villainFightRestrictions = {
+      [ORRGO]: { kind: 'requires-villain-defeated-this-turn' },
+      [SQUIRREL_GIRL]: { kind: 'at-most-one-card-played' },
+      [DOOP]: { kind: 'no-adjacent-villain' },
+    };
+    return gameState;
+  }
+
+  /** Returns the fightVillain intents only. */
+  function fightIntents(gameState: LegendaryGameState) {
+    return getLegalMoves(gameState, CONTEXT).filter((move) => move.name === 'fightVillain');
+  }
+
+  test('T18: no fight is offered for a blocked Orrgo, Squirrel Girl or Doop; other spaces are unchanged', () => {
+    const orrgoBlocked = makeRestrictedG({ city: [null, ORRGO, null, null, null] });
+    assert.deepStrictEqual(fightIntents(orrgoBlocked), []);
+    const squirrelGirlBlocked = makeRestrictedG({
+      city: [SQUIRREL_GIRL, null, null, null, null],
+      inPlay: ['hero-a', 'hero-b'] as CardExtId[],
+    });
+    assert.deepStrictEqual(fightIntents(squirrelGirlBlocked), []);
+    const doopBlocked = makeRestrictedG({ city: [null, null, DOOP, PLAIN, null] });
+    assert.deepStrictEqual(fightIntents(doopBlocked), [{ name: 'fightVillain', args: { cityIndex: 3 } }]);
+  });
+
+  test('T19: each satisfied restriction and an unrestricted villain offer { cityIndex } exactly', () => {
+    const orrgoSatisfied = makeRestrictedG({ city: [null, ORRGO, null, null, null], hasDefeatedVillainThisTurn: true });
+    assert.deepStrictEqual(fightIntents(orrgoSatisfied), [{ name: 'fightVillain', args: { cityIndex: 1 } }]);
+    const squirrelGirlSatisfied = makeRestrictedG({
+      city: [SQUIRREL_GIRL, null, null, null, null],
+      inPlay: ['hero-a'] as CardExtId[],
+    });
+    assert.deepStrictEqual(fightIntents(squirrelGirlSatisfied), [{ name: 'fightVillain', args: { cityIndex: 0 } }]);
+    const doopSatisfied = makeRestrictedG({ city: [null, null, DOOP, null, PLAIN] });
+    assert.deepStrictEqual(fightIntents(doopSatisfied), [
+      { name: 'fightVillain', args: { cityIndex: 2 } },
+      { name: 'fightVillain', args: { cityIndex: 4 } },
+    ]);
+  });
+});

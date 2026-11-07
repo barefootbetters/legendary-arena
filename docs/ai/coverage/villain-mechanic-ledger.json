@@ -7,10 +7,10 @@
       "executable": 240,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 518,
-      "subsystem": 2
+      "unmarked": 516,
+      "subsystem": 4
     },
-    "distinctMechanics": 50
+    "distinctMechanics": 51
   },
   "rows": [
     {
@@ -1316,10 +1316,10 @@
       "cardName": "Orrgo",
       "set": "chmp",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
+      "mechanic": "setup:fight-restriction",
+      "status": "subsystem",
+      "wp": "WP-871",
+      "decision": "D-24816",
       "handler": ""
     },
     {
@@ -6178,10 +6178,10 @@
       "cardName": "Doop",
       "set": "ssw2",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
+      "mechanic": "setup:fight-restriction",
+      "status": "subsystem",
+      "wp": "WP-871",
+      "decision": "D-24816",
       "handler": ""
     },
     {
