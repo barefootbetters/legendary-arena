@@ -375,6 +375,17 @@ Replays of pre-WP-864 matches with these effects diverge; stored competitive row
   folded consistently in the WP and EC, with no new contradiction and an EC of 84 content lines. One P2 wording fold was applied:
   the three `// why:` comments above the primitive length asserts join the sanctioned pin edits.
 
+## Execution Amendment (2026-11-07, inline)
+
+- **Primitive position 40 → 44 (stale baseline).** Between draft and execution, WP-868 (D-24811) appended
+  `hq-heroes-cost-change`, `ko-from-discard-current` and `reenter-sewers-if-villain-deck-top` (40-42) and WP-873 (D-24818)
+  appended `fortify` (43). `demolish-each-player` is therefore appended at **position 44**, still last, with no other change.
+  Every "39 → 40" length pin in RS-4 / the EC reads "43 → 44" at execution.
+- **One more sanctioned pin site.** WP-873 added its own runtime pin in `rules/villainAbility.types.test.ts`
+  (`T5: fortify is the 43rd and last primitive …`): its length assert moves 43 → 44, its title drops "and last" (fortify is
+  still at index 42), and its `Record<VillainEffectPrimitive, true>` parity literal gains `'demolish-each-player': true`. Same
+  class of edit as the EC's sanctioned pins (an append moves a total), citing WP-864 / D-24807.
+
 ## Lint Gate Self-Review (00.3)
 
 - **§1 structure:** every required section is present and non-empty. Out of Scope names the hollow flag, Epic Fin Fang Foom,
