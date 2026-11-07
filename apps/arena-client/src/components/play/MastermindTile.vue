@@ -2,6 +2,7 @@
 import { defineComponent, ref, watch, type PropType } from 'vue';
 import type {
   UIEnigmaCodeState,
+  UIFortifier,
   UIMastermindState,
   UITurnEconomyState,
 } from '@legendary-arena/game-engine';
@@ -11,6 +12,7 @@ import CardTile from './CardTile.vue';
 import DarkPortalMarker from './DarkPortalMarker.vue';
 import CrossedSwordsIcon from './CrossedSwordsIcon.vue';
 import EnigmaGuessPicker from './EnigmaGuessPicker.vue';
+import FortifiedVillains from './FortifiedVillains.vue';
 import type { SubmitMove } from './uiMoveName.types';
 
 /**
@@ -50,12 +52,19 @@ import type { SubmitMove } from './uiMoveName.types';
  */
 export default defineComponent({
   name: 'MastermindTile',
-  components: { CardTile, DarkPortalMarker, CrossedSwordsIcon, EnigmaGuessPicker },
+  components: { CardTile, DarkPortalMarker, CrossedSwordsIcon, EnigmaGuessPicker, FortifiedVillains },
   emits: ['read'],
   props: {
     mastermind: {
       type: Object as PropType<UIMastermindState>,
       required: true,
+    },
+    // why: D-24819 — UIState.city.fortifiers. A Villain fortifying the Mastermind
+    // (Colleen Wing) is drawn on this tile with its own Fight button.
+    fortifiers: {
+      type: Array as PropType<UIFortifier[]>,
+      required: false,
+      default: () => [],
     },
     // why: WP-727 / D-24548 — the Portals Dark Portal above the Mastermind, as a
     // +N attack. Derived by the parent from scheme.darkPortals (0 = no portal /
@@ -409,6 +418,7 @@ export default defineComponent({
           data-testid="play-mastermind-fight-cost"
         >Fight {{ mastermind.fightCost }}</span>
       </span>
+
       <span class="mastermind-status" data-testid="play-mastermind-tactics-remaining">
         Tactics remaining: {{ mastermind.tacticsRemaining }}
       </span>
@@ -425,6 +435,18 @@ export default defineComponent({
         Final blow — fight the Mastermind
       </span>
     </button>
+    <!-- why: D-24819 — Fortify puts the Villain on the Mastermind (rules v23 L1454). A
+         sibling of the Fight button (a button cannot hold a button), absolutely positioned
+         over the tile so the adversary band keeps its height. -->
+    <FortifiedVillains
+      :fortifiers="fortifiers"
+      place="mastermind"
+      :current-stage="currentStage"
+      :is-viewer-turn="isViewerTurn"
+      :has-healed-this-turn="hasHealedThisTurn"
+      :economy="economy"
+      :submit-move="submitMove"
+    />
     <!-- why: WP-738 / D-24561 — the "Fight using Excessive Violence" affordance
          against the Mastermind. A SEPARATE opt-in button (the normal Fight click
          above is unchanged); shown only when the fight is allowed AND the player

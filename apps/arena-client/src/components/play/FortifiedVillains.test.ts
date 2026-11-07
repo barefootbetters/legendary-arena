@@ -73,6 +73,7 @@ function mountStrip(options: { fortifier?: UIFortifier; isViewerTurn?: boolean; 
   const wrapper = mount(FortifiedVillains, {
     props: {
       fortifiers: [options.fortifier ?? squirrelGirl()],
+      place: 'sidekick-stack',
       currentStage: 'main',
       isViewerTurn: options.isViewerTurn ?? true,
       economy: economy({ attack, availableAttack: attack }),
@@ -125,5 +126,38 @@ describe('FortifiedVillains (WP-873 / D-24818)', () => {
       await button.trigger('click');
       assert.equal(calls.length, 0, `${testCase.label}: a click submits nothing`);
     }
+  });
+
+  test('D-24819: only the host place renders, titled with its place and lock; none renders nothing', () => {
+    const { submitMove } = recorder();
+    const colleenWing: UIFortifier = {
+      place: 'mastermind',
+      placeLabel: 'the Mastermind',
+      extId: 'cvwr-villain-heroes-for-hire-colleen-wing-00',
+      display: { extId: 'cvwr-villain-heroes-for-hire-colleen-wing-00', name: 'Colleen Wing', imageUrl: '', cost: 9 },
+      fightCost: 9,
+      lockText: "the Mastermind can't be fought",
+    };
+    const atMastermind = mount(FortifiedVillains, {
+      props: {
+        fortifiers: [squirrelGirl(), colleenWing],
+        place: 'mastermind',
+        currentStage: 'main',
+        economy: economy(),
+        submitMove,
+      },
+    });
+    const chips = atMastermind.findAll('[data-testid="play-fortifier"]');
+    assert.equal(chips.length, 1, 'only the Mastermind fortifier renders on the Mastermind');
+    assert.match(chips[0]!.text(), /Colleen Wing/);
+    assert.equal(chips[0]!.attributes('data-place'), 'mastermind');
+    assert.equal(
+      chips[0]!.attributes('title'),
+      "Colleen Wing fortifies the Mastermind: the Mastermind can't be fought. Fight Colleen Wing to end it.",
+    );
+    const atStackWithNone = mount(FortifiedVillains, {
+      props: { fortifiers: [colleenWing], place: 'sidekick-stack', currentStage: 'main', economy: economy(), submitMove },
+    });
+    assert.equal(atStackWithNone.find('ul').exists(), false, 'no list renders when nothing fortifies the host place');
   });
 });

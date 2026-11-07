@@ -586,6 +586,7 @@ export default defineComponent({
                marker stays hidden. -->
           <MastermindTile
             :mastermind="snapshot.mastermind"
+            :fortifiers="snapshot.city.fortifiers ?? []"
             :current-stage="snapshot.game.currentStage"
             :is-viewer-turn="isViewerTurn"
             :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
@@ -650,6 +651,7 @@ export default defineComponent({
         <section class="play-mobile__band play-mobile__band--scroll-x">
           <SharedDecks
             :piles="snapshot.piles"
+            :fortifiers="snapshot.city.fortifiers ?? []"
             :current-stage="snapshot.game.currentStage"
             :is-viewer-turn="isViewerTurn"
             :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
