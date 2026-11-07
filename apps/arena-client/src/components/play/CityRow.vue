@@ -15,6 +15,7 @@ import { useSlashGestureSetting } from '../../composables/useSlashGestureSetting
 import { useRowFit } from '../../composables/useRowFit';
 import CardTile from './CardTile.vue';
 import EscapedPile from './EscapedPile.vue';
+import FortifiedVillains from './FortifiedVillains.vue';
 import DarkPortalMarker from './DarkPortalMarker.vue';
 import CrossedSwordsIcon from './CrossedSwordsIcon.vue';
 import type { SubmitMove } from './uiMoveName.types';
@@ -57,7 +58,7 @@ import type { SubmitMove } from './uiMoveName.types';
  */
 export default defineComponent({
   name: 'CityRow',
-  components: { CardTile, EscapedPile, DarkPortalMarker, CrossedSwordsIcon },
+  components: { CardTile, EscapedPile, FortifiedVillains, DarkPortalMarker, CrossedSwordsIcon },
   props: {
     city: {
       type: Object as PropType<UICityState>,
@@ -573,6 +574,17 @@ export default defineComponent({
       >
         <template v-if="cell.kind === 'escaped'">
           <EscapedPile :pile="cell.entries" />
+          <!-- why: WP-873 / D-24818 — a fortifying Villain left the Escape Pile; it shows
+               under it with its own Fight button, gated with this row's own props. -->
+          <FortifiedVillains
+            v-if="city.fortifiers !== undefined && city.fortifiers.length > 0"
+            :fortifiers="city.fortifiers"
+            :current-stage="currentStage"
+            :is-viewer-turn="isViewerTurn"
+            :has-healed-this-turn="hasHealedThisTurn"
+            :economy="economy"
+            :submit-move="submitMove"
+          />
         </template>
         <!-- why: WP-831 / D-24764 — a space a scheme removed from the City keeps its column (so the
              HQ stays aligned) but holds nothing and has no name any more. -->

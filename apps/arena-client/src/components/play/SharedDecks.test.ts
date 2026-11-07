@@ -389,3 +389,24 @@ describe('SharedDecks — card-face-only recruit piles (desktop)', () => {
     );
   });
 });
+
+describe('SharedDecks — Fortify locks the Sidekick Stack (WP-873 / D-24818)', () => {
+  test('T31: with sidekickStackFortifiedReason set and 2 recruit, Recruit Sidekick is disabled with that reason', async () => {
+    const reason = 'Squirrel Girl fortifies the Sidekick Stack. Fight Squirrel Girl first.';
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(SharedDecks, {
+      props: {
+        piles: piles({ sidekicksCount: 12, sidekickStackFortifiedReason: reason }),
+        currentStage: 'main',
+        isViewerTurn: true,
+        economy: economy({ recruit: 2, availableRecruit: 2 }),
+        submitMove,
+      },
+    });
+    const button = wrapper.find('[data-testid="play-recruit-sidekick"]');
+    assert.equal(button.attributes('disabled'), '');
+    assert.equal(button.attributes('title'), reason);
+    await button.trigger('click');
+    assert.equal(calls.length, 0);
+  });
+});

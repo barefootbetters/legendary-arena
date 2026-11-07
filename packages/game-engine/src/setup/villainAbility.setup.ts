@@ -32,6 +32,11 @@ import {
 // against the canonical CITY_SPACE_NAMES; CitySpaceName is the lifted field type.
 import type { CitySpaceName } from '../board/citySpaceNames.js';
 import { CITY_SPACE_NAMES } from '../board/citySpaceNames.js';
+// why: WP-873 / D-24818 — the Fortify grammar validates the place and lock against the
+// contract's closed sets (types and constants only; no runtime cycle).
+import type { FortifyLock } from '../board/fortify.types.js';
+import { FORTIFY_ALLOWED_LOCKS } from '../board/fortify.types.js';
+import { isFortifyPlace } from '../board/fortify.logic.js';
 // why: D-24281 — reveal-or-wound stores its `requireValue` normalized to the
 // `cardTraits` slug space so the executor's `===` trait comparison is
 // casing/whitespace-safe. normalizeTraitSlug is the SINGLE canonical normalizer
@@ -517,6 +522,8 @@ function parseLocationGatedEffect(
  *   - `ko-from-discard-current:<N>`  (the mandatory KO of N cards from your discard; D-24811)
  *   - `reenter-sewers-if-villain-deck-top:<villain|bystander|villain+bystander>`  (the defeated
  *     card reenters the Sewers on a matching Villain Deck top; D-24811)
+ *   - `fortify:<place>:<lock>`  (the escaped Villain fortifies the place; the lock must be one
+ *     FORTIFY_ALLOWED_LOCKS lists for it; D-24818)
  *   - `discard-hero-each-player-by-trait:<kind>:<value>` and
  *     `discard-hero-or-wound-each-player-by-trait:<kind>:<value>`  (each player discards a
  *     matching Hero, or may gain a Wound instead; D-24770)
@@ -880,6 +887,9 @@ function parseUngatedEffect(
       return { primitive: 'reenter-sewers-if-villain-deck-top', reenterRevealKinds: ['villain', 'bystander'] };
     }
     return null;
+  }
+  if (primitiveToken === 'fortify') {
+    return parseFortifyEffect(parts);
   }
   if (primitiveToken === 'play-villain-deck-cards') {
     // why: D-24351 — grammar `play-villain-deck-cards:<N>` (exactly 2 tokens); N is the
@@ -1452,4 +1462,36 @@ export function buildVillainAbilityHooks(
   }
 
   return hooks;
+}
+
+/**
+ * Parses the parts of a `fortify:<place>:<lock>` marker (WP-873 / D-24818).
+ *
+ * Exactly 3 colon-parts; `<place>` must be one of FORTIFY_PLACES and `<lock>` one of the
+ * locks FORTIFY_ALLOWED_LOCKS lists for that place (Squirrel Girl:
+ * `fortify:sidekick-stack:no-recruit-or-gain`; Colleen Wing: `fortify:mastermind:no-fight`).
+ * Anything else returns null (→ unresolvedMarkers), never a partial descriptor.
+ *
+ * @param parts - The marker value split on ':' (parts[0] is `fortify`).
+ * @returns The fortify descriptor, or null.
+ */
+function parseFortifyEffect(parts: readonly string[]): VillainEffectDescriptor | null {
+  if (parts.length !== 3) {
+    return null;
+  }
+  const placeToken = parts[1];
+  if (!isFortifyPlace(placeToken)) {
+    return null;
+  }
+  const lockToken = parts[2];
+  let fortifyLock: FortifyLock | null = null;
+  for (const allowedLock of FORTIFY_ALLOWED_LOCKS[placeToken]) {
+    if (allowedLock === lockToken) {
+      fortifyLock = allowedLock;
+    }
+  }
+  if (fortifyLock === null) {
+    return null;
+  }
+  return { primitive: 'fortify', fortifyPlace: placeToken, fortifyLock };
 }

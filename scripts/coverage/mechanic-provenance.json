@@ -91,6 +91,7 @@
     "hq-heroes-cost-change": { "wp": "WP-868", "decision": "D-24811" },
     "ko-from-discard-current": { "wp": "WP-868", "decision": "D-24811" },
     "reenter-sewers-if-villain-deck-top": { "wp": "WP-868", "decision": "D-24811" },
+    "fortify": { "wp": "WP-873", "decision": "D-24818" },
     "draw": { "wp": "WP-022", "decision": "D-2201" },
     "rescue": { "wp": "WP-215", "decision": "D-21501" },
     "undercover": { "wp": "WP-282", "decision": "D-24060" },

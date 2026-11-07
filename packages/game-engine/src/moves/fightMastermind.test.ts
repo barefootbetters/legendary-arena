@@ -21,6 +21,7 @@ import { initializeCity, initializeHq } from '../board/city.logic.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
 import { makeMockMoveContext } from '../test/mockMoveContext.js';
+import { removeFortification } from '../board/fortify.logic.js';
 import type { MockMoveContext } from '../test/mockMoveContext.js';
 import { makeCardStatEntry, makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
 
@@ -1295,5 +1296,23 @@ describe('fightMastermind — Size-Changing fight discount (D-24802)', () => {
     fightMastermind(moveContext);
     assert.deepStrictEqual(moveContext.G.mastermind.tacticsDefeated, []);
     assert.strictEqual(moveContext.G.turnEconomy.spentAttack, 0);
+  });
+});
+
+describe('WP-873 fightMastermind — the Mastermind fortified (D-24818)', () => {
+  it('T21: a fortified Mastermind refuses the fight; once the fortification ends the fight proceeds', () => {
+    const gameState = createMockGameState({
+      turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+    });
+    gameState.fortifications = {
+      mastermind: { villainCardId: 'cvwr-villain-heroes-for-hire-colleen-wing-00', lock: 'no-fight' },
+    };
+    const snapshotBefore = JSON.stringify(gameState);
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext);
+    assert.equal(JSON.stringify(moveContext.G), snapshotBefore, 'G is byte-identical while the Mastermind is fortified');
+    removeFortification(moveContext.G, 'mastermind');
+    fightMastermind(moveContext);
+    assert.deepStrictEqual(moveContext.G.mastermind.tacticsDefeated, ['tactic-1'], 'the top tactic is defeated');
   });
 });

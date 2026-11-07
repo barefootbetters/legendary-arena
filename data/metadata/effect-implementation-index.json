@@ -10,11 +10,11 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 751,
+      "executable": 753,
       "deferred": 17,
       "condition": 58,
       "unsupported": 280,
-      "unmarked": 963,
+      "unmarked": 961,
       "subsystem": 7
     }
   },
@@ -9503,22 +9503,22 @@
       "name": "Squirrel Girl",
       "set": "cvwr",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "fortify",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#fortify",
+      "wp": "WP-873",
+      "decision": "D-24818"
     },
     {
       "extId": "cvwr-villain-heroes-for-hire-colleen-wing",
       "name": "Colleen Wing",
       "set": "cvwr",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "fortify",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#fortify",
+      "wp": "WP-873",
+      "decision": "D-24818"
     },
     {
       "extId": "cvwr-villain-heroes-for-hire-humbug",
@@ -32724,13 +32724,13 @@
     "cvwr-villain-great-lakes-avengers-squirrel-girl": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "fortify"
       ]
     },
     "cvwr-villain-heroes-for-hire-colleen-wing": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "fortify"
       ]
     },
     "cvwr-villain-heroes-for-hire-humbug": {

@@ -371,3 +371,15 @@ describe('recruitSidekick wiring (WP-842 / D-24776)', () => {
     assert.deepStrictEqual(gameState.playerZones['0']!.discard, [SIDEKICK_EXT_ID]);
   });
 });
+
+describe('WP-873 recruitSidekick — the Sidekick Stack fortified (D-24818)', () => {
+  it('T19: a fortified Stack refuses the recruit silently and leaves G deep-equal', () => {
+    const gameState = createMockGameState({ recruit: 2 });
+    gameState.fortifications = {
+      'sidekick-stack': { villainCardId: 'cvwr-villain-great-lakes-avengers-squirrel-girl-00', lock: 'no-recruit-or-gain' },
+    };
+    const before = JSON.parse(JSON.stringify(gameState)) as unknown;
+    recruitSidekick(makeMockMoveContext(gameState));
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(gameState)), before);
+  });
+});

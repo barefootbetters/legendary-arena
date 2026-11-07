@@ -2122,3 +2122,25 @@ describe('WP-871 fightVillain — villain fight restrictions (D-24816)', () => {
     assert.equal('hasDefeatedVillainThisTurn' in moveContext.G.turnEconomy, false, 'no flag key without an Orrgo-kind entry');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-873 / D-24818 — the fortifier routing leaves City fights untouched
+// ---------------------------------------------------------------------------
+
+describe('WP-873 fightVillain — City fights with a fortification present (D-24818)', () => {
+  it('T17: a City fight is resolved exactly as before and the fortification is untouched', () => {
+    const squirrelGirl = 'cvwr-villain-great-lakes-avengers-squirrel-girl-00' as CardExtId;
+    const fortifications = { 'sidekick-stack': { villainCardId: squirrelGirl, lock: 'no-recruit-or-gain' as const } };
+    const withFortify = createMockGameState({ city: ['villain-a', null, null, null, null] });
+    withFortify.fortifications = structuredClone(fortifications);
+    const withoutFortify = createMockGameState({ city: ['villain-a', null, null, null, null] });
+    const fortifiedContext = createMockMoveContext(withFortify);
+    const plainContext = createMockMoveContext(withoutFortify);
+    fightVillain(fortifiedContext, { cityIndex: 0 });
+    fightVillain(plainContext, { cityIndex: 0 });
+    assert.ok(fortifiedContext.G.playerZones['0']!.victory.includes('villain-a'), 'the City villain is defeated');
+    assert.deepStrictEqual(fortifiedContext.G.fortifications, fortifications, 'the fortification is untouched');
+    const { fortifications: _removed, ...fortifiedRest } = JSON.parse(JSON.stringify(fortifiedContext.G)) as Record<string, unknown>;
+    assert.deepStrictEqual(fortifiedRest, JSON.parse(JSON.stringify(plainContext.G)), 'every other field matches the no-fortify fight');
+  });
+});
