@@ -159,12 +159,13 @@ import { getEligibleKoDiscardCards } from '../moves/koDiscardChoice.resolve.js';
 import { offPlayCardStats } from '../hero/splitCard.logic.js';
 // why: WP-871 / D-24816 — the City projection asks the one fight-restriction authority
 // (shared with fightVillain and getLegalMoves) whether, and why, a fight is blocked.
-import { getFightRestrictionBlockReason } from '../moves/villainDefeatRequirement.logic.js';
-// why: WP-873 / D-24818 — the Fortify projection reads the fortify helpers (the only readers
-// of G.fortifications) and the same fight-restriction authority the fortifier fight uses.
+// why: WP-873 / D-24818 — the Fortify projection also reads the same fight-restriction
+// authority the fortifier fight uses (FIGHT_RESTRICTION_REASONS, getFightRestriction,
+// isFightRestrictionBlocking), and the fortify helpers (the only readers of G.fortifications).
 import {
   FIGHT_RESTRICTION_REASONS,
   getFightRestriction,
+  getFightRestrictionBlockReason,
   isFightRestrictionBlocking,
 } from '../moves/villainDefeatRequirement.logic.js';
 import {

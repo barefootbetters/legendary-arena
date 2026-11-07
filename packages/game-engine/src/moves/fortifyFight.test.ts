@@ -172,6 +172,9 @@ describe('WP-873 fortifier fight (D-24818)', () => {
     const healed = createFortifiedState();
     healed.hasHealedThisTurn = true;
     assertRefused(healed, 'sidekick-stack', 'healed this turn');
+    const noZones = createFortifiedState();
+    noZones.playerZones = {} as LegendaryGameState['playerZones'];
+    assertRefused(noZones, 'sidekick-stack', 'no zone for the fighter (Inspector P2-1)');
   });
 
   it('T16: Colleen Wing at the Mastermind is fought for 9', () => {

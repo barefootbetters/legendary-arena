@@ -77,6 +77,12 @@ export function fightFortifyingVillain(
   if (hasHealedThisTurn(G)) {
     return;
   }
+  // why: defense-in-depth for a malformed state with no zone for the fighter — refuse before
+  // any write, so no price note, debit or acted flag is recorded for a fight that cannot land
+  // (the core keeps its own guard). Never reachable from a real match.
+  if (G.playerZones[currentPlayer] === undefined) {
+    return;
+  }
   // why: findFightableFortifier returned non-null, so the argument is a fortified place.
   const place = fortifiedPlace as FortifyPlace;
   const villainAttack = resolveFightCost(G, fortifier.cardId, currentPlayer);
