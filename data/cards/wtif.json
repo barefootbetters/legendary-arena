@@ -1670,7 +1670,7 @@
           "imageUrl": "https://images.legendary-arena.com/wtif/wtif-vi-intergalactic-party-animals-captain-marvel-end-of-the-party.webp",
           "abilities": [
             "Captain Marvel gets +1[icon:attack] for each other Intergalactic Party Animal in the city and/or Escape Pile.",
-            "Ambush: Each player reveals a [hc:strength] Hero or gains a Wound.",
+            "Ambush: Each player reveals a [hc:strength] Hero or gains a Wound. [effect:reveal-or-wound:hc:strength]",
             "Escape: Captain Marvel ascends to become a [rule:new Mastermind]. She gains the ability “Master Strike: Repeat her Ambush effect.“"
           ],
           "copies": 1

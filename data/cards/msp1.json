@@ -1188,8 +1188,8 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/msp1/msp1-vi-enemies-of-asgard-frost-giant.webp",
           "abilities": [
-            "Fight: Each player reveals a [hc:ranged] Hero or gains a Wound.",
-            "Escape: Same effect."
+            "Fight: Each player reveals a [hc:ranged] Hero or gains a Wound. [effect:reveal-or-wound:hc:ranged]",
+            "Escape: Same effect. [effect:reveal-or-wound:hc:ranged]"
           ],
           "copies": 2
         },
@@ -1200,7 +1200,7 @@
           "vAttack": "6",
           "imageUrl": "https://images.legendary-arena.com/msp1/msp1-vi-enemies-of-asgard-laufey-frost-giant-king.webp",
           "abilities": [
-            "Ambush: Each player reveals a [hc:ranged] Hero or gains a Wound.",
+            "Ambush: Each player reveals a [hc:ranged] Hero or gains a Wound. [effect:reveal-or-wound:hc:ranged]",
             "Fight: Choose a player. That player KOs any number of Wounds from their hand and discard pile."
           ],
           "copies": 2
@@ -1300,8 +1300,8 @@
           "vAttack": "6",
           "imageUrl": "https://images.legendary-arena.com/msp1/msp1-vi-iron-foes-whiplash.webp",
           "abilities": [
-            "Fight: Each player reveals a [hc:tech] hero or gains a Wound.",
-            "Escape: Same effect."
+            "Fight: Each player reveals a [hc:tech] hero or gains a Wound. [effect:reveal-or-wound:hc:tech]",
+            "Escape: Same effect. [effect:reveal-or-wound:hc:tech]"
           ],
           "copies": 2
         },

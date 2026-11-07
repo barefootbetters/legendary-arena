@@ -1904,6 +1904,61 @@
       "date": "2026-11-06",
       "evidence": "",
       "note": "Live check (NEW match after the deploy): playing the card grants nothing and logs it readied for a Heist; Attempt Heist (Heist Count N) appears once; a won Heist fires the ability, a tie does nothing, a lost Heist gains a Wound; the button is gone after one attempt. D-24808."
+    },
+    {
+      "key": "mastermind:cvwr/baron-helmut-zemo|cursed-dynasty",
+      "kind": "mastermind",
+      "card": "Baron Helmut Zemo",
+      "ability": "Tactic: Cursed Dynasty",
+      "wp": "",
+      "state": "pending",
+      "date": "2026-11-06",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy): defeating this tactic logs \"will draw 8 cards on their next hand (+2 extra, Cursed Dynasty)\" and the next hand holds 8 cards. D-24813."
+    },
+    {
+      "key": "mastermind:mgtg/ego-the-living-planet|im-a-celestial-sweetheart",
+      "kind": "mastermind",
+      "card": "Ego, the Living Planet",
+      "ability": "Tactic: I'm a Celestial, Sweetheart",
+      "wp": "",
+      "state": "pending",
+      "date": "2026-11-06",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy): defeating this tactic logs \"will draw 8 cards on their next hand (+2 extra, I'm a Celestial, Sweetheart)\" and the next hand holds 8 cards. The second line (destroy the leftmost city space, shuffle the tactic back) is not modelled. D-24813."
+    },
+    {
+      "key": "mastermind:msis/ebony-maw|hear-me-and-rejoice",
+      "kind": "mastermind",
+      "card": "Ebony Maw",
+      "ability": "Tactic: Hear Me and Rejoice",
+      "wp": "",
+      "state": "pending",
+      "date": "2026-11-06",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy): defeating this tactic logs \"will draw 8 cards on their next hand (+2 extra, Hear Me and Rejoice)\" and the next hand holds 8 cards. The Endgame +3 line is not modelled. D-24813."
+    },
+    {
+      "key": "mastermind:co2e/doctor-doom|treasures-of-latveria",
+      "kind": "mastermind",
+      "card": "Doctor Doom",
+      "ability": "Tactic: Treasures of Latveria",
+      "wp": "",
+      "state": "pending",
+      "date": "2026-11-06",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy): defeating this tactic logs \"will draw 9 cards on their next hand (+3 extra, Treasures of Latveria)\" and the next hand holds 9 cards. D-24813."
+    },
+    {
+      "key": "amwp/wasp|next-hand-extra-draw",
+      "kind": "hero",
+      "card": "Wasp",
+      "ability": "Infiltrate — When you draw a new hand this turn, draw an extra card",
+      "wp": "WP-866",
+      "state": "pending",
+      "date": "2026-11-06",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy): playing Infiltrate logs \"will draw 7 cards on their next hand (+1 extra, Infiltrate …)\"; with nothing else changing the hand size, the end-of-turn hand holds 7 cards (two copies: 8). D-24809."
     }
   ]
 }

@@ -2711,8 +2711,8 @@ describe('executeVillainAbilities — ko-hero:each:N:zone (WP-463 / D-24280)', (
     assert.deepStrictEqual(G.playerZones['0']!.discard, [AGENT, heroA, heroB], 'nothing auto-KOd for the chooser');
     assert.deepStrictEqual(G.ko, [other], 'the other player auto-KOd');
     // why: the fire site composes the log line from this result; pending plus the
-    // other player's target renders "the active player must KO two heroes; other players
-    // KO’d …" (pinned in notableEvents.compose.test.ts).
+    // other player's target renders "each player KOs two heroes: Player 0 must choose
+    // which; Player 1 KO’d …" (pinned in notableEvents.compose.test.ts).
     assert.equal(results[0]!.pending, true);
     assert.deepStrictEqual(results[0]!.targets, [other]);
   });
@@ -6613,7 +6613,7 @@ describe('WP-836 co2e grey-Hero and Hero-count effects (D-24769)', () => {
     assert.equal(results[0]!.greyFilter, 'non-grey');
     assert.equal(
       composeEffectResultLogLine(resolveEffectResultNames(G, results)),
-      'the active player must KO a non-grey Hero; Player 1 had no non-grey Hero to KO',
+      'each player KOs a non-grey Hero: Player 0 must choose which; Player 1 had no non-grey Hero to KO',
     );
 
     const nobodyG = wp836G([wp836Hook(DESTROYER, 'onAmbush', destroyerAmbush)], {

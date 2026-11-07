@@ -856,7 +856,7 @@
           "imageUrl": "https://images.legendary-arena.com/bkwd/bkwd-vi-elite-assassins-blue-talon.webp",
           "abilities": [
             "[keyword:Dark Memories]",
-            "Ambush: Each player reveals a [hc:ranged] Hero or gains a Wound.",
+            "Ambush: Each player reveals a [hc:ranged] Hero or gains a Wound. [effect:reveal-or-wound:hc:ranged]",
             "Fight: You may send a Hero from your discard pile [keyword:Undercover]."
           ],
           "copies": 2

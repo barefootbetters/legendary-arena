@@ -109,6 +109,7 @@
     "discard-artifact-or-three-then-ko": { "wp": "WP-860", "decision": "D-24796" },
     "feast": { "wp": "WP-857", "decision": "D-24793" },
     "hq-hero-gains-size-changing-tech": { "wp": "WP-862", "decision": "D-24804" },
+    "next-hand-extra-draw": { "wp": "WP-866", "decision": "D-24809" },
     "ko-wound-reward": { "wp": "WP-382", "decision": "D-24183" },
     "discard-to-play": { "wp": "WP-383", "decision": "D-24184" },
     "return-on-discard": { "wp": "WP-498", "decision": "D-24301" },

@@ -182,6 +182,33 @@ const LOKI_WHISPERS_AND_LIES_TACTIC_ID: CardExtId =
 // stack rather than clobber. Named, not inlined, so an audit can grep the number.
 export const TREASURES_EXTRA_CARDS = 3;
 
+// why: D-24813 — four more tactics print the same next-hand Fight line as core
+// Treasures of Latveria, under their own ext_ids (same
+// `${setAbbr}-mastermind-${mastermindSlug}-${tacticSlug}` grammar), so the core id
+// never matched them and their Fight resolved to nothing. Printed text
+// (data/cards/<set>.json):
+//   cvwr Baron Helmut Zemo "Cursed Dynasty", mgtg Ego "I'm a Celestial, Sweetheart",
+//   msis Ebony Maw "Hear Me and Rejoice":
+//     "Fight: When you draw a new hand of cards at the end of this turn, draw two
+//      extra cards."
+//   co2e Doctor Doom "Treasures of Latveria": the same line with "three extra cards".
+// Ego's second line (destroy the leftmost city space, shuffle the tactic back) and
+// Ebony Maw's "[keyword:Endgame]: ... three cards instead." are NOT modelled: the
+// engine has no destructible city spaces and no Endgame state, so those lines stay
+// deferred (D-24813). Outside the Endgame, Hear Me and Rejoice's printed result is +2.
+const ZEMO_CURSED_DYNASTY_TACTIC_ID: CardExtId =
+  'cvwr-mastermind-baron-helmut-zemo-cursed-dynasty';
+const EGO_CELESTIAL_SWEETHEART_TACTIC_ID: CardExtId =
+  'mgtg-mastermind-ego-the-living-planet-im-a-celestial-sweetheart';
+const EBONY_MAW_HEAR_ME_AND_REJOICE_TACTIC_ID: CardExtId =
+  'msis-mastermind-ebony-maw-hear-me-and-rejoice';
+const CO2E_DOCTOR_DOOM_TREASURES_OF_LATVERIA_TACTIC_ID: CardExtId =
+  'co2e-mastermind-doctor-doom-treasures-of-latveria';
+
+// why: D-24813 — the printed "draw two extra cards" of Cursed Dynasty, I'm a
+// Celestial, Sweetheart and Hear Me and Rejoice. Named so an audit can grep it.
+export const TWO_EXTRA_CARDS = 2;
+
 // why: WP-691 / D-24508 — Whispers and Lies makes each OTHER player KO exactly two
 // Bystanders from their Victory Pile; a player with fewer than two KOs all they
 // have (clamped by the count present). The max per other player.
@@ -659,6 +686,31 @@ export function resolveTreasuresOfLatveria(
   G: LegendaryGameState,
   currentPlayer: string,
 ): void {
+  resolveNextHandExtraCardsTactic(G, currentPlayer, TREASURES_EXTRA_CARDS, 'Treasures of Latveria');
+}
+
+/**
+ * Resolves a tactic whose printed Fight is "When you draw a new hand of cards at
+ * the end of this turn, draw N extra cards.": the defeating player's next-hand
+ * fill grows by `extraCards`.
+ *
+ * The shared body of core Treasures of Latveria (WP-691 / D-24508) and the four
+ * D-24813 tactics. ADDITIVE via the `(override ?? HAND_SIZE) + delta` writer on the
+ * WP-497 `G.handSizeOverrides` field, so stacked next-hand bonuses add up. No new
+ * `G` field and no second consumption site — game.ts's play-phase `onBegin` fill
+ * consumes and clears the override.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The player who defeated the tactic (the beneficiary).
+ * @param extraCards - The printed number of extra cards.
+ * @param tacticName - The tactic's printed name, for the log line.
+ */
+export function resolveNextHandExtraCardsTactic(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  extraCards: number,
+  tacticName: string,
+): void {
   // why: "draw a new hand of cards at the end of this turn" ≡ this player's NEXT
   // play-phase `onBegin` fill (this engine has no end-of-turn cleanup draw). Lazy-
   // create the WP-497 container before the first per-player write — it is absent by
@@ -667,10 +719,10 @@ export function resolveTreasuresOfLatveria(
     G.handSizeOverrides = {};
   }
   const nextHandSize =
-    (G.handSizeOverrides[currentPlayer] ?? HAND_SIZE) + TREASURES_EXTRA_CARDS;
+    (G.handSizeOverrides[currentPlayer] ?? HAND_SIZE) + extraCards;
   G.handSizeOverrides[currentPlayer] = nextHandSize;
   pushLog(G,
-    `Fight effect: Player ${currentPlayer} will draw ${String(nextHandSize)} cards on their next hand (+${String(TREASURES_EXTRA_CARDS)} extra, Treasures of Latveria).`,
+    `Fight effect: Player ${currentPlayer} will draw ${String(nextHandSize)} cards on their next hand (+${String(extraCards)} extra, ${tacticName}).`,
     'applied',
   );
 }
@@ -1512,6 +1564,24 @@ export function dispatchTacticOnFight(
   // defeating player's next-hand fill (no player choice).
   if (defeatedTacticId === DR_DOOM_TREASURES_OF_LATVERIA_TACTIC_ID) {
     resolveTreasuresOfLatveria(G, currentPlayer);
+    return;
+  }
+  // why: D-24813 — the co2e reprint of Treasures of Latveria (+3) and the three
+  // "draw two extra cards" tactics share the core resolver's additive writer.
+  if (defeatedTacticId === CO2E_DOCTOR_DOOM_TREASURES_OF_LATVERIA_TACTIC_ID) {
+    resolveTreasuresOfLatveria(G, currentPlayer);
+    return;
+  }
+  if (defeatedTacticId === ZEMO_CURSED_DYNASTY_TACTIC_ID) {
+    resolveNextHandExtraCardsTactic(G, currentPlayer, TWO_EXTRA_CARDS, 'Cursed Dynasty');
+    return;
+  }
+  if (defeatedTacticId === EGO_CELESTIAL_SWEETHEART_TACTIC_ID) {
+    resolveNextHandExtraCardsTactic(G, currentPlayer, TWO_EXTRA_CARDS, "I'm a Celestial, Sweetheart");
+    return;
+  }
+  if (defeatedTacticId === EBONY_MAW_HEAR_ME_AND_REJOICE_TACTIC_ID) {
+    resolveNextHandExtraCardsTactic(G, currentPlayer, TWO_EXTRA_CARDS, 'Hear Me and Rejoice');
     return;
   }
   // why: WP-691 / D-24508 — Magneto's Xavier's Nemesis: rescue one Bystander per

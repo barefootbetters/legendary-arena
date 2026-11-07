@@ -9,7 +9,8 @@
     "The exhaustive candidate list is reproducible at any time via `node scripts/convert-cards/apply-effect-markers.mjs --propose`. WP-187 surfaced 221 Ambush/Fight phrase-match candidates (2026-05-28); WP-188 widening surfaced an additional 57 Escape/Overrun candidates (2026-05-29). The _unassigned block below records the human classification RATIONALE with representative rows per reason (plus EVERY 'Each player KOs' Escape line, exhaustively); it is intentionally not a 1:1 copy of --propose output.",
     "DATA-vs-SPEC drift found during WP-187 execution (2026-05-28; unchanged by WP-188): (a) The WP-187 spec assumed two cards (one bkwd, one rvlt) carry two Fight: lines apiece and would loud-fail as reason 'multi-line'. Under the LOCKED predicate (line.trimStart() begins with 'Fight:'), NO card has two timing lines of the same timing — rvlt/army-of-evil/mister-hyde and rvlt/dark-avengers/sentry each have a SECOND 'Fight:' embedded mid-line (inside flavor / a granted ability), which the predicate correctly does not treat as a timing line. So _unassigned carries no 'multi-line' rows; the multi-line loud-fail remains an active guardrail in the script and is exercised via a scratch input. (b) The WP-187 spot-check expected a 'gainWoundEachPlayer' Ambush mark; NO unconditional each-player wound line exists on any Ambush/Fight line in the 40 sets — every wound line is conditional ('reveal X or gains a Wound', 'If ...', 'with no ...', 'each other player'). WP-188's Escape side fills that gap: 14 'Escape: Each player gains a Wound.' lines give gainWoundEachPlayer its first real data.",
     "WP-190 promoted 0 of 6 rows (all non-curatable under v1 discipline: 5 magnitude>1, 1 filtered, 1 compound; counts overlap). The `no-vocabulary-keyword` tag is preserved for cross-WP audit traceability; substantive re-tagging deferred to a future predicate-machinery WP.",
-    "WP-202 promoted 2 of the 6 D-18802 Escape-side `no-vocabulary-keyword` rows by adding the seventh engine keyword `koHeroEachPlayerMag2` (D-20201 closed-union-per-magnitude). The promoted rows are the two unconditional unfiltered magnitude-2 Destroyer Escape lines: `villains/core/enemies-of-asgard/destroyer` and `villains/msp1/enemies-of-asgard/destroyer` (both print exactly 'Escape: Each player KOs two of their Heroes.'). 4 rows remain deferred under the same `reason: \"no-vocabulary-keyword\"` tag — the cross-WP D-18802 audit anchor is preserved verbatim (NO re-tagging). The 4 remaining blockers, named explicitly: `2099/false-aesir-of-alchemax/hela-2099` — wrong target (Henchmen not Heroes) + choice ('or gains a Wound') + filtered source (Victory Pile); `core/brotherhood/juggernaut` Escape — filtered source ('from their hand'); `cvwr/csa-special-marshals/bullseye` — stat/class filter ('printed [icon:attack] of 2 or more'); `wpnx/weapon-plus/ultimaton-weapon-xv` — class filter ('non-grey Heroes'). Substantive re-tagging is deferred to a future predicate-machinery WP."
+    "WP-202 promoted 2 of the 6 D-18802 Escape-side `no-vocabulary-keyword` rows by adding the seventh engine keyword `koHeroEachPlayerMag2` (D-20201 closed-union-per-magnitude). The promoted rows are the two unconditional unfiltered magnitude-2 Destroyer Escape lines: `villains/core/enemies-of-asgard/destroyer` and `villains/msp1/enemies-of-asgard/destroyer` (both print exactly 'Escape: Each player KOs two of their Heroes.'). 4 rows remain deferred under the same `reason: \"no-vocabulary-keyword\"` tag — the cross-WP D-18802 audit anchor is preserved verbatim (NO re-tagging). The 4 remaining blockers, named explicitly: `2099/false-aesir-of-alchemax/hela-2099` — wrong target (Henchmen not Heroes) + choice ('or gains a Wound') + filtered source (Victory Pile); `core/brotherhood/juggernaut` Escape — filtered source ('from their hand'); `cvwr/csa-special-marshals/bullseye` — stat/class filter ('printed [icon:attack] of 2 or more'); `wpnx/weapon-plus/ultimaton-weapon-xv` — class filter ('non-grey Heroes'). Substantive re-tagging is deferred to a future predicate-machinery WP.",
+    "2026-11-06 villain-primitive sweep (INFRA, no engine change): every remaining villain Ambush:/Fight:/Escape: line printing exactly 'Each player reveals a(n) [hc:X] Hero or gains a Wound.' is marked reveal-or-wound:hc:X (WP-469 / D-24281), with its 'Escape: Same effect.' sibling marked the same (core Zzzax template); anni Ravenous leaves _unassigned (its old conditional reason predates WP-469). Villain Fight lines 'When you draw a new hand of cards at the end of this turn, draw an extra card / two extra cards' are marked add-next-hand-size:N (WP-543 / D-24352): chmp Monsteroso (1), ff04 Giganto (2). Still unmarked on purpose: 'each other player' and compound / conditional reveal lines; mastermind tactics with the same next-hand text (tactics dispatch by ext_id in tacticHandlers.ts, not by marker); msp1 Hydra Spies, whose [keyword:Fight]: prefix neither this script nor the engine parser reads as a Fight timing line."
   ],
   "villains": {
     "2099": {
@@ -23,11 +24,13 @@
     },
     "amwp": {
       "armada-of-kang": {
+        "city-defense-system": { "ambush": ["reveal-or-wound:hc:ranged"], "escape": ["reveal-or-wound:hc:ranged"] },
         "m-o-d-o-k": { "fight": ["koHeroEachPlayer"] }
       },
       "cross-technologies": {
         "cross-security-detail": { "fight": ["koHeroCurrentPlayer"] },
-        "shrinksperiments": { "fight": ["hq-hero-gains-size-changing:replace:tech"] }
+        "shrinksperiments": { "fight": ["hq-hero-gains-size-changing:replace:tech"] },
+        "yellowjacket-prototype": { "ambush": ["reveal-or-wound:hc:instinct"], "escape": ["reveal-or-wound:hc:instinct"] }
       },
       "quantum-realm": {
         "hungering-energy": { "fight": ["koHeroCurrentPlayer"] }
@@ -35,15 +38,18 @@
     },
     "anni": {
       "annihilation-wave": {
-        "queens-of-annihilation": { "fight": ["koHeroCurrentPlayer"] }
+        "queens-of-annihilation": { "fight": ["koHeroCurrentPlayer"] },
+        "ravenous": { "escape": ["reveal-or-wound:hc:strength"] }
       }
     },
     "antm": {
       "queens-vengeance": {
         "blackbird": { "fight": ["koHeroCurrentPlayer"] },
-        "gigantus": { "fight": ["koHeroCurrentPlayer"] }
+        "gigantus": { "fight": ["koHeroCurrentPlayer"] },
+        "iron-knight": { "escape": ["reveal-or-wound:hc:tech"] }
       },
       "ultrons-legacy": {
+        "brutish-ultron-14": { "fight": ["reveal-or-wound:hc:strength"], "escape": ["reveal-or-wound:hc:strength"] },
         "crimson-cowl": { "ambush": ["captureBystander"] },
         "original-ultron-1": { "fight": ["koHeroCurrentPlayer"] },
         "ultron-pym": { "fight": ["hq-hero-gains-size-changing:if-none:tech"] },
@@ -64,6 +70,9 @@
       }
     },
     "bkwd": {
+      "elite-assassins": {
+        "blue-talon": { "ambush": ["reveal-or-wound:hc:ranged"] }
+      },
       "taskmasters-thunderbolts": {
         "jester": { "ambush": ["captureBystander"] }
       }
@@ -85,6 +94,7 @@
     "chmp": {
       "monsters-unleashed": {
         "goom": { "ambush": ["captureBystander"], "fight": ["koHeroCurrentPlayer"] },
+        "monsteroso": { "fight": ["add-next-hand-size:1"] },
         "sporr": { "fight": ["hq-hero-gains-size-changing:add:tech+ranged"] }
       },
       "wrecking-crew": {
@@ -177,7 +187,8 @@
     },
     "cosm": {
       "black-order-of-thanos": {
-        "black-dwarf": { "fight": ["koHeroCurrentPlayer"] }
+        "black-dwarf": { "fight": ["koHeroCurrentPlayer"] },
+        "proxima-midnight": { "escape": ["reveal-or-wound:hc:instinct"] }
       },
       "elders-of-the-universe": {
         "the-champion-of-the-universe": { "fight": ["koHeroCurrentPlayer"] }
@@ -187,11 +198,17 @@
       }
     },
     "cvwr": {
+      "great-lakes-avengers": {
+        "big-bertha": { "fight": ["reveal-or-wound:hc:strength"], "escape": ["reveal-or-wound:hc:strength"] }
+      },
       "heroes-for-hire": {
         "humbug": { "fight": ["koHeroCurrentPlayer"] }
       },
       "registration-enforcers": {
         "micromax": { "fight": ["koHeroCurrentPlayer"] }
+      },
+      "thunderbolts": {
+        "mach-iv": { "fight": ["reveal-or-wound:hc:tech"], "escape": ["reveal-or-wound:hc:tech"] }
       }
     },
     "dead": {
@@ -203,10 +220,17 @@
     "dkcy": {
       "emissaries-of-evil": {
         "rhino": { "escape": ["gainWoundEachPlayer"] }
+      },
+      "streets-of-new-york": {
+        "tombstone": { "escape": ["reveal-or-wound:hc:strength"] }
       }
     },
     "ff04": {
+      "heralds-of-galactus": {
+        "firelord": { "fight": ["reveal-or-wound:hc:ranged"], "escape": ["reveal-or-wound:hc:ranged"] }
+      },
       "subterranea": {
+        "giganto": { "fight": ["add-next-hand-size:2"] },
         "moloids": { "fight": ["koHeroCurrentPlayer"] }
       }
     },
@@ -249,10 +273,15 @@
         "chitauri-soldier": { "ambush": ["captureBystander"] }
       },
       "enemies-of-asgard": {
-        "destroyer": { "escape": ["koHeroEachPlayerMag2"] }
+        "destroyer": { "escape": ["koHeroEachPlayerMag2"] },
+        "frost-giant": { "fight": ["reveal-or-wound:hc:ranged"], "escape": ["reveal-or-wound:hc:ranged"] },
+        "laufey-frost-giant-king": { "ambush": ["reveal-or-wound:hc:ranged"] }
       },
       "gamma-hunters": {
         "fighter-jet": { "fight": ["koHeroCurrentPlayer"] }
+      },
+      "iron-foes": {
+        "whiplash": { "fight": ["reveal-or-wound:hc:tech"], "escape": ["reveal-or-wound:hc:tech"] }
       }
     },
     "nmut": {
@@ -274,6 +303,10 @@
       "maximum-carnage": {
         "demogoblin": { "ambush": ["captureBystander"] },
         "shriek": { "escape": ["gainWoundEachPlayer"] }
+      },
+      "sinister-six": {
+        "sandman": { "escape": ["reveal-or-wound:hc:instinct"] },
+        "vulture": { "escape": ["reveal-or-wound:hc:instinct"] }
       }
     },
     "rvlt": {
@@ -283,10 +316,19 @@
       },
       "dark-avengers": {
         "ares": { "fight": ["koHeroCurrentPlayer"] },
+        "dark-wolverine-daken": { "ambush": ["reveal-or-wound:hc:instinct"] },
         "sentry": { "escape": ["gainWoundEachPlayer"] }
       },
       "hoods-gang": {
         "madam-masque": { "fight": ["koHeroCurrentPlayer"] }
+      },
+      "lethal-legion": {
+        "living-laser": { "fight": ["reveal-or-wound:hc:ranged"], "escape": ["reveal-or-wound:hc:ranged"] }
+      }
+    },
+    "smhc": {
+      "salvagers": {
+        "tinkerer": { "escape": ["reveal-or-wound:hc:tech"] }
       }
     },
     "ssw1": {
@@ -317,6 +359,7 @@
     },
     "vnom": {
       "life-foundation": {
+        "agony": { "escape": ["reveal-or-wound:hc:covert"] },
         "riot": { "fight": ["koHeroCurrentPlayer"] }
       }
     },
@@ -331,6 +374,7 @@
         "proxima-midnight": { "fight": ["koHeroCurrentPlayer"] }
       },
       "intergalactic-party-animals": {
+        "captain-marvel-end-of-the-party": { "ambush": ["reveal-or-wound:hc:strength"] },
         "party-korg": { "fight": ["koHeroCurrentPlayer"] }
       },
       "rival-overlords": {
@@ -345,12 +389,18 @@
       "aspects-of-the-void": {
         "infini-tendrils": { "ambush": ["captureBystander"] }
       },
+      "code-red": {
+        "red-she-hulk": { "fight": ["reveal-or-wound:hc:covert"], "escape": ["reveal-or-wound:hc:covert"] }
+      },
       "intelligencia": {
         "doc-samson": { "fight": ["koHeroCurrentPlayer"] }
       },
       "sakaar-imperial-guard": {
         "headman-charr": { "escape": ["gainWoundEachPlayer"] },
         "primus-vand": { "fight": ["koHeroCurrentPlayer"] }
+      },
+      "u-foes": {
+        "vapor": { "fight": ["reveal-or-wound:hc:covert"], "escape": ["reveal-or-wound:hc:covert"] }
       }
     },
     "xmen": {
@@ -367,7 +417,7 @@
         "blackthorn": { "escape": ["gainWoundEachPlayer"] }
       },
       "sisterhood-of-mutants": {
-        "lady-deathstrike": { "fight": ["koHeroCurrentPlayer"] }
+        "lady-deathstrike": { "fight": ["koHeroCurrentPlayer"], "escape": ["reveal-or-wound:hc:instinct"] }
       }
     }
   },
@@ -501,7 +551,6 @@
     { "set": "cvwr", "group": "csa-special-marshals", "card": "bullseye", "timing": "escape", "text": "Escape: Each player KOs one of their Heroes that has printed [icon:attack] of 2 or more.", "reason": "no-vocabulary-keyword" },
     { "set": "wpnx", "group": "weapon-plus", "card": "ultimaton-weapon-xv", "timing": "escape", "text": "Escape: Each player KOs one of their non-grey Heroes.", "reason": "no-vocabulary-keyword" },
 
-    { "set": "anni", "group": "annihilation-wave", "card": "ravenous", "timing": "escape", "text": "Escape: Each player reveals a [hc:strength] Hero or gains a wound.", "reason": "conditional" },
     { "set": "asrd", "group": "dark-council", "card": "the-mangog", "timing": "escape", "text": "Escape: Each player who is not [keyword:Worthy] gains a Wound.", "reason": "conditional" },
     { "set": "bkwd", "group": "taskmasters-thunderbolts", "card": "jack-olantern", "timing": "escape", "text": "Escape: Each player with fewer than two Henchmen in their Victory Pile gains a Wound.", "reason": "conditional" },
     { "set": "dkcy", "group": "underworld", "card": "lilith-daughter-of-dracula", "timing": "escape", "text": "Escape: Each player without Dracula in their Victory Pile gains a Wound.", "reason": "conditional" },
