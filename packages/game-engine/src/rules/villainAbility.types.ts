@@ -383,7 +383,8 @@ export type VillainEffectPrimitive =
   | 'hq-heroes-cost-change'
   | 'ko-from-discard-current'
   | 'reenter-sewers-if-villain-deck-top'
-  | 'fortify';
+  | 'fortify'
+  | 'demolish-each-player';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -547,6 +548,14 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   // Keyword-less, so it self-narrates. The marker script's hand-synced copy
   // (`scripts/convert-cards/apply-effect-markers.mjs`) appends it at the same position.
   'fortify',
+  // why: WP-864 / D-24807 — appended at position 44. Trull the Unhuman's Ambush (after its
+  // Bystander capture), Zzutak's Escape and Piledriver's Escape ("[Demolish] each player"): one
+  // Hero Deck reveal, bottomed, and each player discards a card of its cost, through the shared
+  // `demolishEachPlayer` resolver (`board/demolish.logic.ts`). No params, so the terminal
+  // `parts.length === 1` branch parses it. Keyword-less, so it self-narrates. The marker
+  // script's hand-synced copy (`scripts/convert-cards/apply-effect-markers.mjs`) appends it at
+  // the same position.
+  'demolish-each-player',
 ] as const;
 
 /**

@@ -2014,6 +2014,50 @@
       "date": "2026-11-07",
       "evidence": "",
       "note": "Live check (NEW match with Heroes for Hire after the deploy): when Colleen Wing escapes she shows under the Escaped Pile as fortifying the Mastermind; the Mastermind Fight button is disabled with \"Colleen Wing fortifies the Mastermind. Fight Colleen Wing first.\"; fighting her (9 Attack) re-enables it. Play Diagnostics uiStateSnapshot shows mastermind.fortifiedReason while she fortifies. D-24818."
+    },
+    {
+      "key": "mastermind:chmp/fin-fang-foom|master-strike",
+      "kind": "mastermind",
+      "card": "Fin Fang Foom",
+      "ability": "Master Strike: [Demolish] each player, then do it again for each Monsters Unleashed Villain in the city and Escape Pile.",
+      "wp": "WP-864",
+      "state": "pending",
+      "date": "2026-11-07",
+      "evidence": "",
+      "note": "Live check (Fin Fang Foom match after the deploy; the strike arm is dispatcher code, so an in-flight match works too): a Master Strike logs \"[Fin Fang Foom Master Strike] Demolish each player N time(s): once, plus once for each of the M Monsters Unleashed Villain(s) in the city and Escape Pile.\", then N times \"Demolish revealed <Hero> (cost C) and put it on the bottom of the Hero Deck.\" with one \"Player P discarded <card> (cost C).\" or \"has no card that costs C to discard.\" per player, current player first; each repeat names a different Hero; hand sizes in Play Diagnostics drop by the discards. D-24807."
+    },
+    {
+      "key": "chmp-villain-monsters-unleashed-trull-the-unhuman|demolish-each-player",
+      "kind": "villain",
+      "card": "Trull the Unhuman",
+      "ability": "Ambush: Trull captures a Bystander. Then [Demolish] each player.",
+      "wp": "WP-864",
+      "state": "pending",
+      "date": "2026-11-07",
+      "evidence": "",
+      "note": "Live check (NEW match with Monsters Unleashed after the deploy): when Trull enters the City he holds a captured Bystander and the log shows \"Ambush effect: Demolish revealed <Hero> (cost C) …\" with each player's discard line (the generic capture line follows them). D-24807."
+    },
+    {
+      "key": "chmp-villain-monsters-unleashed-zzutak|demolish-each-player",
+      "kind": "villain",
+      "card": "Zzutak",
+      "ability": "Escape: [Demolish] each player.",
+      "wp": "WP-864",
+      "state": "pending",
+      "date": "2026-11-07",
+      "evidence": "",
+      "note": "Live check (NEW match with Monsters Unleashed after the deploy): when Zzutak escapes the log shows \"Escape effect: Demolish revealed <Hero> (cost C) and put it on the bottom of the Hero Deck.\" and each player's discard line. D-24807."
+    },
+    {
+      "key": "chmp-villain-wrecking-crew-piledriver|demolish-each-player",
+      "kind": "villain",
+      "card": "Piledriver",
+      "ability": "Escape: [Demolish] each player.",
+      "wp": "WP-864",
+      "state": "pending",
+      "date": "2026-11-07",
+      "evidence": "",
+      "note": "Live check (NEW match with Wrecking Crew after the deploy): when Piledriver escapes the log shows \"Escape effect: Demolish revealed <Hero> (cost C) and put it on the bottom of the Hero Deck.\" and each player's discard line; his Fight still KOs one of your Heroes. D-24807."
     }
   ]
 }

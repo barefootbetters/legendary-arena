@@ -807,7 +807,7 @@
           "imageUrl": "https://images.legendary-arena.com/chmp/chmp-vi-monsters-unleashed-trull-the-unhuman.webp",
           "abilities": [
             "[keyword:Size-Changing]: [hc:covert], [hc:tech]",
-            "Ambush: Trull captures a Bystander. Then [keyword:Demolish] each player."
+            "Ambush: Trull captures a Bystander. Then [keyword:Demolish] each player. [effect:captureBystander] [effect:demolish-each-player]"
           ],
           "copies": 1
         },
@@ -819,7 +819,7 @@
           "imageUrl": "https://images.legendary-arena.com/chmp/chmp-vi-monsters-unleashed-zzutak.webp",
           "abilities": [
             "[keyword:Size-Changing]: [hc:ranged], [hc:instinct]",
-            "Escape: [keyword:Demolish] each player."
+            "Escape: [keyword:Demolish] each player. [effect:demolish-each-player]"
           ],
           "copies": 1
         }
@@ -852,7 +852,7 @@
           "imageUrl": "https://images.legendary-arena.com/chmp/chmp-vi-wrecking-crew-piledriver.webp",
           "abilities": [
             "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]",
-            "Escape: [keyword:Demolish] each player."
+            "Escape: [keyword:Demolish] each player. [effect:demolish-each-player]"
           ],
           "copies": 2
         },
