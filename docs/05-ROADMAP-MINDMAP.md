@@ -424,7 +424,7 @@ mindmap
         ["WP-863 ✅ Trap Heroes in the Microverse, the last-listed extra Hero's cards shuffle into the Villain Deck as Micro-Sized Villains with Attack equal to printed cost and Size-Changing for their color, fighting one lets you choose a player to gain it, a Twist plays two Villain Deck cards, Evil Wins at 3 escaped per player or an empty Villain Deck. game engine plus registry EC-901 D-24805 DONE 2026-11-05"]
         ["WP-864 📝 Demolish each player, one shared resolver reveals the Hero Deck top once puts it on the bottom and each player discards a card of that cost, Fin Fang Foom Master Strike Demolishes once plus once per Monsters Unleashed Villain in the city and Escape Pile, Trull the Unhuman Ambush and Zzutak and Piledriver Escape. game engine plus card data DRAFTED 2026-11-05 EC-902 D-24807 reserved"]
         ["WP-867 📝 Unresolved Master Strike flagged, a strike whose Mastermind has no resolver records a master-strike hollow effect and logs the red Unhandled effect line instead of doing nothing silently, and the effect index lists one Master Strike row per Mastermind from a curated strike provenance overlay. game engine plus coverage feed DRAFTED 2026-11-06 EC-905 D-24810 reserved"]
-        ["WP-868 📝 Villain Fight hollows, Tim Boo Ba and siblings make the Heroes in the HQ cost less or more this turn through an overlay the recruit price reads, Flatman and siblings force a KO from your discard pile with no KO None option, Mr. Immortal reveals the Villain Deck top and reenters the Sewers on a Villain or Bystander. game engine plus UIState plus arena-client plus card data DRAFTED 2026-11-06 EC-906 D-24811 reserved"]
+        ["WP-868 ✅ Villain Fight hollows, Tim Boo Ba and siblings make the Heroes in the HQ cost less or more this turn through an overlay the recruit price reads, Flatman and siblings force a KO from your discard pile with no KO None option, Mr. Immortal reveals the Villain Deck top and reenters the Sewers on a Villain or Bystander. game engine plus UIState plus arena-client plus card data EC-906 D-24811 DONE 2026-11-07"]
         ["WP-869 📝 Stack cards enter the City as Villains, Groot from Planet X Fight sends two Bystanders from the Bystander Stack into the city as 3 Attack Splintered Half-Groot Villains rescued as Bystanders when fought, Agent Gabe Jones Fight and Agent Eric Marshall Ambush send a 3 Attack S.H.I.E.L.D. Officer gained as a Hero, one villain primitive bridged at the Fight and Ambush sites with per-instance unique ids. game engine plus card data DRAFTED 2026-11-06 EC-907 D-24814 reserved"]
         ["WP-865 ✅ Heist, a once-per-turn Attempt a Heist action counts the different printed costs you have against the Villain Deck top card VP and fires the readied Heist abilities, Heist lines stop granting at play. game engine plus arena-client EC-903 D-24808 DONE 2026-11-06"]
         ["WP-866 ✅ Next-hand extra draw hero lines that print When you draw a new hand this turn draw an extra card add N to the next hand through a next-hand-extra-draw hero keyword writing handSizeOverrides at play, twelve lines incl Wasp Infiltrate. game engine plus card data EC-904 D-24809 DONE 2026-11-06"]
@@ -1039,7 +1039,7 @@ mindmap
 | Legends Public Scoreboard | 2/2 | — |
 | Villain Deck Pipeline | 5/5 | — |
 | Villain & Henchman Effects | 21/21 | — |
-| Hero Ability Coverage & Markup Pipeline | 223/243 | 20 open |
+| Hero Ability Coverage & Markup Pipeline | 224/243 | 19 open |
 | Notable Events & Overlays | 6/6 | — |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
 | Dashboard & Operator Analytics | 55/55 | — |
@@ -1060,9 +1060,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 4/4 | — |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **838/867 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 28 open |
+| **Total** | **839/867 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 27 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 29):** WP-871 open; WP-869 open; WP-868 open; WP-867 open; WP-864 open; WP-849 open; WP-840 open; WP-839 open; WP-838 open; WP-822 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-745 open; WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 28):** WP-871 open; WP-869 open; WP-867 open; WP-864 open; WP-849 open; WP-840 open; WP-839 open; WP-838 open; WP-822 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-745 open; WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
