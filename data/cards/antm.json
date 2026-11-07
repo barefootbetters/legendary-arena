@@ -760,7 +760,7 @@
           "imageUrl": "https://images.legendary-arena.com/antm/antm-vi-ultrons-legacy-alkhema.webp",
           "abilities": [
             "[keyword:Empowered] by [hc:instinct]",
-            "Fight: KO a card from your discard pile."
+            "Fight: KO a card from your discard pile. [effect:ko-from-discard-current:1]"
           ],
           "copies": 1
         },
@@ -891,7 +891,7 @@
           "imageUrl": "https://images.legendary-arena.com/antm/antm-vi-queens-vengeance-star-knight.webp",
           "abilities": [
             "[keyword:Chivalrous Duel]",
-            "Fight: KO a card from your discard pile."
+            "Fight: KO a card from your discard pile. [effect:ko-from-discard-current:1]"
           ],
           "copies": 1
         },

@@ -38,7 +38,11 @@ import { hasPendingRevealThreeAssign, selectDefaultRevealThreeAssignment } from 
 import { hasPendingElectromagneticBubbleChoice } from '../moves/electromagneticBubbleChoice.resolve.js';
 import { hasPendingDiscardChoice } from '../moves/discardChoice.resolve.js';
 import { hasPendingPutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resolve.js';
-import { hasPendingKoDiscardChoice, getEligibleKoDiscardCards } from '../moves/koDiscardChoice.resolve.js';
+import {
+  hasPendingKoDiscardChoice,
+  getEligibleKoDiscardCards,
+  getRequiredKoDiscardCount,
+} from '../moves/koDiscardChoice.resolve.js';
 import { hasPendingReorderChoice } from '../moves/reorderChoice.resolve.js';
 import { hasPendingDefeatChoice } from '../moves/defeatChoice.resolve.js';
 import { selectDiscardToLimitCards, selectRedSkullKoTarget } from '../rules/mastermindHandlers.js';
@@ -279,7 +283,9 @@ export interface SimulationLifecycleContext {
  * Picks the front entry's chooser's Wounds first, then starting S.H.I.E.L.D. Agents and
  * Troopers (the `isCullableDeckTopCard` set the bot already culls for Melter), each in
  * discard order, up to the entry's `maxCount`. A repeated id is one more copy (D-24682).
- * Anything else stays: a recruited Hero or an Officer is never KO'd.
+ * Anything else stays: a recruited Hero or an Officer is never KO'd, except that a mandatory
+ * entry (`minCount`, Flatman, D-24811) tops up with the next untaken cards in discard order until
+ * it holds the required count.
  *
  * @param gameState - The engine state. Not mutated.
  * @returns The card ids to KO; empty when the discard holds nothing cullable.
@@ -300,23 +306,46 @@ export function selectDefaultKoDiscardCardIds(gameState: LegendaryGameState): Ca
     front.eligibleCardIds,
   );
   const chosen: CardExtId[] = [];
+  // why: WP-868 / D-24811 — each pass records the discard INDEX it took, because ids repeat
+  // (three Wounds share one id) and the mandatory top-up below must skip exactly the copies
+  // already chosen, not every copy of a chosen id.
+  const takenIndices = new Set<number>();
   // why: D-24688 — Wounds first (a dead card is the best KO), then the starting
   // S.H.I.E.L.D. cards; two passes keep the order deterministic and capped.
-  for (const cardId of discard) {
+  for (let discardIndex = 0; discardIndex < discard.length; discardIndex++) {
     if (chosen.length >= front.maxCount) {
       return chosen;
     }
+    const cardId = discard[discardIndex]!;
     if (cardId === WOUND_EXT_ID) {
       chosen.push(cardId);
+      takenIndices.add(discardIndex);
     }
   }
-  for (const cardId of discard) {
+  for (let discardIndex = 0; discardIndex < discard.length; discardIndex++) {
     if (chosen.length >= front.maxCount) {
       return chosen;
     }
+    const cardId = discard[discardIndex]!;
     if (cardId !== WOUND_EXT_ID && isCullableDeckTopCard(cardId)) {
       chosen.push(cardId);
+      takenIndices.add(discardIndex);
     }
+  }
+  // why: WP-868 / D-24811 — a mandatory entry ("KO a card from your discard pile", Flatman) must
+  // KO at least the required count even when nothing is cullable, or the resolve rejects the
+  // answer and the block-all guard never lifts. The top-up walks the untaken eligible cards in
+  // discard order, by position, to `min(minCount, eligible count)`.
+  const required = getRequiredKoDiscardCount(gameState, front);
+  for (let discardIndex = 0; discardIndex < discard.length; discardIndex++) {
+    if (chosen.length >= required) {
+      break;
+    }
+    if (takenIndices.has(discardIndex)) {
+      continue;
+    }
+    chosen.push(discard[discardIndex]!);
+    takenIndices.add(discardIndex);
   }
   return chosen;
 }

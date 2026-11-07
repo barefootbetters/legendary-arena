@@ -872,7 +872,7 @@
             "[keyword:Rooftops] [keyword:Conqueror] 1",
             "[keyword:Streets] [keyword:Conqueror] 1",
             "[keyword:Bridge] [keyword:Conqueror] 1",
-            "Fight: Each Hero currently in the HQ costs 1 less this turn."
+            "Fight: Each Hero currently in the HQ costs 1 less this turn. [effect:hq-heroes-cost-change:less:1]"
           ],
           "copies": 1
         },

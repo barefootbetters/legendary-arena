@@ -102,6 +102,19 @@ export interface HqSizeChangingGrant {
   expiresAtEndOfTurn: boolean;
 }
 
+// why: WP-868 / D-24811 — one "Heroes currently in the HQ cost N less / more this turn" change
+// on one HQ Hero instance (Tim Boo Ba, Jormungand, Dr. Carlton Drake, The Mind Stone). The
+// villain line snapshots the Heroes in the HQ when it fires, so `cardId` is the copy-unique
+// instance and a Hero that refills the HQ later in the turn has no entry. `amount` is the signed
+// recruit-price delta (-N for "less", +N for "more").
+/** One "this turn" recruit-price change on an HQ Hero (D-24811). JSON-serializable. */
+export interface HqCostChange {
+  /** The copy-unique Hero instance the change belongs to. */
+  cardId: CardExtId;
+  /** The signed recruit-price delta: negative for "cost less", positive for "cost more". */
+  amount: number;
+}
+
 // why: WP-513 / D-24325 — Killbots' "number of Twists next to this Scheme" counter
 // key (G.counters). Seeded 3 at setup, +1 per Killbots twist; a Killbot's attack
 // equals this value. A plain counter key (not an endgame condition).
@@ -1042,6 +1055,14 @@ export interface PendingKoDiscardChoice {
    * and the bot default all apply it.
    */
   eligibleCardIds?: CardExtId[] | undefined;
+  /**
+   * The fewest cards the player must KO (WP-868 / D-24811): a mandatory "KO a card from your
+   * discard pile" (Flatman and its siblings) parks `minCount` equal to `maxCount`. The required
+   * count is `min(minCount, eligible count)` everywhere (the resolve move, the bot, the projection
+   * and the prompt). Omit-when-absent, so every "up to N" entry (Maniacal Tyrant, Salomé, the grey
+   * filter, Firepower from the Future) keeps accepting an empty selection and stays byte-identical.
+   */
+  minCount?: number;
 }
 
 /**
@@ -2990,6 +3011,13 @@ export interface LegendaryGameState {
   // so a match that never grants keeps a byte-identical finalStateHash.
   /** HQ Size-Changing grants in grant order. Runtime-written by sizeChangingGrant.logic.ts; pruned at turn cleanup. */
   hqSizeChangingGrants?: HqSizeChangingGrant[];
+
+  // why: WP-868 / D-24811 — the "Heroes currently in the HQ cost N less / more this turn" overlay,
+  // keyed by the copy-unique HQ instance and read by resolveRecruitCost only while that card is in
+  // G.hq (getHqCostChange). Lazy-created by the first change and deleted at end-of-turn cleanup,
+  // so a match that never fires one keeps a byte-identical finalStateHash.
+  /** HQ recruit-price changes in the order they were made. Runtime-written by hqCostChange.logic.ts; deleted at turn cleanup. */
+  hqCostChanges?: HqCostChange[];
 
   // why: D-24730 — per-card Copy-Powers copied Hero Classes ("This card is both Covert
   // and the color you copy", D-24345). Unlike Size-Changing, the copied class belongs to

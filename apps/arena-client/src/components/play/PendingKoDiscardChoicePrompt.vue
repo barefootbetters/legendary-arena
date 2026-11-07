@@ -13,6 +13,10 @@ import type { SubmitMove } from "./uiMoveName.types";
  * 0..maxCount cards to KO and submits `resolveKoDiscardChoice({ cardIds })`. An empty
  * selection ("KO None") is the legal "KO nothing" choice.
  *
+ * WP-868 / D-24811: a mandatory entry (`minCount`, cvwr Flatman "KO a card from your discard
+ * pile") reads "KO 1 card from your discard pile", keeps submit disabled until the required count
+ * is picked, and never offers "KO None".
+ *
  * // why: D-24682 — the selection is by discard INDEX, so two copies of a shared-id card
  * (two S.H.I.E.L.D. Agents) are two separate picks; the submitted cardIds may repeat an
  * id once per copy, which the engine accepts as a multiset.
@@ -91,6 +95,13 @@ export default defineComponent({
         const listedNoun = listedCount === 1 ? "card" : "cards";
         return `KO any number of the ${listedCount} ${listedNoun} you just discarded`;
       }
+      // why: WP-868 / D-24811 — a mandatory entry (Flatman's "KO a card from your discard pile")
+      // names the exact count, not "up to".
+      const minCount = props.pendingKoDiscardChoice?.minCount;
+      if (minCount !== undefined) {
+        const mandatoryNoun = minCount === 1 ? "card" : "cards";
+        return `KO ${minCount} ${mandatoryNoun} from your discard pile`;
+      }
       const count = maxCount.value;
       const greyFilter = props.pendingKoDiscardChoice?.greyFilter;
       let noun: string;
@@ -102,6 +113,25 @@ export default defineComponent({
         noun = count === 1 ? "card" : "cards";
       }
       return `KO up to ${count} ${noun} from your discard pile`;
+    });
+
+    // why: WP-868 / D-24811 — the fewest picks a mandatory entry accepts: `minCount`, clamped by the
+    // listed discard (already the eligible list), the same `required` basis the engine resolve
+    // enforces. 0 on an "up to N" entry, so its behavior is unchanged.
+    const requiredCount = computed<number>(() => {
+      const minCount = props.pendingKoDiscardChoice?.minCount;
+      if (minCount === undefined || !props.pendingKoDiscardChoice) return 0;
+      return Math.min(minCount, props.pendingKoDiscardChoice.discard.length);
+    });
+
+    // why: WP-868 / D-24811 — the submit label. A mandatory entry never offers "KO None": with no
+    // pick it asks for one instead.
+    const submitLabel = computed<string>(() => {
+      const pickedCount = selectedIndices.value.length;
+      if (pickedCount === 0) {
+        return props.pendingKoDiscardChoice?.minCount !== undefined ? "Choose a card to KO" : "KO None";
+      }
+      return `KO ${pickedCount} card${pickedCount === 1 ? "" : "s"}`;
     });
 
     function isSelected(discardIndex: number): boolean {
@@ -120,7 +150,10 @@ export default defineComponent({
     }
 
     // why: 0 is a legal choice ("up to four"), so submit is enabled at any count ≤ cap.
-    const canSubmit = computed<boolean>(() => !isSubmitting.value);
+    // WP-868 / D-24811: a mandatory entry also needs the required count picked first.
+    const canSubmit = computed<boolean>(
+      () => !isSubmitting.value && selectedIndices.value.length >= requiredCount.value,
+    );
 
     function onSubmit(): void {
       if (!canSubmit.value || !props.pendingKoDiscardChoice) return;
@@ -136,6 +169,8 @@ export default defineComponent({
       shouldRender,
       maxCount,
       headingText,
+      requiredCount,
+      submitLabel,
       isSelected,
       toggleCard,
       canSubmit,
@@ -188,7 +223,7 @@ export default defineComponent({
       :aria-disabled="!canSubmit ? 'true' : undefined"
       @click="onSubmit"
     >
-      {{ selectedIndices.length === 0 ? 'KO None' : `KO ${selectedIndices.length} card${selectedIndices.length === 1 ? '' : 's'}` }}
+      {{ submitLabel }}
     </button>
   </div>
 </template>

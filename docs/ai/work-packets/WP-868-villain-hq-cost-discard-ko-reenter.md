@@ -386,6 +386,30 @@ defeated card from the Victory Pile into the Sewers through `pushVillainIntoCity
 Groot from Planet X is a separate WP. Replays of pre-WP-868 matches with these lines diverge; stored competitive rows stay frozen
 (D-24616 §5).
 
+### Execution amendment (2026-11-07) — the KO-site drift pin and two test shapes
+
+Execution at `origin/main` `ecd7d9af` (WP-864 / WP-869 / WP-871 not yet executed, so the three primitives
+sit at positions 40, 41 and 42) surfaced one file beyond `## Files Expected to Change`, added as an inline
+allowlist amendment:
+
+- `packages/game-engine/src/hero/ownedCardKoTrigger.test.ts` — **modified** — the WP-853 / D-24789 KO-site
+  drift pin scans every `koCard` call by enclosing function and fails until a new site is classified. The
+  direct mandatory KO (RS-2, `koFirstDiscardCardsDirectly` in `villainEffects.execute.ts`) is a new owned
+  site, so `LOCKED_TABLE` gains `{ koSites: 1, ownedRecords: 1 }` for it. The classification is the one the
+  pin's failure message asks for (the card leaves the player's discard pile and `recordOwnedCardKoed` is
+  called beside it); no other row or assertion changed.
+
+Two test shapes differ from the Scope (In) wording, with no contract change:
+
+- The required count `min(minCount, eligible count)` lives in one exported helper,
+  `getRequiredKoDiscardCount` (`moves/koDiscardChoice.resolve.ts`), which both the resolve move and the bot
+  top-up call (the EC's "one implementation" guardrail).
+- RS-3's "a full City pushes its last card through the escape procedure" calls
+  `reenterSewersOnVillainDeckReveal` directly: a Fight empties its own space, so through
+  `defeatCityVillainCore` the push can never reach the escape edge. Every other RS-3 case runs through
+  `defeatCityVillainCore`. The malformed-token RS-4 cases for all three primitives live in
+  `villain/koFromDiscardMandatory.test.ts`.
+
 ## Pre-flight (01.4) and Copilot (01.7)
 
 - **Pre-flight round 1:** NOT READY, four PS items, all folded: (PS-1) `UIHQState.recruitCosts` is projected only under

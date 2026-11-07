@@ -1457,7 +1457,7 @@
           "imageUrl": "https://images.legendary-arena.com/cosm/cosm-vi-black-order-of-thanos-supergiant.webp",
           "abilities": [
             "Ambush: [keyword:Danger Sense 1], helping all Black Order Villains and the Mastermind. Play a Villain revealed this way.",
-            "Fight: You may KO a card from your discard pile."
+            "Fight: You may KO a card from your discard pile. [effect:ko-up-to-from-discard-current:1]"
           ],
           "copies": 2
         },

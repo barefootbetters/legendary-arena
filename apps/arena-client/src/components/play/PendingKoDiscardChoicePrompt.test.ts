@@ -165,3 +165,45 @@ describe('PendingKoDiscardChoicePrompt — cards just discarded (WP-850 / D-2478
     assert.equal(wrapper.find('.pending-ko-discard-choice-prompt__heading').text(), 'KO up to 2 cards from your discard pile');
   });
 });
+
+describe('PendingKoDiscardChoicePrompt — mandatory KO (WP-868 / D-24811)', () => {
+  /** A Flatman entry: "KO a card from your discard pile", so at least minCount must be picked. */
+  function makeMandatoryChoice(cardIds: string[], minCount: number): UIPendingKoDiscardChoice {
+    return { ...makeChoice(cardIds, minCount), minCount } as UIPendingKoDiscardChoice;
+  }
+
+  test('reads "KO 1 card from your discard pile" and never offers "KO None"', () => {
+    const wrapper = mount(PendingKoDiscardChoicePrompt, {
+      props: { pendingKoDiscardChoice: makeMandatoryChoice(['a', 'b'], 1), viewerPlayerId: 'player-0', submitMove: () => {} },
+    });
+    assert.equal(wrapper.find('.pending-ko-discard-choice-prompt__heading').text(), 'KO 1 card from your discard pile');
+    assert.equal(wrapper.find('[data-testid="pending-ko-discard-submit"]').text(), 'Choose a card to KO');
+    assert.doesNotMatch(wrapper.text(), /KO None/);
+  });
+
+  test('submit is disabled at zero picks and enabled once the required card is picked', async () => {
+    let submitted: { name: string; args: unknown } | undefined;
+    const submitMove: SubmitMove = (name, args) => { submitted = { name, args }; };
+    const wrapper = mount(PendingKoDiscardChoicePrompt, {
+      props: { pendingKoDiscardChoice: makeMandatoryChoice(['a', 'b'], 1), viewerPlayerId: 'player-0', submitMove },
+    });
+    const submitButton = wrapper.find('[data-testid="pending-ko-discard-submit"]');
+    assert.equal(submitButton.attributes('disabled'), '', 'disabled with no pick');
+    await submitButton.trigger('click');
+    assert.equal(submitted, undefined, 'a zero-pick submit sends nothing');
+    await wrapper.find('[data-testid="pending-ko-discard-card-1"]').trigger('click');
+    assert.equal(wrapper.find('[data-testid="pending-ko-discard-submit"]').attributes('disabled'), undefined);
+    assert.equal(wrapper.find('[data-testid="pending-ko-discard-submit"]').text(), 'KO 1 card');
+    await wrapper.find('[data-testid="pending-ko-discard-submit"]').trigger('click');
+    assert.deepEqual(submitted, { name: 'resolveKoDiscardChoice', args: { cardIds: ['b'] } });
+  });
+
+  test('an "up to" entry is unchanged: "KO None" is offered and submit is enabled at zero picks', () => {
+    const wrapper = mount(PendingKoDiscardChoicePrompt, {
+      props: { pendingKoDiscardChoice: makeChoice(['a', 'b'], 1), viewerPlayerId: 'player-0', submitMove: () => {} },
+    });
+    assert.equal(wrapper.find('.pending-ko-discard-choice-prompt__heading').text(), 'KO up to 1 card from your discard pile');
+    assert.equal(wrapper.find('[data-testid="pending-ko-discard-submit"]').text(), 'KO None');
+    assert.equal(wrapper.find('[data-testid="pending-ko-discard-submit"]').attributes('disabled'), undefined);
+  });
+});

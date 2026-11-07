@@ -1576,9 +1576,13 @@ export interface UIPendingDefeatChoice {
  * the cards one play just discarded (Bishop's Firepower from the Future, "KO any number of those
  * cards"), so the prompt can say so; `discard` already lists only those cards. Omitted otherwise.
  *
+ * // why: WP-868 / D-24811 — `minCount` is present only on a mandatory entry (Flatman's "KO a card
+ * from your discard pile"): the prompt keeps submit disabled until `min(minCount, discard.length)`
+ * cards are picked and never offers "KO None". Omitted on every "up to N" entry.
+ *
  * @see WP-693 §Scope (In)
  * @see EC-730 Locked Values
- * @see DECISIONS.md D-24510, D-24769, D-24783, D-24786
+ * @see DECISIONS.md D-24510, D-24769, D-24783, D-24786, D-24811
  */
 export interface UIPendingKoDiscardChoice {
   choiceType: "ko-from-discard";
@@ -1586,6 +1590,7 @@ export interface UIPendingKoDiscardChoice {
   maxCount: number;
   greyFilter?: GreyHeroFilter;
   isLimitedToDiscardedThisWay?: boolean;
+  minCount?: number;
   discard: UIDiscardChoiceHandCard[];
 }
 

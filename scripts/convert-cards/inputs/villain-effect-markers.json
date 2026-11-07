@@ -46,9 +46,11 @@
       "queens-vengeance": {
         "blackbird": { "fight": ["koHeroCurrentPlayer"] },
         "gigantus": { "fight": ["koHeroCurrentPlayer"] },
-        "iron-knight": { "escape": ["reveal-or-wound:hc:tech"] }
+        "iron-knight": { "escape": ["reveal-or-wound:hc:tech"] },
+        "star-knight": { "fight": ["ko-from-discard-current:1"] }
       },
       "ultrons-legacy": {
+        "alkhema": { "fight": ["ko-from-discard-current:1"] },
         "brutish-ultron-14": { "fight": ["reveal-or-wound:hc:strength"], "escape": ["reveal-or-wound:hc:strength"] },
         "crimson-cowl": { "ambush": ["captureBystander"] },
         "original-ultron-1": { "fight": ["koHeroCurrentPlayer"] },
@@ -61,6 +63,7 @@
         "ulik-the-troll": { "fight": ["koHeroCurrentPlayer"] }
       },
       "omens-of-ragnarok": {
+        "jormungand-the-world-serpent": { "fight": ["hq-heroes-cost-change:less:1"] },
         "skurge-the-executioner": { "fight": ["koHeroCurrentPlayer"] }
       }
     },
@@ -95,7 +98,8 @@
       "monsters-unleashed": {
         "goom": { "ambush": ["captureBystander"], "fight": ["koHeroCurrentPlayer"] },
         "monsteroso": { "fight": ["add-next-hand-size:1"] },
-        "sporr": { "fight": ["hq-hero-gains-size-changing:add:tech+ranged"] }
+        "sporr": { "fight": ["hq-hero-gains-size-changing:add:tech+ranged"] },
+        "tim-boo-ba": { "fight": ["hq-heroes-cost-change:less:1"] }
       },
       "wrecking-crew": {
         "piledriver": { "fight": ["koHeroCurrentPlayer"] }
@@ -188,7 +192,8 @@
     "cosm": {
       "black-order-of-thanos": {
         "black-dwarf": { "fight": ["koHeroCurrentPlayer"] },
-        "proxima-midnight": { "escape": ["reveal-or-wound:hc:instinct"] }
+        "proxima-midnight": { "escape": ["reveal-or-wound:hc:instinct"] },
+        "supergiant": { "fight": ["ko-up-to-from-discard-current:1"] }
       },
       "elders-of-the-universe": {
         "the-champion-of-the-universe": { "fight": ["koHeroCurrentPlayer"] }
@@ -199,7 +204,9 @@
     },
     "cvwr": {
       "great-lakes-avengers": {
-        "big-bertha": { "fight": ["reveal-or-wound:hc:strength"], "escape": ["reveal-or-wound:hc:strength"] }
+        "big-bertha": { "fight": ["reveal-or-wound:hc:strength"], "escape": ["reveal-or-wound:hc:strength"] },
+        "flatman": { "fight": ["ko-from-discard-current:1"] },
+        "mr-immortal": { "fight": ["reenter-sewers-if-villain-deck-top:villain+bystander"] }
       },
       "heroes-for-hire": {
         "humbug": { "fight": ["koHeroCurrentPlayer"] }
@@ -242,6 +249,7 @@
         "salom-sorceress-supreme": { "fight": ["ko-up-to-from-discard-current:2"] }
       },
       "lilin": {
+        "meatmarket": { "fight": ["ko-up-to-from-discard-current:1"] },
         "skinner": { "fight": ["koHeroCurrentPlayer"] }
       }
     },
@@ -252,10 +260,12 @@
     },
     "msis": {
       "children-of-thanos": {
-        "chitauri-gorilla": { "ambush": ["captureBystander"] }
+        "chitauri-gorilla": { "ambush": ["captureBystander"] },
+        "outriders": { "fight": ["ko-up-to-from-discard-current:1"] }
       },
       "infinity-stones": {
-        "stonekeeper": { "fight": ["koHeroEachPlayer"] }
+        "stonekeeper": { "fight": ["koHeroEachPlayer"] },
+        "the-mind-stone": { "ambush": ["hq-heroes-cost-change:more:2"] }
       }
     },
     "msmc": {
@@ -265,7 +275,8 @@
       },
       "clan-yashida": {
         "gorgon": { "fight": ["koHeroCurrentPlayer"] },
-        "lord-shingen": { "ambush": ["captureBystander"] }
+        "lord-shingen": { "ambush": ["captureBystander"] },
+        "silver-samurai": { "fight": ["ko-from-discard-current:1"] }
       }
     },
     "msp1": {
@@ -320,7 +331,8 @@
         "sentry": { "escape": ["gainWoundEachPlayer"] }
       },
       "hoods-gang": {
-        "madam-masque": { "fight": ["koHeroCurrentPlayer"] }
+        "madam-masque": { "fight": ["koHeroCurrentPlayer"] },
+        "the-brothers-grimm": { "fight": ["ko-up-to-from-discard-current:1"] }
       },
       "lethal-legion": {
         "living-laser": { "fight": ["reveal-or-wound:hc:ranged"], "escape": ["reveal-or-wound:hc:ranged"] }
@@ -353,6 +365,9 @@
       "guardians-of-knowhere": {
         "gamora": { "escape": ["gainWoundEachPlayer"] }
       },
+      "monster-metropolis": {
+        "bug-shiklahs-dragon": { "fight": ["ko-from-discard-current:1"] }
+      },
       "utopolis": {
         "whizzer": { "escape": ["gainWoundEachPlayer"] }
       }
@@ -360,6 +375,7 @@
     "vnom": {
       "life-foundation": {
         "agony": { "escape": ["reveal-or-wound:hc:covert"] },
+        "dr-carlton-drake": { "fight": ["hq-heroes-cost-change:less:1:instinct+tech"] },
         "riot": { "fight": ["koHeroCurrentPlayer"] }
       }
     },
@@ -414,7 +430,8 @@
         "warwolves": { "fight": ["koHeroCurrentPlayer"] }
       },
       "shiar-imperial-guard": {
-        "blackthorn": { "escape": ["gainWoundEachPlayer"] }
+        "blackthorn": { "escape": ["gainWoundEachPlayer"] },
+        "smasher": { "fight": ["ko-from-discard-current:1"] }
       },
       "sisterhood-of-mutants": {
         "lady-deathstrike": { "fight": ["koHeroCurrentPlayer"], "escape": ["reveal-or-wound:hc:instinct"] }
@@ -446,6 +463,7 @@
       "sentinel": { "fight": ["koHeroCurrentPlayer"] }
     },
     "cvwr": {
+      "cape-killers": { "fight": ["ko-from-discard-current:1"] },
       "mandroid": { "fight": ["koHeroCurrentPlayer"] }
     },
     "dkcy": {

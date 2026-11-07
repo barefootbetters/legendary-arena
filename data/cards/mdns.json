@@ -740,7 +740,7 @@
           "abilities": [
             "Meatmarket gets +1[icon:attack] for each Bystander in the KO pile.",
             "Ambush: [keyword:Hunt for Victims]",
-            "Fight: You may KO a card from your discard pile."
+            "Fight: You may KO a card from your discard pile. [effect:ko-up-to-from-discard-current:1]"
           ],
           "copies": 2
         },

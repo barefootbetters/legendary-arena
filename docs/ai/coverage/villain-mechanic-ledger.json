@@ -4,13 +4,13 @@
   "summary": {
     "totalRows": 761,
     "byStatus": {
-      "executable": 224,
+      "executable": 240,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 532,
+      "unmarked": 516,
       "subsystem": 4
     },
-    "distinctMechanics": 48
+    "distinctMechanics": 51
   },
   "rows": [
     {
@@ -612,11 +612,11 @@
       "cardName": "Alkhema",
       "set": "antm",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-from-discard-current",
+      "status": "executable",
+      "wp": "WP-868",
+      "decision": "D-24811",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-from-discard-current"
     },
     {
       "extId": "antm-villain-queens-vengeance-blackbird",
@@ -744,11 +744,11 @@
       "cardName": "Star-Knight",
       "set": "antm",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-from-discard-current",
+      "status": "executable",
+      "wp": "WP-868",
+      "decision": "D-24811",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-from-discard-current"
     },
     {
       "extId": "antm-villain-ultrons-legacy-ultron-roboticks",
@@ -799,11 +799,11 @@
       "cardName": "Jormungand, The World-Serpent",
       "set": "asrd",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "hq-heroes-cost-change",
+      "status": "executable",
+      "wp": "WP-868",
+      "decision": "D-24811",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hq-heroes-cost-change"
     },
     {
       "extId": "asrd-villain-dark-council-laufey-father-of-loki",
@@ -1371,11 +1371,11 @@
       "cardName": "Tim Boo Ba",
       "set": "chmp",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "hq-heroes-cost-change",
+      "status": "executable",
+      "wp": "WP-868",
+      "decision": "D-24811",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hq-heroes-cost-change"
     },
     {
       "extId": "chmp-villain-monsters-unleashed-trull-the-unhuman",
@@ -2471,11 +2471,11 @@
       "cardName": "Supergiant",
       "set": "cosm",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "wp": "WP-760",
+      "decision": "D-24589",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current"
     },
     {
       "extId": "cosm-villain-elders-of-the-universe-the-champion-of-the-universe",
@@ -2625,11 +2625,11 @@
       "cardName": "Cape-Killers",
       "set": "cvwr",
       "cardType": "henchman",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-from-discard-current",
+      "status": "executable",
+      "wp": "WP-868",
+      "decision": "D-24811",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-from-discard-current"
     },
     {
       "extId": "cvwr-villain-registration-enforcers-captain-marvel",
@@ -2691,11 +2691,11 @@
       "cardName": "Flatman",
       "set": "cvwr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-from-discard-current",
+      "status": "executable",
+      "wp": "WP-868",
+      "decision": "D-24811",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-from-discard-current"
     },
     {
       "extId": "cvwr-villain-heroes-for-hire-humbug",
@@ -2768,11 +2768,11 @@
       "cardName": "Mr. Immortal",
       "set": "cvwr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reenter-sewers-if-villain-deck-top",
+      "status": "executable",
+      "wp": "WP-868",
+      "decision": "D-24811",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reenter-sewers-if-villain-deck-top"
     },
     {
       "extId": "cvwr-villain-superhuman-registration-act-ms-marvel",
@@ -3747,11 +3747,11 @@
       "cardName": "Meatmarket",
       "set": "mdns",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "wp": "WP-760",
+      "decision": "D-24589",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current"
     },
     {
       "extId": "mdns-villain-fallen-metarchus",
@@ -4099,11 +4099,11 @@
       "cardName": "Outriders",
       "set": "msis",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "wp": "WP-760",
+      "decision": "D-24589",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current"
     },
     {
       "extId": "msis-villain-children-of-thanos-proxima-midnight",
@@ -4132,11 +4132,11 @@
       "cardName": "The Mind Stone",
       "set": "msis",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "hq-heroes-cost-change",
+      "status": "executable",
+      "wp": "WP-868",
+      "decision": "D-24811",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hq-heroes-cost-change"
     },
     {
       "extId": "msis-villain-infinity-stones-the-power-stone",
@@ -4396,11 +4396,11 @@
       "cardName": "Silver Samurai",
       "set": "msmc",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-from-discard-current",
+      "status": "executable",
+      "wp": "WP-868",
+      "decision": "D-24811",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-from-discard-current"
     },
     {
       "extId": "msmc-villain-reavers-skullbuster",
@@ -5518,11 +5518,11 @@
       "cardName": "The Brothers Grimm",
       "set": "rvlt",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "wp": "WP-760",
+      "decision": "D-24589",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current"
     },
     {
       "extId": "rvlt-villain-hoods-gang-the-dark-dimension",
@@ -6145,11 +6145,11 @@
       "cardName": "Bug, Shiklah's Dragon",
       "set": "ssw2",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-from-discard-current",
+      "status": "executable",
+      "wp": "WP-868",
+      "decision": "D-24811",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-from-discard-current"
     },
     {
       "extId": "ssw2-villain-deadpools-secret-secret-wars-deadpool",
@@ -6794,11 +6794,11 @@
       "cardName": "Dr. Carlton Drake",
       "set": "vnom",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "hq-heroes-cost-change",
+      "status": "executable",
+      "wp": "WP-868",
+      "decision": "D-24811",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hq-heroes-cost-change"
     },
     {
       "extId": "vnom-villain-life-foundation-lasher",
@@ -8334,11 +8334,11 @@
       "cardName": "Smasher",
       "set": "xmen",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-from-discard-current",
+      "status": "executable",
+      "wp": "WP-868",
+      "decision": "D-24811",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-from-discard-current"
     },
     {
       "extId": "xmen-villain-mojoverse-spiral",

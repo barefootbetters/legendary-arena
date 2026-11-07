@@ -25,7 +25,7 @@
  */
 
 import type { FnContext, PlayerID } from 'boardgame.io';
-import type { LegendaryGameState } from '../types.js';
+import type { LegendaryGameState, PendingKoDiscardChoice } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { moveCardFromZone } from './zoneOps.js';
 import { koCard } from '../board/ko.logic.js';
@@ -116,6 +116,33 @@ export function getEligibleKoDiscardCards(
 }
 
 /**
+ * Returns how many cards a KO-from-discard entry requires: `min(minCount, eligible count)`, or 0
+ * for an "up to N" entry with no `minCount` (WP-868 / D-24811).
+ *
+ * The single basis the resolve move and the bot share, so neither can disagree with the other
+ * about how many cards a mandatory KO must take.
+ *
+ * @param G - The game state to inspect (not mutated).
+ * @param entry - The pending KO-from-discard entry.
+ * @returns The fewest cards a valid selection may hold.
+ */
+export function getRequiredKoDiscardCount(
+  G: LegendaryGameState,
+  entry: PendingKoDiscardChoice,
+): number {
+  if (entry.minCount === undefined) {
+    return 0;
+  }
+  const eligibleCount = getEligibleKoDiscardCards(
+    G,
+    entry.playerID,
+    entry.greyFilter,
+    entry.eligibleCardIds,
+  ).length;
+  return Math.min(entry.minCount, eligibleCount);
+}
+
+/**
  * Counts how many times each card id appears in a list.
  *
  * @param cardIds - The ids to count (not mutated).
@@ -158,8 +185,9 @@ function isSubMultiset(selection: CardExtId[], allowedCardIds: CardExtId[]): boo
  * remove each from discard, append to G.ko → front-pop on success. Silent no-ops (queue
  * intact — resubmit): non-array / non-string ids; more ids than maxCount; empty queue;
  * front.playerID mismatch; front.choiceType mismatch; any id absent from the discard, or
- * repeated more times than the discard holds copies. An empty selection is the legal
- * "KO nothing" choice and still front-pops.
+ * repeated more times than the discard holds copies; on a mandatory entry (`minCount`, D-24811),
+ * fewer ids than `min(minCount, eligible count)`. On an "up to N" entry an empty selection is the
+ * legal "KO nothing" choice and still front-pops.
  *
  * @param context - boardgame.io move context with G and playerID.
  * @param args - the selected { cardIds } to KO from the discard pile.
@@ -192,6 +220,13 @@ export function resolveKoDiscardChoice(
   // (front.maxCount); a selection larger than it is invalid (the discard-size clamp is
   // enforced implicitly by the in-discard presence check below).
   if (args.cardIds.length > front.maxCount) { return; }
+  // why: WP-868 / D-24811 — a mandatory entry ("KO a card from your discard pile", Flatman) rejects
+  // a selection shorter than the required count, queue intact. The required count is clamped by
+  // what the player can actually KO, so a discard emptied below the minimum never deadlocks.
+  if (front.minCount !== undefined) {
+    const required = getRequiredKoDiscardCount(G, front);
+    if (args.cardIds.length < required) { return; }
+  }
   // why: WP-836 / D-24769 — a filtered entry (Destroyer / Frost Giant Warrior / Ymir: grey
   // Heroes only) rejects the whole selection when any id fails the filter, queue intact.
   if (front.greyFilter !== undefined) {

@@ -95,6 +95,8 @@ import { countDistinctHeroClassesYouHave } from '../hero/heroConditions.evaluate
 import { formatEligibleCostList } from '../moves/villainDefeatRequirement.logic.js';
 // why: WP-862 / D-24804 — the Size-Changing grant on a chosen HQ Hero (read inside the handler only).
 import { grantSizeChangingToHqHero } from '../hero/sizeChangingGrant.logic.js';
+// why: WP-868 / D-24811 — the "Heroes currently in the HQ cost N less / more this turn" overlay writer.
+import { addHqCostChange } from '../hero/hqCostChange.logic.js';
 import {
   WOUND_EXT_ID,
   SHIELD_AGENT_EXT_ID,
@@ -408,7 +410,10 @@ function nameKoTarget(G: LegendaryGameState, targetId: CardExtId, zone: VillainK
  * @param extId - The card-instance ext_id to name.
  * @returns The display name, or the raw ext_id when none is available.
  */
-function resolveCardDisplayName(G: LegendaryGameState, extId: CardExtId): string {
+// why: WP-868 / D-24811 — exported for the Mr. Immortal reenter bridge in
+// villainDeck.enterCity.ts, which names cards the same way (no new cycle: villainDeck.reveal.ts
+// already imports this module).
+export function resolveCardDisplayName(G: LegendaryGameState, extId: CardExtId): string {
   const display = G.cardDisplayData?.[extId];
   if (display && typeof display.name === 'string' && display.name.length > 0) {
     return display.name;
@@ -837,6 +842,9 @@ const DELIBERATE_NO_OP_VILLAIN_PRIMITIVES: ReadonlySet<VillainEffectPrimitive> =
     'become-scheme-twist',
     'gain-attached-hero',
     'play-villain-deck-cards',
+    // why: WP-868 / D-24811 — Mr. Immortal's reenter mutates nothing in the executor (the bridge
+    // at the end of defeatCityVillainCore reveals and moves him), so its trace must read `no-op`.
+    'reenter-sewers-if-villain-deck-top',
   ]);
 
 /**
@@ -2005,6 +2013,41 @@ export function villainCardPlaysVillainDeckCards(
     }
   }
   return 0;
+}
+
+/**
+ * Returns the Villain Deck card kinds that send a card back into the Sewers at the given timing,
+ * or null when it carries no `reenter-sewers-if-villain-deck-top` descriptor there (WP-868 /
+ * D-24811: Mr. Immortal's Fight, `['villain', 'bystander']`).
+ *
+ * Read by the bridge at the end of defeatCityVillainCore, which owns the reveal and the City
+ * entry; the executor handler is a deliberate no-op. Mirrors villainCardPlaysVillainDeckCards's
+ * guards. Pure lookup over G.villainAbilityHooks; no mutation.
+ *
+ * @param G - Game state (read-only).
+ * @param cardId - The defeated card's zone-instance ext_id.
+ * @param timing - The timing to inspect (the Fight site passes 'onFight').
+ * @returns The first matching descriptor's kinds, or null.
+ */
+export function villainCardReenterSewersKinds(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+): readonly ('villain' | 'bystander')[] | null {
+  // why: guard against G states / test mocks lacking villainAbilityHooks (the
+  // villainCardPlaysVillainDeckCards guard) — getVillainHooksForCard would throw on undefined.
+  if (!G.villainAbilityHooks || G.villainAbilityHooks.length === 0) {
+    return null;
+  }
+  const hooks = getVillainHooksForCard(G.villainAbilityHooks, cardId, timing);
+  for (const hook of hooks) {
+    for (const descriptor of hook.effects ?? []) {
+      if (descriptor.primitive === 'reenter-sewers-if-villain-deck-top' && descriptor.reenterRevealKinds !== undefined) {
+        return descriptor.reenterRevealKinds;
+      }
+    }
+  }
+  return null;
 }
 
 /**
@@ -3286,6 +3329,221 @@ function villainEffectHqHeroGainsSizeChanging(
   const classes = descriptor.sizeChangingGrantClasses ?? [];
   const mode = descriptor.sizeChangingGrantMode ?? 'add';
   grantSizeChangingToHqHero(G, currentPlayer, classes, mode, cardId);
+  return { targets: [] };
+}
+
+/**
+ * hq-heroes-cost-change primitive — the Heroes in the HQ right now cost `magnitude` less or more
+ * to recruit this turn (WP-868 / D-24811): chmp Tim Boo Ba and asrd Jormungand (Fight, 1 less),
+ * vnom Dr. Carlton Drake (Fight, 1 less, Instinct and Tech Heroes only) and msis The Mind Stone
+ * (Ambush, 2 more).
+ *
+ * Walks G.hq left to right and records one G.hqCostChanges entry per Hero whose printed class
+ * (heroClass or heroClass2) is in `costChangeClasses`, or per Hero when no classes are listed.
+ * Keyword-less, so it self-narrates.
+ */
+// why: "currently in the HQ" — the change is a snapshot of the Heroes in the HQ when the line
+// fires, keyed by the copy-unique instance, so a Hero that refills the HQ later this turn pays its
+// printed price (resolveRecruitCost reads the overlay only while the card is in the HQ).
+function villainEffectHqHeroesCostChange(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const amountSize = descriptor.magnitude;
+  const direction = descriptor.costChangeDirection;
+  if (amountSize === undefined || direction === undefined) {
+    return { targets: [] };
+  }
+  const amount = direction === 'less' ? -amountSize : amountSize;
+  const label = villainEffectTimingLabel(timing);
+  const sourceName = resolveCardDisplayName(G, cardId);
+  const changedCardIds: CardExtId[] = [];
+  for (const hqCardId of G.hq) {
+    if (hqCardId === null) {
+      continue;
+    }
+    if (!hqHeroMatchesCostChangeClasses(G, hqCardId, descriptor.costChangeClasses)) {
+      continue;
+    }
+    addHqCostChange(G, { cardId: hqCardId, amount });
+    changedCardIds.push(hqCardId);
+  }
+  if (changedCardIds.length === 0) {
+    pushLog(G, `${label} effect: no matching Heroes in the HQ (${sourceName}).`, 'blocked');
+    return { targets: [] };
+  }
+  const changedNames: string[] = [];
+  for (const changedCardId of changedCardIds) {
+    changedNames.push(resolveCardDisplayName(G, changedCardId));
+  }
+  pushLog(
+    G,
+    `${label} effect: Heroes in the HQ cost ${String(amountSize)} ${direction} this turn (${sourceName}): ${changedNames.join(', ')}.`,
+    'applied',
+  );
+  return { targets: changedCardIds };
+}
+
+/**
+ * Whether an HQ Hero is one the cost change applies to: any Hero when no classes are listed,
+ * otherwise a Hero whose printed heroClass or heroClass2 is listed (WP-868 / D-24811).
+ *
+ * @param G - Game state (read-only).
+ * @param hqCardId - The HQ Hero instance.
+ * @param costChangeClasses - The listed classes, or undefined for every Hero.
+ * @returns True when the change applies to the Hero.
+ */
+function hqHeroMatchesCostChangeClasses(
+  G: LegendaryGameState,
+  hqCardId: CardExtId,
+  costChangeClasses: readonly string[] | undefined,
+): boolean {
+  if (costChangeClasses === undefined) {
+    return true;
+  }
+  const traitEntry = G.cardTraits[hqCardId];
+  if (traitEntry === undefined) {
+    return false;
+  }
+  // why: a dual-class Hero (WP-703 / D-24523) counts when either printed class is listed (Dr.
+  // Carlton Drake: "Each [Instinct] and [Tech] Hero").
+  const primaryClass = traitEntry.heroClass;
+  if (primaryClass !== null && costChangeClasses.includes(primaryClass)) {
+    return true;
+  }
+  const secondClass = traitEntry.heroClass2;
+  return secondClass !== undefined && secondClass !== null && costChangeClasses.includes(secondClass);
+}
+
+/**
+ * ko-from-discard-current primitive — the current (defeating) player must KO `magnitude` cards
+ * from their own discard pile (WP-868 / D-24811: cvwr Flatman "Fight: KO a card from your discard
+ * pile." and six siblings).
+ *
+ * An empty discard is a logged no-op. When the pick cannot matter (the discard holds N or fewer
+ * cards, or every card shares one id) the first N are KO'd at once; otherwise the D-24510
+ * KO-from-discard choice parks with `minCount` equal to `maxCount`, so it cannot be skipped.
+ * Keyword-less, so it self-narrates.
+ */
+function villainEffectKoFromDiscardCurrent(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const koCount = descriptor.magnitude;
+  if (koCount === undefined) {
+    return { targets: [] };
+  }
+  const zones = G.playerZones[currentPlayer];
+  if (!zones) {
+    return { targets: [] };
+  }
+  const label = villainEffectTimingLabel(timing);
+  const sourceName = resolveCardDisplayName(G, cardId);
+  if (zones.discard.length === 0) {
+    pushLog(G, `${label} effect: your discard pile is empty (${sourceName}); nothing to KO.`, 'blocked');
+    return { targets: [] };
+  }
+  // why: D-24811 — a prompt is only worth showing when the choice can change the outcome. With N
+  // or fewer cards every one of them goes; with one shared id (three Wounds) any copy is the same
+  // card, so the KO happens at once with the same bookkeeping as resolveKoDiscardChoice.
+  if (zones.discard.length <= koCount || discardHoldsOneCardId(zones.discard)) {
+    return koFirstDiscardCardsDirectly(G, currentPlayer, koCount, label, sourceName);
+  }
+  // why: D-24811 — "KO a card" is mandatory, so the shared choice parks with `minCount`; the resolve
+  // move, the bot, the projection and the prompt all refuse fewer than the required count. The
+  // queue is created lazily so an untriggered match keeps a byte-identical hash.
+  if (!G.pendingKoDiscardChoices) {
+    G.pendingKoDiscardChoices = [];
+  }
+  const entry: PendingKoDiscardChoice = {
+    choiceType: 'ko-from-discard',
+    playerID: currentPlayer,
+    maxCount: koCount,
+    minCount: koCount,
+    sourceCardId: cardId,
+  };
+  G.pendingKoDiscardChoices.push(entry);
+  pushLog(G, `${label} effect: KO ${String(koCount)} card(s) from your discard pile (${sourceName}).`, 'neutral');
+  return { targets: [], pending: true };
+}
+
+/**
+ * Whether every card in a discard pile shares one id (three Wounds, two S.H.I.E.L.D. Agents).
+ *
+ * @param discard - The discard pile (not mutated).
+ * @returns True when the pile is non-empty and holds a single distinct id.
+ */
+function discardHoldsOneCardId(discard: readonly CardExtId[]): boolean {
+  const firstCardId = discard[0];
+  if (firstCardId === undefined) {
+    return false;
+  }
+  for (const discardCardId of discard) {
+    if (discardCardId !== firstCardId) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * KOs the first `koCount` cards of the current player's discard pile with no prompt
+ * (WP-868 / D-24811), then narrates them.
+ *
+ * @param G - Game state, mutated in place.
+ * @param currentPlayer - The defeating player.
+ * @param koCount - The most cards to KO.
+ * @param label - The timing label for the log line.
+ * @param sourceName - The display name of the villain whose line fired.
+ * @returns The KO'd card ids.
+ */
+function koFirstDiscardCardsDirectly(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  koCount: number,
+  label: string,
+  sourceName: string,
+): VillainEffectApplication {
+  const zones = G.playerZones[currentPlayer]!;
+  const cardIdsToKo = zones.discard.slice(0, koCount);
+  const koedCardIds: CardExtId[] = [];
+  for (const discardCardId of cardIdsToKo) {
+    const moveResult = moveCardFromZone(zones.discard, [], discardCardId);
+    if (!moveResult.found) {
+      continue;
+    }
+    zones.discard = moveResult.from;
+    // why: the same KO bookkeeping as resolveKoDiscardChoice, so an owned-card-KO grant ("whenever
+    // you KO a card from your discard pile") sees a direct KO exactly as it sees a chosen one.
+    G.ko = koCard(G.ko, discardCardId);
+    recordOwnedCardKoed(G, currentPlayer, discardCardId, 'discard');
+    koedCardIds.push(discardCardId);
+  }
+  const koedNames: string[] = [];
+  for (const koedCardId of koedCardIds) {
+    koedNames.push(resolveCardDisplayName(G, koedCardId));
+  }
+  pushLog(G, `${label} effect: KO'd ${koedNames.join(', ')} from your discard pile (${sourceName}).`, 'applied');
+  return { targets: koedCardIds };
+}
+
+/**
+ * reenter-sewers-if-villain-deck-top primitive — Mr. Immortal's Fight (WP-868 / D-24811). A
+ * DELIBERATE NO-OP here (the WP-481 / WP-542 secondary-fire-site pattern).
+ *
+ * // why: the reveal and the City entry need the escape procedure, which takes a `RevealContext`
+ * and an `implementationMap` the executor does not receive, so the work runs in the bridge at the
+ * end of defeatCityVillainCore (`reenterSewersOnVillainDeckReveal`), read through
+ * `villainCardReenterSewersKinds`. The primitive is listed in DELIBERATE_NO_OP_VILLAIN_PRIMITIVES
+ * so its trace reads `no-op`, not `fired`; the bridge narrates.
+ */
+function villainEffectReenterSewersIfVillainDeckTop(): VillainEffectApplication {
   return { targets: [] };
 }
 
@@ -4723,6 +4981,12 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'hq-heroes-to-hero-deck-bottom': villainEffectHqHeroesToHeroDeckBottom,
   // why: WP-862 / D-24804 — position 39, the Size-Changing grant on a chosen HQ Hero.
   'hq-hero-gains-size-changing': villainEffectHqHeroGainsSizeChanging,
+  // why: WP-868 / D-24811 — positions 40-42: the HQ cost change (Tim Boo Ba / Jormungand / Dr.
+  // Carlton Drake / The Mind Stone), the mandatory KO from your discard pile (Flatman + six
+  // siblings) and Mr. Immortal's reenter (a deliberate no-op; the defeatCityVillainCore bridge acts).
+  'hq-heroes-cost-change': villainEffectHqHeroesCostChange,
+  'ko-from-discard-current': villainEffectKoFromDiscardCurrent,
+  'reenter-sewers-if-villain-deck-top': villainEffectReenterSewersIfVillainDeckTop,
 };
 
 /**
