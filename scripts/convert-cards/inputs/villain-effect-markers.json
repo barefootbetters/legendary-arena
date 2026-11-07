@@ -100,10 +100,12 @@
         "goom": { "ambush": ["captureBystander"], "fight": ["koHeroCurrentPlayer"] },
         "monsteroso": { "fight": ["add-next-hand-size:1"] },
         "sporr": { "fight": ["hq-hero-gains-size-changing:add:tech+ranged"] },
-        "tim-boo-ba": { "fight": ["hq-heroes-cost-change:less:1"] }
+        "tim-boo-ba": { "fight": ["hq-heroes-cost-change:less:1"] },
+        "trull-the-unhuman": { "ambush": ["captureBystander", "demolish-each-player"] },
+        "zzutak": { "escape": ["demolish-each-player"] }
       },
       "wrecking-crew": {
-        "piledriver": { "fight": ["koHeroCurrentPlayer"] }
+        "piledriver": { "fight": ["koHeroCurrentPlayer"], "escape": ["demolish-each-player"] }
       }
     },
     "co2e": {
@@ -546,7 +548,6 @@
 
     { "set": "2099", "group": "alchemax-enforcers", "card": "venture", "timing": "ambush", "text": "Ambush: Put the top card of the Hero Deck into the Escape Pile. Venture captures a Bystander. [keyword:Cyber-Mod][hc:ranged]: Venture also captures a non-grey Hero from your discard pile.", "reason": "other" },
     { "set": "2099", "group": "alchemax-enforcers", "card": "whackoid", "timing": "ambush", "text": "Ambush: Put the top card of the Hero Deck into the Escape Pile. Whackoid captures all Bystanders from other Villains in the city. If he captures any Bystanders this way, each player gains a Wound.", "reason": "other" },
-    { "set": "chmp", "group": "monsters-unleashed", "card": "trull-the-unhuman", "timing": "ambush", "text": "Ambush: Trull captures a Bystander. Then [keyword:Demolish] each player.", "reason": "other" },
     { "set": "smhc", "group": "vulture-tech", "card": "turbine-powered", "timing": "ambush", "text": "Ambush: Turbine Powered captures a Bystander. Then move this Villain to the Rooftops. If there's already a Villain there, swap them.", "reason": "other" },
     { "set": "dstr", "group": "fear-lords", "card": "dspayre", "timing": "ambush", "text": "Ambush: D'Spayre enters the [keyword:Astral Plane] and captures a Bystander.", "reason": "other" },
 
