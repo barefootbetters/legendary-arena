@@ -208,6 +208,16 @@ export default defineComponent({
       if (!cost.allowed) {
         return cost;
       }
+      // why: WP-757 / D-24587 — while the Mastermind haunts an HQ Hero the engine's
+      // fightMastermind refuses the fight (isMastermindHaunting), so a live button here
+      // would be a WP-750 / D-24574 dead button. Every submit path (plain, Excessive
+      // Violence, the Enigma picker) goes through this gate, so one arm covers them all.
+      if (props.mastermind.isHaunting === true) {
+        return {
+          allowed: false,
+          reason: 'The Mastermind is haunting a Hero in the HQ. Exorcise that Hero first.',
+        };
+      }
       if (props.mastermind.tacticsRemaining === 0) {
         // why: WP-687 / D-24504 — under the optional Final Blow rule, an
         // all-tactics-defeated Mastermind is NOT "already fallen": it stays
