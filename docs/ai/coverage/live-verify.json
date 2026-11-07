@@ -1992,6 +1992,28 @@
       "date": "2026-11-07",
       "evidence": "2p Operator match sU1EWDfnPVj (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers; Cape-Killers; Wolverine, Spider-Man, Hulk, Cyclops, Black Widow; Final Blow on; server build e6ec91f5 = the WP-868 merge, created 2026-11-07T18:34:12Z after boot, isMatchOlderThanServer false): Mr. Immortal revealed Zzutak (6.2.24) and Sporr twice (7.2.11, 7.2.14) and reentered the Sewers each time (6.2.25, 7.2.12, 7.2.15, threat); the revealed card stayed on top (Zzutak entered the City from the Villain Deck at 7.1.1); on a Master Strike he stayed defeated (8.2.18-8.2.19). Not observed live: a Henchman or Bystander top card, or a full-City push (covered by tests).",
       "note": "Live check (NEW match with Great Lakes Avengers after the deploy): fighting Mr. Immortal logs \"Mr. Immortal revealed <card> from the Villain Deck.\" and the card stays on top; on a Villain, Henchman or Bystander the log adds \"Mr. Immortal reenters the Sewers.\" and he is in the Sewers (not the Victory Pile); otherwise he stays defeated. D-24811."
+    },
+    {
+      "key": "cvwr-villain-great-lakes-avengers-squirrel-girl|fortify",
+      "kind": "villain",
+      "card": "Squirrel Girl",
+      "ability": "Escape: Fortify the Sidekick Stack. While it's fortified, Sidekicks can't be recruited or gained.",
+      "wp": "WP-873",
+      "state": "pending",
+      "date": "2026-11-07",
+      "evidence": "",
+      "note": "Live check (NEW match with Great Lakes Avengers after the deploy): when Squirrel Girl escapes she shows under the Escaped Pile as fortifying the Sidekick Stack and is not in the Escaped Pile; Recruit Sidekick is disabled with \"Squirrel Girl fortifies the Sidekick Stack. Fight Squirrel Girl first.\"; fighting her (one card played) puts her in the Victory Pile and re-enables it. Play Diagnostics uiStateSnapshot shows city.fortifiers and piles.sidekickStackFortifiedReason while she fortifies. D-24818."
+    },
+    {
+      "key": "cvwr-villain-heroes-for-hire-colleen-wing|fortify",
+      "kind": "villain",
+      "card": "Colleen Wing",
+      "ability": "Escape: Fortify the Mastermind. While it's fortified, the Mastermind can't be fought.",
+      "wp": "WP-873",
+      "state": "pending",
+      "date": "2026-11-07",
+      "evidence": "",
+      "note": "Live check (NEW match with Heroes for Hire after the deploy): when Colleen Wing escapes she shows under the Escaped Pile as fortifying the Mastermind; the Mastermind Fight button is disabled with \"Colleen Wing fortifies the Mastermind. Fight Colleen Wing first.\"; fighting her (9 Attack) re-enables it. Play Diagnostics uiStateSnapshot shows mastermind.fortifiedReason while she fortifies. D-24818."
     }
   ]
 }

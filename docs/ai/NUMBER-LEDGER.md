@@ -510,7 +510,7 @@ high-water: 422
 - WP-869 — converted-bystander-villain-split-groot (chmp Groot from Planet X Fight: two Bystanders from the Bystander Stack enter the city as 3-Attack "Splintered Half-Groot" Villains; fighting one rescues it as a Bystander. reserved 2026-11-06, claude/wp869-reserve)
 - WP-871 — villain-fight-restriction-gate (Orrgo "unless you have already defeated another Villain this turn", Squirrel Girl "if you played more than one card this turn", Doop "if there is a Villain in an adjacent city space": a state-only fight precondition gating fightVillain, getLegalMoves and the City Fight button. reserved 2026-11-06, claude/wp871-reserve; LANDED 2026-11-06)
 - WP-872 — villain-fight-cross-player-and-villain-deck (Mandarin's Rings henchman variants Liar, Nightbringer and Remaker Fight lines: another player's deck top to your discard or theirs, reveal three Villain Deck cards and may defeat one worth 2VP or less, give a hand/discard card to the player on your right. reserved 2026-11-06, claude/wp872-reserve)
-- WP-873 — fortify-keyword (the Civil War Fortify keyword: a Villain Escape / Ambush line parks the Villain at a place (Sidekick / Wound / Bystander / Officer Stack, the Mastermind, an HQ space, the Hero or Villain Deck, a player deck) instead of the Escape Pile; the place is locked or modified until any player fights that Villain there; one Fortify per place. Squirrel Girl Escape fortifies the Sidekick Stack. reserved 2026-11-07, claude/wp873-reserve)
+- WP-873 — fortify-keyword (the Civil War Fortify keyword: a Villain Escape / Ambush line parks the Villain at a place (Sidekick / Wound / Bystander / Officer Stack, the Mastermind, an HQ space, the Hero or Villain Deck, a player deck) instead of the Escape Pile; the place is locked or modified until any player fights that Villain there; one Fortify per place. Squirrel Girl Escape fortifies the Sidekick Stack. reserved 2026-11-07, claude/wp873-reserve; LANDED 2026-11-07)
 
 ## EC
 
@@ -983,7 +983,7 @@ high-water: 457
 - EC-907 — converted-bystander-villain-split-groot (WP-869. reserved 2026-11-06, claude/wp869-reserve)
 - EC-909 — villain-fight-restriction-gate (WP-871. reserved 2026-11-06, claude/wp871-reserve; LANDED 2026-11-06)
 - EC-910 — villain-fight-cross-player-and-villain-deck (WP-872. reserved 2026-11-06, claude/wp872-reserve)
-- EC-911 — fortify-keyword (WP-873. reserved 2026-11-07, claude/wp873-reserve)
+- EC-911 — fortify-keyword (WP-873. reserved 2026-11-07, claude/wp873-reserve; LANDED 2026-11-07)
 
 ## D
 
@@ -1577,4 +1577,4 @@ section below) and the allocation protocol in
 - D-24814 — converted-bystander-villain-split-groot (WP-869; a Villain Fight that turns Bystander Stack cards into fixed-Attack Villains entering the city, and their defeat routing (rescued as a Bystander) and escape routing. reserved 2026-11-06, claude/wp869-reserve)
 - D-24816 — villain-fight-restriction-gate (WP-871; the [fight-restriction:<kind>] marker, the G.villainFightRestrictions table, the three kinds and their turn reads, the fight-only scope, and the public UICityCard projection. reserved 2026-11-06, claude/wp871-reserve; LANDED 2026-11-06)
 - D-24817 — villain-fight-cross-player-and-villain-deck (WP-872; the three Mandarin's Rings variant primitives, the non-active seat choice reuse, the Villain Deck reveal-defeat-reorder, and the solo and Good/Bad rulings. reserved 2026-11-06, claude/wp872-reserve)
-- D-24818 — fortify-keyword (WP-873; the Fortify marker, the fortified-target table, each target's lock semantics, and how a Fortify ends. reserved 2026-11-07, claude/wp873-reserve)
+- D-24818 — fortify-keyword (WP-873; the Fortify marker, the fortified-target table, each target's lock semantics, and how a Fortify ends. reserved 2026-11-07, claude/wp873-reserve; LANDED 2026-11-07)
