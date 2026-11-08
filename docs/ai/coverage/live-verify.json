@@ -776,12 +776,12 @@
       "key": "core-villain-brotherhood-sabretooth|reveal-or-wound",
       "kind": "villain",
       "card": "Sabretooth",
-      "ability": "reveal-or-wound",
-      "wp": "WP-469",
+      "ability": "Fight: Each player reveals an X-Men Hero or gains a Wound",
+      "wp": "WP-845",
       "state": "verified",
-      "date": "2026-10-04",
-      "evidence": "Solo Magneto / Midtown matches trJwnB0oLeg + jjChx_MJ2gl (build afd76ff)",
-      "note": "Both branches: revealed an X-Men Hero (no Wound), and with no X-Men Hero gained a Wound."
+      "date": "2026-11-02",
+      "evidence": "2p Operator match 9sArOoptLJ0 (Magneto / Midtown Bank Robbery; server build 548923dd, created after boot, isMatchOlderThanServer false): Player 0 fought Sabretooth (21.2.25); Player 1, with no X-Men Hero, was wounded at once (21.2.23); Player 0, holding Wolverine, was offered the reveal-or-Wound choice (21.2.24) and revealed, taking no Wound (21.2.27). Earlier: WP-469, 2026-10-04, Solo Magneto / Midtown matches trJwnB0oLeg + jjChx_MJ2gl (build afd76ff).",
+      "note": "The revealer sees 'Reveal a Hero or gain a Wound?' on their own seat; Reveal avoids the Wound, Gain a Wound instead takes it; cannot-reveal seats are wounded at once. D-24779. Earlier WP-469 check: Both branches: revealed an X-Men Hero (no Wound), and with no X-Men Hero gained a Wound."
     },
     {
       "key": "henchman-savage-land-mutates|add-next-hand-size",
@@ -1455,17 +1455,6 @@
       "note": "Gain a Sidekick: Stack -1, discard +1, applied log line, recruit button still enabled after the gain. D-24778."
     },
     {
-      "key": "core-villain-brotherhood-sabretooth|reveal-or-wound",
-      "kind": "villain",
-      "card": "Sabretooth",
-      "ability": "Fight: Each player reveals an X-Men Hero or gains a Wound",
-      "wp": "WP-845",
-      "state": "verified",
-      "date": "2026-11-02",
-      "evidence": "2p Operator match 9sArOoptLJ0 (Magneto / Midtown Bank Robbery; server build 548923dd, created after boot, isMatchOlderThanServer false): Player 0 fought Sabretooth (21.2.25); Player 1, with no X-Men Hero, was wounded at once (21.2.23); Player 0, holding Wolverine, was offered the reveal-or-Wound choice (21.2.24) and revealed, taking no Wound (21.2.27).",
-      "note": "The revealer sees 'Reveal a Hero or gain a Wound?' on their own seat; Reveal avoids the Wound, Gain a Wound instead takes it; cannot-reveal seats are wounded at once. D-24779."
-    },
-    {
       "key": "mastermind:core/loki|master-strike-turn-order",
       "kind": "mastermind",
       "card": "Loki",
@@ -1843,34 +1832,12 @@
       "key": "amwp/scott-lang-cat-burglar|heist",
       "kind": "hero",
       "card": "Scott Lang, Cat Burglar",
-      "ability": "Petty Larceny — Heist: +2 Recruit",
+      "ability": "Heist — Petty Larceny: +2 Recruit; Anything for Cassie: rescue a Bystander; Shocking Support: +2 Attack",
       "wp": "WP-865",
       "state": "pending",
       "date": "2026-11-06",
       "evidence": "",
-      "note": "Live check (NEW match after the deploy): playing the card grants nothing and logs it readied for a Heist; Attempt Heist (Heist Count N) appears once; a won Heist fires the ability, a tie does nothing, a lost Heist gains a Wound; the button is gone after one attempt. D-24808."
-    },
-    {
-      "key": "amwp/scott-lang-cat-burglar|heist",
-      "kind": "hero",
-      "card": "Scott Lang, Cat Burglar",
-      "ability": "Anything for Cassie — Heist: rescue a Bystander",
-      "wp": "WP-865",
-      "state": "pending",
-      "date": "2026-11-06",
-      "evidence": "",
-      "note": "Live check (NEW match after the deploy): playing the card grants nothing and logs it readied for a Heist; Attempt Heist (Heist Count N) appears once; a won Heist fires the ability, a tie does nothing, a lost Heist gains a Wound; the button is gone after one attempt. D-24808."
-    },
-    {
-      "key": "amwp/scott-lang-cat-burglar|heist",
-      "kind": "hero",
-      "card": "Scott Lang, Cat Burglar",
-      "ability": "Shocking Support — Heist: +2 Attack",
-      "wp": "WP-865",
-      "state": "pending",
-      "date": "2026-11-06",
-      "evidence": "",
-      "note": "Live check (NEW match after the deploy): playing the card grants nothing and logs it readied for a Heist; Attempt Heist (Heist Count N) appears once; a won Heist fires the ability, a tie does nothing, a lost Heist gains a Wound; the button is gone after one attempt. D-24808."
+      "note": "Live check (NEW match after the deploy), for each of the three cards: playing the card grants nothing and logs it readied for a Heist; Attempt Heist (Heist Count N) appears once; a won Heist fires the ability, a tie does nothing, a lost Heist gains a Wound; the button is gone after one attempt. D-24808."
     },
     {
       "key": "amwp/wasp|heist",
