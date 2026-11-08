@@ -269,8 +269,9 @@ describe('mastermindStrikeHandler — unresolved Master Strike is a hollow effec
       checkedCount += 1;
     }
     // why: 11 executable + General Ross deferred, plus Fin Fang Foom (WP-864 / D-24807,
-    // on main at execution) = 13. A misspelled status filter would check fewer.
-    assert.equal(checkedCount, 13);
+    // on main at execution) = 13, plus The Mandarin (WP-875 / D-24822) = 14. A misspelled
+    // status filter would check fewer.
+    assert.equal(checkedCount, 14);
   });
 
   it('logs the hollow line, then the strike-count line, once the pipeline applies the returned effects', () => {

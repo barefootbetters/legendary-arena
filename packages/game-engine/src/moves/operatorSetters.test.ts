@@ -234,6 +234,13 @@ const GATE_BLOCKERS: readonly GateBlocker[] = [
     remove: (G) => { Reflect.deleteProperty(G, 'pendingNextHandFromPlayPicks'); },
   },
   {
+    // why: WP-875 / D-24822 — owed Mandarin's Ring City entries are settled, asked or entered by
+    // the onMove opener after the move, like the pick queue above.
+    label: 'pendingMandarinRingEntries is non-empty',
+    apply: (G) => { G.pendingMandarinRingEntries = [{ playerID: '0' }]; },
+    remove: (G) => { Reflect.deleteProperty(G, 'pendingMandarinRingEntries'); },
+  },
+  {
     // why: WP-829 / D-24762 — owed Go Back in Time Purges are opened into a seat choice after
     // the move, like the escape queues above.
     label: 'pendingTimestreamPurges is non-empty',

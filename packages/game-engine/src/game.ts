@@ -48,6 +48,7 @@ import { openEscapeProcedureSeatChoiceIfNeeded } from './villainDeck/villainEsca
 import { openTimestreamPurgeSeatChoiceIfNeeded, sweepPurgedHeroesFromHq } from './rules/timestreamPurge.logic.js';
 import { openEnigmaPeekSeatChoiceIfNeeded } from './rules/enigmaCode.logic.js';
 import { openRevealOrWoundSeatChoiceIfNeeded } from './moves/revealOrWoundChoice.logic.js';
+import { openMandarinRingEntriesIfNeeded } from './moves/mandarinRingEntry.logic.js';
 import { executeRuleHooks } from './rules/ruleRuntime.execute.js';
 import { applyRuleEffects } from './rules/ruleRuntime.effects.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from './rules/ruleRuntime.impl.js';
@@ -943,6 +944,29 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // with no prompt (declining is not an option then, L3199-3200). Early no-op when
           // nothing is queued.
           openRevealOrWoundSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
+          // why: WP-875 / D-24822 — The Mandarin's Master Strike queued one Ring entry per player
+          // with an available Ring (a strike has no events). Settle them here: a lone Ring enters
+          // with no prompt, players with two or more answer one 'mandarin-ring-entry' seat choice,
+          // and the chosen Rings enter the Sewers current player first. An entry can push a Villain
+          // off the Bridge, so the escape opener, the D-24599 latch + pile-depletion pair and the
+          // reveal-or-wound opener re-run (each idempotent, each waits on an open choice) so that
+          // escape's steps and any loss it causes land on this move. BEFORE Diving Block, so a Wave
+          // from a strike Wound waits until the Ring choices are answered. Only with a live ctx
+          // (the unit-test `{ G }` call shape has none); no Purge-sweep re-run (it catches up on
+          // the next move).
+          if (ctx !== undefined) {
+            openMandarinRingEntriesIfNeeded(
+              G,
+              events,
+              ctx.currentPlayer,
+              { random, ctx: { currentPlayer: ctx.currentPlayer, turn: ctx.turn } },
+              DEFAULT_IMPLEMENTATION_MAP,
+            );
+            openEscapeProcedureSeatChoiceIfNeeded(G, events, ctx.currentPlayer);
+            latchFinalTurnIfDeckExhausted(G);
+            applyPileDepletionResourceLoss(G);
+            openRevealOrWoundSeatChoiceIfNeeded(G, events, ctx.currentPlayer);
+          }
           // why: WP-682 / D-24499 — after every move, open (or re-open) the next
           // Diving-Block reveal/decline WAVE for any Wounds parked at the
           // gainWoundForPlayer chokepoint this move. Runs here (not in each
@@ -1068,6 +1092,12 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // mirrors it.
           if (G.pendingNextHandFromPlayPicks !== undefined) {
             delete G.pendingNextHandFromPlayPicks;
+          }
+          // why: WP-875 / D-24822 — owed Mandarin's Ring entries belong to the turn whose strike
+          // queued them. Guarded delete, so a match without The Mandarin is byte-unchanged;
+          // applyOnBeginParity mirrors it.
+          if (G.pendingMandarinRingEntries !== undefined) {
+            delete G.pendingMandarinRingEntries;
           }
 
           // why: WP-328 — stamp the turn number into G (ctx.turn lives only in ctx, and
