@@ -9,11 +9,13 @@
  * validates the submission is a permutation of the parked remainder and rewrites
  * the top-N of the deck to that order, front-popping the queue.
  *
- * All invalid states are silent no-ops (moves never throw). The queue is left
- * byte-identical on every no-op so the player can resubmit a valid order — the
- * block-all guard guarantees the deck top (and thus the parked cards) still
- * exists while pending. The reorder is a PURE permutation: no ctx.random, no
- * cards added or removed, no zone other than the deck touched.
+ * Invalid submissions are silent no-ops (moves never throw): the queue is left
+ * byte-identical so the player can resubmit a valid order. A deck that drifted
+ * under the parked cards (WP-870 / D-24815: a same-move Excessive Violence draw
+ * or KO-or-keep KO after a fight-time reorder) is NOT a no-op: the stale front is
+ * dropped with a neutral log line, so it can never hold the block-all guard. The
+ * reorder is a PURE permutation: no ctx.random, no cards added or removed, no zone
+ * other than the deck touched.
  *
  * No registry imports. No .reduce(). Moves never throw.
  */
@@ -21,6 +23,7 @@
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
+import { pushLog } from '../log/logPush.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -80,7 +83,8 @@ function isPermutationOf(candidate: CardExtId[], reference: CardExtId[]): boolea
  * permutation of the parked `cardIds` → rewrite the top-N of the deck → front-pop
  * on success. Silent no-ops: non-array / empty / non-string orderedCardIds; empty
  * queue; front.playerID mismatch; front.choiceType mismatch; not a permutation of
- * the parked remainder (queue intact — resubmit).
+ * the parked remainder (queue intact — resubmit). A deck top that is no longer the
+ * parked remainder drops the front with a neutral log line (D-24815).
  *
  * @param context - boardgame.io move context with G and playerID.
  * @param args - the chosen { orderedCardIds } for the top of the deck.
@@ -105,20 +109,35 @@ export function resolveReorderChoice({ G, playerID }: MoveContext, args: Resolve
   if (front.choiceType !== 'reorder-deck-top') { return; }
 
   // Step 3: The submission must be a permutation of the parked remainder — same
-  // cards, any order. The block-all guard froze the deck top since park time, so
-  // `front.cardIds` is still the top-N of the deck; rewriting the top-N to a
+  // cards, any order. The deck top is then checked against `front.cardIds` (a
+  // same-move overtake can drift it, D-24815); rewriting a matching top-N to a
   // permutation preserves the whole-deck multiset (no card added or dropped).
   if (!isPermutationOf(args.orderedCardIds, front.cardIds)) { return; }
 
   const playerZones = G.playerZones[playerID];
   if (!playerZones) { return; }
   const remainderCount = front.cardIds.length;
-  // why: defense-in-depth (copilot #2) — verify the deck top still matches the
-  // parked remainder before rewriting; if a future block-all regression let it
-  // drift, no-op rather than scramble the deck. Belt-and-suspenders over the
-  // block-all guarantee, not a substitute for it.
-  if (playerZones.deck.length < remainderCount) { return; }
-  if (!isPermutationOf(playerZones.deck.slice(0, remainderCount), front.cardIds)) { return; }
+  // why: WP-870 / D-24815 (amends the D-24286 drift no-op) — verify the deck top
+  // still matches the parked remainder before rewriting, and never scramble the deck.
+  // A drifted front is DROPPED, not left queued: Mandarin's Rings Spin parks a reorder
+  // inside defeatCityVillainCore and fireExcessiveViolencePlays runs after it in the
+  // same move (an Excessive Violence draw, or a KO-or-keep KO resolved first, can take
+  // a parked card). refreshStaleKoOrKeepFront covers only KO-or-keep, so a drifted
+  // reorder left queued would hold the block-all guard forever (a turn that cannot end).
+  if (
+    playerZones.deck.length < remainderCount ||
+    !isPermutationOf(playerZones.deck.slice(0, remainderCount), front.cardIds)
+  ) {
+    queue.shift();
+    if (queue.length === 0) {
+      delete G.pendingReorderChoices;
+    }
+    pushLog(G,
+      `Player ${playerID}'s revealed cards are no longer all on top of their deck; nothing to put back in order.`,
+      'neutral',
+    );
+    return;
+  }
 
   // Step 4: Mutate — rewrite the top-N to the chosen order, leave the rest of the
   // deck untouched. New array (never mutate the input in place).

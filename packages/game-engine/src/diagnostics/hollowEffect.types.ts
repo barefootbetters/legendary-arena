@@ -129,7 +129,9 @@ export interface EffectExecutionOutcome {
  * in the diagnostics export.
  *
  * @property cardId - The card-instance ext_id whose ability was hollow.
- * @property cardType - Whether the source card is a hero, villain, or henchman.
+ * @property cardType - Whether the source card is a hero, villain, henchman, or
+ *   mastermind (`'mastermind'` = a Master Strike that reached no dispatcher arm,
+ *   WP-867 / D-24810).
  * @property timing - The hook timing the hollow mechanic was declared at.
  * @property mechanic - The declared mechanic label that reached no handler.
  * @property reason - The hollow reason (one of the three hollow reasons).
@@ -137,7 +139,10 @@ export interface EffectExecutionOutcome {
  */
 export interface HollowEffectRecord {
   cardId: string;
-  cardType: 'hero' | 'villain' | 'henchman';
+  // why: WP-867 / D-24810 — 'mastermind' is appended for a Master Strike whose
+  // Mastermind has no arm in mastermindStrikeHandler: the strike belongs to the
+  // Mastermind card, so labelling it 'villain' would mislabel the panel and sweep.
+  cardType: 'hero' | 'villain' | 'henchman' | 'mastermind';
   timing: string;
   mechanic: string;
   reason: 'parse-unrecognized' | 'no-handler' | 'unsupported-keyword';

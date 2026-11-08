@@ -192,6 +192,19 @@ function isLockedEffectKeyword(keyword) {
 // Mind Stone, Flatman and six siblings, and Mr. Immortal; each validates via its own branch below).
 // `fortify` (`:<place>:<lock>`) appended at position 43 by WP-873 (D-24818 — cvwr Squirrel Girl
 // and Colleen Wing's Escape; validates via its own place + allowed-lock branch below).
+// `demolish-each-player` (no-param) appended at position 44 by WP-864 (D-24807 — chmp Trull the
+// Unhuman's Ambush, Zzutak's and Piledriver's Escape "[Demolish] each player"; validates via the
+// terminal no-param `parts.length === 1` branch).
+// `stack-cards-enter-city-as-villains` (`:<bystander|officer>:<N>[:<name>]`) appended at position
+// 45 by WP-869 (D-24814 — chmp Groot from Planet X's Fight, cvwr Agent Gabe Jones's Fight and Agent
+// Eric Marshall's Ambush; validates via its own branch below).
+// `reveal-top-may-ko-current` (no-param), `reveal-top-discard-zero-cost-current` (`:<N>`) and
+// `next-hand-from-play-zero-cost-current` (no-param) appended at positions 46, 47 and 48 by WP-870
+// (D-24815 — rvlt Mandarin's Rings Lightning (and antm Daystar) "Reveal the top card of your deck.
+// You may KO it.", Spin "Reveal the top six cards … Discard all of them that cost 0, then put the
+// rest back in any order." and Zero "Choose a card you played this turn that costs 0 … add that card
+// to your hand as an extra card."; the two no-param ones validate via the terminal
+// `parts.length === 1` branch, the `:<N>` one via its own branch below).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -236,6 +249,11 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-from-discard-current',
   'reenter-sewers-if-villain-deck-top',
   'fortify',
+  'demolish-each-player',
+  'stack-cards-enter-city-as-villains',
+  'reveal-top-may-ko-current',
+  'reveal-top-discard-zero-cost-current',
+  'next-hand-from-play-zero-cost-current',
 ];
 
 // why: WP-836 / D-24769 — hand-synced local copy of the engine's HERO_CLASSES
@@ -269,6 +287,12 @@ const FORTIFY_ALLOWED_LOCKS = {
   'sidekick-stack': ['no-recruit-or-gain'],
   mastermind: ['no-fight'],
 };
+
+// why: WP-869 / D-24814 — hand-synced local copy of the engine's STACK_VILLAIN_NAME_PATTERN
+// (packages/game-engine/src/rules/stackVillain.logic.ts): the optional name token of a
+// stack-cards-enter-city-as-villains marker. The engine's stackVillain.test.ts asserts this file
+// contains the engine pattern's source, so the two copies cannot drift.
+const STACK_VILLAIN_NAME_PATTERN = /^[a-z0-9]+([_-][a-z0-9]+)*$/;
 
 /**
  * Returns true when a `@<space>[+<space>…]` gate suffix (the text after the `@`)
@@ -475,6 +499,12 @@ function isValidParameterizedEffectToken(token) {
     // mandatory KO. Same strict positive-integer grammar as the "up to" sibling.
     return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
   }
+  if (primitive === 'reveal-top-discard-zero-cost-current') {
+    // why: D-24815 — grammar reveal-top-discard-zero-cost-current:<N> (exactly 2 tokens; Spin: :6),
+    // N the count of deck-top cards revealed. Mirrors the engine parser: the bare token is invalid
+    // (no default count), so it must not reach the terminal no-param branch.
+    return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
+  }
   if (primitive === 'reenter-sewers-if-villain-deck-top') {
     // why: D-24811 — grammar reenter-sewers-if-villain-deck-top:<kinds> (exactly 2 tokens; Mr.
     // Immortal: :villain+bystander). Mirrors the engine parser's three accepted kind tokens.
@@ -488,6 +518,15 @@ function isValidParameterizedEffectToken(token) {
     if (parts.length !== 3) return false;
     if (!Object.hasOwn(FORTIFY_ALLOWED_LOCKS, parts[1])) return false;
     return FORTIFY_ALLOWED_LOCKS[parts[1]].includes(parts[2]);
+  }
+  if (primitive === 'stack-cards-enter-city-as-villains') {
+    // why: D-24814 — grammar stack-cards-enter-city-as-villains:<bystander|officer>:<N>[:<name>]
+    // (3 or 4 tokens; Groot from Planet X: :bystander:2:splintered_half-groot, Agent Gabe Jones and
+    // Agent Eric Marshall: :officer:1). Mirrors the engine parser's stack-villain branch.
+    if (parts.length !== 3 && parts.length !== 4) return false;
+    if (parts[1] !== 'bystander' && parts[1] !== 'officer') return false;
+    if (!/^[1-9][0-9]*$/.test(parts[2])) return false;
+    return parts.length === 3 || STACK_VILLAIN_NAME_PATTERN.test(parts[3]);
   }
   if (primitive === 'play-villain-deck-cards') {
     // why: D-24351 — grammar play-villain-deck-cards:<N> (exactly 2 tokens); N is the

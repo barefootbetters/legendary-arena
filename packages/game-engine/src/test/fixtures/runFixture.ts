@@ -46,6 +46,7 @@ import { resolveDeferredHeroGrants } from '../../hero/heroEffects.execute.js';
 import { openNonActiveReturnOnDiscardSeatChoiceIfNeeded } from '../../moves/resolveReturnOnDiscard.js';
 import { openEscapeProcedureSeatChoiceIfNeeded } from '../../villainDeck/villainEscapeProcedure.js';
 import { openRevealOrWoundSeatChoiceIfNeeded } from '../../moves/revealOrWoundChoice.logic.js';
+import { openNextHandFromPlaySeatChoiceIfNeeded } from '../../moves/nextHandFromPlay.logic.js';
 import { applyEndOfTurnCleanup } from '../../moves/endOfTurnCleanup.logic.js';
 import { replayOutOfTimeCards } from '../../moves/outOfTime.logic.js';
 import { revealVillainCard } from '../../villainDeck/villainDeck.reveal.js';
@@ -424,6 +425,10 @@ function dispatchSingleMove(
   // replay must park it too. Directly after the escape opener (this harness has no depletion
   // re-check to order against).
   openRevealOrWoundSeatChoiceIfNeeded(gameState, undefined, cursor.currentPlayer);
+  // why: WP-870 / D-24815 — the lockstep partner of the simulation.runner.ts owed Zero pick
+  // mirror: a sim-captured trace answers the pick with resolveSeatChoice moves, so the replay must
+  // park it too (this harness never runs onMove).
+  openNextHandFromPlaySeatChoiceIfNeeded(gameState, undefined, cursor.currentPlayer);
 
   if (endTurnFlag.triggered) {
     rotateToNextTurn(gameState, cursor, fixture.input.playerOrder, numPlayers, nextRandom, endTurnFlag.nextPlayer);

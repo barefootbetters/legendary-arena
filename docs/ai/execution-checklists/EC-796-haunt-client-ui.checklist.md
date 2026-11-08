@@ -22,7 +22,7 @@
   1. `canExorciseHauntedHero()` (viewer's turn ∧ `play.main`), then the heal lock (`You healed this turn — you can't exorcise`), then `useCardCostGating(economy).canRecruit(display)`.
   2. If `display === null`, gate on stage only and label the button "Exorcise" with no cost.
   3. A null slot or a null `viewerPlayerId` renders no button.
-- Mastermind lock: inside `gateForFight`, after the stage check and before the cost check, use `` `${name} is haunting a Hero in the HQ — exorcise it to fight` ``. This also hides the EV button through `showEvFight`.
+- Mastermind lock: **already shipped by PR #3207; do not move or reword it.** Inside `gateForFight`, after the cost check and before the all-tactics-defeated check, reason `The Mastermind is haunting a Hero in the HQ. Exorcise that Hero first.`. It also hides the EV button through `showEvFight` and keeps the Enigma picker closed. This packet adds only the `play-mastermind-haunting` badge.
 - Recipients: the viewer first ("You"), then the others in `players` order, labelled `playerLabel(playerId, undefined)`.
 - Test ids:
   - `play-hq-haunter`, with `data-haunter-kind` and `data-haunter-ext-id`;
@@ -72,6 +72,6 @@
 - Villain strip shows a hyphenated id instead of a name → reading `extId` instead of the embedded `display`.
 - Existing HQRow tests fail on missing props → the new props were made required.
 - Chooser clipped or offset on mobile → it was positioned absolute or fixed.
-- EV fight button still shows while haunting → the lock was added to the normal button instead of inside `gateForFight`.
+- EV fight button still shows while haunting, or an existing `Haunt blocks the Fight` test fails → the PR #3207 lock in `gateForFight` was moved, reworded or removed.
 - Exorcise enabled after a Heal but the engine refuses it → the heal-lock gate is missing.
 - Exorcise click does nothing → wrong payload (a recipient sent on KO, or a numeric seat id).

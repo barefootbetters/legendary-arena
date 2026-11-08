@@ -20,6 +20,7 @@ source:
   - C:\dev\legendary-arena\wiki\debug-effects.md (this page — https://ewiki.legendary-arena.com/debug-effects/)
   - ../scripts/build-effect-implementation-index.mjs
   - ../scripts/coverage/tactic-provenance.json
+  - ../scripts/coverage/strike-provenance.json
   - ../scripts/build-card-mechanics-metadata.mjs
   - ../scripts/hero-mechanic-ledger.mjs
   - ../scripts/villain-mechanic-ledger.mjs
@@ -112,7 +113,7 @@ hidden behind a no-op executor. See [Card Effect System](card-effect-system.md#v
 
 | Surface | Answers | Where it lives |
 |---|---|---|
-| **Effect-implementation index** (`pnpm effect-index`) | For every card × mechanic across hero / villain / mastermind scopes: status · handler · WP · governing decision. The three-scope data backbone the viewer reads | [`build-effect-implementation-index.mjs`](../scripts/build-effect-implementation-index.mjs) (WP-484 / D-24289; mastermind-tactic feed WP-507 / D-24313) → `data/metadata/effect-implementation-index.json` |
+| **Effect-implementation index** (`pnpm effect-index`) | For every card × mechanic across hero / villain / mastermind scopes: status · handler · WP · governing decision. The three-scope data backbone the viewer reads | [`build-effect-implementation-index.mjs`](../scripts/build-effect-implementation-index.mjs) (WP-484 / D-24289; mastermind-tactic feed WP-507 / D-24313; Master Strike feed WP-867 / D-24810) → `data/metadata/effect-implementation-index.json` |
 | **`/debug/effects` viewer** | The index rendered as a searchable, scope/status/set-filterable table, with a per-status summary; a blank handler/WP/decision (—) is the honest "no handler ran" signal, never fabricated | [`EffectsPage.vue`](../apps/dashboard/src/pages/debug/EffectsPage.vue) (WP-487) + [`useEffectIndex.ts`](../apps/dashboard/src/composables/useEffectIndex.ts); set filter WP-536, design-name search WP-491 |
 | **Runtime effect tracing** | Per-dispatch trace (`cardId`, `scope`, `timing`, `effect`, `handler`, `status`, `fireSite`, `params`, `turn`) written to `G.diagnostics.traces` — the "handler reached but which fire site, and did it no-op?" record | [`effectTrace.record.ts`](../packages/game-engine/src/diagnostics/effectTrace.record.ts) (WP-488 / D-24294) |
 | **Mechanic ledgers** (`pnpm ledger:heroes` / `ledger:villains`) | Per card × mechanic status: `executable` · `deferred` · `condition` · `unsupported` (code gap) · `unmarked` (data gap) · `subsystem` (implemented ELSEWHERE — done, not a TODO) | [`hero-mechanic-ledger.mjs`](../scripts/hero-mechanic-ledger.mjs), [`villain-mechanic-ledger.mjs`](../scripts/villain-mechanic-ledger.mjs) → `docs/ai/coverage/*.json` |
@@ -126,7 +127,8 @@ The load-bearing property shared by all of them: every one is **derived from
 the real engine parser or a runtime hook** over `data/cards/*.json` — none is a
 hand-maintained lookup that can silently disagree with the engine. The effect
 index is a **verbatim join** of the hero and villain mechanic ledgers plus the
-mastermind-tactic feed; it computes no new provenance and runs no second parser.
+mastermind-tactic and Master Strike feeds; it computes no new provenance and runs
+no second parser.
 
 ### How the effect index is built (generated, never authored)
 
@@ -139,8 +141,20 @@ for. `build-effect-implementation-index.mjs` (WP-484):
    status/handler/wp/decision comes from the curated overlay
    [`tactic-provenance.json`](../scripts/coverage/tactic-provenance.json) or the
    `unmarked` default — **never fabricated** (the WP-493 generated-identity /
-   curated-provenance split).
-2. Normalizes every ledger row and tactic into a scope-tagged entry
+   curated-provenance split). It also enumerates **one Master Strike row per
+   Mastermind** (WP-867 / D-24810): extId
+   `${setAbbr}-mastermind-${slug}-master-strike`, name `<Mastermind> Master
+   Strike`, mechanic `master-strike`, scope `mastermind`, with
+   status/handler/wp/decision from the curated
+   [`strike-provenance.json`](../scripts/coverage/strike-provenance.json)
+   overlay (the Masterminds whose strike has a dispatcher arm; General Ross is
+   `deferred`, a partial arm) or the same `unmarked` default. An overlay key
+   that names no Mastermind, or a strike extId equal to a tactic extId, fails
+   the build. An engine test runs the real strike dispatcher for every
+   `executable` / `deferred` overlay row, so the overlay cannot claim a
+   resolver the engine lacks. At runtime an `unmarked` Mastermind's strike
+   records a `master-strike` hollow effect.
+2. Normalizes every ledger row, tactic and Master Strike into a scope-tagged entry
    (`hero` | `villain` | `mastermind`), passing status/handler/wp/decision
    through verbatim.
 3. Sorts by (extId, mechanic), builds the per-card `cards{}` join, and computes
@@ -290,6 +304,10 @@ missing provenance row shows `unmarked` rather than a guessed attribution.
 - [`scripts/coverage/tactic-provenance.json`](../scripts/coverage/tactic-provenance.json)
   — the curated mastermind-tactic status/handler/wp/decision overlay the index
   reads (identity comes from the card data, provenance from here).
+- [`scripts/coverage/strike-provenance.json`](../scripts/coverage/strike-provenance.json)
+  — the curated Master Strike overlay (WP-867 / D-24810): one row per Mastermind
+  whose strike has a dispatcher arm; every other Mastermind's strike row is
+  `unmarked`, and its strike records a `master-strike` hollow at runtime.
 - [`apps/dashboard/src/pages/debug/EffectsPage.vue`](../apps/dashboard/src/pages/debug/EffectsPage.vue),
   [`apps/dashboard/src/composables/useEffectIndex.ts`](../apps/dashboard/src/composables/useEffectIndex.ts)
   — the `/debug/effects` viewer (WP-487) and the composable that validates and

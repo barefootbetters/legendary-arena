@@ -150,9 +150,9 @@ describe('mastermindStrikeHandler', () => {
   });
 
   // -------------------------------------------------------------------------
-  // Test 4: empty supply — no capture and no message
+  // Test 4: empty supply — no capture; the unresolved strike is flagged
   // -------------------------------------------------------------------------
-  it('appends no message on an empty supply for a mastermind with no printed strike (D-24654)', () => {
+  it('flags the strike of a mastermind with no printed-strike resolver as hollow and captures nothing on an empty supply (D-24654, WP-867)', () => {
     const gameState = makeTestState();
     gameState.piles.bystanders = [];
     const messagesBefore = gameState.messages.length;
@@ -164,10 +164,20 @@ describe('mastermindStrikeHandler', () => {
       0,
       'no bystander captured when supply is empty',
     );
+    // why: WP-867 / D-24810 — 'test-mastermind' has no strike arm, so the strike
+    // is no longer silent: it appends exactly one message, the hollow `blocked`
+    // line, and still never reports on the bystander supply (D-24654).
     assert.equal(
       gameState.messages.length,
-      messagesBefore,
-      'no message appended — the strike no longer reports on the bystander supply',
+      messagesBefore + 1,
+      'exactly one message appended — the unresolved-strike hollow line',
+    );
+    const appended = gameState.messages[messagesBefore];
+    assert.ok(appended !== undefined, 'the hollow line must be present');
+    assert.equal(appended.outcome, 'blocked', 'the hollow line is a blocked line');
+    assert.equal(
+      appended.text,
+      'Unhandled effect observed: card "test-mastermind-base" declared a "master-strike" mechanic at onMastermindStrikeRevealed, but no executable handler was reached (no-handler).',
     );
   });
 

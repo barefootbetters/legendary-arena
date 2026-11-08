@@ -3,18 +3,18 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2076,
+    "totalEntries": 2189,
     "byScope": {
       "hero": 859,
-      "villain": 761,
-      "mastermind": 456
+      "villain": 763,
+      "mastermind": 567
     },
     "byStatus": {
-      "executable": 753,
-      "deferred": 17,
+      "executable": 776,
+      "deferred": 18,
       "condition": 58,
       "unsupported": 280,
-      "unmarked": 961,
+      "unmarked": 1050,
       "subsystem": 7
     }
   },
@@ -91,6 +91,17 @@
       "set": "2099",
       "scope": "mastermind",
       "mechanic": "john-herod-executive-vp",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "2099-mastermind-alchemax-executives-master-strike",
+      "name": "Alchemax Executives Master Strike",
+      "set": "2099",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -201,6 +212,17 @@
       "set": "2099",
       "scope": "mastermind",
       "mechanic": "goblin-2099",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "2099-mastermind-sinister-six-2099-master-strike",
+      "name": "Sinister Six 2099 Master Strike",
+      "set": "2099",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -745,6 +767,17 @@
       "decision": ""
     },
     {
+      "extId": "amwp-mastermind-darren-cross-master-strike",
+      "name": "Darren Cross Master Strike",
+      "set": "amwp",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "amwp-mastermind-darren-cross-protect-my-investments",
       "name": "Protect My Investments",
       "set": "amwp",
@@ -800,6 +833,17 @@
       "decision": ""
     },
     {
+      "extId": "amwp-mastermind-ghost-master-thief-master-strike",
+      "name": "Ghost, Master Thief Master Strike",
+      "set": "amwp",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "amwp-mastermind-ghost-master-thief-nightmarish-wraith",
       "name": "Nightmarish Wraith",
       "set": "amwp",
@@ -838,6 +882,17 @@
       "set": "amwp",
       "scope": "mastermind",
       "mechanic": "kangs-defiance",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "amwp-mastermind-kang-quantum-conqueror-master-strike",
+      "name": "Kang, Quantum Conqueror Master Strike",
+      "set": "amwp",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -1751,6 +1806,17 @@
       "decision": ""
     },
     {
+      "extId": "anni-mastermind-annihilus-master-strike",
+      "name": "Annihilus Master Strike",
+      "set": "anni",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "anni-mastermind-annihilus-pull-into-the-negative-zone",
       "name": "Pull Into the Negative Zone",
       "set": "anni",
@@ -1800,6 +1866,17 @@
       "set": "anni",
       "scope": "mastermind",
       "mechanic": "leap-into-the-timestream",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "anni-mastermind-kang-the-conqueror-master-strike",
+      "name": "Kang the Conqueror Master Strike",
+      "set": "anni",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -2201,6 +2278,17 @@
       ]
     },
     {
+      "extId": "antm-mastermind-morgan-le-fay-master-strike",
+      "name": "Morgan Le Fay Master Strike",
+      "set": "antm",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "antm-mastermind-morgan-le-fay-reverse-the-flow-of-time",
       "name": "Reverse the Flow of Time",
       "set": "antm",
@@ -2256,6 +2344,17 @@
       "decision": ""
     },
     {
+      "extId": "antm-mastermind-ultron-master-strike",
+      "name": "Ultron Master Strike",
+      "set": "antm",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "antm-mastermind-ultron-paralyzing-encephalo-ray",
       "name": "Paralyzing Encephalo-Ray",
       "set": "antm",
@@ -2304,11 +2403,11 @@
       "name": "Daystar",
       "set": "antm",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-top-may-ko-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-top-may-ko-current",
+      "wp": "WP-870",
+      "decision": "D-24815"
     },
     {
       "extId": "antm-villain-queens-vengeance-gigantus",
@@ -2865,6 +2964,17 @@
       "decision": ""
     },
     {
+      "extId": "asrd-mastermind-hela-goddess-of-death-master-strike",
+      "name": "Hela, Goddess of Death Master Strike",
+      "set": "asrd",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "asrd-mastermind-hela-goddess-of-death-naglfar-longship-of-fingernails",
       "name": "Naglfar, Longship of Fingernails",
       "set": "asrd",
@@ -2914,6 +3024,17 @@
       "set": "asrd",
       "scope": "mastermind",
       "mechanic": "dagger-of-living-abyss",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "asrd-mastermind-malekith-the-accursed-master-strike",
+      "name": "Malekith the Accursed Master Strike",
+      "set": "asrd",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -3429,6 +3550,17 @@
       "decision": ""
     },
     {
+      "extId": "bkpt-mastermind-killmonger-master-strike",
+      "name": "Killmonger Master Strike",
+      "set": "bkpt",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "bkpt-mastermind-killmonger-rite-of-challenge",
       "name": "Rite of Challenge",
       "set": "bkpt",
@@ -3478,6 +3610,17 @@
       "set": "bkpt",
       "scope": "mastermind",
       "mechanic": "cruelty-provokes-resistance",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "bkpt-mastermind-klaw-master-strike",
+      "name": "Klaw Master Strike",
+      "set": "bkpt",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -3956,6 +4099,17 @@
       "decision": ""
     },
     {
+      "extId": "bkwd-mastermind-indestructible-man-master-strike",
+      "name": "Indestructible Man Master Strike",
+      "set": "bkwd",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "bkwd-mastermind-indestructible-man-secrets-of-indestructibility",
       "name": "Secrets of Indestructibility",
       "set": "bkwd",
@@ -3983,6 +4137,17 @@
       "set": "bkwd",
       "scope": "mastermind",
       "mechanic": "henchman-instructor",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "bkwd-mastermind-taskmaster-master-strike",
+      "name": "Taskmaster Master Strike",
+      "set": "bkwd",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -4546,6 +4711,17 @@
       "decision": "D-24754"
     },
     {
+      "extId": "ca75-mastermind-arnim-zola-master-strike",
+      "name": "Arnim Zola Master Strike",
+      "set": "ca75",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveArnimZolaStrike",
+      "wp": "WP-821",
+      "decision": "D-24754"
+    },
+    {
       "extId": "ca75-mastermind-arnim-zola-pet-projects",
       "name": "Pet Projects",
       "set": "ca75",
@@ -4586,6 +4762,17 @@
       "mechanic": "hatred-for-the-avengers",
       "status": "executable",
       "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveHatredForTheAvengers",
+      "wp": "WP-818",
+      "decision": "D-24752"
+    },
+    {
+      "extId": "ca75-mastermind-baron-heinrich-zemo-master-strike",
+      "name": "Baron Heinrich Zemo Master Strike",
+      "set": "ca75",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveBaronZemoStrike",
       "wp": "WP-818",
       "decision": "D-24752"
     },
@@ -5242,6 +5429,17 @@
       "decision": ""
     },
     {
+      "extId": "chmp-mastermind-fin-fang-foom-master-strike",
+      "name": "Fin Fang Foom Master Strike",
+      "set": "chmp",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveFinFangFoomStrike",
+      "wp": "WP-864",
+      "decision": "D-24807"
+    },
+    {
       "extId": "chmp-mastermind-fin-fang-foom-multipronged-assault",
       "name": "Multipronged Assault",
       "set": "chmp",
@@ -5308,6 +5506,17 @@
       "decision": ""
     },
     {
+      "extId": "chmp-mastermind-pagliacci-master-strike",
+      "name": "Pagliacci Master Strike",
+      "set": "chmp",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "chmp-villain-monsters-unleashed-goom",
       "name": "Goom",
       "set": "chmp",
@@ -5334,11 +5543,11 @@
       "name": "Groot from Planet X",
       "set": "chmp",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "stack-cards-enter-city-as-villains",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#stack-cards-enter-city-as-villains",
+      "wp": "WP-869",
+      "decision": "D-24814"
     },
     {
       "extId": "chmp-villain-monsters-unleashed-monsteroso",
@@ -5389,22 +5598,33 @@
       "name": "Trull the Unhuman",
       "set": "chmp",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "captureBystander",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander",
+      "wp": "WP-185",
+      "decision": "D-18506"
+    },
+    {
+      "extId": "chmp-villain-monsters-unleashed-trull-the-unhuman",
+      "name": "Trull the Unhuman",
+      "set": "chmp",
+      "scope": "villain",
+      "mechanic": "demolish-each-player",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#demolish-each-player",
+      "wp": "WP-864",
+      "decision": "D-24807"
     },
     {
       "extId": "chmp-villain-monsters-unleashed-zzutak",
       "name": "Zzutak",
       "set": "chmp",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "demolish-each-player",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#demolish-each-player",
+      "wp": "WP-864",
+      "decision": "D-24807"
     },
     {
       "extId": "chmp-villain-wrecking-crew-bulldozer",
@@ -5416,6 +5636,17 @@
       "handler": "",
       "wp": "",
       "decision": ""
+    },
+    {
+      "extId": "chmp-villain-wrecking-crew-piledriver",
+      "name": "Piledriver",
+      "set": "chmp",
+      "scope": "villain",
+      "mechanic": "demolish-each-player",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#demolish-each-player",
+      "wp": "WP-864",
+      "decision": "D-24807"
     },
     {
       "extId": "chmp-villain-wrecking-crew-piledriver",
@@ -5897,6 +6128,17 @@
       "decision": ""
     },
     {
+      "extId": "co2e-mastermind-doctor-doom-master-strike",
+      "name": "Dr. Doom Master Strike",
+      "set": "co2e",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveDoctorDoomStrike",
+      "wp": "WP-388",
+      "decision": "D-24192"
+    },
+    {
       "extId": "co2e-mastermind-doctor-doom-monarchs-decree",
       "name": "Monarch's Decree",
       "set": "co2e",
@@ -5952,6 +6194,17 @@
       "decision": ""
     },
     {
+      "extId": "co2e-mastermind-doctor-octopus-master-strike",
+      "name": "Doctor Octopus Master Strike",
+      "set": "co2e",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveDoctorOctopusStrike",
+      "wp": "WP-397",
+      "decision": "D-24200"
+    },
+    {
       "extId": "co2e-mastermind-doctor-octopus-octal-octyls",
       "name": "Octal Octyls",
       "set": "co2e",
@@ -5994,6 +6247,17 @@
       "handler": "",
       "wp": "",
       "decision": ""
+    },
+    {
+      "extId": "co2e-mastermind-loki-master-strike",
+      "name": "Loki Master Strike",
+      "set": "co2e",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveLokiStrike",
+      "wp": "WP-398",
+      "decision": "D-24201"
     },
     {
       "extId": "co2e-mastermind-loki-scion-of-the-frost-giants",
@@ -6062,6 +6326,17 @@
       "decision": ""
     },
     {
+      "extId": "co2e-mastermind-magneto-master-strike",
+      "name": "Magneto Master Strike",
+      "set": "co2e",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveCo2eMagnetoStrike",
+      "wp": "WP-388",
+      "decision": "D-24192"
+    },
+    {
       "extId": "co2e-mastermind-red-skull-dust-of-death",
       "name": "Dust of Death",
       "set": "co2e",
@@ -6071,6 +6346,17 @@
       "handler": "",
       "wp": "",
       "decision": ""
+    },
+    {
+      "extId": "co2e-mastermind-red-skull-master-strike",
+      "name": "Red Skull Master Strike",
+      "set": "co2e",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveRedSkullStrike",
+      "wp": "WP-577",
+      "decision": "D-24386"
     },
     {
       "extId": "co2e-mastermind-red-skull-ruthless-command",
@@ -7167,6 +7453,17 @@
       "decision": "D-24509"
     },
     {
+      "extId": "core-mastermind-dr-doom-master-strike",
+      "name": "Dr. Doom Master Strike",
+      "set": "core",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveCoreDoomStrike",
+      "wp": "WP-538",
+      "decision": "D-24347"
+    },
+    {
       "extId": "core-mastermind-dr-doom-monarchs-decree",
       "name": "Monarch's Decree",
       "set": "core",
@@ -7220,6 +7517,17 @@
       "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveManiacalTyrant",
       "wp": "WP-693",
       "decision": "D-24510"
+    },
+    {
+      "extId": "core-mastermind-loki-master-strike",
+      "name": "Loki Master Strike",
+      "set": "core",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveCoreLokiStrike",
+      "wp": "WP-537",
+      "decision": "D-24346"
     },
     {
       "extId": "core-mastermind-loki-vanishing-illusions",
@@ -7277,6 +7585,17 @@
       "decision": "D-24512"
     },
     {
+      "extId": "core-mastermind-magneto-master-strike",
+      "name": "Magneto Master Strike",
+      "set": "core",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveMagnetoStrike",
+      "wp": "WP-476",
+      "decision": "D-24284"
+    },
+    {
       "extId": "core-mastermind-magneto-xaviers-nemesis",
       "name": "Xavier's Nemesis",
       "set": "core",
@@ -7308,6 +7627,17 @@
       "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveHydraConspiracy",
       "wp": "WP-567",
       "decision": "D-24376"
+    },
+    {
+      "extId": "core-mastermind-red-skull-master-strike",
+      "name": "Red Skull Master Strike",
+      "set": "core",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveRedSkullStrike",
+      "wp": "WP-577",
+      "decision": "D-24386"
     },
     {
       "extId": "core-mastermind-red-skull-negablast-grenades",
@@ -8605,6 +8935,17 @@
       "decision": ""
     },
     {
+      "extId": "cosm-mastermind-beyonder-the-master-strike",
+      "name": "Beyonder, The Master Strike",
+      "set": "cosm",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "cosm-mastermind-beyonder-the-playthings-of-a-petulant-god",
       "name": "Playthings of a Petulant God",
       "set": "cosm",
@@ -8660,6 +9001,17 @@
       "decision": ""
     },
     {
+      "extId": "cosm-mastermind-grandmaster-the-master-strike",
+      "name": "Grandmaster, The Master Strike",
+      "set": "cosm",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "cosm-mastermind-grandmaster-the-match-offenders-vs-defenders",
       "name": "Match Offenders vs. Defenders",
       "set": "cosm",
@@ -8687,6 +9039,17 @@
       "set": "cosm",
       "scope": "mastermind",
       "mechanic": "dark-side-of-adam-warlock",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "cosm-mastermind-magus-master-strike",
+      "name": "Magus Master Strike",
+      "set": "cosm",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -9235,6 +9598,17 @@
       "decision": ""
     },
     {
+      "extId": "cvwr-mastermind-authoritarian-iron-man-master-strike",
+      "name": "Authoritarian Iron Man Master Strike",
+      "set": "cvwr",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "cvwr-mastermind-authoritarian-iron-man-recall-to-service",
       "name": "Recall to Service",
       "set": "cvwr",
@@ -9273,6 +9647,17 @@
       "set": "cvwr",
       "scope": "mastermind",
       "mechanic": "endless-minions",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "cvwr-mastermind-baron-helmut-zemo-master-strike",
+      "name": "Baron Helmut Zemo Master Strike",
+      "set": "cvwr",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -9323,6 +9708,17 @@
       "decision": ""
     },
     {
+      "extId": "cvwr-mastermind-maria-hill-director-of-shield-master-strike",
+      "name": "Maria Hill, Director of S.H.I.E.L.D. Master Strike",
+      "set": "cvwr",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "cvwr-mastermind-maria-hill-director-of-shield-rapid-response-team",
       "name": "Rapid Response Team",
       "set": "cvwr",
@@ -9350,6 +9746,17 @@
       "set": "cvwr",
       "scope": "mastermind",
       "mechanic": "cyborg-detective",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "cvwr-mastermind-misty-knight-master-strike",
+      "name": "Misty Knight Master Strike",
+      "set": "cvwr",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -9405,6 +9812,17 @@
       "set": "cvwr",
       "scope": "mastermind",
       "mechanic": "hammer-goliath",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "cvwr-mastermind-ragnarok-master-strike",
+      "name": "Ragnarok Master Strike",
+      "set": "cvwr",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -9602,22 +10020,22 @@
       "name": "Agent Eric Marshall",
       "set": "cvwr",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "stack-cards-enter-city-as-villains",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#stack-cards-enter-city-as-villains",
+      "wp": "WP-869",
+      "decision": "D-24814"
     },
     {
       "extId": "cvwr-villain-shield-elite-agent-gabe-jones",
       "name": "Agent Gabe Jones",
       "set": "cvwr",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "stack-cards-enter-city-as-villains",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#stack-cards-enter-city-as-villains",
+      "wp": "WP-869",
+      "decision": "D-24814"
     },
     {
       "extId": "cvwr-villain-shield-elite-dum-dum-dugan",
@@ -10440,6 +10858,17 @@
       "decision": ""
     },
     {
+      "extId": "dead-mastermind-evil-deadpool-master-strike",
+      "name": "Evil Deadpool Master Strike",
+      "set": "dead",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "dead-mastermind-evil-deadpool-of-course-its-corpse",
       "name": "Of Course it's Corpse",
       "set": "dead",
@@ -10478,6 +10907,17 @@
       "set": "dead",
       "scope": "mastermind",
       "mechanic": "interstellar-assassin",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "dead-mastermind-macho-gomez-master-strike",
+      "name": "Macho Gomez Master Strike",
+      "set": "dead",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -10757,6 +11197,17 @@
       "decision": ""
     },
     {
+      "extId": "dims-mastermind-j-jonah-jameson-master-strike",
+      "name": "J. Jonah Jameson Master Strike",
+      "set": "dims",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "dims-mastermind-j-jonah-jameson-promote-spider-slayer-security",
       "name": "Promote Spider-Slayer Security",
       "set": "dims",
@@ -10999,6 +11450,17 @@
       "decision": ""
     },
     {
+      "extId": "dkcy-mastermind-apocalypse-master-strike",
+      "name": "Apocalypse Master Strike",
+      "set": "dkcy",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "dkcy-mastermind-apocalypse-the-end-of-all-things",
       "name": "The End of All Things",
       "set": "dkcy",
@@ -11043,6 +11505,17 @@
       "decision": ""
     },
     {
+      "extId": "dkcy-mastermind-kingpin-master-strike",
+      "name": "Kingpin Master Strike",
+      "set": "dkcy",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "dkcy-mastermind-kingpin-mob-war",
       "name": "Mob War",
       "set": "dkcy",
@@ -11070,6 +11543,17 @@
       "set": "dkcy",
       "scope": "mastermind",
       "mechanic": "devilish-torment",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "dkcy-mastermind-mephisto-master-strike",
+      "name": "Mephisto Master Strike",
+      "set": "dkcy",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -11120,6 +11604,17 @@
       "decision": ""
     },
     {
+      "extId": "dkcy-mastermind-mr-sinister-master-strike",
+      "name": "Mr. Sinister Master Strike",
+      "set": "dkcy",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "dkcy-mastermind-mr-sinister-plans-within-plans",
       "name": "Plans Within Plans",
       "set": "dkcy",
@@ -11147,6 +11642,17 @@
       "set": "dkcy",
       "scope": "mastermind",
       "mechanic": "furious-wrath",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "dkcy-mastermind-stryfe-master-strike",
+      "name": "Stryfe Master Strike",
+      "set": "dkcy",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -11961,6 +12467,17 @@
       "decision": ""
     },
     {
+      "extId": "dstr-mastermind-dormammu-master-strike",
+      "name": "Dormammu Master Strike",
+      "set": "dstr",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "dstr-mastermind-dormammu-torments-of-the-dark-dimension",
       "name": "Torments of the Dark Dimension",
       "set": "dstr",
@@ -11999,6 +12516,17 @@
       "set": "dstr",
       "scope": "mastermind",
       "mechanic": "dream-weaver",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "dstr-mastermind-nightmare-master-strike",
+      "name": "Nightmare Master Strike",
+      "set": "dstr",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -12490,6 +13018,17 @@
       "decision": ""
     },
     {
+      "extId": "fear-mastermind-uru-enchanted-iron-man-master-strike",
+      "name": "Uru-Enchanted Iron Man Master Strike",
+      "set": "fear",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "fear-mastermind-uru-enchanted-iron-man-pepper-potts-in-rescue-armor",
       "name": "Pepper Potts in Rescue Armor",
       "set": "fear",
@@ -12794,6 +13333,17 @@
       "decision": ""
     },
     {
+      "extId": "ff04-mastermind-galactus-master-strike",
+      "name": "Galactus Master Strike",
+      "set": "ff04",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "ff04-mastermind-galactus-panicked-mobs",
       "name": "Panicked Mobs",
       "set": "ff04",
@@ -12832,6 +13382,17 @@
       "set": "ff04",
       "scope": "mastermind",
       "mechanic": "master-of-monsters",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "ff04-mastermind-mole-man-master-strike",
+      "name": "Mole Man Master Strike",
+      "set": "ff04",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -13165,6 +13726,17 @@
       "decision": ""
     },
     {
+      "extId": "gotg-mastermind-supreme-intelligence-of-the-kree-master-strike",
+      "name": "Supreme Intelligence of the Kree Master Strike",
+      "set": "gotg",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "gotg-mastermind-thanos-centuries-of-envy",
       "name": "Centuries of Envy",
       "set": "gotg",
@@ -13192,6 +13764,17 @@
       "set": "gotg",
       "scope": "mastermind",
       "mechanic": "keeper-of-souls",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "gotg-mastermind-thanos-master-strike",
+      "name": "Thanos Master Strike",
+      "set": "gotg",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -13791,11 +14374,11 @@
       "name": "Lightning, The Electro-Blast",
       "set": "rvlt",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-top-may-ko-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-top-may-ko-current",
+      "wp": "WP-870",
+      "decision": "D-24815"
     },
     {
       "extId": "henchman-mandarins-rings-nightbringer-the-black-light",
@@ -13835,22 +14418,22 @@
       "name": "Spin, The Vortex Beam",
       "set": "rvlt",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-top-discard-zero-cost-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-top-discard-zero-cost-current",
+      "wp": "WP-870",
+      "decision": "D-24815"
     },
     {
       "extId": "henchman-mandarins-rings-zero-the-ice-blast",
       "name": "Zero, The Ice Blast",
       "set": "rvlt",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "next-hand-from-play-zero-cost-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#next-hand-from-play-zero-cost-current",
+      "wp": "WP-870",
+      "decision": "D-24815"
     },
     {
       "extId": "henchman-mandroid",
@@ -14238,6 +14821,17 @@
       "decision": ""
     },
     {
+      "extId": "mdns-mastermind-lilith-mother-of-demons-master-strike",
+      "name": "Lilith, Mother of Demons Master Strike",
+      "set": "mdns",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "mdns-mastermind-lilith-mother-of-demons-mesopotamian-demon-goddess",
       "name": "Mesopotamian Demon Goddess",
       "set": "mdns",
@@ -14309,6 +14903,17 @@
       "set": "mdns",
       "scope": "mastermind",
       "mechanic": "imprison-in-the-soul-crystal",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "mdns-mastermind-zarathos-master-strike",
+      "name": "Zarathos Master Strike",
+      "set": "mdns",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -14899,6 +15504,17 @@
       "decision": "D-24813"
     },
     {
+      "extId": "mgtg-mastermind-ego-the-living-planet-master-strike",
+      "name": "Ego, the Living Planet Master Strike",
+      "set": "mgtg",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "mgtg-mastermind-ego-the-living-planet-the-expansion-is-my-purpose",
       "name": "The Expansion is My Purpose",
       "set": "mgtg",
@@ -14937,6 +15553,17 @@
       "set": "mgtg",
       "scope": "mastermind",
       "mechanic": "hood-of-the-accuser",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "mgtg-mastermind-ronan-the-accuser-master-strike",
+      "name": "Ronan the Accuser Master Strike",
+      "set": "mgtg",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -15491,6 +16118,17 @@
       "decision": "D-24813"
     },
     {
+      "extId": "msis-mastermind-ebony-maw-master-strike",
+      "name": "Ebony Maw Master Strike",
+      "set": "msis",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "msis-mastermind-ebony-maw-smile-even-in-death",
       "name": "Smile...Even in Death",
       "set": "msis",
@@ -15529,6 +16167,17 @@
       "set": "msis",
       "scope": "mastermind",
       "mechanic": "destiny-arrives-all-the-same",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "msis-mastermind-thanos-master-strike",
+      "name": "Thanos Master Strike",
+      "set": "msis",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -16006,6 +16655,17 @@
       "decision": ""
     },
     {
+      "extId": "msmc-mastermind-bastion-fused-sentinel-master-strike",
+      "name": "Bastion, Fused Sentinel Master Strike",
+      "set": "msmc",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "msmc-mastermind-bastion-fused-sentinel-nimrod-future-sentinel",
       "name": "Nimrod, Future Sentinel",
       "set": "msmc",
@@ -16033,6 +16693,17 @@
       "set": "msmc",
       "scope": "mastermind",
       "mechanic": "avalon-asteroid-haven",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "msmc-mastermind-exodus-master-strike",
+      "name": "Exodus Master Strike",
+      "set": "msmc",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -16077,6 +16748,17 @@
       "set": "msmc",
       "scope": "mastermind",
       "mechanic": "cybernetic-healing-factor",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "msmc-mastermind-lady-deathstrike-master-strike",
+      "name": "Lady Deathstrike Master Strike",
+      "set": "msmc",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -16934,6 +17616,17 @@
       "decision": ""
     },
     {
+      "extId": "msp1-mastermind-iron-monger-master-strike",
+      "name": "Iron Monger Master Strike",
+      "set": "msp1",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "msp1-mastermind-iron-monger-overloaded-arsenal",
       "name": "Overloaded Arsenal",
       "set": "msp1",
@@ -16989,6 +17682,17 @@
       "decision": ""
     },
     {
+      "extId": "msp1-mastermind-loki-master-strike",
+      "name": "Loki Master Strike",
+      "set": "msp1",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "msp1-mastermind-loki-vanishing-illusions",
       "name": "Vanishing Illusions",
       "set": "msp1",
@@ -17027,6 +17731,17 @@
       "set": "msp1",
       "scope": "mastermind",
       "mechanic": "hydra-conspiracy",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "msp1-mastermind-red-skull-master-strike",
+      "name": "Red Skull Master Strike",
+      "set": "msp1",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -17567,6 +18282,17 @@
       "decision": ""
     },
     {
+      "extId": "nmut-mastermind-belasco-demon-lord-of-limbo-master-strike",
+      "name": "Belasco, Demon Lord of Limbo Master Strike",
+      "set": "nmut",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "nmut-mastermind-belasco-demon-lord-of-limbo-rescue-from-limbo",
       "name": "Rescue from Limbo",
       "set": "nmut",
@@ -17594,6 +18320,17 @@
       "set": "nmut",
       "scope": "mastermind",
       "mechanic": "contempt-for-weaklings",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "nmut-mastermind-emma-frost-the-white-queen-master-strike",
+      "name": "Emma Frost, The White Queen Master Strike",
+      "set": "nmut",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -18099,6 +18836,17 @@
       "decision": ""
     },
     {
+      "extId": "noir-mastermind-charles-xavier-professor-of-crime-master-strike",
+      "name": "Charles Xavier, Professor of Crime Master Strike",
+      "set": "noir",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "noir-mastermind-charles-xavier-professor-of-crime-x-con-men",
       "name": "X-Con Men",
       "set": "noir",
@@ -18137,6 +18885,17 @@
       "set": "noir",
       "scope": "mastermind",
       "mechanic": "carnival-of-carnage",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "noir-mastermind-the-goblin-underworld-boss-master-strike",
+      "name": "The Goblin, Underworld Boss Master Strike",
+      "set": "noir",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -18473,6 +19232,17 @@
       "decision": ""
     },
     {
+      "extId": "pttr-mastermind-carnage-master-strike",
+      "name": "Carnage Master Strike",
+      "set": "pttr",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "pttr-mastermind-carnage-om-nom-nom",
       "name": "Om Nom Nom",
       "set": "pttr",
@@ -18511,6 +19281,17 @@
       "set": "pttr",
       "scope": "mastermind",
       "mechanic": "master-of-illusions",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "pttr-mastermind-mysterio-master-strike",
+      "name": "Mysterio Master Strike",
+      "set": "pttr",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -18807,6 +19588,17 @@
       "decision": ""
     },
     {
+      "extId": "rlmk-mastermind-emperor-vulcan-of-the-shiar-master-strike",
+      "name": "Emperor Vulcan of the Shi'ar Master Strike",
+      "set": "rlmk",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "rlmk-mastermind-emperor-vulcan-of-the-shiar-solar-cage",
       "name": "Solar Cage",
       "set": "rlmk",
@@ -18834,6 +19626,17 @@
       "set": "rlmk",
       "scope": "mastermind",
       "mechanic": "echo-tech-chorus-sentries",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "rlmk-mastermind-maximus-the-mad-master-strike",
+      "name": "Maximus the Mad Master Strike",
+      "set": "rlmk",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -19340,6 +20143,17 @@
       "decision": ""
     },
     {
+      "extId": "rvlt-mastermind-grim-reaper-master-strike",
+      "name": "Grim Reaper Master Strike",
+      "set": "rvlt",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "rvlt-mastermind-grim-reaper-maze-of-bones",
       "name": "Maze of Bones",
       "set": "rvlt",
@@ -19378,6 +20192,17 @@
       "set": "rvlt",
       "scope": "mastermind",
       "mechanic": "focus-magic-through-guns",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "rvlt-mastermind-hood-the-master-strike",
+      "name": "Hood, The Master Strike",
+      "set": "rvlt",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -19433,6 +20258,17 @@
       "set": "rvlt",
       "scope": "mastermind",
       "mechanic": "intertwining-powers",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "rvlt-mastermind-mandarin-master-strike",
+      "name": "Mandarin Master Strike",
+      "set": "rvlt",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -20124,6 +20960,17 @@
       "decision": ""
     },
     {
+      "extId": "shld-mastermind-hydra-high-council-master-strike",
+      "name": "Hydra High Council Master Strike",
+      "set": "shld",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "shld-mastermind-hydra-high-council-red-skull",
       "name": "Red Skull",
       "set": "shld",
@@ -20173,6 +21020,17 @@
       "set": "shld",
       "scope": "mastermind",
       "mechanic": "iron-mans-armor",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "shld-mastermind-hydra-super-adaptoid-master-strike",
+      "name": "Hydra Super-Adaptoid Master Strike",
+      "set": "shld",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -20758,6 +21616,17 @@
       "decision": ""
     },
     {
+      "extId": "smhc-mastermind-adrian-toomes-master-strike",
+      "name": "Adrian Toomes Master Strike",
+      "set": "smhc",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "smhc-mastermind-adrian-toomes-more-harm-than-good",
       "name": "More Harm than Good",
       "set": "smhc",
@@ -20807,6 +21676,17 @@
       "set": "smhc",
       "scope": "mastermind",
       "mechanic": "lurking-shadow",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "smhc-mastermind-vulture-master-strike",
+      "name": "Vulture Master Strike",
+      "set": "smhc",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -21291,6 +22171,17 @@
       "decision": ""
     },
     {
+      "extId": "ssw1-mastermind-madelyne-pryor-goblin-queen-master-strike",
+      "name": "Madelyne Pryor, Goblin Queen Master Strike",
+      "set": "ssw1",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "ssw1-mastermind-nimrod-super-sentinel-adapt-and-destroy",
       "name": "Adapt and Destroy",
       "set": "ssw1",
@@ -21307,6 +22198,17 @@
       "set": "ssw1",
       "scope": "mastermind",
       "mechanic": "detect-mutation",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "ssw1-mastermind-nimrod-super-sentinel-master-strike",
+      "name": "Nimrod, Super Sentinel Master Strike",
+      "set": "ssw1",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -21340,6 +22242,17 @@
       "set": "ssw1",
       "scope": "mastermind",
       "mechanic": "brutal-beating",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "ssw1-mastermind-wasteland-hulk-master-strike",
+      "name": "Wasteland Hulk Master Strike",
+      "set": "ssw1",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -21395,6 +22308,17 @@
       "set": "ssw1",
       "scope": "mastermind",
       "mechanic": "love-to-have-you-for-dinner",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "ssw1-mastermind-zombie-green-goblin-master-strike",
+      "name": "Zombie Green Goblin Master Strike",
+      "set": "ssw1",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -22131,11 +23055,33 @@
       "decision": ""
     },
     {
+      "extId": "ssw2-mastermind-immortal-emperor-zheng-zhu-master-strike",
+      "name": "Immortal Emperor Zheng-Zhu Master Strike",
+      "set": "ssw2",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "ssw2-mastermind-immortal-emperor-zheng-zhu-ultimate-kung-fu-mastery",
       "name": "Ultimate Kung-Fu Mastery",
       "set": "ssw2",
       "scope": "mastermind",
       "mechanic": "ultimate-kung-fu-mastery",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "ssw2-mastermind-king-hyperion-master-strike",
+      "name": "King Hyperion Master Strike",
+      "set": "ssw2",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -22219,6 +23165,17 @@
       "decision": ""
     },
     {
+      "extId": "ssw2-mastermind-shiklah-the-demon-bride-master-strike",
+      "name": "Shiklah, the Demon Bride Master Strike",
+      "set": "ssw2",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "ssw2-mastermind-shiklah-the-demon-bride-shiklahs-husband-deadpool",
       "name": "Shiklah's Husband, Deadpool",
       "set": "ssw2",
@@ -22246,6 +23203,17 @@
       "set": "ssw2",
       "scope": "mastermind",
       "mechanic": "infect-the-entire-city",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "ssw2-mastermind-spider-queen-master-strike",
+      "name": "Spider-Queen Master Strike",
+      "set": "ssw2",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -23294,6 +24262,17 @@
       "decision": ""
     },
     {
+      "extId": "vill-mastermind-dr-strange-master-strike",
+      "name": "Dr. Strange Master Strike",
+      "set": "vill",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "vill-mastermind-dr-strange-winds-of-watoomb",
       "name": "Winds of Watoomb",
       "set": "vill",
@@ -23310,6 +24289,17 @@
       "set": "vill",
       "scope": "mastermind",
       "mechanic": "bounty-on-furys-head",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "vill-mastermind-nick-fury-master-strike",
+      "name": "Nick Fury Master Strike",
+      "set": "vill",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -23360,6 +24350,17 @@
       "decision": ""
     },
     {
+      "extId": "vill-mastermind-odin-master-strike",
+      "name": "Odin Master Strike",
+      "set": "vill",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "vill-mastermind-odin-might-of-valhalla",
       "name": "Might of Valhalla",
       "set": "vill",
@@ -23398,6 +24399,17 @@
       "set": "vill",
       "scope": "mastermind",
       "mechanic": "cerebro-device",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "vill-mastermind-professor-x-master-strike",
+      "name": "Professor X Master Strike",
+      "set": "vill",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -24181,6 +25193,17 @@
       "decision": ""
     },
     {
+      "extId": "vnom-mastermind-hybrid-master-strike",
+      "name": "Hybrid Master Strike",
+      "set": "vnom",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "vnom-mastermind-hybrid-symbiotic-call",
       "name": "Symbiotic Call",
       "set": "vnom",
@@ -24197,6 +25220,17 @@
       "set": "vnom",
       "scope": "mastermind",
       "mechanic": "desperate-rescue",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "vnom-mastermind-poison-thanos-master-strike",
+      "name": "Poison Thanos Master Strike",
+      "set": "vnom",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -24918,6 +25952,17 @@
       "decision": ""
     },
     {
+      "extId": "wpnx-mastermind-omega-red-master-strike",
+      "name": "Omega Red Master Strike",
+      "set": "wpnx",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "wpnx-mastermind-omega-red-the-carbonadium-synthesizer",
       "name": "The Carbonadium Synthesizer",
       "set": "wpnx",
@@ -24962,6 +26007,17 @@
       "decision": ""
     },
     {
+      "extId": "wpnx-mastermind-romulus-master-strike",
+      "name": "Romulus Master Strike",
+      "set": "wpnx",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "wpnx-mastermind-romulus-take-over-the-weapon-x-program",
       "name": "Take Over the Weapon X Program",
       "set": "wpnx",
@@ -24989,6 +26045,17 @@
       "set": "wpnx",
       "scope": "mastermind",
       "mechanic": "lethal-fangs",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "wpnx-mastermind-sabretooth-master-strike",
+      "name": "Sabretooth Master Strike",
+      "set": "wpnx",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -25316,6 +26383,17 @@
       ]
     },
     {
+      "extId": "wtif-mastermind-hank-pym-yellowjacket-master-strike",
+      "name": "Hank Pym, Yellowjacket Master Strike",
+      "set": "wtif",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "wtif-mastermind-hank-pym-yellowjacket-microscopic-research",
       "name": "Microscopic Research",
       "set": "wtif",
@@ -25371,6 +26449,17 @@
       "decision": ""
     },
     {
+      "extId": "wtif-mastermind-killmonger-the-betrayer-master-strike",
+      "name": "Killmonger, The Betrayer Master Strike",
+      "set": "wtif",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "wtif-mastermind-killmonger-the-betrayer-pulling-the-strings",
       "name": "Pulling the Strings",
       "set": "wtif",
@@ -25409,6 +26498,17 @@
       "set": "wtif",
       "scope": "mastermind",
       "mechanic": "infinity-of-minions",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "wtif-mastermind-ultron-infinity-master-strike",
+      "name": "Ultron Infinity Master Strike",
+      "set": "wtif",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -25464,6 +26564,17 @@
       "set": "wtif",
       "scope": "mastermind",
       "mechanic": "even-the-odds",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "wtif-mastermind-zombie-scarlet-witch-master-strike",
+      "name": "Zombie Scarlet Witch Master Strike",
+      "set": "wtif",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -26343,6 +27454,17 @@
       "decision": ""
     },
     {
+      "extId": "wwhk-mastermind-general-thunderbolt-ross-master-strike",
+      "name": "General “Thunderbolt” Ross Master Strike",
+      "set": "wwhk",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "deferred",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveGeneralRossStrike",
+      "wp": "WP-669",
+      "decision": "D-24483"
+    },
+    {
       "extId": "wwhk-mastermind-general-thunderbolt-ross-personal-arsenal",
       "name": "Personal Arsenal",
       "set": "wwhk",
@@ -26398,6 +27520,17 @@
       "decision": ""
     },
     {
+      "extId": "wwhk-mastermind-illuminati-secret-society-master-strike",
+      "name": "Illuminati, Secret Society Master Strike",
+      "set": "wwhk",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "wwhk-mastermind-illuminati-secret-society-zoms-manacles-of-living-bondage",
       "name": "Zom's Manacles of Living Bondage",
       "set": "wwhk",
@@ -26414,6 +27547,17 @@
       "set": "wwhk",
       "scope": "mastermind",
       "mechanic": "fury-of-the-green-scar",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "wwhk-mastermind-king-hulk-sakaarson-master-strike",
+      "name": "King Hulk, Sakaarson Master Strike",
+      "set": "wwhk",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -26486,6 +27630,17 @@
       "decision": ""
     },
     {
+      "extId": "wwhk-mastermind-m-o-d-o-k-master-strike",
+      "name": "M.O.D.O.K. Master Strike",
+      "set": "wwhk",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "wwhk-mastermind-m-o-d-o-k-redundancy-algorithim",
       "name": "Redundancy Algorithim",
       "set": "wwhk",
@@ -26502,6 +27657,17 @@
       "set": "wwhk",
       "scope": "mastermind",
       "mechanic": "haughty-spite",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "wwhk-mastermind-red-king-the-master-strike",
+      "name": "Red King, The Master Strike",
+      "set": "wwhk",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -26535,6 +27701,17 @@
       "set": "wwhk",
       "scope": "mastermind",
       "mechanic": "vast-armies-of-sakaar",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "wwhk-mastermind-sentry-the-master-strike",
+      "name": "Sentry, The Master Strike",
+      "set": "wwhk",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -28211,6 +29388,17 @@
       "decision": ""
     },
     {
+      "extId": "xmen-mastermind-arcade-master-strike",
+      "name": "Arcade Master Strike",
+      "set": "xmen",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "xmen-mastermind-arcade-roulette-wheel-of-death",
       "name": "Roulette Wheel of Death",
       "set": "xmen",
@@ -28266,11 +29454,33 @@
       "decision": ""
     },
     {
+      "extId": "xmen-mastermind-dark-phoenix-master-strike",
+      "name": "Dark Phoenix Master Strike",
+      "set": "xmen",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "xmen-mastermind-dark-phoenix-worship-me-as-a-god",
       "name": "Worship Me as a God",
       "set": "xmen",
       "scope": "mastermind",
       "mechanic": "worship-me-as-a-god",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "xmen-mastermind-deathbird-master-strike",
+      "name": "Deathbird Master Strike",
+      "set": "xmen",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -28354,6 +29564,17 @@
       "decision": ""
     },
     {
+      "extId": "xmen-mastermind-mojo-master-strike",
+      "name": "Mojo Master Strike",
+      "set": "xmen",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "xmen-mastermind-mojo-mojo-branding-opportunity",
       "name": "Mojo Branding Opportunity",
       "set": "xmen",
@@ -28370,6 +29591,17 @@
       "set": "xmen",
       "scope": "mastermind",
       "mechanic": "godlike-psionic-entity",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "xmen-mastermind-onslaught-master-strike",
+      "name": "Onslaught Master Strike",
+      "set": "xmen",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -28414,6 +29646,17 @@
       "set": "xmen",
       "scope": "mastermind",
       "mechanic": "fiend-of-the-astral-plane",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "xmen-mastermind-shadow-king-master-strike",
+      "name": "Shadow King Master Strike",
+      "set": "xmen",
+      "scope": "mastermind",
+      "mechanic": "master-strike",
       "status": "unmarked",
       "handler": "",
       "wp": "",
@@ -29893,6 +31136,12 @@
         "john-herod-executive-vp"
       ]
     },
+    "2099-mastermind-alchemax-executives-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "2099-mastermind-alchemax-executives-tiger-wylde-general-of-alchemax-elite": {
       "scope": "mastermind",
       "mechanics": [
@@ -29951,6 +31200,12 @@
       "scope": "mastermind",
       "mechanics": [
         "goblin-2099"
+      ]
+    },
+    "2099-mastermind-sinister-six-2099-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "2099-mastermind-sinister-six-2099-sandwoman-2099": {
@@ -30097,6 +31352,12 @@
         "corporate-raider"
       ]
     },
+    "amwp-mastermind-darren-cross-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "amwp-mastermind-darren-cross-protect-my-investments": {
       "scope": "mastermind",
       "mechanics": [
@@ -30127,6 +31388,12 @@
         "elaborate-rescue-plan"
       ]
     },
+    "amwp-mastermind-ghost-master-thief-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "amwp-mastermind-ghost-master-thief-nightmarish-wraith": {
       "scope": "mastermind",
       "mechanics": [
@@ -30149,6 +31416,12 @@
       "scope": "mastermind",
       "mechanics": [
         "kangs-defiance"
+      ]
+    },
+    "amwp-mastermind-kang-quantum-conqueror-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "amwp-mastermind-kang-quantum-conqueror-multiversal-engine-core": {
@@ -30410,6 +31683,12 @@
         "deploy-the-planet-killer"
       ]
     },
+    "anni-mastermind-annihilus-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "anni-mastermind-annihilus-pull-into-the-negative-zone": {
       "scope": "mastermind",
       "mechanics": [
@@ -30438,6 +31717,12 @@
       "scope": "mastermind",
       "mechanics": [
         "leap-into-the-timestream"
+      ]
+    },
+    "anni-mastermind-kang-the-conqueror-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "anni-mastermind-kang-the-conqueror-pull-from-the-future": {
@@ -30538,6 +31823,12 @@
         "streets"
       ]
     },
+    "antm-mastermind-morgan-le-fay-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "antm-mastermind-morgan-le-fay-reverse-the-flow-of-time": {
       "scope": "mastermind",
       "mechanics": [
@@ -30568,6 +31859,12 @@
         "arrogant-blindspot"
       ]
     },
+    "antm-mastermind-ultron-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "antm-mastermind-ultron-paralyzing-encephalo-ray": {
       "scope": "mastermind",
       "mechanics": [
@@ -30595,7 +31892,7 @@
     "antm-villain-queens-vengeance-daystar": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-top-may-ko-current"
       ]
     },
     "antm-villain-queens-vengeance-gigantus": {
@@ -30734,6 +32031,12 @@
         "helas-cloak"
       ]
     },
+    "asrd-mastermind-hela-goddess-of-death-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "asrd-mastermind-hela-goddess-of-death-naglfar-longship-of-fingernails": {
       "scope": "mastermind",
       "mechanics": [
@@ -30762,6 +32065,12 @@
       "scope": "mastermind",
       "mechanics": [
         "dagger-of-living-abyss"
+      ]
+    },
+    "asrd-mastermind-malekith-the-accursed-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "asrd-mastermind-malekith-the-accursed-the-hunting-horn-of-faerie": {
@@ -30902,6 +32211,12 @@
         "altar-of-resurrection"
       ]
     },
+    "bkpt-mastermind-killmonger-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "bkpt-mastermind-killmonger-rite-of-challenge": {
       "scope": "mastermind",
       "mechanics": [
@@ -30930,6 +32245,12 @@
       "scope": "mastermind",
       "mechanics": [
         "cruelty-provokes-resistance"
+      ]
+    },
+    "bkpt-mastermind-klaw-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "bkpt-mastermind-klaw-ultrasonic-boom": {
@@ -31045,6 +32366,12 @@
         "manipulate-murderous-mad-monk"
       ]
     },
+    "bkwd-mastermind-indestructible-man-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "bkwd-mastermind-indestructible-man-secrets-of-indestructibility": {
       "scope": "mastermind",
       "mechanics": [
@@ -31061,6 +32388,12 @@
       "scope": "mastermind",
       "mechanics": [
         "henchman-instructor"
+      ]
+    },
+    "bkwd-mastermind-taskmaster-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "bkwd-mastermind-taskmaster-photographic-reflexes": {
@@ -31191,6 +32524,12 @@
         "dominate-the-weak"
       ]
     },
+    "ca75-mastermind-arnim-zola-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "ca75-mastermind-arnim-zola-pet-projects": {
       "scope": "mastermind",
       "mechanics": [
@@ -31213,6 +32552,12 @@
       "scope": "mastermind",
       "mechanics": [
         "hatred-for-the-avengers"
+      ]
+    },
+    "ca75-mastermind-baron-heinrich-zemo-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "ca75-mastermind-baron-heinrich-zemo-prisoners-of-war": {
@@ -31337,6 +32682,12 @@
         "flammable-acid-breath"
       ]
     },
+    "chmp-mastermind-fin-fang-foom-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "chmp-mastermind-fin-fang-foom-multipronged-assault": {
       "scope": "mastermind",
       "mechanics": [
@@ -31373,6 +32724,12 @@
         "jester-of-a-twisted-opera"
       ]
     },
+    "chmp-mastermind-pagliacci-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "chmp-villain-monsters-unleashed-goom": {
       "scope": "villain",
       "mechanics": [
@@ -31383,7 +32740,7 @@
     "chmp-villain-monsters-unleashed-groot-from-planet-x": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "stack-cards-enter-city-as-villains"
       ]
     },
     "chmp-villain-monsters-unleashed-monsteroso": {
@@ -31413,13 +32770,14 @@
     "chmp-villain-monsters-unleashed-trull-the-unhuman": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "captureBystander",
+        "demolish-each-player"
       ]
     },
     "chmp-villain-monsters-unleashed-zzutak": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "demolish-each-player"
       ]
     },
     "chmp-villain-wrecking-crew-bulldozer": {
@@ -31431,6 +32789,7 @@
     "chmp-villain-wrecking-crew-piledriver": {
       "scope": "villain",
       "mechanics": [
+        "demolish-each-player",
         "koHeroCurrentPlayer"
       ]
     },
@@ -31500,6 +32859,12 @@
         "dark-technology"
       ]
     },
+    "co2e-mastermind-doctor-doom-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "co2e-mastermind-doctor-doom-monarchs-decree": {
       "scope": "mastermind",
       "mechanics": [
@@ -31530,6 +32895,12 @@
         "high-octane"
       ]
     },
+    "co2e-mastermind-doctor-octopus-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "co2e-mastermind-doctor-octopus-octal-octyls": {
       "scope": "mastermind",
       "mechanics": [
@@ -31552,6 +32923,12 @@
       "scope": "mastermind",
       "mechanics": [
         "cruel-manipulations"
+      ]
+    },
+    "co2e-mastermind-loki-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "co2e-mastermind-loki-scion-of-the-frost-giants": {
@@ -31590,10 +32967,22 @@
         "imprisoning-sphere"
       ]
     },
+    "co2e-mastermind-magneto-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "co2e-mastermind-red-skull-dust-of-death": {
       "scope": "mastermind",
       "mechanics": [
         "dust-of-death"
+      ]
+    },
+    "co2e-mastermind-red-skull-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "co2e-mastermind-red-skull-ruthless-command": {
@@ -31931,6 +33320,12 @@
         "dark-technology"
       ]
     },
+    "core-mastermind-dr-doom-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "core-mastermind-dr-doom-monarchs-decree": {
       "scope": "mastermind",
       "mechanics": [
@@ -31959,6 +33354,12 @@
       "scope": "mastermind",
       "mechanics": [
         "maniacal-tyrant"
+      ]
+    },
+    "core-mastermind-loki-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "core-mastermind-loki-vanishing-illusions": {
@@ -31991,6 +33392,12 @@
         "electromagnetic-bubble"
       ]
     },
+    "core-mastermind-magneto-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "core-mastermind-magneto-xaviers-nemesis": {
       "scope": "mastermind",
       "mechanics": [
@@ -32007,6 +33414,12 @@
       "scope": "mastermind",
       "mechanics": [
         "hydra-conspiracy"
+      ]
+    },
+    "core-mastermind-red-skull-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "core-mastermind-red-skull-negablast-grenades": {
@@ -32331,6 +33744,12 @@
         "dimensional-collapse"
       ]
     },
+    "cosm-mastermind-beyonder-the-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "cosm-mastermind-beyonder-the-playthings-of-a-petulant-god": {
       "scope": "mastermind",
       "mechanics": [
@@ -32361,6 +33780,12 @@
         "galactic-marathon"
       ]
     },
+    "cosm-mastermind-grandmaster-the-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "cosm-mastermind-grandmaster-the-match-offenders-vs-defenders": {
       "scope": "mastermind",
       "mechanics": [
@@ -32377,6 +33802,12 @@
       "scope": "mastermind",
       "mechanics": [
         "dark-side-of-adam-warlock"
+      ]
+    },
+    "cosm-mastermind-magus-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "cosm-mastermind-magus-resurrected-as-the-child-magus": {
@@ -32577,6 +34008,12 @@
         "man-the-fortifications"
       ]
     },
+    "cvwr-mastermind-authoritarian-iron-man-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "cvwr-mastermind-authoritarian-iron-man-recall-to-service": {
       "scope": "mastermind",
       "mechanics": [
@@ -32599,6 +34036,12 @@
       "scope": "mastermind",
       "mechanics": [
         "endless-minions"
+      ]
+    },
+    "cvwr-mastermind-baron-helmut-zemo-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "cvwr-mastermind-baron-helmut-zemo-revenge-for-my-father": {
@@ -32625,6 +34068,12 @@
         "evacuation-code-epsilon"
       ]
     },
+    "cvwr-mastermind-maria-hill-director-of-shield-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "cvwr-mastermind-maria-hill-director-of-shield-rapid-response-team": {
       "scope": "mastermind",
       "mechanics": [
@@ -32641,6 +34090,12 @@
       "scope": "mastermind",
       "mechanics": [
         "cyborg-detective"
+      ]
+    },
+    "cvwr-mastermind-misty-knight-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "cvwr-mastermind-misty-knight-trusted-bodyguard": {
@@ -32671,6 +34126,12 @@
       "scope": "mastermind",
       "mechanics": [
         "hammer-goliath"
+      ]
+    },
+    "cvwr-mastermind-ragnarok-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "cvwr-mastermind-ragnarok-unnatural-storm-clouds": {
@@ -32778,13 +34239,13 @@
     "cvwr-villain-shield-elite-agent-eric-marshall": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "stack-cards-enter-city-as-villains"
       ]
     },
     "cvwr-villain-shield-elite-agent-gabe-jones": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "stack-cards-enter-city-as-villains"
       ]
     },
     "cvwr-villain-shield-elite-dum-dum-dugan": {
@@ -32975,6 +34436,12 @@
         "hyper-insane-healing-factor"
       ]
     },
+    "dead-mastermind-evil-deadpool-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "dead-mastermind-evil-deadpool-of-course-its-corpse": {
       "scope": "mastermind",
       "mechanics": [
@@ -32997,6 +34464,12 @@
       "scope": "mastermind",
       "mechanics": [
         "interstellar-assassin"
+      ]
+    },
+    "dead-mastermind-macho-gomez-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "dead-mastermind-macho-gomez-renegotiate-the-contract": {
@@ -33098,6 +34571,12 @@
         "incite-violent-riots"
       ]
     },
+    "dims-mastermind-j-jonah-jameson-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "dims-mastermind-j-jonah-jameson-promote-spider-slayer-security": {
       "scope": "mastermind",
       "mechanics": [
@@ -33167,6 +34646,12 @@
         "immortal-and-undefeated"
       ]
     },
+    "dkcy-mastermind-apocalypse-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "dkcy-mastermind-apocalypse-the-end-of-all-things": {
       "scope": "mastermind",
       "mechanics": [
@@ -33191,6 +34676,12 @@
         "dirty-cops"
       ]
     },
+    "dkcy-mastermind-kingpin-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "dkcy-mastermind-kingpin-mob-war": {
       "scope": "mastermind",
       "mechanics": [
@@ -33207,6 +34698,12 @@
       "scope": "mastermind",
       "mechanics": [
         "devilish-torment"
+      ]
+    },
+    "dkcy-mastermind-mephisto-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "dkcy-mastermind-mephisto-pain-begets-pain": {
@@ -33233,6 +34730,12 @@
         "master-geneticist"
       ]
     },
+    "dkcy-mastermind-mr-sinister-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "dkcy-mastermind-mr-sinister-plans-within-plans": {
       "scope": "mastermind",
       "mechanics": [
@@ -33249,6 +34752,12 @@
       "scope": "mastermind",
       "mechanics": [
         "furious-wrath"
+      ]
+    },
+    "dkcy-mastermind-stryfe-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "dkcy-mastermind-stryfe-psychic-torment": {
@@ -33544,6 +35053,12 @@
         "flames-of-regency"
       ]
     },
+    "dstr-mastermind-dormammu-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "dstr-mastermind-dormammu-torments-of-the-dark-dimension": {
       "scope": "mastermind",
       "mechanics": [
@@ -33566,6 +35081,12 @@
       "scope": "mastermind",
       "mechanics": [
         "dream-weaver"
+      ]
+    },
+    "dstr-mastermind-nightmare-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "dstr-mastermind-nightmare-night-terrors": {
@@ -33677,6 +35198,12 @@
       "scope": "mastermind",
       "mechanics": [
         "armor-of-the-destroyer"
+      ]
+    },
+    "fear-mastermind-uru-enchanted-iron-man-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "fear-mastermind-uru-enchanted-iron-man-pepper-potts-in-rescue-armor": {
@@ -33796,6 +35323,12 @@
         "force-of-eternity"
       ]
     },
+    "ff04-mastermind-galactus-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "ff04-mastermind-galactus-panicked-mobs": {
       "scope": "mastermind",
       "mechanics": [
@@ -33818,6 +35351,12 @@
       "scope": "mastermind",
       "mechanics": [
         "master-of-monsters"
+      ]
+    },
+    "ff04-mastermind-mole-man-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "ff04-mastermind-mole-man-secret-tunnel": {
@@ -33938,6 +35477,12 @@
         "guide-kree-evolution"
       ]
     },
+    "gotg-mastermind-supreme-intelligence-of-the-kree-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "gotg-mastermind-thanos-centuries-of-envy": {
       "scope": "mastermind",
       "mechanics": [
@@ -33954,6 +35499,12 @@
       "scope": "mastermind",
       "mechanics": [
         "keeper-of-souls"
+      ]
+    },
+    "gotg-mastermind-thanos-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "gotg-mastermind-thanos-the-mad-titan": {
@@ -34220,7 +35771,7 @@
     "henchman-mandarins-rings-lightning-the-electro-blast": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-top-may-ko-current"
       ]
     },
     "henchman-mandarins-rings-nightbringer-the-black-light": {
@@ -34244,13 +35795,13 @@
     "henchman-mandarins-rings-spin-the-vortex-beam": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-top-discard-zero-cost-current"
       ]
     },
     "henchman-mandarins-rings-zero-the-ice-blast": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "next-hand-from-play-zero-cost-current"
       ]
     },
     "henchman-mandroid": {
@@ -34446,6 +35997,12 @@
         "connoisseur-of-souls"
       ]
     },
+    "mdns-mastermind-lilith-mother-of-demons-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "mdns-mastermind-lilith-mother-of-demons-mesopotamian-demon-goddess": {
       "scope": "mastermind",
       "mechanics": [
@@ -34486,6 +36043,12 @@
       "scope": "mastermind",
       "mechanics": [
         "imprison-in-the-soul-crystal"
+      ]
+    },
+    "mdns-mastermind-zarathos-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "mdns-villain-fallen-atrocity": {
@@ -34604,6 +36167,12 @@
         "im-a-celestial-sweetheart"
       ]
     },
+    "mgtg-mastermind-ego-the-living-planet-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "mgtg-mastermind-ego-the-living-planet-the-expansion-is-my-purpose": {
       "scope": "mastermind",
       "mechanics": [
@@ -34626,6 +36195,12 @@
       "scope": "mastermind",
       "mechanics": [
         "hood-of-the-accuser"
+      ]
+    },
+    "mgtg-mastermind-ronan-the-accuser-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "mgtg-mastermind-ronan-the-accuser-ronans-throne": {
@@ -34782,6 +36357,12 @@
         "hear-me-and-rejoice"
       ]
     },
+    "msis-mastermind-ebony-maw-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "msis-mastermind-ebony-maw-smile-even-in-death": {
       "scope": "mastermind",
       "mechanics": [
@@ -34804,6 +36385,12 @@
       "scope": "mastermind",
       "mechanics": [
         "destiny-arrives-all-the-same"
+      ]
+    },
+    "msis-mastermind-thanos-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "msis-mastermind-thanos-price-to-pay": {
@@ -34969,6 +36556,12 @@
         "master-mold-sentinel-factory"
       ]
     },
+    "msmc-mastermind-bastion-fused-sentinel-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "msmc-mastermind-bastion-fused-sentinel-nimrod-future-sentinel": {
       "scope": "mastermind",
       "mechanics": [
@@ -34985,6 +36578,12 @@
       "scope": "mastermind",
       "mechanics": [
         "avalon-asteroid-haven"
+      ]
+    },
+    "msmc-mastermind-exodus-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "msmc-mastermind-exodus-omega-level-mutant": {
@@ -35009,6 +36608,12 @@
       "scope": "mastermind",
       "mechanics": [
         "cybernetic-healing-factor"
+      ]
+    },
+    "msmc-mastermind-lady-deathstrike-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "msmc-mastermind-lady-deathstrike-prey-on-the-weak": {
@@ -35222,6 +36827,12 @@
         "hostile-takeover"
       ]
     },
+    "msp1-mastermind-iron-monger-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "msp1-mastermind-iron-monger-overloaded-arsenal": {
       "scope": "mastermind",
       "mechanics": [
@@ -35252,6 +36863,12 @@
         "maniacal-tyrant"
       ]
     },
+    "msp1-mastermind-loki-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "msp1-mastermind-loki-vanishing-illusions": {
       "scope": "mastermind",
       "mechanics": [
@@ -35274,6 +36891,12 @@
       "scope": "mastermind",
       "mechanics": [
         "hydra-conspiracy"
+      ]
+    },
+    "msp1-mastermind-red-skull-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "msp1-mastermind-red-skull-negablast-grenades": {
@@ -35476,6 +37099,12 @@
         "cleaving-demonblade"
       ]
     },
+    "nmut-mastermind-belasco-demon-lord-of-limbo-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "nmut-mastermind-belasco-demon-lord-of-limbo-rescue-from-limbo": {
       "scope": "mastermind",
       "mechanics": [
@@ -35492,6 +37121,12 @@
       "scope": "mastermind",
       "mechanics": [
         "contempt-for-weaklings"
+      ]
+    },
+    "nmut-mastermind-emma-frost-the-white-queen-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "nmut-mastermind-emma-frost-the-white-queen-psychic-x-men-link": {
@@ -35632,6 +37267,12 @@
         "master-manipulator"
       ]
     },
+    "noir-mastermind-charles-xavier-professor-of-crime-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "noir-mastermind-charles-xavier-professor-of-crime-x-con-men": {
       "scope": "mastermind",
       "mechanics": [
@@ -35654,6 +37295,12 @@
       "scope": "mastermind",
       "mechanics": [
         "carnival-of-carnage"
+      ]
+    },
+    "noir-mastermind-the-goblin-underworld-boss-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "noir-mastermind-the-goblin-underworld-boss-sinister-dreams": {
@@ -35790,6 +37437,12 @@
         "feed-me"
       ]
     },
+    "pttr-mastermind-carnage-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "pttr-mastermind-carnage-om-nom-nom": {
       "scope": "mastermind",
       "mechanics": [
@@ -35812,6 +37465,12 @@
       "scope": "mastermind",
       "mechanics": [
         "master-of-illusions"
+      ]
+    },
+    "pttr-mastermind-mysterio-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "pttr-mastermind-mysterio-mists-of-deception": {
@@ -35924,6 +37583,12 @@
         "contempt-for-weakness"
       ]
     },
+    "rlmk-mastermind-emperor-vulcan-of-the-shiar-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "rlmk-mastermind-emperor-vulcan-of-the-shiar-solar-cage": {
       "scope": "mastermind",
       "mechanics": [
@@ -35940,6 +37605,12 @@
       "scope": "mastermind",
       "mechanics": [
         "echo-tech-chorus-sentries"
+      ]
+    },
+    "rlmk-mastermind-maximus-the-mad-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "rlmk-mastermind-maximus-the-mad-seize-the-inhuman-throne": {
@@ -36062,6 +37733,12 @@
         "cult-of-skulls"
       ]
     },
+    "rvlt-mastermind-grim-reaper-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "rvlt-mastermind-grim-reaper-maze-of-bones": {
       "scope": "mastermind",
       "mechanics": [
@@ -36084,6 +37761,12 @@
       "scope": "mastermind",
       "mechanics": [
         "focus-magic-through-guns"
+      ]
+    },
+    "rvlt-mastermind-hood-the-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "rvlt-mastermind-hood-the-paean-to-dormammu": {
@@ -36114,6 +37797,12 @@
       "scope": "mastermind",
       "mechanics": [
         "intertwining-powers"
+      ]
+    },
+    "rvlt-mastermind-mandarin-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "rvlt-mastermind-mandarin-rings-seek-their-true-hand": {
@@ -36355,6 +38044,12 @@
         "baron-helmut-zemo"
       ]
     },
+    "shld-mastermind-hydra-high-council-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "shld-mastermind-hydra-high-council-red-skull": {
       "scope": "mastermind",
       "mechanics": [
@@ -36383,6 +38078,12 @@
       "scope": "mastermind",
       "mechanics": [
         "iron-mans-armor"
+      ]
+    },
+    "shld-mastermind-hydra-super-adaptoid-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "shld-mastermind-hydra-super-adaptoid-thors-hammer": {
@@ -36530,6 +38231,12 @@
         "dont-interfere"
       ]
     },
+    "smhc-mastermind-adrian-toomes-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "smhc-mastermind-adrian-toomes-more-harm-than-good": {
       "scope": "mastermind",
       "mechanics": [
@@ -36558,6 +38265,12 @@
       "scope": "mastermind",
       "mechanics": [
         "lurking-shadow"
+      ]
+    },
+    "smhc-mastermind-vulture-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "smhc-mastermind-vulture-mid-air-heist": {
@@ -36685,6 +38398,12 @@
         "gather-the-harvest"
       ]
     },
+    "ssw1-mastermind-madelyne-pryor-goblin-queen-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "ssw1-mastermind-nimrod-super-sentinel-adapt-and-destroy": {
       "scope": "mastermind",
       "mechanics": [
@@ -36695,6 +38414,12 @@
       "scope": "mastermind",
       "mechanics": [
         "detect-mutation"
+      ]
+    },
+    "ssw1-mastermind-nimrod-super-sentinel-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "ssw1-mastermind-nimrod-super-sentinel-scatter-the-mutants": {
@@ -36713,6 +38438,12 @@
       "scope": "mastermind",
       "mechanics": [
         "brutal-beating"
+      ]
+    },
+    "ssw1-mastermind-wasteland-hulk-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "ssw1-mastermind-wasteland-hulk-memories-of-pain": {
@@ -36743,6 +38474,12 @@
       "scope": "mastermind",
       "mechanics": [
         "love-to-have-you-for-dinner"
+      ]
+    },
+    "ssw1-mastermind-zombie-green-goblin-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "ssw1-mastermind-zombie-green-goblin-reign-of-terror": {
@@ -37034,10 +38771,22 @@
         "imperial-edict"
       ]
     },
+    "ssw2-mastermind-immortal-emperor-zheng-zhu-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "ssw2-mastermind-immortal-emperor-zheng-zhu-ultimate-kung-fu-mastery": {
       "scope": "mastermind",
       "mechanics": [
         "ultimate-kung-fu-mastery"
+      ]
+    },
+    "ssw2-mastermind-king-hyperion-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "ssw2-mastermind-king-hyperion-monarch-of-utopolis": {
@@ -37082,6 +38831,12 @@
         "infernal-power"
       ]
     },
+    "ssw2-mastermind-shiklah-the-demon-bride-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "ssw2-mastermind-shiklah-the-demon-bride-shiklahs-husband-deadpool": {
       "scope": "mastermind",
       "mechanics": [
@@ -37098,6 +38853,12 @@
       "scope": "mastermind",
       "mechanics": [
         "infect-the-entire-city"
+      ]
+    },
+    "ssw2-mastermind-spider-queen-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "ssw2-mastermind-spider-queen-sonic-scream": {
@@ -37398,6 +39159,12 @@
         "eye-of-agamotto"
       ]
     },
+    "vill-mastermind-dr-strange-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "vill-mastermind-dr-strange-winds-of-watoomb": {
       "scope": "mastermind",
       "mechanics": [
@@ -37408,6 +39175,12 @@
       "scope": "mastermind",
       "mechanics": [
         "bounty-on-furys-head"
+      ]
+    },
+    "vill-mastermind-nick-fury-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "vill-mastermind-nick-fury-purge-hydra": {
@@ -37434,6 +39207,12 @@
         "divine-justice"
       ]
     },
+    "vill-mastermind-odin-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "vill-mastermind-odin-might-of-valhalla": {
       "scope": "mastermind",
       "mechanics": [
@@ -37456,6 +39235,12 @@
       "scope": "mastermind",
       "mechanics": [
         "cerebro-device"
+      ]
+    },
+    "vill-mastermind-professor-x-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "vill-mastermind-professor-x-mental-dominance": {
@@ -37777,6 +39562,12 @@
         "life-foundation-research"
       ]
     },
+    "vnom-mastermind-hybrid-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "vnom-mastermind-hybrid-symbiotic-call": {
       "scope": "mastermind",
       "mechanics": [
@@ -37787,6 +39578,12 @@
       "scope": "mastermind",
       "mechanics": [
         "desperate-rescue"
+      ]
+    },
+    "vnom-mastermind-poison-thanos-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "vnom-mastermind-poison-thanos-poisoned-loyalties": {
@@ -37961,6 +39758,12 @@
         "drain-life-force"
       ]
     },
+    "wpnx-mastermind-omega-red-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "wpnx-mastermind-omega-red-the-carbonadium-synthesizer": {
       "scope": "mastermind",
       "mechanics": [
@@ -37985,6 +39788,12 @@
         "master-of-schemes"
       ]
     },
+    "wpnx-mastermind-romulus-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "wpnx-mastermind-romulus-take-over-the-weapon-x-program": {
       "scope": "mastermind",
       "mechanics": [
@@ -38001,6 +39810,12 @@
       "scope": "mastermind",
       "mechanics": [
         "lethal-fangs"
+      ]
+    },
+    "wpnx-mastermind-sabretooth-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "wpnx-mastermind-sabretooth-salivating-prowl": {
@@ -38104,6 +39919,12 @@
         "weapon-x-sequence"
       ]
     },
+    "wtif-mastermind-hank-pym-yellowjacket-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "wtif-mastermind-hank-pym-yellowjacket-microscopic-research": {
       "scope": "mastermind",
       "mechanics": [
@@ -38134,6 +39955,12 @@
         "change-in-loyalties"
       ]
     },
+    "wtif-mastermind-killmonger-the-betrayer-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "wtif-mastermind-killmonger-the-betrayer-pulling-the-strings": {
       "scope": "mastermind",
       "mechanics": [
@@ -38156,6 +39983,12 @@
       "scope": "mastermind",
       "mechanics": [
         "infinity-of-minions"
+      ]
+    },
+    "wtif-mastermind-ultron-infinity-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "wtif-mastermind-ultron-infinity-struggle-for-the-infinity-stones": {
@@ -38186,6 +40019,12 @@
       "scope": "mastermind",
       "mechanics": [
         "even-the-odds"
+      ]
+    },
+    "wtif-mastermind-zombie-scarlet-witch-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "wtif-mastermind-zombie-scarlet-witch-refuse-to-accept-death": {
@@ -38474,6 +40313,12 @@
         "call-out-the-army"
       ]
     },
+    "wwhk-mastermind-general-thunderbolt-ross-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "wwhk-mastermind-general-thunderbolt-ross-personal-arsenal": {
       "scope": "mastermind",
       "mechanics": [
@@ -38504,6 +40349,12 @@
         "hulkbusters-hammer-fist"
       ]
     },
+    "wwhk-mastermind-illuminati-secret-society-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "wwhk-mastermind-illuminati-secret-society-zoms-manacles-of-living-bondage": {
       "scope": "mastermind",
       "mechanics": [
@@ -38514,6 +40365,12 @@
       "scope": "mastermind",
       "mechanics": [
         "fury-of-the-green-scar"
+      ]
+    },
+    "wwhk-mastermind-king-hulk-sakaarson-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "wwhk-mastermind-king-hulk-sakaarson-oath-of-the-warbound": {
@@ -38552,6 +40409,12 @@
         "dont-get-a-big-head-about-it"
       ]
     },
+    "wwhk-mastermind-m-o-d-o-k-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "wwhk-mastermind-m-o-d-o-k-redundancy-algorithim": {
       "scope": "mastermind",
       "mechanics": [
@@ -38562,6 +40425,12 @@
       "scope": "mastermind",
       "mechanics": [
         "haughty-spite"
+      ]
+    },
+    "wwhk-mastermind-red-king-the-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "wwhk-mastermind-red-king-the-royal-bodyguard": {
@@ -38580,6 +40449,12 @@
       "scope": "mastermind",
       "mechanics": [
         "vast-armies-of-sakaar"
+      ]
+    },
+    "wwhk-mastermind-sentry-the-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "wwhk-mastermind-sentry-the-pacifying-light": {
@@ -38973,6 +40848,12 @@
         "i-need-an-audience"
       ]
     },
+    "xmen-mastermind-arcade-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "xmen-mastermind-arcade-roulette-wheel-of-death": {
       "scope": "mastermind",
       "mechanics": [
@@ -39003,10 +40884,22 @@
         "fiery-reincarnation"
       ]
     },
+    "xmen-mastermind-dark-phoenix-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "xmen-mastermind-dark-phoenix-worship-me-as-a-god": {
       "scope": "mastermind",
       "mechanics": [
         "worship-me-as-a-god"
+      ]
+    },
+    "xmen-mastermind-deathbird-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "xmen-mastermind-deathbird-shiar-elite-bodyguards": {
@@ -39051,6 +40944,12 @@
         "cross-dimensional-marketing"
       ]
     },
+    "xmen-mastermind-mojo-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
+      ]
+    },
     "xmen-mastermind-mojo-mojo-branding-opportunity": {
       "scope": "mastermind",
       "mechanics": [
@@ -39061,6 +40960,12 @@
       "scope": "mastermind",
       "mechanics": [
         "godlike-psionic-entity"
+      ]
+    },
+    "xmen-mastermind-onslaught-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "xmen-mastermind-onslaught-sins-of-x-men-past": {
@@ -39085,6 +40990,12 @@
       "scope": "mastermind",
       "mechanics": [
         "fiend-of-the-astral-plane"
+      ]
+    },
+    "xmen-mastermind-shadow-king-master-strike": {
+      "scope": "mastermind",
+      "mechanics": [
+        "master-strike"
       ]
     },
     "xmen-mastermind-shadow-king-poison-their-minds": {

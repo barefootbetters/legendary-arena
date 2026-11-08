@@ -383,7 +383,15 @@ export type VillainEffectPrimitive =
   | 'hq-heroes-cost-change'
   | 'ko-from-discard-current'
   | 'reenter-sewers-if-villain-deck-top'
-  | 'fortify';
+  | 'fortify'
+  | 'demolish-each-player'
+  | 'stack-cards-enter-city-as-villains'
+  // why: WP-870 / D-24815 — the Mandarin's Rings own-deck Fight lines, appended last: Lightning
+  // (and antm Daystar) KO-or-keep the deck top, Spin discards the 0-cost cards of the top six and
+  // reorders the rest, Zero adds a 0-cost card played this turn to the next hand.
+  | 'reveal-top-may-ko-current'
+  | 'reveal-top-discard-zero-cost-current'
+  | 'next-hand-from-play-zero-cost-current';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -547,6 +555,38 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   // Keyword-less, so it self-narrates. The marker script's hand-synced copy
   // (`scripts/convert-cards/apply-effect-markers.mjs`) appends it at the same position.
   'fortify',
+  // why: WP-864 / D-24807 — appended at position 44. Trull the Unhuman's Ambush (after its
+  // Bystander capture), Zzutak's Escape and Piledriver's Escape ("[Demolish] each player"): one
+  // Hero Deck reveal, bottomed, and each player discards a card of its cost, through the shared
+  // `demolishEachPlayer` resolver (`board/demolish.logic.ts`). No params, so the terminal
+  // `parts.length === 1` branch parses it. Keyword-less, so it self-narrates. The marker
+  // script's hand-synced copy (`scripts/convert-cards/apply-effect-markers.mjs`) appends it at
+  // the same position.
+  'demolish-each-player',
+  // why: WP-869 / D-24814 — appended at position 45. Groot from Planet X's Fight, Agent Gabe Jones's
+  // Fight and Agent Eric Marshall's Ambush (`stack-cards-enter-city-as-villains:<bystander|officer>:
+  // <N>[:<name>]`): N cards leave the Bystander Stack or the S.H.I.E.L.D. Officer Stack and enter the
+  // City as 3-Attack Villains. A DELIBERATE NO-OP in the executor; the bridge at the end of
+  // defeatCityVillainCore (onFight) and in performVillainReveal (onAmbush) does the work (D-24351).
+  // Keyword-less, the fire sites narrate. The marker script's hand-synced copy
+  // (`scripts/convert-cards/apply-effect-markers.mjs`) appends it at the same position.
+  'stack-cards-enter-city-as-villains',
+  // why: WP-870 / D-24815 — appended at positions 46, 47 and 48, the Mandarin's Rings own-deck
+  // Fight lines. Lightning, The Electro-Blast (and antm Daystar): "Reveal the top card of your
+  // deck. You may KO it." (`reveal-top-may-ko-current`, no param: the WP-754 KO-or-keep entry on
+  // G.pendingRevealTopDispose). Spin, The Vortex Beam: "Reveal the top six cards of your deck.
+  // Discard all of them that cost 0, then put the rest back in any order."
+  // (`reveal-top-discard-zero-cost-current:<N>`: the WP-479 reorder over the survivors). Zero, The
+  // Ice Blast: "Choose a card you played this turn that costs 0. When you draw a new hand of cards
+  // at the end of this turn, add that card to your hand as an extra card."
+  // (`next-hand-from-play-zero-cost-current`, no param: G.pendingNextHandFromPlayPicks, then the
+  // D-24512 / D-24797 G.deferredHandInjections). One named primitive per printed line, not a
+  // villain → hero-keyword bridge. All three keyword-less, so all three self-narrate. The marker
+  // script's hand-synced copy (`scripts/convert-cards/apply-effect-markers.mjs`) appends them at
+  // the same positions.
+  'reveal-top-may-ko-current',
+  'reveal-top-discard-zero-cost-current',
+  'next-hand-from-play-zero-cost-current',
 ] as const;
 
 /**
@@ -788,6 +828,14 @@ export interface VillainEffectDescriptor {
   // `descriptorKey` — the primitive is keyword-less, so it self-narrates regardless.
   fortifyPlace?: FortifyPlace;
   fortifyLock?: FortifyLock;
+  // why: WP-869 / D-24814 — present ONLY on `{ primitive: 'stack-cards-enter-city-as-villains' }`
+  // descriptors: the stack the cards come from (Groot from Planet X: 'bystander'; Agent Gabe Jones
+  // and Agent Eric Marshall: 'officer') and the optional marker name token the converted cards are
+  // displayed under (Groot: 'splintered_half-groot'; absent means the stack token's own name). The
+  // count is `magnitude`. Written only when present (never `undefined`). Deliberately NOT part of
+  // `descriptorKey` — the primitive is keyword-less, so the fire sites narrate regardless.
+  stackVillainKind?: 'bystander' | 'officer';
+  stackVillainName?: string;
 }
 
 // why: D-24023 — the frozen legacy-keyword → descriptor translation table. The
