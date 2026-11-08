@@ -2109,9 +2109,9 @@
       "card": "Mandarin",
       "ability": "Master Strike: Each player chooses a Mandarin's Ring from their Victory Pile to enter the city. Any player who didn't have a Ring gains a Wound instead.",
       "wp": "WP-875",
-      "state": "pending",
-      "date": "2026-11-07",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-11-08",
+      "evidence": "2p Operator match oNO3ETi9UE0 (The Mandarin / Midtown Bank Robbery; HYDRA + Spider-Foes; Mandarin's Rings; Spider-Man, Hulk, Wolverine, Black Widow, Iron Man; server and client build 2a49a7d0 = the WP-875 merge, server running since 2026-11-08T16:43:07Z, match created 22:08:08Z after boot): with Spin and Lightning in Player 0's Victory Pile and none in Player 1's, the first operator-revealed Master Strike logged \"[Mandarin Master Strike] Player 0 will send a Mandarin's Ring from their Victory Pile into the City.\" (5.2.6) and \"Player 1 had no Mandarin's Ring in their Victory Pile and gained a Wound.\" (5.2.7), then \"Player 0 chooses which Mandarin's Ring enters the City.\" (5.2.9) with the choice prompt listing both Rings; the chosen Spin logged \"Player 0's Spin, The Vortex Beam (henchman-mandarins-rings-08) entered the City from their Victory Pile.\" (5.2.10, threat). A second strike with only Lightning left queued Player 0 (5.2.12), Wounded Player 1 again (5.2.13) and entered Lightning with no prompt (5.2.15). No \"Unhandled effect observed\" line. Not observed live: a Villain pushed off the Bridge by a re-entering Ring (the City was not full; covered by T11 / T16 / T18). The end-of-match Play Diagnostics capture (heroes win on turn 13) lists one hollow effect, Remaker's unmarked onFight (WP-872 scope), and no master-strike hollow.",
       "note": "Live check (NEW match created after the deploy (deployed gitSha checked), Mastermind rvlt/mandarin; an operator match via ?route=workshop with the setters placing Mandarin's Rings in Victory Piles and revealing a Master Strike): a player with no Ring logs \"[Mandarin Master Strike] Player P had no Mandarin's Ring in their Victory Pile and gained a Wound.\"; a player with one Ring logs \"[Mandarin Master Strike] Player P's <Ring> entered the City from their Victory Pile.\" and the Ring is in the Sewers; a player with two Rings gets a \"Your choice\" seat choice listing them by name, and the chosen one enters. No \"Unhandled effect observed\" line. D-24822."
     },
     {
@@ -2120,9 +2120,9 @@
       "card": "Mandarin",
       "ability": "All Mandarin's Rings get +1 Attack.",
       "wp": "WP-875",
-      "state": "pending",
-      "date": "2026-11-07",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-11-08",
+      "evidence": "2p Operator match oNO3ETi9UE0 (The Mandarin / Midtown Bank Robbery; HYDRA + Spider-Foes; Mandarin's Rings; Spider-Man, Hulk, Wolverine, Black Widow, Iron Man; server and client build 2a49a7d0 = the WP-875 merge, server running since 2026-11-08T16:43:07Z, match created 22:08:08Z after boot): Spin, The Vortex Beam (henchman-mandarins-rings-08, printed 3) showed Fight 4 in the City; with +3 Attack (3.2.1) the fight was refused (a refused fight logs nothing), and after +20 more (3.2.2) it succeeded (3.2.3). Operator-confirmed on screen.",
       "note": "Live check (NEW match created after the deploy (deployed gitSha checked), Mastermind rvlt/mandarin; an operator match via ?route=workshop with the setters placing a Mandarin's Ring in the City and giving Attack): a Ring in the City (Spin, Zero, ...) shows Fight 4 where it printed 3, and fighting it with 3 Attack is refused. D-24822."
     },
     {
@@ -2131,9 +2131,9 @@
       "card": "Mandarin",
       "ability": "Mandarin gets -1 Attack for each Mandarin's Ring among all players' Victory Piles. (-3 Attack for each in solo.)",
       "wp": "WP-875",
-      "state": "pending",
-      "date": "2026-11-07",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-11-08",
+      "evidence": "2p Operator match oNO3ETi9UE0 (The Mandarin / Midtown Bank Robbery; HYDRA + Spider-Foes; Mandarin's Rings; Spider-Man, Hulk, Wolverine, Black Widow, Iron Man; server and client build 2a49a7d0 = the WP-875 merge, server running since 2026-11-08T16:43:07Z, match created 22:08:08Z after boot): The Mandarin showed Fight 16 with no Rings in Victory Piles, 15 after Player 0 defeated Spin (3.2.3) and 14 after Lightning (5.2.2). Operator-confirmed on screen. Not observed live: the one-seat -3 per Ring case (covered by T3). The end-of-match Play Diagnostics uiStateSnapshot (captured 2a49a7d) shows mastermind.fightCost 10 with six Rings in Player 0's Victory Pile and none in Player 1's (16 - 6 = 10).",
       "note": "Live check (NEW match created after the deploy (deployed gitSha checked), Mastermind rvlt/mandarin; an operator match via ?route=workshop with the setters placing Mandarin's Rings in Victory Piles, or defeating them; a one-seat match for the -3 case): The Mandarin shows Fight 16 with no Rings in Victory Piles and drops by 1 per Ring defeated (16 -> 15 -> 14 ...; a one-seat match 16 -> 13 -> 10 ...). D-24822."
     }
   ]
