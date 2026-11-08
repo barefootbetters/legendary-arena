@@ -2068,7 +2068,7 @@
       "state": "verified",
       "date": "2026-11-08",
       "evidence": "2p operator match kaF7bqJbbGS (Mandarin / Midtown Bank Robbery; server 7c197771, client 7fb5d60, created after the deploy): henchman-mandarins-rings-04 moved to the Villain Deck top (1.2.7) and entered the city (2.1.1); Player 1 fought it (4.2.7), \"Player 1 revealed S.H.I.E.L.D. Agent (starting-shield-agent) from the top of their deck — KO it or keep it (reveal-top).\" (4.2.8), then KO'd it (4.2.9). Play Diagnostics effectTrace: reveal-top-may-ko-current fired; not among the match's hollow effects.",
-      "note": "Live check (NEW match created after the deploy (deployed gitSha checked), Mastermind rvlt/mandarin (Always Leads puts Mandarin's Rings in the Villain Deck); an operator match via ?route=workshop with the setters placing the copy in the City and giving Attack.): defeating henchman-mandarins-rings-04 opens the KO-or-keep prompt (KO / Keep on top, no Discard) and logs \"Player P revealed <card> from the top of their deck — KO it or keep it (reveal-top).\"; KO puts it in the KO pile. D-24815. Verified with the bot ally answering the prompt; the KO-or-keep prompt itself is the shared WP-754 one."
+      "note": "Live check (NEW match created after the deploy (deployed gitSha checked), Mastermind rvlt/mandarin (Always Leads puts Mandarin's Rings in the Villain Deck); an operator match via ?route=workshop with the setters placing the copy in the City and giving Attack.): defeating henchman-mandarins-rings-04 opens the KO-or-keep prompt (KO / Keep on top, no Discard) and logs \"Player P revealed <card> from the top of their deck — KO it or keep it (reveal-top).\"; KO puts it in the KO pile. D-24815. Verified with the bot ally answering the prompt; the same KO-or-keep prompt (Keep / KO, no Discard) was seen by a human for Daystar in match sA9BHfHXbB7."
     },
     {
       "key": "antm-villain-queens-vengeance-daystar|reveal-top-may-ko-current",
@@ -2076,9 +2076,9 @@
       "card": "Daystar",
       "ability": "Fight: Reveal the top card of your deck. You may KO it.",
       "wp": "WP-870",
-      "state": "pending",
-      "date": "2026-11-07",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-11-08",
+      "evidence": "2p operator match sA9BHfHXbB7 (Mandarin / Midtown Bank Robbery; server 7c197771, client 7fb5d60, created after the deploy; the card was moved to the Villain Deck top and brought into the city with an operator Scheme Twist, whose Midtown effect plays the next card): Player 0 fought Daystar (4.2.8); \"Player 0 revealed S.H.I.E.L.D. Agent (starting-shield-agent) from the top of their deck — KO it or keep it (reveal-top).\" (4.2.9); the prompt \"Reveal the top card — KO it or keep it\" showed only Keep and KO (no Discard); KO logged \"Player 0 KO'd S.H.I.E.L.D. Agent ... (reveal-top).\" (4.2.10).",
       "note": "Live check (NEW match with antm Queen's Vengeance after the deploy): defeating Daystar opens the same KO-or-keep prompt as Lightning. D-24815."
     },
     {
@@ -2087,9 +2087,9 @@
       "card": "Spin, The Vortex Beam",
       "ability": "Fight: Reveal the top six cards of your deck. Discard all of them that cost 0, then put the rest back in any order.",
       "wp": "WP-870",
-      "state": "pending",
-      "date": "2026-11-07",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-11-08",
+      "evidence": "2p operator match sA9BHfHXbB7 (Mandarin / Midtown Bank Robbery; server 7c197771, client 7fb5d60, created after the deploy; the card was moved to the Villain Deck top and brought into the city with an operator Scheme Twist, whose Midtown effect plays the next card): deck top Astonishing Strength, Unstoppable Hulk, Crazed Rampage over S.H.I.E.L.D. starters; fighting Spin (2.2.27) logged three \"Player 0 discarded S.H.I.E.L.D. Agent (starting-shield-agent) from the top of their deck (cost 0).\" lines (2.2.28-2.2.30) and \"Player 0 puts the other 3 revealed cards back in any order.\" (2.2.31); the reorder prompt listed exactly the three Heroes; reordered Crazed Rampage, Unstoppable Hulk, Astonishing Strength, and the next hand drew them in that order.",
       "note": "Live check (NEW match created after the deploy (deployed gitSha checked), Mastermind rvlt/mandarin (Always Leads puts Mandarin's Rings in the Villain Deck); an operator match via ?route=workshop with the setters placing the copy in the City and giving Attack.): defeating henchman-mandarins-rings-08 logs one \"Player P discarded <card> from the top of their deck (cost 0).\" per S.H.I.E.L.D. Agent / Trooper / Wound among the top six, then \"Player P puts the other N revealed cards back in any order.\" and opens the reorder prompt when N >= 2. D-24815."
     },
     {
@@ -2098,9 +2098,9 @@
       "card": "Zero, The Ice Blast",
       "ability": "Fight: Choose a card you played this turn that costs 0. When you draw a new hand of cards at the end of this turn, add that card to your hand as an extra card.",
       "wp": "WP-870",
-      "state": "pending",
-      "date": "2026-11-07",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-11-08",
+      "evidence": "2p operator match sA9BHfHXbB7 (Mandarin / Midtown Bank Robbery; server 7c197771, client 7fb5d60, created after the deploy; the card was moved to the Villain Deck top and brought into the city with an operator Scheme Twist, whose Midtown effect plays the next card): Player 0 played an Agent and a Trooper (2.2.7-2.2.8) and fought Zero (2.2.10); the pick opened as a seat choice (kind next-hand-from-play, heading \"Your choice\", options S.H.I.E.L.D. Agent / S.H.I.E.L.D. Trooper); picking the Trooper logged \"Player 0 will add S.H.I.E.L.D. Trooper (starting-shield-trooper) to their next hand as an extra card (Zero, The Ice Blast (henchman-mandarins-rings-09)).\" (2.2.12) and the card stayed in play. At end of turn the new hand was 7 cards with the Trooper added after the six drawn, logged \"S.H.I.E.L.D. Trooper (starting-shield-trooper) was added to Player 0's hand as an extra card.\" (2.3.1, no Electromagnetic Bubble).",
       "note": "Live check (NEW match created after the deploy (deployed gitSha checked), Mastermind rvlt/mandarin (Always Leads puts Mandarin's Rings in the Villain Deck); an operator match via ?route=workshop with the setters placing the copy in the City and giving Attack.): play a S.H.I.E.L.D. Agent and a Trooper, defeat henchman-mandarins-rings-09; a choice listing both opens (heading \"Your choice\"); pick one, end the turn: uiState.snapshot.players[P].handDisplay.length is 7 with the picked card, and the log reads \"<card> (<id>) was added to Player P's hand as an extra card.\". D-24815."
     }
   ]
