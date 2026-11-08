@@ -13,8 +13,12 @@
  * No boardgame.io imports. No registry imports.
  */
 
-import type { RuleEffect } from './ruleHooks.types.js';
+import type { RuleEffect, RuleTriggerName } from './ruleHooks.types.js';
 import type { ImplementationMap } from './ruleRuntime.execute.js';
+// why: WP-867 / D-24810 — a Master Strike that reaches no per-Mastermind arm is a
+// hollow effect; it is recorded through the one hollow-effect seam (structured
+// record + the standard `blocked` log line), never a bespoke line.
+import { recordHollowEffect } from '../diagnostics/hollowEffect.record.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import { reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
@@ -131,6 +135,15 @@ const MASTERMIND_GENERAL_ROSS = 'wwhk/general-thunderbolt-ross';
 // again for each Monsters Unleashed Villain in the city and Escape Pile." The id is the
 // match LAGN `setup.mastermind.id`; setup takes the non-Epic face (D-24193).
 const MASTERMIND_FIN_FANG_FOOM = 'chmp/fin-fang-foom';
+
+// why: WP-867 / D-24810 — the hollow-effect mechanic label for a Master Strike
+// that reached no per-Mastermind arm. Matches the effect-index row mechanic
+// (`...-master-strike`, scripts/coverage/strike-provenance.json).
+const MASTER_STRIKE_HOLLOW_MECHANIC = 'master-strike';
+
+// why: WP-867 / D-24810 — typed against RuleTriggerName so the hollow record's
+// `timing` is checked against the trigger union the strike actually fires on.
+const MASTER_STRIKE_TRIGGER: RuleTriggerName = 'onMastermindStrikeRevealed';
 // why: WP-864 / D-24807 — villain instance ids are `{setAbbr}-villain-{groupSlug}-{cardSlug}-{NN}`
 // (villainDeck.setup.ts), so every Monsters Unleashed card starts with this prefix. The Escape
 // Pile's other contents (Bystanders, captured Heroes) never match it.
@@ -237,6 +250,35 @@ function resolveCurrentPlayer(context: unknown): string | null {
     return null;
   }
   return currentPlayer;
+}
+
+/**
+ * Narrows the rule-pipeline context to the framework turn number.
+ *
+ * @param context - The context the rule pipeline passed to the handler.
+ * @returns The turn number, or 0 when the context does not carry a finite one.
+ */
+function resolveStrikeTurn(context: unknown): number {
+  // why: WP-867 / D-24810 — the unresolved-strike hollow record carries the turn
+  // it was observed on. Every production reveal site forwards the framework turn
+  // as `ctx.turn` (D-24704); a stub context (`{}` in unit tests) yields 0. This is
+  // a third local copy of the turn narrow, kept local (mirroring
+  // resolveCurrentPlayer) because hero/heroEffects.execute.ts `readTurnNumber` and
+  // villainDeck/villainDeck.reveal.ts `readRevealContextTurn` are module-private
+  // and the latter is RevealContext-typed; exporting either would widen the
+  // import surface and couple this module to the villain-deck module.
+  if (typeof context !== 'object' || context === null) {
+    return 0;
+  }
+  const ctx = (context as { ctx?: unknown }).ctx;
+  if (typeof ctx !== 'object' || ctx === null) {
+    return 0;
+  }
+  const turn = (ctx as { turn?: unknown }).turn;
+  if (typeof turn !== 'number' || !Number.isFinite(turn)) {
+    return 0;
+  }
+  return turn;
 }
 
 /**
@@ -1424,8 +1466,9 @@ export function mastermindStrikeHandler(
   // D-24654 removed the D-15401 generic capture-a-Bystander placeholder.
 
   // why: branches are mutually exclusive per mastermind id — a mastermind
-  // matching none of them takes no branch and the strike is generic
-  // bookkeeping only (its printed text is not yet implemented).
+  // matching none of them reaches the terminal `else`, which flags the strike as
+  // a hollow effect (its printed text is not yet implemented; WP-867 / D-24810).
+  // The generic strike-count bookkeeping below still runs for every Mastermind.
   const mastermindId = gameState.selection.mastermindId;
   // why: WP-846 / D-24780 — each each-player strike receives the active player
   // (resolveCurrentPlayer; null in stub contexts → sorted order) so its loop starts with the
@@ -1476,6 +1519,22 @@ export function mastermindStrikeHandler(
     // why: WP-864 / D-24807 — "[Demolish] each player, then do it again for each Monsters
     // Unleashed Villain in the city and Escape Pile."
     resolveFinFangFoomStrike(gameState, resolveCurrentPlayer(strikeContext));
+  } else {
+    // why: WP-867 / D-24810 — no per-Mastermind arm was reached, so the printed
+    // strike is hollow (the D-24033 reachability rule: an arm that resolves
+    // partially or no-ops on this board is never flagged). The record and its
+    // standard `blocked` log line go through the one seam, recordHollowEffect,
+    // so the hollow panel, Play Diagnostics and the sim harvest all read it; no
+    // bespoke second line. The log order is therefore the hollow line, then the
+    // generic "strike count incremented" line the pipeline applies after return.
+    recordHollowEffect(gameState, {
+      cardId: gameState.mastermind.baseCardId,
+      cardType: 'mastermind',
+      timing: MASTER_STRIKE_TRIGGER,
+      mechanic: MASTER_STRIKE_HOLLOW_MECHANIC,
+      reason: 'no-handler',
+      turn: resolveStrikeTurn(strikeContext),
+    });
   }
 
   // why: WP-200 — terminal emission AFTER the per-mastermind text effect
