@@ -6,6 +6,7 @@ import { mount } from '@vue/test-utils';
 import MastermindTile from './MastermindTile.vue';
 import EnigmaGuessPicker from './EnigmaGuessPicker.vue';
 import type {
+  UIFortifier,
   UIMastermindState,
   UITurnEconomyState,
 } from '@legendary-arena/game-engine';
@@ -976,5 +977,45 @@ describe('MastermindTile — Fortify blocks the Fight (WP-873 / D-24818)', () =>
     assert.equal(button.attributes('title'), fortifiedReason);
     await button.trigger('click');
     assert.equal(calls.length, 0);
+  });
+
+  test('D-24819: the Mastermind fortifier is drawn on the tile, outside the Fight button, and fighting it sends its place', async () => {
+    const colleenWing: UIFortifier = {
+      place: 'mastermind',
+      placeLabel: 'the Mastermind',
+      extId: 'cvwr-villain-heroes-for-hire-colleen-wing-00',
+      display: { extId: 'cvwr-villain-heroes-for-hire-colleen-wing-00', name: 'Colleen Wing', imageUrl: '', cost: 9 },
+      fightCost: 9,
+      lockText: "the Mastermind can't be fought",
+    };
+    const squirrelGirl: UIFortifier = {
+      place: 'sidekick-stack',
+      placeLabel: 'the Sidekick Stack',
+      extId: 'cvwr-villain-great-lakes-avengers-squirrel-girl-00',
+      display: { extId: 'cvwr-villain-great-lakes-avengers-squirrel-girl-00', name: 'Squirrel Girl', imageUrl: '', cost: 3 },
+      fightCost: 3,
+      lockText: "Sidekicks can't be recruited or gained",
+    };
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive({ fortifiedReason }),
+        fortifiers: [squirrelGirl, colleenWing],
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    const chips = wrapper.findAll('[data-testid="play-fortifier"]');
+    assert.equal(chips.length, 1, 'only the Mastermind fortifier is drawn on the Mastermind');
+    assert.match(chips[0]!.text(), /Colleen Wing/);
+    const fightButton = wrapper.find('[data-testid="play-mastermind-button"]');
+    assert.equal(fightButton.element.contains(chips[0]!.element), false, 'not nested inside the Fight button');
+    await wrapper.find('[data-testid="play-fortifier-fight"]').trigger('click');
+    assert.deepStrictEqual(calls, [{ name: 'fightVillain', args: { fortifiedPlace: 'mastermind' } }]);
+    const unfortified = mount(MastermindTile, {
+      props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy(), submitMove },
+    });
+    assert.equal(unfortified.find('[data-testid="play-fortifier"]').exists(), false);
   });
 });

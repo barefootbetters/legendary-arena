@@ -4,7 +4,7 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mount } from '@vue/test-utils';
 import SharedDecks from './SharedDecks.vue';
-import type { UISharedPilesState, UITurnEconomyState } from '@legendary-arena/game-engine';
+import type { UIFortifier, UISharedPilesState, UITurnEconomyState } from '@legendary-arena/game-engine';
 import type { SubmitMove, UiMoveName } from './uiMoveName.types';
 
 interface RecordedCall {
@@ -408,5 +408,45 @@ describe('SharedDecks — Fortify locks the Sidekick Stack (WP-873 / D-24818)', 
     assert.equal(button.attributes('title'), reason);
     await button.trigger('click');
     assert.equal(calls.length, 0);
+  });
+
+  test('D-24819: the Sidekick Stack fortifier is drawn on the Sidekicks cell, outside the recruit button, and fighting it sends its place', async () => {
+    const reason = 'Squirrel Girl fortifies the Sidekick Stack. Fight Squirrel Girl first.';
+    const squirrelGirl: UIFortifier = {
+      place: 'sidekick-stack',
+      placeLabel: 'the Sidekick Stack',
+      extId: 'cvwr-villain-great-lakes-avengers-squirrel-girl-00',
+      display: { extId: 'cvwr-villain-great-lakes-avengers-squirrel-girl-00', name: 'Squirrel Girl', imageUrl: '', cost: 3 },
+      fightCost: 3,
+      lockText: "Sidekicks can't be recruited or gained",
+    };
+    const colleenWing: UIFortifier = {
+      place: 'mastermind',
+      placeLabel: 'the Mastermind',
+      extId: 'cvwr-villain-heroes-for-hire-colleen-wing-00',
+      display: { extId: 'cvwr-villain-heroes-for-hire-colleen-wing-00', name: 'Colleen Wing', imageUrl: '', cost: 9 },
+      fightCost: 9,
+      lockText: "the Mastermind can't be fought",
+    };
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(SharedDecks, {
+      props: {
+        piles: piles({ sidekicksCount: 12, sidekickStackFortifiedReason: reason }),
+        fortifiers: [squirrelGirl, colleenWing],
+        currentStage: 'main',
+        isViewerTurn: true,
+        economy: economy({ attack: 3, availableAttack: 3 }),
+        submitMove,
+      },
+    });
+    const chips = wrapper.findAll('[data-testid="play-fortifier"]');
+    assert.equal(chips.length, 1, 'only the Sidekick Stack fortifier is drawn on the Sidekicks cell');
+    assert.match(chips[0]!.text(), /Squirrel Girl/);
+    const sidekickCell = wrapper.find('[data-testid="play-shared-deck-sidekicks"]');
+    assert.ok(sidekickCell.element.contains(chips[0]!.element), 'it sits in the Sidekicks cell');
+    const recruitButton = wrapper.find('[data-testid="play-recruit-sidekick"]');
+    assert.equal(recruitButton.element.contains(chips[0]!.element), false, 'not nested inside the recruit button');
+    await wrapper.find('[data-testid="play-fortifier-fight"]').trigger('click');
+    assert.deepStrictEqual(calls, [{ name: 'fightVillain', args: { fortifiedPlace: 'sidekick-stack' } }]);
   });
 });

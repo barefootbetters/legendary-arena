@@ -1668,7 +1668,7 @@ describe('WP-871 CityRow — fight restriction (D-24816)', () => {
   });
 });
 
-describe('CityRow — fortifying Villains under the Escaped Pile (WP-873 / D-24818)', () => {
+describe('CityRow — fortifying Villains are drawn on their place, not in the City (WP-873 / D-24819)', () => {
   const fortifier: UIFortifier = {
     place: 'sidekick-stack',
     placeLabel: 'the Sidekick Stack',
@@ -1678,7 +1678,10 @@ describe('CityRow — fortifying Villains under the Escaped Pile (WP-873 / D-248
     lockText: "Sidekicks can't be recruited or gained",
   };
 
-  test('T29: a fortifier renders in the escaped cell; without one nothing renders', () => {
+  // why: D-24819 — behavior intentionally changed. WP-873's strip under the Escaped Pile
+  // stretched the City row and shrank the scale-to-fit board (D-24505); the City row never
+  // draws a fortifier now.
+  test('T29: a fortifier never renders in the City row; the escaped cell holds only the Escaped Pile', () => {
     const { submitMove } = recorder();
     const withFortifier = mount(CityRow, {
       props: {
@@ -1689,14 +1692,8 @@ describe('CityRow — fortifying Villains under the Escaped Pile (WP-873 / D-248
         submitMove,
       },
     });
-    const tile = withFortifier.find('[data-testid="play-fortifier"]');
-    assert.ok(tile.exists(), 'the fortifier tile renders');
+    assert.equal(withFortifier.find('[data-testid="play-fortifier"]').exists(), false, 'no fortifier tile in the City row');
     const escapedCell = withFortifier.find('[data-testid="play-escaped-pile"]').element.parentElement!;
-    assert.ok(escapedCell.contains(tile.element), 'it sits in the escaped cell');
-    assert.match(tile.text(), /Squirrel Girl/);
-    const plain = mount(CityRow, {
-      props: { city: fullCity(), decks: DECKS, currentStage: 'main', economy: economy(), submitMove },
-    });
-    assert.equal(plain.find('[data-testid="play-fortifier"]').exists(), false);
+    assert.equal(escapedCell.children.length, 1, 'the escaped cell holds only the Escaped Pile');
   });
 });

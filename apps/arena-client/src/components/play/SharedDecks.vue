@@ -4,12 +4,14 @@ import {
   OFFICER_RECRUIT_COST,
   SIDEKICK_RECRUIT_COST,
   type UICardDisplay,
+  type UIFortifier,
   type UISharedPilesState,
   type UITurnEconomyState,
 } from '@legendary-arena/game-engine';
 import { useTurnActions, healLockGate } from '../../composables/useTurnActions';
 import type { GatingResult } from '../../composables/useCardCostGating';
 import CardTile from './CardTile.vue';
+import FortifiedVillains from './FortifiedVillains.vue';
 import type { SubmitMove } from './uiMoveName.types';
 
 /**
@@ -45,11 +47,18 @@ import type { SubmitMove } from './uiMoveName.types';
  */
 export default defineComponent({
   name: 'SharedDecks',
-  components: { CardTile },
+  components: { CardTile, FortifiedVillains },
   props: {
     piles: {
       type: Object as PropType<UISharedPilesState>,
       required: true,
+    },
+    // why: D-24819 — UIState.city.fortifiers. A Villain fortifying the Sidekick Stack
+    // (Squirrel Girl) is drawn on the Sidekicks cell with its own Fight button.
+    fortifiers: {
+      type: Array as PropType<UIFortifier[]>,
+      required: false,
+      default: () => [],
     },
     currentStage: {
       type: String,
@@ -334,6 +343,18 @@ export default defineComponent({
           <span class="shared-decks__count" :class="{ 'sr-only': isCardFaceOnly }">[{{ piles.sidekicksCount }}]</span>
           <span class="shared-decks__cost" :class="{ 'sr-only': isCardFaceOnly }">Recruit: {{ sidekickCost }}</span>
         </button>
+        <!-- why: D-24819 — Fortify puts the Villain on the Sidekick Stack (rules v23
+             L1454). A sibling of the recruit button (a button cannot hold a button),
+             absolutely positioned over the card so the band keeps its height. -->
+        <FortifiedVillains
+          :fortifiers="fortifiers"
+          place="sidekick-stack"
+          :current-stage="currentStage"
+          :is-viewer-turn="isViewerTurn"
+          :has-healed-this-turn="hasHealedThisTurn"
+          :economy="economy"
+          :submit-move="submitMove"
+        />
       </li>
     </ol>
   </section>
@@ -349,6 +370,8 @@ export default defineComponent({
 }
 
 .shared-decks__cell {
+  /* why: D-24819 — the positioning context for a fortifier chip drawn over the card. */
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;

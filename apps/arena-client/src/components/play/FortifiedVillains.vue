@@ -1,25 +1,30 @@
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue';
-import type { UIFortifier, UITurnEconomyState } from '@legendary-arena/game-engine';
+import type { FortifyPlace, UIFortifier, UITurnEconomyState } from '@legendary-arena/game-engine';
 import { UNNAMED_CITY_SPACE_TARGET } from '@legendary-arena/game-engine';
 import { useCardCostGating, type GatingResult } from '../../composables/useCardCostGating';
 import { useTurnActions, healLockGate } from '../../composables/useTurnActions';
 import type { SubmitMove } from './uiMoveName.types';
 
 /**
- * Fortified Villains strip (WP-873 / D-24818) — rendered by `<CityRow>` under the
- * Escaped Pile.
+ * Fortifying Villain chip (WP-873 / D-24818; placement D-24819).
  *
  * A fortifying Villain (Squirrel Girl at the Sidekick Stack, Colleen Wing at the
- * Mastermind) left the Escape Pile and sits beside the place it locks. Each tile shows
- * the Villain, the place it fortifies, the engine-written lock text and a `Fight N`
- * button priced like a City fight. Clicking it sends
- * `fightVillain({ fortifiedPlace })`; the engine re-validates every check.
+ * Mastermind) left the Escape Pile and sits on the place it locks (rules v23 L1454:
+ * "put on or near" it). The host that draws that place mounts this component with its
+ * own `place`: `<SharedDecks>` on the Sidekicks cell, `<MastermindTile>` on the
+ * Mastermind. Each chip shows the Villain's name and a `Fight N` button priced like a
+ * City fight; the place and the engine-written lock text are its title and screen-reader
+ * text. Clicking Fight sends `fightVillain({ fortifiedPlace })`; the engine re-validates
+ * every check.
+ *
+ * The chip list is absolutely positioned over the host's card, so it never adds height
+ * to the board row it sits in (D-24819; the scale-to-fit board, D-24505).
  *
  * Gate order (EC-132 §3, stage → resource → structural): stage, heal lock, cost at the
  * unnamed target (a fortifier is on no named City space, so restricted Attack never
- * counts), then the projected fight restriction. The client renders the projected
- * `placeLabel` / `lockText` and never switches on the place or lock (D-24574).
+ * counts), then the projected fight restriction. `place` only routes a fortifier to the
+ * host that draws its place; no gate reads the place or the lock (D-24819).
  *
  * Per the EC-132 §2 SFC authoring whitelist: a tested component that uses composables
  * uses `defineComponent({ setup() { return {...} } })`.
@@ -29,6 +34,11 @@ export default defineComponent({
   props: {
     fortifiers: {
       type: Array as PropType<UIFortifier[]>,
+      required: true,
+    },
+    // why: D-24819 — the place the host draws; only fortifiers of this place render here.
+    place: {
+      type: String as PropType<FortifyPlace>,
       required: true,
     },
     currentStage: {
@@ -58,9 +68,34 @@ export default defineComponent({
   },
   setup(props) {
     /**
+     * Returns the fortifiers on this host's place, in projection order.
+     *
+     * @returns The fortifiers whose place is the host's place.
+     */
+    function fortifiersHere(): UIFortifier[] {
+      const here: UIFortifier[] = [];
+      for (const fortifier of props.fortifiers) {
+        if (fortifier.place === props.place) {
+          here.push(fortifier);
+        }
+      }
+      return here;
+    }
+
+    /**
+     * Builds the chip's hover text from the projected place label and lock text.
+     *
+     * @param fortifier - The projected fortifier.
+     * @returns The sentence shown as the chip's title.
+     */
+    function chipTitle(fortifier: UIFortifier): string {
+      return `${fortifier.display.name} fortifies ${fortifier.placeLabel}: ${fortifier.lockText}. Fight ${fortifier.display.name} to end it.`;
+    }
+
+    /**
      * Returns whether the viewer can fight a fortifier now, and why not.
      *
-     * @param fortifier - The projected fortifier tile.
+     * @param fortifier - The projected fortifier.
      * @returns The gating result; the reason is the disabled button's title.
      */
     function gateForFortifier(fortifier: UIFortifier): GatingResult {
@@ -89,7 +124,7 @@ export default defineComponent({
     /**
      * Sends the fortifier fight for a place.
      *
-     * @param fortifier - The projected fortifier tile.
+     * @param fortifier - The projected fortifier.
      */
     function onFightFortifier(fortifier: UIFortifier): void {
       if (!gateForFortifier(fortifier).allowed) {
@@ -98,23 +133,27 @@ export default defineComponent({
       props.submitMove('fightVillain', { fortifiedPlace: fortifier.place });
     }
 
-    return { gateForFortifier, onFightFortifier };
+    return { fortifiersHere, chipTitle, gateForFortifier, onFightFortifier };
   },
 });
 </script>
 
 <template>
-  <ul class="fortified-villains" aria-label="Fortifying Villains">
+  <ul
+    v-if="fortifiersHere().length > 0"
+    class="fortified-villains"
+    aria-label="Fortifying Villains"
+  >
     <li
-      v-for="fortifier in fortifiers"
+      v-for="fortifier in fortifiersHere()"
       :key="fortifier.place"
-      class="fortified-villains__tile"
+      class="fortified-villains__chip"
       data-testid="play-fortifier"
       :data-place="fortifier.place"
+      :title="chipTitle(fortifier)"
     >
-      <p class="fortified-villains__name">{{ fortifier.display.name }}</p>
-      <p class="fortified-villains__place">Fortifying {{ fortifier.placeLabel }}</p>
-      <p class="fortified-villains__lock">{{ fortifier.lockText }}</p>
+      <span class="fortified-villains__name">{{ fortifier.display.name }}</span>
+      <span class="sr-only">Fortifying {{ fortifier.placeLabel }}: {{ fortifier.lockText }}</span>
       <button
         type="button"
         class="fortified-villains__fight"
@@ -131,41 +170,49 @@ export default defineComponent({
 </template>
 
 <style scoped>
+/* why: D-24819 — the chips sit ON the fortified card (rules v23 L1454) and are
+   absolutely positioned, so the host row keeps its height and the scale-to-fit board
+   (D-24505) never rescales because a Villain fortified something. The host provides
+   the positioning context. */
 .fortified-villains {
-  list-style: none;
-  margin: 0.25rem 0 0;
-  padding: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
 }
 
-.fortified-villains__tile {
+.fortified-villains__chip {
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
-  padding: 0.375rem;
-  border: 1px solid var(--color-threat, #7c3aed);
-  border-radius: 0.25rem;
-  min-width: 5rem;
-  font-size: 0.75rem;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.2rem 0.4rem;
+  border: 2px solid var(--color-threat, #7c3aed);
+  border-radius: 0.4rem;
+  background: rgba(24, 12, 48, 0.9);
+  color: #fff;
+  font-size: 0.7rem;
+  line-height: 1.1;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
 }
 
 .fortified-villains__name {
-  margin: 0;
-  font-weight: 600;
-}
-
-.fortified-villains__place,
-.fortified-villains__lock {
-  margin: 0;
-}
-
-.fortified-villains__lock {
-  opacity: 0.8;
+  font-weight: 700;
 }
 
 .fortified-villains__fight {
-  margin-top: 0.125rem;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 700;
 }
 </style>

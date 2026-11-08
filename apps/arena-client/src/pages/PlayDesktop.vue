@@ -907,6 +907,7 @@ export default defineComponent({
                          tile's marker (shown only when > 0) stays hidden. -->
                     <MastermindTile
                       :mastermind="snapshot.mastermind"
+                      :fortifiers="snapshot.city.fortifiers ?? []"
                       :current-stage="snapshot.game.currentStage"
                       :is-viewer-turn="isViewerTurn"
                       :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
@@ -932,6 +933,7 @@ export default defineComponent({
                   </div>
                   <SharedDecks
                     :piles="snapshot.piles"
+                    :fortifiers="snapshot.city.fortifiers ?? []"
                     :current-stage="snapshot.game.currentStage"
                     :is-viewer-turn="isViewerTurn"
                     :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
