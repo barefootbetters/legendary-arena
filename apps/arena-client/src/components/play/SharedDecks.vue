@@ -350,9 +350,9 @@ export default defineComponent({
           <span class="shared-decks__count" :class="{ 'sr-only': isCardFaceOnly }">[{{ piles.sidekicksCount }}]</span>
           <span class="shared-decks__cost" :class="{ 'sr-only': isCardFaceOnly }">Recruit: {{ sidekickCost }}</span>
         </button>
-        <!-- why: D-24819 — Fortify puts the Villain on the Sidekick Stack (rules v23
+        <!-- why: D-24819 — Fortify puts the Villain near the Sidekick Stack (rules v23
              L1454). A sibling of the recruit button (a button cannot hold a button),
-             absolutely positioned over the card so the band keeps its height. -->
+             under the card in normal flow, never over it. -->
         <FortifiedVillains
           :fortifiers="fortifiers"
           place="sidekick-stack"
@@ -377,8 +377,6 @@ export default defineComponent({
 }
 
 .shared-decks__cell {
-  /* why: D-24819 — the positioning context for a fortifier chip drawn over the card. */
-  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;

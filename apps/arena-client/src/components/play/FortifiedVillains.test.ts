@@ -2,6 +2,7 @@ import '../../testing/jsdom-setup';
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { mount } from '@vue/test-utils';
 import FortifiedVillains from './FortifiedVillains.vue';
 import type { UIFortifier, UITurnEconomyState } from '@legendary-arena/game-engine';
@@ -93,6 +94,11 @@ describe('FortifiedVillains (WP-873 / D-24818)', () => {
     const button = wrapper.find('[data-testid="play-fortifier-fight"]');
     assert.equal(button.attributes('disabled'), undefined);
     assert.match(button.text(), /Fight 3/);
+    assert.equal(wrapper.find('[data-testid="play-fortifier-blocked"]').exists(), false, 'no blocked cue while the fight is allowed');
+    assert.equal(
+      tile.attributes('title'),
+      "Squirrel Girl fortifies the Sidekick Stack: Sidekicks can't be recruited or gained. Fight Squirrel Girl for 3 Attack to end it.",
+    );
     await button.trigger('click');
     assert.deepStrictEqual(calls, [{ name: 'fightVillain', args: { fortifiedPlace: 'sidekick-stack' } }]);
   });
@@ -123,12 +129,20 @@ describe('FortifiedVillains (WP-873 / D-24818)', () => {
         assert.match(title, testCase.reason, `${testCase.label}: reason`);
         assert.notEqual(title, restriction, `${testCase.label}: the cost reason, not the restriction`);
       }
+      // why: D-24819 — the blocked reason is shown on the chip itself (a visible cue whose title
+      // is the reason, and the chip's own title), not only on the disabled button.
+      const cue = wrapper.find('[data-testid="play-fortifier-blocked"]');
+      assert.equal(cue.exists(), true, `${testCase.label}: the blocked cue shows`);
+      assert.equal(cue.text(), "Can't fight yet", `${testCase.label}: cue text`);
+      assert.equal(cue.attributes('title'), title, `${testCase.label}: the cue's title is the reason`);
+      const chipTitle = wrapper.find('[data-testid="play-fortifier"]').attributes('title')!;
+      assert.ok(chipTitle.endsWith(`You can't fight Squirrel Girl now: ${title}`), `${testCase.label}: the chip title gives the reason`);
       await button.trigger('click');
       assert.equal(calls.length, 0, `${testCase.label}: a click submits nothing`);
     }
   });
 
-  test('D-24819: only the host place renders, titled with its place and lock; none renders nothing', () => {
+  test('D-24819: only the host place renders, titled with its place, lock and fight status; none renders nothing', () => {
     const { submitMove } = recorder();
     const colleenWing: UIFortifier = {
       place: 'mastermind',
@@ -151,13 +165,25 @@ describe('FortifiedVillains (WP-873 / D-24818)', () => {
     assert.equal(chips.length, 1, 'only the Mastermind fortifier renders on the Mastermind');
     assert.match(chips[0]!.text(), /Colleen Wing/);
     assert.equal(chips[0]!.attributes('data-place'), 'mastermind');
+    // why: D-24819 — behavior intentionally changed: the chip title now also says whether the
+    // viewer can fight (here, 0 Attack against 9).
     assert.equal(
       chips[0]!.attributes('title'),
-      "Colleen Wing fortifies the Mastermind: the Mastermind can't be fought. Fight Colleen Wing to end it.",
+      "Colleen Wing fortifies the Mastermind: the Mastermind can't be fought. You can't fight Colleen Wing now: Needs 9 attack, you have 0.",
     );
     const atStackWithNone = mount(FortifiedVillains, {
       props: { fortifiers: [colleenWing], place: 'sidekick-stack', currentStage: 'main', economy: economy(), submitMove },
     });
     assert.equal(atStackWithNone.find('ul').exists(), false, 'no list renders when nothing fortifies the host place');
+  });
+
+  // why: D-24819 — an overlay chip covered the Sidekick Stack and left the operator unsure
+  // whether the chip or the card took the click (match gN9rrI-U110). The chip sits under the
+  // card in normal flow; jsdom cannot see layout, so the stylesheet is pinned.
+  test('D-24819: the chip is in normal flow, never an overlay on the card', () => {
+    const source = readFileSync(new URL('./FortifiedVillains.vue', import.meta.url), 'utf8');
+    const style = source.slice(source.indexOf('<style'));
+    assert.equal(/position:\s*absolute/.test(style), false, 'no absolutely positioned chip');
+    assert.equal(/position:\s*fixed/.test(style), false, 'no fixed-position chip');
   });
 });
