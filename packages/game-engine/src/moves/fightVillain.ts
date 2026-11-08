@@ -640,6 +640,10 @@ export function defeatCityVillainCore(
   let officerGained = false;
   let microSizedGained = false;
   let stackBystandersRescued = 0;
+  // why: a converted card gained as a Hero says so in the log, but only after the "fought" line
+  // below: logging it here, during the routing, put "gained it as a Hero" ahead of the fight that
+  // caused it (operator match 8eURMq6tTSS 5.2.16-5.2.17). Null when the defeat gains nothing.
+  let gainedHeroLogLine: string | null = null;
   if (G.convertedVillainOrigins?.[cardId] === 'micro-sized') {
     // why: WP-863 / D-24805 — Trap Heroes in the Microverse "When you fight one, choose any player
     // to gain it as a Hero." The card goes to the defeater's discard first, so it always sits in a
@@ -651,9 +655,8 @@ export function defeatCityVillainCore(
     skrullGained = true;
     G.playerZones[currentPlayer]!.discard.push(cardId);
     delete G.convertedVillainOrigins[cardId];
-    pushLog(G,
-      `Player ${currentPlayer} defeated the Skrull ${formatCardRef(G.cardDisplayData, cardId)} and gained the Hero into their discard pile.`,
-    );
+    gainedHeroLogLine =
+      `Player ${currentPlayer} defeated the Skrull ${formatCardRef(G.cardDisplayData, cardId)} and gained the Hero into their discard pile.`;
   } else if (G.convertedVillainOrigins?.[cardId] === 'shield-officer') {
     // why: WP-823 / D-24756 — Brainwash the Military "When you defeat a S.H.I.E.L.D.
     // Officer, gain it as a Hero." Every Officer is identical, and the engine holds an
@@ -665,9 +668,8 @@ export function defeatCityVillainCore(
     officerGained = true;
     G.playerZones[currentPlayer]!.discard.push(SHIELD_OFFICER_EXT_ID);
     delete G.convertedVillainOrigins[cardId];
-    pushLog(G,
-      `Player ${currentPlayer} defeated ${formatCardRef(G.cardDisplayData, cardId)} and gained it as a Hero into their discard pile.`,
-    );
+    gainedHeroLogLine =
+      `Player ${currentPlayer} defeated ${formatCardRef(G.cardDisplayData, cardId)} and gained it as a Hero into their discard pile.`;
   } else if (G.convertedVillainOrigins?.[cardId] === 'bystander-stack-villain') {
     // why: WP-869 / D-24814 — Groot from Planet X: "When you fight one, rescue it as a Bystander"
     // (rules v23: Bystanders that become Villains count as Bystanders in your Victory Pile, not
@@ -685,9 +687,8 @@ export function defeatCityVillainCore(
     officerGained = true;
     G.playerZones[currentPlayer]!.discard.push(SHIELD_OFFICER_EXT_ID);
     delete G.convertedVillainOrigins[cardId];
-    pushLog(G,
-      `Player ${currentPlayer} defeated ${formatCardRef(G.cardDisplayData, cardId)} and gained it as a Hero into their discard pile.`,
-    );
+    gainedHeroLogLine =
+      `Player ${currentPlayer} defeated ${formatCardRef(G.cardDisplayData, cardId)} and gained it as a Hero into their discard pile.`;
   } else {
     G.playerZones[currentPlayer]!.victory.push(cardId);
   }
@@ -737,6 +738,9 @@ export function defeatCityVillainCore(
   pushLog(G,
     `Player ${currentPlayer} fought ${formatCardRef(G.cardDisplayData, cardId)} at city space ${cityIndex}.`,
   );
+  if (gainedHeroLogLine !== null) {
+    pushLog(G, gainedHeroLogLine);
+  }
   const appliedFightResults = executeVillainAbilities(G, ctx, cardId, 'onFight', shuffleContext, cityIndex);
   // why: WP-316 — map results→keywords so the fightResolved `appliedEffects`
   // field and the composeFightNarrative string stay byte-identical to main; the

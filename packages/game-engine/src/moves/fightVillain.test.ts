@@ -626,6 +626,23 @@ describe('defeatCityVillainCore — Skrull defeat-to-gain (WP-514 / D-24327)', (
     );
   });
 
+  it('logs the Skrull gain line right after the fought line, never before it', () => {
+    const gameState = createMockGameState({
+      city: ['hero-skrull', null, null, null, null],
+    });
+    gameState.convertedVillainOrigins = {
+      'hero-skrull': 'skrull',
+    } as LegendaryGameState['convertedVillainOrigins'];
+
+    defeatCityVillainCore(gameState, { currentPlayer: '0' }, 0, shuffleContext);
+
+    const texts = gameState.messages.map((message) => message.text);
+    const foughtIndex = texts.findIndex((text) => text.startsWith('Player 0 fought '));
+    const gainIndex = texts.findIndex((text) => text.includes('and gained the Hero into their discard pile'));
+    assert.ok(foughtIndex >= 0 && gainIndex >= 0, texts.join(' | '));
+    assert.equal(gainIndex, foughtIndex + 1, 'the gain line follows the fight that caused it');
+  });
+
   it('WP-518: the fightResolved overlay narrative announces the Skrull gain', () => {
     const gameState = createMockGameState({
       city: ['hero-skrull', null, null, null, null],

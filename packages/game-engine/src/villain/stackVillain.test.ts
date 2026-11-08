@@ -416,6 +416,18 @@ describe('WP-869 Groot from Planet X Fight (D-24814)', () => {
 });
 
 describe('WP-869 S.H.I.E.L.D. Elite Officers (D-24814)', () => {
+  it('logs the Officer gain line right after the fought line (operator match 8eURMq6tTSS 5.2.16-5.2.17)', () => {
+    const G = makeState([GABE_OFFICER, null, null, null, null], 2, 3);
+    G.convertedVillainOrigins = { [GABE_OFFICER]: 'officer-stack-villain' };
+    G.villainDeckCardTypes[GABE_OFFICER] = 'villain';
+    defeatCityVillainCore(G, FIGHT_CTX, 0, SHUFFLE_CONTEXT);
+    const texts = logTexts(G);
+    const foughtIndex = texts.indexOf(`Player 0 fought S.H.I.E.L.D. Officer (${GABE_OFFICER}) at city space 0.`);
+    const gainIndex = texts.indexOf(`Player 0 defeated S.H.I.E.L.D. Officer (${GABE_OFFICER}) and gained it as a Hero into their discard pile.`);
+    assert.ok(foughtIndex >= 0 && gainIndex >= 0, texts.join(' | '));
+    assert.equal(gainIndex, foughtIndex + 1, 'the gain line follows the fight that caused it');
+  });
+
   it("Agent Gabe Jones's Fight: one Officer enters at 3 Attack; fighting it gains the Officer Hero", () => {
     const G = makeState([GABE_JONES, null, null, null, null], 2, 3);
     defeatCityVillainCore(G, FIGHT_CTX, 0, SHUFFLE_CONTEXT);
