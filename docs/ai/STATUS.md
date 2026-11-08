@@ -140,6 +140,13 @@
   3. Fight nothing, end the turn: `uiState.snapshot.players[0].handDisplay.length` is 7. Optional: two copies → 8.
   4. After the ewiki deploy, `ewiki.legendary-arena.com/turn-system/` returns 200 and contains `next-hand-extra-draw` (CF Access service-token headers).
 
+### Attempt Heist moves to the bottom turn bar (D-24812, amends D-24808 §7) (2026-11-06)
+
+**User-visible on `play.legendary-arena.com` after deploy.** The **Attempt Heist (Heist Count N)** button now appears in Step 2 of the bottom turn bar, beside Heal Wounds and End turn, whenever a Heist can be attempted. It used to sit in the "Played This Turn" heading, where operator match `OZLV05npDB8` readied a Heist card on about 20 turns without the button ever being noticed. The engine path was re-verified end to end; this is a client placement fix only.
+
+- **Tests.** arena-client 2552 -> 2554 / 0; `typecheck` 0.
+- **Live re-check:** operator-pending, combined with the D-24808 Heist live check.
+
 ### Each-player KO log line says every player KOs (D-24644 amendment) (2026-11-06)
 
 **User-visible in the game log after deploy.** Super-Skrull's Fight, Juggernaut's Ambush / Escape and Destroyer's KO now log "Fight effect: each player KOs a hero: Player 0 must choose which; Player 1 KO’d S.H.I.E.L.D. Agent from their hand." instead of "the active player must KO a hero; …", which read as if only the active player loses a Hero (Jeff's match `yTdbv34zeV6`, 7.2.6). Engine behavior is unchanged. A current-player KO keeps "the active player must KO a hero".

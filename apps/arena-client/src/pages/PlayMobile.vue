@@ -697,8 +697,6 @@ export default defineComponent({
             :out-of-time-cards="viewer.outOfTimeCards ?? []"
             :controlled-artifacts="viewer.controlledArtifacts ?? []"
             :ritual-card-ids="snapshot.economy.ritualArtifactOptions ?? []"
-            :heist-available="snapshot.economy.heistAvailable === true"
-            :heist-count="snapshot.economy.heistCount"
             :submit-move="submitMove"
           />
         </section>
@@ -1036,6 +1034,8 @@ export default defineComponent({
             :has-acted-this-turn="snapshot.game.hasActedThisTurn"
             :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
             :has-revealed-villain="snapshot.game.villainRevealedThisTurn"
+            :heist-available="snapshot.economy.heistAvailable === true"
+            :heist-count="snapshot.economy.heistCount"
             :submit-move="submitMove"
           />
         </template>
