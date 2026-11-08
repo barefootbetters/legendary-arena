@@ -79,6 +79,9 @@ export function isOperatorChoiceOpen(G: LegendaryGameState): boolean {
   if ((G.pendingFlyingShieldBlockWounds?.length ?? 0) > 0) return true;
   // why: WP-828 / D-24761 — owed Man Out of Time grants are opened the same way.
   if ((G.pendingOutOfTimeGrants?.length ?? 0) > 0) return true;
+  // why: WP-870 / D-24815 — an owed Zero pick is a choice the opener will park; a setter must not
+  // reshape the board under it.
+  if ((G.pendingNextHandFromPlayPicks?.length ?? 0) > 0) return true;
   // why: WP-829 / D-24762 — owed Go Back in Time Purges are opened the same way.
   if ((G.pendingTimestreamPurges?.length ?? 0) > 0) return true;
   if ((G.pendingEscapeProcedures?.length ?? 0) > 0) return true;

@@ -198,6 +198,13 @@ function isLockedEffectKeyword(keyword) {
 // `stack-cards-enter-city-as-villains` (`:<bystander|officer>:<N>[:<name>]`) appended at position
 // 45 by WP-869 (D-24814 — chmp Groot from Planet X's Fight, cvwr Agent Gabe Jones's Fight and Agent
 // Eric Marshall's Ambush; validates via its own branch below).
+// `reveal-top-may-ko-current` (no-param), `reveal-top-discard-zero-cost-current` (`:<N>`) and
+// `next-hand-from-play-zero-cost-current` (no-param) appended at positions 46, 47 and 48 by WP-870
+// (D-24815 — rvlt Mandarin's Rings Lightning (and antm Daystar) "Reveal the top card of your deck.
+// You may KO it.", Spin "Reveal the top six cards … Discard all of them that cost 0, then put the
+// rest back in any order." and Zero "Choose a card you played this turn that costs 0 … add that card
+// to your hand as an extra card."; the two no-param ones validate via the terminal
+// `parts.length === 1` branch, the `:<N>` one via its own branch below).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -244,6 +251,9 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'fortify',
   'demolish-each-player',
   'stack-cards-enter-city-as-villains',
+  'reveal-top-may-ko-current',
+  'reveal-top-discard-zero-cost-current',
+  'next-hand-from-play-zero-cost-current',
 ];
 
 // why: WP-836 / D-24769 — hand-synced local copy of the engine's HERO_CLASSES
@@ -487,6 +497,12 @@ function isValidParameterizedEffectToken(token) {
   if (primitive === 'ko-from-discard-current') {
     // why: D-24811 — grammar ko-from-discard-current:<N> (exactly 2 tokens; Flatman: :1), the
     // mandatory KO. Same strict positive-integer grammar as the "up to" sibling.
+    return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
+  }
+  if (primitive === 'reveal-top-discard-zero-cost-current') {
+    // why: D-24815 — grammar reveal-top-discard-zero-cost-current:<N> (exactly 2 tokens; Spin: :6),
+    // N the count of deck-top cards revealed. Mirrors the engine parser: the bare token is invalid
+    // (no default count), so it must not reach the terminal no-param branch.
     return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
   }
   if (primitive === 'reenter-sewers-if-villain-deck-top') {

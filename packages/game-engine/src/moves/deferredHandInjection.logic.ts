@@ -1,9 +1,11 @@
 /**
  * Deferred specific-card hand injection consume (WP-695 / D-24512).
  *
- * Magneto's "Electromagnetic Bubble" tactic records a chosen X-Men Hero in
- * `G.deferredHandInjections[playerId]`; it is consumed once at that player's next
- * play-phase `onBegin` fill (game.ts), AFTER the normal hand fill, adding each recorded
+ * Two writers record a chosen card in `G.deferredHandInjections[playerId]`: Magneto's
+ * "Electromagnetic Bubble" tactic (an X-Men Hero) and, since WP-870 / D-24815, Mandarin's
+ * Rings Zero (a 0-cost card played this turn). The consume lines are source-neutral for that
+ * reason (the writers' own pick lines name the source). It is consumed once at that player's
+ * end-of-turn new-hand fill (applyEndOfTurnCleanup Step 5), AFTER the normal hand fill, adding each recorded
  * ext_id to the hand as an extra card and then clearing the key. This is the sibling of
  * `handSizeOverrides` (which bumps the fill COUNT and cannot carry WHICH card).
  *
@@ -129,7 +131,7 @@ export function consumeDeferredHandInjections(
     }
     if (pulled) {
       pushLog(G,
-        `${resolveCardName(G.cardDisplayData, injectCardId)} (${injectCardId}) was added to Player ${playerId}'s hand as an extra card (Electromagnetic Bubble).`,
+        `${resolveCardName(G.cardDisplayData, injectCardId)} (${injectCardId}) was added to Player ${playerId}'s hand as an extra card.`,
         'applied',
         injectCardId,
       );
@@ -137,7 +139,7 @@ export function consumeDeferredHandInjections(
       // why: card not locatable in the player's discard / in-play / deck — a logged
       // no-op (never a throw); the injection is still cleared below so it cannot re-fire.
       pushLog(G,
-        `Player ${playerId}'s Electromagnetic Bubble card (${injectCardId}) could not be found to add to their hand; no effect.`,
+        `Player ${playerId}'s extra card (${injectCardId}) could not be found to add to their hand; no effect.`,
         'blocked',
         injectCardId,
       );

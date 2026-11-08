@@ -523,6 +523,8 @@ function parseLocationGatedEffect(
  *   - `hq-heroes-cost-change:<less|more>:<N>[:<c>[+<c>…]]`  (the Heroes in the HQ cost N less or
  *     more this turn, optionally only the listed classes; D-24811)
  *   - `ko-from-discard-current:<N>`  (the mandatory KO of N cards from your discard; D-24811)
+ *   - `reveal-top-discard-zero-cost-current:<N>`  (reveal the top N, discard the cost-0 ones,
+ *     reorder the rest; D-24815)
  *   - `reenter-sewers-if-villain-deck-top:<villain|bystander|villain+bystander>`  (the defeated
  *     card reenters the Sewers on a matching Villain Deck top; D-24811)
  *   - `fortify:<place>:<lock>`  (the escaped Villain fortifies the place; the lock must be one
@@ -544,7 +546,8 @@ function parseLocationGatedEffect(
  *     `ko-bystander-each-victory-pile` (D-24749) |
  *     `gain-recruit-current-per-hero-class` (D-24750) |
  *     `discard-hand-matching-hq-card-names-each-player` |
- *     `hq-heroes-to-hero-deck-bottom` (D-24770)  (no params)
+ *     `hq-heroes-to-hero-deck-bottom` (D-24770) |
+ *     `reveal-top-may-ko-current` | `next-hand-from-play-zero-cost-current` (D-24815)  (no params)
  *
  * @param value - The ungated marker value (the text inside `[effect:…]` minus
  *   any `@<space>` suffix).
@@ -873,6 +876,21 @@ function parseUngatedEffect(
       return null;
     }
     return { primitive: 'ko-from-discard-current', magnitude };
+  }
+  if (primitiveToken === 'reveal-top-discard-zero-cost-current') {
+    // why: WP-870 / D-24815 — grammar `reveal-top-discard-zero-cost-current:<N>` (exactly 2
+    // colon-parts; Mandarin's Rings Spin `:6`), N the count of deck-top cards revealed, a positive
+    // integer carried as `magnitude`. A bare token, a non-positive or non-integer count, or a third
+    // token returns null (→ unresolvedMarkers): the count has no meaningful default, so the bare
+    // token must NOT fall through to the terminal no-param branch below.
+    if (parts.length !== 2) {
+      return null;
+    }
+    const magnitude = parsePositiveInteger(parts[1]!);
+    if (magnitude === null) {
+      return null;
+    }
+    return { primitive: 'reveal-top-discard-zero-cost-current', magnitude };
   }
   if (primitiveToken === 'reenter-sewers-if-villain-deck-top') {
     // why: WP-868 / D-24811 — grammar `reenter-sewers-if-villain-deck-top:<kinds>` (exactly 2

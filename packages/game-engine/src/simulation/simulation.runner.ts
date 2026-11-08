@@ -53,6 +53,7 @@ import { resolveDeferredHeroGrants } from '../hero/heroEffects.execute.js';
 import { openNonActiveReturnOnDiscardSeatChoiceIfNeeded } from '../moves/resolveReturnOnDiscard.js';
 import { openEscapeProcedureSeatChoiceIfNeeded } from '../villainDeck/villainEscapeProcedure.js';
 import { openRevealOrWoundSeatChoiceIfNeeded } from '../moves/revealOrWoundChoice.logic.js';
+import { openNextHandFromPlaySeatChoiceIfNeeded } from '../moves/nextHandFromPlay.logic.js';
 import { resetTurnEconomy } from '../economy/economy.logic.js';
 import { applyOnBeginParity } from './onBeginParity.js';
 import { applyEndOfTurnCleanup } from '../moves/endOfTurnCleanup.logic.js';
@@ -708,6 +709,9 @@ function runPerTurnLoop(
         // position (after the escape opener and the depletion re-check, before the unmirrored
         // Diving Block opener), so a queued revealer is asked in the sim too.
         openRevealOrWoundSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+        // why: WP-870 / D-24815 — the loops never run the onMove opener, so mirror the owed Zero
+        // pick opener here; without it a sim game that fights Zero never applies the pick.
+        openNextHandFromPlaySeatChoiceIfNeeded(gameState, undefined, currentPlayer);
         continue;
       }
     }
@@ -815,6 +819,9 @@ function runPerTurnLoop(
     // opener). The getLegalMoves seat-choice short-circuit and the WP-749 non-active dispatch
     // then answer it at its default (Reveal).
     openRevealOrWoundSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+    // why: WP-870 / D-24815 — the loops never run the onMove opener, so mirror the owed Zero pick
+    // opener here; the getLegalMoves seat-choice short-circuit answers it at its default (0).
+    openNextHandFromPlaySeatChoiceIfNeeded(gameState, undefined, currentPlayer);
 
     // why: zero-legal-moves + endTurn-illegal fallback (RS-6 second clause).
     // If the policy returned endTurn when the stage is not cleanup, the

@@ -57,7 +57,7 @@ antm-villain-ultrons-legacy-alkhema,Alkhema,antm,villain,ko-from-discard-current
 antm-villain-queens-vengeance-blackbird,Blackbird,antm,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 antm-villain-ultrons-legacy-brutish-ultron-14,Brutish Ultron-14,antm,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 antm-villain-ultrons-legacy-crimson-cowl,Crimson Cowl,antm,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
-antm-villain-queens-vengeance-daystar,Daystar,antm,villain,(unmarked),unmarked,,,
+antm-villain-queens-vengeance-daystar,Daystar,antm,villain,reveal-top-may-ko-current,executable,WP-870,D-24815,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-top-may-ko-current
 antm-villain-ultrons-legacy-future-ultron-prime,Future Ultron Prime,antm,villain,(unmarked),unmarked,,,
 antm-villain-queens-vengeance-gigantus,Gigantus,antm,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 antm-villain-queens-vengeance-iron-knight,Iron Knight,antm,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
@@ -488,7 +488,7 @@ henchman-mandarins-rings-influence-the-impact-beam,"Influence, The Impact Beam",
 rvlt-villain-army-of-evil-klaw,Klaw,rvlt,villain,gain-attached-hero,executable,WP-450,D-24270,packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero
 rvlt-villain-lethal-legion-laser-maze,Laser Maze,rvlt,villain,(unmarked),unmarked,,,
 henchman-mandarins-rings-liar-the-mento-intensifier,"Liar, The Mento-Intensifier",rvlt,henchman,(unmarked),unmarked,,,
-henchman-mandarins-rings-lightning-the-electro-blast,"Lightning, The Electro-Blast",rvlt,henchman,(unmarked),unmarked,,,
+henchman-mandarins-rings-lightning-the-electro-blast,"Lightning, The Electro-Blast",rvlt,henchman,reveal-top-may-ko-current,executable,WP-870,D-24815,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-top-may-ko-current
 rvlt-villain-lethal-legion-living-laser,Living Laser,rvlt,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 rvlt-villain-lethal-legion-mbaku,M'Baku,rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-hoods-gang-madam-masque,Madam Masque,rvlt,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
@@ -499,12 +499,12 @@ henchman-mandarins-rings-remaker-the-matter-rearranger,"Remaker, The Matter Rear
 rvlt-villain-dark-avengers-sentry,Sentry,rvlt,villain,gainWoundEachPlayer,executable,WP-185,D-18502,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 rvlt-villain-dark-avengers-sentrys-watchtower,Sentry's Watchtower,rvlt,villain,(unmarked),unmarked,,,
 henchman-mandarins-rings-spectral-the-disintegration-beam,"Spectral, The Disintegration Beam",rvlt,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
-henchman-mandarins-rings-spin-the-vortex-beam,"Spin, The Vortex Beam",rvlt,henchman,(unmarked),unmarked,,,
+henchman-mandarins-rings-spin-the-vortex-beam,"Spin, The Vortex Beam",rvlt,henchman,reveal-top-discard-zero-cost-current,executable,WP-870,D-24815,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-top-discard-zero-cost-current
 rvlt-villain-lethal-legion-swordsman,Swordsman,rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-hoods-gang-the-brothers-grimm,The Brothers Grimm,rvlt,villain,ko-up-to-from-discard-current,executable,WP-760,D-24589,packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current
 rvlt-villain-hoods-gang-the-dark-dimension,The Dark Dimension,rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-lethal-legion-white-gorilla-cult,White Gorilla Cult,rvlt,villain,(unmarked),unmarked,,,
-henchman-mandarins-rings-zero-the-ice-blast,"Zero, The Ice Blast",rvlt,henchman,(unmarked),unmarked,,,
+henchman-mandarins-rings-zero-the-ice-blast,"Zero, The Ice Blast",rvlt,henchman,next-hand-from-play-zero-cost-current,executable,WP-870,D-24815,packages/game-engine/src/villain/villainEffects.execute.ts#next-hand-from-play-zero-cost-current
 rvlt-villain-lethal-legion-the-raft-prison,“The Raft“ Prison,rvlt,villain,(unmarked),unmarked,,,
 shld-villain-hydra-elite-crossbones,Crossbones,shld,villain,(unmarked),unmarked,,,
 shld-villain-hydra-elite-gorgon,Gorgon,shld,villain,(unmarked),unmarked,,,
