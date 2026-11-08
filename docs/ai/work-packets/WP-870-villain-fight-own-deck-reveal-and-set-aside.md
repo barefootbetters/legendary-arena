@@ -268,6 +268,29 @@ Plus: the runtime count / list / last-entry pins in `rules/villainAbility.types.
 
 ---
 
+## Execution Amendment (2026-11-07, inline)
+
+- **Primitive positions 40-42 → 46-48 (stale baseline, the Assumes 3 hazard).** Between draft and execution, WP-868
+  (D-24811) appended `hq-heroes-cost-change`, `ko-from-discard-current` and `reenter-sewers-if-villain-deck-top` (40-42),
+  WP-873 (D-24818) `fortify` (43), WP-864 (D-24807) `demolish-each-player` (44) and WP-869 (D-24814)
+  `stack-cards-enter-city-as-villains` (45, landed while this PR was open; rebased). The three WP-870 primitives are appended
+  last at **46, 47, 48** in the Locked Values order, with no other change. Every count pin moved 45 → 48 (the canonical-list
+  case, the WP-816 T2, WP-817 T1, WP-836 T1, WP-837 T1, WP-873 T5 and WP-869 length asserts, the WP-869 title drops "and
+  last", and the WP-873 T5 `Record<VillainEffectPrimitive, true>` parity literal gains +3 keys). The antm `queens-vengeance` block already held WP-868's
+  `star-knight`; `daystar` sits alphabetically between `blackbird` and `gigantus`.
+- **Provenance placement.** The three `mechanic-provenance.json` keys follow `stack-cards-enter-city-as-villains` (now the
+  last villain primitive key), keeping the append order, rather than sitting directly after `hq-hero-gains-size-changing`.
+- **Feed absolute values (Assumes 14).** The deltas are as planned; the absolute counts moved with the four WPs above and WP-867 (D-24810, the effect index lists every Master Strike). Villain
+  ledger executable 249 → 253, unmarked 509 → 505, distinctMechanics 54 → 57; effect index executable 772 → 776, unmarked
+  1054 → 1050; Daystar, Lightning, Spin and Zero `executable` with WP-870 / D-24815. Card mechanics, runtime-observed hollows and
+  the coverage baseline did not move (line-ending churn reverted). Engine baseline 6619 (not 6455).
+- **`recordDeferredHandInjection` duplicated, not imported.** `rules/tacticHandlers.ts` imports `parkSeatChoice` from
+  `moves/seatChoice.resolve.ts`, which now imports `moves/nextHandFromPlay.logic.ts`, so reuse would add a cycle through a large
+  module; the four-line lazy-init + push is duplicated (the Locked Values "else duplicate it" branch).
+- **Reorder drift.** The two drift returns (short deck, non-permutation top) are one `if (a || b)` drop branch; both cases are
+  covered by T16 and the rewritten `reorderChoice.resolve.test.ts` drift case. The Inspector's P2 also reworded the Step 3
+  comment above them, which still said the block-all guard keeps `front.cardIds` on top (drift wording, the same allowance).
+
 ## Gate Record
 
 All gates ran as independent subagents.
