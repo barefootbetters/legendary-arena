@@ -513,7 +513,7 @@ high-water: 422
 - WP-872 — villain-fight-cross-player-and-villain-deck (Mandarin's Rings henchman variants Liar, Nightbringer and Remaker Fight lines: another player's deck top to your discard or theirs, reveal three Villain Deck cards and may defeat one worth 2VP or less, give a hand/discard card to the player on your right. reserved 2026-11-06, claude/wp872-reserve)
 - WP-873 — fortify-keyword (the Civil War Fortify keyword: a Villain Escape / Ambush line parks the Villain at a place (Sidekick / Wound / Bystander / Officer Stack, the Mastermind, an HQ space, the Hero or Villain Deck, a player deck) instead of the Escape Pile; the place is locked or modified until any player fights that Villain there; one Fortify per place. Squirrel Girl Escape fortifies the Sidekick Stack. reserved 2026-11-07, claude/wp873-reserve; LANDED 2026-11-07)
 - WP-874 — wrecking-crew-demolish (chmp Wrecking Crew Demolish lines WP-864 left out: The Wrecker Ambush Demolishes each player once per Wrecking Crew Villain in the city, Bulldozer Ambush moves an extra space and Demolishes each player if it pushed a Villain, Thunderball Fight in the Sewers or Bank Demolishes each other player; reuses the D-24807 resolver. reserved 2026-11-07, claude/wp874-reserve)
-- WP-875 — mandarin-master-strike-and-ring-attack (rvlt The Mandarin: Master Strike sends a Mandarin's Ring from each player's Victory Pile back into the City or that player gains a Wound, Mandarin's Rings get +1 Attack, The Mandarin gets -1 Attack per Mandarin's Ring in all Victory Piles. reserved 2026-11-07, claude/wp-mandarin-reserve)
+- WP-875 — mandarin-master-strike-and-ring-attack (rvlt The Mandarin: Master Strike sends a Mandarin's Ring from each player's Victory Pile back into the City or that player gains a Wound, Mandarin's Rings get +1 Attack, The Mandarin gets -1 Attack per Mandarin's Ring in all Victory Piles. reserved 2026-11-07, claude/wp-mandarin-reserve; LANDED 2026-11-07)
 
 ## EC
 
@@ -989,7 +989,7 @@ high-water: 457
 - EC-910 — villain-fight-cross-player-and-villain-deck (WP-872. reserved 2026-11-06, claude/wp872-reserve)
 - EC-911 — fortify-keyword (WP-873. reserved 2026-11-07, claude/wp873-reserve; LANDED 2026-11-07)
 - EC-912 — wrecking-crew-demolish (WP-874. reserved 2026-11-07, claude/wp874-reserve)
-- EC-913 — mandarin-master-strike-and-ring-attack (WP-875. reserved 2026-11-07, claude/wp-mandarin-reserve)
+- EC-913 — mandarin-master-strike-and-ring-attack (WP-875. reserved 2026-11-07, claude/wp-mandarin-reserve; LANDED 2026-11-07)
 
 ## D
 
@@ -1588,4 +1588,4 @@ section below) and the allocation protocol in
 - D-24819 — fortifier-placement (fix to WP-873 / EC-911, no new WP; a fortifying Villain is drawn on the place it fortifies, not under the Escaped Pile, so the City row keeps its height. reserved 2026-11-07, claude/wp873-fortifier-placement)
 - D-24820 — wrecking-crew-demolish (WP-874; the counted, conditional and each-other-player Demolish villain primitives, the shared resolver seat filter and repeat count, and the Bulldozer extra-space push rule. reserved 2026-11-07, claude/wp874-reserve)
 - D-24821 — fortifier-chip-under-card-and-fight-status (fix to WP-873 / D-24819, no new WP; the fortifier chip sits under the card it fortifies, not over it, and shows why a fight is blocked. reserved 2026-11-08, claude/wp873-fortifier-chip-reason)
-- D-24822 — mandarin-master-strike-and-ring-attack (WP-875; The Mandarin's Master Strike handler, the Ring +1 Attack modifier and the per-Ring mastermind Attack reduction. reserved 2026-11-07, claude/wp-mandarin-reserve)
+- D-24822 — mandarin-master-strike-and-ring-attack (WP-875; The Mandarin's Master Strike handler, the Ring +1 Attack modifier and the per-Ring mastermind Attack reduction. reserved 2026-11-07, claude/wp-mandarin-reserve; LANDED 2026-11-07)
