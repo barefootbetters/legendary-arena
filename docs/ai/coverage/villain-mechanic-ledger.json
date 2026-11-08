@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "cardType": "villain",
   "summary": {
-    "totalRows": 760,
+    "totalRows": 763,
     "byStatus": {
-      "executable": 198,
+      "executable": 253,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 559,
-      "subsystem": 2
+      "unmarked": 505,
+      "subsystem": 4
     },
-    "distinctMechanics": 47
+    "distinctMechanics": 57
   },
   "rows": [
     {
@@ -172,11 +172,11 @@
       "cardName": "City Defense System",
       "set": "amwp",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "amwp-villain-ghost-chasers-corrupted-government-agents",
@@ -513,11 +513,11 @@
       "cardName": "Yellowjacket Prototype",
       "set": "amwp",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "anni-villain-annihilation-wave-annihilation-armada",
@@ -579,11 +579,11 @@
       "cardName": "Ravenous",
       "set": "anni",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "anni-villain-timelines-of-kang-scarlet-centurion",
@@ -612,11 +612,11 @@
       "cardName": "Alkhema",
       "set": "antm",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-from-discard-current",
+      "status": "executable",
+      "wp": "WP-868",
+      "decision": "D-24811",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-from-discard-current"
     },
     {
       "extId": "antm-villain-queens-vengeance-blackbird",
@@ -634,11 +634,11 @@
       "cardName": "Brutish Ultron-14",
       "set": "antm",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "antm-villain-ultrons-legacy-crimson-cowl",
@@ -656,11 +656,11 @@
       "cardName": "Daystar",
       "set": "antm",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-top-may-ko-current",
+      "status": "executable",
+      "wp": "WP-870",
+      "decision": "D-24815",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-top-may-ko-current"
     },
     {
       "extId": "antm-villain-ultrons-legacy-future-ultron-prime",
@@ -689,11 +689,11 @@
       "cardName": "Iron Knight",
       "set": "antm",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "antm-villain-ultrons-legacy-legions-of-ultron",
@@ -744,11 +744,11 @@
       "cardName": "Star-Knight",
       "set": "antm",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-from-discard-current",
+      "status": "executable",
+      "wp": "WP-868",
+      "decision": "D-24811",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-from-discard-current"
     },
     {
       "extId": "antm-villain-ultrons-legacy-ultron-roboticks",
@@ -799,11 +799,11 @@
       "cardName": "Jormungand, The World-Serpent",
       "set": "asrd",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "hq-heroes-cost-change",
+      "status": "executable",
+      "wp": "WP-868",
+      "decision": "D-24811",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hq-heroes-cost-change"
     },
     {
       "extId": "asrd-villain-dark-council-laufey-father-of-loki",
@@ -1030,11 +1030,11 @@
       "cardName": "Blue Talon",
       "set": "bkwd",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "bkwd-villain-taskmasters-thunderbolts-bullseye",
@@ -1294,33 +1294,44 @@
       "cardName": "Groot from Planet X",
       "set": "chmp",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "stack-cards-enter-city-as-villains",
+      "status": "executable",
+      "wp": "WP-869",
+      "decision": "D-24814",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#stack-cards-enter-city-as-villains"
     },
     {
       "extId": "chmp-villain-monsters-unleashed-monsteroso",
       "cardName": "Monsteroso",
       "set": "chmp",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "add-next-hand-size",
+      "status": "executable",
+      "wp": "WP-543",
+      "decision": "D-24352",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#add-next-hand-size"
     },
     {
       "extId": "chmp-villain-monsters-unleashed-orrgo",
       "cardName": "Orrgo",
       "set": "chmp",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
+      "mechanic": "setup:fight-restriction",
+      "status": "subsystem",
+      "wp": "WP-871",
+      "decision": "D-24816",
       "handler": ""
+    },
+    {
+      "extId": "chmp-villain-wrecking-crew-piledriver",
+      "cardName": "Piledriver",
+      "set": "chmp",
+      "cardType": "villain",
+      "mechanic": "demolish-each-player",
+      "status": "executable",
+      "wp": "WP-864",
+      "decision": "D-24807",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#demolish-each-player"
     },
     {
       "extId": "chmp-villain-wrecking-crew-piledriver",
@@ -1371,33 +1382,44 @@
       "cardName": "Tim Boo Ba",
       "set": "chmp",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "hq-heroes-cost-change",
+      "status": "executable",
+      "wp": "WP-868",
+      "decision": "D-24811",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hq-heroes-cost-change"
     },
     {
       "extId": "chmp-villain-monsters-unleashed-trull-the-unhuman",
       "cardName": "Trull the Unhuman",
       "set": "chmp",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "captureBystander",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18506",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander"
+    },
+    {
+      "extId": "chmp-villain-monsters-unleashed-trull-the-unhuman",
+      "cardName": "Trull the Unhuman",
+      "set": "chmp",
+      "cardType": "villain",
+      "mechanic": "demolish-each-player",
+      "status": "executable",
+      "wp": "WP-864",
+      "decision": "D-24807",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#demolish-each-player"
     },
     {
       "extId": "chmp-villain-monsters-unleashed-zzutak",
       "cardName": "Zzutak",
       "set": "chmp",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "demolish-each-player",
+      "status": "executable",
+      "wp": "WP-864",
+      "decision": "D-24807",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#demolish-each-player"
     },
     {
       "extId": "co2e-villain-radiation-abomination",
@@ -2449,11 +2471,11 @@
       "cardName": "Proxima Midnight",
       "set": "cosm",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "henchman-sidera-maris-bridge-builders",
@@ -2471,11 +2493,11 @@
       "cardName": "Supergiant",
       "set": "cosm",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "wp": "WP-760",
+      "decision": "D-24589",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current"
     },
     {
       "extId": "cosm-villain-elders-of-the-universe-the-champion-of-the-universe",
@@ -2570,33 +2592,33 @@
       "cardName": "Agent Eric Marshall",
       "set": "cvwr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "stack-cards-enter-city-as-villains",
+      "status": "executable",
+      "wp": "WP-869",
+      "decision": "D-24814",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#stack-cards-enter-city-as-villains"
     },
     {
       "extId": "cvwr-villain-shield-elite-agent-gabe-jones",
       "cardName": "Agent Gabe Jones",
       "set": "cvwr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "stack-cards-enter-city-as-villains",
+      "status": "executable",
+      "wp": "WP-869",
+      "decision": "D-24814",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#stack-cards-enter-city-as-villains"
     },
     {
       "extId": "cvwr-villain-great-lakes-avengers-big-bertha",
       "cardName": "Big Bertha",
       "set": "cvwr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "cvwr-villain-registration-enforcers-blade",
@@ -2625,11 +2647,11 @@
       "cardName": "Cape-Killers",
       "set": "cvwr",
       "cardType": "henchman",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-from-discard-current",
+      "status": "executable",
+      "wp": "WP-868",
+      "decision": "D-24811",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-from-discard-current"
     },
     {
       "extId": "cvwr-villain-registration-enforcers-captain-marvel",
@@ -2647,11 +2669,11 @@
       "cardName": "Colleen Wing",
       "set": "cvwr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "fortify",
+      "status": "executable",
+      "wp": "WP-873",
+      "decision": "D-24818",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#fortify"
     },
     {
       "extId": "cvwr-villain-registration-enforcers-deadpool",
@@ -2691,11 +2713,11 @@
       "cardName": "Flatman",
       "set": "cvwr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-from-discard-current",
+      "status": "executable",
+      "wp": "WP-868",
+      "decision": "D-24811",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-from-discard-current"
     },
     {
       "extId": "cvwr-villain-heroes-for-hire-humbug",
@@ -2724,11 +2746,11 @@
       "cardName": "Mach-IV",
       "set": "cvwr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "henchman-mandroid",
@@ -2768,11 +2790,11 @@
       "cardName": "Mr. Immortal",
       "set": "cvwr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reenter-sewers-if-villain-deck-top",
+      "status": "executable",
+      "wp": "WP-868",
+      "decision": "D-24811",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reenter-sewers-if-villain-deck-top"
     },
     {
       "extId": "cvwr-villain-superhuman-registration-act-ms-marvel",
@@ -2856,11 +2878,11 @@
       "cardName": "Squirrel Girl",
       "set": "cvwr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "fortify",
+      "status": "executable",
+      "wp": "WP-873",
+      "decision": "D-24818",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#fortify"
     },
     {
       "extId": "cvwr-villain-heroes-for-hire-tarantula",
@@ -3241,11 +3263,11 @@
       "cardName": "Tombstone",
       "set": "dkcy",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "dkcy-villain-marauders-vertigo",
@@ -3483,22 +3505,22 @@
       "cardName": "Firelord",
       "set": "ff04",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "ff04-villain-subterranea-giganto",
       "cardName": "Giganto",
       "set": "ff04",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "add-next-hand-size",
+      "status": "executable",
+      "wp": "WP-543",
+      "decision": "D-24352",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#add-next-hand-size"
     },
     {
       "extId": "ff04-villain-subterranea-megataur",
@@ -3747,11 +3769,11 @@
       "cardName": "Meatmarket",
       "set": "mdns",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "wp": "WP-760",
+      "decision": "D-24589",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current"
     },
     {
       "extId": "mdns-villain-fallen-metarchus",
@@ -4099,11 +4121,11 @@
       "cardName": "Outriders",
       "set": "msis",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "wp": "WP-760",
+      "decision": "D-24589",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current"
     },
     {
       "extId": "msis-villain-children-of-thanos-proxima-midnight",
@@ -4132,11 +4154,11 @@
       "cardName": "The Mind Stone",
       "set": "msis",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "hq-heroes-cost-change",
+      "status": "executable",
+      "wp": "WP-868",
+      "decision": "D-24811",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hq-heroes-cost-change"
     },
     {
       "extId": "msis-villain-infinity-stones-the-power-stone",
@@ -4396,11 +4418,11 @@
       "cardName": "Silver Samurai",
       "set": "msmc",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-from-discard-current",
+      "status": "executable",
+      "wp": "WP-868",
+      "decision": "D-24811",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-from-discard-current"
     },
     {
       "extId": "msmc-villain-reavers-skullbuster",
@@ -4550,11 +4572,11 @@
       "cardName": "Frost Giant",
       "set": "msp1",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "msp1-villain-hydra-hydra-motorcycle-squad",
@@ -4638,11 +4660,11 @@
       "cardName": "Laufey, Frost Giant King",
       "set": "msp1",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "msp1-villain-gamma-hunters-lt-gen-thunderbolt-ross",
@@ -4693,11 +4715,11 @@
       "cardName": "Whiplash",
       "set": "msp1",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "nmut-villain-hellions-catseye",
@@ -5034,11 +5056,11 @@
       "cardName": "Sandman",
       "set": "pttr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "pttr-villain-sinister-six-shocker",
@@ -5067,11 +5089,11 @@
       "cardName": "Vulture",
       "set": "pttr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "rlmk-villain-shiar-imperial-elite-gladiator",
@@ -5287,11 +5309,11 @@
       "cardName": "Dark Wolverine (Daken)",
       "set": "rvlt",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "rvlt-villain-army-of-evil-dome-of-darkforce",
@@ -5375,22 +5397,22 @@
       "cardName": "Lightning, The Electro-Blast",
       "set": "rvlt",
       "cardType": "henchman",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-top-may-ko-current",
+      "status": "executable",
+      "wp": "WP-870",
+      "decision": "D-24815",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-top-may-ko-current"
     },
     {
       "extId": "rvlt-villain-lethal-legion-living-laser",
       "cardName": "Living Laser",
       "set": "rvlt",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "rvlt-villain-lethal-legion-mbaku",
@@ -5496,11 +5518,11 @@
       "cardName": "Spin, The Vortex Beam",
       "set": "rvlt",
       "cardType": "henchman",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-top-discard-zero-cost-current",
+      "status": "executable",
+      "wp": "WP-870",
+      "decision": "D-24815",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-top-discard-zero-cost-current"
     },
     {
       "extId": "rvlt-villain-lethal-legion-swordsman",
@@ -5518,11 +5540,11 @@
       "cardName": "The Brothers Grimm",
       "set": "rvlt",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "wp": "WP-760",
+      "decision": "D-24589",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current"
     },
     {
       "extId": "rvlt-villain-hoods-gang-the-dark-dimension",
@@ -5551,11 +5573,11 @@
       "cardName": "Zero, The Ice Blast",
       "set": "rvlt",
       "cardType": "henchman",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "next-hand-from-play-zero-cost-current",
+      "status": "executable",
+      "wp": "WP-870",
+      "decision": "D-24815",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#next-hand-from-play-zero-cost-current"
     },
     {
       "extId": "rvlt-villain-lethal-legion-the-raft-prison",
@@ -5727,11 +5749,11 @@
       "cardName": "Tinkerer",
       "set": "smhc",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "smhc-villain-vulture-tech-turbine-powered",
@@ -6145,11 +6167,11 @@
       "cardName": "Bug, Shiklah's Dragon",
       "set": "ssw2",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-from-discard-current",
+      "status": "executable",
+      "wp": "WP-868",
+      "decision": "D-24811",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-from-discard-current"
     },
     {
       "extId": "ssw2-villain-deadpools-secret-secret-wars-deadpool",
@@ -6178,10 +6200,10 @@
       "cardName": "Doop",
       "set": "ssw2",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
+      "mechanic": "setup:fight-restriction",
+      "status": "subsystem",
+      "wp": "WP-871",
+      "decision": "D-24816",
       "handler": ""
     },
     {
@@ -6783,22 +6805,22 @@
       "cardName": "Agony",
       "set": "vnom",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "vnom-villain-life-foundation-dr-carlton-drake",
       "cardName": "Dr. Carlton Drake",
       "set": "vnom",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "hq-heroes-cost-change",
+      "status": "executable",
+      "wp": "WP-868",
+      "decision": "D-24811",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hq-heroes-cost-change"
     },
     {
       "extId": "vnom-villain-life-foundation-lasher",
@@ -7058,11 +7080,11 @@
       "cardName": "Captain Marvel, End of the Party",
       "set": "wtif",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "wtif-villain-black-order-guards-corvus-glaive",
@@ -7817,11 +7839,11 @@
       "cardName": "Red She-Hulk",
       "set": "wwhk",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "henchman-sakaaran-hivelings",
@@ -7883,11 +7905,11 @@
       "cardName": "Vapor",
       "set": "wwhk",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "wwhk-villain-u-foes-vector",
@@ -8121,6 +8143,17 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
+      "extId": "xmen-villain-sisterhood-of-mutants-lady-deathstrike",
+      "cardName": "Lady Deathstrike",
+      "set": "xmen",
+      "cardType": "villain",
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
+    },
+    {
       "extId": "xmen-villain-sisterhood-of-mutants-lady-mastermind",
       "cardName": "Lady Mastermind",
       "set": "xmen",
@@ -8323,11 +8356,11 @@
       "cardName": "Smasher",
       "set": "xmen",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-from-discard-current",
+      "status": "executable",
+      "wp": "WP-868",
+      "decision": "D-24811",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-from-discard-current"
     },
     {
       "extId": "xmen-villain-mojoverse-spiral",

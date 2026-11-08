@@ -46,6 +46,11 @@ import { resolveDeferredHeroGrants } from '../../hero/heroEffects.execute.js';
 import { openNonActiveReturnOnDiscardSeatChoiceIfNeeded } from '../../moves/resolveReturnOnDiscard.js';
 import { openEscapeProcedureSeatChoiceIfNeeded } from '../../villainDeck/villainEscapeProcedure.js';
 import { openRevealOrWoundSeatChoiceIfNeeded } from '../../moves/revealOrWoundChoice.logic.js';
+import { openNextHandFromPlaySeatChoiceIfNeeded } from '../../moves/nextHandFromPlay.logic.js';
+// why: WP-875 / D-24822 — the lockstep partner of the simulation.runner.ts Mandarin Ring-entry
+// mirror; an entry's escape needs the implementation map.
+import { openMandarinRingEntriesIfNeeded } from '../../moves/mandarinRingEntry.logic.js';
+import { DEFAULT_IMPLEMENTATION_MAP } from '../../rules/ruleRuntime.impl.js';
 import { applyEndOfTurnCleanup } from '../../moves/endOfTurnCleanup.logic.js';
 import { replayOutOfTimeCards } from '../../moves/outOfTime.logic.js';
 import { revealVillainCard } from '../../villainDeck/villainDeck.reveal.js';
@@ -424,6 +429,24 @@ function dispatchSingleMove(
   // replay must park it too. Directly after the escape opener (this harness has no depletion
   // re-check to order against).
   openRevealOrWoundSeatChoiceIfNeeded(gameState, undefined, cursor.currentPlayer);
+  // why: WP-875 / D-24822 — mirror the live Mandarin Ring-entry opener at its live position (right
+  // after the reveal-or-wound opener), then the re-run escape opener and the re-run reveal-or-wound
+  // opener (this harness mirrors neither the final-turn latch nor pile depletion). The
+  // RevealContext is built from this harness's own locals (the ACTIVE seat and the real turn), never
+  // the acting seat's seatChoiceContext or the possibly-undefined dispatched move context.
+  openMandarinRingEntriesIfNeeded(
+    gameState,
+    undefined,
+    cursor.currentPlayer,
+    { random: { Shuffle: <T>(deck: T[]): T[] => shuffleWithPrng(deck, nextRandom) }, ctx: { currentPlayer: cursor.currentPlayer, turn: cursor.turn } },
+    DEFAULT_IMPLEMENTATION_MAP,
+  );
+  openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, cursor.currentPlayer);
+  openRevealOrWoundSeatChoiceIfNeeded(gameState, undefined, cursor.currentPlayer);
+  // why: WP-870 / D-24815 — the lockstep partner of the simulation.runner.ts owed Zero pick
+  // mirror: a sim-captured trace answers the pick with resolveSeatChoice moves, so the replay must
+  // park it too (this harness never runs onMove).
+  openNextHandFromPlaySeatChoiceIfNeeded(gameState, undefined, cursor.currentPlayer);
 
   if (endTurnFlag.triggered) {
     rotateToNextTurn(gameState, cursor, fixture.input.playerOrder, numPlayers, nextRandom, endTurnFlag.nextPlayer);

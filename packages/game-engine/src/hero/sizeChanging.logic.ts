@@ -25,6 +25,7 @@
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { playedCardIdsThisTurn } from './splitCard.logic.js';
+import { getHqCostChange } from './hqCostChange.logic.js';
 
 // why: a frozen shared empty result so the common no-entry path allocates nothing and
 // callers can iterate it safely without a null check.
@@ -139,7 +140,8 @@ export function cardHasClassWhenPlayed(
 /**
  * Returns the cost a player pays to recruit a Hero right now, after Size-Changing.
  *
- * The printed G.cardStats cost, minus 2 for each Size-Changing class with a matching card the
+ * The printed G.cardStats cost, plus any "this turn" HQ cost change while the card is in the HQ
+ * (floored at 0, D-24811), minus 2 for each Size-Changing class with a matching card the
  * player played this turn (floored at 0), minus 2 for each Microscopic icon matched by its own
  * played card. The Microscopic step may take the result below 0; a negative result is Recruit
  * the player gains by recruiting the card (rules v23 p.30).
@@ -155,6 +157,11 @@ export function resolveRecruitCost(
   cardId: CardExtId,
 ): number {
   const printedCost = G.cardStats[cardId]?.cost ?? 0;
+  // why: WP-868 / D-24811 — a "Heroes currently in the HQ cost N less / more this turn" change
+  // applies first, only while the card is in the HQ (getHqCostChange returns 0 otherwise), and
+  // never takes the price below 0; Size-Changing then discounts the changed price. Only the
+  // recruit price moves: every other cost read keeps the printed cost, as with D-24801.
+  const changedCost = Math.max(0, printedCost + getHqCostChange(G, cardId));
   // why: WP-862 / D-24804 — priced through the HQ-card reader, so a Size-Changing granted
   // during play (G.hqSizeChangingGrants) discounts the card while it sits in the HQ. With no
   // grant the reader returns the printed lists, so every other price is unchanged.
@@ -162,7 +169,7 @@ export function resolveRecruitCost(
   return applySizeChangingDiscount(
     G,
     playerID,
-    printedCost,
+    changedCost,
     sizeChanging.classes,
     sizeChanging.microscopicIcons,
   );

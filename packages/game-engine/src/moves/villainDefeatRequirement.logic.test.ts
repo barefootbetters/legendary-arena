@@ -19,10 +19,16 @@ import {
   listEligibleHandCardsByTrait,
   selectDefaultCostDiscardCard,
   formatEligibleCostList,
+  getFightRestriction,
+  matchHasFightRestrictionKind,
+  isFightRestrictionBlocking,
+  getFightRestrictionBlockReason,
+  FIGHT_RESTRICTION_REASONS,
+  findFightableFortifier,
 } from './villainDefeatRequirement.logic.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
-import type { VillainDefeatRequirement } from '../rules/villainAbility.types.js';
+import type { VillainDefeatRequirement, VillainFightRestriction } from '../rules/villainAbility.types.js';
 
 /**
  * Builds a minimal game state for the gate helpers: one player's zones, a card
@@ -326,5 +332,215 @@ describe('WP-837 listEligibleHandCardsByTrait (D-24770)', () => {
     );
     assert.deepStrictEqual(listEligibleHandCardsByTrait(state, '9', { kind: 'team', value: 'x-men' }), []);
     assert.deepStrictEqual(state.playerZones['0']!.hand, hand, 'the hand is not mutated');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-871 / D-24816 — fight restriction helpers
+// ---------------------------------------------------------------------------
+
+describe('WP-871 fight restriction helpers (D-24816)', () => {
+  const ORRGO = 'chmp-villain-monsters-unleashed-orrgo-00';
+  const SQUIRREL_GIRL = 'cvwr-villain-great-lakes-avengers-squirrel-girl-00';
+  const DOOP = 'ssw2-villain-deadpools-secret-secret-wars-doop-00';
+  const PLAIN = 'core-villain-hydra-hydra-kidnappers-00';
+  const DEFEATED_FIRST: VillainFightRestriction = { kind: 'requires-villain-defeated-this-turn' };
+  const ONE_CARD: VillainFightRestriction = { kind: 'at-most-one-card-played' };
+  const NO_NEIGHBOUR: VillainFightRestriction = { kind: 'no-adjacent-villain' };
+
+  /**
+   * Builds a minimal state for the restriction helpers: one player's inPlay, the
+   * City, a turn economy and an optional restriction table. Cast through unknown
+   * because only the fields the helpers read are populated.
+   */
+  function makeRestrictionState(options: {
+    city?: (CardExtId | null)[];
+    inPlay?: CardExtId[];
+    turnEconomy?: Record<string, unknown>;
+    restrictions?: Record<string, VillainFightRestriction>;
+  }): LegendaryGameState {
+    const state = {
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: options.inPlay ?? [], victory: [] },
+      },
+      city: options.city ?? [null, null, null, null, null],
+      turnEconomy: options.turnEconomy ?? {},
+      ...(options.restrictions ? { villainFightRestrictions: options.restrictions } : {}),
+    };
+    return state as unknown as LegendaryGameState;
+  }
+
+  it('T6: requires-villain-defeated-this-turn blocks until the flag is true', () => {
+    assert.equal(isFightRestrictionBlocking(makeRestrictionState({}), '0', 0, DEFEATED_FIRST), true);
+    const afterDefeat = makeRestrictionState({ turnEconomy: { hasDefeatedVillainThisTurn: true } });
+    assert.equal(isFightRestrictionBlocking(afterDefeat, '0', 0, DEFEATED_FIRST), false);
+  });
+
+  it('T7: at-most-one-card-played blocks only past one played card, counting a returned Sidekick', () => {
+    assert.equal(isFightRestrictionBlocking(makeRestrictionState({ inPlay: [] }), '0', 0, ONE_CARD), false);
+    assert.equal(isFightRestrictionBlocking(makeRestrictionState({ inPlay: ['hero-a'] }), '0', 0, ONE_CARD), false);
+    assert.equal(
+      isFightRestrictionBlocking(makeRestrictionState({ inPlay: ['hero-a', 'hero-b'] }), '0', 0, ONE_CARD),
+      true,
+    );
+    const sidekickReturned = makeRestrictionState({
+      inPlay: ['hero-a'],
+      turnEconomy: { sidekicksReturnedThisTurn: 1 },
+    });
+    assert.equal(
+      isFightRestrictionBlocking(sidekickReturned, '0', 0, ONE_CARD),
+      true,
+      'the returned Sidekick still counts as played (playedCardIdsThisTurn)',
+    );
+  });
+
+  it('T8: no-adjacent-villain blocks exactly when a neighbour inside the City is occupied', () => {
+    for (const cityIndex of [0, 2, 4]) {
+      const city: (CardExtId | null)[] = [null, null, null, null, null];
+      city[cityIndex] = DOOP;
+      assert.equal(
+        isFightRestrictionBlocking(makeRestrictionState({ city }), '0', cityIndex, NO_NEIGHBOUR),
+        false,
+        `index ${cityIndex} with empty neighbours`,
+      );
+    }
+    const leftFilled: (CardExtId | null)[] = [null, PLAIN, DOOP, null, null];
+    assert.equal(isFightRestrictionBlocking(makeRestrictionState({ city: leftFilled }), '0', 2, NO_NEIGHBOUR), true);
+    const rightFilled: (CardExtId | null)[] = [null, null, DOOP, PLAIN, null];
+    assert.equal(isFightRestrictionBlocking(makeRestrictionState({ city: rightFilled }), '0', 2, NO_NEIGHBOUR), true);
+    const edgeLeftNeighbour: (CardExtId | null)[] = [DOOP, PLAIN, null, null, null];
+    assert.equal(
+      isFightRestrictionBlocking(makeRestrictionState({ city: edgeLeftNeighbour }), '0', 0, NO_NEIGHBOUR),
+      true,
+    );
+    const edgeRightNeighbour: (CardExtId | null)[] = [null, null, null, PLAIN, DOOP];
+    assert.equal(
+      isFightRestrictionBlocking(makeRestrictionState({ city: edgeRightNeighbour }), '0', 4, NO_NEIGHBOUR),
+      true,
+    );
+    const farEnd: (CardExtId | null)[] = [DOOP, null, null, null, PLAIN];
+    assert.equal(
+      isFightRestrictionBlocking(makeRestrictionState({ city: farEnd }), '0', 0, NO_NEIGHBOUR),
+      false,
+      'the City never wraps: index 4 is not a neighbour of index 0',
+    );
+    const sixSpaces: (CardExtId | null)[] = [null, null, null, null, PLAIN, DOOP];
+    assert.equal(
+      isFightRestrictionBlocking(makeRestrictionState({ city: sixSpaces }), '0', 5, NO_NEIGHBOUR),
+      true,
+      'a resized City (D-24764): index 5 has index 4 as a neighbour',
+    );
+    const sixSpacesEmpty: (CardExtId | null)[] = [null, null, null, null, null, DOOP];
+    assert.equal(
+      isFightRestrictionBlocking(makeRestrictionState({ city: sixSpacesEmpty }), '0', 5, NO_NEIGHBOUR),
+      false,
+      'no read past the end of the City counts',
+    );
+  });
+
+  it('T9: getFightRestrictionBlockReason returns the locked reason only while blocking', () => {
+    assert.deepEqual(FIGHT_RESTRICTION_REASONS, {
+      'requires-villain-defeated-this-turn': 'Defeat another Villain first this turn',
+      'at-most-one-card-played': 'You played more than one card this turn',
+      'no-adjacent-villain': 'A Villain is in an adjacent city space',
+    });
+    const restrictions = { [ORRGO]: DEFEATED_FIRST, [SQUIRREL_GIRL]: ONE_CARD, [DOOP]: NO_NEIGHBOUR };
+    const blocked = makeRestrictionState({
+      city: [ORRGO, null, SQUIRREL_GIRL, DOOP, PLAIN],
+      inPlay: ['hero-a', 'hero-b'],
+      restrictions,
+    });
+    assert.equal(getFightRestrictionBlockReason(blocked, '0', 0), 'Defeat another Villain first this turn');
+    assert.equal(getFightRestrictionBlockReason(blocked, '0', 2), 'You played more than one card this turn');
+    assert.equal(getFightRestrictionBlockReason(blocked, '0', 3), 'A Villain is in an adjacent city space');
+    assert.equal(getFightRestrictionBlockReason(blocked, '0', 1), null, 'an empty space');
+    assert.equal(getFightRestrictionBlockReason(blocked, '0', 4), null, 'an unrestricted villain');
+    const satisfied = makeRestrictionState({
+      city: [ORRGO, null, SQUIRREL_GIRL, null, DOOP],
+      inPlay: ['hero-a'],
+      turnEconomy: { hasDefeatedVillainThisTurn: true },
+      restrictions,
+    });
+    assert.equal(getFightRestrictionBlockReason(satisfied, '0', 0), null);
+    assert.equal(getFightRestrictionBlockReason(satisfied, '0', 2), null);
+    assert.equal(getFightRestrictionBlockReason(satisfied, '0', 4), null);
+    assert.equal(getFightRestriction(satisfied, PLAIN), null);
+    assert.deepEqual(getFightRestriction(satisfied, DOOP), NO_NEIGHBOUR);
+  });
+
+  it('T10: matchHasFightRestrictionKind finds a kind only when an entry has it', () => {
+    const withOrrgo = makeRestrictionState({ restrictions: { [ORRGO]: DEFEATED_FIRST, [DOOP]: NO_NEIGHBOUR } });
+    assert.equal(matchHasFightRestrictionKind(withOrrgo, 'requires-villain-defeated-this-turn'), true);
+    const doopOnly = makeRestrictionState({ restrictions: { [DOOP]: NO_NEIGHBOUR } });
+    assert.equal(matchHasFightRestrictionKind(doopOnly, 'requires-villain-defeated-this-turn'), false);
+    assert.equal(matchHasFightRestrictionKind(makeRestrictionState({}), 'requires-villain-defeated-this-turn'), false);
+  });
+});
+
+describe('WP-873 fortifier helpers (D-24818)', () => {
+  const SQUIRREL_GIRL = 'cvwr-villain-great-lakes-avengers-squirrel-girl-00' as CardExtId;
+  const NEIGHBOUR_A = 'test-villain-neighbour-a-00' as CardExtId;
+  const NEIGHBOUR_B = 'test-villain-neighbour-b-00' as CardExtId;
+
+  /**
+   * Builds a state with Squirrel Girl fortifying the Sidekick Stack, her restriction, a
+   * printed fight cost of 3 and the given attack and cards in play. Cast through unknown
+   * because only the fields the helpers read are populated.
+   */
+  function makeFortifiedState(options: {
+    attack: number;
+    inPlay?: CardExtId[];
+    hand?: CardExtId[];
+    requirements?: Record<string, VillainDefeatRequirement>;
+    discardCosts?: Record<string, { eligibleCosts: number[] }>;
+    withTable?: boolean;
+  }): LegendaryGameState {
+    const state = {
+      playerZones: {
+        '0': { deck: [], hand: options.hand ?? [], discard: [], inPlay: options.inPlay ?? [], victory: [] },
+      },
+      city: [NEIGHBOUR_A, NEIGHBOUR_B, null, null, null],
+      hq: [null, null, null, null, null],
+      cardTraits: {},
+      cardStats: {
+        [SQUIRREL_GIRL]: { attack: 0, recruit: 0, cost: 0, fightCost: 3, fightCostMode: 'static', fightCostBase: 0 },
+      },
+      villainAttachedHeroes: {},
+      escapedPile: [],
+      turnEconomy: { attack: options.attack, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+      villainFightRestrictions: { [SQUIRREL_GIRL]: { kind: 'at-most-one-card-played' } },
+      ...(options.requirements ? { villainDefeatRequirements: options.requirements } : {}),
+      ...(options.discardCosts ? { villainFightDiscardCosts: options.discardCosts } : {}),
+      ...(options.withTable === false
+        ? {}
+        : { fortifications: { 'sidekick-stack': { villainCardId: SQUIRREL_GIRL, lock: 'no-recruit-or-gain' } } }),
+    };
+    return state as unknown as LegendaryGameState;
+  }
+
+  it('T18: isFightRestrictionBlocking with a null City index never blocks on adjacency', () => {
+    const state = makeFortifiedState({ attack: 0 });
+    assert.equal(isFightRestrictionBlocking(state, '0', null, { kind: 'no-adjacent-villain' }), false);
+    assert.equal(isFightRestrictionBlocking(state, '0', 0, { kind: 'no-adjacent-villain' }), true, 'index 0 still sees index 1');
+    assert.equal(isFightRestrictionBlocking(state, '0', null, { kind: 'requires-villain-defeated-this-turn' }), true);
+    const twoPlayed = makeFortifiedState({ attack: 0, inPlay: ['hero-a', 'hero-b'] as CardExtId[] });
+    assert.equal(isFightRestrictionBlocking(twoPlayed, '0', null, { kind: 'at-most-one-card-played' }), true);
+  });
+
+  it('T33: findFightableFortifier refuses each of its six checks and returns the fightable one', () => {
+    assert.equal(findFightableFortifier(makeFortifiedState({ attack: 3 }), '0', 'wound-stack'), null, 'not a place');
+    assert.equal(findFightableFortifier(makeFortifiedState({ attack: 3, withTable: false }), '0', 'sidekick-stack'), null, 'no entry');
+    assert.equal(findFightableFortifier(makeFortifiedState({ attack: 2 }), '0', 'sidekick-stack'), null, 'short attack');
+    const requirement = makeFortifiedState({ attack: 3, requirements: { [SQUIRREL_GIRL]: { kind: 'team', value: 'x-men' } } });
+    assert.equal(findFightableFortifier(requirement, '0', 'sidekick-stack'), null, 'defeat requirement unmet');
+    const restricted = makeFortifiedState({ attack: 3, inPlay: ['hero-a', 'hero-b'] as CardExtId[] });
+    assert.equal(findFightableFortifier(restricted, '0', 'sidekick-stack'), null, 'fight restriction blocks');
+    const discardCost = makeFortifiedState({ attack: 3, discardCosts: { [SQUIRREL_GIRL]: { eligibleCosts: [2] } } });
+    assert.equal(findFightableFortifier(discardCost, '0', 'sidekick-stack'), null, 'a discard cost fails closed');
+    assert.deepStrictEqual(findFightableFortifier(makeFortifiedState({ attack: 3 }), '0', 'sidekick-stack'), {
+      cardId: SQUIRREL_GIRL,
+      price: 3,
+      required: 3,
+    });
   });
 });

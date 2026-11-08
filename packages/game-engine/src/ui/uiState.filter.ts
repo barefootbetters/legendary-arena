@@ -27,6 +27,7 @@ import type {
   UIPlayerState,
   UITurnEconomyState,
   UICityCard,
+  UIFortifier,
   UIHQCard,
   UIHQHaunter,
   UIDisplayEntry,
@@ -92,6 +93,33 @@ function buildVillainAttachedHeroesFilterCopy(
   return result;
 }
 
+/**
+ * Rebuilds the fortifier tiles field by field (WP-873 / D-24818).
+ *
+ * // why: every field is public (a fortifier is face up on the table); `display` is
+ * deep-copied like a City card's so the filtered state never aliases the input.
+ *
+ * @param fortifiers - The projected fortifier tiles.
+ * @returns Fresh copies, in the same order.
+ */
+function deepCopyFortifiers(fortifiers: UIFortifier[]): UIFortifier[] {
+  const result: UIFortifier[] = [];
+  for (const fortifier of fortifiers) {
+    result.push({
+      place: fortifier.place,
+      placeLabel: fortifier.placeLabel,
+      extId: fortifier.extId,
+      display: { ...fortifier.display },
+      fightCost: fortifier.fightCost,
+      lockText: fortifier.lockText,
+      ...(fortifier.fightRestrictionReason !== undefined
+        ? { fightRestrictionReason: fortifier.fightRestrictionReason }
+        : {}),
+    });
+  }
+  return result;
+}
+
 // why: WP-111 — City display is public; shallow copies at every level
 // prevent aliasing with the input UIState's card objects. Mirrors the
 // WP-028 cardKeywords post-mortem aliasing-prevention precedent.
@@ -121,6 +149,12 @@ function deepCopyCitySpaces(
         // spread (never a literal undefined) with a fresh array copy.
         ...(space.fightDiscardCosts !== undefined
           ? { fightDiscardCosts: [...space.fightDiscardCosts] }
+          : {}),
+        // why: WP-871 / D-24816 — the public fight-restriction reason MUST pass through
+        // here or the whitelist drops it (five-step contract, step 3): the Fight button
+        // would look enabled while the engine refuses the fight. Every audience.
+        ...(space.fightRestrictionReason !== undefined
+          ? { fightRestrictionReason: space.fightRestrictionReason }
           : {}),
       });
     }
@@ -604,6 +638,14 @@ export function filterUIStateForAudience(
     city: {
       spaces: deepCopyCitySpaces(uiState.city.spaces),
       escapedPile: deepCopyDisplayEntries(uiState.city.escapedPile),
+      // why: WP-873 / D-24818 — the fortifying Villains are public shared-board information
+      // for every audience and MUST survive this field-by-field whitelist (five-step UIState
+      // contract, step 3). Optional, so TypeScript does not flag a missing pass-through (the
+      // EC-206 drop). Conditional spread keeps it omit-when-absent; entries are rebuilt field
+      // by field so nothing aliases the input.
+      ...(uiState.city.fortifiers !== undefined
+        ? { fortifiers: deepCopyFortifiers(uiState.city.fortifiers) }
+        : {}),
     },
     hq: {
       slots: [...uiState.hq.slots],
@@ -681,6 +723,12 @@ export function filterUIStateForAudience(
       // information for every audience; optional, so it MUST be passed through here or
       // it is silently dropped (the EC-206 failure mode). Omit-when-absent.
       ...(uiState.mastermind.isHaunting === true ? { isHaunting: true as const } : {}),
+      // why: WP-873 / D-24818 — "a Villain fortifies the Mastermind" is public shared-board
+      // information; the Mastermind object is a field-by-field whitelist, so the optional
+      // reason MUST be passed through here or it is silently dropped (the PR #1165 class).
+      ...(uiState.mastermind.fortifiedReason !== undefined
+        ? { fortifiedReason: uiState.mastermind.fortifiedReason }
+        : {}),
     },
     scheme: {
       id: uiState.scheme.id,
@@ -765,6 +813,12 @@ export function filterUIStateForAudience(
       // same way, so the filtered UIState never aliases the full one's object.
       ...(uiState.piles.sidekickDisplay !== undefined
         ? { sidekickDisplay: { ...uiState.piles.sidekickDisplay } }
+        : {}),
+      // why: WP-873 / D-24818 — the Sidekick Stack's Fortify reason is public. The
+      // `...uiState.piles` spread above already carries this primitive; the explicit
+      // conditional spread documents the five-step pass-through and stays omit-when-absent.
+      ...(uiState.piles.sidekickStackFortifiedReason !== undefined
+        ? { sidekickStackFortifiedReason: uiState.piles.sidekickStackFortifiedReason }
         : {}),
     },
     koPile: deepCopyKoPile(uiState.koPile),
@@ -1167,6 +1221,12 @@ export function filterUIStateForAudience(
       // chooser (the whitelist drops any field it does not name); omitted on every other entry.
       ...(uiState.pendingKoDiscardChoice.isLimitedToDiscardedThisWay === true
         ? { isLimitedToDiscardedThisWay: true }
+        : {}),
+      // why: WP-868 / D-24811 — pass the mandatory minimum through to the chooser (the whitelist
+      // drops any field it does not name, and a dropped minCount would offer "KO None" on
+      // Flatman's mandatory KO); omitted on every "up to N" entry.
+      ...(uiState.pendingKoDiscardChoice.minCount !== undefined
+        ? { minCount: uiState.pendingKoDiscardChoice.minCount }
         : {}),
       discard: discardCopy,
     };

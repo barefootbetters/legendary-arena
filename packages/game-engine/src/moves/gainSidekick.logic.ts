@@ -20,6 +20,7 @@
  */
 
 import type { LegendaryGameState } from '../types.js';
+import { isSidekickStackFortified } from '../board/fortify.logic.js';
 
 /**
  * Gains one Sidekick from the Sidekick Stack into a player's DISCARD pile (WP-844 / D-24778).
@@ -37,6 +38,11 @@ import type { LegendaryGameState } from '../types.js';
  *   player's zones were missing.
  */
 export function gainSidekickToDiscard(G: LegendaryGameState, playerID: string): boolean {
+  // why: WP-873 / D-24818 — "Sidekicks can't be recruited or gained" while the Sidekick Stack
+  // is fortified; this is the one card-effect gain chokepoint, so every gain path is locked.
+  if (isSidekickStackFortified(G)) {
+    return false;
+  }
   const sidekickId = G.piles.sidekicks[0];
   if (sidekickId === null || sidekickId === undefined) {
     return false;

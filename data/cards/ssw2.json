@@ -630,7 +630,7 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "When you draw a new hand of cards at the end of this turn, draw three extra cards."
+            "When you draw a new hand of cards at the end of this turn, draw three extra cards. [keyword:next-hand-extra-draw:3]"
           ]
         }
       ],
@@ -2054,7 +2054,7 @@
           "vAttack": "2",
           "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-vi-deadpools-secret-secret-wars-doop.webp",
           "abilities": [
-            "You can't fight Doop if there is a Villain in an adjacent city space."
+            "You can't fight Doop if there is a Villain in an adjacent city space. [fight-restriction:no-adjacent-villain]"
           ],
           "copies": 2
         },
@@ -2222,7 +2222,7 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-vi-monster-metropolis-bug-shiklahs-dragon.webp",
           "abilities": [
-            "Fight: KO a card from your discard pile.",
+            "Fight: KO a card from your discard pile. [effect:ko-from-discard-current:1]",
             "[keyword:Fateful Resurrection]"
           ],
           "copies": 2

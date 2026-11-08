@@ -2,9 +2,10 @@ import '../../testing/jsdom-setup';
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { mount } from '@vue/test-utils';
 import SharedDecks from './SharedDecks.vue';
-import type { UISharedPilesState, UITurnEconomyState } from '@legendary-arena/game-engine';
+import type { UIFortifier, UISharedPilesState, UITurnEconomyState } from '@legendary-arena/game-engine';
 import type { SubmitMove, UiMoveName } from './uiMoveName.types';
 
 interface RecordedCall {
@@ -387,5 +388,93 @@ describe('SharedDecks — card-face-only recruit piles (desktop)', () => {
       wrapper.find('[data-testid="play-recruit-officer"] [data-testid="card-tile"]').attributes('title'),
       'S.H.I.E.L.D. Officers [28] — Recruit: 3\nNeeds 3 recruit, you have 1.',
     );
+  });
+});
+
+describe('SharedDecks — Fortify locks the Sidekick Stack (WP-873 / D-24818)', () => {
+  test('T31: with sidekickStackFortifiedReason set and 2 recruit, Recruit Sidekick is disabled with that reason', async () => {
+    const reason = 'Squirrel Girl fortifies the Sidekick Stack. Fight Squirrel Girl first.';
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(SharedDecks, {
+      props: {
+        piles: piles({ sidekicksCount: 12, sidekickStackFortifiedReason: reason }),
+        currentStage: 'main',
+        isViewerTurn: true,
+        economy: economy({ recruit: 2, availableRecruit: 2 }),
+        submitMove,
+      },
+    });
+    const button = wrapper.find('[data-testid="play-recruit-sidekick"]');
+    assert.equal(button.attributes('disabled'), '');
+    assert.equal(button.attributes('title'), reason);
+    await button.trigger('click');
+    assert.equal(calls.length, 0);
+  });
+
+  test('D-24819: the Sidekick Stack fortifier is drawn on the Sidekicks cell, outside the recruit button, and fighting it sends its place', async () => {
+    const reason = 'Squirrel Girl fortifies the Sidekick Stack. Fight Squirrel Girl first.';
+    const squirrelGirl: UIFortifier = {
+      place: 'sidekick-stack',
+      placeLabel: 'the Sidekick Stack',
+      extId: 'cvwr-villain-great-lakes-avengers-squirrel-girl-00',
+      display: { extId: 'cvwr-villain-great-lakes-avengers-squirrel-girl-00', name: 'Squirrel Girl', imageUrl: '', cost: 3 },
+      fightCost: 3,
+      lockText: "Sidekicks can't be recruited or gained",
+    };
+    const colleenWing: UIFortifier = {
+      place: 'mastermind',
+      placeLabel: 'the Mastermind',
+      extId: 'cvwr-villain-heroes-for-hire-colleen-wing-00',
+      display: { extId: 'cvwr-villain-heroes-for-hire-colleen-wing-00', name: 'Colleen Wing', imageUrl: '', cost: 9 },
+      fightCost: 9,
+      lockText: "the Mastermind can't be fought",
+    };
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(SharedDecks, {
+      props: {
+        piles: piles({ sidekicksCount: 12, sidekickStackFortifiedReason: reason }),
+        fortifiers: [squirrelGirl, colleenWing],
+        currentStage: 'main',
+        isViewerTurn: true,
+        economy: economy({ attack: 3, availableAttack: 3 }),
+        submitMove,
+      },
+    });
+    const chips = wrapper.findAll('[data-testid="play-fortifier"]');
+    assert.equal(chips.length, 1, 'only the Sidekick Stack fortifier is drawn on the Sidekicks cell');
+    assert.match(chips[0]!.text(), /Squirrel Girl/);
+    const sidekickCell = wrapper.find('[data-testid="play-shared-deck-sidekicks"]');
+    assert.ok(sidekickCell.element.contains(chips[0]!.element), 'it sits in the Sidekicks cell');
+    const recruitButton = wrapper.find('[data-testid="play-recruit-sidekick"]');
+    assert.equal(recruitButton.element.contains(chips[0]!.element), false, 'not nested inside the recruit button');
+    await wrapper.find('[data-testid="play-fortifier-fight"]').trigger('click');
+    assert.deepStrictEqual(calls, [{ name: 'fightVillain', args: { fortifiedPlace: 'sidekick-stack' } }]);
+  });
+
+  // why: D-24819 — on the tilted desktop board, hovering the Sidekicks cell stands the card up
+  // (WP-854 / D-24790). The fortifier chip lives in that cell, so the lifted card rose over it
+  // and took every click (operator match 6GnBeOwGcXG). jsdom cannot hit-test 3D, so the class
+  // and the selectors that read it are pinned here; the click itself was checked in a browser.
+  test('D-24819: the Sidekicks cell is --fortified exactly while the Stack is fortified, and no stand-up selector lifts it', () => {
+    const reason = 'Squirrel Girl fortifies the Sidekick Stack. Fight Squirrel Girl first.';
+    const { submitMove } = recorder();
+    const fortified = mount(SharedDecks, {
+      props: { piles: piles({ sidekickStackFortifiedReason: reason }), currentStage: 'main', economy: economy(), submitMove },
+    });
+    const cell = fortified.find('[data-testid="play-shared-deck-sidekicks"]');
+    assert.equal(cell.classes().includes('shared-decks__cell--fortified'), true);
+    const open = mount(SharedDecks, {
+      props: { piles: piles(), currentStage: 'main', economy: economy(), submitMove },
+    });
+    assert.equal(open.find('[data-testid="play-shared-deck-sidekicks"]').classes().includes('shared-decks__cell--fortified'), false);
+
+    const sources = [
+      readFileSync(new URL('./SharedDecks.vue', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../pages/PlayDesktop.vue', import.meta.url), 'utf8'),
+    ];
+    for (const source of sources) {
+      assert.equal(source.includes('.shared-decks__cell:hover'), false, 'every stand-up selector must skip a fortified cell');
+      assert.ok(source.includes('.shared-decks__cell:not(.shared-decks__cell--fortified):hover > .shared-decks__recruit'));
+    }
   });
 });

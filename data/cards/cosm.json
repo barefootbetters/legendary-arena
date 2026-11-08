@@ -44,7 +44,7 @@
           "recruit": null,
           "abilities": [
             "To play this, you must discard a card. [keyword:discard-to-play:1]",
-            "When you draw a new hand of cards at the end of this turn, draw two extra cards."
+            "When you draw a new hand of cards at the end of this turn, draw two extra cards. [keyword:next-hand-extra-draw:2]"
           ]
         },
         {
@@ -1457,7 +1457,7 @@
           "imageUrl": "https://images.legendary-arena.com/cosm/cosm-vi-black-order-of-thanos-supergiant.webp",
           "abilities": [
             "Ambush: [keyword:Danger Sense 1], helping all Black Order Villains and the Mastermind. Play a Villain revealed this way.",
-            "Fight: You may KO a card from your discard pile."
+            "Fight: You may KO a card from your discard pile. [effect:ko-up-to-from-discard-current:1]"
           ],
           "copies": 2
         },
@@ -1469,7 +1469,7 @@
           "imageUrl": "https://images.legendary-arena.com/cosm/cosm-vi-black-order-of-thanos-proxima-midnight.webp",
           "abilities": [
             "Ambush: [keyword:Danger Sense 2], helping all Black Order Villains and the Mastermind. Play a Scheme Twist revealed this way.",
-            "Escape: Each player reveals an [hc:instinct] Hero or gains a Wound."
+            "Escape: Each player reveals an [hc:instinct] Hero or gains a Wound. [effect:reveal-or-wound:hc:instinct]"
           ],
           "copies": 1
         },

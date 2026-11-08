@@ -395,6 +395,37 @@ describe('fightVillain — WP-316 Fight: effect log narration', () => {
     );
   });
 
+  // why: D-24644 amendment (2026-11-06) — Super-Skrull's "Each player KOs one of their
+  // Heroes" logged "the active player must KO a hero; Player 1 KO’d …" (Jeff's match
+  // yTdbv34zeV6, 7.2.6), which read as if only the active player loses a Hero.
+  it('an each-player KO (Super-Skrull) logs that every player KOs and who is still choosing', () => {
+    const gameState = createMockGameState({
+      city: ['villain-super-skrull', null, null, null, null],
+      hand: ['core-hero-a', 'core-hero-b'],
+      villainAbilityHooks: [fightHook('villain-super-skrull', 'koHeroEachPlayer')],
+      cardDisplayData: {
+        'starting-shield-agent': { name: 'S.H.I.E.L.D. Agent' },
+      } as unknown as LegendaryGameState['cardDisplayData'],
+    });
+    gameState.playerZones['1'] = {
+      ...makePlayerZones(),
+      hand: ['starting-shield-agent'] as LegendaryGameState['playerZones']['1']['hand'],
+    };
+    const moveContext = createMockMoveContext(gameState);
+
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    const fightLines = moveContext.G.messages
+      .map((entry) => entry.text)
+      .filter((text) => text.startsWith('Fight effect:'));
+    assert.deepStrictEqual(fightLines, [
+      'Fight effect: each player KOs a hero: Player 0 must choose which; '
+        + 'Player 1 KO’d S.H.I.E.L.D. Agent from their hand.',
+    ]);
+    assert.deepStrictEqual(moveContext.G.pendingKoHeroChoices, [{ choiceType: 'ko-hero', playerID: '0' }]);
+    assert.deepStrictEqual(moveContext.G.playerZones['1']!.hand, [], 'the other player auto-KO’d their only Hero');
+  });
+
   it('an effectless fight pushes no Fight effect line', () => {
     const gameState = createMockGameState({
       city: ['villain-a', null, null, null, null],
@@ -593,6 +624,23 @@ describe('defeatCityVillainCore — Skrull defeat-to-gain (WP-514 / D-24327)', (
       gameState.messages.some((message) => message.text.includes('gained the Hero')),
       'a gain log line is emitted (no untrailed hero in the deck)',
     );
+  });
+
+  it('logs the Skrull gain line right after the fought line, never before it', () => {
+    const gameState = createMockGameState({
+      city: ['hero-skrull', null, null, null, null],
+    });
+    gameState.convertedVillainOrigins = {
+      'hero-skrull': 'skrull',
+    } as LegendaryGameState['convertedVillainOrigins'];
+
+    defeatCityVillainCore(gameState, { currentPlayer: '0' }, 0, shuffleContext);
+
+    const texts = gameState.messages.map((message) => message.text);
+    const foughtIndex = texts.findIndex((text) => text.startsWith('Player 0 fought '));
+    const gainIndex = texts.findIndex((text) => text.includes('and gained the Hero into their discard pile'));
+    assert.ok(foughtIndex >= 0 && gainIndex >= 0, texts.join(' | '));
+    assert.equal(gainIndex, foughtIndex + 1, 'the gain line follows the fight that caused it');
   });
 
   it('WP-518: the fightResolved overlay narrative announces the Skrull gain', () => {
@@ -1966,5 +2014,150 @@ describe('fightVillain — Size-Changing fight discount (D-24802)', () => {
     assert.ok(moveContext.G.playerZones['0']!.victory.includes('villain-a'), 'defeated');
     assert.equal(moveContext.G.turnEconomy.spentAttack, 2);
     assert.ok(moveContext.G.messages.every((entry) => !entry.text.startsWith('Size-Changing')));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-871 / D-24816 — villain fight restrictions (Orrgo, Squirrel Girl, Doop)
+// ---------------------------------------------------------------------------
+
+describe('WP-871 fightVillain — villain fight restrictions (D-24816)', () => {
+  const ORRGO = 'chmp-villain-monsters-unleashed-orrgo-00';
+  const SQUIRREL_GIRL = 'cvwr-villain-great-lakes-avengers-squirrel-girl-00';
+  const DOOP = 'ssw2-villain-deadpools-secret-secret-wars-doop-00';
+  const PLAIN = 'core-villain-hydra-hydra-kidnappers-00';
+  const OTHER_PLAIN = 'core-villain-hydra-endless-armies-of-hydra-00';
+  const shuffleContext = { random: makeMockCtx({ numPlayers: 1 }).random };
+
+  /**
+   * A fight state with the given City, attack and cards in play; the restriction
+   * table is set only when `restrictions` is given (the omit-when-empty shape).
+   */
+  function restrictionState(options: {
+    city: LegendaryGameState['city'];
+    attack: number;
+    inPlay?: string[];
+    restrictions?: LegendaryGameState['villainFightRestrictions'];
+  }): LegendaryGameState {
+    const gameState = createMockGameState({ city: options.city, inPlay: options.inPlay ?? [] });
+    gameState.cardStats[ORRGO as CardExtId] = makeCardStatEntry({ fightCost: 2 });
+    gameState.cardStats[SQUIRREL_GIRL as CardExtId] = makeCardStatEntry({ fightCost: 3 });
+    gameState.cardStats[DOOP as CardExtId] = makeCardStatEntry({ fightCost: 2 });
+    gameState.cardStats[PLAIN as CardExtId] = makeCardStatEntry({ fightCost: 1 });
+    gameState.cardStats[OTHER_PLAIN as CardExtId] = makeCardStatEntry({ fightCost: 1 });
+    if (options.restrictions !== undefined) {
+      gameState.villainFightRestrictions = options.restrictions;
+    }
+    gameState.turnEconomy = makeTurnEconomy({ attack: options.attack });
+    return gameState;
+  }
+
+  /** Fights a City index and asserts G is deep-equal before and after (a silent refusal). */
+  function assertFightRefused(gameState: LegendaryGameState, args: { cityIndex: number; useExcessiveViolence?: boolean }): void {
+    const before = JSON.parse(JSON.stringify(gameState)) as unknown;
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, args);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(moveContext.G)), before, `${JSON.stringify(args)} must not mutate G`);
+  }
+
+  const ORRGO_TABLE = { [ORRGO]: { kind: 'requires-villain-defeated-this-turn' as const } };
+
+  it('T11: Orrgo with no prior defeat this turn is refused silently', () => {
+    assertFightRefused(restrictionState({ city: [null, ORRGO, null, null, null], attack: 5, restrictions: ORRGO_TABLE }), {
+      cityIndex: 1,
+    });
+  });
+
+  it('T12: fighting another Villain first sets the flag (surviving the cost spend) and Orrgo is then fightable', () => {
+    const moveContext = createMockMoveContext(
+      restrictionState({ city: [PLAIN, ORRGO, null, null, null], attack: 5, restrictions: ORRGO_TABLE }),
+    );
+    fightVillain(moveContext, { cityIndex: 0 });
+    assert.equal(moveContext.G.turnEconomy.hasDefeatedVillainThisTurn, true, 'the core set the flag and the spend kept it');
+    fightVillain(moveContext, { cityIndex: 1 });
+    const victory = moveContext.G.playerZones['0']!.victory;
+    assert.ok(victory.includes(PLAIN), 'the plain villain is defeated');
+    assert.ok(victory.includes(ORRGO), 'Orrgo is defeated');
+  });
+
+  it('T13: a free defeat through defeatCityVillainCore counts as the earlier defeat', () => {
+    const moveContext = createMockMoveContext(
+      restrictionState({ city: [PLAIN, ORRGO, null, null, null], attack: 5, restrictions: ORRGO_TABLE }),
+    );
+    defeatCityVillainCore(moveContext.G, { currentPlayer: '0' }, 0, shuffleContext);
+    fightVillain(moveContext, { cityIndex: 1 });
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes(ORRGO), 'Orrgo is defeated');
+  });
+
+  it('T14: Squirrel Girl is fought after one played card and refused after two', () => {
+    const table = { [SQUIRREL_GIRL]: { kind: 'at-most-one-card-played' as const } };
+    const oneCard = createMockMoveContext(
+      restrictionState({ city: [SQUIRREL_GIRL, null, null, null, null], attack: 3, inPlay: ['hero-a'], restrictions: table }),
+    );
+    fightVillain(oneCard, { cityIndex: 0 });
+    assert.ok(oneCard.G.playerZones['0']!.victory.includes(SQUIRREL_GIRL), 'fought with one card played');
+    assertFightRefused(
+      restrictionState({
+        city: [SQUIRREL_GIRL, null, null, null, null],
+        attack: 3,
+        inPlay: ['hero-a', 'hero-b'],
+        restrictions: table,
+      }),
+      { cityIndex: 0 },
+    );
+  });
+
+  it('T15: Doop is fought with empty neighbours and refused beside a Villain, with or without Excessive Violence', () => {
+    const table = { [DOOP]: { kind: 'no-adjacent-villain' as const } };
+    const alone = createMockMoveContext(restrictionState({ city: [null, null, DOOP, null, null], attack: 2, restrictions: table }));
+    fightVillain(alone, { cityIndex: 2 });
+    assert.ok(alone.G.playerZones['0']!.victory.includes(DOOP), 'fought with empty neighbours');
+    assertFightRefused(restrictionState({ city: [null, null, DOOP, PLAIN, null], attack: 2, restrictions: table }), {
+      cityIndex: 2,
+    });
+    assertFightRefused(restrictionState({ city: [null, null, DOOP, PLAIN, null], attack: 5, restrictions: table }), {
+      cityIndex: 2,
+      useExcessiveViolence: true,
+    });
+  });
+
+  it('T16: a blocked Doop is still defeated by a free defeat (D-24737)', () => {
+    const table = { [DOOP]: { kind: 'no-adjacent-villain' as const } };
+    const gameState = restrictionState({ city: [null, null, DOOP, PLAIN, null], attack: 0, restrictions: table });
+    defeatCityVillainCore(gameState, { currentPlayer: '0' }, 2, shuffleContext);
+    assert.equal(gameState.city[2], null, 'Doop left the City');
+    assert.ok(gameState.playerZones['0']!.victory.includes(DOOP), 'Doop is defeated');
+  });
+
+  it('T17: a match with only Doop never writes the Orrgo flag', () => {
+    const table = { [DOOP]: { kind: 'no-adjacent-villain' as const } };
+    const moveContext = createMockMoveContext(
+      restrictionState({ city: [PLAIN, null, null, DOOP, OTHER_PLAIN], attack: 5, restrictions: table }),
+    );
+    fightVillain(moveContext, { cityIndex: 0 });
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes(PLAIN), 'the plain villain is defeated');
+    assert.equal('hasDefeatedVillainThisTurn' in moveContext.G.turnEconomy, false, 'no flag key without an Orrgo-kind entry');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-873 / D-24818 — the fortifier routing leaves City fights untouched
+// ---------------------------------------------------------------------------
+
+describe('WP-873 fightVillain — City fights with a fortification present (D-24818)', () => {
+  it('T17: a City fight is resolved exactly as before and the fortification is untouched', () => {
+    const squirrelGirl = 'cvwr-villain-great-lakes-avengers-squirrel-girl-00' as CardExtId;
+    const fortifications = { 'sidekick-stack': { villainCardId: squirrelGirl, lock: 'no-recruit-or-gain' as const } };
+    const withFortify = createMockGameState({ city: ['villain-a', null, null, null, null] });
+    withFortify.fortifications = structuredClone(fortifications);
+    const withoutFortify = createMockGameState({ city: ['villain-a', null, null, null, null] });
+    const fortifiedContext = createMockMoveContext(withFortify);
+    const plainContext = createMockMoveContext(withoutFortify);
+    fightVillain(fortifiedContext, { cityIndex: 0 });
+    fightVillain(plainContext, { cityIndex: 0 });
+    assert.ok(fortifiedContext.G.playerZones['0']!.victory.includes('villain-a'), 'the City villain is defeated');
+    assert.deepStrictEqual(fortifiedContext.G.fortifications, fortifications, 'the fortification is untouched');
+    const { fortifications: _removed, ...fortifiedRest } = JSON.parse(JSON.stringify(fortifiedContext.G)) as Record<string, unknown>;
+    assert.deepStrictEqual(fortifiedRest, JSON.parse(JSON.stringify(plainContext.G)), 'every other field matches the no-fortify fight');
   });
 });

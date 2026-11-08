@@ -1378,7 +1378,7 @@
           "imageUrl": "https://images.legendary-arena.com/rvlt/rvlt-vi-dark-avengers-dark-wolverine-daken.webp",
           "abilities": [
             "[keyword:Last Stand]",
-            "Ambush: Each player reveals an [hc:instinct] Hero or gains a Wound.",
+            "Ambush: Each player reveals an [hc:instinct] Hero or gains a Wound. [effect:reveal-or-wound:hc:instinct]",
             "Escape: Same Effect, then shuffle Dark Wolverine back into the Villain Deck."
           ],
           "copies": 1
@@ -1463,7 +1463,7 @@
           "imageUrl": "https://images.legendary-arena.com/rvlt/rvlt-vi-hoods-gang-the-brothers-grimm.webp",
           "abilities": [
             "To fight The Brothers Grimm, you must also discard two identical cards.",
-            "Fight: You may KO a card from your discard pile."
+            "Fight: You may KO a card from your discard pile. [effect:ko-up-to-from-discard-current:1]"
           ],
           "copies": 1
         },
@@ -1519,8 +1519,8 @@
           "imageUrl": "https://images.legendary-arena.com/rvlt/rvlt-vi-lethal-legion-living-laser.webp",
           "abilities": [
             "Living Laser gers +3[icon:attack] while there's a “Maze“ [rule:Location] in the city.",
-            "Fight: Each player reveals a [hc:ranged] Hero or gains a Wound.",
-            "Escape: Same effect."
+            "Fight: Each player reveals a [hc:ranged] Hero or gains a Wound. [effect:reveal-or-wound:hc:ranged]",
+            "Escape: Same effect. [effect:reveal-or-wound:hc:ranged]"
           ],
           "copies": 1
         },
@@ -1647,7 +1647,7 @@
           "slug": "lightning-the-electro-blast",
           "imageUrl": "https://images.legendary-arena.com/rvlt/rvlt-hm-mandarins-rings-lightning-the-electro-blast.webp",
           "abilities": [
-            "Fight: Reveal the top card of your deck. You may KO it."
+            "Fight: Reveal the top card of your deck. You may KO it. [effect:reveal-top-may-ko-current]"
           ]
         },
         {
@@ -1679,7 +1679,7 @@
           "slug": "spin-the-vortex-beam",
           "imageUrl": "https://images.legendary-arena.com/rvlt/rvlt-hm-mandarins-rings-spin-the-vortex-beam.webp",
           "abilities": [
-            "Fight: Reveal the top six cards of your deck. Discard all of them that cost 0, then put the rest back in any order."
+            "Fight: Reveal the top six cards of your deck. Discard all of them that cost 0, then put the rest back in any order. [effect:reveal-top-discard-zero-cost-current:6]"
           ]
         },
         {
@@ -1687,7 +1687,7 @@
           "slug": "zero-the-ice-blast",
           "imageUrl": "https://images.legendary-arena.com/rvlt/rvlt-hm-mandarins-rings-zero-the-ice-blast.webp",
           "abilities": [
-            "Fight: Choose a card you played this turn that costs 0. When you draw a new hand of cards at the end of this turn, add that card to your hand as an extra card."
+            "Fight: Choose a card you played this turn that costs 0. When you draw a new hand of cards at the end of this turn, add that card to your hand as an extra card. [effect:next-hand-from-play-zero-cost-current]"
           ]
         }
       ],

@@ -1045,7 +1045,7 @@
           "imageUrl": "https://images.legendary-arena.com/msis/msis-vi-children-of-thanos-outriders.webp",
           "abilities": [
             "[keyword:Endgame]: +2[icon:attack]",
-            "Fight: You may KO a card from your discard pile."
+            "Fight: You may KO a card from your discard pile. [effect:ko-up-to-from-discard-current:1]"
           ],
           "copies": 1
         },
@@ -1207,7 +1207,7 @@
           "imageUrl": "https://images.legendary-arena.com/msis/msis-vi-infinity-stones-the-mind-stone.webp",
           "abilities": [
             "The Mind Stone gets +[icon:attack] equal to the highest cost of Hero in the HQ.",
-            "Ambush: All Heroes currently in the HQ cost 2 more this turn.",
+            "Ambush: All Heroes currently in the HQ cost 2 more this turn. [effect:hq-heroes-cost-change:more:2]",
             "Fight: Gain a Hero from the HQ."
           ],
           "copies": 1

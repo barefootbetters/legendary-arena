@@ -728,7 +728,7 @@
           "imageUrl": "https://images.legendary-arena.com/vnom/vnom-vi-life-foundation-agony.webp",
           "abilities": [
             "Ambush: Reveal the top three cards of the Villain Deck. A Villain you revealed [keyword:Symbiote Bonds] with Agony. Put the rest back in any order.",
-            "Escape: Each player reveals a [hc:covert] Hero or gains a Wound."
+            "Escape: Each player reveals a [hc:covert] Hero or gains a Wound. [effect:reveal-or-wound:hc:covert]"
           ],
           "copies": 1
         },
@@ -739,7 +739,7 @@
           "vAttack": "5",
           "imageUrl": "https://images.legendary-arena.com/vnom/vnom-vi-life-foundation-dr-carlton-drake.webp",
           "abilities": [
-            "Fight: Each [hc:instinct] and [hc:tech] Hero currently in the HQ costs 1 less this turn."
+            "Fight: Each [hc:instinct] and [hc:tech] Hero currently in the HQ costs 1 less this turn. [effect:hq-heroes-cost-change:less:1:instinct+tech]"
           ],
           "copies": 1
         },

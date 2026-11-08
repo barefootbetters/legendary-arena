@@ -13,8 +13,12 @@
  * No boardgame.io imports. No registry imports.
  */
 
-import type { RuleEffect } from './ruleHooks.types.js';
+import type { RuleEffect, RuleTriggerName } from './ruleHooks.types.js';
 import type { ImplementationMap } from './ruleRuntime.execute.js';
+// why: WP-867 / D-24810 — a Master Strike that reaches no per-Mastermind arm is a
+// hollow effect; it is recorded through the one hollow-effect seam (structured
+// record + the standard `blocked` log line), never a bespoke line.
+import { recordHollowEffect } from '../diagnostics/hollowEffect.record.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import { reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
@@ -52,6 +56,15 @@ import { BARON_ZEMO_MASTERMIND_ID } from '../economy/rescueOnFight.logic.js';
 import { ARNIM_ZOLA_MASTERMIND_ID, listZolaWeakHqSlots } from '../mastermind/arnimZola.logic.js';
 import { refillHqSlot } from '../board/city.logic.js';
 import { selectDefaultCostDiscardCard } from '../moves/villainDefeatRequirement.logic.js';
+import { demolishEachPlayer } from '../board/demolish.logic.js';
+// why: WP-875 / D-24822 — The Mandarin's strike reads the Ring helpers and appends to the owed
+// Ring-entry queue; the City entry runs later in the onMove opener (moves/mandarinRingEntry.logic.ts).
+import {
+  MANDARIN_MASTERMIND_ID,
+  countQueuedMandarinRingEntries,
+  listMandarinRingsInVictoryPile,
+  queueMandarinRingEntry,
+} from '../mastermind/mandarin.logic.js';
 
 // why: mastermind ext_id constants — matching against
 // G.selection.mastermindId for per-mastermind dispatch. Strings come from
@@ -126,6 +139,23 @@ const DOOM_STRIKE_HAND_GATE = 6;
 // [Cross-Dimensional Hulk Rampage]" and Red Hulk's flips back — resolveGeneralRossStrike
 // flips the boss face. The named ride-along effect is honest-partial (logged) this slice.
 const MASTERMIND_GENERAL_ROSS = 'wwhk/general-thunderbolt-ross';
+// why: WP-864 / D-24807 — Fin Fang Foom (chmp) prints "[Demolish] each player, then do it
+// again for each Monsters Unleashed Villain in the city and Escape Pile." The id is the
+// match LAGN `setup.mastermind.id`; setup takes the non-Epic face (D-24193).
+const MASTERMIND_FIN_FANG_FOOM = 'chmp/fin-fang-foom';
+
+// why: WP-867 / D-24810 — the hollow-effect mechanic label for a Master Strike
+// that reached no per-Mastermind arm. Matches the effect-index row mechanic
+// (`...-master-strike`, scripts/coverage/strike-provenance.json).
+const MASTER_STRIKE_HOLLOW_MECHANIC = 'master-strike';
+
+// why: WP-867 / D-24810 — typed against RuleTriggerName so the hollow record's
+// `timing` is checked against the trigger union the strike actually fires on.
+const MASTER_STRIKE_TRIGGER: RuleTriggerName = 'onMastermindStrikeRevealed';
+// why: WP-864 / D-24807 — villain instance ids are `{setAbbr}-villain-{groupSlug}-{cardSlug}-{NN}`
+// (villainDeck.setup.ts), so every Monsters Unleashed card starts with this prefix. The Escape
+// Pile's other contents (Bystanders, captured Heroes) never match it.
+const MONSTERS_UNLEASHED_EXT_ID_PREFIX = 'chmp-villain-monsters-unleashed-';
 // why: the printed penalty puts exactly this many cards on top of the deck.
 const DOOM_PUT_ON_DECK_COUNT = 2;
 
@@ -228,6 +258,35 @@ function resolveCurrentPlayer(context: unknown): string | null {
     return null;
   }
   return currentPlayer;
+}
+
+/**
+ * Narrows the rule-pipeline context to the framework turn number.
+ *
+ * @param context - The context the rule pipeline passed to the handler.
+ * @returns The turn number, or 0 when the context does not carry a finite one.
+ */
+function resolveStrikeTurn(context: unknown): number {
+  // why: WP-867 / D-24810 — the unresolved-strike hollow record carries the turn
+  // it was observed on. Every production reveal site forwards the framework turn
+  // as `ctx.turn` (D-24704); a stub context (`{}` in unit tests) yields 0. This is
+  // a third local copy of the turn narrow, kept local (mirroring
+  // resolveCurrentPlayer) because hero/heroEffects.execute.ts `readTurnNumber` and
+  // villainDeck/villainDeck.reveal.ts `readRevealContextTurn` are module-private
+  // and the latter is RevealContext-typed; exporting either would widen the
+  // import surface and couple this module to the villain-deck module.
+  if (typeof context !== 'object' || context === null) {
+    return 0;
+  }
+  const ctx = (context as { ctx?: unknown }).ctx;
+  if (typeof ctx !== 'object' || ctx === null) {
+    return 0;
+  }
+  const turn = (ctx as { turn?: unknown }).turn;
+  if (typeof turn !== 'number' || !Number.isFinite(turn)) {
+    return 0;
+  }
+  return turn;
 }
 
 /**
@@ -928,6 +987,61 @@ function resolveBaronZemoStrike(
 }
 
 /**
+ * Resolves The Mandarin's Master Strike (WP-875 / D-24822): "Each player chooses a Mandarin's Ring
+ * from their Victory Pile to enter the city. Any player who didn't have a Ring gains a Wound
+ * instead."
+ *
+ * Each player (current player first, then clockwise; D-24780) with no available Ring gains a Wound
+ * (or takes a logged no-op when the Wound supply is empty); each other player is queued on
+ * G.pendingMandarinRingEntries. Available = the Rings in that player's Victory Pile minus the
+ * entries already owed by them, so a second strike in the same move never counts a Ring twice. The
+ * arm moves no card and parks no choice.
+ *
+ * @param gameState - The game state to mutate.
+ * @param currentPlayer - The active player (null in stub contexts → sorted order); the
+ *   each-player loop starts with them (D-24780).
+ */
+function resolveMandarinStrike(
+  gameState: LegendaryGameState,
+  currentPlayer: string | null,
+): void {
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780); a null
+  // currentPlayer (stub contexts) keeps the sorted order.
+  const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), currentPlayer);
+
+  for (const playerId of playerIds) {
+    const playerZones = gameState.playerZones[playerId]!;
+    const ringCount = listMandarinRingsInVictoryPile(playerZones.victory).length;
+    const availableRingCount = ringCount - countQueuedMandarinRingEntries(gameState, playerId);
+
+    if (availableRingCount > 0) {
+      // why: a strike has no boardgame.io events, so it cannot park the "chooses a Ring" seat
+      // choice; the entry is queued and the play-phase onMove opener settles it (the D-24779 /
+      // D-24815 owed-queue shape).
+      queueMandarinRingEntry(gameState, playerId);
+      pushLog(gameState,
+        `[Mandarin Master Strike] Player ${playerId} will send a Mandarin's Ring from their Victory Pile into the City.`,
+        'neutral',
+      );
+      continue;
+    }
+
+    // why: the Wound is gained here, at strike time. It never touches a zone a Ring entry
+    // touches, so dealing it before the queued entries resolve changes only the log order.
+    const woundOutcome = gainWoundToDiscard(gameState, playerId);
+    if (woundOutcome !== 'no-wound') {
+      pushLog(gameState,
+        `[Mandarin Master Strike] Player ${playerId} had no Mandarin's Ring in their Victory Pile and ${describeStrikeWound(woundOutcome)}.`,
+      );
+    } else {
+      pushLog(gameState,
+        `[Mandarin Master Strike] Player ${playerId} had no Mandarin's Ring in their Victory Pile and the Wound supply is empty — no effect.`,
+      );
+    }
+  }
+}
+
+/**
  * Resolves Arnim Zola's Master Strike (WP-821 / D-24754): "For each Hero in the HQ that
  * has less than 2 printed [icon:attack], put that Hero on the bottom of the Hero Deck, and
  * each player discards a card of that Hero's cost."
@@ -1010,6 +1124,57 @@ function discardCardOfCostForEachPlayer(
     pushLog(gameState,
       `[Arnim Zola Master Strike] Player ${playerId} discarded ${resolveCardName(gameState.cardDisplayData, cardId)} (cost ${cost}).`,
     );
+  }
+}
+
+/**
+ * Counts the Monsters Unleashed Villains in the City and the Escape Pile.
+ *
+ * @param gameState - The game state to read.
+ * @returns How many City spaces and Escape Pile entries hold a Monsters Unleashed Villain.
+ */
+function countMonstersUnleashedInCityAndEscapePile(gameState: LegendaryGameState): number {
+  let count = 0;
+  for (const cityCardId of gameState.city) {
+    if (cityCardId !== null && cityCardId.startsWith(MONSTERS_UNLEASHED_EXT_ID_PREFIX)) {
+      count = count + 1;
+    }
+  }
+  for (const escapedCardId of gameState.escapedPile) {
+    if (escapedCardId.startsWith(MONSTERS_UNLEASHED_EXT_ID_PREFIX)) {
+      count = count + 1;
+    }
+  }
+  return count;
+}
+
+/**
+ * Resolves Fin Fang Foom's Master Strike (WP-864 / D-24807): "[Demolish] each player, then do
+ * it again for each Monsters Unleashed Villain in the city and Escape Pile."
+ *
+ * Demolishes each player once, plus once per Monsters Unleashed Villain in the City and the
+ * Escape Pile. Each Demolish reveals the then-top Hero Deck card. Never throws.
+ *
+ * @param gameState - The game state to mutate.
+ * @param currentPlayer - The active player (null in stub contexts → sorted order); each
+ *   Demolish's discard loop starts with them (D-24780).
+ */
+function resolveFinFangFoomStrike(
+  gameState: LegendaryGameState,
+  currentPlayer: string | null,
+): void {
+  // why: D-24807 interpretation, flagged for the operator — "do it again for each" reads as
+  // 1 + N Demolishes. The count is taken once, when the strike starts: a Demolish moves no
+  // Villain, so recounting between repeats could never change it.
+  const count = countMonstersUnleashedInCityAndEscapePile(gameState);
+  const total = 1 + count;
+  pushLog(
+    gameState,
+    `[Fin Fang Foom Master Strike] Demolish each player ${total} time(s): once, plus once for each of the ${count} Monsters Unleashed Villain(s) in the city and Escape Pile.`,
+    'neutral',
+  );
+  for (let demolishIndex = 0; demolishIndex < total; demolishIndex++) {
+    demolishEachPlayer(gameState, currentPlayer, '[Fin Fang Foom Master Strike]');
   }
 }
 
@@ -1364,8 +1529,9 @@ export function mastermindStrikeHandler(
   // D-24654 removed the D-15401 generic capture-a-Bystander placeholder.
 
   // why: branches are mutually exclusive per mastermind id — a mastermind
-  // matching none of them takes no branch and the strike is generic
-  // bookkeeping only (its printed text is not yet implemented).
+  // matching none of them reaches the terminal `else`, which flags the strike as
+  // a hollow effect (its printed text is not yet implemented; WP-867 / D-24810).
+  // The generic strike-count bookkeeping below still runs for every Mastermind.
   const mastermindId = gameState.selection.mastermindId;
   // why: WP-846 / D-24780 — each each-player strike receives the active player
   // (resolveCurrentPlayer; null in stub contexts → sorted order) so its loop starts with the
@@ -1412,6 +1578,31 @@ export function mastermindStrikeHandler(
     // [icon:attack], put that Hero on the bottom of the Hero Deck, and each player discards
     // a card of that Hero's cost."
     resolveArnimZolaStrike(gameState, resolveCurrentPlayer(strikeContext));
+  } else if (mastermindId === MASTERMIND_FIN_FANG_FOOM) {
+    // why: WP-864 / D-24807 — "[Demolish] each player, then do it again for each Monsters
+    // Unleashed Villain in the city and Escape Pile."
+    resolveFinFangFoomStrike(gameState, resolveCurrentPlayer(strikeContext));
+  } else if (mastermindId === MANDARIN_MASTERMIND_ID) {
+    // why: WP-875 / D-24822 — "Each player chooses a Mandarin's Ring from their Victory Pile to
+    // enter the city. Any player who didn't have a Ring gains a Wound instead." Wounds now; Ring
+    // choices are queued for the onMove opener (a strike has no events).
+    resolveMandarinStrike(gameState, resolveCurrentPlayer(strikeContext));
+  } else {
+    // why: WP-867 / D-24810 — no per-Mastermind arm was reached, so the printed
+    // strike is hollow (the D-24033 reachability rule: an arm that resolves
+    // partially or no-ops on this board is never flagged). The record and its
+    // standard `blocked` log line go through the one seam, recordHollowEffect,
+    // so the hollow panel, Play Diagnostics and the sim harvest all read it; no
+    // bespoke second line. The log order is therefore the hollow line, then the
+    // generic "strike count incremented" line the pipeline applies after return.
+    recordHollowEffect(gameState, {
+      cardId: gameState.mastermind.baseCardId,
+      cardType: 'mastermind',
+      timing: MASTER_STRIKE_TRIGGER,
+      mechanic: MASTER_STRIKE_HOLLOW_MECHANIC,
+      reason: 'no-handler',
+      turn: resolveStrikeTurn(strikeContext),
+    });
   }
 
   // why: WP-200 — terminal emission AFTER the per-mastermind text effect

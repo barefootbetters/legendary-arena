@@ -230,6 +230,13 @@ export default defineComponent({
           reason: `Needs a card that costs ${formatCostList(fightDiscardCosts)} to discard`,
         };
       }
+      // why: WP-871 / D-24816 — the villain's printed fight restriction (Orrgo, Squirrel
+      // Girl, Doop) gates after the resource gates (stage → heal → cost → discard →
+      // restriction), per the EC-132 §3 order (resource before structural). The engine
+      // writes the reason only while the restriction blocks; the client never re-tests it.
+      if (cell.card.fightRestrictionReason !== undefined) {
+        return { allowed: false, reason: cell.card.fightRestrictionReason };
+      }
       return cost;
     }
 
@@ -292,6 +299,29 @@ export default defineComponent({
         return false;
       }
       return eligibleDiscardCards(fightDiscardCosts).length === 0;
+    }
+
+    /**
+     * Whether the fight-restriction cue shows on a cell (WP-871 / D-24816).
+     *
+     * @param cell - The City cell.
+     * @returns True for a restricted villain in the viewer's Main stage with no heal lock.
+     */
+    function isFightRestricted(cell: CityCell): boolean {
+      // why (Jeff feedback, match OSth9-iV03C): a reason only in the tooltip is not
+      // enough. WP-871 / D-24816 — the restriction cue shows in the window where it
+      // explains a disabled Fight: the viewer's Main stage, no heal lock, and an
+      // engine-projected restriction reason.
+      if (cell.kind !== 'slot' || cell.card === null) {
+        return false;
+      }
+      if (cell.card.fightRestrictionReason === undefined) {
+        return false;
+      }
+      if (!useTurnActions(props.currentStage, props.isViewerTurn).canFightVillain().allowed) {
+        return false;
+      }
+      return healLockGate(props.hasHealedThisTurn).allowed;
     }
 
     function hasFightCostBadge(cell: CityCell): boolean {
@@ -482,6 +512,7 @@ export default defineComponent({
       isFightCostUnaffordable,
       discardCostCue,
       isFightDiscardUnpayable,
+      isFightRestricted,
       onFight,
       showEvFight,
       onFightEV,
@@ -541,6 +572,9 @@ export default defineComponent({
         ]"
       >
         <template v-if="cell.kind === 'escaped'">
+          <!-- why: D-24819 — a fortifying Villain is drawn on the place it fortifies
+               (SharedDecks / MastermindTile), never in this cell: a strip here stretched
+               the whole City row and shrank the scale-to-fit board. -->
           <EscapedPile :pile="cell.entries" />
         </template>
         <!-- why: WP-831 / D-24764 — a space a scheme removed from the City keeps its column (so the
@@ -627,6 +661,22 @@ export default defineComponent({
               }"
               data-testid="play-city-discard-cost"
             >{{ discardCostCue(cell.card.fightDiscardCosts) }}</span>
+            <!-- why: WP-871 / D-24816 — the fight-restriction cue (Orrgo, Squirrel Girl,
+                 Doop). The 80px desktop tile cannot hold the English reason, so the cue is
+                 the fixed short text and the full reason is its title (the Discard N
+                 precedent). Stacked above the Fight N badge when both show. -->
+            <span
+              v-if="isFightRestricted(cell)"
+              class="city-space__fight-restriction"
+              :class="{
+                'city-space__fight-restriction--stacked':
+                  hasFightCostBadge(cell) !== (cell.card.fightDiscardCosts !== undefined),
+                'city-space__fight-restriction--stacked-twice':
+                  hasFightCostBadge(cell) && cell.card.fightDiscardCosts !== undefined,
+              }"
+              data-testid="play-city-fight-restriction"
+              :title="cell.card.fightRestrictionReason"
+            >Can't fight yet</span>
           </button>
           <!-- why (Jeff feedback): the empty placeholder no longer prints the slot
                name inside it — the name is now the side label above. It stays a
@@ -940,6 +990,46 @@ export default defineComponent({
 
 @media (prefers-reduced-motion: reduce) {
   .city-space__discard-cost--unpayable {
+    animation: none;
+  }
+}
+
+/* why: WP-871 / D-24816 — the fight-restriction cue, shown only while it explains a
+   disabled Fight, so it is always loud: the discard cue's pill in its unpayable red,
+   ring and single pulse (Jeff feedback, match OSth9-iV03C). */
+.city-space__fight-restriction {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  width: max-content;
+  max-width: calc(100% - 6px);
+  padding: 0.05rem 0.35rem;
+  border-radius: 0.75rem;
+  background: #b91c1c;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9), 0 0 10px rgba(185, 28, 28, 0.85);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  pointer-events: none;
+  animation: city-space__fight-cost-pulse 700ms ease-out 1;
+}
+
+/* why: clears one pill below it (the Fight N badge or the Discard cue), including the
+   badge's larger loud state; --stacked-twice clears both. */
+.city-space__fight-restriction--stacked {
+  bottom: 1.45rem;
+}
+
+.city-space__fight-restriction--stacked-twice {
+  bottom: 2.85rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .city-space__fight-restriction {
     animation: none;
   }
 }

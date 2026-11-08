@@ -26,6 +26,7 @@ import type { LogEntry } from "../log/logOutcome.types.js";
 import type { CardExtId } from "../state/zones.types.js";
 import type { GreyHeroFilter } from "../rules/villainAbility.types.js";
 import type { AttackTargetName } from "../economy/economy.types.js";
+import type { FortifyPlace } from "../board/fortify.types.js";
 import type { MenaceTier, SchemeLossKind } from "../rules/schemeLossProgress.js";
 // why: WP-258 — reuse the engine's canonical HollowEffectRecord rather than
 // declaring a parallel UI type. The projection surfaces the WP-257 runtime
@@ -668,6 +669,14 @@ export interface UICityCard {
    * without a fight discard cost.
    */
   fightDiscardCosts?: number[];
+  /**
+   * WP-871 / D-24816 — present only while the villain's printed fight restriction
+   * (Orrgo, Squirrel Girl, Doop) blocks the current player's fight; the
+   * engine-written reason the client shows as the Fight button's tooltip. Built
+   * from public state (cards played this turn, the City, Villains defeated this
+   * turn), so every audience sees it.
+   */
+  fightRestrictionReason?: string;
 }
 
 /**
@@ -681,6 +690,35 @@ export interface UICityCard {
 export interface UICityState {
   spaces: (UICityCard | null)[];
   escapedPile: UIDisplayEntry[];
+  /**
+   * WP-873 / D-24818 — the Villains fortifying a place (Squirrel Girl at the Sidekick
+   * Stack, Colleen Wing at the Mastermind), in FORTIFY_PLACES order. A fortifier left the
+   * Escape Pile, so the client shows it under the Escaped Pile column with its own Fight
+   * button. Public (every audience). Present only when at least one place is fortified.
+   */
+  fortifiers?: UIFortifier[];
+}
+
+/**
+ * A Villain fortifying a place (WP-873 / D-24818), with what it locks and its fight price.
+ *
+ * // why: every field is built from public state (the fortifier is face up on the table),
+ * and the reason strings are engine-written, so the client renders them verbatim and never
+ * switches on `place` (D-24574: the client gates on projected data).
+ */
+export interface UIFortifier {
+  /** The fortified place; the client sends it back as `fightVillain({ fortifiedPlace })`. */
+  place: FortifyPlace;
+  /** The place's player-facing name (`the Sidekick Stack`). */
+  placeLabel: string;
+  extId: CardExtId;
+  display: UICardDisplay;
+  /** The active player's Size-Changing fight price, floored at 0 (the UICityCard.fightCost rule). */
+  fightCost: number;
+  /** What the place's lock prevents (`Sidekicks can't be recruited or gained`). */
+  lockText: string;
+  /** Present only while the fortifier's printed fight restriction blocks the active player. */
+  fightRestrictionReason?: string;
 }
 
 /**
@@ -791,6 +829,10 @@ export interface UIMastermindState {
   // fought until that Hero is exorcised). Public; omit-when-absent (never `false`), so
   // the key appears only while the Mastermind actually haunts.
   isHaunting?: true;
+  // why: WP-873 / D-24818 — present only while a Villain fortifies the Mastermind (Colleen
+  // Wing): the engine-written reason it can't be fought, which the tile shows as the Fight
+  // button's tooltip. Public; omit-when-absent.
+  fortifiedReason?: string;
 }
 
 /**
@@ -1014,6 +1056,10 @@ export interface UISharedPilesState {
   // type ONLY so hand-written fixtures need no backfill; `uiState.build.ts` ALWAYS
   // populates it.
   sidekickDisplay?: UICardDisplay;
+  // why: WP-873 / D-24818 — present only while a Villain fortifies the Sidekick Stack
+  // (Squirrel Girl): the engine-written reason Sidekicks can't be recruited, which the
+  // Sidekicks cell shows as the Recruit button's tooltip. Public; omit-when-absent.
+  sidekickStackFortifiedReason?: string;
 }
 
 /**
@@ -1568,9 +1614,13 @@ export interface UIPendingDefeatChoice {
  * the cards one play just discarded (Bishop's Firepower from the Future, "KO any number of those
  * cards"), so the prompt can say so; `discard` already lists only those cards. Omitted otherwise.
  *
+ * // why: WP-868 / D-24811 — `minCount` is present only on a mandatory entry (Flatman's "KO a card
+ * from your discard pile"): the prompt keeps submit disabled until `min(minCount, discard.length)`
+ * cards are picked and never offers "KO None". Omitted on every "up to N" entry.
+ *
  * @see WP-693 §Scope (In)
  * @see EC-730 Locked Values
- * @see DECISIONS.md D-24510, D-24769, D-24783, D-24786
+ * @see DECISIONS.md D-24510, D-24769, D-24783, D-24786, D-24811
  */
 export interface UIPendingKoDiscardChoice {
   choiceType: "ko-from-discard";
@@ -1578,6 +1628,7 @@ export interface UIPendingKoDiscardChoice {
   maxCount: number;
   greyFilter?: GreyHeroFilter;
   isLimitedToDiscardedThisWay?: boolean;
+  minCount?: number;
   discard: UIDiscardChoiceHandCard[];
 }
 

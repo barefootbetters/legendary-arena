@@ -140,6 +140,18 @@ export interface TurnEconomy {
    */
   sidekicksReturnedThisTurn?: number;
   /**
+   * WP-871 / D-24816 — the current player defeated a City Villain (fought or
+   * effect-defeated) this turn. Read by the Orrgo fight restriction
+   * (`requires-villain-defeated-this-turn`); a Mastermind defeat does not set it.
+   *
+   * ACTIVE-PLAYER-SCOPED. LAZILY MATERIALIZED: written only in a match with a
+   * `requires-villain-defeated-this-turn` restriction (`recordVillainDefeated`, from
+   * `defeatCityVillainCore`), only ever written `true`, dropped by `resetTurnEconomy`
+   * at turn start, carried by `carryConversionFlag`. Absent ≡ false; omitted by
+   * `JSON.stringify`, so every other match serializes byte-identically.
+   */
+  hasDefeatedVillainThisTurn?: boolean;
+  /**
    * WP-736 / D-24556 — the ordered ledger of "Excessive Violence" cards the current
    * player has played this turn (Venomverse's Excessive Violence, keywords-full id 30).
    * Playing an allowlisted EV card appends its CardExtId here (via

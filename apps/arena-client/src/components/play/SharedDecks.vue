@@ -4,12 +4,14 @@ import {
   OFFICER_RECRUIT_COST,
   SIDEKICK_RECRUIT_COST,
   type UICardDisplay,
+  type UIFortifier,
   type UISharedPilesState,
   type UITurnEconomyState,
 } from '@legendary-arena/game-engine';
 import { useTurnActions, healLockGate } from '../../composables/useTurnActions';
 import type { GatingResult } from '../../composables/useCardCostGating';
 import CardTile from './CardTile.vue';
+import FortifiedVillains from './FortifiedVillains.vue';
 import type { SubmitMove } from './uiMoveName.types';
 
 /**
@@ -45,11 +47,18 @@ import type { SubmitMove } from './uiMoveName.types';
  */
 export default defineComponent({
   name: 'SharedDecks',
-  components: { CardTile },
+  components: { CardTile, FortifiedVillains },
   props: {
     piles: {
       type: Object as PropType<UISharedPilesState>,
       required: true,
+    },
+    // why: D-24819 — UIState.city.fortifiers. A Villain fortifying the Sidekick Stack
+    // (Squirrel Girl) is drawn on the Sidekicks cell with its own Fight button.
+    fortifiers: {
+      type: Array as PropType<UIFortifier[]>,
+      required: false,
+      default: () => [],
     },
     currentStage: {
       type: String,
@@ -166,6 +175,13 @@ export default defineComponent({
       const healLock = healLockGate(props.hasHealedThisTurn);
       if (!healLock.allowed) {
         return healLock;
+      }
+      // why: WP-873 / D-24818 — while a Villain fortifies the Sidekick Stack (Squirrel Girl)
+      // the engine's recruitSidekick refuses (isSidekickStackFortified). A structural Stack
+      // gate, so it sits with this cell's other structural gates (which precede the cost check
+      // here), right after the heal lock; the engine writes the reason.
+      if (props.piles.sidekickStackFortifiedReason !== undefined) {
+        return { allowed: false, reason: props.piles.sidekickStackFortifiedReason };
       }
       if (props.economy.hasRecruitedSidekickThisTurn === true) {
         return { allowed: false, reason: 'You already recruited a Sidekick this turn.' };
@@ -302,7 +318,14 @@ export default defineComponent({
           <span class="shared-decks__cost" :class="{ 'sr-only': isCardFaceOnly }">Recruit: {{ officerCost }}</span>
         </button>
       </li>
-      <li class="shared-decks__cell" data-testid="play-shared-deck-sidekicks">
+      <!-- why: D-24819 — --fortified (from the projected lock reason) turns off the
+           stand-up lift while a Villain fortifies the Stack: the chip sits inside this
+           cell, so hovering it would lift the card over the chip and take its clicks. -->
+      <li
+        class="shared-decks__cell"
+        :class="{ 'shared-decks__cell--fortified': piles.sidekickStackFortifiedReason !== undefined }"
+        data-testid="play-shared-deck-sidekicks"
+      >
         <!-- why: WP-842 / D-24776 — the Sidekicks cell is the second recruitable
              supply pile (once per turn). Same markup as the Officers button; the
              gate (turn → stage → heal lock → once-per-turn → empty Stack →
@@ -327,6 +350,18 @@ export default defineComponent({
           <span class="shared-decks__count" :class="{ 'sr-only': isCardFaceOnly }">[{{ piles.sidekicksCount }}]</span>
           <span class="shared-decks__cost" :class="{ 'sr-only': isCardFaceOnly }">Recruit: {{ sidekickCost }}</span>
         </button>
+        <!-- why: D-24819 — Fortify puts the Villain near the Sidekick Stack (rules v23
+             L1454). A sibling of the recruit button (a button cannot hold a button),
+             under the card in normal flow, never over it. -->
+        <FortifiedVillains
+          :fortifiers="fortifiers"
+          place="sidekick-stack"
+          :current-stage="currentStage"
+          :is-viewer-turn="isViewerTurn"
+          :has-healed-this-turn="hasHealedThisTurn"
+          :economy="economy"
+          :submit-move="submitMove"
+        />
       </li>
     </ol>
   </section>
@@ -404,12 +439,14 @@ export default defineComponent({
    --tilt-lift. Every link from the root down to the recruit button preserves
    3D, or the card would rise but stay tilted; the links are on only while a
    recruit cell is hovered, because at rest coplanar preserve-3d layers z-fight
-   in Chrome's hit test and steal clicks (EC-890 Amendment A). */
+   in Chrome's hit test and steal clicks (EC-890 Amendment A). A fortified cell
+   never lifts (--fortified, D-24819): the fortifier chip lives in the cell, and a
+   lifted card would rise over it and take its clicks. */
 @media (hover: hover) {
-  .shared-decks--tilt-lift:has(.shared-decks__cell:hover > .shared-decks__recruit),
-  .shared-decks--tilt-lift:has(.shared-decks__cell:hover > .shared-decks__recruit) .shared-decks__row,
-  .shared-decks--tilt-lift:has(.shared-decks__cell:hover > .shared-decks__recruit) .shared-decks__cell,
-  .shared-decks--tilt-lift:has(.shared-decks__cell:hover > .shared-decks__recruit) .shared-decks__recruit {
+  .shared-decks--tilt-lift:has(.shared-decks__cell:not(.shared-decks__cell--fortified):hover > .shared-decks__recruit),
+  .shared-decks--tilt-lift:has(.shared-decks__cell:not(.shared-decks__cell--fortified):hover > .shared-decks__recruit) .shared-decks__row,
+  .shared-decks--tilt-lift:has(.shared-decks__cell:not(.shared-decks__cell--fortified):hover > .shared-decks__recruit) .shared-decks__cell,
+  .shared-decks--tilt-lift:has(.shared-decks__cell:not(.shared-decks__cell--fortified):hover > .shared-decks__recruit) .shared-decks__recruit {
     transform-style: preserve-3d;
   }
   /* why: the bottom-edge origin makes the card rise off the table rather than
@@ -422,7 +459,7 @@ export default defineComponent({
   /* why: the hover sits on the cell, which keeps its box, while the transform
      moves the button; hovering the button itself would flicker as it moves out
      from under the pointer. */
-  .shared-decks--tilt-lift .shared-decks__cell:hover > .shared-decks__recruit {
+  .shared-decks--tilt-lift .shared-decks__cell:not(.shared-decks__cell--fortified):hover > .shared-decks__recruit {
     transform: rotateX(calc(-1 * var(--board-tilt-angle))) scale(1.06);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
   }

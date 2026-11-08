@@ -50,7 +50,7 @@ import type { HeroEffectResolvedEvent } from '../events/notableEvents.types.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { shuffleDeck } from '../setup/shuffle.js';
 import { moveCardFromZone, moveAllCards } from '../moves/zoneOps.js';
-import { reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
+import { HAND_SIZE, reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
 import { addResources, enableRecruitSpendableAsAttack, enableDrawLock, enrollExcessiveViolenceCard, enrollHeistCard, enablePlayBothSides, addRestrictedAttack, formatAttackTargets, addFightCostReduction, recordOutOfTimePlayed } from '../economy/economy.logic.js';
 import type { AttackTargetName } from '../economy/economy.types.js';
 import { countDistinctVictoryPointValues } from '../economy/bloodFrenzy.logic.js';
@@ -84,6 +84,7 @@ import { queueOutOfTimeGrant } from '../moves/outOfTimeGrant.logic.js';
 // why: WP-844 / D-24778 — a type-import-only module, so the executor stays off recruitSidekick.ts's
 // pending-choice guard graph and no cycle is added.
 import { gainSidekickToDiscard } from '../moves/gainSidekick.logic.js';
+import { buildFortifyBlockReason, isSidekickStackFortified } from '../board/fortify.logic.js';
 import {
   revealTopThreeForAssign,
   buildAllRevealThreeAssignDispositions,
@@ -385,6 +386,10 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // heroEffectRevealTopMayKo (parks a KO-or-keep reveal of the deck top), so it belongs here.
   // Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
   'feast',
+  // why: WP-866 / D-24809 — "When you draw a new hand … this turn, draw an extra card"; has a
+  // HERO_EFFECT_HANDLERS entry (heroEffectNextHandExtraDraw), so it belongs here (MVP_KEYWORDS
+  // derives from this set). Carries a magnitude (the extra cards) → NOT in NO_MAGNITUDE_KEYWORDS.
+  'next-hand-extra-draw',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -2203,6 +2208,19 @@ function heroEffectGainSidekick(
     return;
   }
 
+  // why: WP-873 / D-24818 — "Sidekicks can't be recruited or gained" while a Villain fortifies
+  // the Sidekick Stack. gainSidekickToDiscard refuses too, but the line here names the
+  // fortifier (D-24017: a silent skip reads as "the card did nothing").
+  if (isSidekickStackFortified(G)) {
+    pushLog(
+      G,
+      `Player ${playerID} could not gain a Sidekick — ${buildFortifyBlockReason(G, 'sidekick-stack')} (${formatCardRef(G.cardDisplayData, cardId)})`,
+      'blocked',
+      cardId,
+    );
+    return;
+  }
+
   // why: D-24778 — rules v23 L1170: "Gain" means "put it into your discard pile", and the
   // top of the Stack (pile[0]) goes first, so the gain is deterministic. Rules v23
   // L3216-3218: a card-effect gain does not count against the once-per-turn Sidekick
@@ -2227,6 +2245,52 @@ function heroEffectGainSidekick(
   } else {
     pushLog(G, `Player ${playerID} could not gain a Sidekick — the Sidekick Stack is empty (${card}).`, 'blocked', cardId);
   }
+}
+
+/**
+ * Hero handler for the `next-hand-extra-draw` keyword (WP-866 / D-24809).
+ *
+ * "When you draw a new hand (of cards at the end of) this turn, draw an extra card" (Wasp's
+ * Infiltrate; "two" / "three extra cards" on Adam Warlock, Warpath and Captain Britain): raises
+ * the playing player's next-hand fill target by `magnitude`. The shipped end-of-turn cleanup
+ * draws to that target and deletes it. One `applied` log line; no randomness, never throws.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Unused move context.
+ * @param playerID - The player who played the card.
+ * @param cardId - The played card instance.
+ * @param effect - The `{ type: 'next-hand-extra-draw', magnitude: N }` descriptor.
+ */
+function heroEffectNextHandExtraDraw(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  // why: D-24809 — the magnitude pre-gate admits 0, but the marker pattern never emits one; a
+  // request below 1 is a defensive silent no-op.
+  const extraCards = effect.magnitude ?? 0;
+  if (extraCards < 1) {
+    return;
+  }
+
+  // why: D-24352 — lazy-init the WP-497 container (never seeded in setup), then the ADDITIVE
+  // write: the current target (or HAND_SIZE) plus the extra cards, so a second copy or a
+  // defeated Savage Land Mutates in the same turn stacks. The end-of-turn cleanup (D-24520)
+  // reads and deletes the entry once, so no end-of-turn trigger is needed (D-22501's "no timing
+  // dispatch" deferral did not apply). The key is the resolving playerID: every current dispatch
+  // path (including Copy Powers and the Steal Abilities re-fire) is active-seat only, so it equals
+  // currentPlayer. A future non-active resolver would carry the bonus to that seat's next cleanup
+  // and must re-check this.
+  if (G.handSizeOverrides === undefined) {
+    G.handSizeOverrides = {};
+  }
+  const nextHandSize = (G.handSizeOverrides[playerID] ?? HAND_SIZE) + extraCards;
+  G.handSizeOverrides[playerID] = nextHandSize;
+
+  const card = formatCardRef(G.cardDisplayData, cardId);
+  pushLog(G, `Player ${playerID} will draw ${String(nextHandSize)} cards on their next hand (+${String(extraCards)} extra, ${card}).`, 'applied', cardId);
 }
 
 /**
@@ -7572,6 +7636,10 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // KO-or-keep reveal unchanged: the deck top is shown in the owner-only prompt, then the player
   // KOs or keeps it (RS-1 reveal-before-choose), resolved by resolveRevealTopDispose.
   feast: heroEffectRevealTopMayKo,
+  // why: WP-866 / D-24809 — "When you draw a new hand … this turn, draw N extra card(s)": the
+  // D-24352 additive write into G.handSizeOverrides, consumed by that turn's end-of-turn cleanup.
+  // Carries a magnitude → NOT in NO_MAGNITUDE_KEYWORDS.
+  'next-hand-extra-draw': heroEffectNextHandExtraDraw,
 };
 
 // ---------------------------------------------------------------------------

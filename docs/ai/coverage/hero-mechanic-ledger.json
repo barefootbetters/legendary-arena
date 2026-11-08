@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 849,
+    "totalRows": 859,
     "byStatus": {
-      "executable": 469,
+      "executable": 481,
       "deferred": 16,
       "condition": 58,
       "unsupported": 279,
-      "unmarked": 24,
+      "unmarked": 22,
       "subsystem": 3
     },
-    "distinctMechanics": 179
+    "distinctMechanics": 180
   },
   "rows": [
     {
@@ -725,6 +725,22 @@
       ]
     },
     {
+      "extId": "amwp/freedom-fighters",
+      "heroName": "Freedom Fighters",
+      "set": "amwp",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
+        {
+          "slug": "mystics",
+          "name": "Mystics"
+        }
+      ]
+    },
+    {
       "extId": "amwp/janet-van-dyne",
       "heroName": "Janet van Dyne",
       "set": "amwp",
@@ -862,6 +878,22 @@
           "slug": "hope-returns",
           "name": "Hope Returns"
         },
+        {
+          "slug": "infiltrate",
+          "name": "Infiltrate"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/wasp",
+      "heroName": "Wasp",
+      "set": "amwp",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
         {
           "slug": "infiltrate",
           "name": "Infiltrate"
@@ -3364,6 +3396,22 @@
       "extId": "chmp/viv-vision",
       "heroName": "Viv Vision",
       "set": "chmp",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
+        {
+          "slug": "expanding-neural-network",
+          "name": "Expanding Neural Network"
+        }
+      ]
+    },
+    {
+      "extId": "chmp/viv-vision",
+      "heroName": "Viv Vision",
+      "set": "chmp",
       "mechanic": "size-changing",
       "status": "executable",
       "wp": "",
@@ -3839,12 +3887,17 @@
       "extId": "co2e/spider-man-miles-morales",
       "heroName": "Spider-Man (Miles Morales)",
       "set": "co2e",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": []
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
+        {
+          "slug": "web-trap",
+          "name": "Web-Trap"
+        }
+      ]
     },
     {
       "extId": "co2e/storm",
@@ -4806,6 +4859,22 @@
       ]
     },
     {
+      "extId": "cosm/adam-warlock",
+      "heroName": "Adam Warlock",
+      "set": "cosm",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
+        {
+          "slug": "regenerative-cocoon",
+          "name": "Regenerative Cocoon"
+        }
+      ]
+    },
+    {
       "extId": "cosm/captain-mar-vell",
       "heroName": "Captain Mar-Vell",
       "set": "cosm",
@@ -5333,8 +5402,8 @@
       "set": "cvwr",
       "mechanic": "fortify",
       "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-873",
+      "decision": "D-24818",
       "handler": "",
       "designs": [
         {
@@ -7155,12 +7224,17 @@
       "extId": "gotg/groot",
       "heroName": "Groot",
       "set": "gotg",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": []
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
+        {
+          "slug": "surviving-sprig",
+          "name": "Surviving Sprig"
+        }
+      ]
     },
     {
       "extId": "gotg/rocket-raccoon",
@@ -8710,6 +8784,22 @@
       "extId": "msmc/warpath",
       "heroName": "Warpath",
       "set": "msmc",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
+        {
+          "slug": "endless-endurance",
+          "name": "Endless Endurance"
+        }
+      ]
+    },
+    {
+      "extId": "msmc/warpath",
+      "heroName": "Warpath",
+      "set": "msmc",
       "mechanic": "tactical-formation",
       "status": "unsupported",
       "wp": "",
@@ -9786,6 +9876,22 @@
         {
           "slug": "trample-underhoof",
           "name": "Trample Underhoof"
+        }
+      ]
+    },
+    {
+      "extId": "rlmk/karnak",
+      "heroName": "Karnak",
+      "set": "rlmk",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
+        {
+          "slug": "brilliant-strategist",
+          "name": "Brilliant Strategist"
         }
       ]
     },
@@ -11539,6 +11645,22 @@
       "extId": "ssw2/captain-britain",
       "heroName": "Captain Britain",
       "set": "ssw2",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
+        {
+          "slug": "lead-the-captain-britain-corps",
+          "name": "Lead the Captain Britain Corps"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/captain-britain",
+      "heroName": "Captain Britain",
+      "set": "ssw2",
       "mechanic": "patrol",
       "status": "unsupported",
       "wp": "",
@@ -12027,6 +12149,22 @@
         {
           "slug": "crazed-experiments",
           "name": "Crazed Experiments"
+        }
+      ]
+    },
+    {
+      "extId": "vill/dr-octopus",
+      "heroName": "Dr. Octopus",
+      "set": "vill",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
+        {
+          "slug": "brilliant-research",
+          "name": "Brilliant Research"
         }
       ]
     },
@@ -13479,6 +13617,22 @@
         {
           "slug": "gamma-draining-nanites",
           "name": "Gamma-Draining Nanites"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/bruce-banner",
+      "heroName": "Bruce Banner",
+      "set": "wwhk",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
+        {
+          "slug": "solve-the-impossible",
+          "name": "Solve the Impossible"
         }
       ]
     },
@@ -15239,6 +15393,22 @@
         {
           "slug": "electromagnetic-pulse",
           "name": "Electromagnetic Pulse"
+        }
+      ]
+    },
+    {
+      "extId": "xmen/polaris",
+      "heroName": "Polaris",
+      "set": "xmen",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
+        {
+          "slug": "ride-the-magnetic-waves",
+          "name": "Ride the Magnetic Waves"
         }
       ]
     },

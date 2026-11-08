@@ -28,6 +28,7 @@ import type { LegendaryGameState } from '../types.js';
 import { getAvailableRecruit, markSidekickRecruited, recordRecruitedHeroCost, recordSidekickReturned, spendRecruit } from '../economy/economy.logic.js';
 import { matchHasRecruitedHeroRitual } from './ritualArtifact.js';
 import { SIDEKICK_EXT_ID } from '../setup/pilesInit.js';
+import { isSidekickStackFortified } from '../board/fortify.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { drawCardsIntoHand } from './drawCards.logic.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
@@ -93,6 +94,12 @@ export const SIDEKICK_RETURN_DRAW_COUNT = 2;
  * @param context - boardgame.io move context with G, ctx.
  */
 export function recruitSidekick({ G, ctx }: MoveContext): void {
+  // why: WP-873 / D-24818 — while a Villain fortifies the Sidekick Stack (Squirrel Girl),
+  // "Sidekicks can't be recruited or gained": a silent board-state return before any write,
+  // like the Haunt lock. isSidekickStackFortified is the single predicate.
+  if (isSidekickStackFortified(G)) {
+    return;
+  }
   // Step 1: Validate — the Sidekick Stack must be non-empty.
   // why: an exhausted Stack is a silent no-op, never a throw — the deterministic
   // move contract. pile[0] is the top card (the locked supply-pile convention

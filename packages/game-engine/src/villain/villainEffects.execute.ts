@@ -16,7 +16,7 @@
  * attachBystanderToVillain, awardAttachedBystanders.
  */
 
-import type { LegendaryGameState, PendingKoHeroChoice, PendingGiveHqHeroChoice, PendingMelterKoChoice, MelterRevealedTop, PendingKoDiscardChoice } from '../types.js';
+import type { LegendaryGameState, PendingKoHeroChoice, PendingGiveHqHeroChoice, PendingMelterKoChoice, MelterRevealedTop, PendingKoDiscardChoice, PendingRevealTopDispose, RevealedTopEntry, PendingReorderChoice } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type { CardTraitEntry } from '../state/cardTraits.types.js';
 import {
@@ -75,6 +75,11 @@ import {
   SAVIOR_BYSTANDER_THRESHOLD,
 } from '../board/bystanders.logic.js';
 import { captureHeroFromHq } from '../board/heroCapture.logic.js';
+// why: WP-873 / D-24818 — the Fortify escape handler writes G.fortifications only through the
+// fortify helpers (pure, type-only imports back into the engine; no cycle).
+import { fortifyWithEscapedVillain, getFortification } from '../board/fortify.logic.js';
+import { demolishEachPlayer } from '../board/demolish.logic.js';
+import { FORTIFY_LOCK_TEXT, FORTIFY_PLACE_LABELS } from '../board/fortify.types.js';
 import type { CaptureHeroResult } from '../board/heroCapture.logic.js';
 // why: WP-522 / D-24335 — give-hq-hero-by-trait-to-current refills the vacated HQ slot
 // from G.heroDeck after removing the gifted Hero, the same refill contract
@@ -88,13 +93,18 @@ import { discardFromHand } from '../moves/discardFromHand.js';
 import { reshuffleDiscardIntoDeck, drawCardsIntoHand, HAND_SIZE } from '../moves/drawCards.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { pushLog } from '../log/logPush.js';
-import { describeKoSourceZone } from '../log/logDisplay.js';
+import { describeKoSourceZone, formatCardRef } from '../log/logDisplay.js';
+// why: WP-870 / D-24815 — Zero's handler only queues the owed next-hand pick; that module never
+// imports this executor, and its opener runs from the play-phase onMove.
+import { queueNextHandFromPlayPick } from '../moves/nextHandFromPlay.logic.js';
 // why: WP-817 / D-24750 — Captain Zolandia counts Hero Classes with the hero side's one
 // counter, and Primus's Escape narrates its costs with the shared cost-list formatter.
 import { countDistinctHeroClassesYouHave } from '../hero/heroConditions.evaluate.js';
 import { formatEligibleCostList } from '../moves/villainDefeatRequirement.logic.js';
 // why: WP-862 / D-24804 — the Size-Changing grant on a chosen HQ Hero (read inside the handler only).
 import { grantSizeChangingToHqHero } from '../hero/sizeChangingGrant.logic.js';
+// why: WP-868 / D-24811 — the "Heroes currently in the HQ cost N less / more this turn" overlay writer.
+import { addHqCostChange } from '../hero/hqCostChange.logic.js';
 import {
   WOUND_EXT_ID,
   SHIELD_AGENT_EXT_ID,
@@ -408,7 +418,10 @@ function nameKoTarget(G: LegendaryGameState, targetId: CardExtId, zone: VillainK
  * @param extId - The card-instance ext_id to name.
  * @returns The display name, or the raw ext_id when none is available.
  */
-function resolveCardDisplayName(G: LegendaryGameState, extId: CardExtId): string {
+// why: WP-868 / D-24811 — exported for the Mr. Immortal reenter bridge in
+// villainDeck.enterCity.ts, which names cards the same way (no new cycle: villainDeck.reveal.ts
+// already imports this module).
+export function resolveCardDisplayName(G: LegendaryGameState, extId: CardExtId): string {
   const display = G.cardDisplayData?.[extId];
   if (display && typeof display.name === 'string' && display.name.length > 0) {
     return display.name;
@@ -837,6 +850,13 @@ const DELIBERATE_NO_OP_VILLAIN_PRIMITIVES: ReadonlySet<VillainEffectPrimitive> =
     'become-scheme-twist',
     'gain-attached-hero',
     'play-villain-deck-cards',
+    // why: WP-868 / D-24811 — Mr. Immortal's reenter mutates nothing in the executor (the bridge
+    // at the end of defeatCityVillainCore reveals and moves him), so its trace must read `no-op`.
+    'reenter-sewers-if-villain-deck-top',
+    // why: WP-869 / D-24814 — the stack entry mutates nothing in the executor (the bridge at the
+    // end of defeatCityVillainCore and in performVillainReveal moves the cards), so its trace must
+    // read `no-op`, not `fired`.
+    'stack-cards-enter-city-as-villains',
   ]);
 
 /**
@@ -2005,6 +2025,95 @@ export function villainCardPlaysVillainDeckCards(
     }
   }
   return 0;
+}
+
+/**
+ * Returns the Villain Deck card kinds that send a card back into the Sewers at the given timing,
+ * or null when it carries no `reenter-sewers-if-villain-deck-top` descriptor there (WP-868 /
+ * D-24811: Mr. Immortal's Fight, `['villain', 'bystander']`).
+ *
+ * Read by the bridge at the end of defeatCityVillainCore, which owns the reveal and the City
+ * entry; the executor handler is a deliberate no-op. Mirrors villainCardPlaysVillainDeckCards's
+ * guards. Pure lookup over G.villainAbilityHooks; no mutation.
+ *
+ * @param G - Game state (read-only).
+ * @param cardId - The defeated card's zone-instance ext_id.
+ * @param timing - The timing to inspect (the Fight site passes 'onFight').
+ * @returns The first matching descriptor's kinds, or null.
+ */
+export function villainCardReenterSewersKinds(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+): readonly ('villain' | 'bystander')[] | null {
+  // why: guard against G states / test mocks lacking villainAbilityHooks (the
+  // villainCardPlaysVillainDeckCards guard) — getVillainHooksForCard would throw on undefined.
+  if (!G.villainAbilityHooks || G.villainAbilityHooks.length === 0) {
+    return null;
+  }
+  const hooks = getVillainHooksForCard(G.villainAbilityHooks, cardId, timing);
+  for (const hook of hooks) {
+    for (const descriptor of hook.effects ?? []) {
+      if (descriptor.primitive === 'reenter-sewers-if-villain-deck-top' && descriptor.reenterRevealKinds !== undefined) {
+        return descriptor.reenterRevealKinds;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * What a card's `stack-cards-enter-city-as-villains` descriptor sends into the City at the given
+ * timing (WP-869 / D-24814).
+ */
+export interface StackVillainEntry {
+  /** Which stack the cards come from. */
+  kind: 'bystander' | 'officer';
+  /** How many cards enter (the descriptor's `magnitude`). */
+  count: number;
+  /** The marker's name token, or null when the line names none. */
+  nameToken: string | null;
+}
+
+/**
+ * Returns the first `stack-cards-enter-city-as-villains` descriptor a card carries at the given
+ * timing as `{ kind, count, nameToken }`, or null when it carries none there (WP-869 / D-24814:
+ * Groot from Planet X's Fight, Agent Gabe Jones's Fight, Agent Eric Marshall's Ambush).
+ *
+ * Read by the Fight bridge at the end of defeatCityVillainCore and the Ambush bridge in
+ * performVillainReveal; the executor handler is a deliberate no-op. Mirrors
+ * villainCardPlaysVillainDeckCards's guards. Pure lookup over G.villainAbilityHooks; no mutation.
+ *
+ * @param G - Game state (read-only).
+ * @param cardId - The triggering card's zone-instance ext_id.
+ * @param timing - The timing to inspect ('onFight' or 'onAmbush').
+ * @returns The entry, or null.
+ */
+export function villainCardStackVillainEntry(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+): StackVillainEntry | null {
+  // why: guard against G states / test mocks lacking villainAbilityHooks (the
+  // villainCardPlaysVillainDeckCards guard) — getVillainHooksForCard would throw on undefined.
+  if (!G.villainAbilityHooks || G.villainAbilityHooks.length === 0) {
+    return null;
+  }
+  const hooks = getVillainHooksForCard(G.villainAbilityHooks, cardId, timing);
+  for (const hook of hooks) {
+    for (const descriptor of hook.effects ?? []) {
+      if (descriptor.primitive === 'stack-cards-enter-city-as-villains' && descriptor.stackVillainKind !== undefined) {
+        // why: the parser always sets `magnitude` (the `:N` count); a hand-built test hook
+        // lacking it falls back to 1 (the villainCardPlaysVillainDeckCards precedent).
+        return {
+          kind: descriptor.stackVillainKind,
+          count: descriptor.magnitude ?? 1,
+          nameToken: descriptor.stackVillainName ?? null,
+        };
+      }
+    }
+  }
+  return null;
 }
 
 /**
@@ -3286,6 +3395,236 @@ function villainEffectHqHeroGainsSizeChanging(
   const classes = descriptor.sizeChangingGrantClasses ?? [];
   const mode = descriptor.sizeChangingGrantMode ?? 'add';
   grantSizeChangingToHqHero(G, currentPlayer, classes, mode, cardId);
+  return { targets: [] };
+}
+
+/**
+ * hq-heroes-cost-change primitive — the Heroes in the HQ right now cost `magnitude` less or more
+ * to recruit this turn (WP-868 / D-24811): chmp Tim Boo Ba and asrd Jormungand (Fight, 1 less),
+ * vnom Dr. Carlton Drake (Fight, 1 less, Instinct and Tech Heroes only) and msis The Mind Stone
+ * (Ambush, 2 more).
+ *
+ * Walks G.hq left to right and records one G.hqCostChanges entry per Hero whose printed class
+ * (heroClass or heroClass2) is in `costChangeClasses`, or per Hero when no classes are listed.
+ * Keyword-less, so it self-narrates.
+ */
+// why: "currently in the HQ" — the change is a snapshot of the Heroes in the HQ when the line
+// fires, keyed by the copy-unique instance, so a Hero that refills the HQ later this turn pays its
+// printed price (resolveRecruitCost reads the overlay only while the card is in the HQ).
+function villainEffectHqHeroesCostChange(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const amountSize = descriptor.magnitude;
+  const direction = descriptor.costChangeDirection;
+  if (amountSize === undefined || direction === undefined) {
+    return { targets: [] };
+  }
+  const amount = direction === 'less' ? -amountSize : amountSize;
+  const label = villainEffectTimingLabel(timing);
+  const sourceName = resolveCardDisplayName(G, cardId);
+  const changedCardIds: CardExtId[] = [];
+  for (const hqCardId of G.hq) {
+    if (hqCardId === null) {
+      continue;
+    }
+    if (!hqHeroMatchesCostChangeClasses(G, hqCardId, descriptor.costChangeClasses)) {
+      continue;
+    }
+    addHqCostChange(G, { cardId: hqCardId, amount });
+    changedCardIds.push(hqCardId);
+  }
+  if (changedCardIds.length === 0) {
+    pushLog(G, `${label} effect: no matching Heroes in the HQ (${sourceName}).`, 'blocked');
+    return { targets: [] };
+  }
+  const changedNames: string[] = [];
+  for (const changedCardId of changedCardIds) {
+    changedNames.push(resolveCardDisplayName(G, changedCardId));
+  }
+  pushLog(
+    G,
+    `${label} effect: Heroes in the HQ cost ${String(amountSize)} ${direction} this turn (${sourceName}): ${changedNames.join(', ')}.`,
+    'applied',
+  );
+  return { targets: changedCardIds };
+}
+
+/**
+ * Whether an HQ Hero is one the cost change applies to: any Hero when no classes are listed,
+ * otherwise a Hero whose printed heroClass or heroClass2 is listed (WP-868 / D-24811).
+ *
+ * @param G - Game state (read-only).
+ * @param hqCardId - The HQ Hero instance.
+ * @param costChangeClasses - The listed classes, or undefined for every Hero.
+ * @returns True when the change applies to the Hero.
+ */
+function hqHeroMatchesCostChangeClasses(
+  G: LegendaryGameState,
+  hqCardId: CardExtId,
+  costChangeClasses: readonly string[] | undefined,
+): boolean {
+  if (costChangeClasses === undefined) {
+    return true;
+  }
+  const traitEntry = G.cardTraits[hqCardId];
+  if (traitEntry === undefined) {
+    return false;
+  }
+  // why: a dual-class Hero (WP-703 / D-24523) counts when either printed class is listed (Dr.
+  // Carlton Drake: "Each [Instinct] and [Tech] Hero").
+  const primaryClass = traitEntry.heroClass;
+  if (primaryClass !== null && costChangeClasses.includes(primaryClass)) {
+    return true;
+  }
+  const secondClass = traitEntry.heroClass2;
+  return secondClass !== undefined && secondClass !== null && costChangeClasses.includes(secondClass);
+}
+
+/**
+ * ko-from-discard-current primitive — the current (defeating) player must KO `magnitude` cards
+ * from their own discard pile (WP-868 / D-24811: cvwr Flatman "Fight: KO a card from your discard
+ * pile." and six siblings).
+ *
+ * An empty discard is a logged no-op. When the pick cannot matter (the discard holds N or fewer
+ * cards, or every card shares one id) the first N are KO'd at once; otherwise the D-24510
+ * KO-from-discard choice parks with `minCount` equal to `maxCount`, so it cannot be skipped.
+ * Keyword-less, so it self-narrates.
+ */
+function villainEffectKoFromDiscardCurrent(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const koCount = descriptor.magnitude;
+  if (koCount === undefined) {
+    return { targets: [] };
+  }
+  const zones = G.playerZones[currentPlayer];
+  if (!zones) {
+    return { targets: [] };
+  }
+  const label = villainEffectTimingLabel(timing);
+  const sourceName = resolveCardDisplayName(G, cardId);
+  if (zones.discard.length === 0) {
+    pushLog(G, `${label} effect: your discard pile is empty (${sourceName}); nothing to KO.`, 'blocked');
+    return { targets: [] };
+  }
+  // why: D-24811 — a prompt is only worth showing when the choice can change the outcome. With N
+  // or fewer cards every one of them goes; with one shared id (three Wounds) any copy is the same
+  // card, so the KO happens at once with the same bookkeeping as resolveKoDiscardChoice.
+  if (zones.discard.length <= koCount || discardHoldsOneCardId(zones.discard)) {
+    return koFirstDiscardCardsDirectly(G, currentPlayer, koCount, label, sourceName);
+  }
+  // why: D-24811 — "KO a card" is mandatory, so the shared choice parks with `minCount`; the resolve
+  // move, the bot, the projection and the prompt all refuse fewer than the required count. The
+  // queue is created lazily so an untriggered match keeps a byte-identical hash.
+  if (!G.pendingKoDiscardChoices) {
+    G.pendingKoDiscardChoices = [];
+  }
+  const entry: PendingKoDiscardChoice = {
+    choiceType: 'ko-from-discard',
+    playerID: currentPlayer,
+    maxCount: koCount,
+    minCount: koCount,
+    sourceCardId: cardId,
+  };
+  G.pendingKoDiscardChoices.push(entry);
+  pushLog(G, `${label} effect: KO ${String(koCount)} card(s) from your discard pile (${sourceName}).`, 'neutral');
+  return { targets: [], pending: true };
+}
+
+/**
+ * Whether every card in a discard pile shares one id (three Wounds, two S.H.I.E.L.D. Agents).
+ *
+ * @param discard - The discard pile (not mutated).
+ * @returns True when the pile is non-empty and holds a single distinct id.
+ */
+function discardHoldsOneCardId(discard: readonly CardExtId[]): boolean {
+  const firstCardId = discard[0];
+  if (firstCardId === undefined) {
+    return false;
+  }
+  for (const discardCardId of discard) {
+    if (discardCardId !== firstCardId) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * KOs the first `koCount` cards of the current player's discard pile with no prompt
+ * (WP-868 / D-24811), then narrates them.
+ *
+ * @param G - Game state, mutated in place.
+ * @param currentPlayer - The defeating player.
+ * @param koCount - The most cards to KO.
+ * @param label - The timing label for the log line.
+ * @param sourceName - The display name of the villain whose line fired.
+ * @returns The KO'd card ids.
+ */
+function koFirstDiscardCardsDirectly(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  koCount: number,
+  label: string,
+  sourceName: string,
+): VillainEffectApplication {
+  const zones = G.playerZones[currentPlayer]!;
+  const cardIdsToKo = zones.discard.slice(0, koCount);
+  const koedCardIds: CardExtId[] = [];
+  for (const discardCardId of cardIdsToKo) {
+    const moveResult = moveCardFromZone(zones.discard, [], discardCardId);
+    if (!moveResult.found) {
+      continue;
+    }
+    zones.discard = moveResult.from;
+    // why: the same KO bookkeeping as resolveKoDiscardChoice, so an owned-card-KO grant ("whenever
+    // you KO a card from your discard pile") sees a direct KO exactly as it sees a chosen one.
+    G.ko = koCard(G.ko, discardCardId);
+    recordOwnedCardKoed(G, currentPlayer, discardCardId, 'discard');
+    koedCardIds.push(discardCardId);
+  }
+  const koedNames: string[] = [];
+  for (const koedCardId of koedCardIds) {
+    koedNames.push(resolveCardDisplayName(G, koedCardId));
+  }
+  pushLog(G, `${label} effect: KO'd ${koedNames.join(', ')} from your discard pile (${sourceName}).`, 'applied');
+  return { targets: koedCardIds };
+}
+
+/**
+ * reenter-sewers-if-villain-deck-top primitive — Mr. Immortal's Fight (WP-868 / D-24811). A
+ * DELIBERATE NO-OP here (the WP-481 / WP-542 secondary-fire-site pattern).
+ *
+ * // why: the reveal and the City entry need the escape procedure, which takes a `RevealContext`
+ * and an `implementationMap` the executor does not receive, so the work runs in the bridge at the
+ * end of defeatCityVillainCore (`reenterSewersOnVillainDeckReveal`), read through
+ * `villainCardReenterSewersKinds`. The primitive is listed in DELIBERATE_NO_OP_VILLAIN_PRIMITIVES
+ * so its trace reads `no-op`, not `fired`; the bridge narrates.
+ */
+function villainEffectReenterSewersIfVillainDeckTop(): VillainEffectApplication {
+  return { targets: [] };
+}
+
+/**
+ * stack-cards-enter-city-as-villains primitive — Groot from Planet X's Fight, Agent Gabe Jones's
+ * Fight and Agent Eric Marshall's Ambush (WP-869 / D-24814). A DELIBERATE NO-OP here (the WP-542
+ * secondary-fire-site pattern, D-24351).
+ *
+ * // why: City entry can push a card out through the escape procedure, which takes a
+ * `RevealContext` and an `implementationMap` the executor does not receive, so the work runs in
+ * `enterStackCardsAsVillains` (villainDeck.reveal.ts), called from the end of defeatCityVillainCore
+ * (onFight) and from performVillainReveal (onAmbush), read through `villainCardStackVillainEntry`.
+ * Listed in DELIBERATE_NO_OP_VILLAIN_PRIMITIVES so its trace reads `no-op`; the bridge narrates.
+ */
+function villainEffectStackCardsEnterCityAsVillains(): VillainEffectApplication {
   return { targets: [] };
 }
 
@@ -4723,7 +5062,317 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'hq-heroes-to-hero-deck-bottom': villainEffectHqHeroesToHeroDeckBottom,
   // why: WP-862 / D-24804 — position 39, the Size-Changing grant on a chosen HQ Hero.
   'hq-hero-gains-size-changing': villainEffectHqHeroGainsSizeChanging,
+  // why: WP-868 / D-24811 — positions 40-42: the HQ cost change (Tim Boo Ba / Jormungand / Dr.
+  // Carlton Drake / The Mind Stone), the mandatory KO from your discard pile (Flatman + six
+  // siblings) and Mr. Immortal's reenter (a deliberate no-op; the defeatCityVillainCore bridge acts).
+  'hq-heroes-cost-change': villainEffectHqHeroesCostChange,
+  'ko-from-discard-current': villainEffectKoFromDiscardCurrent,
+  'reenter-sewers-if-villain-deck-top': villainEffectReenterSewersIfVillainDeckTop,
+  // why: WP-873 / D-24818 — position 43: Squirrel Girl and Colleen Wing's Escape Fortify.
+  // Keyword-less, self-narrating. Moves the escaped Villain into G.fortifications.
+  fortify: villainEffectFortify,
+  // why: WP-864 / D-24807 — position 44: Trull the Unhuman's Ambush, Zzutak's and Piledriver's
+  // Escape Demolish. Keyword-less, self-narrating through the shared demolishEachPlayer.
+  'demolish-each-player': villainEffectDemolishEachPlayer,
+  // why: WP-869 / D-24814 — position 45: Groot from Planet X / Agent Gabe Jones / Agent Eric
+  // Marshall's stack cards entering the City as Villains (a deliberate no-op; the Fight and Ambush
+  // bridges act).
+  'stack-cards-enter-city-as-villains': villainEffectStackCardsEnterCityAsVillains,
+  // why: WP-870 / D-24815 — positions 46-48: Mandarin's Rings Lightning (and antm Daystar) KO-or-
+  // keep the deck top, Spin discards the 0-cost cards of the top six and reorders the rest, Zero
+  // queues the next-hand pick. All keyword-less, self-narrating; each reuses a shipped queue.
+  'reveal-top-may-ko-current': villainEffectRevealTopMayKoCurrent,
+  'reveal-top-discard-zero-cost-current': villainEffectRevealTopDiscardZeroCostCurrent,
+  'next-hand-from-play-zero-cost-current': villainEffectNextHandFromPlayZeroCostCurrent,
 };
+
+/**
+ * demolish-each-player primitive — "[Demolish] each player" (WP-864 / D-24807: Trull the
+ * Unhuman's Ambush after its Bystander capture, Zzutak's and Piledriver's Escape). Rules v23 p.24.
+ *
+ * Delegates to the shared `demolishEachPlayer` resolver: one Hero Deck reveal, bottomed, and
+ * each player, current player first, discards the earliest hand card of its cost. No params;
+ * keyword-less, so the resolver's own lines narrate it. Never throws.
+ *
+ * @param G - Game state (mutated: Hero Deck order, hands, discards, messages).
+ * @param currentPlayer - The active player; the discard loop starts with them (D-24780).
+ * @param _cardId - Unused.
+ * @param timing - The timing that fired (for the "<Ambush|Escape> effect:" label).
+ * @returns `{ targets: [] }` always — a keyword-less result is never recorded.
+ */
+function villainEffectDemolishEachPlayer(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+): VillainEffectApplication {
+  demolishEachPlayer(G, currentPlayer, `${villainEffectTimingLabel(timing)} effect:`);
+  return { targets: [] };
+}
+
+/**
+ * reveal-top-may-ko-current primitive — the current (defeating) player reveals the top card
+ * of their deck and may KO it (WP-870 / D-24815: Mandarin's Rings Lightning, The Electro-Blast,
+ * and antm Daystar, "Fight: Reveal the top card of your deck. You may KO it.").
+ *
+ * Snapshots the deck top (reshuffle-on-empty) and parks ONE PendingRevealTopDispose whose single
+ * entry allows KO and forbids discard, so the shipped resolveRevealTopDispose accepts only 'ko'
+ * or 'top' (keep it on top). Keyword-less, so it self-narrates.
+ *
+ * @returns `{ targets: [], pending: true }` on a park; `{ targets: [] }` with nothing to reveal.
+ */
+function villainEffectRevealTopMayKoCurrent(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  _timing: VillainAbilityTiming,
+  _descriptor: VillainEffectDescriptor,
+  shuffleContext?: ShuffleProvider,
+): VillainEffectApplication {
+  // why: WP-870 / D-24815 — duplicated from the hero side's WP-754 KO-or-keep park
+  // (heroEffectRevealTopMayKo) rather than imported: the villain executor does not import the
+  // hero executor (a module-cycle risk for a ~25-line park), and code-style Rule 1 duplicates
+  // until a third copy. The resolve move (resolveRevealTopDispose), the stale-front refresh, the
+  // prompt and the UIState projection are shared, unchanged.
+  const zones = G.playerZones[currentPlayer];
+  if (!zones) {
+    return { targets: [] };
+  }
+  // why: D-24285 — "reveal the top card" is a reveal, so an empty deck reshuffles the discard
+  // first (reshuffleDiscardIntoDeck no-ops on an empty discard or a missing shuffle source).
+  if (zones.deck.length === 0) {
+    reshuffleDiscardIntoDeck(zones, shuffleContext);
+  }
+  const revealedCardId = zones.deck[0];
+  if (revealedCardId === undefined) {
+    pushLog(G, `Player ${currentPlayer} had no card to reveal on top of their deck (reveal-top).`, 'blocked');
+    return { targets: [] };
+  }
+  const revealedEntry: RevealedTopEntry = {
+    ownerPlayerID: currentPlayer,
+    cardId: revealedCardId,
+    isKoAllowed: true,
+    isDiscardAllowed: false,
+  };
+  if (!G.pendingRevealTopDispose) {
+    G.pendingRevealTopDispose = [];
+  }
+  const isQueuedBehindAnotherChoice = G.pendingRevealTopDispose.length > 0;
+  G.pendingRevealTopDispose.push({
+    choiceType: 'reveal-top-dispose',
+    playerID: currentPlayer,
+    revealedTops: [revealedEntry],
+  } satisfies PendingRevealTopDispose);
+  if (isQueuedBehindAnotherChoice) {
+    // why: the snapshot is provisional while a choice ahead can still change the top;
+    // refreshStaleKoOrKeepFront logs the real reveal when this choice moves up (WP-754).
+    pushLog(G,
+      `Player ${currentPlayer} queues another reveal of the top card of their deck — it is shown once the choice before it resolves (reveal-top).`,
+      'neutral',
+    );
+    return { targets: [], pending: true };
+  }
+  pushLog(G,
+    `Player ${currentPlayer} revealed ${formatCardRef(G.cardDisplayData, revealedCardId)} from the top of their deck — KO it or keep it (reveal-top).`,
+    'neutral',
+    revealedCardId,
+  );
+  return { targets: [], pending: true };
+}
+
+/**
+ * reveal-top-discard-zero-cost-current primitive — the current (defeating) player reveals the
+ * top `magnitude` cards of their deck, discards every one that costs 0, then puts the rest back
+ * in any order (WP-870 / D-24815: Mandarin's Rings Spin, The Vortex Beam, "Fight: Reveal the top
+ * six cards of your deck. Discard all of them that cost 0, then put the rest back in any order.").
+ *
+ * Parks the shipped WP-479 PendingReorderChoice over two or more survivors. Keyword-less, so it
+ * self-narrates.
+ *
+ * @returns `{ targets: [], pending: true }` when a reorder parked, else `{ targets: [] }`.
+ */
+function villainEffectRevealTopDiscardZeroCostCurrent(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  _timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+  shuffleContext?: ShuffleProvider,
+): VillainEffectApplication {
+  const count = descriptor.magnitude;
+  if (count === undefined) {
+    return { targets: [] };
+  }
+  const zones = G.playerZones[currentPlayer];
+  if (!zones) {
+    return { targets: [] };
+  }
+  // why: D-24285 — "reveal the top N cards" tops a short deck up from the discard first (the
+  // reveal-reshuffle rule; reshuffleDiscardIntoDeck no-ops on an empty discard).
+  if (zones.deck.length < count) {
+    reshuffleDiscardIntoDeck(zones, shuffleContext);
+  }
+  const lookedAt = zones.deck.slice(0, count);
+  if (lookedAt.length === 0) {
+    pushLog(G, `Player ${currentPlayer} had no cards to reveal (cost-0 discard).`, 'blocked');
+    return { targets: [] };
+  }
+  const discardedCount = discardZeroCostLookedAtCards(G, currentPlayer, zones, lookedAt);
+  const remaining = lookedAt.length - discardedCount;
+  // why: WP-479 / D-24286 — "put the rest back in any order" parks a reorder only for two or
+  // more survivors (zero or one card has a single order). The survivors kept their relative
+  // order on top, so the top `remaining` cards are exactly them.
+  if (remaining < 2) {
+    return { targets: [] };
+  }
+  if (!G.pendingReorderChoices) {
+    G.pendingReorderChoices = [];
+  }
+  G.pendingReorderChoices.push({
+    choiceType: 'reorder-deck-top',
+    playerID: currentPlayer,
+    cardIds: zones.deck.slice(0, remaining),
+  } satisfies PendingReorderChoice);
+  pushLog(G,
+    `Player ${currentPlayer} puts the other ${String(remaining)} revealed cards back in any order.`,
+    'neutral',
+  );
+  return { targets: [], pending: true };
+}
+
+/**
+ * Moves each looked-at deck-top card that costs 0 from the deck to the discard, in reveal
+ * order, logging one line per card (Spin, WP-870 / D-24815).
+ *
+ * @param G - Game state (log appended).
+ * @param currentPlayer - The defeating player whose deck was revealed.
+ * @param zones - That player's zones (deck and discard reassigned in place).
+ * @param lookedAt - The revealed deck-top cards, in deck order.
+ * @returns How many cards were discarded.
+ */
+function discardZeroCostLookedAtCards(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  zones: PlayerZones,
+  lookedAt: readonly CardExtId[],
+): number {
+  let discardedCount = 0;
+  for (const lookedAtCardId of lookedAt) {
+    // why: D-24583 — cost 0 is a printed cost of 0 or a Wound (rules v23 L2861-2862); a card
+    // with no known cost is not 0 and stays.
+    if (resolveRevealedDeckTopCost(G, lookedAtCardId) !== 0) {
+      continue;
+    }
+    // why: the discard is a deck → discard move (the resolveRevealTopDispose discard branch's
+    // move), not a hand discard, so hand-discard reactions (discardFromHand) do not fire, as
+    // for every shipped reveal-discard. moveCardFromZone removes the first occurrence, which is
+    // inside the looked-at window: every earlier copy of the same id in that window was already
+    // discarded, and a copy below the window never precedes it.
+    const moveResult = moveCardFromZone(zones.deck, zones.discard, lookedAtCardId);
+    if (!moveResult.found) {
+      continue;
+    }
+    zones.deck = moveResult.from;
+    zones.discard = moveResult.to;
+    discardedCount += 1;
+    pushLog(G,
+      `Player ${currentPlayer} discarded ${formatCardRef(G.cardDisplayData, lookedAtCardId)} from the top of their deck (cost 0).`,
+      'applied',
+      lookedAtCardId,
+    );
+  }
+  return discardedCount;
+}
+
+/**
+ * next-hand-from-play-zero-cost-current primitive — the current (defeating) player chooses a
+ * card they played this turn that costs 0 and adds it to their next hand as an extra card
+ * (WP-870 / D-24815: Mandarin's Rings Zero, The Ice Blast).
+ *
+ * Only records the owed pick; the play-phase onMove opener resolves it. Keyword-less, so it
+ * self-narrates.
+ *
+ * @returns `{ targets: [], pending: true }` (the pick is owed).
+ */
+function villainEffectNextHandFromPlayZeroCostCurrent(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+): VillainEffectApplication {
+  // why: WP-870 / D-24815 — the villain executor receives no boardgame.io events, so it cannot
+  // park the seat choice itself: it queues the owed pick and the play-phase onMove opener (and
+  // the rebuilt sim / PAR / fixture loops) opens it, the D-24750 / D-24779 precedent. The chosen
+  // card stays in play until cleanup and returns through the shipped D-24797 set-aside.
+  queueNextHandFromPlayPick(G, currentPlayer, cardId);
+  pushLog(G,
+    `Player ${currentPlayer} will add a 0-cost card they played this turn to their next hand (${formatCardRef(G.cardDisplayData, cardId)}).`,
+    'neutral',
+    cardId,
+  );
+  return { targets: [], pending: true };
+}
+
+/**
+ * fortify primitive — the escaped Villain leaves the Escape Pile and fortifies a place until a
+ * player fights it there (WP-873 / D-24818: cvwr Squirrel Girl fortifies the Sidekick Stack,
+ * Colleen Wing the Mastermind). Rules v23 L1454-1466.
+ *
+ * One Villain per place: when another Villain already fortifies the place, this one stays in
+ * the Escape Pile and the log says why. Keyword-less, so it self-narrates.
+ */
+function villainEffectFortify(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  // why: WP-873 / D-24818 — Fortify is printed only as an Escape effect, and only the escape
+  // site has just put the Villain in the Escape Pile, so any other timing is a no-op (no
+  // write, no log) even when the card happens to sit in the pile.
+  if (timing !== 'onEscape') {
+    return { targets: [] };
+  }
+  const place = descriptor.fortifyPlace;
+  const lock = descriptor.fortifyLock;
+  if (place === undefined || lock === undefined) {
+    return { targets: [] };
+  }
+  // why: D-24656 — the HQ KO and Bystander discard this escape owes were enqueued before this
+  // Escape effect and still resolve after the move; Fortify takes only the Villain card out of
+  // the Escape Pile, and the escape counter keeps counting the escape.
+  const outcome = fortifyWithEscapedVillain(G, place, lock, cardId);
+  const villainName = resolveCardDisplayName(G, cardId);
+  const placeLabel = FORTIFY_PLACE_LABELS[place];
+  switch (outcome) {
+    case 'fortified':
+      pushLog(
+        G,
+        `${villainName} fortifies ${placeLabel}: ${FORTIFY_LOCK_TEXT[lock]} until a player fights ${villainName}.`,
+        'threat',
+      );
+      return { targets: [] };
+    case 'already-fortified': {
+      const existing = getFortification(G, place);
+      const otherName = existing !== null ? resolveCardDisplayName(G, existing.villainCardId) : 'another Villain';
+      pushLog(
+        G,
+        `${villainName} can't fortify ${placeLabel}: ${otherName} already fortifies it, so ${villainName} stays in the Escape Pile.`,
+        'blocked',
+      );
+      return { targets: [] };
+    }
+    case 'not-in-escape-pile':
+      return { targets: [] };
+    default: {
+      // why: compile-time exhaustiveness (the WP-871 isFightRestrictionBlocking precedent) — an
+      // outcome added to FortifyOutcome without its arm here fails `tsc` instead of silently
+      // skipping its log line. Intentionally unused (no tsconfig sets noUnusedLocals).
+      const unhandledOutcome: never = outcome;
+      return { targets: [] };
+    }
+  }
+}
 
 /**
  * Applies one villain effect descriptor deterministically by dispatching to its

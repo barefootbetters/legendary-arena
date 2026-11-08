@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "_comment": "Master Strike ext_id -> {status, handler, wp, decision} provenance overlay for the effect-implementation index's Master Strike rows (WP-867 / D-24810). Strike IDENTITY (one row per Mastermind: extId / name / set / mechanic 'master-strike') is enumerated automatically from the mastermind card data by scripts/build-effect-implementation-index.mjs, so every Mastermind's Master Strike appears in the index without an entry here; this file curates ONLY status/handler/wp/decision for Masterminds whose printed strike has an arm in mastermindStrikeHandler (the WP-507 tactic-provenance pattern). A Mastermind absent from this map defaults to status 'unmarked' with blank handler/wp/decision -- the honest 'no handler ran' signal, never a fabricated attribution; at runtime its strike records a 'master-strike' hollow effect. wp / decision name the WP and decision that made the printed strike resolve IN FULL (so co2e Doctor Octopus and Loki cite WP-397 / D-24200 and WP-398 / D-24201, which finished the branches D-24192 left open, and both Red Skull rows cite WP-577 / D-24386, which superseded the D-24188 auto-pick). 'deferred' marks an arm that resolves the strike only partially (General Ross: the face flip runs, the named follow-on is logged as not modeled). An engine test (packages/game-engine/src/rules/mastermindStrike.unresolved.test.ts) runs the real dispatcher for every executable / deferred row and fails if one records a hollow, and the generator fails on a key that matches no Mastermind. Keyed by ${setAbbr}-mastermind-${mastermindSlug}-master-strike; keys sorted.",
+  "strikes": {
+    "ca75-mastermind-arnim-zola-master-strike": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveArnimZolaStrike",
+      "wp": "WP-821",
+      "decision": "D-24754"
+    },
+    "ca75-mastermind-baron-heinrich-zemo-master-strike": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveBaronZemoStrike",
+      "wp": "WP-818",
+      "decision": "D-24752"
+    },
+    "chmp-mastermind-fin-fang-foom-master-strike": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveFinFangFoomStrike",
+      "wp": "WP-864",
+      "decision": "D-24807"
+    },
+    "co2e-mastermind-doctor-doom-master-strike": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveDoctorDoomStrike",
+      "wp": "WP-388",
+      "decision": "D-24192"
+    },
+    "co2e-mastermind-doctor-octopus-master-strike": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveDoctorOctopusStrike",
+      "wp": "WP-397",
+      "decision": "D-24200"
+    },
+    "co2e-mastermind-loki-master-strike": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveLokiStrike",
+      "wp": "WP-398",
+      "decision": "D-24201"
+    },
+    "co2e-mastermind-magneto-master-strike": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveCo2eMagnetoStrike",
+      "wp": "WP-388",
+      "decision": "D-24192"
+    },
+    "co2e-mastermind-red-skull-master-strike": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveRedSkullStrike",
+      "wp": "WP-577",
+      "decision": "D-24386"
+    },
+    "core-mastermind-dr-doom-master-strike": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveCoreDoomStrike",
+      "wp": "WP-538",
+      "decision": "D-24347"
+    },
+    "core-mastermind-loki-master-strike": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveCoreLokiStrike",
+      "wp": "WP-537",
+      "decision": "D-24346"
+    },
+    "core-mastermind-magneto-master-strike": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveMagnetoStrike",
+      "wp": "WP-476",
+      "decision": "D-24284"
+    },
+    "core-mastermind-red-skull-master-strike": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveRedSkullStrike",
+      "wp": "WP-577",
+      "decision": "D-24386"
+    },
+    "rvlt-mastermind-mandarin-master-strike": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveMandarinStrike",
+      "wp": "WP-875",
+      "decision": "D-24822"
+    },
+    "wwhk-mastermind-general-thunderbolt-ross-master-strike": {
+      "status": "deferred",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveGeneralRossStrike",
+      "wp": "WP-669",
+      "decision": "D-24483"
+    }
+  }
+}

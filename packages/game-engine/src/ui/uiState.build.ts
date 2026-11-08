@@ -34,6 +34,7 @@ import type {
   UIEnigmaCodeState,
   UIPlayerState,
   UICityCard,
+  UIFortifier,
   UIGameOverState,
   UIProgressCounters,
   UIFinalTurnState,
@@ -156,6 +157,24 @@ import { getEligibleKoDiscardCards } from '../moves/koDiscardChoice.resolve.js';
 // why: WP-817 / D-24750 — handCosts projects the same off-play cost the fight-discard
 // gate reads (isHandCardCostOneOf), so the client and the engine agree on eligibility.
 import { offPlayCardStats } from '../hero/splitCard.logic.js';
+// why: WP-871 / D-24816 — the City projection asks the one fight-restriction authority
+// (shared with fightVillain and getLegalMoves) whether, and why, a fight is blocked.
+// why: WP-873 / D-24818 — the Fortify projection also reads the same fight-restriction
+// authority the fortifier fight uses (FIGHT_RESTRICTION_REASONS, getFightRestriction,
+// isFightRestrictionBlocking), and the fortify helpers (the only readers of G.fortifications).
+import {
+  FIGHT_RESTRICTION_REASONS,
+  getFightRestriction,
+  getFightRestrictionBlockReason,
+  isFightRestrictionBlocking,
+} from '../moves/villainDefeatRequirement.logic.js';
+import {
+  buildFortifyBlockReason,
+  isMastermindFortified,
+  isSidekickStackFortified,
+  listFortifications,
+} from '../board/fortify.logic.js';
+import { FORTIFY_LOCK_TEXT, FORTIFY_PLACE_LABELS } from '../board/fortify.types.js';
 import { enigmaColorsOf } from '../rules/enigmaCode.logic.js';
 
 // why: exact structural contract — do not widen or add optional fields.
@@ -684,7 +703,12 @@ function matchHasSizeChangingCard(gameState: LegendaryGameState): boolean {
   // why: WP-862 / D-24804 — a Size-Changing granted during play can discount an HQ Hero in a
   // match with no printed Size-Changing card, so an open grant also puts recruitCosts on the board.
   const hasGrant = gameState.hqSizeChangingGrants !== undefined;
-  return sizeChangingCount > 0 || microscopicCount > 0 || hasGrant;
+  // why: WP-868 / D-24811 — a "Heroes currently in the HQ cost N less / more this turn" change
+  // moves an HQ price in a match with no Size-Changing card at all; without recruitCosts the
+  // client prices the slot at its printed cost and gates Recruit wrongly, so an open change also
+  // puts recruitCosts on the board (it is deleted at end-of-turn cleanup, and so is the field).
+  const hasCostChange = gameState.hqCostChanges !== undefined;
+  return sizeChangingCount > 0 || microscopicCount > 0 || hasGrant || hasCostChange;
 }
 
 /**
@@ -709,6 +733,72 @@ function buildHqRecruitCosts(
     }
   }
   return recruitCosts;
+}
+
+/** The Fortify projection inputs buildUIState spreads into three public fields (WP-873). */
+interface FortifyProjection {
+  fortifiers: UIFortifier[];
+  mastermindFortifiedReason: string | null;
+  sidekickStackFortifiedReason: string | null;
+}
+
+/**
+ * Builds the Fortify projection: one UIFortifier per fortified place, and the reason each
+ * locked place shows (WP-873 / D-24818).
+ *
+ * // why: public inputs only — a fortifier is face up on the table and every predicate input
+ * (cards played this turn, the fortifications) is public, so every audience sees the same
+ * values. Each field still MUST pass through filterUIStateForAudience (the five-step
+ * UIState contract; a skipped pass-through is silently dropped, the EC-206 class).
+ *
+ * @param gameState - Current game state (read-only).
+ * @param activePlayerId - The player who can fight (prices and restrictions are theirs).
+ * @returns The fortifier tiles and the two lock reasons (null when not locked).
+ */
+function buildFortifyProjection(gameState: LegendaryGameState, activePlayerId: string): FortifyProjection {
+  const fortifiers: UIFortifier[] = [];
+  let mastermindFortifiedReason: string | null = null;
+  let sidekickStackFortifiedReason: string | null = null;
+  for (const entry of listFortifications(gameState)) {
+    const villainCardId = entry.fortification.villainCardId;
+    const restriction = getFightRestriction(gameState, villainCardId);
+    const isRestricted =
+      restriction !== null && isFightRestrictionBlocking(gameState, activePlayerId, null, restriction);
+    fortifiers.push({
+      place: entry.place,
+      placeLabel: FORTIFY_PLACE_LABELS[entry.place],
+      extId: villainCardId,
+      display: resolveDisplay(villainCardId, gameState),
+      // why: D-24802 — built exactly like UICityCard.fightCost: the active player's price,
+      // floored at 0, the debit findFightableFortifier checks.
+      fightCost: Math.max(0, resolveFightPrice(gameState, villainCardId, activePlayerId)),
+      lockText: FORTIFY_LOCK_TEXT[entry.fortification.lock],
+      ...(isRestricted && restriction !== null
+        ? { fightRestrictionReason: FIGHT_RESTRICTION_REASONS[restriction.kind] }
+        : {}),
+    });
+    switch (entry.place) {
+      case 'sidekick-stack':
+        if (isSidekickStackFortified(gameState)) {
+          sidekickStackFortifiedReason = buildFortifyBlockReason(gameState, 'sidekick-stack');
+        }
+        break;
+      case 'mastermind':
+        if (isMastermindFortified(gameState)) {
+          mastermindFortifiedReason = buildFortifyBlockReason(gameState, 'mastermind');
+        }
+        break;
+      default: {
+        // why: compile-time exhaustiveness (the WP-871 precedent) — a place appended to
+        // FortifyPlace without a projected lock reason here fails `tsc`, instead of shipping a
+        // fortified place whose locked button the client still shows live (D-24574).
+        // Intentionally unused (no tsconfig sets noUnusedLocals).
+        const unhandledPlace: never = entry.place;
+        break;
+      }
+    }
+  }
+  return { fortifiers, mastermindFortifiedReason, sidekickStackFortifiedReason };
 }
 
 export function buildUIState(
@@ -922,7 +1012,8 @@ export function buildUIState(
   // why: city projection includes type and keywords for display without
   // exposing the raw villainDeckCardTypes or cardKeywords maps
   const citySpaces: (UICityCard | null)[] = [];
-  for (const space of gameState.city) {
+  for (let cityIndex = 0; cityIndex < gameState.city.length; cityIndex++) {
+    const space = gameState.city[cityIndex] ?? null;
     if (space === null) {
       citySpaces.push(null);
     } else {
@@ -938,6 +1029,10 @@ export function buildUIState(
       // count only (D-24311); it is still never flattened onto the mastermind.
       const spaceAttachedBystanders = gameState.attachedBystanders?.[space] ?? [];
       const spaceFightDiscardCosts = gameState.villainFightDiscardCosts?.[space];
+      // why: WP-871 / D-24816 — every input of the restriction predicate is public, so the
+      // reason ships to every audience; it is computed for ctx.currentPlayer, the only
+      // player who can fight, exactly like fightCost below.
+      const fightRestrictionReason = getFightRestrictionBlockReason(gameState, ctx.currentPlayer, cityIndex);
       citySpaces.push({
         extId: space,
         type: gameState.villainDeckCardTypes[space] ?? 'unknown',
@@ -969,6 +1064,9 @@ export function buildUIState(
         ...(spaceFightDiscardCosts !== undefined
           ? { fightDiscardCosts: [...spaceFightDiscardCosts.eligibleCosts] }
           : {}),
+        // why: WP-871 / D-24816 — present only while the restriction blocks, so every
+        // unrestricted City card keeps a byte-identical projection.
+        ...(fightRestrictionReason !== null ? { fightRestrictionReason } : {}),
       });
     }
   }
@@ -977,6 +1075,9 @@ export function buildUIState(
     gameState.escapedPile,
     gameState,
   );
+  // why: WP-873 / D-24818 — one pass over G.fortifications feeds the City, Mastermind and
+  // shared-pile fields below; every field is omitted when nothing is fortified.
+  const fortifyProjection = buildFortifyProjection(gameState, ctx.currentPlayer);
 
   // --- 4. Project HQ ---
   // why: HQ slots expose ext_ids for registry display lookup; no
@@ -1078,6 +1179,11 @@ export function buildUIState(
     // why: WP-757 / D-24587 — omit-when-absent: the key exists only while the Mastermind
     // haunts, read from the same isMastermindHaunting predicate fightMastermind uses.
     ...(isMastermindHaunting(gameState) ? { isHaunting: true as const } : {}),
+    // why: WP-873 / D-24818 — omit-when-absent: the key exists only while a Villain fortifies
+    // the Mastermind (isMastermindFortified, the predicate fightMastermind gates on).
+    ...(fortifyProjection.mastermindFortifiedReason !== null
+      ? { fortifiedReason: fortifyProjection.mastermindFortifiedReason }
+      : {}),
   };
 
   // --- 6. Project scheme — derive twist count ---
@@ -1277,6 +1383,11 @@ export function buildUIState(
     // why: WP-842 / D-24776 — the Sidekicks cell is the second recruitable supply pile; its
     // card face is projected the same way (fresh copy, UNKNOWN fallback) and always built.
     sidekickDisplay: resolveDisplay(SIDEKICK_EXT_ID, gameState),
+    // why: WP-873 / D-24818 — omit-when-absent: present only while a Villain fortifies the
+    // Sidekick Stack (isSidekickStackFortified, the predicate recruitSidekick gates on).
+    ...(fortifyProjection.sidekickStackFortifiedReason !== null
+      ? { sidekickStackFortifiedReason: fortifyProjection.sidekickStackFortifiedReason }
+      : {}),
   };
 
   // --- 12. Project KO pile ---
@@ -1723,6 +1834,10 @@ export function buildUIState(
         // why: WP-850 / D-24786 — tells the prompt the list is "the cards you just discarded";
         // omitted (never an `undefined` or `false` literal) on every other entry.
         ...(frontChoice.eligibleCardIds !== undefined ? { isLimitedToDiscardedThisWay: true } : {}),
+        // why: WP-868 / D-24811 — a mandatory "KO a card from your discard pile" (Flatman) tells
+        // the prompt it cannot submit fewer than the required count or offer "KO None"; omitted
+        // (never an `undefined` literal) on every "up to N" entry.
+        ...(frontChoice.minCount !== undefined ? { minCount: frontChoice.minCount } : {}),
         discard,
       };
     }
@@ -2567,7 +2682,12 @@ export function buildUIState(
     players,
     // why: WP-128 / D-12806 — `escapedPile` ships safe-skip `[]` until
     // a future WP adds `G.city.escapedPile`.
-    city: { spaces: citySpaces, escapedPile },
+    // why: WP-873 / D-24818 — `fortifiers` only when a place is fortified (lazy projection).
+    city: {
+      spaces: citySpaces,
+      escapedPile,
+      ...(fortifyProjection.fortifiers.length > 0 ? { fortifiers: fortifyProjection.fortifiers } : {}),
+    },
     // why: WP-111 — slots preserved verbatim (PS-6 fallback); slotDisplay
     // added as a parallel array. Length-equals-slots invariant is
     // maintained by the unified for-of loop above.

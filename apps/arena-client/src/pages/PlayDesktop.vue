@@ -907,6 +907,7 @@ export default defineComponent({
                          tile's marker (shown only when > 0) stays hidden. -->
                     <MastermindTile
                       :mastermind="snapshot.mastermind"
+                      :fortifiers="snapshot.city.fortifiers ?? []"
                       :current-stage="snapshot.game.currentStage"
                       :is-viewer-turn="isViewerTurn"
                       :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
@@ -932,6 +933,7 @@ export default defineComponent({
                   </div>
                   <SharedDecks
                     :piles="snapshot.piles"
+                    :fortifiers="snapshot.city.fortifiers ?? []"
                     :current-stage="snapshot.game.currentStage"
                     :is-viewer-turn="isViewerTurn"
                     :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
@@ -1634,16 +1636,18 @@ export default defineComponent({
    mastermind zone) preserves 3D only while one of the three is hovered, and the
    plane steps out of hit testing meanwhile, for the same z-fight and slide reasons
    as the City and HQ (EC-890 Amendment A). The Enigma exclusion is the static
-   --guessing class because :has() cannot nest. */
-.play-desktop__board-plane--lift:has(.mastermind-tile--tilt-lift:not(.mastermind-tile--guessing) .mastermind__fight-button:hover, .shared-decks--tilt-lift .shared-decks__cell:hover > .shared-decks__recruit),
-.play-desktop__board-plane--lift:has(.mastermind-tile--tilt-lift:not(.mastermind-tile--guessing) .mastermind__fight-button:hover, .shared-decks--tilt-lift .shared-decks__cell:hover > .shared-decks__recruit) .play-desktop__adversary-band,
-.play-desktop__board-plane--lift:has(.mastermind-tile--tilt-lift:not(.mastermind-tile--guessing) .mastermind__fight-button:hover, .shared-decks--tilt-lift .shared-decks__cell:hover > .shared-decks__recruit) .play-desktop__mastermind-zone {
+   --guessing class because :has() cannot nest; the fortified exclusions
+   (--fortified, D-24819) are static classes for the same reason, so a fortified
+   place never lifts over its fortifier chip. */
+.play-desktop__board-plane--lift:has(.mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):not(.mastermind-tile--fortified) .mastermind__fight-button:hover, .shared-decks--tilt-lift .shared-decks__cell:not(.shared-decks__cell--fortified):hover > .shared-decks__recruit),
+.play-desktop__board-plane--lift:has(.mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):not(.mastermind-tile--fortified) .mastermind__fight-button:hover, .shared-decks--tilt-lift .shared-decks__cell:not(.shared-decks__cell--fortified):hover > .shared-decks__recruit) .play-desktop__adversary-band,
+.play-desktop__board-plane--lift:has(.mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):not(.mastermind-tile--fortified) .mastermind__fight-button:hover, .shared-decks--tilt-lift .shared-decks__cell:not(.shared-decks__cell--fortified):hover > .shared-decks__recruit) .play-desktop__mastermind-zone {
   transform-style: preserve-3d;
 }
-.play-desktop__board-plane--lift:has(.mastermind-tile--tilt-lift:not(.mastermind-tile--guessing) .mastermind__fight-button:hover, .shared-decks--tilt-lift .shared-decks__cell:hover > .shared-decks__recruit) {
+.play-desktop__board-plane--lift:has(.mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):not(.mastermind-tile--fortified) .mastermind__fight-button:hover, .shared-decks--tilt-lift .shared-decks__cell:not(.shared-decks__cell--fortified):hover > .shared-decks__recruit) {
   pointer-events: none;
 }
-.play-desktop__board-plane--lift:has(.mastermind-tile--tilt-lift:not(.mastermind-tile--guessing) .mastermind__fight-button:hover, .shared-decks--tilt-lift .shared-decks__cell:hover > .shared-decks__recruit) > * {
+.play-desktop__board-plane--lift:has(.mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):not(.mastermind-tile--fortified) .mastermind__fight-button:hover, .shared-decks--tilt-lift .shared-decks__cell:not(.shared-decks__cell--fortified):hover > .shared-decks__recruit) > * {
   pointer-events: auto;
 }
 

@@ -2,6 +2,7 @@
 import { defineComponent, ref, watch, type PropType } from 'vue';
 import type {
   UIEnigmaCodeState,
+  UIFortifier,
   UIMastermindState,
   UITurnEconomyState,
 } from '@legendary-arena/game-engine';
@@ -11,6 +12,7 @@ import CardTile from './CardTile.vue';
 import DarkPortalMarker from './DarkPortalMarker.vue';
 import CrossedSwordsIcon from './CrossedSwordsIcon.vue';
 import EnigmaGuessPicker from './EnigmaGuessPicker.vue';
+import FortifiedVillains from './FortifiedVillains.vue';
 import type { SubmitMove } from './uiMoveName.types';
 
 /**
@@ -50,12 +52,19 @@ import type { SubmitMove } from './uiMoveName.types';
  */
 export default defineComponent({
   name: 'MastermindTile',
-  components: { CardTile, DarkPortalMarker, CrossedSwordsIcon, EnigmaGuessPicker },
+  components: { CardTile, DarkPortalMarker, CrossedSwordsIcon, EnigmaGuessPicker, FortifiedVillains },
   emits: ['read'],
   props: {
     mastermind: {
       type: Object as PropType<UIMastermindState>,
       required: true,
+    },
+    // why: D-24819 — UIState.city.fortifiers. A Villain fortifying the Mastermind
+    // (Colleen Wing) is drawn on this tile with its own Fight button.
+    fortifiers: {
+      type: Array as PropType<UIFortifier[]>,
+      required: false,
+      default: () => [],
     },
     // why: WP-727 / D-24548 — the Portals Dark Portal above the Mastermind, as a
     // +N attack. Derived by the parent from scheme.darkPortals (0 = no portal /
@@ -208,6 +217,23 @@ export default defineComponent({
       if (!cost.allowed) {
         return cost;
       }
+      // why: WP-757 / D-24587 — while the Mastermind haunts an HQ Hero the engine's
+      // fightMastermind refuses the fight (isMastermindHaunting), so a live button here
+      // would be a WP-750 / D-24574 dead button. Every submit path (plain, Excessive
+      // Violence, the Enigma picker) goes through this gate, so one arm covers them all.
+      if (props.mastermind.isHaunting === true) {
+        return {
+          allowed: false,
+          reason: 'The Mastermind is haunting a Hero in the HQ. Exorcise that Hero first.',
+        };
+      }
+      // why: WP-873 / D-24818 — while a Villain fortifies the Mastermind (Colleen Wing) the
+      // engine's fightMastermind refuses (isMastermindFortified). A structural lock, so it sits
+      // after the resource gates and beside the Haunt lock, before the tactics check; the
+      // engine writes the reason, and every submit path goes through this gate.
+      if (props.mastermind.fortifiedReason !== undefined) {
+        return { allowed: false, reason: props.mastermind.fortifiedReason };
+      }
       if (props.mastermind.tacticsRemaining === 0) {
         // why: WP-687 / D-24504 — under the optional Final Blow rule, an
         // all-tactics-defeated Mastermind is NOT "already fallen": it stays
@@ -327,6 +353,7 @@ export default defineComponent({
     :class="{
       'mastermind-tile--tilt-lift': isTiltLiftEnabled,
       'mastermind-tile--guessing': enigmaGuessFight !== null && enigmaCode !== undefined,
+      'mastermind-tile--fortified': mastermind.fortifiedReason !== undefined,
     }"
     data-testid="play-mastermind-tile"
     aria-label="Mastermind"
@@ -392,6 +419,7 @@ export default defineComponent({
           data-testid="play-mastermind-fight-cost"
         >Fight {{ mastermind.fightCost }}</span>
       </span>
+
       <span class="mastermind-status" data-testid="play-mastermind-tactics-remaining">
         Tactics remaining: {{ mastermind.tacticsRemaining }}
       </span>
@@ -408,6 +436,18 @@ export default defineComponent({
         Final blow — fight the Mastermind
       </span>
     </button>
+    <!-- why: D-24819 — Fortify puts the Villain near the Mastermind (rules v23 L1454). A
+         sibling of the Fight button (a button cannot hold a button), under it in normal
+         flow, never over the card. -->
+    <FortifiedVillains
+      :fortifiers="fortifiers"
+      place="mastermind"
+      :current-stage="currentStage"
+      :is-viewer-turn="isViewerTurn"
+      :has-healed-this-turn="hasHealedThisTurn"
+      :economy="economy"
+      :submit-move="submitMove"
+    />
     <!-- why: WP-738 / D-24561 — the "Fight using Excessive Violence" affordance
          against the Mastermind. A SEPARATE opt-in button (the normal Fight click
          above is unchanged); shown only when the fight is allowed AND the player
@@ -724,11 +764,13 @@ export default defineComponent({
    would rise but stay tilted; the links are on only while the fight button is
    hovered, because at rest coplanar preserve-3d layers z-fight in Chrome's hit
    test and steal clicks (EC-890 Amendment A). Never while the Enigma guess is
-   open (--guessing). */
+   open (--guessing), and never while a Villain fortifies the Mastermind
+   (--fortified, D-24819): the lifted card would rise over the fortifier chip and
+   take its clicks, and the Fight button is locked anyway. */
 @media (hover: hover) {
-  .mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):has(.mastermind__fight-button:hover),
-  .mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):has(.mastermind__fight-button:hover) .mastermind__fight-button,
-  .mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):has(.mastermind__fight-button:hover) .mastermind__card-frame {
+  .mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):not(.mastermind-tile--fortified):has(.mastermind__fight-button:hover),
+  .mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):not(.mastermind-tile--fortified):has(.mastermind__fight-button:hover) .mastermind__fight-button,
+  .mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):not(.mastermind-tile--fortified):has(.mastermind__fight-button:hover) .mastermind__card-frame {
     transform-style: preserve-3d;
   }
   /* why: the bottom-edge origin makes the card rise off the table rather than
@@ -741,7 +783,7 @@ export default defineComponent({
      "Tactics remaining" and Final Blow lines, which stay on the table, and it is
      the hover target that never moves, so the lifted card cannot flicker out from
      under the pointer. */
-  .mastermind-tile--tilt-lift:not(.mastermind-tile--guessing) .mastermind__fight-button:hover .mastermind__card-frame {
+  .mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):not(.mastermind-tile--fortified) .mastermind__fight-button:hover .mastermind__card-frame {
     transform: rotateX(calc(-1 * var(--board-tilt-angle))) scale(1.06);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
   }

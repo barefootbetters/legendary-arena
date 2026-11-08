@@ -776,12 +776,12 @@
       "key": "core-villain-brotherhood-sabretooth|reveal-or-wound",
       "kind": "villain",
       "card": "Sabretooth",
-      "ability": "reveal-or-wound",
-      "wp": "WP-469",
+      "ability": "Fight: Each player reveals an X-Men Hero or gains a Wound",
+      "wp": "WP-845",
       "state": "verified",
-      "date": "2026-10-04",
-      "evidence": "Solo Magneto / Midtown matches trJwnB0oLeg + jjChx_MJ2gl (build afd76ff)",
-      "note": "Both branches: revealed an X-Men Hero (no Wound), and with no X-Men Hero gained a Wound."
+      "date": "2026-11-02",
+      "evidence": "2p Operator match 9sArOoptLJ0 (Magneto / Midtown Bank Robbery; server build 548923dd, created after boot, isMatchOlderThanServer false): Player 0 fought Sabretooth (21.2.25); Player 1, with no X-Men Hero, was wounded at once (21.2.23); Player 0, holding Wolverine, was offered the reveal-or-Wound choice (21.2.24) and revealed, taking no Wound (21.2.27). Earlier: WP-469, 2026-10-04, Solo Magneto / Midtown matches trJwnB0oLeg + jjChx_MJ2gl (build afd76ff).",
+      "note": "The revealer sees 'Reveal a Hero or gain a Wound?' on their own seat; Reveal avoids the Wound, Gain a Wound instead takes it; cannot-reveal seats are wounded at once. D-24779. Earlier WP-469 check: Both branches: revealed an X-Men Hero (no Wound), and with no X-Men Hero gained a Wound."
     },
     {
       "key": "henchman-savage-land-mutates|add-next-hand-size",
@@ -1455,17 +1455,6 @@
       "note": "Gain a Sidekick: Stack -1, discard +1, applied log line, recruit button still enabled after the gain. D-24778."
     },
     {
-      "key": "core-villain-brotherhood-sabretooth|reveal-or-wound",
-      "kind": "villain",
-      "card": "Sabretooth",
-      "ability": "Fight: Each player reveals an X-Men Hero or gains a Wound",
-      "wp": "WP-845",
-      "state": "verified",
-      "date": "2026-11-02",
-      "evidence": "2p Operator match 9sArOoptLJ0 (Magneto / Midtown Bank Robbery; server build 548923dd, created after boot, isMatchOlderThanServer false): Player 0 fought Sabretooth (21.2.25); Player 1, with no X-Men Hero, was wounded at once (21.2.23); Player 0, holding Wolverine, was offered the reveal-or-Wound choice (21.2.24) and revealed, taking no Wound (21.2.27).",
-      "note": "The revealer sees 'Reveal a Hero or gain a Wound?' on their own seat; Reveal avoids the Wound, Gain a Wound instead takes it; cannot-reveal seats are wounded at once. D-24779."
-    },
-    {
       "key": "mastermind:core/loki|master-strike-turn-order",
       "kind": "mastermind",
       "card": "Loki",
@@ -1843,34 +1832,12 @@
       "key": "amwp/scott-lang-cat-burglar|heist",
       "kind": "hero",
       "card": "Scott Lang, Cat Burglar",
-      "ability": "Petty Larceny — Heist: +2 Recruit",
+      "ability": "Heist — Petty Larceny: +2 Recruit; Anything for Cassie: rescue a Bystander; Shocking Support: +2 Attack",
       "wp": "WP-865",
       "state": "pending",
       "date": "2026-11-06",
       "evidence": "",
-      "note": "Live check (NEW match after the deploy): playing the card grants nothing and logs it readied for a Heist; Attempt Heist (Heist Count N) appears once; a won Heist fires the ability, a tie does nothing, a lost Heist gains a Wound; the button is gone after one attempt. D-24808."
-    },
-    {
-      "key": "amwp/scott-lang-cat-burglar|heist",
-      "kind": "hero",
-      "card": "Scott Lang, Cat Burglar",
-      "ability": "Anything for Cassie — Heist: rescue a Bystander",
-      "wp": "WP-865",
-      "state": "pending",
-      "date": "2026-11-06",
-      "evidence": "",
-      "note": "Live check (NEW match after the deploy): playing the card grants nothing and logs it readied for a Heist; Attempt Heist (Heist Count N) appears once; a won Heist fires the ability, a tie does nothing, a lost Heist gains a Wound; the button is gone after one attempt. D-24808."
-    },
-    {
-      "key": "amwp/scott-lang-cat-burglar|heist",
-      "kind": "hero",
-      "card": "Scott Lang, Cat Burglar",
-      "ability": "Shocking Support — Heist: +2 Attack",
-      "wp": "WP-865",
-      "state": "pending",
-      "date": "2026-11-06",
-      "evidence": "",
-      "note": "Live check (NEW match after the deploy): playing the card grants nothing and logs it readied for a Heist; Attempt Heist (Heist Count N) appears once; a won Heist fires the ability, a tie does nothing, a lost Heist gains a Wound; the button is gone after one attempt. D-24808."
+      "note": "Live check (NEW match after the deploy), for each of the three cards: playing the card grants nothing and logs it readied for a Heist; Attempt Heist (Heist Count N) appears once; a won Heist fires the ability, a tie does nothing, a lost Heist gains a Wound; the button is gone after one attempt. D-24808."
     },
     {
       "key": "amwp/wasp|heist",
@@ -1904,6 +1871,270 @@
       "date": "2026-11-06",
       "evidence": "",
       "note": "Live check (NEW match after the deploy): playing the card grants nothing and logs it readied for a Heist; Attempt Heist (Heist Count N) appears once; a won Heist fires the ability, a tie does nothing, a lost Heist gains a Wound; the button is gone after one attempt. D-24808."
+    },
+    {
+      "key": "mastermind:cvwr/baron-helmut-zemo|cursed-dynasty",
+      "kind": "mastermind",
+      "card": "Baron Helmut Zemo",
+      "ability": "Tactic: Cursed Dynasty",
+      "wp": "",
+      "state": "pending",
+      "date": "2026-11-06",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy): defeating this tactic logs \"will draw 8 cards on their next hand (+2 extra, Cursed Dynasty)\" and the next hand holds 8 cards. D-24813."
+    },
+    {
+      "key": "mastermind:mgtg/ego-the-living-planet|im-a-celestial-sweetheart",
+      "kind": "mastermind",
+      "card": "Ego, the Living Planet",
+      "ability": "Tactic: I'm a Celestial, Sweetheart",
+      "wp": "",
+      "state": "pending",
+      "date": "2026-11-06",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy): defeating this tactic logs \"will draw 8 cards on their next hand (+2 extra, I'm a Celestial, Sweetheart)\" and the next hand holds 8 cards. The second line (destroy the leftmost city space, shuffle the tactic back) is not modelled. D-24813."
+    },
+    {
+      "key": "mastermind:msis/ebony-maw|hear-me-and-rejoice",
+      "kind": "mastermind",
+      "card": "Ebony Maw",
+      "ability": "Tactic: Hear Me and Rejoice",
+      "wp": "",
+      "state": "pending",
+      "date": "2026-11-06",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy): defeating this tactic logs \"will draw 8 cards on their next hand (+2 extra, Hear Me and Rejoice)\" and the next hand holds 8 cards. The Endgame +3 line is not modelled. D-24813."
+    },
+    {
+      "key": "mastermind:co2e/doctor-doom|treasures-of-latveria",
+      "kind": "mastermind",
+      "card": "Doctor Doom",
+      "ability": "Tactic: Treasures of Latveria",
+      "wp": "",
+      "state": "pending",
+      "date": "2026-11-06",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy): defeating this tactic logs \"will draw 9 cards on their next hand (+3 extra, Treasures of Latveria)\" and the next hand holds 9 cards. D-24813."
+    },
+    {
+      "key": "amwp/wasp|next-hand-extra-draw",
+      "kind": "hero",
+      "card": "Wasp",
+      "ability": "Infiltrate — When you draw a new hand this turn, draw an extra card",
+      "wp": "WP-866",
+      "state": "pending",
+      "date": "2026-11-06",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy): playing Infiltrate logs \"will draw 7 cards on their next hand (+1 extra, Infiltrate …)\"; with nothing else changing the hand size, the end-of-turn hand holds 7 cards (two copies: 8). D-24809."
+    },
+    {
+      "key": "chmp-villain-monsters-unleashed-tim-boo-ba|hq-heroes-cost-change",
+      "kind": "villain",
+      "card": "Tim Boo Ba",
+      "ability": "Fight: All Heroes currently in the HQ cost 1 less this turn.",
+      "wp": "WP-868",
+      "state": "verified",
+      "date": "2026-11-07",
+      "evidence": "2p Operator match sU1EWDfnPVj (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers; Cape-Killers; Wolverine, Spider-Man, Hulk, Cyclops, Black Widow; Final Blow on; server build e6ec91f5 = the WP-868 merge, created 2026-11-07T18:34:12Z after boot, isMatchOlderThanServer false): fighting Tim Boo Ba logged \"Fight effect: Heroes in the HQ cost 1 less this turn (Tim Boo Ba): Mission Accomplished, Optic Blast, Crazed Rampage, Astonishing Strength, Covert Operation.\" (4.2.6, applied); Crazed Rampage then recruited for 4 instead of 5 and Astonishing Strength for 1 instead of 2 (4.2.8, 4.2.9). Not observed live: a later HQ refill paying full price, and the Recruit gate at the lower price (the operator had added +20 Recruit); both covered by tests. The recruit log note labels the reduced price \"Size-Changing\" (recruitHero.ts buildSizeChangingNote), a cosmetic mislabel.",
+      "note": "Live check (NEW match with Monsters Unleashed after the deploy): fighting Tim Boo Ba logs \"Heroes in the HQ cost 1 less this turn (Tim Boo Ba): …\", every HQ price drops by 1 and Recruit unlocks at the lower price; a Hero that refills the HQ later that turn pays full price; prices are printed again next turn. D-24811."
+    },
+    {
+      "key": "cvwr-villain-great-lakes-avengers-flatman|ko-from-discard-current",
+      "kind": "villain",
+      "card": "Flatman",
+      "ability": "Fight: KO a card from your discard pile.",
+      "wp": "WP-868",
+      "state": "verified",
+      "date": "2026-11-07",
+      "evidence": "2p Operator match sU1EWDfnPVj (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers; Cape-Killers; Wolverine, Spider-Man, Hulk, Cyclops, Black Widow; Final Blow on; server build e6ec91f5 = the WP-868 merge, created 2026-11-07T18:34:12Z after boot, isMatchOlderThanServer false): Flatman with several distinct cards in the discard parked the mandatory choice (6.2.21, \"KO 1 card(s) from your discard pile (Flatman).\") and Player 0 KO'd Growing Anger through it (6.2.22); the second Flatman, with only a Wound to take, KO'd it at once with no prompt (23.2.13). The same primitive on Cape-Killers: the bot answered every mandatory prompt with a card (15.2.12, 27.2.11, 33.2.14 Wounds; 18.2.19, 18.2.22, 30.2.21 S.H.I.E.L.D. cards), one direct KO (31.2.14), and an empty discard logged the blocked no-op (34.2.22). Second operator match M9ezoxltTiz (same loadout; server e3912105, created 2026-11-07T19:49:29Z after boot): with six Heroes recruited that turn in the discard, fighting Flatman parked the mandatory choice (5.2.16) and Player 0 KO'd a S.H.I.E.L.D. Agent through it (5.2.17); the operator confirmed the prompt button read \"Choose a card to KO\" (the zero-pick label shown only when pendingKoDiscardChoice.minCount reached the client, i.e. the field survived the projection and the chooser filter; without it the label is \"KO None\"). An earlier fight with an empty discard logged the blocked no-op (3.2.10). The bot again answered both Cape-Killers prompts with a card (8.2.13, 12.2.12).",
+      "note": "Live check (NEW match with Great Lakes Avengers after the deploy): with two or more distinct cards in the discard, fighting Flatman opens \"KO 1 card from your discard pile\" with no \"KO None\" and submit disabled until a card is picked; Play Diagnostics uiStateSnapshot shows pendingKoDiscardChoice.minCount = 1 while it is open. With one card (or only Wounds) it is KO'd at once. D-24811."
+    },
+    {
+      "key": "cvwr-villain-great-lakes-avengers-mr-immortal|reenter-sewers-if-villain-deck-top",
+      "kind": "villain",
+      "card": "Mr. Immortal",
+      "ability": "Fight: Reveal the top card of the Villain Deck. If it's a Villain or Bystander, Mr. Immortal reenters the Sewers.",
+      "wp": "WP-868",
+      "state": "verified",
+      "date": "2026-11-07",
+      "evidence": "2p Operator match sU1EWDfnPVj (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers; Cape-Killers; Wolverine, Spider-Man, Hulk, Cyclops, Black Widow; Final Blow on; server build e6ec91f5 = the WP-868 merge, created 2026-11-07T18:34:12Z after boot, isMatchOlderThanServer false): Mr. Immortal revealed Zzutak (6.2.24) and Sporr twice (7.2.11, 7.2.14) and reentered the Sewers each time (6.2.25, 7.2.12, 7.2.15, threat); the revealed card stayed on top (Zzutak entered the City from the Villain Deck at 7.1.1); on a Master Strike he stayed defeated (8.2.18-8.2.19). Not observed live: a Henchman or Bystander top card, or a full-City push (covered by tests).",
+      "note": "Live check (NEW match with Great Lakes Avengers after the deploy): fighting Mr. Immortal logs \"Mr. Immortal revealed <card> from the Villain Deck.\" and the card stays on top; on a Villain, Henchman or Bystander the log adds \"Mr. Immortal reenters the Sewers.\" and he is in the Sewers (not the Victory Pile); otherwise he stays defeated. D-24811."
+    },
+    {
+      "key": "cvwr-villain-great-lakes-avengers-squirrel-girl|fortify",
+      "kind": "villain",
+      "card": "Squirrel Girl",
+      "ability": "Escape: Fortify the Sidekick Stack. While it's fortified, Sidekicks can't be recruited or gained.",
+      "wp": "WP-873",
+      "state": "verified",
+      "date": "2026-11-08",
+      "evidence": "3p Operator match CAb0Dfc0M4- (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers + Heroes for Hire; Cape-Killers; Wolverine, Spider-Man, Hulk, Cyclops, Black Widow; Sidekicks 12; Final Blow on; server build cd5d2749, which is the #3212 merge; created 2026-11-07T22:16:17Z after boot, isMatchOlderThanServer false): Squirrel Girl -00 escaped and logged \"Squirrel Girl fortifies the Sidekick Stack\" (9.2.6-9.2.7) and left the Escaped Pile; the second copy -01 escaped next turn and logged \"Squirrel Girl already fortifies it, so Squirrel Girl stays in the Escape Pile\" (10.1.2-10.1.4). The end-of-game Play Diagnostics uiStateSnapshot shows city.fortifiers [sidekick-stack, Squirrel Girl -00, fightCost 3] and piles.sidekickStackFortifiedReason \"Squirrel Girl fortifies the Sidekick Stack. Fight Squirrel Girl first.\", with -01 in city.escapedPile and escapedVillains 5 counting both escapes. Not observed: fighting her from the fortifier strip to clear the lock (she still fortified at game end), and the disabled Recruit Sidekick button is not in the log. Second 3p Operator match 3E3IU6V-YIJ (same loadout; server build cd5d2749; created 2026-11-07T22:35:08Z after boot): -00 fortified the Sidekick Stack again (15.1.5-15.1.6) and -01 stayed in the Escape Pile with the already-fortifies line (18.1.2-18.1.4); the game ended in a scheme loss that same reveal (18.1.5) with her still fortifying, so the fight that clears the lock is still not observed. Third 2p Operator match gN9rrI-U110 (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers; Hand Ninjas; Sidekicks 0; client build ff182b8, which has the D-24819 chip and the #3226 click fix; server 0af19d79; created 2026-11-08T03:01:58Z after boot): -00 fortified the Sidekick Stack (12.1.2-12.1.3); after the Operator +20 Attack with no card played, Player 0 fought her from the chip and logged \"fought Squirrel Girl (cvwr-villain-great-lakes-avengers-squirrel-girl-00) fortifying the Sidekick Stack. The Sidekick Stack is no longer fortified.\" (23.2.1-23.2.2), and the end snapshot has no fortifiers and no sidekickStackFortifiedReason. On turns 13-19 her printed restriction (more than one card played) correctly kept the chip disabled; that it was hard to tell why led to D-24821. Not observed: Recruit Sidekick coming back after the fight, because this setup had 0 Sidekicks. Fourth 2p Operator match vZdr5qqLZI- (Sidekicks 0; client 7b43234, which has D-24821; server 0af19d79): fortified (8.1.3), second copy stayed in the Escape Pile (10.1.3), fought from the chip after Operator +20 Attack with no card played, \"The Sidekick Stack is no longer fortified.\" (11.2.2). Fifth 2p Operator match 8bDukTIqTEk (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers; Hand Ninjas; Sidekicks 30 from ssw1; client 7b43234; server 0af19d79; created 2026-11-08T03:42:08Z after boot, isMatchOlderThanServer false): -00 fortified the Sidekick Stack (7.1.2-7.1.3); fought from the chip after Operator +20 Attack with no card played, \"The Sidekick Stack is no longer fortified.\" (8.2.1-8.2.2), and the operator saw Recruit Sidekick enable again (30 Sidekicks); -01 later escaped and fortified the freed place (22.1.2-22.1.4) and left the Escape Pile; the end Play Diagnostics uiStateSnapshot shows city.fortifiers [sidekick-stack, -01, fightCost 3], piles.sidekickStackFortifiedReason \"Squirrel Girl fortifies the Sidekick Stack. Fight Squirrel Girl first.\" with sidekicksCount 30, and -00 in a Victory Pile. The game ended in a scheme loss (24.1.4) with -01 fortifying.",
+      "note": "Live check (NEW match with Great Lakes Avengers and Sidekicks > 0 after the deploy): when Squirrel Girl escapes she is not in the Escaped Pile; she shows as a chip under the Sidekicks card (D-24821; before it, over the card per D-24819, and under the Escaped Pile before that). Recruit Sidekick is disabled with \"Squirrel Girl fortifies the Sidekick Stack. Fight Squirrel Girl first.\"; the chip shows \"Can't fight yet\" while more than one card is played; fighting her from the chip (at most one card played) puts her in the Victory Pile and re-enables Recruit Sidekick. Play Diagnostics uiStateSnapshot shows city.fortifiers and piles.sidekickStackFortifiedReason while she fortifies. D-24818, D-24819, D-24821."
+    },
+    {
+      "key": "cvwr-villain-heroes-for-hire-colleen-wing|fortify",
+      "kind": "villain",
+      "card": "Colleen Wing",
+      "ability": "Escape: Fortify the Mastermind. While it's fortified, the Mastermind can't be fought.",
+      "wp": "WP-873",
+      "state": "verified",
+      "date": "2026-11-07",
+      "evidence": "3p Operator match CAb0Dfc0M4- (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers + Heroes for Hire; Cape-Killers; Wolverine, Spider-Man, Hulk, Cyclops, Black Widow; Sidekicks 12; Final Blow on; server build cd5d2749, which is the #3212 merge; created 2026-11-07T22:16:17Z after boot, isMatchOlderThanServer false): Colleen Wing escaped and logged \"Colleen Wing fortifies the Mastermind\" (11.1.2-11.1.3); no Mastermind fight is logged while she fortified (turns 11-30); Player 0 fought her from the fortifier strip and logged \"fought Colleen Wing fortifying the Mastermind. The Mastermind is no longer fortified.\" (30.2.24), then fought Fin Fang Foom in the same turn (30.2.25-30.2.26). escapedVillains still counted her escape (5 at game end). Second 3p Operator match 3E3IU6V-YIJ (same loadout; server build cd5d2749; created 2026-11-07T22:35:08Z after boot): Colleen Wing fortified the Mastermind (8.1.2-8.1.4), was fought from the fortifier strip with \"The Mastermind is no longer fortified.\" (16.2.21), and Fin Fang Foom was fought the same turn (16.2.22-16.2.23).",
+      "note": "Live check (NEW match with Heroes for Hire after the deploy): when Colleen Wing escapes she fortifies the Mastermind; after D-24819 she shows as a chip on the Mastermind tile (before it, under the Escaped Pile). The Mastermind Fight button is disabled with \"Colleen Wing fortifies the Mastermind. Fight Colleen Wing first.\"; fighting her (9 Attack) re-enables it. Play Diagnostics uiStateSnapshot shows mastermind.fortifiedReason while she fortifies. D-24818, D-24819."
+    },
+    {
+      "key": "mastermind:chmp/fin-fang-foom|master-strike",
+      "kind": "mastermind",
+      "card": "Fin Fang Foom",
+      "ability": "Master Strike: [Demolish] each player, then do it again for each Monsters Unleashed Villain in the city and Escape Pile.",
+      "wp": "WP-864",
+      "state": "verified",
+      "date": "2026-11-07",
+      "evidence": "2p Operator match 5wQp-SYfg7K (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Wrecking Crew; Hand Ninjas; Wolverine, Spider-Man, Hulk, Cyclops, Black Widow; Final Blow on; server build c9995794 = the WP-864 merge, running since 2026-11-07T22:52:30Z, match created 22:57:39Z after boot): with Orrgo, Goom, Groot from Planet X, Sporr and Zzutak in the City, three operator-revealed Master Strikes each logged \"Demolish each player 6 time(s): once, plus once for each of the 5 Monsters Unleashed Villain(s) in the city and Escape Pile.\" (6.2.2, 6.2.23, 6.2.44, neutral) followed by six reveals apiece, 18 in all, each \"Demolish revealed <Hero> (cost C) and put it on the bottom of the Hero Deck.\" (applied). The current player 0 discarded first on every Demolish: Player 0 discarded Healing Factor (cost 3) (6.2.4) and Optic Blast (cost 3) (6.2.25); Player 1 discarded Web-Shooters (cost 2) (6.2.8); every other seat-cost pair logged \"Player P has no card that costs C to discard.\" (blocked). Repeated names (Dangerous Rescue x3 at 6.2.24-6.2.30, Unstoppable Hulk x2) are distinct copies: 18 reveals against a 55-card Hero Deck cannot cycle a bottomed card back. The terminal \"Mastermind strike revealed\" line still followed each strike. Not observed live: an Escape Pile Monsters Unleashed Villain in the count, and a 0-cost reveal (both covered by tests).",
+      "note": "Live check (Fin Fang Foom match after the deploy; the strike arm is dispatcher code, so an in-flight match works too): a Master Strike logs \"[Fin Fang Foom Master Strike] Demolish each player N time(s): once, plus once for each of the M Monsters Unleashed Villain(s) in the city and Escape Pile.\", then N times \"Demolish revealed <Hero> (cost C) and put it on the bottom of the Hero Deck.\" with one \"Player P discarded <card> (cost C).\" or \"has no card that costs C to discard.\" per player, current player first; each repeat reveals the next card (copies of one Hero can repeat); hand sizes in Play Diagnostics drop by the discards. D-24807."
+    },
+    {
+      "key": "chmp-villain-monsters-unleashed-trull-the-unhuman|demolish-each-player",
+      "kind": "villain",
+      "card": "Trull the Unhuman",
+      "ability": "Ambush: Trull captures a Bystander. Then [Demolish] each player.",
+      "wp": "WP-864",
+      "state": "pending",
+      "date": "2026-11-07",
+      "evidence": "",
+      "note": "Live check (NEW match with Monsters Unleashed after the deploy): when Trull enters the City he holds a captured Bystander and the log shows \"Ambush effect: Demolish revealed <Hero> (cost C) …\" with each player's discard line (the generic capture line follows them). D-24807."
+    },
+    {
+      "key": "chmp-villain-monsters-unleashed-zzutak|demolish-each-player",
+      "kind": "villain",
+      "card": "Zzutak",
+      "ability": "Escape: [Demolish] each player.",
+      "wp": "WP-864",
+      "state": "pending",
+      "date": "2026-11-07",
+      "evidence": "",
+      "note": "Live check (NEW match with Monsters Unleashed after the deploy): when Zzutak escapes the log shows \"Escape effect: Demolish revealed <Hero> (cost C) and put it on the bottom of the Hero Deck.\" and each player's discard line. D-24807."
+    },
+    {
+      "key": "chmp-villain-wrecking-crew-piledriver|demolish-each-player",
+      "kind": "villain",
+      "card": "Piledriver",
+      "ability": "Escape: [Demolish] each player.",
+      "wp": "WP-864",
+      "state": "pending",
+      "date": "2026-11-07",
+      "evidence": "",
+      "note": "Live check (NEW match with Wrecking Crew after the deploy): when Piledriver escapes the log shows \"Escape effect: Demolish revealed <Hero> (cost C) and put it on the bottom of the Hero Deck.\" and each player's discard line; his Fight still KOs one of your Heroes. D-24807."
+    },
+    {
+      "key": "chmp-villain-monsters-unleashed-groot-from-planet-x|stack-cards-enter-city-as-villains",
+      "kind": "villain",
+      "card": "Groot from Planet X",
+      "ability": "Fight: Two Bystanders from the Bystander Stack enter the city as 3 Attack “Splintered Half-Groot” Villains. When you fight one, rescue it as a Bystander.",
+      "wp": "WP-869",
+      "state": "verified",
+      "date": "2026-11-07",
+      "evidence": "2p Operator match 8eURMq6tTSS (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + S.H.I.E.L.D. Elite; Hand Ninjas; Wolverine, Spider-Man, Hulk, Cyclops, Black Widow; Final Blow on; server build 9a83b196, which contains the WP-869 merge 90f66e6d, running since 2026-11-07T23:44:49Z; match created 2026-11-07T23:50:27Z after boot, isMatchOlderThanServer false): Silent Sniper's free defeat of Groot from Planet X (3.2.12-3.2.13) logged two entries, \"Fight effect: Splintered Half-Groot (stack-villain-…-00) enters the city from the Bystander Stack (Groot from Planet X (…)).\" and the same for -01 (3.2.15, 3.2.16, threat), and the overlay read \"Fought \"Groot from Planet X\" and rescued 1 bystander(s); 2 Splintered Half-Groot Villains enter the city.\" Fighting each Half-Groot (3.2.20 at city space 1, 5.2.22 at city space 2) logged \"rescued 1 bystander(s) from Splintered Half-Groot (…)\" with the overlay \"Fought \"Splintered Half-Groot\" and rescued 1 bystander(s).\"; the final score shows bystanderVP 11, Player 0's eleven rescues including both Half-Groots, and no stack-villain id is in any player's zones. The onFight trace reads no-op and no unmarked-ability hollow was logged. Not observed live: the 3-Attack price and type \"villain\" in the uiStateSnapshot (the export was captured at game over with an empty City, and the fights used operator Attack), a short Bystander Stack, and an escaped Half-Groot; all are covered by stackVillain.test.ts.",
+      "note": "Live check (NEW match with Monsters Unleashed after the deploy): fighting Groot from Planet X logs \"Fight effect: Splintered Half-Groot (stack-villain-…) enters the city from the Bystander Stack (Groot from Planet X (…)).\" twice; two 3-Attack Splintered Half-Groots (Bystander art) stand in the Sewers and the Bank, and the fight overlay says \"2 Splintered Half-Groot Villains enter the city\". Fighting one adds a Bystander to the Victory Pile and logs \"rescued 1 bystander(s)\". Play Diagnostics uiStateSnapshot shows each with type \"villain\" and fightCost 3. D-24814."
+    },
+    {
+      "key": "cvwr-villain-shield-elite-agent-gabe-jones|stack-cards-enter-city-as-villains",
+      "kind": "villain",
+      "card": "Agent Gabe Jones",
+      "ability": "Fight: A S.H.I.E.L.D. Officer enters the city as a 3 Attack Villain. When you fight it, gain it as a Hero.",
+      "wp": "WP-869",
+      "state": "verified",
+      "date": "2026-11-07",
+      "evidence": "2p Operator match 8eURMq6tTSS (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + S.H.I.E.L.D. Elite; Hand Ninjas; Wolverine, Spider-Man, Hulk, Cyclops, Black Widow; Final Blow on; server build 9a83b196, which contains the WP-869 merge 90f66e6d, running since 2026-11-07T23:44:49Z; match created 2026-11-07T23:50:27Z after boot, isMatchOlderThanServer false): Fighting Agent Gabe Jones (5.2.14) logged \"Fight effect: S.H.I.E.L.D. Officer (stack-villain-…-00) enters the city from the S.H.I.E.L.D. Officer Stack (Agent Gabe Jones (…)).\" (5.2.15, threat) with the overlay \"Fought \"Agent Gabe Jones\"; S.H.I.E.L.D. Officer enters the city.\" Fighting the Officer at city space 0 logged \"defeated S.H.I.E.L.D. Officer (…) and gained it as a Hero into their discard pile.\" (5.2.16-5.2.17) with the overlay \"…gained the Hero into the active player's discard pile.\"; the Officer was later played from the deck for +2 Recruit (9.2.9). Cosmetic: the gain line logs before the \"fought\" line, the D-24756 routing order shared with Brainwash the Military Officers.",
+      "note": "Live check (NEW match with S.H.I.E.L.D. Elite after the deploy): fighting Agent Gabe Jones puts a 3-Attack S.H.I.E.L.D. Officer in the Sewers (the log names it entering from the S.H.I.E.L.D. Officer Stack); fighting it puts the S.H.I.E.L.D. Officer in your discard pile, not the Victory Pile. Play Diagnostics uiStateSnapshot shows it with type \"villain\" and fightCost 3. D-24814."
+    },
+    {
+      "key": "cvwr-villain-shield-elite-agent-eric-marshall|stack-cards-enter-city-as-villains",
+      "kind": "villain",
+      "card": "Agent Eric Marshall",
+      "ability": "Ambush: A S.H.I.E.L.D. Officer enters the city as a 3 Attack Villain. When you fight it, gain it as a Hero.",
+      "wp": "WP-869",
+      "state": "verified",
+      "date": "2026-11-07",
+      "evidence": "2p Operator match 8eURMq6tTSS (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + S.H.I.E.L.D. Elite; Hand Ninjas; Wolverine, Spider-Man, Hulk, Cyclops, Black Widow; Final Blow on; server build 9a83b196, which contains the WP-869 merge 90f66e6d, running since 2026-11-07T23:44:49Z; match created 2026-11-07T23:50:27Z after boot, isMatchOlderThanServer false): Agent Eric Marshall's reveal logged \"[Ambush] Agent Eric Marshall (…) revealed and entered the city!\" (7.1.1) and \"Ambush effect: S.H.I.E.L.D. Officer (stack-villain-…-00) enters the city from the S.H.I.E.L.D. Officer Stack (Agent Eric Marshall (…)).\" (7.1.2, threat); the ambushResolved overlay read \"\"Agent Eric Marshall\" ambushed: S.H.I.E.L.D. Officer enters the city.\" Eric was then fought at city space 1 and the Officer at city space 0 (7.2.9-7.2.11), so the Officer stood in the Sewers and Eric in the Bank; the Officer was gained into the discard pile. The onAmbush trace reads no-op.",
+      "note": "Live check (NEW match with S.H.I.E.L.D. Elite after the deploy): when Agent Eric Marshall is revealed, a 3-Attack S.H.I.E.L.D. Officer enters the Sewers after him (Officer in the Sewers, Eric in the Bank) and the Ambush overlay reads \"S.H.I.E.L.D. Officer enters the city\", not \"no Ambush effect\"; fighting the Officer puts it in your discard pile. D-24814."
+    },
+    {
+      "key": "henchman-mandarins-rings-lightning-the-electro-blast|reveal-top-may-ko-current",
+      "kind": "henchman",
+      "card": "Lightning, The Electro-Blast",
+      "ability": "Fight: Reveal the top card of your deck. You may KO it.",
+      "wp": "WP-870",
+      "state": "verified",
+      "date": "2026-11-08",
+      "evidence": "2p operator match kaF7bqJbbGS (Mandarin / Midtown Bank Robbery; server 7c197771, client 7fb5d60, created after the deploy): henchman-mandarins-rings-04 moved to the Villain Deck top (1.2.7) and entered the city (2.1.1); Player 1 fought it (4.2.7), \"Player 1 revealed S.H.I.E.L.D. Agent (starting-shield-agent) from the top of their deck — KO it or keep it (reveal-top).\" (4.2.8), then KO'd it (4.2.9). Play Diagnostics effectTrace: reveal-top-may-ko-current fired; not among the match's hollow effects.",
+      "note": "Live check (NEW match created after the deploy (deployed gitSha checked), Mastermind rvlt/mandarin (Always Leads puts Mandarin's Rings in the Villain Deck); an operator match via ?route=workshop with the setters placing the copy in the City and giving Attack.): defeating henchman-mandarins-rings-04 opens the KO-or-keep prompt (KO / Keep on top, no Discard) and logs \"Player P revealed <card> from the top of their deck — KO it or keep it (reveal-top).\"; KO puts it in the KO pile. D-24815. Verified with the bot ally answering the prompt; the same KO-or-keep prompt (Keep / KO, no Discard) was seen by a human for Daystar in match sA9BHfHXbB7."
+    },
+    {
+      "key": "antm-villain-queens-vengeance-daystar|reveal-top-may-ko-current",
+      "kind": "villain",
+      "card": "Daystar",
+      "ability": "Fight: Reveal the top card of your deck. You may KO it.",
+      "wp": "WP-870",
+      "state": "verified",
+      "date": "2026-11-08",
+      "evidence": "2p operator match sA9BHfHXbB7 (Mandarin / Midtown Bank Robbery; server 7c197771, client 7fb5d60, created after the deploy; the card was moved to the Villain Deck top and brought into the city with an operator Scheme Twist, whose Midtown effect plays the next card): Player 0 fought Daystar (4.2.8); \"Player 0 revealed S.H.I.E.L.D. Agent (starting-shield-agent) from the top of their deck — KO it or keep it (reveal-top).\" (4.2.9); the prompt \"Reveal the top card — KO it or keep it\" showed only Keep and KO (no Discard); KO logged \"Player 0 KO'd S.H.I.E.L.D. Agent ... (reveal-top).\" (4.2.10).",
+      "note": "Live check (NEW match with antm Queen's Vengeance after the deploy): defeating Daystar opens the same KO-or-keep prompt as Lightning. D-24815."
+    },
+    {
+      "key": "henchman-mandarins-rings-spin-the-vortex-beam|reveal-top-discard-zero-cost-current",
+      "kind": "henchman",
+      "card": "Spin, The Vortex Beam",
+      "ability": "Fight: Reveal the top six cards of your deck. Discard all of them that cost 0, then put the rest back in any order.",
+      "wp": "WP-870",
+      "state": "verified",
+      "date": "2026-11-08",
+      "evidence": "2p operator match sA9BHfHXbB7 (Mandarin / Midtown Bank Robbery; server 7c197771, client 7fb5d60, created after the deploy; the card was moved to the Villain Deck top and brought into the city with an operator Scheme Twist, whose Midtown effect plays the next card): deck top Astonishing Strength, Unstoppable Hulk, Crazed Rampage over S.H.I.E.L.D. starters; fighting Spin (2.2.27) logged three \"Player 0 discarded S.H.I.E.L.D. Agent (starting-shield-agent) from the top of their deck (cost 0).\" lines (2.2.28-2.2.30) and \"Player 0 puts the other 3 revealed cards back in any order.\" (2.2.31); the reorder prompt listed exactly the three Heroes; reordered Crazed Rampage, Unstoppable Hulk, Astonishing Strength, and the next hand drew them in that order.",
+      "note": "Live check (NEW match created after the deploy (deployed gitSha checked), Mastermind rvlt/mandarin (Always Leads puts Mandarin's Rings in the Villain Deck); an operator match via ?route=workshop with the setters placing the copy in the City and giving Attack.): defeating henchman-mandarins-rings-08 logs one \"Player P discarded <card> from the top of their deck (cost 0).\" per S.H.I.E.L.D. Agent / Trooper / Wound among the top six, then \"Player P puts the other N revealed cards back in any order.\" and opens the reorder prompt when N >= 2. D-24815."
+    },
+    {
+      "key": "henchman-mandarins-rings-zero-the-ice-blast|next-hand-from-play-zero-cost-current",
+      "kind": "henchman",
+      "card": "Zero, The Ice Blast",
+      "ability": "Fight: Choose a card you played this turn that costs 0. When you draw a new hand of cards at the end of this turn, add that card to your hand as an extra card.",
+      "wp": "WP-870",
+      "state": "verified",
+      "date": "2026-11-08",
+      "evidence": "2p operator match sA9BHfHXbB7 (Mandarin / Midtown Bank Robbery; server 7c197771, client 7fb5d60, created after the deploy; the card was moved to the Villain Deck top and brought into the city with an operator Scheme Twist, whose Midtown effect plays the next card): Player 0 played an Agent and a Trooper (2.2.7-2.2.8) and fought Zero (2.2.10); the pick opened as a seat choice (kind next-hand-from-play, heading \"Your choice\", options S.H.I.E.L.D. Agent / S.H.I.E.L.D. Trooper); picking the Trooper logged \"Player 0 will add S.H.I.E.L.D. Trooper (starting-shield-trooper) to their next hand as an extra card (Zero, The Ice Blast (henchman-mandarins-rings-09)).\" (2.2.12) and the card stayed in play. At end of turn the new hand was 7 cards with the Trooper added after the six drawn, logged \"S.H.I.E.L.D. Trooper (starting-shield-trooper) was added to Player 0's hand as an extra card.\" (2.3.1, no Electromagnetic Bubble).",
+      "note": "Live check (NEW match created after the deploy (deployed gitSha checked), Mastermind rvlt/mandarin (Always Leads puts Mandarin's Rings in the Villain Deck); an operator match via ?route=workshop with the setters placing the copy in the City and giving Attack.): play a S.H.I.E.L.D. Agent and a Trooper, defeat henchman-mandarins-rings-09; a choice listing both opens (heading \"Your choice\"); pick one, end the turn: uiState.snapshot.players[P].handDisplay.length is 7 with the picked card, and the log reads \"<card> (<id>) was added to Player P's hand as an extra card.\". D-24815."
+    },
+    {
+      "key": "mastermind:rvlt/mandarin|master-strike",
+      "kind": "mastermind",
+      "card": "Mandarin",
+      "ability": "Master Strike: Each player chooses a Mandarin's Ring from their Victory Pile to enter the city. Any player who didn't have a Ring gains a Wound instead.",
+      "wp": "WP-875",
+      "state": "verified",
+      "date": "2026-11-08",
+      "evidence": "2p Operator match oNO3ETi9UE0 (The Mandarin / Midtown Bank Robbery; HYDRA + Spider-Foes; Mandarin's Rings; Spider-Man, Hulk, Wolverine, Black Widow, Iron Man; server and client build 2a49a7d0 = the WP-875 merge, server running since 2026-11-08T16:43:07Z, match created 22:08:08Z after boot): with Spin and Lightning in Player 0's Victory Pile and none in Player 1's, the first operator-revealed Master Strike logged \"[Mandarin Master Strike] Player 0 will send a Mandarin's Ring from their Victory Pile into the City.\" (5.2.6) and \"Player 1 had no Mandarin's Ring in their Victory Pile and gained a Wound.\" (5.2.7), then \"Player 0 chooses which Mandarin's Ring enters the City.\" (5.2.9) with the choice prompt listing both Rings; the chosen Spin logged \"Player 0's Spin, The Vortex Beam (henchman-mandarins-rings-08) entered the City from their Victory Pile.\" (5.2.10, threat). A second strike with only Lightning left queued Player 0 (5.2.12), Wounded Player 1 again (5.2.13) and entered Lightning with no prompt (5.2.15). No \"Unhandled effect observed\" line. Not observed live: a Villain pushed off the Bridge by a re-entering Ring (the City was not full; covered by T11 / T16 / T18). The end-of-match Play Diagnostics capture (heroes win on turn 13) lists one hollow effect, Remaker's unmarked onFight (WP-872 scope), and no master-strike hollow.",
+      "note": "Live check (NEW match created after the deploy (deployed gitSha checked), Mastermind rvlt/mandarin; an operator match via ?route=workshop with the setters placing Mandarin's Rings in Victory Piles and revealing a Master Strike): a player with no Ring logs \"[Mandarin Master Strike] Player P had no Mandarin's Ring in their Victory Pile and gained a Wound.\"; a player with one Ring logs \"[Mandarin Master Strike] Player P's <Ring> entered the City from their Victory Pile.\" and the Ring is in the Sewers; a player with two Rings gets a \"Your choice\" seat choice listing them by name, and the chosen one enters. No \"Unhandled effect observed\" line. D-24822."
+    },
+    {
+      "key": "mastermind:rvlt/mandarin|ring-attack",
+      "kind": "mastermind",
+      "card": "Mandarin",
+      "ability": "All Mandarin's Rings get +1 Attack.",
+      "wp": "WP-875",
+      "state": "verified",
+      "date": "2026-11-08",
+      "evidence": "2p Operator match oNO3ETi9UE0 (The Mandarin / Midtown Bank Robbery; HYDRA + Spider-Foes; Mandarin's Rings; Spider-Man, Hulk, Wolverine, Black Widow, Iron Man; server and client build 2a49a7d0 = the WP-875 merge, server running since 2026-11-08T16:43:07Z, match created 22:08:08Z after boot): Spin, The Vortex Beam (henchman-mandarins-rings-08, printed 3) showed Fight 4 in the City; with +3 Attack (3.2.1) the fight was refused (a refused fight logs nothing), and after +20 more (3.2.2) it succeeded (3.2.3). Operator-confirmed on screen.",
+      "note": "Live check (NEW match created after the deploy (deployed gitSha checked), Mastermind rvlt/mandarin; an operator match via ?route=workshop with the setters placing a Mandarin's Ring in the City and giving Attack): a Ring in the City (Spin, Zero, ...) shows Fight 4 where it printed 3, and fighting it with 3 Attack is refused. D-24822."
+    },
+    {
+      "key": "mastermind:rvlt/mandarin|victory-pile-ring-reduction",
+      "kind": "mastermind",
+      "card": "Mandarin",
+      "ability": "Mandarin gets -1 Attack for each Mandarin's Ring among all players' Victory Piles. (-3 Attack for each in solo.)",
+      "wp": "WP-875",
+      "state": "verified",
+      "date": "2026-11-08",
+      "evidence": "2p Operator match oNO3ETi9UE0 (The Mandarin / Midtown Bank Robbery; HYDRA + Spider-Foes; Mandarin's Rings; Spider-Man, Hulk, Wolverine, Black Widow, Iron Man; server and client build 2a49a7d0 = the WP-875 merge, server running since 2026-11-08T16:43:07Z, match created 22:08:08Z after boot): The Mandarin showed Fight 16 with no Rings in Victory Piles, 15 after Player 0 defeated Spin (3.2.3) and 14 after Lightning (5.2.2). Operator-confirmed on screen. Not observed live: the one-seat -3 per Ring case (covered by T3). The end-of-match Play Diagnostics uiStateSnapshot (captured 2a49a7d) shows mastermind.fightCost 10 with six Rings in Player 0's Victory Pile and none in Player 1's (16 - 6 = 10).",
+      "note": "Live check (NEW match created after the deploy (deployed gitSha checked), Mastermind rvlt/mandarin; an operator match via ?route=workshop with the setters placing Mandarin's Rings in Victory Piles, or defeating them; a one-seat match for the -3 case): The Mandarin shows Fight 16 with no Rings in Victory Piles and drops by 1 per Ring defeated (16 -> 15 -> 14 ...; a one-seat match 16 -> 13 -> 10 ...). D-24822."
     }
   ]
 }

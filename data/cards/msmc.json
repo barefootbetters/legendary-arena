@@ -614,7 +614,7 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "When you draw a new hand of cards at the end of this turn, draw two extra cards."
+            "When you draw a new hand of cards at the end of this turn, draw two extra cards. [keyword:next-hand-extra-draw:2]"
           ]
         },
         {
@@ -1378,7 +1378,7 @@
           "imageUrl": "https://images.legendary-arena.com/msmc/msmc-vi-clan-yashida-silver-samurai.webp",
           "abilities": [
             "Ambush: The Villain in the city worth the most VP captures a Bystander.",
-            "Fight: KO a card from your discard pile."
+            "Fight: KO a card from your discard pile. [effect:ko-from-discard-current:1]"
           ],
           "copies": 2
         },

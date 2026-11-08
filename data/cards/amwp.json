@@ -402,7 +402,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:tech][hc:tech][hc:tech]",
-            "When you draw a new hand this turn, draw an extra card.",
+            "When you draw a new hand this turn, draw an extra card. [keyword:next-hand-extra-draw:1]",
             "Heist: You get +3[icon:attack]."
           ]
         },
@@ -830,7 +830,7 @@
           "attack": null,
           "recruit": "1",
           "abilities": [
-            "When you draw a new hand this turn, draw an extra card."
+            "When you draw a new hand this turn, draw an extra card. [keyword:next-hand-extra-draw:1]"
           ]
         },
         {
@@ -1560,8 +1560,8 @@
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-vi-cross-technologies-yellowjacket-prototype.webp",
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:instinct][hc:instinct][hc:instinct][hc:instinct]",
-            "Ambush: Each player reveals a [hc:instinct] Hero or gains a Wound.",
-            "Escape: Same effect."
+            "Ambush: Each player reveals a [hc:instinct] Hero or gains a Wound. [effect:reveal-or-wound:hc:instinct]",
+            "Escape: Same effect. [effect:reveal-or-wound:hc:instinct]"
           ],
           "copies": 1
         },
@@ -1726,8 +1726,8 @@
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-vi-armada-of-kang-city-defense-system.webp",
           "abilities": [
             "[keyword:Streets Conqueror 2]",
-            "Ambush: Each player reveals a [hc:ranged] Hero or gains a Wound.",
-            "Escape: Same effect."
+            "Ambush: Each player reveals a [hc:ranged] Hero or gains a Wound. [effect:reveal-or-wound:hc:ranged]",
+            "Escape: Same effect. [effect:reveal-or-wound:hc:ranged]"
           ],
           "copies": 1
         },

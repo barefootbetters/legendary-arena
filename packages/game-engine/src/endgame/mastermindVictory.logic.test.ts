@@ -122,7 +122,8 @@ const ALL_PENDING_FIELDS = [
   'pendingDiscardChoices', 'pendingDiscardToPlay', 'pendingDivingBlockWounds',
   'pendingDoOverChoices', 'pendingDrawOrEmpowered', 'pendingElectromagneticBubbleChoices', 'pendingEnigmaPeekOffers', 'pendingEscapeEffectDiscards', 'pendingEscapeProcedures', 'pendingFlyingShieldBlockWounds',
   'pendingGiveHqHeroChoices', 'pendingHeroChoice', 'pendingKoDiscardChoices',
-  'pendingKoHeroChoices', 'pendingMelterKoChoices', 'pendingOptionalKoRewards',
+  // why: WP-875 / D-24822 — pendingMandarinRingEntries joins the drop set.
+  'pendingKoHeroChoices', 'pendingMandarinRingEntries', 'pendingMelterKoChoices', 'pendingNextHandFromPlayPicks', 'pendingOptionalKoRewards',
   'pendingOptionalPutBottomHQ', 'pendingOutOfTimeGrants', 'pendingPlayVillainTopChoices', 'pendingPutAnyNumberBottomHQ',
   'pendingPutCardsOnDeckChoices', 'pendingPutHandOnDeckTop', 'pendingReorderChoices', 'pendingReturnOnDiscard',
   'pendingReturnZeroCostDiscard', 'pendingRevealOrWoundChoices', 'pendingRevealThreeAssign', 'pendingRevealTopDispose', 'pendingRuthlessDictatorChoices', 'pendingScryKoChoices',

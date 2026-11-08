@@ -667,8 +667,13 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // regenerated: 7724 -> 7677 raw observations). The denominator holds at 8687 (heist's baseline
   // peak keeps it), and heist's obs MOVE into resolvedObs: 1091 -> 1141, so percentResolved
   // 12.6 -> 13.1 (1141 / 8687). A mechanic-status re-pin, the invariant the next test asserts.
+  // 2026-11-06 (WP-866 / D-24809, re-pin): twelve "When you draw a new hand … draw an extra card"
+  // hero lines now raise the next hand, so their gate-only hollows leave the sweep and the bigger
+  // hands shift the fixed-seed trajectory (feed regenerated: 7677 -> 7662 raw observations, 77
+  // mechanics, 0 dropped). totalObs 8687 -> 8686 (-1); resolvedObs stays 1141, so percentResolved
+  // stays 13.1 (1141 / 8686). A trajectory re-pin; no mechanic changed status.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8687);
+  assert.equal(view.totalObs.value, 8686);
   assert.equal(view.resolvedObs.value, 1141);
   assert.equal(view.percentResolved.value, 13.1);
   assert.ok(view.remaining.value.length > 0);

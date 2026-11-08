@@ -400,6 +400,9 @@ const LOCKED_TABLE: Record<string, KoSiteCounts> = {
   'villain/villainEffects.execute.ts#villainEffectScryKoOwnDeck': { koSites: 1, ownedRecords: 1 },
   'villain/villainEffects.execute.ts#villainEffectRevealTopKoGreyOrDrawByClass': { koSites: 1, ownedRecords: 1 },
   'villain/villainEffects.execute.ts#villainEffectKoWoundsCurrentHandAndDiscard': { koSites: 1, ownedRecords: 1 },
+  // why: WP-868 / D-24811 — Flatman's mandatory KO from your discard pile, taken at once when the
+  // pick cannot matter (owned: the card leaves the defeating player's discard pile).
+  'villain/villainEffects.execute.ts#koFirstDiscardCardsDirectly': { koSites: 1, ownedRecords: 1 },
   'villain/villainEffects.execute.ts#villainEffectKoHeroesCurrentByTrait': { koSites: 1, ownedRecords: 1 },
   'villain/villainEffects.execute.ts#koOneHeroForPlayer': { koSites: 2, ownedRecords: 2 },
   'villain/villainEffects.execute.ts#koHeroesFromZoneForPlayer': { koSites: 1, ownedRecords: 1 },

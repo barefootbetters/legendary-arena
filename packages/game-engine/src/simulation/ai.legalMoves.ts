@@ -22,11 +22,15 @@ import { UNNAMED_CITY_SPACE_TARGET } from '../economy/economy.types.js';
 import { resolveFightPrice, resolveMastermindFightPrice } from '../economy/economy.resolve.js';
 import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic.js';
 import { isHqSlotHaunted, isMastermindHaunting } from '../board/haunt.logic.js';
+import { isMastermindFortified, listFortifications } from '../board/fortify.logic.js';
 import {
   getDefeatRequirement,
   playerMeetsDefeatRequirement,
   getFightDiscardCost,
   selectDefaultCostDiscardCard,
+  getFightRestriction,
+  isFightRestrictionBlocking,
+  findFightableFortifier,
 } from '../moves/villainDefeatRequirement.logic.js';
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
@@ -36,7 +40,11 @@ import { hasPendingRevealThreeAssign, selectDefaultRevealThreeAssignment } from 
 import { hasPendingElectromagneticBubbleChoice } from '../moves/electromagneticBubbleChoice.resolve.js';
 import { hasPendingDiscardChoice } from '../moves/discardChoice.resolve.js';
 import { hasPendingPutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resolve.js';
-import { hasPendingKoDiscardChoice, getEligibleKoDiscardCards } from '../moves/koDiscardChoice.resolve.js';
+import {
+  hasPendingKoDiscardChoice,
+  getEligibleKoDiscardCards,
+  getRequiredKoDiscardCount,
+} from '../moves/koDiscardChoice.resolve.js';
 import { hasPendingReorderChoice } from '../moves/reorderChoice.resolve.js';
 import { hasPendingDefeatChoice } from '../moves/defeatChoice.resolve.js';
 import { selectDiscardToLimitCards, selectRedSkullKoTarget } from '../rules/mastermindHandlers.js';
@@ -277,7 +285,9 @@ export interface SimulationLifecycleContext {
  * Picks the front entry's chooser's Wounds first, then starting S.H.I.E.L.D. Agents and
  * Troopers (the `isCullableDeckTopCard` set the bot already culls for Melter), each in
  * discard order, up to the entry's `maxCount`. A repeated id is one more copy (D-24682).
- * Anything else stays: a recruited Hero or an Officer is never KO'd.
+ * Anything else stays: a recruited Hero or an Officer is never KO'd, except that a mandatory
+ * entry (`minCount`, Flatman, D-24811) tops up with the next untaken cards in discard order until
+ * it holds the required count.
  *
  * @param gameState - The engine state. Not mutated.
  * @returns The card ids to KO; empty when the discard holds nothing cullable.
@@ -298,23 +308,46 @@ export function selectDefaultKoDiscardCardIds(gameState: LegendaryGameState): Ca
     front.eligibleCardIds,
   );
   const chosen: CardExtId[] = [];
+  // why: WP-868 / D-24811 — each pass records the discard INDEX it took, because ids repeat
+  // (three Wounds share one id) and the mandatory top-up below must skip exactly the copies
+  // already chosen, not every copy of a chosen id.
+  const takenIndices = new Set<number>();
   // why: D-24688 — Wounds first (a dead card is the best KO), then the starting
   // S.H.I.E.L.D. cards; two passes keep the order deterministic and capped.
-  for (const cardId of discard) {
+  for (let discardIndex = 0; discardIndex < discard.length; discardIndex++) {
     if (chosen.length >= front.maxCount) {
       return chosen;
     }
+    const cardId = discard[discardIndex]!;
     if (cardId === WOUND_EXT_ID) {
       chosen.push(cardId);
+      takenIndices.add(discardIndex);
     }
   }
-  for (const cardId of discard) {
+  for (let discardIndex = 0; discardIndex < discard.length; discardIndex++) {
     if (chosen.length >= front.maxCount) {
       return chosen;
     }
+    const cardId = discard[discardIndex]!;
     if (cardId !== WOUND_EXT_ID && isCullableDeckTopCard(cardId)) {
       chosen.push(cardId);
+      takenIndices.add(discardIndex);
     }
+  }
+  // why: WP-868 / D-24811 — a mandatory entry ("KO a card from your discard pile", Flatman) must
+  // KO at least the required count even when nothing is cullable, or the resolve rejects the
+  // answer and the block-all guard never lifts. The top-up walks the untaken eligible cards in
+  // discard order, by position, to `min(minCount, eligible count)`.
+  const required = getRequiredKoDiscardCount(gameState, front);
+  for (let discardIndex = 0; discardIndex < discard.length; discardIndex++) {
+    if (chosen.length >= required) {
+      break;
+    }
+    if (takenIndices.has(discardIndex)) {
+      continue;
+    }
+    chosen.push(discard[discardIndex]!);
+    takenIndices.add(discardIndex);
   }
   return chosen;
 }
@@ -406,6 +439,8 @@ function selectDoOverDefault(gameState: LegendaryGameState): { accept: true } | 
  *   3. fightVillain intents — City slot 0..4 ascending (if stage === 'main'
  *      and availableAttack covers baseFightCost + patrolModifier and the
  *      slot is not Guard-blocked)
+ *   3b. fightVillain fortifier intents — one per fightable fortified place,
+ *      FORTIFY_PLACES order (WP-873 / D-24818; empty without a fortification)
  *   4. fightMastermind — one entry (if stage === 'main', tactics remain,
  *      and availableAttack covers the base-card fightCost)
  *   5. revealVillainCard — one entry if stage === 'start'
@@ -1116,6 +1151,18 @@ export function getLegalMoves(
       ) {
         continue;
       }
+      // why: WP-871 / D-24816 — mirror the fightVillain move's fight-restriction gate
+      // (Orrgo, Squirrel Girl, Doop) with the same helper at the same position (D-24364:
+      // every move precondition ships with its enumeration mirror). Offering a fight the
+      // move refuses is a no-op the bot re-picks every step until the 100-step cap faults
+      // the turn.
+      const fightRestriction = getFightRestriction(gameState, cityCard);
+      if (
+        fightRestriction !== null &&
+        isFightRestrictionBlocking(gameState, activePlayer, cityIndex, fightRestriction)
+      ) {
+        continue;
+      }
       // why: WP-817 / D-24750 — mirror the fightVillain move's fight-discard-cost gate with
       // the same helpers (D-24364: every move precondition ships with its enumeration
       // mirror). A discard-cost villain (Primus) is offered only with a named card the move
@@ -1152,13 +1199,31 @@ export function getLegalMoves(
     }
   }
 
+  // 3b. fightVillain fortifier intents — one per fortified place the active player can fight,
+  //     in FORTIFY_PLACES order.
+  // why: WP-873 / D-24818 — mirrors the fightVillain({ fortifiedPlace }) path (D-24364: a move
+  // precondition ships with its enumeration mirror). findFightableFortifier is the single
+  // authority the move itself calls, and the stage / pending gates are the ones above (this
+  // function returned early on every pending choice), so every emitted intent commits.
+  // Without a fortification the loop pushes nothing, so the output is byte-identical.
+  if (stage === 'main') {
+    for (const entry of listFortifications(gameState)) {
+      if (findFightableFortifier(gameState, activePlayer, entry.place) !== null) {
+        legalMoves.push({ name: 'fightVillain', args: { fortifiedPlace: entry.place } });
+      }
+    }
+  }
+
   // 4. fightMastermind — at most one entry (affordable + tactics remain).
   // why: WP-757 / D-24587 — the Mastermind can't be fought while it haunts an HQ Hero;
   // the same isMastermindHaunting predicate gates the fightMastermind move.
+  // why: WP-873 / D-24818 — nor while a Villain fortifies it (Colleen Wing); the same
+  // isMastermindFortified predicate gates the move (D-24364 mirror).
   if (
     stage === 'main' &&
     gameState.mastermind.tacticsDeck.length > 0 &&
-    !isMastermindHaunting(gameState)
+    !isMastermindHaunting(gameState) &&
+    !isMastermindFortified(gameState)
   ) {
     // why: D-24802 — mirror fightMastermind: the Size-Changing price.
     const mastermindFightCost = resolveMastermindFightPrice(gameState, activePlayer);

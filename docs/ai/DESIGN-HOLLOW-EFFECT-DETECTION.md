@@ -207,7 +207,7 @@ WP-257 introduces a runtime-only diagnostics channel:
 ```ts
 type HollowEffectRecord = {
   cardId: string;
-  cardType: 'hero' | 'villain' | 'henchman';
+  cardType: 'hero' | 'villain' | 'henchman' | 'mastermind'; // 'mastermind': WP-867 / D-24810
   timing: string;
   mechanic: string;
   reason: 'parse-unrecognized' | 'no-handler' | 'unsupported-keyword';

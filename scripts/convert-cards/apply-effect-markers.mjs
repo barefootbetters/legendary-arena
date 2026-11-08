@@ -186,6 +186,25 @@ function isLockedEffectKeyword(keyword) {
 // `hq-hero-gains-size-changing` (`:<if-none|add|replace>:<c>[+<c>…]`) appended at position 39
 // by WP-862 (D-24804 — antm Ultron-Pym, amwp Shrinksperiments and chmp Sporr Fights; validates via
 // its own mode + Hero Class list branch below).
+// `hq-heroes-cost-change` (`:<less|more>:<N>[:<c>[+<c>…]]`), `ko-from-discard-current` (`:<N>`) and
+// `reenter-sewers-if-villain-deck-top` (`:<villain|bystander|villain+bystander>`) appended at
+// positions 40, 41 and 42 by WP-868 (D-24811 — Tim Boo Ba / Jormungand / Dr. Carlton Drake / The
+// Mind Stone, Flatman and six siblings, and Mr. Immortal; each validates via its own branch below).
+// `fortify` (`:<place>:<lock>`) appended at position 43 by WP-873 (D-24818 — cvwr Squirrel Girl
+// and Colleen Wing's Escape; validates via its own place + allowed-lock branch below).
+// `demolish-each-player` (no-param) appended at position 44 by WP-864 (D-24807 — chmp Trull the
+// Unhuman's Ambush, Zzutak's and Piledriver's Escape "[Demolish] each player"; validates via the
+// terminal no-param `parts.length === 1` branch).
+// `stack-cards-enter-city-as-villains` (`:<bystander|officer>:<N>[:<name>]`) appended at position
+// 45 by WP-869 (D-24814 — chmp Groot from Planet X's Fight, cvwr Agent Gabe Jones's Fight and Agent
+// Eric Marshall's Ambush; validates via its own branch below).
+// `reveal-top-may-ko-current` (no-param), `reveal-top-discard-zero-cost-current` (`:<N>`) and
+// `next-hand-from-play-zero-cost-current` (no-param) appended at positions 46, 47 and 48 by WP-870
+// (D-24815 — rvlt Mandarin's Rings Lightning (and antm Daystar) "Reveal the top card of your deck.
+// You may KO it.", Spin "Reveal the top six cards … Discard all of them that cost 0, then put the
+// rest back in any order." and Zero "Choose a card you played this turn that costs 0 … add that card
+// to your hand as an extra card."; the two no-param ones validate via the terminal
+// `parts.length === 1` branch, the `:<N>` one via its own branch below).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -226,6 +245,15 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'discard-hand-matching-hq-card-names-each-player',
   'hq-heroes-to-hero-deck-bottom',
   'hq-hero-gains-size-changing',
+  'hq-heroes-cost-change',
+  'ko-from-discard-current',
+  'reenter-sewers-if-villain-deck-top',
+  'fortify',
+  'demolish-each-player',
+  'stack-cards-enter-city-as-villains',
+  'reveal-top-may-ko-current',
+  'reveal-top-discard-zero-cost-current',
+  'next-hand-from-play-zero-cost-current',
 ];
 
 // why: WP-836 / D-24769 — hand-synced local copy of the engine's HERO_CLASSES
@@ -250,6 +278,21 @@ const VILLAIN_EFFECT_CONDITIONS = ['savior', 'another-group-villain-in-city'];
 // this list, so a mistyped space in the marker map is rejected (never a silent
 // accept) and any engine-side rename breaks this script until it is updated here.
 const CITY_SPACE_NAMES = ['sewers', 'bank', 'rooftops', 'streets', 'bridge'];
+
+// why: WP-873 / D-24818 — hand-synced local copy of the engine's FORTIFY_ALLOWED_LOCKS
+// (packages/game-engine/src/board/fortify.types.ts); its keys are FORTIFY_PLACES. Same
+// no-import-from-packages discipline: a fortify marker whose place or lock is not listed here
+// is rejected, and a place the engine appends breaks nothing until it is appended here too.
+const FORTIFY_ALLOWED_LOCKS = {
+  'sidekick-stack': ['no-recruit-or-gain'],
+  mastermind: ['no-fight'],
+};
+
+// why: WP-869 / D-24814 — hand-synced local copy of the engine's STACK_VILLAIN_NAME_PATTERN
+// (packages/game-engine/src/rules/stackVillain.logic.ts): the optional name token of a
+// stack-cards-enter-city-as-villains marker. The engine's stackVillain.test.ts asserts this file
+// contains the engine pattern's source, so the two copies cannot drift.
+const STACK_VILLAIN_NAME_PATTERN = /^[a-z0-9]+([_-][a-z0-9]+)*$/;
 
 /**
  * Returns true when a `@<space>[+<space>…]` gate suffix (the text after the `@`)
@@ -442,6 +485,48 @@ function isValidParameterizedEffectToken(token) {
     // 3 tokens; Sporr: :add:tech+ranged). Mirrors the engine parser so producer + consumer agree.
     const modes = ['if-none', 'add', 'replace'];
     return parts.length === 3 && modes.includes(parts[1]) && isValidHeroClassList(parts[2]);
+  }
+  if (primitive === 'hq-heroes-cost-change') {
+    // why: D-24811 — grammar hq-heroes-cost-change:<less|more>:<N>[:<c>[+<c>…]] (3 or 4 tokens; Dr.
+    // Carlton Drake: :less:1:instinct+tech). Mirrors the engine parser so producer + consumer agree.
+    if (parts.length !== 3 && parts.length !== 4) return false;
+    if (parts[1] !== 'less' && parts[1] !== 'more') return false;
+    if (!/^[1-9][0-9]*$/.test(parts[2])) return false;
+    return parts.length === 3 || isValidHeroClassList(parts[3]);
+  }
+  if (primitive === 'ko-from-discard-current') {
+    // why: D-24811 — grammar ko-from-discard-current:<N> (exactly 2 tokens; Flatman: :1), the
+    // mandatory KO. Same strict positive-integer grammar as the "up to" sibling.
+    return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
+  }
+  if (primitive === 'reveal-top-discard-zero-cost-current') {
+    // why: D-24815 — grammar reveal-top-discard-zero-cost-current:<N> (exactly 2 tokens; Spin: :6),
+    // N the count of deck-top cards revealed. Mirrors the engine parser: the bare token is invalid
+    // (no default count), so it must not reach the terminal no-param branch.
+    return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
+  }
+  if (primitive === 'reenter-sewers-if-villain-deck-top') {
+    // why: D-24811 — grammar reenter-sewers-if-villain-deck-top:<kinds> (exactly 2 tokens; Mr.
+    // Immortal: :villain+bystander). Mirrors the engine parser's three accepted kind tokens.
+    const kinds = ['villain', 'bystander', 'villain+bystander'];
+    return parts.length === 2 && kinds.includes(parts[1]);
+  }
+  if (primitive === 'fortify') {
+    // why: D-24818 — grammar fortify:<place>:<lock> (exactly 3 tokens; Squirrel Girl:
+    // :sidekick-stack:no-recruit-or-gain, Colleen Wing: :mastermind:no-fight). The lock must be
+    // one FORTIFY_ALLOWED_LOCKS lists for the place. Mirrors the engine parser's fortify branch.
+    if (parts.length !== 3) return false;
+    if (!Object.hasOwn(FORTIFY_ALLOWED_LOCKS, parts[1])) return false;
+    return FORTIFY_ALLOWED_LOCKS[parts[1]].includes(parts[2]);
+  }
+  if (primitive === 'stack-cards-enter-city-as-villains') {
+    // why: D-24814 — grammar stack-cards-enter-city-as-villains:<bystander|officer>:<N>[:<name>]
+    // (3 or 4 tokens; Groot from Planet X: :bystander:2:splintered_half-groot, Agent Gabe Jones and
+    // Agent Eric Marshall: :officer:1). Mirrors the engine parser's stack-villain branch.
+    if (parts.length !== 3 && parts.length !== 4) return false;
+    if (parts[1] !== 'bystander' && parts[1] !== 'officer') return false;
+    if (!/^[1-9][0-9]*$/.test(parts[2])) return false;
+    return parts.length === 3 || STACK_VILLAIN_NAME_PATTERN.test(parts[3]);
   }
   if (primitive === 'play-villain-deck-cards') {
     // why: D-24351 — grammar play-villain-deck-cards:<N> (exactly 2 tokens); N is the

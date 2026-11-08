@@ -25,6 +25,7 @@ import { KILLBOT_TWISTS_NEXT_TO_SCHEME, DARK_PORTAL_COUNT } from '../types.js';
 // drive a Brainwash the Military Officer's fight cost.
 import { TRAITOR_BATTALION_TWISTS } from '../types.js';
 import { BRAINWASHED_OFFICER_BASE_ATTACK } from '../rules/brainwashTheMilitary.logic.js';
+import { STACK_VILLAIN_ATTACK } from '../rules/stackVillain.logic.js';
 // why: WP-728 / D-24549 — the fixed City space count bounds the Dark-Portal
 // location scan; CITY_SPACE_NAMES is the single source of the 5-space board.
 import { CITY_SPACE_NAMES, citySpaceNameForIndex } from '../board/citySpaceNames.js';
@@ -37,6 +38,9 @@ import { getFightCostReduction } from './economy.logic.js';
 // why: WP-815 / D-24747 — the Abomination terms read the HQ at fight time; one
 // helper per resolver, so each family is added in exactly one authority.
 import { villainAbominationBonus, mastermindAbominationBonus } from './abomination.logic.js';
+// why: WP-875 / D-24822 — The Mandarin's two read-time cost terms (Rings +1 Attack; The Mandarin
+// -1 Attack per Ring in all Victory Piles, -3 in solo), id-keyed like Baron Zemo's (D-24752).
+import { mandarinRingAttackBonus, mandarinVictoryPileAttackReduction } from '../mastermind/mandarin.logic.js';
 // why: WP-841 / D-24774 — the variable-Attack passives read the City, the Escape Pile
 // and the HQ at fight time; the villain resolver is their only reader.
 import { villainVariableAttackBonus } from './villainVariableAttack.logic.js';
@@ -122,7 +126,11 @@ export function resolveFightCost(
     bystanderVillainAttackBonus(G, villainCardId) +
     villainBloodFrenzyBonus(G, villainCardId, fightingPlayerId) +
     villainAbominationBonus(G, villainCardId) +
-    villainVariableAttackBonus(G, villainCardId);
+    villainVariableAttackBonus(G, villainCardId) +
+    // why: WP-875 / D-24822 — "All Mandarin's Rings get +1 Attack" while The Mandarin leads, read
+    // at fight time in this single authority (the D-24752 id-keyed shape), so the fight move, the
+    // bot and the City fightCost projection agree; 0 in every other match.
+    mandarinRingAttackBonus(G, villainCardId);
   // why: WP-794 / D-24663 — the Storm / Forge "Any Villain you fight on the <space> this turn
   // gets -N attack" reduction is applied HERE, in the single authority, so the fight move, the
   // bot's legal moves and the City fightCost projection all agree by construction.
@@ -402,6 +410,15 @@ function resolveBaseFightCost(
     return BRAINWASHED_OFFICER_BASE_ATTACK + (G.counters[TRAITOR_BATTALION_TWISTS] ?? 0);
   }
 
+  // why: WP-869 / D-24814 — a stack card that entered the City as a Villain (Groot from Planet X's
+  // Splintered Half-Groots, the S.H.I.E.L.D. Elite Officers) attacks for a fixed 3, the Attack
+  // every marked line prints. Checked OVERLAY-FIRST beside the Officer branch, because a converted
+  // stack card carries no cardStats row (the guard below would return 0).
+  const stackOrigin = G.convertedVillainOrigins?.[villainCardId];
+  if (stackOrigin === 'bystander-stack-villain' || stackOrigin === 'officer-stack-villain') {
+    return STACK_VILLAIN_ATTACK;
+  }
+
   const villainStats = G.cardStats[villainCardId];
   if (villainStats === undefined) {
     return 0;
@@ -471,10 +488,14 @@ export function resolveMastermindFightCost(G: LegendaryGameState, fightingPlayer
   // why: WP-818 / D-24752 — Baron Zemo's +9 unless the fighter is a Savior; added
   // before the reduction, like the Abomination term.
   const nonSaviorBonus = mastermindNonSaviorBonus(G, fightingPlayerId);
+  // why: WP-875 / D-24822 — The Mandarin's "-1 Attack for each Mandarin's Ring among all players'
+  // Victory Piles (-3 in solo)", read at fight time in this single authority (the D-24752 shape);
+  // 0 unless The Mandarin leads. Subtracted inside the 0 floor.
+  const mandarinReduction = mandarinVictoryPileAttackReduction(G);
   // why: the 0 floor keeps this function's ">= 0" promise.
   return Math.max(
     0,
-    baseFightCost + portalBonus + abominationBonus + nonSaviorBonus - mastermindReduction,
+    baseFightCost + portalBonus + abominationBonus + nonSaviorBonus - mastermindReduction - mandarinReduction,
   );
 }
 

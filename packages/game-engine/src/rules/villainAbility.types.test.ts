@@ -15,6 +15,7 @@ import {
   VILLAIN_EFFECT_KEYWORDS,
   VILLAIN_EFFECT_PRIMITIVES,
   VILLAIN_DEFEAT_REQUIREMENT_KINDS,
+  VILLAIN_FIGHT_RESTRICTION_KINDS,
   VILLAIN_EFFECT_CONDITIONS,
   LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR,
   descriptorToLegacyKeyword,
@@ -28,6 +29,7 @@ import type {
   VillainEffectPrimitive,
   VillainEffectDescriptor,
   VillainDefeatRequirementKind,
+  VillainFightRestrictionKind,
   VillainEffectCondition,
 } from './villainAbility.types.js';
 import type { CardExtId } from '../state/zones.types.js';
@@ -359,8 +361,16 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
   // thirty-second to thirty-fourth (co2e Abomination, Beetle, Savage Land Mutates Fights).
   // WP-837 (D-24770) appended the thirty-fifth to thirty-eighth (co2e Mystique, Frost Giant
   // Warrior and Juggernaut Ambushes). WP-862 (D-24804) appended the thirty-ninth (Ultron-Pym /
-  // Shrinksperiments / Sporr Fight: hq-hero-gains-size-changing).
-  it('contains exactly the 39 canonical primitives in order', () => {
+  // Shrinksperiments / Sporr Fight: hq-hero-gains-size-changing). WP-868 (D-24811) appended the
+  // fortieth to forty-second (Tim Boo Ba's HQ cost change, Flatman's mandatory KO from your
+  // discard pile, Mr. Immortal's reenter). WP-873 (D-24818) appended the forty-third, `fortify`
+  // (Squirrel Girl and Colleen Wing's Escape). WP-864 (D-24807) appended the forty-fourth,
+  // `demolish-each-player` (Trull the Unhuman's Ambush, Zzutak's and Piledriver's Escape). WP-869
+  // (D-24814) appended the forty-fifth, `stack-cards-enter-city-as-villains` (Groot from Planet X /
+  // Agent Gabe Jones / Agent Eric Marshall: stack cards enter the City as Villains). WP-870
+  // (D-24815) appended the forty-sixth to forty-eighth (Mandarin's Rings Lightning / Daystar
+  // KO-or-keep, Spin's cost-0 discard + reorder, Zero's next-hand card).
+  it('contains exactly the 48 canonical primitives in order', () => {
     const expectedPrimitives: VillainEffectPrimitive[] = [
       'ko-hero',
       'gain-wound',
@@ -401,16 +411,25 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
       'discard-hand-matching-hq-card-names-each-player',
       'hq-heroes-to-hero-deck-bottom',
       'hq-hero-gains-size-changing',
+      'hq-heroes-cost-change',
+      'ko-from-discard-current',
+      'reenter-sewers-if-villain-deck-top',
+      'fortify',
+      'demolish-each-player',
+      'stack-cards-enter-city-as-villains',
+      'reveal-top-may-ko-current',
+      'reveal-top-discard-zero-cost-current',
+      'next-hand-from-play-zero-cost-current',
     ];
     assert.equal(
       VILLAIN_EFFECT_PRIMITIVES.length,
-      39,
-      'VILLAIN_EFFECT_PRIMITIVES must have exactly 39 entries',
+      48,
+      'VILLAIN_EFFECT_PRIMITIVES must have exactly 48 entries',
     );
     assert.equal(
       VILLAIN_EFFECT_PRIMITIVES[VILLAIN_EFFECT_PRIMITIVES.length - 1],
-      'hq-hero-gains-size-changing',
-      'hq-hero-gains-size-changing must be appended last (position 39)',
+      'next-hand-from-play-zero-cost-current',
+      'next-hand-from-play-zero-cost-current must be appended last (position 48)',
     );
     assert.deepStrictEqual(
       [...VILLAIN_EFFECT_PRIMITIVES],
@@ -629,8 +648,10 @@ describe('WP-816 villain-side Savior types (D-24749)', () => {
 
   it('T2: ko-bystander-each-victory-pile is the 29th primitive', () => {
     // why: WP-817 (D-24750) appended positions 30-31 after it, WP-836 (D-24769) 32-34 and
-    // WP-837 (D-24770) 35-38 and WP-862 (D-24804) 39, so the total moved 29 → 31 → 34 → 38 → 39.
-    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 39);
+    // WP-837 (D-24770) 35-38, WP-862 (D-24804) 39, WP-868 (D-24811) 40-42, WP-873 (D-24818)
+    // 43, WP-864 (D-24807) 44, WP-869 (D-24814) 45 and WP-870 (D-24815) 46-48, so the total moved
+    // 29 → 31 → 34 → 38 → 39 → 42 → 43 → 44 → 45 → 48.
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 48);
     assert.equal(VILLAIN_EFFECT_PRIMITIVES[28], 'ko-bystander-each-victory-pile');
   });
 
@@ -664,8 +685,9 @@ describe('WP-816 villain-side Savior types (D-24749)', () => {
 describe('WP-817 Captain Zolandia + Primus types (D-24750)', () => {
   it('T1: the two new primitives sit at positions 30 and 31', () => {
     // why: WP-836 (D-24769) appended positions 32-34 after them and WP-837 (D-24770)
-    // 35-38 and WP-862 (D-24804) 39, so the total is 39.
-    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 39);
+    // 35-38, WP-862 (D-24804) 39, WP-868 (D-24811) 40-42, WP-873 (D-24818) 43, WP-864 (D-24807)
+    // 44, WP-869 (D-24814) 45 and WP-870 (D-24815) 46-48, so the total is 48.
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 48);
     assert.equal(VILLAIN_EFFECT_PRIMITIVES[29], 'gain-recruit-current-per-hero-class');
     assert.equal(VILLAIN_EFFECT_PRIMITIVES[30], 'discard-hero-each-player-by-cost');
   });
@@ -689,9 +711,10 @@ describe('WP-817 Captain Zolandia + Primus types (D-24750)', () => {
 
 describe('WP-836 co2e grey-Hero and Hero-count types (D-24769)', () => {
   it('T1: the three new primitives sit at positions 32, 33 and 34', () => {
-    // why: WP-837 (D-24770) appended positions 35-38 after them and WP-862 (D-24804) 39, so the
-    // total is 39.
-    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 39);
+    // why: WP-837 (D-24770) appended positions 35-38 after them, WP-862 (D-24804) 39, WP-868
+    // (D-24811) 40-42, WP-873 (D-24818) 43, WP-864 (D-24807) 44, WP-869 (D-24814) 45 and WP-870
+    // (D-24815) 46-48, so the total is 48.
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 48);
     assert.equal(VILLAIN_EFFECT_PRIMITIVES[31], 'gain-recruit-current-count-by-trait');
     assert.equal(VILLAIN_EFFECT_PRIMITIVES[32], 'draw-cards-current-count-by-trait');
     assert.equal(VILLAIN_EFFECT_PRIMITIVES[33], 'reveal-top-ko-grey-or-draw-by-class');
@@ -742,8 +765,10 @@ describe('WP-836 co2e grey-Hero and Hero-count types (D-24769)', () => {
 
 describe('WP-837 co2e each-player discard and reveal-gated Ambush types (D-24770)', () => {
   it('T1: the four new primitives sit at positions 35-38 in the locked order', () => {
-    // why: WP-862 (D-24804) appended position 39 after them, so the slice stops at 38.
-    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 39);
+    // why: WP-862 (D-24804) appended position 39 after them, WP-868 (D-24811) 40-42 and WP-873
+    // (D-24818) 43, WP-864 (D-24807) 44, WP-869 (D-24814) 45 and WP-870 (D-24815) 46-48, so the
+    // slice stops at 38.
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 48);
     assert.deepStrictEqual(VILLAIN_EFFECT_PRIMITIVES.slice(34, 38), [
       'discard-hero-each-player-by-trait',
       'discard-hero-or-wound-each-player-by-trait',
@@ -775,5 +800,113 @@ describe('WP-837 co2e each-player discard and reveal-gated Ambush types (D-24770
     for (const descriptor of keywordLess) {
       assert.equal(descriptorToLegacyKeyword(descriptor), undefined, `${descriptor.primitive} must self-narrate`);
     }
+  });
+});
+
+describe('WP-871 VILLAIN_FIGHT_RESTRICTION_KINDS drift-detection (D-24816)', () => {
+  it('T1: the array holds exactly the three kinds in canonical order and matches the union', () => {
+    assert.deepStrictEqual(
+      [...VILLAIN_FIGHT_RESTRICTION_KINDS],
+      ['requires-villain-defeated-this-turn', 'at-most-one-card-played', 'no-adjacent-villain'],
+    );
+    // why: a runtime parity pin (WP-563 / D-24372) — the Record literal must list every
+    // union member (tsc enforces that only on a typecheck run), and its keys must equal
+    // the array exactly at runtime.
+    const unionMembers: Record<VillainFightRestrictionKind, true> = {
+      'requires-villain-defeated-this-turn': true,
+      'at-most-one-card-played': true,
+      'no-adjacent-villain': true,
+    };
+    assert.deepStrictEqual(Object.keys(unionMembers), [...VILLAIN_FIGHT_RESTRICTION_KINDS]);
+  });
+});
+
+describe('WP-873 fortify primitive (D-24818)', () => {
+  it('T5: fortify is the 43rd primitive, and the union matches the array at runtime', () => {
+    // why: WP-864 (D-24807) appended demolish-each-player at 44 after it and WP-869 (D-24814)
+    // stack-cards-enter-city-as-villains at 45 and WP-870 (D-24815) 46-48, so the total is 48.
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 48);
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES[42], 'fortify');
+    // why: a runtime parity pin (WP-563 / D-24372) — the Record literal must list every union
+    // member (tsc enforces that only on a typecheck run), and its keys must equal the array.
+    const unionMembers: Record<VillainEffectPrimitive, true> = {
+      'ko-hero': true,
+      'gain-wound': true,
+      'capture-hq-hero': true,
+      'hero-deck-top-to-escape': true,
+      'capture-bystander': true,
+      'scry-ko-own-deck': true,
+      'gain-attached-hero': true,
+      'reveal-or-wound': true,
+      'become-scheme-twist': true,
+      'draw-cards-current': true,
+      'ko-heroes-current-by-trait': true,
+      'rescue-bystanders-current-by-trait-count': true,
+      'gain-wound-unless-victory-villain-group': true,
+      'override-next-hand-size': true,
+      'ko-wounds-current-hand-and-discard': true,
+      'ko-cullable-each-deck-top': true,
+      'capture-bystanders-plus-per-hq-hero-by-trait': true,
+      'give-hq-hero-by-trait-to-current': true,
+      'swap-two-city-villains': true,
+      'give-hq-hero-each-player': true,
+      'gain-recruit-current': true,
+      'gain-officer-current': true,
+      'add-next-hand-size': true,
+      'play-villain-deck-cards': true,
+      'ko-heroes-current-count-by-trait': true,
+      'haunt-hq-hero': true,
+      'reveal-top-draw-if-cost-lte': true,
+      'ko-up-to-from-discard-current': true,
+      'ko-bystander-each-victory-pile': true,
+      'gain-recruit-current-per-hero-class': true,
+      'discard-hero-each-player-by-cost': true,
+      'gain-recruit-current-count-by-trait': true,
+      'draw-cards-current-count-by-trait': true,
+      'reveal-top-ko-grey-or-draw-by-class': true,
+      'discard-hero-each-player-by-trait': true,
+      'discard-hero-or-wound-each-player-by-trait': true,
+      'discard-hand-matching-hq-card-names-each-player': true,
+      'hq-heroes-to-hero-deck-bottom': true,
+      'hq-hero-gains-size-changing': true,
+      'hq-heroes-cost-change': true,
+      'ko-from-discard-current': true,
+      'reenter-sewers-if-villain-deck-top': true,
+      fortify: true,
+      'demolish-each-player': true,
+      'stack-cards-enter-city-as-villains': true,
+      'reveal-top-may-ko-current': true,
+      'reveal-top-discard-zero-cost-current': true,
+      'next-hand-from-play-zero-cost-current': true,
+    };
+    assert.deepStrictEqual(Object.keys(unionMembers), [...VILLAIN_EFFECT_PRIMITIVES]);
+  });
+
+  it('T5: a fortify descriptor is keyword-less (self-narrating)', () => {
+    assert.equal(
+      descriptorToLegacyKeyword({ primitive: 'fortify', fortifyPlace: 'mastermind', fortifyLock: 'no-fight' }),
+      undefined,
+    );
+  });
+});
+
+describe('WP-869 stack-cards-enter-city-as-villains primitive (D-24814)', () => {
+  it('is the 45th primitive', () => {
+    // why: WP-869 / D-24814 appended it at position 45, after WP-864's demolish-each-player;
+    // WP-870 (D-24815) appended 46-48 after it, so the total is 48.
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 48);
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES[44], 'stack-cards-enter-city-as-villains');
+  });
+
+  it('a stack-villain descriptor is keyword-less (the fire sites narrate)', () => {
+    assert.equal(
+      descriptorToLegacyKeyword({
+        primitive: 'stack-cards-enter-city-as-villains',
+        magnitude: 2,
+        stackVillainKind: 'bystander',
+        stackVillainName: 'splintered_half-groot',
+      }),
+      undefined,
+    );
   });
 });

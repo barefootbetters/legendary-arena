@@ -37,6 +37,7 @@ amwp/cassie-lang,Cassie Lang,amwp,discard-to-play,executable,WP-383,D-24184,pack
 amwp/cassie-lang,Cassie Lang,amwp,microscopic-size-changing,executable,,D-24801,packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing,inspire-revolution|learn-from-the-past|quantum-beacon
 amwp/cassie-lang,Cassie Lang,amwp,size-changing,executable,,D-24801,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,colossal-stomp|giant-hug|start-small
 amwp/freedom-fighters,Freedom Fighters,amwp,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,steel-warrior
+amwp/freedom-fighters,Freedom Fighters,amwp,next-hand-extra-draw,executable,WP-866,D-24809,packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw,mystics
 amwp/janet-van-dyne,Janet van Dyne,amwp,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,subatomic-size
 amwp/janet-van-dyne,Janet van Dyne,amwp,microscopic-size-changing,executable,,D-24801,packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing,subatomic-size
 amwp/janet-van-dyne,Janet van Dyne,amwp,size-changing,executable,,D-24801,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,wasp-of-another-generation
@@ -45,6 +46,7 @@ amwp/jentorra,Jentorra,amwp,explore,unsupported,,,,find-your-courage|lead-powerf
 amwp/scott-lang-cat-burglar,"Scott Lang, Cat Burglar",amwp,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,anything-for-cassie
 amwp/wasp,Wasp,amwp,first-hero-condition,condition,,,,follow-my-lead
 amwp/wasp,Wasp,amwp,microscopic-size-changing,executable,,D-24801,packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing,hope-returns|infiltrate
+amwp/wasp,Wasp,amwp,next-hand-extra-draw,executable,WP-866,D-24809,packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw,infiltrate
 amwp/wasp,Wasp,amwp,size-changing,executable,,D-24801,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,flitting-sting|follow-my-lead|master-physicist|positive-ions
 anni/brainstorm,Brainstorm,anni,out-of-time,executable,WP-803,D-24692,packages/game-engine/src/hero/heroEffects.execute.ts#out-of-time,borrow-from-the-future|time-loop-experiments
 anni/brainstorm,Brainstorm,anni,put-hand-on-deck-top,executable,WP-700,D-24519,packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top,time-loop-experiments
@@ -177,6 +179,7 @@ chmp/totally-awesome-hulk,Totally Awesome Hulk,chmp,cheering-crowds,unsupported,
 chmp/totally-awesome-hulk,Totally Awesome Hulk,chmp,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,incredible-mind-awesome-body
 chmp/totally-awesome-hulk,Totally Awesome Hulk,chmp,size-changing,executable,,D-24801,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,7th-smartest-man-in-the-world|beloved-behemoth|growing-pains|incredible-mind-awesome-body
 chmp/viv-vision,Viv Vision,chmp,cheering-crowds,unsupported,,,,crowdsourcing
+chmp/viv-vision,Viv Vision,chmp,next-hand-extra-draw,executable,WP-866,D-24809,packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw,expanding-neural-network
 chmp/viv-vision,Viv Vision,chmp,size-changing,executable,,D-24801,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,alter-molecular-density|expanding-neural-network
 chmp/viv-vision,Viv Vision,chmp,versatile,unsupported,,,,crowdsourcing
 co2e/black-widow,Black Widow,co2e,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,intelligence-network
@@ -205,7 +208,7 @@ co2e/rogue,Rogue,co2e,optional-ko-reward,executable,WP-248,D-24019,packages/game
 co2e/spider-man,Spider-Man,co2e,gain-sidekick,executable,WP-844,D-24778,packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick,witty-banter
 co2e/spider-man,Spider-Man,co2e,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal,astonishing-strength|web-shooters|with-great-power
 co2e/spider-man,Spider-Man,co2e,reveal-count,unsupported,,,,with-great-power
-co2e/spider-man-miles-morales,Spider-Man (Miles Morales),co2e,(unmarked),unmarked,,,,
+co2e/spider-man-miles-morales,Spider-Man (Miles Morales),co2e,next-hand-extra-draw,executable,WP-866,D-24809,packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw,web-trap
 co2e/storm,Storm,co2e,(unmarked),unmarked,,,,
 co2e/thor,Thor,co2e,recruit-threshold,condition,,,,glory-of-asgard|spark-of-the-divine
 co2e/wolverine,Wolverine,co2e,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,berserker-rage|frenzied-slashing|keen-senses
@@ -263,6 +266,7 @@ core/wolverine,Wolverine,core,draw,executable,WP-022,D-2201,packages/game-engine
 core/wolverine,Wolverine,core,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,healing-factor
 cosm/adam-warlock,Adam Warlock,cosm,burn-shards,unsupported,,,,manifest-the-soul-gem|soulblast|transmute-matter
 cosm/adam-warlock,Adam Warlock,cosm,discard-to-play,executable,WP-383,D-24184,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play,regenerative-cocoon
+cosm/adam-warlock,Adam Warlock,cosm,next-hand-extra-draw,executable,WP-866,D-24809,packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw,regenerative-cocoon
 cosm/captain-mar-vell,Captain Mar-Vell,cosm,danger-sense,unsupported,,,,cosmic-awareness|protector-of-the-universe
 cosm/moondragon,Moondragon,cosm,danger-sense,unsupported,,,,lunar-dragon-form|psionic-warning|psychokinetic-blast
 cosm/nebula,Nebula,cosm,(unmarked),unmarked,,,,
@@ -292,7 +296,7 @@ cvwr/hercules,Hercules,cvwr,reveal-ko,executable,WP-253,D-24024,packages/game-en
 cvwr/hulkling,Hulkling,cvwr,gain-wound-self,executable,WP-364,D-24156,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self,half-kree
 cvwr/hulkling,Hulkling,cvwr,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,cellular-regeneration
 cvwr/hulkling,Hulkling,cvwr,size-changing,executable,,D-24801,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,cellular-regeneration|enormous-shapeshifter|half-kree|half-skrull|impersonate
-cvwr/luke-cage,Luke Cage,cvwr,fortify,unsupported,,,,unbreakable-skin
+cvwr/luke-cage,Luke Cage,cvwr,fortify,unsupported,WP-873,D-24818,,unbreakable-skin
 cvwr/luke-cage,Luke Cage,cvwr,gain-wound-self,executable,WP-364,D-24156,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self,reckless
 cvwr/patriot,Patriot,cvwr,(unmarked),unmarked,,,,
 cvwr/peter-parker,Peter Parker,cvwr,gain-sidekick,executable,WP-844,D-24778,packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick,spider-man-unmasked
@@ -396,7 +400,7 @@ ff04/thing,Thing,ff04,focus,unsupported,,,,crime-stopper|knuckle-sandwich
 gotg/drax-the-destroyer,Drax the Destroyer,gotg,artifact,unsupported,,,,knives-of-the-hunter
 gotg/drax-the-destroyer,Drax the Destroyer,gotg,reveal-top-dispose,executable,WP-702,D-24521,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose,interstellar-tracker
 gotg/gamora,Gamora,gotg,artifact,unsupported,,,,godslayer-blade
-gotg/groot,Groot,gotg,(unmarked),unmarked,,,,
+gotg/groot,Groot,gotg,next-hand-extra-draw,executable,WP-866,D-24809,packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw,surviving-sprig
 gotg/rocket-raccoon,Rocket Raccoon,gotg,artifact,unsupported,,,,incoming-detector
 gotg/rocket-raccoon,Rocket Raccoon,gotg,optional-discard-draw,executable,WP-754,D-24581,packages/game-engine/src/hero/heroEffects.execute.ts#optional-discard-draw,gritty-scavenger
 gotg/star-lord,Star-Lord,gotg,artifact,unsupported,,,,element-guns|implanted-memory-chip|sentient-starship
@@ -474,6 +478,7 @@ msmc/stepford-cuckoos,Stepford Cuckoos,msmc,when-recruited,unsupported,,,,find-m
 msmc/strong-guy,Strong Guy,msmc,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,treasure-hunt|x-factor-investigations
 msmc/strong-guy,Strong Guy,msmc,tactical-formation,unsupported,,,,go-big
 msmc/warpath,Warpath,msmc,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,grim-tracker|superhuman-senses
+msmc/warpath,Warpath,msmc,next-hand-extra-draw,executable,WP-866,D-24809,packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw,endless-endurance
 msmc/warpath,Warpath,msmc,tactical-formation,unsupported,,,,dangerous-maneuver
 msp1/black-widow,Black Widow,msp1,defeat-with-bystander,executable,WP-486,D-24291,packages/game-engine/src/hero/heroEffects.execute.ts#defeat-with-bystander,silent-sniper
 msp1/black-widow,Black Widow,msp1,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,mission-accomplished
@@ -534,6 +539,7 @@ rlmk/gorgon,Gorgon,rlmk,rooftops-abomination,unsupported,,,,lead-the-inhuman-eli
 rlmk/gorgon,Gorgon,rlmk,streets-abomination,unsupported,,,,stomping-shockwave
 rlmk/gorgon,Gorgon,rlmk,teleport,unsupported,,,,lead-the-inhuman-elite|lockjaw-inhumans-best-friend
 rlmk/gorgon,Gorgon,rlmk,when-recruited-abilities,unsupported,,,,lead-the-inhuman-elite|lockjaw-inhumans-best-friend|stomping-shockwave|trample-underhoof
+rlmk/karnak,Karnak,rlmk,next-hand-extra-draw,executable,WP-866,D-24809,packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw,brilliant-strategist
 rlmk/karnak,Karnak,rlmk,when-recruited-abilities,unsupported,,,,brilliant-strategist|find-fatal-flaw|seek-the-center|shatter-the-weak-point
 rlmk/medusa,Medusa,rlmk,thrones-favor,unsupported,,,,headstrong|queen-of-the-inhumans|royal-command|splitting-hairs
 rlmk/medusa,Medusa,rlmk,when-recruited-abilities,unsupported,,,,headstrong|queen-of-the-inhumans|royal-command|splitting-hairs
@@ -631,6 +637,7 @@ ssw2/beast,Beast,ssw2,patrol,unsupported,,,,upside-down-thinking
 ssw2/beast,Beast,ssw2,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal,balanced-attack
 ssw2/beast,Beast,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts,upside-down-thinking
 ssw2/black-swan,Black Swan,ssw2,optional-ko-reward,executable,WP-248,D-24019,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,witness-the-end
+ssw2/captain-britain,Captain Britain,ssw2,next-hand-extra-draw,executable,WP-866,D-24809,packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw,lead-the-captain-britain-corps
 ssw2/captain-britain,Captain Britain,ssw2,patrol,unsupported,,,,raise-the-union-jack
 ssw2/captain-and-the-devil-the,"Captain and the Devil, The",ssw2,patrol,unsupported,,,,feeding-grounds
 ssw2/captain-and-the-devil-the,"Captain and the Devil, The",ssw2,spectrum,condition,,,,jurassic-america|patriotic-chomp
@@ -659,6 +666,7 @@ ssw2/time-traveling-jean-grey,Time-Traveling Jean Grey,ssw2,patrol,unsupported,,
 vill/bullseye,Bullseye,vill,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts,fulfill-the-contract
 vill/bullseye,Bullseye,vill,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,everythings-a-weapon
 vill/dr-octopus,Dr. Octopus,vill,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,crazed-experiments
+vill/dr-octopus,Dr. Octopus,vill,next-hand-extra-draw,executable,WP-866,D-24809,packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw,brilliant-research
 vill/electro,Electro,vill,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts,electroshock-therapy|shocking-robbery
 vill/electro,Electro,vill,reveal-top-may-ko,executable,WP-754,D-24581,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-may-ko,electroshock-therapy
 vill/enchantress,Enchantress,vill,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,unending-anguish
@@ -740,6 +748,7 @@ wwhk/amadeus-cho,Amadeus Cho,wwhk,draw,executable,WP-022,D-2201,packages/game-en
 wwhk/amadeus-cho,Amadeus Cho,wwhk,draw-threshold,condition,,,,gamma-draining-nanites
 wwhk/amadeus-cho,Amadeus Cho,wwhk,outwit,condition,,,,extrapolate|like-totally-smart-hulk|renegade-genius|visualize-the-variables
 wwhk/amadeus-cho,Amadeus Cho,wwhk,transform,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#transform,gamma-draining-nanites
+wwhk/bruce-banner,Bruce Banner,wwhk,next-hand-extra-draw,executable,WP-866,D-24809,packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw,solve-the-impossible
 wwhk/bruce-banner,Bruce Banner,wwhk,outwit,condition,,,,gamma-bomb-disaster|gamma-ray-experiment|solve-the-impossible
 wwhk/bruce-banner,Bruce Banner,wwhk,reveal-ko,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-ko,dangerous-testing
 wwhk/bruce-banner,Bruce Banner,wwhk,smash,executable,WP-676,D-24492,packages/game-engine/src/hero/heroEffects.execute.ts#smash,savage-hulk-unleashed
@@ -837,6 +846,7 @@ xmen/phoenix,Phoenix,xmen,optional-ko-hand-discard,executable,WP-667,D-24480,pac
 xmen/phoenix,Phoenix,xmen,piercing-energy,unsupported,,,,obliterating-fire
 xmen/phoenix,Phoenix,xmen,soaring-flight,unsupported,,,,obliterating-fire
 xmen/polaris,Polaris,xmen,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,electromagnetic-pulse
+xmen/polaris,Polaris,xmen,next-hand-extra-draw,executable,WP-866,D-24809,packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw,ride-the-magnetic-waves
 xmen/polaris,Polaris,xmen,piercing-energy,unsupported,,,,electromagnetic-pulse
 xmen/polaris,Polaris,xmen,soaring-flight,unsupported,,,,reverse-polarity|ride-the-magnetic-waves|subtle-attunement
 xmen/polaris,Polaris,xmen,x-gene,unsupported,,,,reverse-polarity

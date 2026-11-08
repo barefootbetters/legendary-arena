@@ -11,6 +11,7 @@
 import type { MatchSetupConfig } from './matchSetup.types.js';
 import type { LogEntry } from './log/logOutcome.types.js';
 import type { BoardKeyword } from './board/boardKeywords.types.js';
+import type { FortifyPlace, Fortification } from './board/fortify.types.js';
 import type { SchemeSetupInstruction } from './scheme/schemeSetup.types.js';
 import type { ChooseOneOption } from './rules/heroCountSource.js';
 
@@ -69,8 +70,20 @@ export { REVEALED_CARD_TYPES } from './villainDeck/villainDeck.types.js';
 // in the Villain Deck are Villains, gained as a Hero on defeat); 'micro-sized' (Trap Heroes in the
 // Microverse, WP-863 / D-24805 — an extra Hero's cards in the Villain Deck are Micro-Sized Villains,
 // gained as a Hero by a player the defeater chooses).
+// why: WP-869 / D-24814 — 'bystander-stack-villain' (Groot from Planet X's Splintered Half-Groots:
+// Bystander Stack cards that enter the City as Villains, rescued as a Bystander when fought) and
+// 'officer-stack-villain' (Agent Gabe Jones / Agent Eric Marshall: a S.H.I.E.L.D. Officer Stack card
+// that enters the City as a Villain, gained as a Hero when fought). The stacks hold identical token
+// ids ('pile-bystander' / 'pile-shield-officer'), and an overlay entry keyed by a token id would
+// convert every copy, so each converted stack card takes its own unique `stack-villain-…` id.
 /** Converted-card villain origin — the named villain group a card "counts as". */
-export type ConvertedVillainOrigin = 'killbot' | 'skrull' | 'shield-officer' | 'micro-sized';
+export type ConvertedVillainOrigin =
+  | 'killbot'
+  | 'skrull'
+  | 'shield-officer'
+  | 'micro-sized'
+  | 'bystander-stack-villain'
+  | 'officer-stack-villain';
 
 // why: D-24802 — a Villain or Mastermind's printed Size-Changing fight discount. `classes`
 // are the "Size-Changing [Class]" classes (2 less each when a matching card was played this
@@ -100,6 +113,19 @@ export interface HqSizeChangingGrant {
   replacesPrinted: boolean;
   /** True for "this turn" grants (removed at end-of-turn cleanup). */
   expiresAtEndOfTurn: boolean;
+}
+
+// why: WP-868 / D-24811 — one "Heroes currently in the HQ cost N less / more this turn" change
+// on one HQ Hero instance (Tim Boo Ba, Jormungand, Dr. Carlton Drake, The Mind Stone). The
+// villain line snapshots the Heroes in the HQ when it fires, so `cardId` is the copy-unique
+// instance and a Hero that refills the HQ later in the turn has no entry. `amount` is the signed
+// recruit-price delta (-N for "less", +N for "more").
+/** One "this turn" recruit-price change on an HQ Hero (D-24811). JSON-serializable. */
+export interface HqCostChange {
+  /** The copy-unique Hero instance the change belongs to. */
+  cardId: CardExtId;
+  /** The signed recruit-price delta: negative for "cost less", positive for "cost more". */
+  amount: number;
 }
 
 // why: WP-513 / D-24325 — Killbots' "number of Twists next to this Scheme" counter
@@ -458,6 +484,7 @@ import type {
   VillainAbilityHook,
   VillainDefeatRequirement,
   VillainFightDiscardCost,
+  VillainFightRestriction,
 } from './rules/villainAbility.types.js';
 import type { NotableGameEvent, StrikeBlockThreatKind } from './events/notableEvents.types.js';
 // why: WP-815 / D-24747 — G.cardAbomination values are the closed AbominationKind
@@ -1041,6 +1068,14 @@ export interface PendingKoDiscardChoice {
    * and the bot default all apply it.
    */
   eligibleCardIds?: CardExtId[] | undefined;
+  /**
+   * The fewest cards the player must KO (WP-868 / D-24811): a mandatory "KO a card from your
+   * discard pile" (Flatman and its siblings) parks `minCount` equal to `maxCount`. The required
+   * count is `min(minCount, eligible count)` everywhere (the resolve move, the bot, the projection
+   * and the prompt). Omit-when-absent, so every "up to N" entry (Maniacal Tyrant, Salomé, the grey
+   * filter, Firepower from the Future) keeps accepting an empty selection and stays byte-identical.
+   */
+  minCount?: number;
 }
 
 /**
@@ -1659,6 +1694,39 @@ export interface PendingOutOfTimeGrant {
   sourceCardId: CardExtId;
 }
 
+// why: WP-870 / D-24815 — the villain executor has no boardgame.io events, so it records the
+// owed pick here and the onMove opener parks the seat choice (the D-24750 / D-24779 shape).
+/**
+ * One owed "choose a card you played this turn that costs 0; add it to your next hand"
+ * pick (WP-870 / D-24815, Mandarin's Rings Zero, The Ice Blast).
+ *
+ * Appended by the `next-hand-from-play-zero-cost-current` villain handler and resolved front
+ * to back by the play-phase onMove opener (`moves/nextHandFromPlay.logic.ts`): a logged no-op
+ * with no eligible card, auto-picked with one, else chosen through G.pendingSeatChoice (kind
+ * 'next-hand-from-play'). The pick is recorded in G.deferredHandInjections. Runtime-only;
+ * lazily created and deleted at turn start.
+ */
+export interface PendingNextHandFromPlayPick {
+  /** The player who defeated Zero and picks one of their played 0-cost cards. */
+  playerID: string;
+  /** The defeated Zero copy that owes the pick (for the log). */
+  sourceCardId: CardExtId;
+}
+
+/**
+ * One owed Mandarin's Ring entry from The Mandarin's Master Strike (WP-875 / D-24822): the player
+ * sends a Mandarin's Ring from their Victory Pile into the City. Queued by the strike arm (which has
+ * no events), settled and drained by the play-phase onMove opener and the rebuilt loops; a player
+ * with two or more available Rings picks through G.pendingSeatChoice (kind 'mandarin-ring-entry').
+ * Runtime-only; lazily created and deleted at turn start and game end.
+ */
+export interface PendingMandarinRingEntry {
+  /** The player whose Victory Pile supplies the Ring. */
+  playerID: string;
+  /** The Ring that player chose (or the only one available); absent until settled. */
+  chosenCardId?: CardExtId;
+}
+
 export interface PendingDivingBlockWound {
   /** The player who gained the Wound and holds Diving Block (may be non-active). */
   playerID: string;
@@ -2146,13 +2214,23 @@ export interface LegendaryGameState {
   /** Per-HQ-slot haunter, index-aligned with `hq` (lazy; WP-757 / D-24587). */
   hqHaunters?: (HqHaunter | null)[];
 
+  // why: WP-873 / D-24818 — the Fortify keyword (rules v23 L1454-1466). One entry per
+  // fortified place, holding the fortifying Villain's CardExtId and the lock it applies.
+  // Created lazily by the first Fortify, an entry removed when its Villain is fought, and
+  // the key deleted when the last entry goes, so a match that never fortifies omits it
+  // from canonical JSON and every hash oracle stays byte-stable. Written only by
+  // fortifyWithEscapedVillain / removeFortification (board/fortify.logic.ts).
+  /** Per-place fortifying Villain (lazy; WP-873 / D-24818). */
+  fortifications?: Partial<Record<FortifyPlace, Fortification>>;
+
   // why: WP-695 / D-24512 — per-player deferred SPECIFIC-card hand injections, keyed by
   // PlayerID; value = the ext_ids to add to that player's hand as extra cards at their
   // NEXT play-phase `onBegin` fill (after the normal fill), then the key is deleted. A
   // SIBLING to handSizeOverrides, NOT a reuse: handSizeOverrides bumps the fill COUNT and
   // cannot carry WHICH card, whereas Magneto's "Electromagnetic Bubble" injects a chosen
-  // X-Men Hero as a specific seventh card. Written only by the Electromagnetic
-  // Bubble tactic resolver / its resolve move; read-and-cleared only at the play-phase
+  // X-Men Hero as a specific seventh card. Written by the Electromagnetic Bubble tactic
+  // resolver / its resolve move and (WP-870 / D-24815) by Mandarin's Rings Zero's pick
+  // (moves/nextHandFromPlay.logic.ts); read-and-cleared only at the play-phase
   // `onBegin` fill for the keyed player (game.ts), co-located with the handSizeOverrides
   // consume. Gameplay-affecting so it MUST be hashed, but — following the
   // handSizeOverrides hygiene pattern — it is **lazily created**, NEVER seeded in
@@ -2570,6 +2648,21 @@ export interface LegendaryGameState {
   // G.pendingSeatChoice, kind 'out-of-time-grant'). Lazily created, deleted at turn start.
   /** FIFO queue of owed Man Out of Time grants (WP-828). */
   pendingOutOfTimeGrants?: PendingOutOfTimeGrant[] | undefined;
+  // why: WP-870 / D-24815 — each defeated Mandarin's Rings Zero owes one "add a 0-cost card you
+  // played this turn to your next hand" pick here, resolved by the play-phase onMove opener
+  // (auto or via G.pendingSeatChoice, kind 'next-hand-from-play') and by the rebuilt sim / PAR /
+  // fixture loops at the same position. Hashed, lazily created at the first queue write, never
+  // seeded, deleted when it drains, at turn start and at game end.
+  /** FIFO queue of owed Zero next-hand picks (WP-870). */
+  pendingNextHandFromPlayPicks?: PendingNextHandFromPlayPick[] | undefined;
+  // why: WP-875 / D-24822 — each Mandarin Master Strike queues one Ring entry here per player with
+  // an available Ring (the strike handler has no events, so it cannot park the choice). The
+  // play-phase onMove opener (and the rebuilt sim / PAR / fixture loops at the same position)
+  // settles it, parks one 'mandarin-ring-entry' seat choice when a player holds two or more Rings,
+  // and enters the chosen Rings into the City front to back. Hashed, lazily created at the first
+  // queue write, never seeded, deleted when it drains, at turn start and at game end.
+  /** FIFO queue of owed Mandarin's Ring City entries (WP-875). */
+  pendingMandarinRingEntries?: PendingMandarinRingEntry[] | undefined;
   // why: WP-828 / D-24761 — hand Heroes granted Man Out of Time this turn; applyCardPlay sets
   // one aside Out of Time after its abilities when it is played. Lazily created on the first
   // grant and deleted at turn start (game.ts onBegin + applyOnBeginParity).
@@ -2990,6 +3083,13 @@ export interface LegendaryGameState {
   /** HQ Size-Changing grants in grant order. Runtime-written by sizeChangingGrant.logic.ts; pruned at turn cleanup. */
   hqSizeChangingGrants?: HqSizeChangingGrant[];
 
+  // why: WP-868 / D-24811 — the "Heroes currently in the HQ cost N less / more this turn" overlay,
+  // keyed by the copy-unique HQ instance and read by resolveRecruitCost only while that card is in
+  // G.hq (getHqCostChange). Lazy-created by the first change and deleted at end-of-turn cleanup,
+  // so a match that never fires one keeps a byte-identical finalStateHash.
+  /** HQ recruit-price changes in the order they were made. Runtime-written by hqCostChange.logic.ts; deleted at turn cleanup. */
+  hqCostChanges?: HqCostChange[];
+
   // why: D-24730 — per-card Copy-Powers copied Hero Classes ("This card is both Covert
   // and the color you copy", D-24345). Unlike Size-Changing, the copied class belongs to
   // ONE play of the card: written by applyCopyPowers, and the whole map is deleted at
@@ -3091,6 +3191,17 @@ export interface LegendaryGameState {
   // the match, so every other match keeps a byte-identical G shape (determinism).
   /** Per-villain fight discard costs. Built at setup, read-only; absent when none. */
   villainFightDiscardCosts?: Record<CardExtId, VillainFightDiscardCost>;
+
+  // why: WP-871 / D-24816 — per-villain-instance fight restriction ("You can't fight
+  // Orrgo unless …", "… Squirrel Girl if …", "… Doop if …"). A sibling of
+  // villainDefeatRequirements / villainFightDiscardCosts: a state-only fight
+  // precondition read by the fightVillain gate, getLegalMoves and the UIState City
+  // projection. Built once at setup from the [fight-restriction:<kind>] marker, keyed
+  // by copy-suffixed instance ext_id, never written by a move. OMITTED ENTIRELY when
+  // no marked villain is in the match, so every other match keeps a byte-identical G
+  // shape (determinism).
+  /** Per-villain fight restrictions. Built at setup, read-only; absent when none. */
+  villainFightRestrictions?: Record<CardExtId, VillainFightRestriction>;
 
   // why: WP-841 / D-24774 — per-villain-instance variable-Attack passive (Baron
   // Strucker, Paibok, Super-Skrull, Hydro-Man: "<Villain> gets +N Attack …"). Read by

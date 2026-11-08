@@ -13,6 +13,7 @@
 import type { CardExtId } from '../state/zones.types.js';
 import type { CitySpaceName } from '../board/citySpaceNames.js';
 import type { HeroClass } from '../content/content.schemas.js';
+import type { FortifyLock, FortifyPlace } from '../board/fortify.types.js';
 
 // ---------------------------------------------------------------------------
 // VillainAbilityTiming
@@ -378,7 +379,19 @@ export type VillainEffectPrimitive =
   | 'discard-hero-or-wound-each-player-by-trait'
   | 'discard-hand-matching-hq-card-names-each-player'
   | 'hq-heroes-to-hero-deck-bottom'
-  | 'hq-hero-gains-size-changing';
+  | 'hq-hero-gains-size-changing'
+  | 'hq-heroes-cost-change'
+  | 'ko-from-discard-current'
+  | 'reenter-sewers-if-villain-deck-top'
+  | 'fortify'
+  | 'demolish-each-player'
+  | 'stack-cards-enter-city-as-villains'
+  // why: WP-870 / D-24815 — the Mandarin's Rings own-deck Fight lines, appended last: Lightning
+  // (and antm Daystar) KO-or-keep the deck top, Spin discards the 0-cost cards of the top six and
+  // reorders the rest, Zero adds a 0-cost card played this turn to the next hand.
+  | 'reveal-top-may-ko-current'
+  | 'reveal-top-discard-zero-cost-current'
+  | 'next-hand-from-play-zero-cost-current';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -524,6 +537,56 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   // price. Keyword-less, so it self-narrates. The marker script's hand-synced copy
   // (`scripts/convert-cards/apply-effect-markers.mjs`) appends it at the same position.
   'hq-hero-gains-size-changing',
+  // why: WP-868 / D-24811 — appended at positions 40, 41 and 42. Tim Boo Ba / Jormungand /
+  // Dr. Carlton Drake Fight and The Mind Stone Ambush (`hq-heroes-cost-change:<less|more>:<N>
+  // [:<c>[+<c>…]]`: the Heroes in the HQ when it fires cost N less or more to recruit this turn),
+  // Flatman and six siblings' Fight (`ko-from-discard-current:<N>`: the mandatory "KO a card from
+  // your discard pile") and Mr. Immortal's Fight (`reenter-sewers-if-villain-deck-top:<kinds>`: a
+  // DELIBERATE NO-OP in the executor; the bridge at the end of defeatCityVillainCore reveals the
+  // Villain Deck top and moves him back into the Sewers on a match). All three keyword-less. The
+  // marker script's hand-synced copy (`scripts/convert-cards/apply-effect-markers.mjs`) appends
+  // them at the same positions.
+  'hq-heroes-cost-change',
+  'ko-from-discard-current',
+  'reenter-sewers-if-villain-deck-top',
+  // why: WP-873 / D-24818 — appended at position 43. Squirrel Girl and Colleen Wing's Escape
+  // (`fortify:<place>:<lock>`): the escaped Villain leaves the Escape Pile and fortifies the
+  // Sidekick Stack or the Mastermind in G.fortifications until a player fights it there.
+  // Keyword-less, so it self-narrates. The marker script's hand-synced copy
+  // (`scripts/convert-cards/apply-effect-markers.mjs`) appends it at the same position.
+  'fortify',
+  // why: WP-864 / D-24807 — appended at position 44. Trull the Unhuman's Ambush (after its
+  // Bystander capture), Zzutak's Escape and Piledriver's Escape ("[Demolish] each player"): one
+  // Hero Deck reveal, bottomed, and each player discards a card of its cost, through the shared
+  // `demolishEachPlayer` resolver (`board/demolish.logic.ts`). No params, so the terminal
+  // `parts.length === 1` branch parses it. Keyword-less, so it self-narrates. The marker
+  // script's hand-synced copy (`scripts/convert-cards/apply-effect-markers.mjs`) appends it at
+  // the same position.
+  'demolish-each-player',
+  // why: WP-869 / D-24814 — appended at position 45. Groot from Planet X's Fight, Agent Gabe Jones's
+  // Fight and Agent Eric Marshall's Ambush (`stack-cards-enter-city-as-villains:<bystander|officer>:
+  // <N>[:<name>]`): N cards leave the Bystander Stack or the S.H.I.E.L.D. Officer Stack and enter the
+  // City as 3-Attack Villains. A DELIBERATE NO-OP in the executor; the bridge at the end of
+  // defeatCityVillainCore (onFight) and in performVillainReveal (onAmbush) does the work (D-24351).
+  // Keyword-less, the fire sites narrate. The marker script's hand-synced copy
+  // (`scripts/convert-cards/apply-effect-markers.mjs`) appends it at the same position.
+  'stack-cards-enter-city-as-villains',
+  // why: WP-870 / D-24815 — appended at positions 46, 47 and 48, the Mandarin's Rings own-deck
+  // Fight lines. Lightning, The Electro-Blast (and antm Daystar): "Reveal the top card of your
+  // deck. You may KO it." (`reveal-top-may-ko-current`, no param: the WP-754 KO-or-keep entry on
+  // G.pendingRevealTopDispose). Spin, The Vortex Beam: "Reveal the top six cards of your deck.
+  // Discard all of them that cost 0, then put the rest back in any order."
+  // (`reveal-top-discard-zero-cost-current:<N>`: the WP-479 reorder over the survivors). Zero, The
+  // Ice Blast: "Choose a card you played this turn that costs 0. When you draw a new hand of cards
+  // at the end of this turn, add that card to your hand as an extra card."
+  // (`next-hand-from-play-zero-cost-current`, no param: G.pendingNextHandFromPlayPicks, then the
+  // D-24512 / D-24797 G.deferredHandInjections). One named primitive per printed line, not a
+  // villain → hero-keyword bridge. All three keyword-less, so all three self-narrate. The marker
+  // script's hand-synced copy (`scripts/convert-cards/apply-effect-markers.mjs`) appends them at
+  // the same positions.
+  'reveal-top-may-ko-current',
+  'reveal-top-discard-zero-cost-current',
+  'next-hand-from-play-zero-cost-current',
 ] as const;
 
 /**
@@ -747,6 +810,32 @@ export interface VillainEffectDescriptor {
   // is keyword-less, so it reverse-maps to `undefined` and self-narrates regardless.
   sizeChangingGrantMode?: 'if-none' | 'add' | 'replace';
   sizeChangingGrantClasses?: readonly HeroClass[];
+  // why: WP-868 / D-24811 — present ONLY on `{ primitive: 'hq-heroes-cost-change' }` descriptors:
+  // whether the Heroes in the HQ cost `magnitude` less (Tim Boo Ba, Jormungand, Dr. Carlton Drake)
+  // or more (The Mind Stone) this turn, and the optional Hero Classes the change is limited to (Dr.
+  // Carlton Drake: ['instinct', 'tech']; absent means every Hero). Deliberately NOT part of
+  // `descriptorKey` — the primitive is keyword-less, so it self-narrates regardless.
+  costChangeDirection?: 'less' | 'more';
+  costChangeClasses?: readonly HeroClass[];
+  // why: WP-868 / D-24811 — present ONLY on `{ primitive: 'reenter-sewers-if-villain-deck-top' }`
+  // descriptors (Mr. Immortal: ['villain', 'bystander']): the revealed Villain Deck card kinds that
+  // send the defeated card back into the Sewers. `villain` also matches a Henchman (Henchmen are
+  // Villains). Deliberately NOT part of `descriptorKey` — the primitive is keyword-less.
+  reenterRevealKinds?: readonly ('villain' | 'bystander')[];
+  // why: WP-873 / D-24818 — present ONLY on `{ primitive: 'fortify' }` descriptors (Squirrel Girl:
+  // 'sidekick-stack' + 'no-recruit-or-gain'; Colleen Wing: 'mastermind' + 'no-fight'): the place the
+  // escaped Villain fortifies and the lock it applies there. Deliberately NOT part of
+  // `descriptorKey` — the primitive is keyword-less, so it self-narrates regardless.
+  fortifyPlace?: FortifyPlace;
+  fortifyLock?: FortifyLock;
+  // why: WP-869 / D-24814 — present ONLY on `{ primitive: 'stack-cards-enter-city-as-villains' }`
+  // descriptors: the stack the cards come from (Groot from Planet X: 'bystander'; Agent Gabe Jones
+  // and Agent Eric Marshall: 'officer') and the optional marker name token the converted cards are
+  // displayed under (Groot: 'splintered_half-groot'; absent means the stack token's own name). The
+  // count is `magnitude`. Written only when present (never `undefined`). Deliberately NOT part of
+  // `descriptorKey` — the primitive is keyword-less, so the fire sites narrate regardless.
+  stackVillainKind?: 'bystander' | 'officer';
+  stackVillainName?: string;
 }
 
 // why: D-24023 — the frozen legacy-keyword → descriptor translation table. The
@@ -879,6 +968,47 @@ export interface VillainDefeatRequirement {
  */
 export interface VillainFightDiscardCost {
   eligibleCosts: number[];
+}
+
+// ---------------------------------------------------------------------------
+// Villain fight restriction (WP-871 / D-24816)
+// ---------------------------------------------------------------------------
+
+/**
+ * The closed set of printed "You can't fight X unless / if …" conditions on City
+ * Villains (WP-871 / D-24816). Each kind is a state-only predicate (no move
+ * argument) read by the fightVillain gate, getLegalMoves and the City projection.
+ *
+ * - `requires-villain-defeated-this-turn` — Orrgo: the current player has already
+ *   defeated another Villain this turn.
+ * - `at-most-one-card-played` — Squirrel Girl: the current player has played at
+ *   most one card this turn.
+ * - `no-adjacent-villain` — Doop: neither neighbouring City space holds a Villain.
+ */
+export type VillainFightRestrictionKind =
+  | 'requires-villain-defeated-this-turn'
+  | 'at-most-one-card-played'
+  | 'no-adjacent-villain';
+
+/**
+ * Canonical array of every {@link VillainFightRestrictionKind}, in canonical
+ * order. The closed set of printed "You can't fight X unless / if …" conditions
+ * on City Villains; built at setup from `[fight-restriction:<kind>]`; immutable
+ * during play. A drift test asserts it matches the union exactly.
+ */
+export const VILLAIN_FIGHT_RESTRICTION_KINDS: readonly VillainFightRestrictionKind[] = [
+  'requires-villain-defeated-this-turn',
+  'at-most-one-card-played',
+  'no-adjacent-villain',
+] as const;
+
+/**
+ * A villain's printed fight restriction (WP-871 / D-24816). Built at setup from
+ * the `[fight-restriction:<kind>]` marker, stored per villain instance in
+ * G.villainFightRestrictions; immutable during gameplay.
+ */
+export interface VillainFightRestriction {
+  kind: VillainFightRestrictionKind;
 }
 
 // ---------------------------------------------------------------------------

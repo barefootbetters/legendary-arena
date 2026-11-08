@@ -147,6 +147,16 @@ export function applyOnBeginParity(
   if (gameState.pendingOutOfTimeGrants !== undefined) {
     delete gameState.pendingOutOfTimeGrants;
   }
+  // why: WP-870 / D-24815 — mirrors game.ts onBegin's owed Zero pick delete. Guarded so a
+  // never-set G stays byte-unchanged.
+  if (gameState.pendingNextHandFromPlayPicks !== undefined) {
+    delete gameState.pendingNextHandFromPlayPicks;
+  }
+  // why: WP-875 / D-24822 — mirrors game.ts onBegin's owed Mandarin's Ring entry delete. Guarded
+  // so a never-set G stays byte-unchanged.
+  if (gameState.pendingMandarinRingEntries !== undefined) {
+    delete gameState.pendingMandarinRingEntries;
+  }
   // why: WP-328 — mirrors game.ts onBegin's logMeta stamp so harness log lines carry
   // the same play-relative {turn}.{step}.{action} prefix as live play. Live derives the
   // turn from ctx.turn offset by the first play turn; the harnesses have no framework

@@ -1439,7 +1439,7 @@
           "recruit": "2",
           "abilities": [
             "[keyword:Soaring Flight]",
-            "[hc:covert]: When you draw a new hand of cards at the end of this turn, draw an extra card."
+            "[hc:covert]: When you draw a new hand of cards at the end of this turn, draw an extra card. [keyword:next-hand-extra-draw:1]"
           ]
         },
         {
@@ -2636,7 +2636,7 @@
           "imageUrl": "https://images.legendary-arena.com/xmen/xmen-vi-shiar-imperial-guard-smasher.webp",
           "abilities": [
             "Ambush: Each player reveals a [hc:strength] Hero or discards a card.",
-            "Fight: KO a card from your discard pile."
+            "Fight: KO a card from your discard pile. [effect:ko-from-discard-current:1]"
           ],
           "copies": 2
         }
@@ -2656,7 +2656,7 @@
           "imageUrl": "https://images.legendary-arena.com/xmen/xmen-vi-sisterhood-of-mutants-lady-deathstrike.webp",
           "abilities": [
             "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]",
-            "Escape: Each player reveals an [hc:instinct] Hero or gains a Wound."
+            "Escape: Each player reveals an [hc:instinct] Hero or gains a Wound. [effect:reveal-or-wound:hc:instinct]"
           ],
           "copies": 2
         },

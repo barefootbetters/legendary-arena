@@ -32,6 +32,7 @@ import type { RevealedCardType, VillainDeckState } from '../villainDeck/villainD
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { buildHeroDeckCards } from '../setup/buildHeroDeck.js';
 import { pushLog } from '../log/logPush.js';
+import type { LogOutcome } from '../log/logOutcome.types.js';
 import { resolveCardName } from '../log/logDisplay.js';
 // why: seatChoice.resolve.ts imports this module's apply for its kind arm, and this module
 // imports parkSeatChoice from it. The cycle is runtime-safe: each side reads the other's binding
@@ -262,6 +263,19 @@ export function isMicroSizedVillain(G: LegendaryGameState, cardId: CardExtId): b
 }
 
 /**
+ * The outcome of gaining a defeated Micro-Sized Villain: whether the defeater gained it outright,
+ * and the log line that says what happened. The caller pushes the line.
+ */
+export interface MicroSizedGainResult {
+  /** true when the defeater gained it outright (the fight narrative's gain clause). */
+  gainedOutright: boolean;
+  /** The gain line: gained outright, blocked by an open choice, or the choice parked. */
+  logMessage: string;
+  /** The gain line's outcome colour. */
+  logOutcome: LogOutcome;
+}
+
+/**
  * Gains a defeated Micro-Sized Villain as a Hero: "When you fight one, choose any player to gain it
  * as a Hero."
  *
@@ -273,45 +287,45 @@ export function isMicroSizedVillain(G: LegendaryGameState, cardId: CardExtId): b
  * @param G - The game state, mutated in place.
  * @param currentPlayer - The defeating (active) player.
  * @param cardId - The defeated card, already removed from the City.
- * @returns true when the defeater gained it outright (the fight narrative's gain clause).
+ * @returns Whether the defeater gained it outright, and the gain log line for the caller to push.
  */
 export function gainDefeatedMicroSizedHero(
   G: LegendaryGameState,
   currentPlayer: string,
   cardId: CardExtId,
-): boolean {
+): MicroSizedGainResult {
   if (G.convertedVillainOrigins !== undefined) {
     delete G.convertedVillainOrigins[cardId];
   }
   G.playerZones[currentPlayer]?.discard.push(cardId);
   const heroName = resolveCardName(G.cardDisplayData, cardId);
   const seats = Object.keys(G.playerZones);
+  // why: the line is returned, not pushed, so defeatCityVillainCore can log it after its "fought"
+  // line; pushed here, during the routing, it came before the fight that caused it (the officer
+  // gain-order fix, operator match 8eURMq6tTSS).
   if (seats.length < 2) {
-    pushLog(G,
-      `Player ${currentPlayer} defeated ${heroName} (Micro-Sized) and gained it as a Hero into their discard pile.`,
-      'applied',
-      cardId,
-    );
-    return true;
+    return {
+      gainedOutright: true,
+      logMessage: `Player ${currentPlayer} defeated ${heroName} (Micro-Sized) and gained it as a Hero into their discard pile.`,
+      logOutcome: 'applied',
+    };
   }
   // why: WP-860 posture — at most one seat choice is open at a time, so an open one blocks only the
   // park; the card stays with the defeater. parkSeatChoice overwrites, so a later park in the same
   // move would drop this choice the same way (accepted, D-24805).
   if (G.pendingSeatChoice !== undefined) {
-    pushLog(G,
-      `Player ${currentPlayer} gained ${heroName} — another choice is open, so no other player could be chosen (${SCHEME_LOG_SOURCE}).`,
-      'blocked',
-      cardId,
-    );
-    return false;
+    return {
+      gainedOutright: false,
+      logMessage: `Player ${currentPlayer} gained ${heroName} — another choice is open, so no other player could be chosen (${SCHEME_LOG_SOURCE}).`,
+      logOutcome: 'blocked',
+    };
   }
   parkSeatChoice(G, undefined, buildMicroSizedGainChoice(G, currentPlayer, cardId), currentPlayer);
-  pushLog(G,
-    `Player ${currentPlayer} chooses a player to gain ${heroName} (${SCHEME_LOG_SOURCE}).`,
-    'neutral',
-    cardId,
-  );
-  return false;
+  return {
+    gainedOutright: false,
+    logMessage: `Player ${currentPlayer} chooses a player to gain ${heroName} (${SCHEME_LOG_SOURCE}).`,
+    logOutcome: 'neutral',
+  };
 }
 
 /**

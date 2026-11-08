@@ -31,6 +31,7 @@ import { isRitualArtifact } from './ritualArtifact.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
 import { clearExpiredHqSizeChangingGrants } from '../hero/sizeChangingGrant.logic.js';
+import { clearHqCostChanges } from '../hero/hqCostChange.logic.js';
 
 /**
  * Moves the player's in-play Ritual Artifacts into their controlled Artifacts (WP-858 / D-24794).
@@ -167,6 +168,9 @@ export function applyEndOfTurnCleanup(
   // Step 8: end every "this turn" HQ Size-Changing grant, and drop grants whose card left the
   // HQ (WP-862 / D-24804); Shrinking Research Budget's lasting grants stay while the card does.
   clearExpiredHqSizeChangingGrants(G);
+  // why: WP-868 / D-24811 — every "Heroes currently in the HQ cost N less / more this turn"
+  // change ends with the turn, so the whole overlay goes at the same step.
+  clearHqCostChanges(G);
 }
 
 /**

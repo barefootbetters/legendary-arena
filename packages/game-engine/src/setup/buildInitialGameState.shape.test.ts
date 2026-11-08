@@ -22,7 +22,7 @@ import { makeMockCtx } from '../test/mockCtx.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
 import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
-import { buildVillainVariableAttack } from './villainDefeatRequirement.setup.js';
+import { buildVillainFightRestrictions, buildVillainVariableAttack } from './villainDefeatRequirement.setup.js';
 
 /**
  * Creates a valid mock MatchSetupConfig for shape tests.
@@ -480,6 +480,16 @@ describe('buildInitialGameState — shape', () => {
               copies: 2,
               abilities: ['Hydro-Man gets +2[icon:attack] in the Sewers and Bridge. [variable-attack:flat:2@sewers+bridge]'],
             },
+            // why: WP-871 T25 — a marked fight-restriction villain proves the
+            // buildVillainFightRestrictions call and its spread are wired.
+            {
+              slug: 'lonely-villain',
+              vAttack: '2',
+              copies: 2,
+              abilities: [
+                "You can't fight Lonely Villain if there is a Villain in an adjacent city space. [fight-restriction:no-adjacent-villain]",
+              ],
+            },
           ],
         },
       ],
@@ -601,6 +611,25 @@ describe('buildInitialGameState — shape', () => {
     assert.deepStrictEqual(gameState.villainVariableAttack, {
       'core-villain-brotherhood-hydro-man-00': hydroMan,
       'core-villain-brotherhood-hydro-man-01': hydroMan,
+    });
+  });
+
+  it('T25 (WP-871): G has no villainFightRestrictions key without a marked villain; a marked one lands per copy', () => {
+    const plainState = buildInitialGameState(
+      createTestConfig(),
+      createMockRegistry(),
+      makeMockCtx({ numPlayers: 2 }),
+    );
+    assert.equal(Object.prototype.hasOwnProperty.call(plainState, 'villainFightRestrictions'), false);
+    assert.deepStrictEqual(buildVillainFightRestrictions(createMockRegistry(), createTestConfig()), {});
+    const markedState = buildInitialGameState(
+      buildShapeFixtureConfig(),
+      buildShapeFixtureRegistry(),
+      makeMockCtx({ numPlayers: 2 }),
+    );
+    assert.deepStrictEqual(markedState.villainFightRestrictions, {
+      'core-villain-brotherhood-lonely-villain-00': { kind: 'no-adjacent-villain' },
+      'core-villain-brotherhood-lonely-villain-01': { kind: 'no-adjacent-villain' },
     });
   });
 });
