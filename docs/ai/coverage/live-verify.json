@@ -2032,9 +2032,9 @@
       "card": "Groot from Planet X",
       "ability": "Fight: Two Bystanders from the Bystander Stack enter the city as 3 Attack “Splintered Half-Groot” Villains. When you fight one, rescue it as a Bystander.",
       "wp": "WP-869",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-07",
-      "evidence": "",
+      "evidence": "2p Operator match 8eURMq6tTSS (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + S.H.I.E.L.D. Elite; Hand Ninjas; Wolverine, Spider-Man, Hulk, Cyclops, Black Widow; Final Blow on; server build 9a83b196, which contains the WP-869 merge 90f66e6d, running since 2026-11-07T23:44:49Z; match created 2026-11-07T23:50:27Z after boot, isMatchOlderThanServer false): Silent Sniper's free defeat of Groot from Planet X (3.2.12-3.2.13) logged two entries, \"Fight effect: Splintered Half-Groot (stack-villain-…-00) enters the city from the Bystander Stack (Groot from Planet X (…)).\" and the same for -01 (3.2.15, 3.2.16, threat), and the overlay read \"Fought \"Groot from Planet X\" and rescued 1 bystander(s); 2 Splintered Half-Groot Villains enter the city.\" Fighting each Half-Groot (3.2.20 at city space 1, 5.2.22 at city space 2) logged \"rescued 1 bystander(s) from Splintered Half-Groot (…)\" with the overlay \"Fought \"Splintered Half-Groot\" and rescued 1 bystander(s).\"; the final score shows bystanderVP 11, Player 0's eleven rescues including both Half-Groots, and no stack-villain id is in any player's zones. The onFight trace reads no-op and no unmarked-ability hollow was logged. Not observed live: the 3-Attack price and type \"villain\" in the uiStateSnapshot (the export was captured at game over with an empty City, and the fights used operator Attack), a short Bystander Stack, and an escaped Half-Groot; all are covered by stackVillain.test.ts.",
       "note": "Live check (NEW match with Monsters Unleashed after the deploy): fighting Groot from Planet X logs \"Fight effect: Splintered Half-Groot (stack-villain-…) enters the city from the Bystander Stack (Groot from Planet X (…)).\" twice; two 3-Attack Splintered Half-Groots (Bystander art) stand in the Sewers and the Bank, and the fight overlay says \"2 Splintered Half-Groot Villains enter the city\". Fighting one adds a Bystander to the Victory Pile and logs \"rescued 1 bystander(s)\". Play Diagnostics uiStateSnapshot shows each with type \"villain\" and fightCost 3. D-24814."
     },
     {
@@ -2043,9 +2043,9 @@
       "card": "Agent Gabe Jones",
       "ability": "Fight: A S.H.I.E.L.D. Officer enters the city as a 3 Attack Villain. When you fight it, gain it as a Hero.",
       "wp": "WP-869",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-07",
-      "evidence": "",
+      "evidence": "2p Operator match 8eURMq6tTSS (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + S.H.I.E.L.D. Elite; Hand Ninjas; Wolverine, Spider-Man, Hulk, Cyclops, Black Widow; Final Blow on; server build 9a83b196, which contains the WP-869 merge 90f66e6d, running since 2026-11-07T23:44:49Z; match created 2026-11-07T23:50:27Z after boot, isMatchOlderThanServer false): Fighting Agent Gabe Jones (5.2.14) logged \"Fight effect: S.H.I.E.L.D. Officer (stack-villain-…-00) enters the city from the S.H.I.E.L.D. Officer Stack (Agent Gabe Jones (…)).\" (5.2.15, threat) with the overlay \"Fought \"Agent Gabe Jones\"; S.H.I.E.L.D. Officer enters the city.\" Fighting the Officer at city space 0 logged \"defeated S.H.I.E.L.D. Officer (…) and gained it as a Hero into their discard pile.\" (5.2.16-5.2.17) with the overlay \"…gained the Hero into the active player's discard pile.\"; the Officer was later played from the deck for +2 Recruit (9.2.9). Cosmetic: the gain line logs before the \"fought\" line, the D-24756 routing order shared with Brainwash the Military Officers.",
       "note": "Live check (NEW match with S.H.I.E.L.D. Elite after the deploy): fighting Agent Gabe Jones puts a 3-Attack S.H.I.E.L.D. Officer in the Sewers (the log names it entering from the S.H.I.E.L.D. Officer Stack); fighting it puts the S.H.I.E.L.D. Officer in your discard pile, not the Victory Pile. Play Diagnostics uiStateSnapshot shows it with type \"villain\" and fightCost 3. D-24814."
     },
     {
@@ -2054,9 +2054,9 @@
       "card": "Agent Eric Marshall",
       "ability": "Ambush: A S.H.I.E.L.D. Officer enters the city as a 3 Attack Villain. When you fight it, gain it as a Hero.",
       "wp": "WP-869",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-07",
-      "evidence": "",
+      "evidence": "2p Operator match 8eURMq6tTSS (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + S.H.I.E.L.D. Elite; Hand Ninjas; Wolverine, Spider-Man, Hulk, Cyclops, Black Widow; Final Blow on; server build 9a83b196, which contains the WP-869 merge 90f66e6d, running since 2026-11-07T23:44:49Z; match created 2026-11-07T23:50:27Z after boot, isMatchOlderThanServer false): Agent Eric Marshall's reveal logged \"[Ambush] Agent Eric Marshall (…) revealed and entered the city!\" (7.1.1) and \"Ambush effect: S.H.I.E.L.D. Officer (stack-villain-…-00) enters the city from the S.H.I.E.L.D. Officer Stack (Agent Eric Marshall (…)).\" (7.1.2, threat); the ambushResolved overlay read \"\"Agent Eric Marshall\" ambushed: S.H.I.E.L.D. Officer enters the city.\" Eric was then fought at city space 1 and the Officer at city space 0 (7.2.9-7.2.11), so the Officer stood in the Sewers and Eric in the Bank; the Officer was gained into the discard pile. The onAmbush trace reads no-op.",
       "note": "Live check (NEW match with S.H.I.E.L.D. Elite after the deploy): when Agent Eric Marshall is revealed, a 3-Attack S.H.I.E.L.D. Officer enters the Sewers after him (Officer in the Sewers, Eric in the Bank) and the Ambush overlay reads \"S.H.I.E.L.D. Officer enters the city\", not \"no Ambush effect\"; fighting the Officer puts it in your discard pile. D-24814."
     },
     {
