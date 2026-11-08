@@ -353,6 +353,7 @@ export default defineComponent({
     :class="{
       'mastermind-tile--tilt-lift': isTiltLiftEnabled,
       'mastermind-tile--guessing': enigmaGuessFight !== null && enigmaCode !== undefined,
+      'mastermind-tile--fortified': mastermind.fortifiedReason !== undefined,
     }"
     data-testid="play-mastermind-tile"
     aria-label="Mastermind"
@@ -763,11 +764,13 @@ export default defineComponent({
    would rise but stay tilted; the links are on only while the fight button is
    hovered, because at rest coplanar preserve-3d layers z-fight in Chrome's hit
    test and steal clicks (EC-890 Amendment A). Never while the Enigma guess is
-   open (--guessing). */
+   open (--guessing), and never while a Villain fortifies the Mastermind
+   (--fortified, D-24819): the lifted card would rise over the fortifier chip and
+   take its clicks, and the Fight button is locked anyway. */
 @media (hover: hover) {
-  .mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):has(.mastermind__fight-button:hover),
-  .mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):has(.mastermind__fight-button:hover) .mastermind__fight-button,
-  .mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):has(.mastermind__fight-button:hover) .mastermind__card-frame {
+  .mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):not(.mastermind-tile--fortified):has(.mastermind__fight-button:hover),
+  .mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):not(.mastermind-tile--fortified):has(.mastermind__fight-button:hover) .mastermind__fight-button,
+  .mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):not(.mastermind-tile--fortified):has(.mastermind__fight-button:hover) .mastermind__card-frame {
     transform-style: preserve-3d;
   }
   /* why: the bottom-edge origin makes the card rise off the table rather than
@@ -780,7 +783,7 @@ export default defineComponent({
      "Tactics remaining" and Final Blow lines, which stay on the table, and it is
      the hover target that never moves, so the lifted card cannot flicker out from
      under the pointer. */
-  .mastermind-tile--tilt-lift:not(.mastermind-tile--guessing) .mastermind__fight-button:hover .mastermind__card-frame {
+  .mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):not(.mastermind-tile--fortified) .mastermind__fight-button:hover .mastermind__card-frame {
     transform: rotateX(calc(-1 * var(--board-tilt-angle))) scale(1.06);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
   }

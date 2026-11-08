@@ -2,6 +2,7 @@ import '../../testing/jsdom-setup';
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { mount } from '@vue/test-utils';
 import MastermindTile from './MastermindTile.vue';
 import EnigmaGuessPicker from './EnigmaGuessPicker.vue';
@@ -1017,5 +1018,31 @@ describe('MastermindTile — Fortify blocks the Fight (WP-873 / D-24818)', () =>
       props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy(), submitMove },
     });
     assert.equal(unfortified.find('[data-testid="play-fortifier"]').exists(), false);
+  });
+
+  // why: D-24819 — the stand-up lift (WP-854 / D-24790) must never raise the Mastermind card over
+  // the fortifier chip. jsdom cannot hit-test 3D, so the class and its selectors are pinned here.
+  test('D-24819: the tile is --fortified exactly while the Mastermind is fortified, and no stand-up selector lifts it', () => {
+    const { submitMove } = recorder();
+    const fortified = mount(MastermindTile, {
+      props: { mastermind: mastermindLive({ fortifiedReason }), currentStage: 'main', economy: economy(), submitMove },
+    });
+    assert.equal(fortified.find('[data-testid="play-mastermind-tile"]').classes().includes('mastermind-tile--fortified'), true);
+    const open = mount(MastermindTile, {
+      props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy(), submitMove },
+    });
+    assert.equal(open.find('[data-testid="play-mastermind-tile"]').classes().includes('mastermind-tile--fortified'), false);
+
+    const sources = [
+      readFileSync(new URL('./MastermindTile.vue', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../pages/PlayDesktop.vue', import.meta.url), 'utf8'),
+    ];
+    for (const source of sources) {
+      const liftSelectors = source.match(/\.mastermind-tile--tilt-lift:not\(\.mastermind-tile--guessing\)[^ ,{]*/g) ?? [];
+      assert.ok(liftSelectors.length > 0, 'the stand-up selectors are present');
+      for (const selector of liftSelectors) {
+        assert.ok(selector.includes(':not(.mastermind-tile--fortified)'), `${selector} must skip a fortified Mastermind`);
+      }
+    }
   });
 });

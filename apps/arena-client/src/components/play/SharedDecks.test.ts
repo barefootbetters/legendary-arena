@@ -2,6 +2,7 @@ import '../../testing/jsdom-setup';
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { mount } from '@vue/test-utils';
 import SharedDecks from './SharedDecks.vue';
 import type { UIFortifier, UISharedPilesState, UITurnEconomyState } from '@legendary-arena/game-engine';
@@ -448,5 +449,32 @@ describe('SharedDecks — Fortify locks the Sidekick Stack (WP-873 / D-24818)', 
     assert.equal(recruitButton.element.contains(chips[0]!.element), false, 'not nested inside the recruit button');
     await wrapper.find('[data-testid="play-fortifier-fight"]').trigger('click');
     assert.deepStrictEqual(calls, [{ name: 'fightVillain', args: { fortifiedPlace: 'sidekick-stack' } }]);
+  });
+
+  // why: D-24819 — on the tilted desktop board, hovering the Sidekicks cell stands the card up
+  // (WP-854 / D-24790). The fortifier chip lives in that cell, so the lifted card rose over it
+  // and took every click (operator match 6GnBeOwGcXG). jsdom cannot hit-test 3D, so the class
+  // and the selectors that read it are pinned here; the click itself was checked in a browser.
+  test('D-24819: the Sidekicks cell is --fortified exactly while the Stack is fortified, and no stand-up selector lifts it', () => {
+    const reason = 'Squirrel Girl fortifies the Sidekick Stack. Fight Squirrel Girl first.';
+    const { submitMove } = recorder();
+    const fortified = mount(SharedDecks, {
+      props: { piles: piles({ sidekickStackFortifiedReason: reason }), currentStage: 'main', economy: economy(), submitMove },
+    });
+    const cell = fortified.find('[data-testid="play-shared-deck-sidekicks"]');
+    assert.equal(cell.classes().includes('shared-decks__cell--fortified'), true);
+    const open = mount(SharedDecks, {
+      props: { piles: piles(), currentStage: 'main', economy: economy(), submitMove },
+    });
+    assert.equal(open.find('[data-testid="play-shared-deck-sidekicks"]').classes().includes('shared-decks__cell--fortified'), false);
+
+    const sources = [
+      readFileSync(new URL('./SharedDecks.vue', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../pages/PlayDesktop.vue', import.meta.url), 'utf8'),
+    ];
+    for (const source of sources) {
+      assert.equal(source.includes('.shared-decks__cell:hover'), false, 'every stand-up selector must skip a fortified cell');
+      assert.ok(source.includes('.shared-decks__cell:not(.shared-decks__cell--fortified):hover > .shared-decks__recruit'));
+    }
   });
 });
