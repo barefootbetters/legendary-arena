@@ -626,79 +626,15 @@ export function defeatCityVillainCore(
   if (matchHasFightRestrictionKind(G, 'requires-villain-defeated-this-turn')) {
     G.turnEconomy = recordVillainDefeated(G.turnEconomy);
   }
-  // why: WP-514 / D-24327 — Secret Invasion "If you defeat that Hero, you gain it":
-  // a defeated Skrull (a Hero acting as a villain) routes to the defeating player's
-  // DISCARD instead of the victory pile, and its conversion overlay is cleared (it is
-  // a Hero again in the discard). Guarded on the 'skrull' origin — every non-Skrull
-  // defeat routes to victory unchanged (tested both ways). The fought cardId is pushed
-  // DIRECTLY here (awardAttachedHeroes below handles a villain's ATTACHED heroes, not
-  // the fought card). A gain log line follows so a Hero the player never recruited does
-  // not appear in their deck with no trail (mirrors the attached-hero log below).
-  // why: WP-518 / D-24331 — capture the Skrull origin BEFORE the delete below so
-  // the fightResolved narrative (composed after the origin overlay is cleared) can
-  // announce the gain in the center-screen overlay, not only in the durable log.
-  let skrullGained = false;
-  let officerGained = false;
-  let microSizedGained = false;
-  let stackBystandersRescued = 0;
-  // why: a converted card gained as a Hero says so in the log, but only after the "fought" line
-  // below: logging it here, during the routing, put "gained it as a Hero" ahead of the fight that
-  // caused it (operator match 8eURMq6tTSS 5.2.16-5.2.17). Null when the defeat gains nothing. The
-  // Micro-Sized line keeps its own outcome colour and card link; the others are plain narration.
-  let gainedHeroLogLine: { message: string; outcome?: LogOutcome; card?: CardExtId } | null = null;
-  if (G.convertedVillainOrigins?.[cardId] === 'micro-sized') {
-    // why: WP-863 / D-24805 — Trap Heroes in the Microverse "When you fight one, choose any player
-    // to gain it as a Hero." The card goes to the defeater's discard first, so it always sits in a
-    // zone, then (two or more seats) the defeater picks the player through a seat choice. It never
-    // enters a Victory Pile. The narrative's gain clause is on only for an outright gain: with a
-    // pending pick the recipient is not decided yet.
-    const microSizedGain = gainDefeatedMicroSizedHero(G, currentPlayer, cardId);
-    microSizedGained = microSizedGain.gainedOutright;
-    gainedHeroLogLine = { message: microSizedGain.logMessage, outcome: microSizedGain.logOutcome, card: cardId };
-  } else if (G.convertedVillainOrigins?.[cardId] === 'skrull') {
-    skrullGained = true;
-    G.playerZones[currentPlayer]!.discard.push(cardId);
-    delete G.convertedVillainOrigins[cardId];
-    gainedHeroLogLine = {
-      message: `Player ${currentPlayer} defeated the Skrull ${formatCardRef(G.cardDisplayData, cardId)} and gained the Hero into their discard pile.`,
-    };
-  } else if (G.convertedVillainOrigins?.[cardId] === 'shield-officer') {
-    // why: WP-823 / D-24756 — Brainwash the Military "When you defeat a S.H.I.E.L.D.
-    // Officer, gain it as a Hero." Every Officer is identical, and the engine holds an
-    // Officer Hero as the fungible SHIELD_OFFICER_EXT_ID token, which already carries
-    // its stats, team, display and the invariant exemption. So the instance leaves play
-    // and the token goes to the defeater's discard. It is the same card, so nothing is
-    // drawn from G.piles.officers, and it never enters the Victory Pile (it scores as no
-    // Villain or Bystander, and Savior never counts it).
-    officerGained = true;
-    G.playerZones[currentPlayer]!.discard.push(SHIELD_OFFICER_EXT_ID);
-    delete G.convertedVillainOrigins[cardId];
-    gainedHeroLogLine = {
-      message: `Player ${currentPlayer} defeated ${formatCardRef(G.cardDisplayData, cardId)} and gained it as a Hero into their discard pile.`,
-    };
-  } else if (G.convertedVillainOrigins?.[cardId] === 'bystander-stack-villain') {
-    // why: WP-869 / D-24814 — Groot from Planet X: "When you fight one, rescue it as a Bystander"
-    // (rules v23: Bystanders that become Villains count as Bystanders in your Victory Pile, not
-    // Villains). The token goes home: a BYSTANDER_EXT_ID enters the Victory Pile, so it scores
-    // and counts as a Bystander everywhere, and the converted id leaves play with its overlay
-    // entry deleted, which frees the id. The rescue counts toward bystandersRescued below.
-    G.playerZones[currentPlayer]!.victory.push(BYSTANDER_EXT_ID);
-    delete G.convertedVillainOrigins[cardId];
-    stackBystandersRescued += 1;
-  } else if (G.convertedVillainOrigins?.[cardId] === 'officer-stack-villain') {
-    // why: WP-869 / D-24814 — Agent Gabe Jones / Agent Eric Marshall: "When you fight it, gain it
-    // as a Hero." The token goes home as the D-24756 Officer routing does: SHIELD_OFFICER_EXT_ID
-    // to the defeater's discard, never the Victory Pile; the overlay entry is deleted (the id is
-    // free again) and the narrative's gain clause turns on.
-    officerGained = true;
-    G.playerZones[currentPlayer]!.discard.push(SHIELD_OFFICER_EXT_ID);
-    delete G.convertedVillainOrigins[cardId];
-    gainedHeroLogLine = {
-      message: `Player ${currentPlayer} defeated ${formatCardRef(G.cardDisplayData, cardId)} and gained it as a Hero into their discard pile.`,
-    };
-  } else {
-    G.playerZones[currentPlayer]!.victory.push(cardId);
-  }
+  // why: WP-872 / D-24817 — the converted-origin routing moved verbatim into
+  // routeDefeatedVillainCard so the City defeat and Nightbringer's Villain Deck defeat share one
+  // routing; the flags and the deferred gain line come back for the narrative and the log below.
+  const routing = routeDefeatedVillainCard(G, currentPlayer, cardId);
+  const skrullGained = routing.skrullGained;
+  const officerGained = routing.officerGained;
+  const microSizedGained = routing.microSizedGained;
+  const stackBystandersRescued = routing.stackBystandersRescued;
+  const gainedHeroLogLine = routing.gainedHeroLogLine;
 
   // Step 3b: Award attached bystanders to player's victory zone (WP-017)
   const victoryBefore = G.playerZones[currentPlayer]!.victory.length;
@@ -846,6 +782,154 @@ export function defeatCityVillainCore(
     ),
   });
 
+  // why: WP-872 / D-24817 — the Fight fire-site bridges (Endless Armies, Mr. Immortal, the WP-869
+  // stack entry) moved verbatim into runVillainFightFireSiteBridges, so Nightbringer's Villain
+  // Deck defeat runs the same bridges; it stays this core's last step.
+  runVillainFightFireSiteBridges(G, ctx, cardId, shuffleContext);
+}
+
+/**
+ * The outcome of routing a defeated Villain card (WP-872 / D-24817): which converted-origin gain
+ * fired, how many stack Bystanders it rescued, and the gain log line the caller pushes after its
+ * own defeat line.
+ */
+export interface DefeatedVillainRouting {
+  /** A Secret Invasion Skrull was gained as a Hero into the defeater's discard. */
+  skrullGained: boolean;
+  /** A Brainwash Officer or a S.H.I.E.L.D. Elite stack Officer became the Officer token. */
+  officerGained: boolean;
+  /** A Micro-Sized Hero was gained outright by the defeater. */
+  microSizedGained: boolean;
+  /** Splintered Half-Groot Bystanders rescued into the Victory Pile (WP-869). */
+  stackBystandersRescued: number;
+  /** The gain line to log after the defeat line, or null when the defeat gains nothing. */
+  gainedHeroLogLine: { message: string; outcome?: LogOutcome; card?: CardExtId } | null;
+}
+
+/**
+ * Routes a defeated Villain card that has already left its zone: a converted card goes home by
+ * its origin (Micro-Sized, Skrull, S.H.I.E.L.D. Officer, the WP-869 stack Bystander / Officer),
+ * anything else to the defeater's Victory Pile.
+ *
+ * // why: WP-872 / D-24817 — moved verbatim out of defeatCityVillainCore so the City defeat and
+ * Nightbringer's Villain Deck defeat share one routing, and every later converted-origin route
+ * goes here. A Micro-Sized card defeated by Nightbringer goes to the defeater: the Nightbringer
+ * step's own seat choice is still open during its apply, so gainDefeatedMicroSizedHero takes its
+ * logged open-choice fallback (D-24805).
+ *
+ * @param G - Game state (mutated: the defeater's zones and the converted-origin overlay).
+ * @param currentPlayer - The defeating player.
+ * @param cardId - The defeated card, already removed from the City or the Villain Deck.
+ * @returns The gain flags, the stack Bystander count and the deferred gain log line.
+ */
+export function routeDefeatedVillainCard(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+): DefeatedVillainRouting {
+  // why: WP-514 / D-24327 — Secret Invasion "If you defeat that Hero, you gain it":
+  // a defeated Skrull (a Hero acting as a villain) routes to the defeating player's
+  // DISCARD instead of the victory pile, and its conversion overlay is cleared (it is
+  // a Hero again in the discard). Guarded on the 'skrull' origin — every non-Skrull
+  // defeat routes to victory unchanged (tested both ways). The fought cardId is pushed
+  // DIRECTLY here (awardAttachedHeroes below handles a villain's ATTACHED heroes, not
+  // the fought card). A gain log line follows so a Hero the player never recruited does
+  // not appear in their deck with no trail (mirrors the attached-hero log below).
+  // why: WP-518 / D-24331 — capture the Skrull origin BEFORE the delete below so
+  // the fightResolved narrative (composed after the origin overlay is cleared) can
+  // announce the gain in the center-screen overlay, not only in the durable log.
+  let skrullGained = false;
+  let officerGained = false;
+  let microSizedGained = false;
+  let stackBystandersRescued = 0;
+  // why: a converted card gained as a Hero says so in the log, but only after the "fought" line
+  // below: logging it here, during the routing, put "gained it as a Hero" ahead of the fight that
+  // caused it (operator match 8eURMq6tTSS 5.2.16-5.2.17). Null when the defeat gains nothing. The
+  // Micro-Sized line keeps its own outcome colour and card link; the others are plain narration.
+  let gainedHeroLogLine: { message: string; outcome?: LogOutcome; card?: CardExtId } | null = null;
+  if (G.convertedVillainOrigins?.[cardId] === 'micro-sized') {
+    // why: WP-863 / D-24805 — Trap Heroes in the Microverse "When you fight one, choose any player
+    // to gain it as a Hero." The card goes to the defeater's discard first, so it always sits in a
+    // zone, then (two or more seats) the defeater picks the player through a seat choice. It never
+    // enters a Victory Pile. The narrative's gain clause is on only for an outright gain: with a
+    // pending pick the recipient is not decided yet.
+    const microSizedGain = gainDefeatedMicroSizedHero(G, currentPlayer, cardId);
+    microSizedGained = microSizedGain.gainedOutright;
+    gainedHeroLogLine = { message: microSizedGain.logMessage, outcome: microSizedGain.logOutcome, card: cardId };
+  } else if (G.convertedVillainOrigins?.[cardId] === 'skrull') {
+    skrullGained = true;
+    G.playerZones[currentPlayer]!.discard.push(cardId);
+    delete G.convertedVillainOrigins[cardId];
+    gainedHeroLogLine = {
+      message: `Player ${currentPlayer} defeated the Skrull ${formatCardRef(G.cardDisplayData, cardId)} and gained the Hero into their discard pile.`,
+    };
+  } else if (G.convertedVillainOrigins?.[cardId] === 'shield-officer') {
+    // why: WP-823 / D-24756 — Brainwash the Military "When you defeat a S.H.I.E.L.D.
+    // Officer, gain it as a Hero." Every Officer is identical, and the engine holds an
+    // Officer Hero as the fungible SHIELD_OFFICER_EXT_ID token, which already carries
+    // its stats, team, display and the invariant exemption. So the instance leaves play
+    // and the token goes to the defeater's discard. It is the same card, so nothing is
+    // drawn from G.piles.officers, and it never enters the Victory Pile (it scores as no
+    // Villain or Bystander, and Savior never counts it).
+    officerGained = true;
+    G.playerZones[currentPlayer]!.discard.push(SHIELD_OFFICER_EXT_ID);
+    delete G.convertedVillainOrigins[cardId];
+    gainedHeroLogLine = {
+      message: `Player ${currentPlayer} defeated ${formatCardRef(G.cardDisplayData, cardId)} and gained it as a Hero into their discard pile.`,
+    };
+  } else if (G.convertedVillainOrigins?.[cardId] === 'bystander-stack-villain') {
+    // why: WP-869 / D-24814 — Groot from Planet X: "When you fight one, rescue it as a Bystander"
+    // (rules v23: Bystanders that become Villains count as Bystanders in your Victory Pile, not
+    // Villains). The token goes home: a BYSTANDER_EXT_ID enters the Victory Pile, so it scores
+    // and counts as a Bystander everywhere, and the converted id leaves play with its overlay
+    // entry deleted, which frees the id. The rescue counts toward bystandersRescued below.
+    G.playerZones[currentPlayer]!.victory.push(BYSTANDER_EXT_ID);
+    delete G.convertedVillainOrigins[cardId];
+    stackBystandersRescued += 1;
+  } else if (G.convertedVillainOrigins?.[cardId] === 'officer-stack-villain') {
+    // why: WP-869 / D-24814 — Agent Gabe Jones / Agent Eric Marshall: "When you fight it, gain it
+    // as a Hero." The token goes home as the D-24756 Officer routing does: SHIELD_OFFICER_EXT_ID
+    // to the defeater's discard, never the Victory Pile; the overlay entry is deleted (the id is
+    // free again) and the narrative's gain clause turns on.
+    officerGained = true;
+    G.playerZones[currentPlayer]!.discard.push(SHIELD_OFFICER_EXT_ID);
+    delete G.convertedVillainOrigins[cardId];
+    gainedHeroLogLine = {
+      message: `Player ${currentPlayer} defeated ${formatCardRef(G.cardDisplayData, cardId)} and gained it as a Hero into their discard pile.`,
+    };
+  } else {
+    G.playerZones[currentPlayer]!.victory.push(cardId);
+  }
+
+  return { skrullGained, officerGained, microSizedGained, stackBystandersRescued, gainedHeroLogLine };
+}
+
+/**
+ * Runs the Fight fire-site bridges for a defeated Villain: Endless Armies of HYDRA's Villain Deck
+ * play, Mr. Immortal's reenter and the WP-869 stack-card entry. Each is an executor no-op whose
+ * work happens here (the D-24351 pattern).
+ *
+ * // why: WP-872 / D-24817 — moved verbatim out of the end of defeatCityVillainCore so the City
+ * defeat and Nightbringer's Villain Deck defeat run the same bridge list, and every later Fight
+ * fire-site bridge goes here. The defeating player is `ctx.currentPlayer`, read the way the core
+ * reads it. The stack entry is re-read here (a pure read of the setup-captured hooks, so it equals
+ * the core's pre-event read).
+ *
+ * @param G - Game state (mutated by the bridges).
+ * @param ctx - The bare ctx (currentPlayer + turn), typed unknown as in the core.
+ * @param cardId - The defeated Villain card.
+ * @param shuffleContext - ShuffleProvider ({ random }) for the bridges' RevealContext.
+ */
+export function runVillainFightFireSiteBridges(
+  G: LegendaryGameState,
+  ctx: unknown,
+  cardId: CardExtId,
+  shuffleContext: ShuffleProvider,
+): void {
+  // why: mirrors defeatCityVillainCore — narrow the unknown ctx to the defeating player.
+  const currentPlayer = (ctx as { currentPlayer: string }).currentPlayer;
+  const fightStackEntry = villainCardStackVillainEntry(G, cardId, 'onFight');
+
   // why: WP-542 / D-24351 — Endless Armies of HYDRA's "Fight: Play the top two cards of
   // the Villain Deck." The executor's play-villain-deck-cards handler is a no-op (the move
   // reaches the reveal pipeline, the executor does not), so the actual play fires HERE,
@@ -911,4 +995,40 @@ export function defeatCityVillainCore(
     };
     enterStackCardsAsVillains(G, stackRevealContext, DEFAULT_IMPLEMENTATION_MAP, cardId, fightStackEntry, 'onFight');
   }
+}
+
+/**
+ * Runs the Fight effect of a Villain defeated straight from the Villain Deck (WP-872 / D-24817:
+ * Nightbringer, The Black Light — "You may defeat a Villain you revealed worth 2VP or less. (Do
+ * its Fight effect.)").
+ *
+ * // why: WP-872 / D-24817 — a Villain Deck defeat is a defeat, not a fight: no "fought" line, no
+ * awards, no fightResolved event, and no "whenever you fight" offer (Baron Zemo's paid rescue,
+ * the Enigma peek, Excessive Violence), the Silent Sniper free-defeat precedent. Its Fight effect
+ * runs through the executor with no fought City space, so a location-gated Fight effect fails
+ * closed (D-24295), then through the same fire-site bridges as a City defeat
+ * (runVillainFightFireSiteBridges), so Endless Armies plays and Mr. Immortal reenters. The caller
+ * passes `{ currentPlayer: fighterSeat, turn }`, never the raw move ctx (D-24732).
+ *
+ * @param G - Game state (mutated by the Fight effect and the bridges).
+ * @param ctx - `{ currentPlayer, turn }` for the defeating player.
+ * @param cardId - The defeated card, already routed (Victory Pile or a converted-origin route).
+ * @param shuffleContext - ShuffleProvider ({ random }) for a Fight reshuffle and the bridges.
+ */
+export function resolveVillainDeckDefeatFightEffect(
+  G: LegendaryGameState,
+  ctx: unknown,
+  cardId: CardExtId,
+  shuffleContext: ShuffleProvider,
+): void {
+  const appliedFightResults = executeVillainAbilities(G, ctx, cardId, 'onFight', shuffleContext);
+  // why: the core's `Fight effect:` line, length-guarded the same way (no line when no keyworded
+  // effect applied; a self-narrating handler logs its own line).
+  if (appliedFightResults.length > 0) {
+    const resolvedFightResults = resolveEffectResultNames(G, appliedFightResults);
+    pushLog(G,
+      `Fight effect: ${composeEffectResultLogLine(resolvedFightResults)}.`,
+    );
+  }
+  runVillainFightFireSiteBridges(G, ctx, cardId, shuffleContext);
 }

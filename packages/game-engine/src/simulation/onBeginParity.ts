@@ -157,6 +157,11 @@ export function applyOnBeginParity(
   if (gameState.pendingMandarinRingEntries !== undefined) {
     delete gameState.pendingMandarinRingEntries;
   }
+  // why: WP-872 / D-24817 — mirrors game.ts onBegin's owed Mandarin's Rings pick delete. Guarded so
+  // a never-set G stays byte-unchanged.
+  if (gameState.pendingVillainFightPicks !== undefined) {
+    delete gameState.pendingVillainFightPicks;
+  }
   // why: WP-328 — mirrors game.ts onBegin's logMeta stamp so harness log lines carry
   // the same play-relative {turn}.{step}.{action} prefix as live play. Live derives the
   // turn from ctx.turn offset by the first play turn; the harnesses have no framework

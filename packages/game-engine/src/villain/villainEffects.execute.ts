@@ -97,6 +97,11 @@ import { describeKoSourceZone, formatCardRef } from '../log/logDisplay.js';
 // why: WP-870 / D-24815 — Zero's handler only queues the owed next-hand pick; that module never
 // imports this executor, and its opener runs from the play-phase onMove.
 import { queueNextHandFromPlayPick } from '../moves/nextHandFromPlay.logic.js';
+// why: WP-872 / D-24817 — Liar, Nightbringer and Remaker's handlers only queue the owed pick. That
+// module imports this executor back (readTurnNumber) and fightVillain (which imports it too): a
+// runtime-safe cycle, because every binding on both sides is read only inside a function body
+// (the WP-828 hero-executor shape), never at module evaluation.
+import { queueVillainFightPick, rightNeighborSeat } from '../moves/villainFightPick.logic.js';
 // why: WP-817 / D-24750 — Captain Zolandia counts Hero Classes with the hero side's one
 // counter, and Primus's Escape narrates its costs with the shared cost-list formatter.
 import { countDistinctHeroClassesYouHave } from '../hero/heroConditions.evaluate.js';
@@ -5084,6 +5089,13 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'reveal-top-may-ko-current': villainEffectRevealTopMayKoCurrent,
   'reveal-top-discard-zero-cost-current': villainEffectRevealTopDiscardZeroCostCurrent,
   'next-hand-from-play-zero-cost-current': villainEffectNextHandFromPlayZeroCostCurrent,
+  // why: WP-872 / D-24817 — positions 49-51: Mandarin's Rings Liar (look at another player's deck
+  // top and claim), Nightbringer (defeat a revealed Villain Deck Villain worth 2VP or less, put the
+  // rest back) and Remaker (give a card to the player on your right). Each queues an owed pick on
+  // G.pendingVillainFightPicks; all keyword-less, self-narrating.
+  'look-other-player-deck-top-claim-current': villainEffectLookOtherPlayerDeckTopClaimCurrent,
+  'reveal-villain-deck-defeat-low-vp-current': villainEffectRevealVillainDeckDefeatLowVpCurrent,
+  'give-card-to-right-player-current': villainEffectGiveCardToRightPlayerCurrent,
 };
 
 /**
@@ -5306,6 +5318,112 @@ function villainEffectNextHandFromPlayZeroCostCurrent(
   queueNextHandFromPlayPick(G, currentPlayer, cardId);
   pushLog(G,
     `Player ${currentPlayer} will add a 0-cost card they played this turn to their next hand (${formatCardRef(G.cardDisplayData, cardId)}).`,
+    'neutral',
+    cardId,
+  );
+  return { targets: [], pending: true };
+}
+
+/**
+ * look-other-player-deck-top-claim-current primitive — the defeating player looks at the top
+ * card of another player's deck, says it is "Good" or "Bad", and that player chooses whose
+ * discard pile gets it (WP-872 / D-24817: Mandarin's Rings Liar, The Mento-Intensifier).
+ *
+ * Only records the owed pick; the play-phase onMove opener parks the seat choices. Keyword-less,
+ * so it self-narrates. Never names the looked-at card.
+ *
+ * @returns `{ targets: [], pending: true }` when a pick is owed, `{ targets: [] }` with one seat.
+ */
+function villainEffectLookOtherPlayerDeckTopClaimCurrent(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+  _timing: VillainAbilityTiming,
+  _descriptor: VillainEffectDescriptor,
+  shuffleContext?: ShuffleProvider,
+): VillainEffectApplication {
+  const source = formatCardRef(G.cardDisplayData, cardId);
+  const otherSeats = seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)
+    .filter((seat) => seat !== currentPlayer);
+  // why: WP-872 / D-24817 Ruling 2 — with one seat Liar does nothing: rules v23 L3257-3261 apply
+  // "do it yourself" only to a Villain's "each other player" text, which Liar does not print.
+  if (otherSeats.length === 0) {
+    pushLog(G, `Player ${currentPlayer} has no other player whose deck they can look at (${source}).`, 'blocked', cardId);
+    return { targets: [] };
+  }
+  // why: WP-872 / D-24817 — the executor has no events, so the pick is queued and the onMove
+  // opener parks it (D-24761 / D-24779). With exactly one other seat the target is fixed now, so
+  // its empty deck tops up here, where the shuffle source is (D-24285); with two or more the
+  // fighter picks first and the 'liar-target' apply tops up. The opener never shuffles.
+  if (otherSeats.length === 1) {
+    const targetSeat = otherSeats[0]!;
+    const targetZones = G.playerZones[targetSeat];
+    if (targetZones !== undefined && targetZones.deck.length === 0) {
+      reshuffleDiscardIntoDeck(targetZones, shuffleContext);
+    }
+    queueVillainFightPick(G, { primitive: 'look-other-player-deck-top-claim-current', playerID: currentPlayer, sourceCardId: cardId, targetSeat });
+  } else {
+    queueVillainFightPick(G, { primitive: 'look-other-player-deck-top-claim-current', playerID: currentPlayer, sourceCardId: cardId });
+  }
+  pushLog(G, `Player ${currentPlayer} will look at the top card of another player's deck (${source}).`, 'neutral', cardId);
+  return { targets: [], pending: true };
+}
+
+/**
+ * reveal-villain-deck-defeat-low-vp-current primitive — the defeating player reveals the top
+ * three Villain Deck cards, may defeat a revealed Villain worth 2VP or less (doing its Fight
+ * effect) and puts the rest back in any order (WP-872 / D-24817: Mandarin's Rings Nightbringer,
+ * The Black Light).
+ *
+ * Only records the owed pick; the play-phase onMove opener reveals and parks the seat choices.
+ * Keyword-less, so it self-narrates.
+ *
+ * @returns `{ targets: [], pending: true }` (the pick is owed).
+ */
+function villainEffectRevealVillainDeckDefeatLowVpCurrent(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+): VillainEffectApplication {
+  // why: WP-872 / D-24817 — the executor has no events, so the pick is queued and the onMove
+  // opener reveals and parks it (D-24761 / D-24779).
+  queueVillainFightPick(G, { primitive: 'reveal-villain-deck-defeat-low-vp-current', playerID: currentPlayer, sourceCardId: cardId });
+  pushLog(G,
+    `Player ${currentPlayer} will reveal the top three cards of the Villain Deck (${formatCardRef(G.cardDisplayData, cardId)}).`,
+    'neutral',
+    cardId,
+  );
+  return { targets: [], pending: true };
+}
+
+/**
+ * give-card-to-right-player-current primitive — the defeating player may give a card from their
+ * hand or discard pile to the player on their right, who puts it in their hand (WP-872 / D-24817:
+ * Mandarin's Rings Remaker, The Matter Rearranger).
+ *
+ * Only records the owed pick; the play-phase onMove opener parks the seat choice. Keyword-less,
+ * so it self-narrates.
+ *
+ * @returns `{ targets: [], pending: true }` when a pick is owed, `{ targets: [] }` with one seat.
+ */
+function villainEffectGiveCardToRightPlayerCurrent(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+): VillainEffectApplication {
+  const source = formatCardRef(G.cardDisplayData, cardId);
+  // why: WP-872 / D-24817 — "the player on your right" is the previous seat in turn order, the
+  // mirror of D-24500's left. With one seat there is none and Remaker does nothing (Ruling 2).
+  const rightSeat = rightNeighborSeat(G, currentPlayer);
+  if (rightSeat === undefined) {
+    pushLog(G, `Player ${currentPlayer} has no player on their right to give a card to (${source}).`, 'blocked', cardId);
+    return { targets: [] };
+  }
+  // why: WP-872 / D-24817 — the executor has no events, so the pick is queued and the onMove
+  // opener parks it (D-24761 / D-24779).
+  queueVillainFightPick(G, { primitive: 'give-card-to-right-player-current', playerID: currentPlayer, sourceCardId: cardId, targetSeat: rightSeat });
+  pushLog(G,
+    `Player ${currentPlayer} may give a card from their hand or discard pile to Player ${rightSeat} (${source}).`,
     'neutral',
     cardId,
   );

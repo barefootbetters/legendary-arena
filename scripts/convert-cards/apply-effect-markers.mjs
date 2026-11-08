@@ -205,6 +205,14 @@ function isLockedEffectKeyword(keyword) {
 // rest back in any order." and Zero "Choose a card you played this turn that costs 0 … add that card
 // to your hand as an extra card."; the two no-param ones validate via the terminal
 // `parts.length === 1` branch, the `:<N>` one via its own branch below).
+// `look-other-player-deck-top-claim-current`, `reveal-villain-deck-defeat-low-vp-current` and
+// `give-card-to-right-player-current` (all no-param) appended at positions 49, 50 and 51 by WP-872
+// (D-24817 — rvlt Mandarin's Rings Liar "Look at the top card of another player's deck. Say it is
+// "Good" or "Bad." That player chooses to put it in your discard pile or their discard pile.",
+// Nightbringer "Reveal the top three cards of the Villain Deck. You may defeat a Villain you revealed
+// worth 2VP or less. (Do its Fight effect.) Put the rest back in any order." and Remaker "You may
+// choose a card from your hand or discard pile. The player on your right puts it in their hand.";
+// all three validate via the terminal `parts.length === 1` branch).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -254,6 +262,9 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'reveal-top-may-ko-current',
   'reveal-top-discard-zero-cost-current',
   'next-hand-from-play-zero-cost-current',
+  'look-other-player-deck-top-claim-current',
+  'reveal-villain-deck-defeat-low-vp-current',
+  'give-card-to-right-player-current',
 ];
 
 // why: WP-836 / D-24769 — hand-synced local copy of the engine's HERO_CLASSES

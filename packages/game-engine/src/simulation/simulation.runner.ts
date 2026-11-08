@@ -57,6 +57,9 @@ import { openNextHandFromPlaySeatChoiceIfNeeded } from '../moves/nextHandFromPla
 // why: WP-875 / D-24822 — the loops never run onMove, so they mirror The Mandarin's Ring-entry
 // opener; an entry's escape needs the implementation map.
 import { openMandarinRingEntriesIfNeeded } from '../moves/mandarinRingEntry.logic.js';
+// why: WP-872 / D-24817 — the loops never run onMove, so they mirror the Mandarin's Rings
+// Liar / Nightbringer / Remaker pick opener.
+import { openVillainFightPickSeatChoiceIfNeeded } from '../moves/villainFightPick.logic.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from '../rules/ruleRuntime.impl.js';
 import { resetTurnEconomy } from '../economy/economy.logic.js';
 import { applyOnBeginParity } from './onBeginParity.js';
@@ -731,6 +734,10 @@ function runPerTurnLoop(
         // why: WP-870 / D-24815 — the loops never run the onMove opener, so mirror the owed Zero
         // pick opener here; without it a sim game that fights Zero never applies the pick.
         openNextHandFromPlaySeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+        // why: WP-872 / D-24817 — mirror the owed Liar / Nightbringer / Remaker pick opener at its
+        // live position (after the Zero opener). events is undefined and the seat is this loop's
+        // ACTIVE seat; a non-active Liar decide is answered by the WP-749 non-active dispatch.
+        openVillainFightPickSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
         continue;
       }
     }
@@ -856,6 +863,9 @@ function runPerTurnLoop(
     // why: WP-870 / D-24815 — the loops never run the onMove opener, so mirror the owed Zero pick
     // opener here; the getLegalMoves seat-choice short-circuit answers it at its default (0).
     openNextHandFromPlaySeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+    // why: WP-872 / D-24817 — mirror the owed Liar / Nightbringer / Remaker pick opener at its live
+    // position (after the Zero opener); its seat choices are answered at their default (0).
+    openVillainFightPickSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
 
     // why: zero-legal-moves + endTurn-illegal fallback (RS-6 second clause).
     // If the policy returned endTurn when the stage is not cleanup, the

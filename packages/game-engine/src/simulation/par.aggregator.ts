@@ -67,6 +67,9 @@ import { openNextHandFromPlaySeatChoiceIfNeeded } from '../moves/nextHandFromPla
 // why: WP-875 / D-24822 — the loops never run onMove, so they mirror The Mandarin's Ring-entry
 // opener; an entry's escape needs the implementation map.
 import { openMandarinRingEntriesIfNeeded } from '../moves/mandarinRingEntry.logic.js';
+// why: WP-872 / D-24817 — the loops never run onMove, so they mirror the Mandarin's Rings
+// Liar / Nightbringer / Remaker pick opener.
+import { openVillainFightPickSeatChoiceIfNeeded } from '../moves/villainFightPick.logic.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from '../rules/ruleRuntime.impl.js';
 import { computeFinalScores, isBystanderCard, isVictoryPileBystander } from '../scoring/scoring.logic.js';
 import { computeRawScore, computeParScore } from '../scoring/parScoring.logic.js';
@@ -806,6 +809,9 @@ function simulateOneGame(
         // why: WP-870 / D-24815 — the loops never run the onMove opener, so mirror the owed Zero
         // pick opener here; without it a PAR game that fights Zero never applies the pick.
         openNextHandFromPlaySeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+        // why: WP-872 / D-24817 — mirror the owed Liar / Nightbringer / Remaker pick opener at its
+        // live position (after the Zero opener); events undefined, the loop's ACTIVE seat.
+        openVillainFightPickSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
         continue;
       }
     }
@@ -911,6 +917,9 @@ function simulateOneGame(
     // why: WP-870 / D-24815 — the loops never run the onMove opener, so mirror the owed Zero pick
     // opener here; the seat-choice dispatch answers it at its default (0).
     openNextHandFromPlaySeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+    // why: WP-872 / D-24817 — mirror the owed Liar / Nightbringer / Remaker pick opener at its live
+    // position (after the Zero opener); its seat choices are answered at their default (0).
+    openVillainFightPickSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
 
     // why: zero-legal-moves fallback. If the policy returned endTurn
     // outside cleanup, the move is a silent no-op and the loop would

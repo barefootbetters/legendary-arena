@@ -10,11 +10,11 @@
       "mastermind": 567
     },
     "byStatus": {
-      "executable": 777,
+      "executable": 780,
       "deferred": 18,
       "condition": 58,
       "unsupported": 280,
-      "unmarked": 1049,
+      "unmarked": 1046,
       "subsystem": 7
     }
   },
@@ -14363,11 +14363,11 @@
       "name": "Liar, The Mento-Intensifier",
       "set": "rvlt",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "look-other-player-deck-top-claim-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#look-other-player-deck-top-claim-current",
+      "wp": "WP-872",
+      "decision": "D-24817"
     },
     {
       "extId": "henchman-mandarins-rings-lightning-the-electro-blast",
@@ -14385,22 +14385,22 @@
       "name": "Nightbringer, The Black Light",
       "set": "rvlt",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-villain-deck-defeat-low-vp-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-villain-deck-defeat-low-vp-current",
+      "wp": "WP-872",
+      "decision": "D-24817"
     },
     {
       "extId": "henchman-mandarins-rings-remaker-the-matter-rearranger",
       "name": "Remaker, The Matter Rearranger",
       "set": "rvlt",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "give-card-to-right-player-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#give-card-to-right-player-current",
+      "wp": "WP-872",
+      "decision": "D-24817"
     },
     {
       "extId": "henchman-mandarins-rings-spectral-the-disintegration-beam",
@@ -35765,7 +35765,7 @@
     "henchman-mandarins-rings-liar-the-mento-intensifier": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "look-other-player-deck-top-claim-current"
       ]
     },
     "henchman-mandarins-rings-lightning-the-electro-blast": {
@@ -35777,13 +35777,13 @@
     "henchman-mandarins-rings-nightbringer-the-black-light": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-villain-deck-defeat-low-vp-current"
       ]
     },
     "henchman-mandarins-rings-remaker-the-matter-rearranger": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "give-card-to-right-player-current"
       ]
     },
     "henchman-mandarins-rings-spectral-the-disintegration-beam": {

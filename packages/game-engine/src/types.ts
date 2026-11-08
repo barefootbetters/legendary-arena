@@ -1573,6 +1573,23 @@ export interface PendingSeatChoice {
     replacesPrinted: boolean;
     sourceCardId: CardExtId;
   };
+  // why: WP-872 / D-24817 — present only on the six Mandarin's Rings pick kinds
+  // (moves/villainFightPick.logic.ts). Every step's state lives here, so a chain never re-reads
+  // the queue. `sourceCardId` + `fighterSeat` on all six; `targetSeat` on 'liar-claim',
+  // 'liar-decide' and 'remaker-give' (and on 'liar-target' once its apply records the pick);
+  // `lookedAtCardId` on 'liar-claim' / 'liar-decide' (the hidden card, never projected);
+  // `claim` on 'liar-decide' (and on 'liar-claim' once applied); `revealedCardIds` on
+  // 'nightbringer-defeat' / 'nightbringer-order' (the cards still on top of the Villain Deck, in
+  // deck order); `defeatedCardId` once Nightbringer's defeat apply ran. NOT projected to the client.
+  villainFightPick?: {
+    sourceCardId: CardExtId;
+    fighterSeat: string;
+    targetSeat?: string;
+    lookedAtCardId?: CardExtId;
+    claim?: 'good' | 'bad';
+    revealedCardIds?: CardExtId[];
+    defeatedCardId?: CardExtId;
+  };
 }
 
 /**
@@ -1725,6 +1742,36 @@ export interface PendingMandarinRingEntry {
   playerID: string;
   /** The Ring that player chose (or the only one available); absent until settled. */
   chosenCardId?: CardExtId;
+}
+
+// why: WP-872 / D-24817 — the villain executor has no boardgame.io events, so it cannot admit a
+// non-active seat or park a seat choice: it records the owed pick here and the play-phase onMove
+// opener parks it (the D-24761 / D-24779 shape). One queue keyed by primitive serves all three
+// Mandarin's Rings lines, so no new union of pick kinds is needed.
+/**
+ * One owed Mandarin's Rings cross-player or Villain Deck Fight pick (WP-872 / D-24817): Liar's
+ * look-and-claim, Nightbringer's Villain Deck defeat and put-back, or Remaker's give-to-the-right.
+ *
+ * Appended by the three villain handlers and drained front to back by the play-phase onMove
+ * opener (`moves/villainFightPick.logic.ts`), which parks the entry's first seat choice; every
+ * later step's state lives in the seat choice's `villainFightPick` payload. Runtime-only; lazily
+ * created and deleted when it drains, at turn start and at game end.
+ */
+export interface PendingVillainFightPick {
+  /** The primitive whose Fight line owes the pick. */
+  primitive:
+    | 'look-other-player-deck-top-claim-current'
+    | 'reveal-villain-deck-defeat-low-vp-current'
+    | 'give-card-to-right-player-current';
+  /** The defeating player (the fighter). */
+  playerID: string;
+  /** The defeated Mandarin's Rings copy that owes the pick (for the log). */
+  sourceCardId: CardExtId;
+  /**
+   * Liar with exactly one other seat (that seat) and Remaker (the right neighbour); absent for
+   * Liar with two or more other seats (the fighter picks) and for Nightbringer.
+   */
+  targetSeat?: string;
 }
 
 export interface PendingDivingBlockWound {
@@ -2663,6 +2710,13 @@ export interface LegendaryGameState {
   // queue write, never seeded, deleted when it drains, at turn start and at game end.
   /** FIFO queue of owed Mandarin's Ring City entries (WP-875). */
   pendingMandarinRingEntries?: PendingMandarinRingEntry[] | undefined;
+  // why: WP-872 / D-24817 — each defeated Mandarin's Rings Liar, Nightbringer or Remaker owes one
+  // pick here (the villain executor has no events). The play-phase onMove opener (and the rebuilt
+  // sim / PAR / fixture loops at the same position) parks its first seat choice and resolveSeatChoice
+  // chains the rest. Hashed, lazily created at the first queue write, never seeded, deleted when it
+  // drains, at turn start and at game end.
+  /** FIFO queue of owed Mandarin's Rings cross-player and Villain Deck picks (WP-872). */
+  pendingVillainFightPicks?: PendingVillainFightPick[] | undefined;
   // why: WP-828 / D-24761 — hand Heroes granted Man Out of Time this turn; applyCardPlay sets
   // one aside Out of Time after its abilities when it is played. Lazily created on the first
   // grant and deleted at turn start (game.ts onBegin + applyOnBeginParity).
