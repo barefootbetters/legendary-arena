@@ -436,9 +436,9 @@ export default defineComponent({
         Final blow — fight the Mastermind
       </span>
     </button>
-    <!-- why: D-24819 — Fortify puts the Villain on the Mastermind (rules v23 L1454). A
-         sibling of the Fight button (a button cannot hold a button), absolutely positioned
-         over the tile so the adversary band keeps its height. -->
+    <!-- why: D-24819 — Fortify puts the Villain near the Mastermind (rules v23 L1454). A
+         sibling of the Fight button (a button cannot hold a button), under it in normal
+         flow, never over the card. -->
     <FortifiedVillains
       :fortifiers="fortifiers"
       place="mastermind"
