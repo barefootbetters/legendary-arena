@@ -50624,3 +50624,21 @@ Protect this file.
 
 ---
 Protect this file.
+
+### D-24821 — The fortifier chip sits under the card it fortifies and says why a fight is blocked (Active 2026-11-08 — fix to WP-873 / D-24819)
+
+**Status:** Active. Landed 2026-11-08 as a post-merge fix to WP-873 / EC-911 (no new WP). It replaces D-24819 item 2 (the chip absolutely positioned over the host card). D-24819 items 1, 3 and 4 stand, as does the PR #3226 stand-up exclusion (`--fortified`).
+
+**Context.** In operator match gN9rrI-U110 (client ff182b8, which has #3226) Squirrel Girl fortified the Sidekick Stack at 12.1.3. The operator could not fight her on turns 13, 15, 17 and 19, then fought her from the chip at 23.2.2 after the Operator +20 Attack with no card played. The engine and the button were right: on those earlier turns more than one card had been played, and her printed restriction (WP-871 / D-24816) blocks the fight. But the only signal was a disabled `Fight 3` on a chip covering the Sidekicks card, with the reason in that disabled button's title, which browsers do not reliably show. The operator could not tell "the chip is unclickable" from "I don't meet the condition", and asked for the chip to move and for a tooltip on the ability to attack.
+
+**Decision.**
+1. **Under, not over.** `FortifiedVillains` renders in normal flow, under the host card: under the Sidekicks card in `SharedDecks`, under the Mastermind Fight button in `MastermindTile`. It never covers the card. The list uses `contain: inline-size` and wrapping text, so it takes the card's width and never widens the band.
+2. **The status is on the chip.** While the gate blocks (stage → heal → cost at `UNNAMED_CITY_SPACE_TARGET` → restriction, unchanged), the chip prints `Can't fight yet`, matching the City row's cue (D-24816 item 9), with the gate reason as its title. The chip's own title says what the Villain locks, then either `Fight <Villain> for <N> Attack to end it.` or `You can't fight <Villain> now: <reason>`. The `Fight N` button keeps its disabled state and its reason title.
+3. **Cost.** The band grows with the chip. In the play-fixture route at 1024 wide, with both places fortified and Squirrel Girl blocked, the band went from 103 to 126 px and the board scaled about 2% smaller (City row 818 to 804 px wide). This is accepted, because a chip that covers its card was the bigger problem. The City row itself stays unchanged (D-24819 item 1).
+
+**Gates.** arena-client 2573 -> 2574 / 0 (T27 / T28 extended: no cue while allowed; cue, cue title and chip title while blocked; the D-24819 host test's chip title updated as an intentional behavior change; a stylesheet pin that the chip is never `position: absolute` / `fixed`). Typecheck 0. Four revert proofs each fail a test: dropping the cue, dropping the reason from the chip title, putting the chip back to `position: absolute`, and dropping the cue's title. Browser check (play-fixture route): the chip sits under each card, the hit test at each Fight button is the button, the Sidekicks card stays flat while the chip is hovered, a real click on the allowed chip submits, and on a 375-wide layout each chip stays inside its host with no sideways scroll.
+
+**Reserved by:** NUMBER-LEDGER D-24821. Related: D-24819 (item 2 replaced), D-24818 (Fortify), D-24816 (fight restrictions, the `Can't fight yet` cue), D-24505 (scale-to-fit board), D-24026.
+
+---
+Protect this file.
