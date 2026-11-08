@@ -57,6 +57,14 @@ import { ARNIM_ZOLA_MASTERMIND_ID, listZolaWeakHqSlots } from '../mastermind/arn
 import { refillHqSlot } from '../board/city.logic.js';
 import { selectDefaultCostDiscardCard } from '../moves/villainDefeatRequirement.logic.js';
 import { demolishEachPlayer } from '../board/demolish.logic.js';
+// why: WP-875 / D-24822 — The Mandarin's strike reads the Ring helpers and appends to the owed
+// Ring-entry queue; the City entry runs later in the onMove opener (moves/mandarinRingEntry.logic.ts).
+import {
+  MANDARIN_MASTERMIND_ID,
+  countQueuedMandarinRingEntries,
+  listMandarinRingsInVictoryPile,
+  queueMandarinRingEntry,
+} from '../mastermind/mandarin.logic.js';
 
 // why: mastermind ext_id constants — matching against
 // G.selection.mastermindId for per-mastermind dispatch. Strings come from
@@ -979,6 +987,61 @@ function resolveBaronZemoStrike(
 }
 
 /**
+ * Resolves The Mandarin's Master Strike (WP-875 / D-24822): "Each player chooses a Mandarin's Ring
+ * from their Victory Pile to enter the city. Any player who didn't have a Ring gains a Wound
+ * instead."
+ *
+ * Each player (current player first, then clockwise; D-24780) with no available Ring gains a Wound
+ * (or takes a logged no-op when the Wound supply is empty); each other player is queued on
+ * G.pendingMandarinRingEntries. Available = the Rings in that player's Victory Pile minus the
+ * entries already owed by them, so a second strike in the same move never counts a Ring twice. The
+ * arm moves no card and parks no choice.
+ *
+ * @param gameState - The game state to mutate.
+ * @param currentPlayer - The active player (null in stub contexts → sorted order); the
+ *   each-player loop starts with them (D-24780).
+ */
+function resolveMandarinStrike(
+  gameState: LegendaryGameState,
+  currentPlayer: string | null,
+): void {
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780); a null
+  // currentPlayer (stub contexts) keeps the sorted order.
+  const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), currentPlayer);
+
+  for (const playerId of playerIds) {
+    const playerZones = gameState.playerZones[playerId]!;
+    const ringCount = listMandarinRingsInVictoryPile(playerZones.victory).length;
+    const availableRingCount = ringCount - countQueuedMandarinRingEntries(gameState, playerId);
+
+    if (availableRingCount > 0) {
+      // why: a strike has no boardgame.io events, so it cannot park the "chooses a Ring" seat
+      // choice; the entry is queued and the play-phase onMove opener settles it (the D-24779 /
+      // D-24815 owed-queue shape).
+      queueMandarinRingEntry(gameState, playerId);
+      pushLog(gameState,
+        `[Mandarin Master Strike] Player ${playerId} will send a Mandarin's Ring from their Victory Pile into the City.`,
+        'neutral',
+      );
+      continue;
+    }
+
+    // why: the Wound is gained here, at strike time. It never touches a zone a Ring entry
+    // touches, so dealing it before the queued entries resolve changes only the log order.
+    const woundOutcome = gainWoundToDiscard(gameState, playerId);
+    if (woundOutcome !== 'no-wound') {
+      pushLog(gameState,
+        `[Mandarin Master Strike] Player ${playerId} had no Mandarin's Ring in their Victory Pile and ${describeStrikeWound(woundOutcome)}.`,
+      );
+    } else {
+      pushLog(gameState,
+        `[Mandarin Master Strike] Player ${playerId} had no Mandarin's Ring in their Victory Pile and the Wound supply is empty — no effect.`,
+      );
+    }
+  }
+}
+
+/**
  * Resolves Arnim Zola's Master Strike (WP-821 / D-24754): "For each Hero in the HQ that
  * has less than 2 printed [icon:attack], put that Hero on the bottom of the Hero Deck, and
  * each player discards a card of that Hero's cost."
@@ -1519,6 +1582,11 @@ export function mastermindStrikeHandler(
     // why: WP-864 / D-24807 — "[Demolish] each player, then do it again for each Monsters
     // Unleashed Villain in the city and Escape Pile."
     resolveFinFangFoomStrike(gameState, resolveCurrentPlayer(strikeContext));
+  } else if (mastermindId === MANDARIN_MASTERMIND_ID) {
+    // why: WP-875 / D-24822 — "Each player chooses a Mandarin's Ring from their Victory Pile to
+    // enter the city. Any player who didn't have a Ring gains a Wound instead." Wounds now; Ring
+    // choices are queued for the onMove opener (a strike has no events).
+    resolveMandarinStrike(gameState, resolveCurrentPlayer(strikeContext));
   } else {
     // why: WP-867 / D-24810 — no per-Mastermind arm was reached, so the printed
     // strike is hollow (the D-24033 reachability rule: an arm that resolves

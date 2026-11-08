@@ -64,6 +64,10 @@ import { openNonActiveReturnOnDiscardSeatChoiceIfNeeded } from '../moves/resolve
 import { openEscapeProcedureSeatChoiceIfNeeded } from '../villainDeck/villainEscapeProcedure.js';
 import { openRevealOrWoundSeatChoiceIfNeeded } from '../moves/revealOrWoundChoice.logic.js';
 import { openNextHandFromPlaySeatChoiceIfNeeded } from '../moves/nextHandFromPlay.logic.js';
+// why: WP-875 / D-24822 — the loops never run onMove, so they mirror The Mandarin's Ring-entry
+// opener; an entry's escape needs the implementation map.
+import { openMandarinRingEntriesIfNeeded } from '../moves/mandarinRingEntry.logic.js';
+import { DEFAULT_IMPLEMENTATION_MAP } from '../rules/ruleRuntime.impl.js';
 import { computeFinalScores, isBystanderCard, isVictoryPileBystander } from '../scoring/scoring.logic.js';
 import { computeRawScore, computeParScore } from '../scoring/parScoring.logic.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
@@ -784,6 +788,21 @@ function simulateOneGame(
         // position (after the escape opener and the depletion re-check, before the unmirrored
         // Diving Block opener), so a queued revealer is asked in the PAR loop too.
         openRevealOrWoundSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+        // why: WP-875 / D-24822 — mirror the live Mandarin Ring-entry opener at its live position (right
+        // after the reveal-or-wound opener), then the re-run escape opener, the pile-depletion re-check and the re-run
+        // reveal-or-wound opener, as live (the loops never mirror the final-turn latch). The
+        // RevealContext is built from this loop's own locals (the ACTIVE seat and the real turn), never
+        // the acting seat's seatChoiceContext or the possibly-undefined dispatched move context.
+        openMandarinRingEntriesIfNeeded(
+          gameState,
+          undefined,
+          currentPlayer,
+          { random: { Shuffle: <T>(deck: T[]): T[] => shuffleWithPrng(deck, nextRandom) }, ctx: { currentPlayer: currentPlayer, turn: turn } },
+          DEFAULT_IMPLEMENTATION_MAP,
+        );
+        openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+        applyPileDepletionResourceLoss(gameState);
+        openRevealOrWoundSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
         // why: WP-870 / D-24815 — the loops never run the onMove opener, so mirror the owed Zero
         // pick opener here; without it a PAR game that fights Zero never applies the pick.
         openNextHandFromPlaySeatChoiceIfNeeded(gameState, undefined, currentPlayer);
@@ -873,6 +892,21 @@ function simulateOneGame(
     // why: WP-845 / D-24779 — mirror the live reveal-or-gain-a-Wound opener at its live position
     // (after the escape opener and the depletion re-check, before the unmirrored Diving Block
     // opener). The WP-749 non-active dispatch then answers it at its default (Reveal).
+    openRevealOrWoundSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+    // why: WP-875 / D-24822 — mirror the live Mandarin Ring-entry opener at its live position (right
+    // after the reveal-or-wound opener), then the re-run escape opener, the pile-depletion re-check and the re-run
+    // reveal-or-wound opener, as live (the loops never mirror the final-turn latch). The
+    // RevealContext is built from this loop's own locals (the ACTIVE seat and the real turn), never
+    // the acting seat's seatChoiceContext or the possibly-undefined dispatched move context.
+    openMandarinRingEntriesIfNeeded(
+      gameState,
+      undefined,
+      currentPlayer,
+      { random: { Shuffle: <T>(deck: T[]): T[] => shuffleWithPrng(deck, nextRandom) }, ctx: { currentPlayer: currentPlayer, turn: turn } },
+      DEFAULT_IMPLEMENTATION_MAP,
+    );
+    openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+    applyPileDepletionResourceLoss(gameState);
     openRevealOrWoundSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
     // why: WP-870 / D-24815 — the loops never run the onMove opener, so mirror the owed Zero pick
     // opener here; the seat-choice dispatch answers it at its default (0).

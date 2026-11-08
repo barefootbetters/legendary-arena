@@ -82,6 +82,9 @@ export function isOperatorChoiceOpen(G: LegendaryGameState): boolean {
   // why: WP-870 / D-24815 — an owed Zero pick is a choice the opener will park; a setter must not
   // reshape the board under it.
   if ((G.pendingNextHandFromPlayPicks?.length ?? 0) > 0) return true;
+  // why: WP-875 / D-24822 — an owed Mandarin's Ring entry is settled, asked or entered by the onMove
+  // opener; a setter must not reshape the Victory Piles or the City under it.
+  if ((G.pendingMandarinRingEntries?.length ?? 0) > 0) return true;
   // why: WP-829 / D-24762 — owed Go Back in Time Purges are opened the same way.
   if ((G.pendingTimestreamPurges?.length ?? 0) > 0) return true;
   if ((G.pendingEscapeProcedures?.length ?? 0) > 0) return true;

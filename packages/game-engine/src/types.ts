@@ -1713,6 +1713,20 @@ export interface PendingNextHandFromPlayPick {
   sourceCardId: CardExtId;
 }
 
+/**
+ * One owed Mandarin's Ring entry from The Mandarin's Master Strike (WP-875 / D-24822): the player
+ * sends a Mandarin's Ring from their Victory Pile into the City. Queued by the strike arm (which has
+ * no events), settled and drained by the play-phase onMove opener and the rebuilt loops; a player
+ * with two or more available Rings picks through G.pendingSeatChoice (kind 'mandarin-ring-entry').
+ * Runtime-only; lazily created and deleted at turn start and game end.
+ */
+export interface PendingMandarinRingEntry {
+  /** The player whose Victory Pile supplies the Ring. */
+  playerID: string;
+  /** The Ring that player chose (or the only one available); absent until settled. */
+  chosenCardId?: CardExtId;
+}
+
 export interface PendingDivingBlockWound {
   /** The player who gained the Wound and holds Diving Block (may be non-active). */
   playerID: string;
@@ -2641,6 +2655,14 @@ export interface LegendaryGameState {
   // seeded, deleted when it drains, at turn start and at game end.
   /** FIFO queue of owed Zero next-hand picks (WP-870). */
   pendingNextHandFromPlayPicks?: PendingNextHandFromPlayPick[] | undefined;
+  // why: WP-875 / D-24822 — each Mandarin Master Strike queues one Ring entry here per player with
+  // an available Ring (the strike handler has no events, so it cannot park the choice). The
+  // play-phase onMove opener (and the rebuilt sim / PAR / fixture loops at the same position)
+  // settles it, parks one 'mandarin-ring-entry' seat choice when a player holds two or more Rings,
+  // and enters the chosen Rings into the City front to back. Hashed, lazily created at the first
+  // queue write, never seeded, deleted when it drains, at turn start and at game end.
+  /** FIFO queue of owed Mandarin's Ring City entries (WP-875). */
+  pendingMandarinRingEntries?: PendingMandarinRingEntry[] | undefined;
   // why: WP-828 / D-24761 — hand Heroes granted Man Out of Time this turn; applyCardPlay sets
   // one aside Out of Time after its abilities when it is played. Lazily created on the first
   // grant and deleted at turn start (game.ts onBegin + applyOnBeginParity).

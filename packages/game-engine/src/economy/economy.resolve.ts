@@ -38,6 +38,9 @@ import { getFightCostReduction } from './economy.logic.js';
 // why: WP-815 / D-24747 — the Abomination terms read the HQ at fight time; one
 // helper per resolver, so each family is added in exactly one authority.
 import { villainAbominationBonus, mastermindAbominationBonus } from './abomination.logic.js';
+// why: WP-875 / D-24822 — The Mandarin's two read-time cost terms (Rings +1 Attack; The Mandarin
+// -1 Attack per Ring in all Victory Piles, -3 in solo), id-keyed like Baron Zemo's (D-24752).
+import { mandarinRingAttackBonus, mandarinVictoryPileAttackReduction } from '../mastermind/mandarin.logic.js';
 // why: WP-841 / D-24774 — the variable-Attack passives read the City, the Escape Pile
 // and the HQ at fight time; the villain resolver is their only reader.
 import { villainVariableAttackBonus } from './villainVariableAttack.logic.js';
@@ -123,7 +126,11 @@ export function resolveFightCost(
     bystanderVillainAttackBonus(G, villainCardId) +
     villainBloodFrenzyBonus(G, villainCardId, fightingPlayerId) +
     villainAbominationBonus(G, villainCardId) +
-    villainVariableAttackBonus(G, villainCardId);
+    villainVariableAttackBonus(G, villainCardId) +
+    // why: WP-875 / D-24822 — "All Mandarin's Rings get +1 Attack" while The Mandarin leads, read
+    // at fight time in this single authority (the D-24752 id-keyed shape), so the fight move, the
+    // bot and the City fightCost projection agree; 0 in every other match.
+    mandarinRingAttackBonus(G, villainCardId);
   // why: WP-794 / D-24663 — the Storm / Forge "Any Villain you fight on the <space> this turn
   // gets -N attack" reduction is applied HERE, in the single authority, so the fight move, the
   // bot's legal moves and the City fightCost projection all agree by construction.
@@ -481,10 +488,14 @@ export function resolveMastermindFightCost(G: LegendaryGameState, fightingPlayer
   // why: WP-818 / D-24752 — Baron Zemo's +9 unless the fighter is a Savior; added
   // before the reduction, like the Abomination term.
   const nonSaviorBonus = mastermindNonSaviorBonus(G, fightingPlayerId);
+  // why: WP-875 / D-24822 — The Mandarin's "-1 Attack for each Mandarin's Ring among all players'
+  // Victory Piles (-3 in solo)", read at fight time in this single authority (the D-24752 shape);
+  // 0 unless The Mandarin leads. Subtracted inside the 0 floor.
+  const mandarinReduction = mandarinVictoryPileAttackReduction(G);
   // why: the 0 floor keeps this function's ">= 0" promise.
   return Math.max(
     0,
-    baseFightCost + portalBonus + abominationBonus + nonSaviorBonus - mastermindReduction,
+    baseFightCost + portalBonus + abominationBonus + nonSaviorBonus - mastermindReduction - mandarinReduction,
   );
 }
 

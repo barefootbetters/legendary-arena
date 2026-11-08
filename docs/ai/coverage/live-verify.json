@@ -2102,6 +2102,39 @@
       "date": "2026-11-08",
       "evidence": "2p operator match sA9BHfHXbB7 (Mandarin / Midtown Bank Robbery; server 7c197771, client 7fb5d60, created after the deploy; the card was moved to the Villain Deck top and brought into the city with an operator Scheme Twist, whose Midtown effect plays the next card): Player 0 played an Agent and a Trooper (2.2.7-2.2.8) and fought Zero (2.2.10); the pick opened as a seat choice (kind next-hand-from-play, heading \"Your choice\", options S.H.I.E.L.D. Agent / S.H.I.E.L.D. Trooper); picking the Trooper logged \"Player 0 will add S.H.I.E.L.D. Trooper (starting-shield-trooper) to their next hand as an extra card (Zero, The Ice Blast (henchman-mandarins-rings-09)).\" (2.2.12) and the card stayed in play. At end of turn the new hand was 7 cards with the Trooper added after the six drawn, logged \"S.H.I.E.L.D. Trooper (starting-shield-trooper) was added to Player 0's hand as an extra card.\" (2.3.1, no Electromagnetic Bubble).",
       "note": "Live check (NEW match created after the deploy (deployed gitSha checked), Mastermind rvlt/mandarin (Always Leads puts Mandarin's Rings in the Villain Deck); an operator match via ?route=workshop with the setters placing the copy in the City and giving Attack.): play a S.H.I.E.L.D. Agent and a Trooper, defeat henchman-mandarins-rings-09; a choice listing both opens (heading \"Your choice\"); pick one, end the turn: uiState.snapshot.players[P].handDisplay.length is 7 with the picked card, and the log reads \"<card> (<id>) was added to Player P's hand as an extra card.\". D-24815."
+    },
+    {
+      "key": "mastermind:rvlt/mandarin|master-strike",
+      "kind": "mastermind",
+      "card": "Mandarin",
+      "ability": "Master Strike: Each player chooses a Mandarin's Ring from their Victory Pile to enter the city. Any player who didn't have a Ring gains a Wound instead.",
+      "wp": "WP-875",
+      "state": "pending",
+      "date": "2026-11-07",
+      "evidence": "",
+      "note": "Live check (NEW match created after the deploy (deployed gitSha checked), Mastermind rvlt/mandarin; an operator match via ?route=workshop with the setters placing Mandarin's Rings in Victory Piles and revealing a Master Strike): a player with no Ring logs \"[Mandarin Master Strike] Player P had no Mandarin's Ring in their Victory Pile and gained a Wound.\"; a player with one Ring logs \"[Mandarin Master Strike] Player P's <Ring> entered the City from their Victory Pile.\" and the Ring is in the Sewers; a player with two Rings gets a \"Your choice\" seat choice listing them by name, and the chosen one enters. No \"Unhandled effect observed\" line. D-24822."
+    },
+    {
+      "key": "mastermind:rvlt/mandarin|ring-attack",
+      "kind": "mastermind",
+      "card": "Mandarin",
+      "ability": "All Mandarin's Rings get +1 Attack.",
+      "wp": "WP-875",
+      "state": "pending",
+      "date": "2026-11-07",
+      "evidence": "",
+      "note": "Live check (NEW match created after the deploy (deployed gitSha checked), Mastermind rvlt/mandarin; an operator match via ?route=workshop with the setters placing a Mandarin's Ring in the City and giving Attack): a Ring in the City (Spin, Zero, ...) shows Fight 4 where it printed 3, and fighting it with 3 Attack is refused. D-24822."
+    },
+    {
+      "key": "mastermind:rvlt/mandarin|victory-pile-ring-reduction",
+      "kind": "mastermind",
+      "card": "Mandarin",
+      "ability": "Mandarin gets -1 Attack for each Mandarin's Ring among all players' Victory Piles. (-3 Attack for each in solo.)",
+      "wp": "WP-875",
+      "state": "pending",
+      "date": "2026-11-07",
+      "evidence": "",
+      "note": "Live check (NEW match created after the deploy (deployed gitSha checked), Mastermind rvlt/mandarin; an operator match via ?route=workshop with the setters placing Mandarin's Rings in Victory Piles, or defeating them; a one-seat match for the -3 case): The Mandarin shows Fight 16 with no Rings in Victory Piles and drops by 1 per Ring defeated (16 -> 15 -> 14 ...; a one-seat match 16 -> 13 -> 10 ...). D-24822."
     }
   ]
 }

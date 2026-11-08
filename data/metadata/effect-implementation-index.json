@@ -10,11 +10,11 @@
       "mastermind": 567
     },
     "byStatus": {
-      "executable": 776,
+      "executable": 777,
       "deferred": 18,
       "condition": 58,
       "unsupported": 280,
-      "unmarked": 1050,
+      "unmarked": 1049,
       "subsystem": 7
     }
   },
@@ -20269,10 +20269,10 @@
       "set": "rvlt",
       "scope": "mastermind",
       "mechanic": "master-strike",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveMandarinStrike",
+      "wp": "WP-875",
+      "decision": "D-24822"
     },
     {
       "extId": "rvlt-mastermind-mandarin-rings-seek-their-true-hand",

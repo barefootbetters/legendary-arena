@@ -59,6 +59,12 @@ import {
   applyNextHandFromPlayResolvedSeatChoice,
   NEXT_HAND_FROM_PLAY_SEAT_CHOICE_KIND,
 } from './nextHandFromPlay.logic.js';
+// why: WP-875 / D-24822 — The Mandarin's Ring-entry apply and kind. mandarin.logic.ts imports no
+// boardgame.io, no registry and nothing under villainDeck/, so this edge adds no module cycle.
+import {
+  applyMandarinRingEntryResolvedSeatChoice,
+  MANDARIN_RING_ENTRY_SEAT_CHOICE_KIND,
+} from '../mastermind/mandarin.logic.js';
 // why: WP-863 / D-24805 — Trap Heroes in the Microverse's "choose any player to gain it" apply (same
 // runtime-safe cycle: the binding is read only inside a function body).
 import {
@@ -580,6 +586,13 @@ function applySeatChoiceByKind(
   // Required: without this arm the owed pick never leaves G.pendingNextHandFromPlayPicks.
   if (choice.kind === NEXT_HAND_FROM_PLAY_SEAT_CHOICE_KIND) {
     applyNextHandFromPlayResolvedSeatChoice(G, choice);
+    return;
+  }
+  // why: WP-875 / D-24822 — The Mandarin's Master Strike: each answering seat's chosen Ring is
+  // recorded on its first unchosen G.pendingMandarinRingEntries entry. The apply never moves a
+  // card; the next onMove opener enters it (the escape it may cause needs the turn and the map).
+  if (choice.kind === MANDARIN_RING_ENTRY_SEAT_CHOICE_KIND) {
+    applyMandarinRingEntryResolvedSeatChoice(G, choice);
     return;
   }
   // why: WP-694 / D-24511 — Monarch's Decree mode apply: the "draw" branch draws for each

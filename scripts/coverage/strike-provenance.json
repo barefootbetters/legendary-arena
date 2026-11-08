@@ -74,6 +74,12 @@
       "wp": "WP-577",
       "decision": "D-24386"
     },
+    "rvlt-mastermind-mandarin-master-strike": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveMandarinStrike",
+      "wp": "WP-875",
+      "decision": "D-24822"
+    },
     "wwhk-mastermind-general-thunderbolt-ross-master-strike": {
       "status": "deferred",
       "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveGeneralRossStrike",
