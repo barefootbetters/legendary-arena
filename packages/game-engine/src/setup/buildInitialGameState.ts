@@ -45,6 +45,7 @@ import {
   applyBrainwashedOfficerDisplay,
   countBrainwashedOfficers,
 } from '../rules/brainwashTheMilitary.logic.js';
+import { applyStackVillainDisplay } from '../rules/stackVillain.logic.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
 import {
   resolveSchemeLossPileSetupSize,
@@ -586,6 +587,12 @@ export function buildInitialGameState(
   // why: WP-823 / D-24756 — each Brainwash the Military Officer displays as a
   // S.H.I.E.L.D. Officer (name and art). A no-op for every scheme without Officers.
   applyBrainwashedOfficerDisplay(cardDisplayData, villainDeckResult.convertedOrigins);
+  // why: WP-869 / D-24814 — the villain ability hooks are built once here, before the display
+  // calls, so the stack-villain ids a marked card owns get their display entries at setup (the
+  // display data is read-only at runtime). The same const goes into G below. A no-op for every
+  // match without a marked card.
+  const villainAbilityHooks = buildVillainAbilityHooks(registry, villainBuildConfig);
+  applyStackVillainDisplay(cardDisplayData, villainAbilityHooks);
 
   // why: WP-111 / EC-118 / PS-8 — setup-time diagnostic surface for missing
   // display entries. Preserves WP-028 D-2801 projection-purity contract:
@@ -942,8 +949,9 @@ export function buildInitialGameState(
     heroAbilityHooks,
     // why: villain/henchman ability hooks built from registry at setup — same
     // pattern as heroAbilityHooks. Immutable during gameplay; executed at the
-    // Fight/Ambush fire sites (WP-185). Narrow test mocks → empty table.
-    villainAbilityHooks: buildVillainAbilityHooks(registry, villainBuildConfig),
+    // Fight/Ambush fire sites (WP-185). Narrow test mocks → empty table. Built above the
+    // display calls (WP-869 / D-24814).
+    villainAbilityHooks,
     // why: WP-200 — append-only structured event log initialised empty.
     // Populated at runtime by the four fire-site emissions
     // (fightVillain.ts / villainDeck.reveal.ts ambush branch /

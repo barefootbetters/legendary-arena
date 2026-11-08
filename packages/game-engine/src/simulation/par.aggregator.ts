@@ -63,6 +63,7 @@ import { resolveDeferredHeroGrants } from '../hero/heroEffects.execute.js';
 import { openNonActiveReturnOnDiscardSeatChoiceIfNeeded } from '../moves/resolveReturnOnDiscard.js';
 import { openEscapeProcedureSeatChoiceIfNeeded } from '../villainDeck/villainEscapeProcedure.js';
 import { openRevealOrWoundSeatChoiceIfNeeded } from '../moves/revealOrWoundChoice.logic.js';
+import { openNextHandFromPlaySeatChoiceIfNeeded } from '../moves/nextHandFromPlay.logic.js';
 import { computeFinalScores, isBystanderCard, isVictoryPileBystander } from '../scoring/scoring.logic.js';
 import { computeRawScore, computeParScore } from '../scoring/parScoring.logic.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
@@ -783,6 +784,9 @@ function simulateOneGame(
         // position (after the escape opener and the depletion re-check, before the unmirrored
         // Diving Block opener), so a queued revealer is asked in the PAR loop too.
         openRevealOrWoundSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+        // why: WP-870 / D-24815 — the loops never run the onMove opener, so mirror the owed Zero
+        // pick opener here; without it a PAR game that fights Zero never applies the pick.
+        openNextHandFromPlaySeatChoiceIfNeeded(gameState, undefined, currentPlayer);
         continue;
       }
     }
@@ -870,6 +874,9 @@ function simulateOneGame(
     // (after the escape opener and the depletion re-check, before the unmirrored Diving Block
     // opener). The WP-749 non-active dispatch then answers it at its default (Reveal).
     openRevealOrWoundSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+    // why: WP-870 / D-24815 — the loops never run the onMove opener, so mirror the owed Zero pick
+    // opener here; the seat-choice dispatch answers it at its default (0).
+    openNextHandFromPlaySeatChoiceIfNeeded(gameState, undefined, currentPlayer);
 
     // why: zero-legal-moves fallback. If the policy returned endTurn
     // outside cleanup, the move is a silent no-op and the loop would

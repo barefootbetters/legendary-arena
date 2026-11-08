@@ -37,6 +37,9 @@ import { CITY_SPACE_NAMES } from '../board/citySpaceNames.js';
 import type { FortifyLock } from '../board/fortify.types.js';
 import { FORTIFY_ALLOWED_LOCKS } from '../board/fortify.types.js';
 import { isFortifyPlace } from '../board/fortify.logic.js';
+// why: WP-869 / D-24814 — the stack-villain grammar validates its optional name token against
+// the one exported pattern (the marker script carries the same source, pinned by a test).
+import { STACK_VILLAIN_NAME_PATTERN } from '../rules/stackVillain.logic.js';
 // why: D-24281 — reveal-or-wound stores its `requireValue` normalized to the
 // `cardTraits` slug space so the executor's `===` trait comparison is
 // casing/whitespace-safe. normalizeTraitSlug is the SINGLE canonical normalizer
@@ -520,10 +523,14 @@ function parseLocationGatedEffect(
  *   - `hq-heroes-cost-change:<less|more>:<N>[:<c>[+<c>…]]`  (the Heroes in the HQ cost N less or
  *     more this turn, optionally only the listed classes; D-24811)
  *   - `ko-from-discard-current:<N>`  (the mandatory KO of N cards from your discard; D-24811)
+ *   - `reveal-top-discard-zero-cost-current:<N>`  (reveal the top N, discard the cost-0 ones,
+ *     reorder the rest; D-24815)
  *   - `reenter-sewers-if-villain-deck-top:<villain|bystander|villain+bystander>`  (the defeated
  *     card reenters the Sewers on a matching Villain Deck top; D-24811)
  *   - `fortify:<place>:<lock>`  (the escaped Villain fortifies the place; the lock must be one
  *     FORTIFY_ALLOWED_LOCKS lists for it; D-24818)
+ *   - `stack-cards-enter-city-as-villains:<bystander|officer>:<N>[:<name>]`  (N stack cards enter
+ *     the City as Villains, optionally displayed under the name token; D-24814)
  *   - `discard-hero-each-player-by-trait:<kind>:<value>` and
  *     `discard-hero-or-wound-each-player-by-trait:<kind>:<value>`  (each player discards a
  *     matching Hero, or may gain a Wound instead; D-24770)
@@ -539,7 +546,8 @@ function parseLocationGatedEffect(
  *     `ko-bystander-each-victory-pile` (D-24749) |
  *     `gain-recruit-current-per-hero-class` (D-24750) |
  *     `discard-hand-matching-hq-card-names-each-player` |
- *     `hq-heroes-to-hero-deck-bottom` (D-24770)  (no params)
+ *     `hq-heroes-to-hero-deck-bottom` (D-24770) |
+ *     `reveal-top-may-ko-current` | `next-hand-from-play-zero-cost-current` (D-24815)  (no params)
  *
  * @param value - The ungated marker value (the text inside `[effect:…]` minus
  *   any `@<space>` suffix).
@@ -869,6 +877,21 @@ function parseUngatedEffect(
     }
     return { primitive: 'ko-from-discard-current', magnitude };
   }
+  if (primitiveToken === 'reveal-top-discard-zero-cost-current') {
+    // why: WP-870 / D-24815 — grammar `reveal-top-discard-zero-cost-current:<N>` (exactly 2
+    // colon-parts; Mandarin's Rings Spin `:6`), N the count of deck-top cards revealed, a positive
+    // integer carried as `magnitude`. A bare token, a non-positive or non-integer count, or a third
+    // token returns null (→ unresolvedMarkers): the count has no meaningful default, so the bare
+    // token must NOT fall through to the terminal no-param branch below.
+    if (parts.length !== 2) {
+      return null;
+    }
+    const magnitude = parsePositiveInteger(parts[1]!);
+    if (magnitude === null) {
+      return null;
+    }
+    return { primitive: 'reveal-top-discard-zero-cost-current', magnitude };
+  }
   if (primitiveToken === 'reenter-sewers-if-villain-deck-top') {
     // why: WP-868 / D-24811 — grammar `reenter-sewers-if-villain-deck-top:<kinds>` (exactly 2
     // colon-parts; Mr. Immortal `:villain+bystander`), kinds `villain`, `bystander` or
@@ -890,6 +913,9 @@ function parseUngatedEffect(
   }
   if (primitiveToken === 'fortify') {
     return parseFortifyEffect(parts);
+  }
+  if (primitiveToken === 'stack-cards-enter-city-as-villains') {
+    return parseStackVillainEffect(parts);
   }
   if (primitiveToken === 'play-villain-deck-cards') {
     // why: D-24351 — grammar `play-villain-deck-cards:<N>` (exactly 2 tokens); N is the
@@ -1462,6 +1488,44 @@ export function buildVillainAbilityHooks(
   }
 
   return hooks;
+}
+
+/**
+ * Parses `stack-cards-enter-city-as-villains:<bystander|officer>:<N>[:<name>]` (WP-869 / D-24814).
+ *
+ * // why: 3 or 4 colon-parts with the primitive. N is a positive integer carried as `magnitude`;
+ * the kind becomes `stackVillainKind`; the optional name token must match
+ * STACK_VILLAIN_NAME_PATTERN and becomes `stackVillainName`, written only when present (never
+ * `undefined`, `exactOptionalPropertyTypes`). Anything else returns null (→ unresolvedMarkers).
+ *
+ * @param parts - The colon-split marker value, the primitive first.
+ * @returns The descriptor, or null.
+ */
+function parseStackVillainEffect(parts: readonly string[]): VillainEffectDescriptor | null {
+  if (parts.length !== 3 && parts.length !== 4) {
+    return null;
+  }
+  const kind = parts[1];
+  if (kind !== 'bystander' && kind !== 'officer') {
+    return null;
+  }
+  const magnitude = parsePositiveInteger(parts[2]!);
+  if (magnitude === null) {
+    return null;
+  }
+  if (parts.length === 3) {
+    return { primitive: 'stack-cards-enter-city-as-villains', stackVillainKind: kind, magnitude };
+  }
+  const nameToken = parts[3]!;
+  if (!STACK_VILLAIN_NAME_PATTERN.test(nameToken)) {
+    return null;
+  }
+  return {
+    primitive: 'stack-cards-enter-city-as-villains',
+    stackVillainKind: kind,
+    magnitude,
+    stackVillainName: nameToken,
+  };
 }
 
 /**

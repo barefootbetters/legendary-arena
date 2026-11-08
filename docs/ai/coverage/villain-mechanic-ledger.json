@@ -4,13 +4,13 @@
   "summary": {
     "totalRows": 763,
     "byStatus": {
-      "executable": 246,
+      "executable": 253,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 512,
+      "unmarked": 505,
       "subsystem": 4
     },
-    "distinctMechanics": 53
+    "distinctMechanics": 57
   },
   "rows": [
     {
@@ -656,11 +656,11 @@
       "cardName": "Daystar",
       "set": "antm",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-top-may-ko-current",
+      "status": "executable",
+      "wp": "WP-870",
+      "decision": "D-24815",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-top-may-ko-current"
     },
     {
       "extId": "antm-villain-ultrons-legacy-future-ultron-prime",
@@ -1294,11 +1294,11 @@
       "cardName": "Groot from Planet X",
       "set": "chmp",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "stack-cards-enter-city-as-villains",
+      "status": "executable",
+      "wp": "WP-869",
+      "decision": "D-24814",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#stack-cards-enter-city-as-villains"
     },
     {
       "extId": "chmp-villain-monsters-unleashed-monsteroso",
@@ -2592,22 +2592,22 @@
       "cardName": "Agent Eric Marshall",
       "set": "cvwr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "stack-cards-enter-city-as-villains",
+      "status": "executable",
+      "wp": "WP-869",
+      "decision": "D-24814",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#stack-cards-enter-city-as-villains"
     },
     {
       "extId": "cvwr-villain-shield-elite-agent-gabe-jones",
       "cardName": "Agent Gabe Jones",
       "set": "cvwr",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "stack-cards-enter-city-as-villains",
+      "status": "executable",
+      "wp": "WP-869",
+      "decision": "D-24814",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#stack-cards-enter-city-as-villains"
     },
     {
       "extId": "cvwr-villain-great-lakes-avengers-big-bertha",
@@ -5397,11 +5397,11 @@
       "cardName": "Lightning, The Electro-Blast",
       "set": "rvlt",
       "cardType": "henchman",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-top-may-ko-current",
+      "status": "executable",
+      "wp": "WP-870",
+      "decision": "D-24815",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-top-may-ko-current"
     },
     {
       "extId": "rvlt-villain-lethal-legion-living-laser",
@@ -5518,11 +5518,11 @@
       "cardName": "Spin, The Vortex Beam",
       "set": "rvlt",
       "cardType": "henchman",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-top-discard-zero-cost-current",
+      "status": "executable",
+      "wp": "WP-870",
+      "decision": "D-24815",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-top-discard-zero-cost-current"
     },
     {
       "extId": "rvlt-villain-lethal-legion-swordsman",
@@ -5573,11 +5573,11 @@
       "cardName": "Zero, The Ice Blast",
       "set": "rvlt",
       "cardType": "henchman",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "next-hand-from-play-zero-cost-current",
+      "status": "executable",
+      "wp": "WP-870",
+      "decision": "D-24815",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#next-hand-from-play-zero-cost-current"
     },
     {
       "extId": "rvlt-villain-lethal-legion-the-raft-prison",

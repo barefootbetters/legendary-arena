@@ -46,6 +46,7 @@
     "antm": {
       "queens-vengeance": {
         "blackbird": { "fight": ["koHeroCurrentPlayer"] },
+        "daystar": { "fight": ["reveal-top-may-ko-current"] },
         "gigantus": { "fight": ["koHeroCurrentPlayer"] },
         "iron-knight": { "escape": ["reveal-or-wound:hc:tech"] },
         "star-knight": { "fight": ["ko-from-discard-current:1"] }
@@ -98,6 +99,7 @@
     "chmp": {
       "monsters-unleashed": {
         "goom": { "ambush": ["captureBystander"], "fight": ["koHeroCurrentPlayer"] },
+        "groot-from-planet-x": { "fight": ["stack-cards-enter-city-as-villains:bystander:2:splintered_half-groot"] },
         "monsteroso": { "fight": ["add-next-hand-size:1"] },
         "sporr": { "fight": ["hq-hero-gains-size-changing:add:tech+ranged"] },
         "tim-boo-ba": { "fight": ["hq-heroes-cost-change:less:1"] },
@@ -218,6 +220,10 @@
       },
       "registration-enforcers": {
         "micromax": { "fight": ["koHeroCurrentPlayer"] }
+      },
+      "shield-elite": {
+        "agent-eric-marshall": { "ambush": ["stack-cards-enter-city-as-villains:officer:1"] },
+        "agent-gabe-jones": { "fight": ["stack-cards-enter-city-as-villains:officer:1"] }
       },
       "thunderbolts": {
         "mach-iv": { "fight": ["reveal-or-wound:hc:tech"], "escape": ["reveal-or-wound:hc:tech"] }
@@ -481,7 +487,10 @@
           "daimonic-the-white-light": { "fight": ["draw-cards-current:1"] },
           "incandescence-the-flame-blast": { "fight": ["ko-up-to-from-discard-current:1"] },
           "influence-the-impact-beam": { "fight": ["gain-recruit-current:1"] },
-          "spectral-the-disintegration-beam": { "fight": ["koHeroCurrentPlayer"] }
+          "lightning-the-electro-blast": { "fight": ["reveal-top-may-ko-current"] },
+          "spectral-the-disintegration-beam": { "fight": ["koHeroCurrentPlayer"] },
+          "spin-the-vortex-beam": { "fight": ["reveal-top-discard-zero-cost-current:6"] },
+          "zero-the-ice-blast": { "fight": ["next-hand-from-play-zero-cost-current"] }
         }
       }
     },
@@ -507,11 +516,8 @@
   },
   "_unassigned": [
     { "set": "rvlt", "group": "mandarins-rings", "card": "liar-the-mento-intensifier", "timing": "fight", "text": "Fight: Look at the top card of another player's deck. Say it is “Good“ or “Bad.“ That player chooses to put it in your discard pile or their discard pile.", "reason": "multi-target" },
-    { "set": "rvlt", "group": "mandarins-rings", "card": "lightning-the-electro-blast", "timing": "fight", "text": "Fight: Reveal the top card of your deck. You may KO it.", "reason": "conditional" },
     { "set": "rvlt", "group": "mandarins-rings", "card": "nightbringer-the-black-light", "timing": "fight", "text": "Fight: Reveal the top three cards of the Villain Deck. You may defeat a Villain you revealed worth 2VP or less. (Do its Fight effect.) Put the rest back in any order.", "reason": "other" },
     { "set": "rvlt", "group": "mandarins-rings", "card": "remaker-the-matter-rearranger", "timing": "fight", "text": "Fight: You may choose a card from your hand or discard pile. The player on your right puts it in their hand.", "reason": "multi-target" },
-    { "set": "rvlt", "group": "mandarins-rings", "card": "spin-the-vortex-beam", "timing": "fight", "text": "Fight: Reveal the top six cards of your deck. Discard all of them that cost 0, then put the rest back in any order.", "reason": "other" },
-    { "set": "rvlt", "group": "mandarins-rings", "card": "zero-the-ice-blast", "timing": "fight", "text": "Fight: Choose a card you played this turn that costs 0. When you draw a new hand of cards at the end of this turn, add that card to your hand as an extra card.", "reason": "other" },
     { "set": "amwp", "group": "armada-of-kang", "card": "quantumnaut-elite", "timing": "fight", "text": "Fight: KO two of your Heroes.", "reason": "magnitude>1" },
     { "set": "msp1", "group": "enemies-of-asgard", "card": "destroyer", "timing": "fight", "text": "Fight: KO all your [team:shield] Heroes.", "reason": "magnitude>1" },
     { "set": "core", "group": "radiation", "card": "maestro", "timing": "fight", "text": "Fight: For each of your [hc:strength] Heroes, KO one of your Heroes.", "reason": "magnitude>1" },

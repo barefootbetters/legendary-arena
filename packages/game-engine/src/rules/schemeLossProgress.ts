@@ -139,8 +139,9 @@ export interface ActiveLossCondition {
  *
  * why (WP-763 Assumes 1a): G.villainDeckCardTypes is written with
  * 'scheme-twist' only at setup (villainDeck.setup.ts), one uniquely-suffixed key
- * per twist copy; the one runtime write (schemeTwistResolvers.ts, Secret
- * Invasion) writes 'villain' for a Hero. So counting 'scheme-twist' values gives
+ * per twist copy; the runtime writes (schemeTwistResolvers.ts, Secret Invasion, for a
+ * Hero; villainDeck.reveal.ts enterStackCardsAsVillains, WP-869 / D-24814, for a stack card
+ * entering the City) both write 'villain'. So counting 'scheme-twist' values gives
  * the setup twist count at any point in the match, with no new G field.
  *
  * @param gameState - The current game state (read-only).
@@ -362,6 +363,13 @@ function escapedConvertedKind(origin: ConvertedVillainOrigin): SchemeLossKind {
     // why: WP-863 / D-24805 — no config counts Micro-Sized Villains by origin (they count as
     // escaped Villains), so the generic escaped kind is the honest label if one ever does.
     case 'micro-sized':
+      return 'escaped-pile';
+    // why: WP-869 / D-24814 — an escaped Splintered Half-Groot or stack Officer is an escaped
+    // Villain (it never counts as a lost Bystander or Officer), and no config counts it by origin,
+    // so the generic escaped kind is the honest label (the Micro-Sized precedent).
+    case 'bystander-stack-villain':
+      return 'escaped-pile';
+    case 'officer-stack-villain':
       return 'escaped-pile';
   }
 }

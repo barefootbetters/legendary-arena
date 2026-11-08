@@ -2161,6 +2161,32 @@ describe('filterUIStateForAudience — hollowEffects public pass-through (D-1280
     );
   });
 
+  it('passes a mastermind master-strike record through for a player and a spectator (WP-867 / D-24810)', () => {
+    // why: WP-867 — an unresolved Master Strike records cardType 'mastermind'; the
+    // existing value-preserving pass-through must carry it with no filter change.
+    const config = createTestConfig();
+    const registry = createMockRegistry();
+    const setupContext = makeMockCtx();
+    const gameState = buildInitialGameState(config, registry, setupContext);
+    const strikeRecord: HollowEffectRecord = {
+      cardId: 'test-mastermind-base',
+      cardType: 'mastermind',
+      timing: 'onMastermindStrikeRevealed',
+      mechanic: 'master-strike',
+      reason: 'no-handler',
+      turn: 4,
+    };
+    gameState.diagnostics = { hollowEffects: [strikeRecord], hollowEffectsDropped: 0 };
+    const uiState = buildUIState(gameState, mockCtx);
+
+    for (const audience of [PLAYER_0, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.ok(result.hollowEffects !== undefined, `${audience.kind} must see hollowEffects`);
+      assert.deepStrictEqual(result.hollowEffects, [strikeRecord]);
+      assert.equal(result.hollowEffects[0]!.cardType, 'mastermind');
+    }
+  });
+
   it('omits hollowEffects for all audiences when the source has none', () => {
     // why: optional field — an absent source omits it for every audience (no
     // empty-array injection).

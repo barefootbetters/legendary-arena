@@ -2657,7 +2657,7 @@
           "imageUrl": "https://images.legendary-arena.com/cvwr/cvwr-vi-shield-elite-agent-eric-marshall.webp",
           "abilities": [
             "[keyword:S.H.I.E.L.D. Clearance]",
-            "Ambush: A S.H.I.E.L.D. Officer enters the city as a 3[icon:attack] Villain. When you fight it, gain it as a Hero."
+            "Ambush: A S.H.I.E.L.D. Officer enters the city as a 3[icon:attack] Villain. When you fight it, gain it as a Hero. [effect:stack-cards-enter-city-as-villains:officer:1]"
           ],
           "copies": 2
         },
@@ -2669,7 +2669,7 @@
           "imageUrl": "https://images.legendary-arena.com/cvwr/cvwr-vi-shield-elite-agent-gabe-jones.webp",
           "abilities": [
             "[keyword:S.H.I.E.L.D. Clearance]",
-            "Fight: A S.H.I.E.L.D. Officer enters the city as a 3[icon:attack] Villain. When you fight it, gain it as a Hero."
+            "Fight: A S.H.I.E.L.D. Officer enters the city as a 3[icon:attack] Villain. When you fight it, gain it as a Hero. [effect:stack-cards-enter-city-as-villains:officer:1]"
           ],
           "copies": 2
         },

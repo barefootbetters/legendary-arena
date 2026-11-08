@@ -54,6 +54,11 @@ import {
   applyOutOfTimeGrantResolvedSeatChoice,
   OUT_OF_TIME_GRANT_SEAT_CHOICE_KIND,
 } from './outOfTimeGrant.logic.js';
+// why: WP-870 / D-24815 — Mandarin's Rings Zero's next-hand pick apply (same runtime-safe cycle).
+import {
+  applyNextHandFromPlayResolvedSeatChoice,
+  NEXT_HAND_FROM_PLAY_SEAT_CHOICE_KIND,
+} from './nextHandFromPlay.logic.js';
 // why: WP-863 / D-24805 — Trap Heroes in the Microverse's "choose any player to gain it" apply (same
 // runtime-safe cycle: the binding is read only inside a function body).
 import {
@@ -569,6 +574,12 @@ function applySeatChoiceByKind(
   // why: WP-828 / D-24761 — the chosen hand Hero gains Man Out of Time this turn.
   if (choice.kind === OUT_OF_TIME_GRANT_SEAT_CHOICE_KIND) {
     applyOutOfTimeGrantResolvedSeatChoice(G, choice);
+    return;
+  }
+  // why: WP-870 / D-24815 — the chosen played 0-cost card is recorded for the next hand (Zero).
+  // Required: without this arm the owed pick never leaves G.pendingNextHandFromPlayPicks.
+  if (choice.kind === NEXT_HAND_FROM_PLAY_SEAT_CHOICE_KIND) {
+    applyNextHandFromPlayResolvedSeatChoice(G, choice);
     return;
   }
   // why: WP-694 / D-24511 — Monarch's Decree mode apply: the "draw" branch draws for each

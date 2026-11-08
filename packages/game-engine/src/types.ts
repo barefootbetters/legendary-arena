@@ -70,8 +70,20 @@ export { REVEALED_CARD_TYPES } from './villainDeck/villainDeck.types.js';
 // in the Villain Deck are Villains, gained as a Hero on defeat); 'micro-sized' (Trap Heroes in the
 // Microverse, WP-863 / D-24805 — an extra Hero's cards in the Villain Deck are Micro-Sized Villains,
 // gained as a Hero by a player the defeater chooses).
+// why: WP-869 / D-24814 — 'bystander-stack-villain' (Groot from Planet X's Splintered Half-Groots:
+// Bystander Stack cards that enter the City as Villains, rescued as a Bystander when fought) and
+// 'officer-stack-villain' (Agent Gabe Jones / Agent Eric Marshall: a S.H.I.E.L.D. Officer Stack card
+// that enters the City as a Villain, gained as a Hero when fought). The stacks hold identical token
+// ids ('pile-bystander' / 'pile-shield-officer'), and an overlay entry keyed by a token id would
+// convert every copy, so each converted stack card takes its own unique `stack-villain-…` id.
 /** Converted-card villain origin — the named villain group a card "counts as". */
-export type ConvertedVillainOrigin = 'killbot' | 'skrull' | 'shield-officer' | 'micro-sized';
+export type ConvertedVillainOrigin =
+  | 'killbot'
+  | 'skrull'
+  | 'shield-officer'
+  | 'micro-sized'
+  | 'bystander-stack-villain'
+  | 'officer-stack-villain';
 
 // why: D-24802 — a Villain or Mastermind's printed Size-Changing fight discount. `classes`
 // are the "Size-Changing [Class]" classes (2 less each when a matching card was played this
@@ -1682,6 +1694,25 @@ export interface PendingOutOfTimeGrant {
   sourceCardId: CardExtId;
 }
 
+// why: WP-870 / D-24815 — the villain executor has no boardgame.io events, so it records the
+// owed pick here and the onMove opener parks the seat choice (the D-24750 / D-24779 shape).
+/**
+ * One owed "choose a card you played this turn that costs 0; add it to your next hand"
+ * pick (WP-870 / D-24815, Mandarin's Rings Zero, The Ice Blast).
+ *
+ * Appended by the `next-hand-from-play-zero-cost-current` villain handler and resolved front
+ * to back by the play-phase onMove opener (`moves/nextHandFromPlay.logic.ts`): a logged no-op
+ * with no eligible card, auto-picked with one, else chosen through G.pendingSeatChoice (kind
+ * 'next-hand-from-play'). The pick is recorded in G.deferredHandInjections. Runtime-only;
+ * lazily created and deleted at turn start.
+ */
+export interface PendingNextHandFromPlayPick {
+  /** The player who defeated Zero and picks one of their played 0-cost cards. */
+  playerID: string;
+  /** The defeated Zero copy that owes the pick (for the log). */
+  sourceCardId: CardExtId;
+}
+
 export interface PendingDivingBlockWound {
   /** The player who gained the Wound and holds Diving Block (may be non-active). */
   playerID: string;
@@ -2183,8 +2214,9 @@ export interface LegendaryGameState {
   // NEXT play-phase `onBegin` fill (after the normal fill), then the key is deleted. A
   // SIBLING to handSizeOverrides, NOT a reuse: handSizeOverrides bumps the fill COUNT and
   // cannot carry WHICH card, whereas Magneto's "Electromagnetic Bubble" injects a chosen
-  // X-Men Hero as a specific seventh card. Written only by the Electromagnetic
-  // Bubble tactic resolver / its resolve move; read-and-cleared only at the play-phase
+  // X-Men Hero as a specific seventh card. Written by the Electromagnetic Bubble tactic
+  // resolver / its resolve move and (WP-870 / D-24815) by Mandarin's Rings Zero's pick
+  // (moves/nextHandFromPlay.logic.ts); read-and-cleared only at the play-phase
   // `onBegin` fill for the keyed player (game.ts), co-located with the handSizeOverrides
   // consume. Gameplay-affecting so it MUST be hashed, but — following the
   // handSizeOverrides hygiene pattern — it is **lazily created**, NEVER seeded in
@@ -2602,6 +2634,13 @@ export interface LegendaryGameState {
   // G.pendingSeatChoice, kind 'out-of-time-grant'). Lazily created, deleted at turn start.
   /** FIFO queue of owed Man Out of Time grants (WP-828). */
   pendingOutOfTimeGrants?: PendingOutOfTimeGrant[] | undefined;
+  // why: WP-870 / D-24815 — each defeated Mandarin's Rings Zero owes one "add a 0-cost card you
+  // played this turn to your next hand" pick here, resolved by the play-phase onMove opener
+  // (auto or via G.pendingSeatChoice, kind 'next-hand-from-play') and by the rebuilt sim / PAR /
+  // fixture loops at the same position. Hashed, lazily created at the first queue write, never
+  // seeded, deleted when it drains, at turn start and at game end.
+  /** FIFO queue of owed Zero next-hand picks (WP-870). */
+  pendingNextHandFromPlayPicks?: PendingNextHandFromPlayPick[] | undefined;
   // why: WP-828 / D-24761 — hand Heroes granted Man Out of Time this turn; applyCardPlay sets
   // one aside Out of Time after its abilities when it is played. Lazily created on the first
   // grant and deleted at turn start (game.ts onBegin + applyOnBeginParity).

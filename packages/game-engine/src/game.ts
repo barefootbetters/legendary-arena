@@ -43,6 +43,7 @@ import { resolveSeatChoice, hasPendingSeatChoice, SEAT_CHOICE_STAGE } from './mo
 import { openDivingBlockSeatChoiceIfNeeded } from './moves/divingBlock.logic.js';
 import { openFlyingShieldBlockSeatChoiceIfNeeded } from './moves/flyingShieldBlock.logic.js';
 import { openOutOfTimeGrantSeatChoiceIfNeeded } from './moves/outOfTimeGrant.logic.js';
+import { openNextHandFromPlaySeatChoiceIfNeeded } from './moves/nextHandFromPlay.logic.js';
 import { openEscapeProcedureSeatChoiceIfNeeded } from './villainDeck/villainEscapeProcedure.js';
 import { openTimestreamPurgeSeatChoiceIfNeeded, sweepPurgedHeroesFromHq } from './rules/timestreamPurge.logic.js';
 import { openEnigmaPeekSeatChoiceIfNeeded } from './rules/enigmaCode.logic.js';
@@ -965,6 +966,12 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // after the move that played the card: auto for one eligible hand Hero, else the
           // active player's seat choice. No-op while another seat choice is open.
           openOutOfTimeGrantSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
+          // why: WP-870 / D-24815 — resolve owed Mandarin's Rings Zero picks ("Choose a card you
+          // played this turn that costs 0 … add that card to your hand as an extra card") after
+          // the fight that queued them: a no-op with no eligible card, auto for one distinct card,
+          // else the active player's seat choice. The villain executor has no events, so the pick
+          // opens here (the D-24779 shape). No-op while another choice is open.
+          openNextHandFromPlaySeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
           // why: WP-830 / D-24763 — The Unbreakable Enigma Code: open the next owed pay-1-Recruit
           // peek offer from a Villain fight (the fighter's own choice). LAST, so every reaction the
           // fight caused (an escape's steps, a Diving Block wave) resolves first: the peek is
@@ -1055,6 +1062,12 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           }
           if (G.pendingOutOfTimeGrants !== undefined) {
             delete G.pendingOutOfTimeGrants;
+          }
+          // why: WP-870 / D-24815 — an owed Zero pick belongs to the turn that defeated Zero.
+          // Guarded delete, so a match that never fought Zero is byte-unchanged; applyOnBeginParity
+          // mirrors it.
+          if (G.pendingNextHandFromPlayPicks !== undefined) {
+            delete G.pendingNextHandFromPlayPicks;
           }
 
           // why: WP-328 — stamp the turn number into G (ctx.turn lives only in ctx, and

@@ -18,7 +18,9 @@ import type { CardExtId } from '../state/zones.types.js';
 import { formatCardRef } from '../log/logDisplay.js';
 // why: WP-823 / D-24756 — a defeated Brainwash the Military Officer is gained as the
 // fungible S.H.I.E.L.D. Officer token.
-import { SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
+import { SHIELD_OFFICER_EXT_ID, BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
+// why: WP-869 / D-24814 — the Fight-site stack-villain clause reads the free ids.
+import { listFreeStackVillainIds } from '../rules/stackVillain.logic.js';
 import { awardAttachedBystanders } from '../board/bystanders.logic.js';
 import { awardAttachedHeroes } from '../board/heroCapture.logic.js';
 import { getSpendableAttackForTarget, spendFightCostForTarget, markExcessiveViolenceUsed, spendRecruit, addResources, recordVillainDefeated } from '../economy/economy.logic.js';
@@ -54,6 +56,8 @@ import {
   resolveEffectResultNames,
   villainCardPlaysVillainDeckCards,
   villainCardReenterSewersKinds,
+  villainCardStackVillainEntry,
+  resolveCardDisplayName,
   readTurnNumber,
 } from '../villain/villainEffects.execute.js';
 // why: WP-868 / D-24811 — Mr. Immortal's reenter bridge (the last step of defeatCityVillainCore).
@@ -62,7 +66,7 @@ import { reenterSewersOnVillainDeckReveal } from '../villainDeck/villainDeck.ent
 // two Villain Deck cards. The reveal machinery lives in villainDeck.reveal.ts; this move
 // imports the shared loop + the RevealContext shape (the move builds one — see below).
 import type { RevealContext } from '../villainDeck/villainDeck.reveal.js';
-import { playTopVillainDeckCards } from '../villainDeck/villainDeck.reveal.js';
+import { playTopVillainDeckCards, enterStackCardsAsVillains } from '../villainDeck/villainDeck.reveal.js';
 // why: WP-542 / D-24351 — the STATIC handler map performVillainReveal needs. The fight move
 // does not receive an implementationMap (only the reveal move + scheme resolvers thread one),
 // so it imports the module constant — the same one game.ts + villainDeck.reveal.ts import.
@@ -102,6 +106,7 @@ import { hasHealedThisTurn } from './healWounds.js';
 import {
   composeFightNarrative,
   composeEffectResultLogLine,
+  composeStackVillainEntryClause,
 } from '../events/notableEvents.compose.js';
 import { pushLog } from '../log/logPush.js';
 import { queueEnigmaPeekOffer } from '../rules/enigmaCode.logic.js';
@@ -634,6 +639,11 @@ export function defeatCityVillainCore(
   let skrullGained = false;
   let officerGained = false;
   let microSizedGained = false;
+  let stackBystandersRescued = 0;
+  // why: a converted card gained as a Hero says so in the log, but only after the "fought" line
+  // below: logging it here, during the routing, put "gained it as a Hero" ahead of the fight that
+  // caused it (operator match 8eURMq6tTSS 5.2.16-5.2.17). Null when the defeat gains nothing.
+  let gainedHeroLogLine: string | null = null;
   if (G.convertedVillainOrigins?.[cardId] === 'micro-sized') {
     // why: WP-863 / D-24805 — Trap Heroes in the Microverse "When you fight one, choose any player
     // to gain it as a Hero." The card goes to the defeater's discard first, so it always sits in a
@@ -645,9 +655,8 @@ export function defeatCityVillainCore(
     skrullGained = true;
     G.playerZones[currentPlayer]!.discard.push(cardId);
     delete G.convertedVillainOrigins[cardId];
-    pushLog(G,
-      `Player ${currentPlayer} defeated the Skrull ${formatCardRef(G.cardDisplayData, cardId)} and gained the Hero into their discard pile.`,
-    );
+    gainedHeroLogLine =
+      `Player ${currentPlayer} defeated the Skrull ${formatCardRef(G.cardDisplayData, cardId)} and gained the Hero into their discard pile.`;
   } else if (G.convertedVillainOrigins?.[cardId] === 'shield-officer') {
     // why: WP-823 / D-24756 — Brainwash the Military "When you defeat a S.H.I.E.L.D.
     // Officer, gain it as a Hero." Every Officer is identical, and the engine holds an
@@ -659,9 +668,27 @@ export function defeatCityVillainCore(
     officerGained = true;
     G.playerZones[currentPlayer]!.discard.push(SHIELD_OFFICER_EXT_ID);
     delete G.convertedVillainOrigins[cardId];
-    pushLog(G,
-      `Player ${currentPlayer} defeated ${formatCardRef(G.cardDisplayData, cardId)} and gained it as a Hero into their discard pile.`,
-    );
+    gainedHeroLogLine =
+      `Player ${currentPlayer} defeated ${formatCardRef(G.cardDisplayData, cardId)} and gained it as a Hero into their discard pile.`;
+  } else if (G.convertedVillainOrigins?.[cardId] === 'bystander-stack-villain') {
+    // why: WP-869 / D-24814 — Groot from Planet X: "When you fight one, rescue it as a Bystander"
+    // (rules v23: Bystanders that become Villains count as Bystanders in your Victory Pile, not
+    // Villains). The token goes home: a BYSTANDER_EXT_ID enters the Victory Pile, so it scores
+    // and counts as a Bystander everywhere, and the converted id leaves play with its overlay
+    // entry deleted, which frees the id. The rescue counts toward bystandersRescued below.
+    G.playerZones[currentPlayer]!.victory.push(BYSTANDER_EXT_ID);
+    delete G.convertedVillainOrigins[cardId];
+    stackBystandersRescued += 1;
+  } else if (G.convertedVillainOrigins?.[cardId] === 'officer-stack-villain') {
+    // why: WP-869 / D-24814 — Agent Gabe Jones / Agent Eric Marshall: "When you fight it, gain it
+    // as a Hero." The token goes home as the D-24756 Officer routing does: SHIELD_OFFICER_EXT_ID
+    // to the defeater's discard, never the Victory Pile; the overlay entry is deleted (the id is
+    // free again) and the narrative's gain clause turns on.
+    officerGained = true;
+    G.playerZones[currentPlayer]!.discard.push(SHIELD_OFFICER_EXT_ID);
+    delete G.convertedVillainOrigins[cardId];
+    gainedHeroLogLine =
+      `Player ${currentPlayer} defeated ${formatCardRef(G.cardDisplayData, cardId)} and gained it as a Hero into their discard pile.`;
   } else {
     G.playerZones[currentPlayer]!.victory.push(cardId);
   }
@@ -711,14 +738,19 @@ export function defeatCityVillainCore(
   pushLog(G,
     `Player ${currentPlayer} fought ${formatCardRef(G.cardDisplayData, cardId)} at city space ${cityIndex}.`,
   );
+  if (gainedHeroLogLine !== null) {
+    pushLog(G, gainedHeroLogLine);
+  }
   const appliedFightResults = executeVillainAbilities(G, ctx, cardId, 'onFight', shuffleContext, cityIndex);
   // why: WP-316 — map results→keywords so the fightResolved `appliedEffects`
   // field and the composeFightNarrative string stay byte-identical to main; the
   // hashed notableEvents surface (and the arena-client) never observe the
   // per-target widening, so finalStateHash is unchanged.
   const appliedFightEffects = appliedFightResults.map((result) => result.keyword);
-  const bystandersRescued = awardResult.playerVictory.length - victoryBefore;
-  if (awardResult.playerVictory.length > victoryBefore) {
+  // why: WP-869 / D-24814 — a fought Splintered Half-Groot is a rescued Bystander, pushed before
+  // victoryBefore was read, so it is added here; the rescue log line and fightResolved count it.
+  const bystandersRescued = awardResult.playerVictory.length - victoryBefore + stackBystandersRescued;
+  if (bystandersRescued > 0) {
     pushLog(G,
       `Player ${currentPlayer} rescued ${bystandersRescued} bystander(s) from ${formatCardRef(G.cardDisplayData, cardId)}.`,
     );
@@ -764,6 +796,25 @@ export function defeatCityVillainCore(
     fightCardDisplay && typeof fightCardDisplay.name === 'string' && fightCardDisplay.name.length > 0
       ? fightCardDisplay.name
       : cardId;
+  // why: WP-869 / D-24814 — the stack entry runs in the bridge at the end of this core, after the
+  // event, so the clause count is read now: the fewest of the marked count, the stack and the
+  // free ids. 0 → no clause (byte-identical narrative). Display names only, never a converted id.
+  const fightStackEntry = villainCardStackVillainEntry(G, cardId, 'onFight');
+  let fightStackVillainClause: string | undefined;
+  if (fightStackEntry !== null) {
+    let fightStack = G.piles.bystanders;
+    if (fightStackEntry.kind === 'officer') {
+      fightStack = G.piles.officers;
+    }
+    const fightFreeIds = listFreeStackVillainIds(G, cardId, fightStackEntry.count);
+    const fightEntryCount = Math.min(fightStackEntry.count, fightStack.length, fightFreeIds.length);
+    if (fightEntryCount > 0) {
+      fightStackVillainClause = composeStackVillainEntryClause(
+        fightEntryCount,
+        resolveCardDisplayName(G, fightFreeIds[0]!),
+      );
+    }
+  }
   G.notableEvents.push({
     type: 'fightResolved',
     playerId: currentPlayer,
@@ -784,6 +835,7 @@ export function defeatCityVillainCore(
       // WP-823 / D-24756: a Brainwash the Military Officer gained as a Hero shares the
       // same "gained the Hero" clause.
       skrullGained || officerGained || microSizedGained,
+      fightStackVillainClause,
     ),
   });
 
@@ -838,5 +890,18 @@ export function defeatCityVillainCore(
       cardId,
       reenterKinds,
     );
+  }
+
+  // why: WP-869 / D-24814 — Groot from Planet X / Agent Gabe Jones's Fight sends stack cards into
+  // the City. The executor's stack-cards-enter-city-as-villains handler is a deliberate no-op (the
+  // D-24351 executor-no-op plus fire-site-bridge pattern), so the entry runs HERE as the last step,
+  // after WP-868's reenter bridge (no card carries both), with a RevealContext built as the Endless
+  // Armies block builds one, for any escape the entry causes.
+  if (fightStackEntry !== null) {
+    const stackRevealContext: RevealContext = {
+      random: shuffleContext.random,
+      ctx: { currentPlayer, turn: readTurnNumber(ctx) },
+    };
+    enterStackCardsAsVillains(G, stackRevealContext, DEFAULT_IMPLEMENTATION_MAP, cardId, fightStackEntry, 'onFight');
   }
 }
