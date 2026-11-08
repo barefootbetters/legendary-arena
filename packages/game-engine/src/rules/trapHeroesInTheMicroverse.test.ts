@@ -342,6 +342,54 @@ describe('WP-863 Trap Heroes in the Microverse — fight: choose any player to g
     checkNoCardInMultipleZones(gameState);
   });
 
+  it('M6: the gain line follows the "fought" line, with its outcome colour and card link', () => {
+    // why: the gain was logged during the routing, ahead of the fight that caused it; this pins
+    // the order for the outright gain, the parked choice and the blocked pick.
+    const outright = buildState(1);
+    const outrightCard = trappedCard(outright, 'unseen-protector');
+    placeInCity(outright, outrightCard, 2);
+    defeatCityVillainCore(outright, { currentPlayer: '0', turn: 1 }, 2, { random: identityRandom });
+    const outrightTexts = logTexts(outright);
+    const outrightFought = outrightTexts.findIndex((text) => text.startsWith('Player 0 fought '));
+    const outrightGain = outrightTexts.indexOf(
+      'Player 0 defeated Unseen Protector (Micro-Sized) and gained it as a Hero into their discard pile.',
+    );
+    assert.ok(outrightFought !== -1, 'the fought line is logged');
+    assert.equal(outrightGain, outrightFought + 1, 'the gain line comes right after the fought line');
+    assert.equal(outright.messages[outrightGain]!.outcome, 'applied');
+    assert.equal(outright.messages[outrightGain]!.card, outrightCard);
+
+    const parked = buildState(2);
+    const parkedCard = trappedCard(parked, 'unseen-protector');
+    placeInCity(parked, parkedCard, 2);
+    defeatCityVillainCore(parked, { currentPlayer: '0', turn: 1 }, 2, { random: identityRandom });
+    const parkedTexts = logTexts(parked);
+    const parkedFought = parkedTexts.findIndex((text) => text.startsWith('Player 0 fought '));
+    const parkedGain = parkedTexts.indexOf('Player 0 chooses a player to gain Unseen Protector (Trap Heroes in the Microverse).');
+    assert.equal(parkedGain, parkedFought + 1);
+    assert.equal(parked.messages[parkedGain]!.outcome, 'neutral');
+    assert.equal(parked.messages[parkedGain]!.card, parkedCard);
+
+    const blocked = buildState(2);
+    blocked.pendingSeatChoice = {
+      kind: 'generic',
+      addressedSeats: ['1'],
+      seatPrompts: { '1': { options: [{ label: 'ok' }] } },
+      submissions: {},
+      defaultOptionIndex: 0,
+    };
+    const blockedCard = trappedCard(blocked, 'unseen-protector');
+    placeInCity(blocked, blockedCard, 2);
+    defeatCityVillainCore(blocked, { currentPlayer: '0', turn: 1 }, 2, { random: identityRandom });
+    const blockedTexts = logTexts(blocked);
+    const blockedFought = blockedTexts.findIndex((text) => text.startsWith('Player 0 fought '));
+    const blockedGain = blockedTexts.indexOf(
+      'Player 0 gained Unseen Protector — another choice is open, so no other player could be chosen (Trap Heroes in the Microverse).',
+    );
+    assert.equal(blockedGain, blockedFought + 1);
+    assert.equal(blocked.messages[blockedGain]!.outcome, 'blocked');
+  });
+
   it('M6: two seats park a "Player N gains" choice; choosing Player 1 moves the card to their discard', () => {
     const gameState = buildState(2);
     const cardId = trappedCard(gameState, 'unseen-protector');
