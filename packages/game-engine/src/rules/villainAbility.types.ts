@@ -385,7 +385,13 @@ export type VillainEffectPrimitive =
   | 'reenter-sewers-if-villain-deck-top'
   | 'fortify'
   | 'demolish-each-player'
-  | 'stack-cards-enter-city-as-villains';
+  | 'stack-cards-enter-city-as-villains'
+  // why: WP-870 / D-24815 — the Mandarin's Rings own-deck Fight lines, appended last: Lightning
+  // (and antm Daystar) KO-or-keep the deck top, Spin discards the 0-cost cards of the top six and
+  // reorders the rest, Zero adds a 0-cost card played this turn to the next hand.
+  | 'reveal-top-may-ko-current'
+  | 'reveal-top-discard-zero-cost-current'
+  | 'next-hand-from-play-zero-cost-current';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -565,6 +571,22 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   // Keyword-less, the fire sites narrate. The marker script's hand-synced copy
   // (`scripts/convert-cards/apply-effect-markers.mjs`) appends it at the same position.
   'stack-cards-enter-city-as-villains',
+  // why: WP-870 / D-24815 — appended at positions 46, 47 and 48, the Mandarin's Rings own-deck
+  // Fight lines. Lightning, The Electro-Blast (and antm Daystar): "Reveal the top card of your
+  // deck. You may KO it." (`reveal-top-may-ko-current`, no param: the WP-754 KO-or-keep entry on
+  // G.pendingRevealTopDispose). Spin, The Vortex Beam: "Reveal the top six cards of your deck.
+  // Discard all of them that cost 0, then put the rest back in any order."
+  // (`reveal-top-discard-zero-cost-current:<N>`: the WP-479 reorder over the survivors). Zero, The
+  // Ice Blast: "Choose a card you played this turn that costs 0. When you draw a new hand of cards
+  // at the end of this turn, add that card to your hand as an extra card."
+  // (`next-hand-from-play-zero-cost-current`, no param: G.pendingNextHandFromPlayPicks, then the
+  // D-24512 / D-24797 G.deferredHandInjections). One named primitive per printed line, not a
+  // villain → hero-keyword bridge. All three keyword-less, so all three self-narrate. The marker
+  // script's hand-synced copy (`scripts/convert-cards/apply-effect-markers.mjs`) appends them at
+  // the same positions.
+  'reveal-top-may-ko-current',
+  'reveal-top-discard-zero-cost-current',
+  'next-hand-from-play-zero-cost-current',
 ] as const;
 
 /**

@@ -16,7 +16,7 @@
  * attachBystanderToVillain, awardAttachedBystanders.
  */
 
-import type { LegendaryGameState, PendingKoHeroChoice, PendingGiveHqHeroChoice, PendingMelterKoChoice, MelterRevealedTop, PendingKoDiscardChoice } from '../types.js';
+import type { LegendaryGameState, PendingKoHeroChoice, PendingGiveHqHeroChoice, PendingMelterKoChoice, MelterRevealedTop, PendingKoDiscardChoice, PendingRevealTopDispose, RevealedTopEntry, PendingReorderChoice } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type { CardTraitEntry } from '../state/cardTraits.types.js';
 import {
@@ -93,7 +93,10 @@ import { discardFromHand } from '../moves/discardFromHand.js';
 import { reshuffleDiscardIntoDeck, drawCardsIntoHand, HAND_SIZE } from '../moves/drawCards.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { pushLog } from '../log/logPush.js';
-import { describeKoSourceZone } from '../log/logDisplay.js';
+import { describeKoSourceZone, formatCardRef } from '../log/logDisplay.js';
+// why: WP-870 / D-24815 — Zero's handler only queues the owed next-hand pick; that module never
+// imports this executor, and its opener runs from the play-phase onMove.
+import { queueNextHandFromPlayPick } from '../moves/nextHandFromPlay.logic.js';
 // why: WP-817 / D-24750 — Captain Zolandia counts Hero Classes with the hero side's one
 // counter, and Primus's Escape narrates its costs with the shared cost-list formatter.
 import { countDistinctHeroClassesYouHave } from '../hero/heroConditions.evaluate.js';
@@ -5075,6 +5078,12 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   // Marshall's stack cards entering the City as Villains (a deliberate no-op; the Fight and Ambush
   // bridges act).
   'stack-cards-enter-city-as-villains': villainEffectStackCardsEnterCityAsVillains,
+  // why: WP-870 / D-24815 — positions 46-48: Mandarin's Rings Lightning (and antm Daystar) KO-or-
+  // keep the deck top, Spin discards the 0-cost cards of the top six and reorders the rest, Zero
+  // queues the next-hand pick. All keyword-less, self-narrating; each reuses a shipped queue.
+  'reveal-top-may-ko-current': villainEffectRevealTopMayKoCurrent,
+  'reveal-top-discard-zero-cost-current': villainEffectRevealTopDiscardZeroCostCurrent,
+  'next-hand-from-play-zero-cost-current': villainEffectNextHandFromPlayZeroCostCurrent,
 };
 
 /**
@@ -5099,6 +5108,208 @@ function villainEffectDemolishEachPlayer(
 ): VillainEffectApplication {
   demolishEachPlayer(G, currentPlayer, `${villainEffectTimingLabel(timing)} effect:`);
   return { targets: [] };
+}
+
+/**
+ * reveal-top-may-ko-current primitive — the current (defeating) player reveals the top card
+ * of their deck and may KO it (WP-870 / D-24815: Mandarin's Rings Lightning, The Electro-Blast,
+ * and antm Daystar, "Fight: Reveal the top card of your deck. You may KO it.").
+ *
+ * Snapshots the deck top (reshuffle-on-empty) and parks ONE PendingRevealTopDispose whose single
+ * entry allows KO and forbids discard, so the shipped resolveRevealTopDispose accepts only 'ko'
+ * or 'top' (keep it on top). Keyword-less, so it self-narrates.
+ *
+ * @returns `{ targets: [], pending: true }` on a park; `{ targets: [] }` with nothing to reveal.
+ */
+function villainEffectRevealTopMayKoCurrent(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  _timing: VillainAbilityTiming,
+  _descriptor: VillainEffectDescriptor,
+  shuffleContext?: ShuffleProvider,
+): VillainEffectApplication {
+  // why: WP-870 / D-24815 — duplicated from the hero side's WP-754 KO-or-keep park
+  // (heroEffectRevealTopMayKo) rather than imported: the villain executor does not import the
+  // hero executor (a module-cycle risk for a ~25-line park), and code-style Rule 1 duplicates
+  // until a third copy. The resolve move (resolveRevealTopDispose), the stale-front refresh, the
+  // prompt and the UIState projection are shared, unchanged.
+  const zones = G.playerZones[currentPlayer];
+  if (!zones) {
+    return { targets: [] };
+  }
+  // why: D-24285 — "reveal the top card" is a reveal, so an empty deck reshuffles the discard
+  // first (reshuffleDiscardIntoDeck no-ops on an empty discard or a missing shuffle source).
+  if (zones.deck.length === 0) {
+    reshuffleDiscardIntoDeck(zones, shuffleContext);
+  }
+  const revealedCardId = zones.deck[0];
+  if (revealedCardId === undefined) {
+    pushLog(G, `Player ${currentPlayer} had no card to reveal on top of their deck (reveal-top).`, 'blocked');
+    return { targets: [] };
+  }
+  const revealedEntry: RevealedTopEntry = {
+    ownerPlayerID: currentPlayer,
+    cardId: revealedCardId,
+    isKoAllowed: true,
+    isDiscardAllowed: false,
+  };
+  if (!G.pendingRevealTopDispose) {
+    G.pendingRevealTopDispose = [];
+  }
+  const isQueuedBehindAnotherChoice = G.pendingRevealTopDispose.length > 0;
+  G.pendingRevealTopDispose.push({
+    choiceType: 'reveal-top-dispose',
+    playerID: currentPlayer,
+    revealedTops: [revealedEntry],
+  } satisfies PendingRevealTopDispose);
+  if (isQueuedBehindAnotherChoice) {
+    // why: the snapshot is provisional while a choice ahead can still change the top;
+    // refreshStaleKoOrKeepFront logs the real reveal when this choice moves up (WP-754).
+    pushLog(G,
+      `Player ${currentPlayer} queues another reveal of the top card of their deck — it is shown once the choice before it resolves (reveal-top).`,
+      'neutral',
+    );
+    return { targets: [], pending: true };
+  }
+  pushLog(G,
+    `Player ${currentPlayer} revealed ${formatCardRef(G.cardDisplayData, revealedCardId)} from the top of their deck — KO it or keep it (reveal-top).`,
+    'neutral',
+    revealedCardId,
+  );
+  return { targets: [], pending: true };
+}
+
+/**
+ * reveal-top-discard-zero-cost-current primitive — the current (defeating) player reveals the
+ * top `magnitude` cards of their deck, discards every one that costs 0, then puts the rest back
+ * in any order (WP-870 / D-24815: Mandarin's Rings Spin, The Vortex Beam, "Fight: Reveal the top
+ * six cards of your deck. Discard all of them that cost 0, then put the rest back in any order.").
+ *
+ * Parks the shipped WP-479 PendingReorderChoice over two or more survivors. Keyword-less, so it
+ * self-narrates.
+ *
+ * @returns `{ targets: [], pending: true }` when a reorder parked, else `{ targets: [] }`.
+ */
+function villainEffectRevealTopDiscardZeroCostCurrent(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  _timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+  shuffleContext?: ShuffleProvider,
+): VillainEffectApplication {
+  const count = descriptor.magnitude;
+  if (count === undefined) {
+    return { targets: [] };
+  }
+  const zones = G.playerZones[currentPlayer];
+  if (!zones) {
+    return { targets: [] };
+  }
+  // why: D-24285 — "reveal the top N cards" tops a short deck up from the discard first (the
+  // reveal-reshuffle rule; reshuffleDiscardIntoDeck no-ops on an empty discard).
+  if (zones.deck.length < count) {
+    reshuffleDiscardIntoDeck(zones, shuffleContext);
+  }
+  const lookedAt = zones.deck.slice(0, count);
+  if (lookedAt.length === 0) {
+    pushLog(G, `Player ${currentPlayer} had no cards to reveal (cost-0 discard).`, 'blocked');
+    return { targets: [] };
+  }
+  const discardedCount = discardZeroCostLookedAtCards(G, currentPlayer, zones, lookedAt);
+  const remaining = lookedAt.length - discardedCount;
+  // why: WP-479 / D-24286 — "put the rest back in any order" parks a reorder only for two or
+  // more survivors (zero or one card has a single order). The survivors kept their relative
+  // order on top, so the top `remaining` cards are exactly them.
+  if (remaining < 2) {
+    return { targets: [] };
+  }
+  if (!G.pendingReorderChoices) {
+    G.pendingReorderChoices = [];
+  }
+  G.pendingReorderChoices.push({
+    choiceType: 'reorder-deck-top',
+    playerID: currentPlayer,
+    cardIds: zones.deck.slice(0, remaining),
+  } satisfies PendingReorderChoice);
+  pushLog(G,
+    `Player ${currentPlayer} puts the other ${String(remaining)} revealed cards back in any order.`,
+    'neutral',
+  );
+  return { targets: [], pending: true };
+}
+
+/**
+ * Moves each looked-at deck-top card that costs 0 from the deck to the discard, in reveal
+ * order, logging one line per card (Spin, WP-870 / D-24815).
+ *
+ * @param G - Game state (log appended).
+ * @param currentPlayer - The defeating player whose deck was revealed.
+ * @param zones - That player's zones (deck and discard reassigned in place).
+ * @param lookedAt - The revealed deck-top cards, in deck order.
+ * @returns How many cards were discarded.
+ */
+function discardZeroCostLookedAtCards(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  zones: PlayerZones,
+  lookedAt: readonly CardExtId[],
+): number {
+  let discardedCount = 0;
+  for (const lookedAtCardId of lookedAt) {
+    // why: D-24583 — cost 0 is a printed cost of 0 or a Wound (rules v23 L2861-2862); a card
+    // with no known cost is not 0 and stays.
+    if (resolveRevealedDeckTopCost(G, lookedAtCardId) !== 0) {
+      continue;
+    }
+    // why: the discard is a deck → discard move (the resolveRevealTopDispose discard branch's
+    // move), not a hand discard, so hand-discard reactions (discardFromHand) do not fire, as
+    // for every shipped reveal-discard. moveCardFromZone removes the first occurrence, which is
+    // inside the looked-at window: every earlier copy of the same id in that window was already
+    // discarded, and a copy below the window never precedes it.
+    const moveResult = moveCardFromZone(zones.deck, zones.discard, lookedAtCardId);
+    if (!moveResult.found) {
+      continue;
+    }
+    zones.deck = moveResult.from;
+    zones.discard = moveResult.to;
+    discardedCount += 1;
+    pushLog(G,
+      `Player ${currentPlayer} discarded ${formatCardRef(G.cardDisplayData, lookedAtCardId)} from the top of their deck (cost 0).`,
+      'applied',
+      lookedAtCardId,
+    );
+  }
+  return discardedCount;
+}
+
+/**
+ * next-hand-from-play-zero-cost-current primitive — the current (defeating) player chooses a
+ * card they played this turn that costs 0 and adds it to their next hand as an extra card
+ * (WP-870 / D-24815: Mandarin's Rings Zero, The Ice Blast).
+ *
+ * Only records the owed pick; the play-phase onMove opener resolves it. Keyword-less, so it
+ * self-narrates.
+ *
+ * @returns `{ targets: [], pending: true }` (the pick is owed).
+ */
+function villainEffectNextHandFromPlayZeroCostCurrent(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+): VillainEffectApplication {
+  // why: WP-870 / D-24815 — the villain executor receives no boardgame.io events, so it cannot
+  // park the seat choice itself: it queues the owed pick and the play-phase onMove opener (and
+  // the rebuilt sim / PAR / fixture loops) opens it, the D-24750 / D-24779 precedent. The chosen
+  // card stays in play until cleanup and returns through the shipped D-24797 set-aside.
+  queueNextHandFromPlayPick(G, currentPlayer, cardId);
+  pushLog(G,
+    `Player ${currentPlayer} will add a 0-cost card they played this turn to their next hand (${formatCardRef(G.cardDisplayData, cardId)}).`,
+    'neutral',
+    cardId,
+  );
+  return { targets: [], pending: true };
 }
 
 /**

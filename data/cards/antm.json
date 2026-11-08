@@ -831,7 +831,7 @@
           "imageUrl": "https://images.legendary-arena.com/antm/antm-vi-queens-vengeance-daystar.webp",
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:ranged][hc:ranged][hc:ranged][hc:ranged][hc:ranged]",
-            "Fight: Reveal the top card of your deck. You may KO it."
+            "Fight: Reveal the top card of your deck. You may KO it. [effect:reveal-top-may-ko-current]"
           ],
           "copies": 1
         },

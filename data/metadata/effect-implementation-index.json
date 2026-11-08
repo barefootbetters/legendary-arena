@@ -10,11 +10,11 @@
       "mastermind": 567
     },
     "byStatus": {
-      "executable": 772,
+      "executable": 776,
       "deferred": 18,
       "condition": 58,
       "unsupported": 280,
-      "unmarked": 1054,
+      "unmarked": 1050,
       "subsystem": 7
     }
   },
@@ -2403,11 +2403,11 @@
       "name": "Daystar",
       "set": "antm",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-top-may-ko-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-top-may-ko-current",
+      "wp": "WP-870",
+      "decision": "D-24815"
     },
     {
       "extId": "antm-villain-queens-vengeance-gigantus",
@@ -14374,11 +14374,11 @@
       "name": "Lightning, The Electro-Blast",
       "set": "rvlt",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-top-may-ko-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-top-may-ko-current",
+      "wp": "WP-870",
+      "decision": "D-24815"
     },
     {
       "extId": "henchman-mandarins-rings-nightbringer-the-black-light",
@@ -14418,22 +14418,22 @@
       "name": "Spin, The Vortex Beam",
       "set": "rvlt",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-top-discard-zero-cost-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-top-discard-zero-cost-current",
+      "wp": "WP-870",
+      "decision": "D-24815"
     },
     {
       "extId": "henchman-mandarins-rings-zero-the-ice-blast",
       "name": "Zero, The Ice Blast",
       "set": "rvlt",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "next-hand-from-play-zero-cost-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#next-hand-from-play-zero-cost-current",
+      "wp": "WP-870",
+      "decision": "D-24815"
     },
     {
       "extId": "henchman-mandroid",
@@ -31892,7 +31892,7 @@
     "antm-villain-queens-vengeance-daystar": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-top-may-ko-current"
       ]
     },
     "antm-villain-queens-vengeance-gigantus": {
@@ -35771,7 +35771,7 @@
     "henchman-mandarins-rings-lightning-the-electro-blast": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-top-may-ko-current"
       ]
     },
     "henchman-mandarins-rings-nightbringer-the-black-light": {
@@ -35795,13 +35795,13 @@
     "henchman-mandarins-rings-spin-the-vortex-beam": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-top-discard-zero-cost-current"
       ]
     },
     "henchman-mandarins-rings-zero-the-ice-blast": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "next-hand-from-play-zero-cost-current"
       ]
     },
     "henchman-mandroid": {
