@@ -2065,10 +2065,10 @@
       "card": "Lightning, The Electro-Blast",
       "ability": "Fight: Reveal the top card of your deck. You may KO it.",
       "wp": "WP-870",
-      "state": "pending",
-      "date": "2026-11-07",
-      "evidence": "",
-      "note": "Live check (NEW match created after the deploy (deployed gitSha checked), Mastermind rvlt/mandarin (Always Leads puts Mandarin's Rings in the Villain Deck); an operator match via ?route=workshop with the setters placing the copy in the City and giving Attack.): defeating henchman-mandarins-rings-04 opens the KO-or-keep prompt (KO / Keep on top, no Discard) and logs \"Player P revealed <card> from the top of their deck — KO it or keep it (reveal-top).\"; KO puts it in the KO pile. D-24815."
+      "state": "verified",
+      "date": "2026-11-08",
+      "evidence": "2p operator match kaF7bqJbbGS (Mandarin / Midtown Bank Robbery; server 7c197771, client 7fb5d60, created after the deploy): henchman-mandarins-rings-04 moved to the Villain Deck top (1.2.7) and entered the city (2.1.1); Player 1 fought it (4.2.7), \"Player 1 revealed S.H.I.E.L.D. Agent (starting-shield-agent) from the top of their deck — KO it or keep it (reveal-top).\" (4.2.8), then KO'd it (4.2.9). Play Diagnostics effectTrace: reveal-top-may-ko-current fired; not among the match's hollow effects.",
+      "note": "Live check (NEW match created after the deploy (deployed gitSha checked), Mastermind rvlt/mandarin (Always Leads puts Mandarin's Rings in the Villain Deck); an operator match via ?route=workshop with the setters placing the copy in the City and giving Attack.): defeating henchman-mandarins-rings-04 opens the KO-or-keep prompt (KO / Keep on top, no Discard) and logs \"Player P revealed <card> from the top of their deck — KO it or keep it (reveal-top).\"; KO puts it in the KO pile. D-24815. Verified with the bot ally answering the prompt; the KO-or-keep prompt itself is the shared WP-754 one."
     },
     {
       "key": "antm-villain-queens-vengeance-daystar|reveal-top-may-ko-current",
