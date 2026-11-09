@@ -49,6 +49,7 @@ import {
   villainCardPlaysVillainDeckCards,
   villainCardStackVillainEntry,
   resolveCardDisplayName,
+  recordVillainSecondarySiteTrace,
 } from '../villain/villainEffects.execute.js';
 import type { StackVillainEntry } from '../villain/villainEffects.execute.js';
 import type { VillainAbilityTiming } from '../rules/villainAbility.types.js';
@@ -445,12 +446,39 @@ export function performVillainReveal(
       // resolving as a normal reveal (villain→city, henchman / bystander / scheme-twist /
       // master-strike, recursing through the rule pipeline). N is the marked count.
       if (ambushPlayCount > 0) {
+        // why: WP-877 / D-24824 — the executor traced this play `no-op`; record where it really
+        // fires. Inside the guard (a reveal-gated The Leader whose player revealed plays nothing and
+        // gets no trace) and BEFORE the play, so the played cards' own traces follow their cause.
+        recordVillainSecondarySiteTrace(
+          G,
+          cardId,
+          'onAmbush',
+          'play-villain-deck-cards',
+          'playTopVillainDeckCards',
+          'villain-ambush-bridge',
+          { magnitude: ambushPlayCount },
+          readRevealContextTurn(context),
+        );
         playTopVillainDeckCards(G, context, implementationMap, ambushPlayCount);
       }
       // why: WP-869 / D-24814 — the Ambush-site bridge (D-24351), after The Leader's play block:
       // the stack cards enter the City here, where the RevealContext and implementationMap are in
       // scope for any escape the entry causes.
       if (ambushStackEntry !== null) {
+        // why: WP-877 / D-24824 — the executor traced the stack entry `no-op`; record the bridge.
+        // Inside the guard: no stack entry, no bridge, no trace. Before the bridge, so the record
+        // precedes the entering cards' own traces. `magnitude` is the marked
+        // count (D-24824 §4).
+        recordVillainSecondarySiteTrace(
+          G,
+          cardId,
+          'onAmbush',
+          'stack-cards-enter-city-as-villains',
+          'enterStackCardsAsVillains',
+          'villain-ambush-bridge',
+          { magnitude: ambushStackEntry.count, stackVillainKind: ambushStackEntry.kind },
+          readRevealContextTurn(context),
+        );
         enterStackCardsAsVillains(G, context, implementationMap, cardId, ambushStackEntry, 'onAmbush');
       }
     }

@@ -334,11 +334,15 @@ describe('WP-869 Groot from Planet X Fight (D-24814)', () => {
     assert.equal(entryMessage.outcome, 'threat');
   });
 
-  it('the onFight trace for the primitive reads no-op, not fired', () => {
+  // why: WP-877 / D-24824 — intentional behavior change: the fight bridge now records a
+  // secondary-site trace beside the executor's no-op.
+  it('the onFight trace for the primitive reads no-op, then the fight bridge records secondary-site', () => {
     const G = fightGroot(5);
     const traces = (G.diagnostics?.traces ?? []).filter((trace) => trace.effect === PRIMITIVE);
-    assert.equal(traces.length, 1);
-    assert.equal(traces[0]!.status, 'no-op');
+    assert.deepStrictEqual(
+      traces.map((trace) => [trace.status, trace.fireSite]),
+      [['no-op', 'villain-executor'], ['secondary-site', 'villain-fight-bridge']],
+    );
     const hollows = (G.diagnostics?.hollowEffects ?? []).filter((hollow) => hollow.cardId === GROOT);
     assert.deepStrictEqual(hollows, []);
   });

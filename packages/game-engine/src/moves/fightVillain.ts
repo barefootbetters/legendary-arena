@@ -59,6 +59,7 @@ import {
   villainCardStackVillainEntry,
   resolveCardDisplayName,
   readTurnNumber,
+  recordVillainSecondarySiteTrace,
 } from '../villain/villainEffects.execute.js';
 // why: WP-868 / D-24811 — Mr. Immortal's reenter bridge (the last step of defeatCityVillainCore).
 import { reenterSewersOnVillainDeckReveal } from '../villainDeck/villainDeck.enterCity.js';
@@ -957,6 +958,20 @@ export function runVillainFightFireSiteBridges(
       // traces carry it, as this Fight's own onFight traces already do.
       ctx: { currentPlayer, turn: readTurnNumber(ctx) },
     };
+    // why: WP-877 / D-24824 — the executor traced this play `no-op`; record where it really fires.
+    // Inside the guard (no play, no trace) and BEFORE the play, so the played cards' own traces
+    // follow their cause in the trace list. `magnitude` is the marked count (equal to the play
+    // count here, D-24824 §4).
+    recordVillainSecondarySiteTrace(
+      G,
+      cardId,
+      'onFight',
+      'play-villain-deck-cards',
+      'playTopVillainDeckCards',
+      'villain-fight-bridge',
+      { magnitude: fightPlayCount },
+      readTurnNumber(ctx),
+    );
     playTopVillainDeckCards(G, revealContext, DEFAULT_IMPLEMENTATION_MAP, fightPlayCount);
   }
 
@@ -973,6 +988,20 @@ export function runVillainFightFireSiteBridges(
       random: shuffleContext.random,
       ctx: { currentPlayer, turn: readTurnNumber(ctx) },
     };
+    // why: WP-877 / D-24824 (supersedes D-24811 §3's "No secondary-site trace") — the executor
+    // traced the reenter `no-op`; record the bridge. Inside the guard: no lookup, no bridge, no
+    // trace. Before the bridge, so the record precedes the reveal and reentry it explains. The
+    // reveal happens whether he reenters or stays defeated, so the trace is recorded either way.
+    recordVillainSecondarySiteTrace(
+      G,
+      cardId,
+      'onFight',
+      'reenter-sewers-if-villain-deck-top',
+      'reenterSewersOnVillainDeckReveal',
+      'villain-fight-bridge',
+      {},
+      readTurnNumber(ctx),
+    );
     reenterSewersOnVillainDeckReveal(
       G,
       reenterRevealContext,
@@ -993,6 +1022,20 @@ export function runVillainFightFireSiteBridges(
       random: shuffleContext.random,
       ctx: { currentPlayer, turn: readTurnNumber(ctx) },
     };
+    // why: WP-877 / D-24824 — the executor traced the stack entry `no-op`; record the bridge.
+    // Inside the guard: no stack entry, no bridge, no trace. Before the bridge, so the record
+    // precedes the entering cards' own traces. `magnitude` is the marked count
+    // (D-24824 §4); the log carries how many cards actually entered.
+    recordVillainSecondarySiteTrace(
+      G,
+      cardId,
+      'onFight',
+      'stack-cards-enter-city-as-villains',
+      'enterStackCardsAsVillains',
+      'villain-fight-bridge',
+      { magnitude: fightStackEntry.count, stackVillainKind: fightStackEntry.kind },
+      readTurnNumber(ctx),
+    );
     enterStackCardsAsVillains(G, stackRevealContext, DEFAULT_IMPLEMENTATION_MAP, cardId, fightStackEntry, 'onFight');
   }
 }
