@@ -142,6 +142,41 @@ describe('EFFECT_TRACE_FIRE_SITES canonical-array drift (D-24294)', () => {
 // ---------------------------------------------------------------------------
 
 describe('recordEffectTrace', () => {
+  // why: D-24824 regression — traces carried the framework ctx.turn, one higher than
+  // the game log's play-relative `{turn}.{step}.{action}` prefix and the hollow-effects
+  // table (the lobby consumes framework turn 1). The stored trace must carry the log
+  // turn, whatever the emitter passed (framework turn, or 0 from a turnless context).
+  it('stamps the play-relative log turn, matching the log prefix and the hollow record', () => {
+    const G = makeG();
+    const frameworkTurn = 7;
+    const firstPlayTurn = 2;
+    G.logMeta = { turn: frameworkTurn - firstPlayTurn + 1, actionInStep: 0, firstPlayTurn };
+    G.currentStage = 'main';
+
+    recordEffectTrace(G, makeTrace({ turn: frameworkTurn }));
+    recordEffectTrace(G, makeTrace({ turn: 0, effect: 'turnless-emitter' }));
+    recordHollowEffect(G, {
+      cardId: 'core/villain/mystique#0',
+      cardType: 'villain',
+      timing: 'onFight',
+      mechanic: 'phantom',
+      reason: 'no-handler',
+      turn: frameworkTurn,
+    });
+
+    const logPrefixTurn = Number(G.messages[0]!.text.split('.')[0]);
+    assert.equal(logPrefixTurn, 6, `the log line is numbered turn 6, got: ${G.messages[0]!.text}`);
+    assert.equal(G.diagnostics!.traces![0]!.turn, 6, 'framework-turn trace carries the log turn');
+    assert.equal(G.diagnostics!.traces![1]!.turn, 6, 'turnless trace carries the log turn');
+    assert.equal(G.diagnostics!.hollowEffects[0]!.turn, 6, 'hollow record carries the same turn');
+  });
+
+  it('keeps the emitter-supplied turn when G.logMeta is absent', () => {
+    const G = makeG();
+    recordEffectTrace(G, makeTrace({ turn: 9 }));
+    assert.equal(G.diagnostics!.traces![0]!.turn, 9);
+  });
+
   it('lazy-inits G.diagnostics + traces on the first write', () => {
     const G = makeG();
     assert.equal(G.diagnostics, undefined, 'channel is absent before the first write');

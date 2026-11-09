@@ -69,5 +69,14 @@ export function recordEffectTrace(G: LegendaryGameState, trace: EffectTrace): vo
     return;
   }
 
-  G.diagnostics.traces.push(trace);
+  // why: D-24824 (supersedes D-24704 §3) — the trace's turn is the game log's
+  // PLAY-RELATIVE turn (G.logMeta.turn = ctx.turn - firstPlayTurn + 1; the lobby
+  // consumes framework turn 1), the same number as the `{turn}.{step}.{action}` log
+  // prefix and the hollow-effects table. Emitters pass the framework ctx.turn (or 0
+  // from a turnless context), so stamp from G.logMeta at this one seam; narrow
+  // fixtures without logMeta keep the emitter-supplied turn.
+  const storedTrace: EffectTrace =
+    G.logMeta !== undefined ? { ...trace, turn: G.logMeta.turn } : trace;
+
+  G.diagnostics.traces.push(storedTrace);
 }

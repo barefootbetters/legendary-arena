@@ -349,9 +349,11 @@ export interface EffectTraceResolution {
  * @property status - The dispatch outcome.
  * @property fireSite - The code site that emitted this trace.
  * @property params - A shallow scalar snapshot of the descriptor's own parameter fields.
- * @property turn - The boardgame.io turn number the trace was observed on (0 only when
- *   the emitting context carries no turn, e.g. a hand-built test context; the
- *   villain-deck reveal path forwards the framework turn since D-24704).
+ * @property turn - The play-relative turn the trace was observed on — the same number
+ *   as the game log's `{turn}.{step}.{action}` prefix (`G.logMeta.turn`; first play
+ *   turn = 1). `recordEffectTrace` stamps it from `G.logMeta` (D-24824, superseding
+ *   D-24704 §3); the emitter-supplied framework turn (0 from a turnless hand-built
+ *   context) survives only when `G.logMeta` is absent.
  * @property resolution - The realized count-scaled computation (WP-706 / D-24528).
  *   Additive OPTIONAL: present only on a count-scaled (`attack-per-count` /
  *   `recruit-per-count`) dispatch, absent on every other trace. Diagnostics-only,
