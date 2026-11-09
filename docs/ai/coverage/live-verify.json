@@ -1922,10 +1922,10 @@
       "card": "Wasp",
       "ability": "Infiltrate — When you draw a new hand this turn, draw an extra card",
       "wp": "WP-866",
-      "state": "pending",
-      "date": "2026-11-06",
-      "evidence": "",
-      "note": "Live check (NEW match after the deploy): playing Infiltrate logs \"will draw 7 cards on their next hand (+1 extra, Infiltrate …)\"; with nothing else changing the hand size, the end-of-turn hand holds 7 cards (two copies: 8). D-24809."
+      "state": "verified",
+      "date": "2026-11-07",
+      "evidence": "Operator match 29wa5LRWMJj, 2p Loki / Unleash the Power of the Cosmic Cube (server ffc89a6f, client 45e8743, both after merge 03867810)",
+      "note": "One copy logs \"will draw 7 cards on their next hand (+1 extra, Infiltrate …)\" (turns 11, 23, 27); two copies log 7 then 8 (turns 13, 21). Final snapshot after turn 27 (one copy): Player 0 hand 7, Player 1 hand 6. Turn 23 (after two copies) played 10 cards = 8 + Diving Block draw + Gathering Stormclouds draw; turn 25 (after one copy) played exactly 7. D-24809."
     },
     {
       "key": "chmp-villain-monsters-unleashed-tim-boo-ba|hq-heroes-cost-change",
