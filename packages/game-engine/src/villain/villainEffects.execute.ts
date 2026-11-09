@@ -850,6 +850,10 @@ function formatCitySpaceList(spaces: readonly CitySpaceName[]): string {
 // sites, where the RevealContext + implementationMap are in scope). It MUST be listed here or
 // its trace would mislabel `fired` — the same reason become-scheme-twist / gain-attached-hero
 // are here.
+// why: WP-877 / D-24824 — the executor trace for the three bridged primitives below
+// (play-villain-deck-cards, reenter-sewers-if-villain-deck-top, stack-cards-enter-city-as-villains)
+// stays `no-op`; each bridge ALSO records a `secondary-site` trace through
+// recordVillainSecondarySiteTrace where the real work fires, the Mystique shape (D-24287).
 const DELIBERATE_NO_OP_VILLAIN_PRIMITIVES: ReadonlySet<VillainEffectPrimitive> =
   new Set<VillainEffectPrimitive>([
     'become-scheme-twist',
@@ -925,6 +929,51 @@ function buildVillainEffectTrace(
     params: buildVillainEffectTraceParams(descriptor),
     turn,
   };
+}
+
+/**
+ * Records the `secondary-site` trace for a bridged deliberate-no-op villain primitive
+ * (WP-877 / D-24824).
+ *
+ * The executor's trace for these primitives reads `no-op`, because their handlers mutate
+ * nothing; the real work runs in a fire-site bridge (the fight bridge or the Ambush block).
+ * Each bridge calls this immediately before it runs, so the trace list reads "the executor
+ * was a no-op; the work fired at the bridge", the shape Mystique's escape twist has had since
+ * WP-488 (D-24287). Writes only `G.diagnostics.traces`, through recordEffectTrace (lazy
+ * init, cap, never throws); hash-excluded and never read as gameplay input (D-24294).
+ *
+ * @param G - The game state; only its diagnostics channel is written.
+ * @param cardId - The card whose bridged effect is about to run.
+ * @param timing - The timing that fired ('onFight' or 'onAmbush').
+ * @param effect - The bridged primitive token.
+ * @param handler - The bridge function's name.
+ * @param fireSite - The bridge that runs the work.
+ * @param params - The descriptor-snapshot params (`magnitude` is the marked count, D-24824 §4).
+ * @param turn - The framework turn (D-24704).
+ */
+export function recordVillainSecondarySiteTrace(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  effect: 'play-villain-deck-cards' | 'reenter-sewers-if-villain-deck-top' | 'stack-cards-enter-city-as-villains',
+  handler: 'playTopVillainDeckCards' | 'reenterSewersOnVillainDeckReveal' | 'enterStackCardsAsVillains',
+  fireSite: 'villain-fight-bridge' | 'villain-ambush-bridge',
+  params: Record<string, string | number | boolean>,
+  turn: number,
+): void {
+  // why: scope reuses the executor's own card-type resolution, so the secondary trace and the
+  // executor trace for the same card always agree on 'villain' versus 'henchman'.
+  recordEffectTrace(G, {
+    cardId,
+    scope: resolveVillainCardType(G, cardId),
+    timing,
+    effect,
+    handler,
+    status: 'secondary-site',
+    fireSite,
+    params,
+    turn,
+  });
 }
 
 /**
@@ -5932,4 +5981,54 @@ function koSingleTarget(
     return target.cardId;
   }
   return null;
+}
+
+/**
+ * The result of `koOneOfYourHeroes` (WP-876 / D-24823): nothing to KO, a parked choice, or the
+ * one Hero that was KO'd and the zone it left.
+ */
+export type KoOneOfYourHeroesResult =
+  | { outcome: 'none' }
+  | { outcome: 'parked' }
+  | { outcome: 'koed'; koedCardId: CardExtId; zone: VillainKoZone };
+
+/**
+ * KOs ONE of a player's Heroes (hand + in play), the shipped "KO one of your Heroes" path with
+ * owed = 1 (WP-876 / D-24823; X-Con Security Van's "If you do, KO one of your Heroes").
+ *
+ * // why: WP-876 / D-24823 — the owed = 1 shape of the inline Red Skull park
+ * (rules/mastermindHandlers.ts) over YOUR_HEROES_KO_ZONES: 0 eligible → none; more than one
+ * physical Hero AND at least two distinct options → park the bare { choiceType: 'ko-hero',
+ * playerID } entry, resolved by the shipped resolveKoHeroChoice (UI, filter and bot exist);
+ * otherwise the KO is forced (one Hero, or identical copies), so the first eligible target is
+ * KO'd with no prompt (D-24007). villainEffectKoHero is NOT reused: it runs an owed loop and
+ * returns narration targets, so this is its own small export. Writes no log; the caller logs
+ * from the result.
+ *
+ * @param G - Game state (mutated: a zone, G.ko, or G.pendingKoHeroChoices).
+ * @param playerID - The player who KOs one of their Heroes.
+ * @returns What happened: none, parked, or the KO'd card and its zone.
+ */
+export function koOneOfYourHeroes(G: LegendaryGameState, playerID: string): KoOneOfYourHeroesResult {
+  const zones = G.playerZones[playerID];
+  if (!zones) {
+    return { outcome: 'none' };
+  }
+  const eligible = buildKoEligibleTargets(zones);
+  if (eligible.length === 0) {
+    return { outcome: 'none' };
+  }
+  if (countKoableHeroes(zones) > 1 && eligible.length >= 2) {
+    if (!G.pendingKoHeroChoices) {
+      G.pendingKoHeroChoices = [];
+    }
+    G.pendingKoHeroChoices.push({ choiceType: 'ko-hero', playerID });
+    return { outcome: 'parked' };
+  }
+  const target = eligible[0]!;
+  const koedCardId = koSingleTarget(G, zones, target, playerID);
+  if (koedCardId === null) {
+    return { outcome: 'none' };
+  }
+  return { outcome: 'koed', koedCardId, zone: target.zone };
 }

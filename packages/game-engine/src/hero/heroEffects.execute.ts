@@ -77,6 +77,14 @@ import {
 } from '../moves/defeatChoice.resolve.js';
 import type { TacticSeatChoiceEvents } from '../moves/defeatChoice.resolve.js';
 import { parkSeatChoice } from '../moves/seatChoice.resolve.js';
+// why: WP-876 / D-24823 — the Heist payloads (The Big Score, Revolutionary Anthem, X-Con Security
+// Van). That module never imports this one; it imports parkSeatChoice from seatChoice.resolve.
+import {
+  applyHeistMasterStrikeKo,
+  applyHeistMoveVillain,
+  isHeistRevealedSchemeTwist,
+  parkHeistShuffleChoice,
+} from './heistPayloads.logic.js';
 import { countRevealableDivingBlockCopies } from '../moves/divingBlock.logic.js';
 // why: WP-828 / D-24761 — the grant handler only queues; the module references this one back only
 // inside function bodies (a runtime-safe cycle).
@@ -390,6 +398,14 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // HERO_EFFECT_HANDLERS entry (heroEffectNextHandExtraDraw), so it belongs here (MVP_KEYWORDS
   // derives from this set). Carries a magnitude (the extra cards) → NOT in NO_MAGNITUDE_KEYWORDS.
   'next-hand-extra-draw',
+  // why: WP-876 / D-24823 — the three Heist payload keywords (The Big Score, Revolutionary Anthem,
+  // X-Con Security Van). Each has a HERO_EFFECT_HANDLERS entry (thin handlers over
+  // hero/heistPayloads.logic.ts) and fires only from fireHeistPlays, so each belongs here.
+  // heist-master-strike-ko and heist-move-villain-ko-hero carry NO magnitude → also in
+  // NO_MAGNITUDE_KEYWORDS; heist-scheme-twist-bonus carries the extra Attack → NOT in it.
+  'heist-master-strike-ko',
+  'heist-scheme-twist-bonus',
+  'heist-move-villain-ko-hero',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -731,6 +747,12 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // isPlayBothSidesActive flag, moves no card); the magnitude pre-gate must not drop it, or the
   // handler never fires, the flag never arms, and the choose-a-side picker still appears.
   'play-both-sides',
+  // why: WP-876 / D-24823 — heist-master-strike-ko (one KO of the recorded revealed card) and
+  // heist-move-villain-ko-hero (one optional move, then one KO) carry NO magnitude. The magnitude
+  // pre-gate must not drop them, or fireHeistPlays reaches no handler and The Big Score's
+  // Master Strike clause and X-Con Security Van fire nothing.
+  'heist-master-strike-ko',
+  'heist-move-villain-ko-hero',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -7412,6 +7434,88 @@ export function fireHeistPlays(
   return firedCardCount;
 }
 
+/**
+ * Hero handler for the `heist-master-strike-ko` keyword (WP-876 / D-24823).
+ *
+ * The Big Score's Heist clause: "If the card revealed from the Villain Deck is a Master Strike, KO
+ * it and put a card from the Bystander Deck on top of the Villain Deck." It rides heistEffects, so
+ * it fires only from fireHeistPlays on a successful Heist. The work is in applyHeistMasterStrikeKo.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Unused (no randomness, no events).
+ * @param playerID - The player whose Heist succeeded.
+ * @param cardId - The Big Score card.
+ * @param _effect - The `{ type: 'heist-master-strike-ko' }` descriptor (no magnitude).
+ */
+function heroEffectHeistMasterStrikeKo(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  applyHeistMasterStrikeKo(G, playerID, cardId);
+}
+
+/**
+ * Hero handler for the `heist-scheme-twist-bonus` keyword (WP-876 / D-24823).
+ *
+ * Revolutionary Anthem's Heist clause: "If the card revealed from the Villain Deck is a Scheme
+ * Twist, you get another +N Attack, and you may shuffle that deck." Reads the RECORDED revealed
+ * card. On a Scheme Twist it grants +N through the shipped attack path (executeSingleEffect, so
+ * the payload module never imports this file), then offers one shuffle seat choice.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param ctx - The forwarded move context (its `events` admit the seat choice; undefined in a unit context).
+ * @param playerID - The player whose Heist succeeded.
+ * @param cardId - The Revolutionary Anthem card.
+ * @param effect - The `{ type: 'heist-scheme-twist-bonus', magnitude: N }` descriptor.
+ */
+function heroEffectHeistSchemeTwistBonus(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  if (!isHeistRevealedSchemeTwist(G)) {
+    pushLog(G,
+      `The card Player ${playerID}'s Heist revealed is not a Scheme Twist, so ${formatCardRef(G.cardDisplayData, cardId)} adds no extra Attack.`,
+      'neutral',
+      cardId,
+    );
+    return;
+  }
+  executeSingleEffect(G, ctx, playerID, cardId, { type: 'attack', magnitude: effect.magnitude ?? 0 });
+  // why: WP-876 / D-24823 — the forwarded move context carries events (the heroEffectRandomActs
+  // precedent); undefined in a unit context, where parkSeatChoice simply skips the stage ride.
+  const events = (ctx as { events?: unknown } | undefined)?.events as Parameters<typeof parkSeatChoice>[1];
+  parkHeistShuffleChoice(G, events, playerID, cardId);
+}
+
+/**
+ * Hero handler for the `heist-move-villain-ko-hero` keyword (WP-876 / D-24823).
+ *
+ * X-Con Security Van's Heist ability: "You may move a Villain to an empty city space. If you do,
+ * KO one of your Heroes." Parks the 'x-con-security-van' move-a-Villain choice when there is a
+ * Villain and an empty space (applyHeistMoveVillain); resolveMoveVillainChoice does the rest.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Unused (the move happens at resolve time).
+ * @param playerID - The player whose Heist succeeded.
+ * @param cardId - The X-Con Security Van card.
+ * @param _effect - The `{ type: 'heist-move-villain-ko-hero' }` descriptor (no magnitude).
+ */
+function heroEffectHeistMoveVillainKoHero(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  applyHeistMoveVillain(G, playerID, cardId);
+}
+
 export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler>> = {
   draw: heroEffectDraw,
   attack: heroEffectAttack,
@@ -7640,6 +7744,13 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // D-24352 additive write into G.handSizeOverrides, consumed by that turn's end-of-turn cleanup.
   // Carries a magnitude → NOT in NO_MAGNITUDE_KEYWORDS.
   'next-hand-extra-draw': heroEffectNextHandExtraDraw,
+  // why: WP-876 / D-24823 — the three Heist payloads; each rides a readied card's heistEffects
+  // and fires only from fireHeistPlays on a successful Heist. heist-master-strike-ko and
+  // heist-move-villain-ko-hero carry NO magnitude → in NO_MAGNITUDE_KEYWORDS;
+  // heist-scheme-twist-bonus carries the extra Attack → NOT in it.
+  'heist-master-strike-ko': heroEffectHeistMasterStrikeKo,
+  'heist-scheme-twist-bonus': heroEffectHeistSchemeTwistBonus,
+  'heist-move-villain-ko-hero': heroEffectHeistMoveVillainKoHero,
 };
 
 // ---------------------------------------------------------------------------

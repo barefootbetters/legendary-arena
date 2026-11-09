@@ -160,6 +160,12 @@ import {
   SIZE_CHANGING_CLASS_PICK_SEAT_CHOICE_KIND,
   SIZE_CHANGING_GRANT_SEAT_CHOICE_KIND,
 } from '../hero/sizeChangingGrant.logic.js';
+// why: WP-876 / D-24823 — Revolutionary Anthem's shuffle apply and kind. heistPayloads.logic
+// imports parkSeatChoice from this module: the same runtime-safe cycle (function bodies only).
+import {
+  applyHeistShuffleResolvedSeatChoice,
+  HEIST_SHUFFLE_SEAT_CHOICE_KIND,
+} from '../hero/heistPayloads.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -717,6 +723,13 @@ function applySeatChoiceByKind(
   }
   if (choice.kind === SIZE_CHANGING_CLASS_PICK_SEAT_CHOICE_KIND) {
     applySizeChangingClassPickResolvedSeatChoice(G, choice);
+    return;
+  }
+  // why: WP-876 / D-24823 — Revolutionary Anthem's optional Villain Deck shuffle: Shuffle through
+  // the shuffle context (ctx.random), or Leave (the default). Placed before the generic
+  // fall-through so the "Seat N resolved <kind> choice" line does not also print.
+  if (choice.kind === HEIST_SHUFFLE_SEAT_CHOICE_KIND) {
+    applyHeistShuffleResolvedSeatChoice(G, choice, shuffleContext);
     return;
   }
   // why: D-24678 — the shuffle context reaches Random Acts' Diving Block draw.

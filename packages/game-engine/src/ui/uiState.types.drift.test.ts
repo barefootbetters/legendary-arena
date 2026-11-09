@@ -1945,6 +1945,19 @@ describe('UIState type drift (WP-795 / D-24664) — pendingMoveVillainChoice', (
 
     const filtered = filterUIStateForAudience(present, { kind: 'player', playerId: '0' });
     assert.deepStrictEqual(Object.keys(filtered.pendingMoveVillainChoice!).sort(), expectedKeys);
+
+    // why: WP-876 / D-24823 — the OPTIONAL variant key (X-Con Security Van) is pinned the same way:
+    // a runtime keyset on the BUILT and the chooser's FILTERED projection (D-24372), so a build or
+    // whitelist that drops it fails here (the D-12803 five-step contract, steps 2-4).
+    gameState.pendingMoveVillainChoices = [
+      { playerID: '0', sourceCardId: 'amwp/scott-lang-cat-burglar/x-con-security-van#0', variant: 'x-con-security-van' },
+    ];
+    const xConKeys = ['playerID', 'variant', 'villainCityIndices'];
+    const xConBuilt = buildUIState(gameState, uiCtx);
+    assert.deepStrictEqual(Object.keys(xConBuilt.pendingMoveVillainChoice!).sort(), xConKeys);
+    assert.equal(xConBuilt.pendingMoveVillainChoice!.variant, 'x-con-security-van');
+    const xConFiltered = filterUIStateForAudience(xConBuilt, { kind: 'player', playerId: '0' });
+    assert.deepStrictEqual(Object.keys(xConFiltered.pendingMoveVillainChoice!).sort(), xConKeys);
   });
 });
 

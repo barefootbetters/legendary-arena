@@ -168,11 +168,14 @@ export function attemptHeist({ G, playerID, ...context }: MoveContext): void {
   // Step 3: Latch the one attempt per turn.
   // why: WP-865 / D-24808 — the latch is set BEFORE the outcome resolves, so no inner effect can
   // re-enter a second attempt, and a Heist card played later this turn is too late.
-  G.turnEconomy = markHeistAttempted(G.turnEconomy);
+  // why: WP-876 / D-24823 — the revealed card is recorded with the latch, so The Big Score and
+  // Revolutionary Anthem read the card THIS Heist revealed even after an earlier Heist ability
+  // changed the Villain Deck top.
+  G.turnEconomy = markHeistAttempted(G.turnEconomy, revealedCardId);
 
   // Step 4: Count and reveal. The move's own logic uses no randomness.
   // why: WP-865 / D-24808 — the revealed card stays on top of the Villain Deck: the rule only
-  // reveals it (two deferred Heist lines read it as "the card revealed"), so no zone moves it and
+  // reveals it (The Big Score and Revolutionary Anthem read it as "the card revealed", WP-876), so no zone moves it and
   // the deck is never shuffled, drawn or reordered here.
   const count = heistCount(G, playerId);
   const victoryPoints = heistRevealedVictoryPoints(G, revealedCardId);

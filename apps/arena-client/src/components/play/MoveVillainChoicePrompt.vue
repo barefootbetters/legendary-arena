@@ -33,6 +33,12 @@ function visualOrderEngineIndices(citySize: number): number[] {
   return indices;
 }
 
+/** The Spinning Cyclone heading and region label. */
+const SPINNING_CYCLONE_HEADING = "Spinning Cyclone: move a Villain";
+
+/** The X-Con Security Van heading and region label (WP-876 / D-24823). */
+const X_CON_HEADING = "X-Con Security Van: move a Villain to an empty space";
+
 /**
  * Inline prompt for resolving a pending Spinning Cyclone move-a-Villain choice (WP-795 /
  * D-24664 — core Storm's "Spinning Cyclone").
@@ -47,6 +53,11 @@ function visualOrderEngineIndices(citySize: number): number[] {
  * Move submits `resolveMoveVillainChoice({ fromCityIndex, toCityIndex })` with ENGINE indices;
  * Don't move submits `resolveMoveVillainChoice({ decline: true })`. The client submits INTENT
  * only — the ENGINE validates the answer against the live City, moves or swaps, and rescues.
+ *
+ * WP-876 / D-24823: with `variant === 'x-con-security-van'` (X-Con Security Van's Heist ability)
+ * the heading and region label read "X-Con Security Van: move a Villain to an empty space", step 2
+ * lists only empty City spaces (never "swap with …"), and a note says a move KOs one of your
+ * Heroes. Without the variant the prompt renders exactly as before.
  *
  * // why: D-24664 — non-dismissible; controls disable after submit to prevent a double move.
  * The choice is game-blocking (the block-all guard freezes turn-end until it resolves). NOT a
@@ -138,13 +149,34 @@ export default defineComponent({
       return options;
     }
 
+    function isXConSecurityVan(): boolean {
+      return props.pendingMoveVillainChoice?.variant === "x-con-security-van";
+    }
+
+    function headingText(): string {
+      // why: WP-876 / D-24823 — X-Con Security Van reuses this prompt; its heading (also the
+      // region's aria-label) names the card and the empty-space rule.
+      if (isXConSecurityVan()) {
+        return X_CON_HEADING;
+      }
+      return SPINNING_CYCLONE_HEADING;
+    }
+
     function destinationOptions(): CitySpaceOption[] {
       const options: CitySpaceOption[] = [];
       if (selectedSourceIndex.value === null) return options;
+      const isEmptyOnly = isXConSecurityVan();
       for (const cityIndex of visualOrderEngineIndices(props.city.spaces.length)) {
-        if (cityIndex !== selectedSourceIndex.value) {
-          options.push(buildOption(cityIndex));
+        if (cityIndex === selectedSourceIndex.value) {
+          continue;
         }
+        // why: WP-876 / D-24823 — X-Con moves only to an EMPTY space (no swap). The engine's test is
+        // G.city[i] === null; this is the same test on the projected City, so the offered set equals
+        // the engine's empty indices and an occupied space is never offered.
+        if (isEmptyOnly && props.city.spaces[cityIndex] !== null) {
+          continue;
+        }
+        options.push(buildOption(cityIndex));
       }
       return options;
     }
@@ -201,6 +233,8 @@ export default defineComponent({
       selectedDestinationIndex,
       isSubmitting,
       shouldRender,
+      isXConSecurityVan,
+      headingText,
       sourceOptions,
       destinationOptions,
       sourceLabel,
@@ -221,11 +255,21 @@ export default defineComponent({
     class="move-villain-prompt"
     data-testid="move-villain-prompt"
     role="region"
-    aria-label="Spinning Cyclone: move a Villain"
+    :aria-label="headingText()"
   >
-    <h3 class="move-villain-prompt__heading">Spinning Cyclone: move a Villain</h3>
-    <p class="move-villain-prompt__hint">
+    <h3 class="move-villain-prompt__heading">{{ headingText() }}</h3>
+    <p v-if="isXConSecurityVan()" class="move-villain-prompt__hint">
+      Pick a Villain, then an empty city space.
+    </p>
+    <p v-else class="move-villain-prompt__hint">
       Pick a Villain, then a new city space. Its captured Bystanders are rescued.
+    </p>
+    <p
+      v-if="isXConSecurityVan()"
+      class="move-villain-prompt__hint"
+      data-testid="move-villain-x-con-note"
+    >
+      If you move a Villain, you KO one of your Heroes.
     </p>
     <div class="move-villain-prompt__step" aria-label="Villain to move">
       <button

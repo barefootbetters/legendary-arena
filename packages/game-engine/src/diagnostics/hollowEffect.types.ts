@@ -231,13 +231,17 @@ export const DEFERRED_BY_DESIGN_MECHANICS: ReadonlySet<string> = new Set<string>
  *
  * - `fired` — a handler ran (the common case).
  * - `no-op` — a DELIBERATE-no-op handler ran. Determined by PRIMITIVE IDENTITY
- *   (the fixed allowlist `{ become-scheme-twist [D-24287], gain-attached-hero
- *   [D-24270] }`, both of which intentionally mutate nothing), NEVER by
- *   `targets.length` — many real-firing handlers legitimately return empty targets.
+ *   (the fixed allowlist `DELIBERATE_NO_OP_VILLAIN_PRIMITIVES`: `become-scheme-twist`
+ *   [D-24287], `gain-attached-hero` [D-24270], `play-villain-deck-cards` [D-24351],
+ *   `reenter-sewers-if-villain-deck-top` [D-24811] and `stack-cards-enter-city-as-villains`
+ *   [D-24814], all of which intentionally mutate nothing), NEVER by `targets.length` —
+ *   many real-firing handlers legitimately return empty targets.
  * - `no-handler` — no handler was reached for the token (co-recorded as a hollow).
  * - `secondary-site` — the effect's real work fired at a DIFFERENT site than the
- *   executor (Mystique's escape→Scheme-Twist: the executor handler is a no-op; the
- *   twist fires at the villain-deck escape site).
+ *   executor, recorded beside the executor's `no-op` trace: Mystique's escape→Scheme-Twist
+ *   (the villain-deck escape site), and the three bridged primitives
+ *   `play-villain-deck-cards`, `reenter-sewers-if-villain-deck-top` and
+ *   `stack-cards-enter-city-as-villains` (the fight and Ambush bridges; WP-877 / D-24824).
  */
 export type EffectTraceStatus =
   | 'fired'
@@ -267,12 +271,21 @@ export const EFFECT_TRACE_STATUSES: readonly EffectTraceStatus[] = [
  *   `interpretHeroPrimitiveEffect` sub-path.
  * - `escape-scheme-twist` — the villain-deck escape branch where a
  *   `become-scheme-twist` escape fires the real Scheme Twist (the secondary site).
+ * - `villain-fight-bridge` — `runVillainFightFireSiteBridges`, where a defeated card's
+ *   bridged Fight work runs (Endless Armies' play, Mr. Immortal's reenter, a Fight stack entry).
+ * - `villain-ambush-bridge` — the Ambush block of `performVillainReveal`, where a bridged
+ *   Ambush runs (The Leader's play, an Ambush stack entry).
  */
+// why: WP-877 / D-24824 — the two bridge members name WHERE the work ran; the trace's `effect`
+// already names WHAT ran, so one site per bridge (not one per primitive) mirrors
+// `escape-scheme-twist`, which names the escape branch.
 export type EffectTraceFireSite =
   | 'villain-executor'
   | 'hero-executor'
   | 'hero-primitive'
-  | 'escape-scheme-twist';
+  | 'escape-scheme-twist'
+  | 'villain-fight-bridge'
+  | 'villain-ambush-bridge';
 
 // why: canonical drift array (WP-488 / D-24294) — same bidirectional-parity contract
 // as EFFECT_TRACE_STATUSES; a fire site added to the union but not the array (or vice
@@ -283,6 +296,8 @@ export const EFFECT_TRACE_FIRE_SITES: readonly EffectTraceFireSite[] = [
   'hero-executor',
   'hero-primitive',
   'escape-scheme-twist',
+  'villain-fight-bridge',
+  'villain-ambush-bridge',
 ] as const;
 
 /**

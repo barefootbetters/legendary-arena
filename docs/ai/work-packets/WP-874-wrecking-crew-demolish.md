@@ -229,6 +229,7 @@ the same list, so this path is likely.
       Wrecking Crew-prefixed charger with `[null,WC,WC,WC,WC]` → 4 Hero Deck rotations (bridge first: one WC is pushed out before
       the count; executor first would give 5).
     - The `ambushResolved` narrative carries the charge clause; the `charge` trace is `no-op`.
+    - If D-24824 (WP-877) has landed, the `charge` Ambush bridge calls `recordVillainSecondarySiteTrace(…, 'villain-ambush-bridge', …)` inside its guard, before the bridge (extending the helper's `effect` / `handler` unions), and its trace test expects `no-op` then `secondary-site`.
   - `board/demolish.logic.test.ts` (extended): `'each-other'` skips the current player and keeps their hand; the solo line; the
     default scope is byte-identical to before (the existing cases unchanged). The Wrecker through the real executor: alone → one
     Demolish; with two more Wrecking Crew Villains → three; a non-Wrecking-Crew Villain is not counted; a match whose selection lacks

@@ -24,6 +24,7 @@ ext_id,hero_name,set,mechanic,status,wp,decision,handler,designs
 amwp/ant-army,Ant Army,amwp,antics,condition,,,,antagonize|anticipate|antiproton-experiments|revolutionary-anthem
 amwp/ant-army,Ant Army,amwp,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,anticipate|up-the-ante
 amwp/ant-army,Ant Army,amwp,heist,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#heist,revolutionary-anthem|up-the-ante
+amwp/ant-army,Ant Army,amwp,heist-scheme-twist-bonus,executable,WP-876,D-24823,packages/game-engine/src/hero/heroEffects.execute.ts#heist-scheme-twist-bonus,revolutionary-anthem
 amwp/ant-army,Ant Army,amwp,microscopic-size-changing,executable,,D-24801,packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing,anti-tank-weapons|antiproton-experiments|revolutionary-anthem
 amwp/ant-army,Ant Army,amwp,size-changing,executable,,D-24801,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,antagonize|anticipate
 amwp/ant-man,Ant-Man,amwp,antics,condition,,,,bug-swarm|hitch-a-ride
@@ -43,6 +44,9 @@ amwp/janet-van-dyne,Janet van Dyne,amwp,microscopic-size-changing,executable,,D-
 amwp/janet-van-dyne,Janet van Dyne,amwp,size-changing,executable,,D-24801,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,wasp-of-another-generation
 amwp/jentorra,Jentorra,amwp,conqueror,unsupported,,,,conquer-the-conqueror|take-the-high-ground|unite-the-oppressed
 amwp/jentorra,Jentorra,amwp,explore,unsupported,,,,find-your-courage|lead-powerful-allies
+amwp/scott-lang-cat-burglar,"Scott Lang, Cat Burglar",amwp,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,putting-a-crew-together
+amwp/scott-lang-cat-burglar,"Scott Lang, Cat Burglar",amwp,heist-master-strike-ko,executable,WP-876,D-24823,packages/game-engine/src/hero/heroEffects.execute.ts#heist-master-strike-ko,the-big-score
+amwp/scott-lang-cat-burglar,"Scott Lang, Cat Burglar",amwp,heist-move-villain-ko-hero,executable,WP-876,D-24823,packages/game-engine/src/hero/heroEffects.execute.ts#heist-move-villain-ko-hero,x-con-security-van
 amwp/scott-lang-cat-burglar,"Scott Lang, Cat Burglar",amwp,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,anything-for-cassie
 amwp/wasp,Wasp,amwp,first-hero-condition,condition,,,,follow-my-lead
 amwp/wasp,Wasp,amwp,microscopic-size-changing,executable,,D-24801,packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing,hope-returns|infiltrate

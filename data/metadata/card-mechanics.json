@@ -100,8 +100,9 @@
       "label": "Attack Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 36,
+      "cardCount": 37,
       "cardIds": [
+        "amwp/scott-lang-cat-burglar",
         "antm/ant-man",
         "asrd/thor",
         "bkwd/falcon-winter-soldier",
@@ -956,6 +957,39 @@
       "cardIds": [
         "amwp/ant-army",
         "amwp/ant-man"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "heist-master-strike-ko",
+      "label": "Heist Master Strike Ko",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "amwp/scott-lang-cat-burglar"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "heist-move-villain-ko-hero",
+      "label": "Heist Move Villain Ko Hero",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "amwp/scott-lang-cat-burglar"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "heist-scheme-twist-bonus",
+      "label": "Heist Scheme Twist Bonus",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "amwp/ant-army"
       ],
       "hidden": true
     },
@@ -2741,6 +2775,7 @@
         "antics",
         "draw",
         "heist",
+        "heist-scheme-twist-bonus",
         "microscopic-size-changing",
         "size-changing"
       ]
@@ -2784,6 +2819,9 @@
     },
     "amwp/scott-lang-cat-burglar": {
       "mechanics": [
+        "attack-per-count",
+        "heist-master-strike-ko",
+        "heist-move-villain-ko-hero",
         "rescue"
       ]
     },
