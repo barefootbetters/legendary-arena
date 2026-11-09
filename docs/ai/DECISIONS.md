@@ -47784,7 +47784,7 @@ Protect this file.
 
 **Live-verify (D-24026):** pending. After deploy, a match's Play Diagnostics export shows `effectTraces` for villain Ambush / Escape effects on the start-of-turn reveal with the same `turn` as that turn's hero traces, not 0.
 
-**Superseded in part:** §3 (framework turn, not play-relative) is superseded by D-24824 (2026-11-08): traces and hollow records carry the log's play-relative turn.
+**Superseded in part:** §3 (framework turn, not play-relative) is superseded by D-24825 (2026-11-08): traces and hollow records carry the log's play-relative turn.
 
 **Reserved by:** NUMBER-LEDGER D-24704. Related: D-24703 (where this was noted), WP-488 / D-24294 (effect traces, diagnostics hash exclusion), WP-257 / D-24033 (hollow records), D-24351, D-24697, D-24026.
 
@@ -50713,7 +50713,7 @@ Protect this file.
 
 ---
 
-### D-24824 — Hollow records and effect traces carry the game log's play-relative turn (direct fix, no WP) (Active 2026-11-08)
+### D-24825 — Hollow records and effect traces carry the game log's play-relative turn (direct fix, no WP) (Active 2026-11-08)
 
 **Context.** The game log numbers every line `{turn}.{step}.{action}` with the play-relative turn (`G.logMeta.turn = ctx.turn − firstPlayTurn + 1`, `game.ts` play `onBegin`; the lobby consumes framework turn 1). The HUD, `UIState.game.turn` and the operator bot decisions (D-24697) use the same number. `HollowEffectRecord.turn` and `EffectTrace.turn` were stamped from the framework `ctx.turn` (D-24704 §3 kept traces on the framework turn), so the operator hollow-effects table and the Play Diagnostics traces read one turn higher than the log. Operator matches `mjw8byyMwLY` (X-Con Security Van logged at 11.2.x / 17.2.x / 23.2.x, table 12 / 18 / 24) and `bo4ZSQLBuQU` (The Big Score logged at 6.2.x / 10.2.x / 12.2.x, table 7 / 11 / 13) made cross-referencing error-prone.
 
@@ -50730,7 +50730,7 @@ Protect this file.
 
 **Live-verify (D-24026):** pending. On a match created after deploy, a hollow's Turns column and its effect traces' `turn` equal the `[blocked]` log line's turn prefix.
 
-**Reserved by:** NUMBER-LEDGER D-24824. Related: D-24704 (§3 superseded), D-24697 (same fix for bot decisions), WP-328 (log numbering), WP-257 / D-24033 (hollow records), WP-488 / D-24294 (effect traces), D-24026.
+**Reserved by:** NUMBER-LEDGER D-24825. Related: D-24704 (§3 superseded), D-24697 (same fix for bot decisions), WP-328 (log numbering), WP-257 / D-24033 (hollow records), WP-488 / D-24294 (effect traces), D-24026.
 
 ---
 Protect this file.

@@ -351,7 +351,7 @@ export interface EffectTraceResolution {
  * @property params - A shallow scalar snapshot of the descriptor's own parameter fields.
  * @property turn - The play-relative turn the trace was observed on — the same number
  *   as the game log's `{turn}.{step}.{action}` prefix (`G.logMeta.turn`; first play
- *   turn = 1). `recordEffectTrace` stamps it from `G.logMeta` (D-24824, superseding
+ *   turn = 1). `recordEffectTrace` stamps it from `G.logMeta` (D-24825, superseding
  *   D-24704 §3); the emitter-supplied framework turn (0 from a turnless hand-built
  *   context) survives only when `G.logMeta` is absent.
  * @property resolution - The realized count-scaled computation (WP-706 / D-24528).

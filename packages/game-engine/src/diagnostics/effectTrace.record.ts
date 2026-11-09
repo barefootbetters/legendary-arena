@@ -69,7 +69,7 @@ export function recordEffectTrace(G: LegendaryGameState, trace: EffectTrace): vo
     return;
   }
 
-  // why: D-24824 (supersedes D-24704 §3) — the trace's turn is the game log's
+  // why: D-24825 (supersedes D-24704 §3) — the trace's turn is the game log's
   // PLAY-RELATIVE turn (G.logMeta.turn = ctx.turn - firstPlayTurn + 1; the lobby
   // consumes framework turn 1), the same number as the `{turn}.{step}.{action}` log
   // prefix and the hollow-effects table. Emitters pass the framework ctx.turn (or 0

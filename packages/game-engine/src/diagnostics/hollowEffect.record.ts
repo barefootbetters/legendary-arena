@@ -66,7 +66,7 @@ export function recordHollowEffect(
     return;
   }
 
-  // why: D-24824 — the record's turn must match the game log's `{turn}.{step}.{action}`
+  // why: D-24825 — the record's turn must match the game log's `{turn}.{step}.{action}`
   // prefix, which is PLAY-RELATIVE (G.logMeta.turn = ctx.turn - firstPlayTurn + 1;
   // the lobby consumes framework turn 1). Callers pass the raw framework ctx.turn,
   // so without this the hollow-effects table read one turn higher than the

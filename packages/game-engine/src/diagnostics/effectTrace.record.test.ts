@@ -142,7 +142,7 @@ describe('EFFECT_TRACE_FIRE_SITES canonical-array drift (D-24294)', () => {
 // ---------------------------------------------------------------------------
 
 describe('recordEffectTrace', () => {
-  // why: D-24824 regression — traces carried the framework ctx.turn, one higher than
+  // why: D-24825 regression — traces carried the framework ctx.turn, one higher than
   // the game log's play-relative `{turn}.{step}.{action}` prefix and the hollow-effects
   // table (the lobby consumes framework turn 1). The stored trace must carry the log
   // turn, whatever the emitter passed (framework turn, or 0 from a turnless context).
