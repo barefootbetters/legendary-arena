@@ -375,6 +375,9 @@ const LOCKED_TABLE: Record<string, KoSiteCounts> = {
   'hero/heroEffects.execute.ts#applyRevealKo': { koSites: 1, ownedRecords: 1 },
   'hero/heroEffects.execute.ts#heroEffectKoWoundReward': { koSites: 1, ownedRecords: 1 },
   'hero/heroEffects.execute.ts#heroEffectKoWound': { koSites: 1, ownedRecords: 1 },
+  // why: WP-876 / D-24823 — The Big Score KOs a revealed Master Strike from the Villain Deck top: a
+  // Villain Deck card no player owns, so no owned-KO record (the Finding Zemo precedent).
+  'hero/heistPayloads.logic.ts#applyHeistMasterStrikeKo': { koSites: 1, ownedRecords: 0 },
   'moves/exorciseHauntedHero.ts#exorciseHauntedHero': { koSites: 1, ownedRecords: 0 },
   'moves/healWounds.ts#healWounds': { koSites: 1, ownedRecords: 1 },
   'moves/koDiscardChoice.resolve.ts#resolveKoDiscardChoice': { koSites: 1, ownedRecords: 1 },

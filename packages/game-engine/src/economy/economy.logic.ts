@@ -496,6 +496,7 @@ type CarriedTurnFields = Partial<
     | 'ritualUsedPlayedCardIds'
     | 'heistCrewCards'
     | 'hasAttemptedHeistThisTurn'
+    | 'heistRevealedCardId'
     | 'hasDefeatedVillainThisTurn'
   >
 >;
@@ -604,6 +605,12 @@ function carryConversionFlag(economy: TurnEconomy): CarriedTurnFields {
   }
   if (economy.hasAttemptedHeistThisTurn !== undefined) {
     carried.hasAttemptedHeistThisTurn = economy.hasAttemptedHeistThisTurn;
+  }
+  // why: WP-876 / D-24823 — carry the Heist's recorded revealed card beside the latch, ONLY when
+  // present. Without the carry, the Heist's own +Attack (an addResources rebuild) would drop it
+  // and a later Big Score or Revolutionary Anthem in the same Heist would see no revealed card.
+  if (economy.heistRevealedCardId !== undefined) {
+    carried.heistRevealedCardId = economy.heistRevealedCardId;
   }
   // why: WP-871 / D-24816 — carry Orrgo's "defeated a Villain this turn" flag ONLY when
   // present (omit-when-absent keeps both hash oracles byte-stable). fightVillain rebuilds
@@ -1224,12 +1231,15 @@ export function enrollHeistCard(economy: TurnEconomy, cardId: CardExtId): TurnEc
  * Marks that the current player has attempted this turn's Heist (WP-865 / D-24808).
  *
  * Called by `attemptHeist` before the outcome resolves. Every other field, including the Heist
- * crew, is carried unchanged. `resetTurnEconomy` clears the latch at the next turn start.
+ * crew, is carried unchanged. `resetTurnEconomy` clears the latch and the revealed card at the
+ * next turn start.
  *
  * @param economy - Current turn economy state.
- * @returns New TurnEconomy with `hasAttemptedHeistThisTurn` set true.
+ * @param revealedCardId - The Villain Deck card this Heist revealed (WP-876 / D-24823).
+ * @returns New TurnEconomy with `hasAttemptedHeistThisTurn` set true and `heistRevealedCardId`
+ *   set to `revealedCardId`.
  */
-export function markHeistAttempted(economy: TurnEconomy): TurnEconomy {
+export function markHeistAttempted(economy: TurnEconomy, revealedCardId: CardExtId): TurnEconomy {
   return {
     attack: economy.attack,
     recruit: economy.recruit,
@@ -1242,6 +1252,9 @@ export function markHeistAttempted(economy: TurnEconomy): TurnEconomy {
     // drops the crew the attempt is about to fire.
     ...carryConversionFlag(economy),
     hasAttemptedHeistThisTurn: true,
+    // why: WP-876 / D-24823 — recorded, not re-read: The Big Score and Revolutionary Anthem read
+    // this id's type, because an earlier Heist ability can change the live Villain Deck top.
+    heistRevealedCardId: revealedCardId,
   };
 }
 

@@ -4,8 +4,8 @@
  * Ten Ant-Man and the Wasp hero lines carry a Heist ability. Before WP-865, six paid out on every
  * play and four did nothing. These tests parse the COMMITTED data/cards/amwp.json through a getSet
  * stub (the D-24746 playedOtherCardsThreshold.test.ts pattern) and pin the locked hook shapes:
- * the six allowlisted cards fuse into one `heist` hook carrying their inner effects, and the other
- * four Heist lines are honest `heist` hollows with no effect.
+ * since WP-876 / D-24823 all ten cards fuse into one `heist` hook carrying their inner effects,
+ * and no `heist` hollow remains.
  *
  * No boardgame.io imports. node:test + node:assert only.
  */
@@ -36,19 +36,30 @@ const FUSED_CARDS: readonly FusedCard[] = [
   { cardPrefix: 'amwp/wasp/infiltrate#', heistLineIndex: 2, heistEffects: [{ type: 'attack', magnitude: 3 }] },
   { cardPrefix: 'amwp/ant-man/tiny-little-risk#', heistLineIndex: 1, heistEffects: [{ type: 'draw', magnitude: 2 }] },
   { cardPrefix: 'amwp/ant-army/up-the-ante#', heistLineIndex: 0, heistEffects: [{ type: 'draw', magnitude: 1 }] },
-];
-
-/** One non-allowlisted Heist line: its first-copy prefix and its Heist line index. */
-interface HollowCard {
-  cardPrefix: string;
-  heistLineIndex: number;
-}
-
-const HOLLOW_CARDS: readonly HollowCard[] = [
-  { cardPrefix: 'amwp/scott-lang-cat-burglar/the-big-score#', heistLineIndex: 0 },
-  { cardPrefix: 'amwp/scott-lang-cat-burglar/putting-a-crew-together#', heistLineIndex: 0 },
-  { cardPrefix: 'amwp/scott-lang-cat-burglar/x-con-security-van#', heistLineIndex: 0 },
-  { cardPrefix: 'amwp/ant-army/revolutionary-anthem#', heistLineIndex: 2 },
+  // why: WP-876 / D-24823 — the four deferred lines now fuse too. The parser emits a line's
+  // keyword-marker effect before its icon-derived attack, so the keyword leads; the two effects of
+  // one card are independent (the attack grant never reads the KO or the bonus), so the order
+  // changes only the log order within that card.
+  {
+    cardPrefix: 'amwp/scott-lang-cat-burglar/the-big-score#',
+    heistLineIndex: 0,
+    heistEffects: [{ type: 'heist-master-strike-ko' }, { type: 'attack', magnitude: 4 }],
+  },
+  {
+    cardPrefix: 'amwp/scott-lang-cat-burglar/putting-a-crew-together#',
+    heistLineIndex: 0,
+    heistEffects: [{ type: 'attack-per-count', magnitude: 1, countSource: 'distinct-costs-you-have' }],
+  },
+  {
+    cardPrefix: 'amwp/scott-lang-cat-burglar/x-con-security-van#',
+    heistLineIndex: 0,
+    heistEffects: [{ type: 'heist-move-villain-ko-hero' }],
+  },
+  {
+    cardPrefix: 'amwp/ant-army/revolutionary-anthem#',
+    heistLineIndex: 2,
+    heistEffects: [{ type: 'heist-scheme-twist-bonus', magnitude: 2 }, { type: 'attack', magnitude: 2 }],
+  },
 ];
 
 /**
@@ -96,7 +107,7 @@ function containsHeistDescriptor(effects: readonly HeroEffectDescriptor[]): bool
   return false;
 }
 
-describe('WP-865 heist parse: the six allowlisted cards fuse into one heist hook', () => {
+describe('WP-865 / WP-876 heist parse: all ten Heist cards fuse into one heist hook', () => {
   const hooks = buildAmwpHooks();
 
   for (const card of FUSED_CARDS) {
@@ -128,18 +139,35 @@ describe('WP-865 heist parse: the six allowlisted cards fuse into one heist hook
   }
 });
 
-describe('WP-865 heist parse: the other four Heist lines are honest hollows', () => {
+describe('WP-876 heist parse: no heist hollow remains in amwp', () => {
   const hooks = buildAmwpHooks();
 
-  for (const card of HOLLOW_CARDS) {
-    it(`${card.cardPrefix} line ${card.heistLineIndex} has no effect, no keyword and a heist marker`, () => {
-      const hollowHook = firstCopyHooks(hooks, card.cardPrefix)[card.heistLineIndex];
-      assert.ok(hollowHook !== undefined, 'a hook exists at the Heist line index');
-      assert.deepEqual(hollowHook.keywords, []);
-      assert.equal(hollowHook.effects, undefined, 'the hollow grants nothing at play');
-      assert.deepEqual(hollowHook.unresolvedMarkers, ['heist']);
-    });
-  }
+  it('no amwp hook carries an unresolved heist marker', () => {
+    for (const hook of hooks) {
+      assert.equal(
+        (hook.unresolvedMarkers ?? []).includes('heist'),
+        false,
+        `${hook.cardId} must not be a heist hollow`,
+      );
+    }
+  });
+
+  it('no amwp hook carries one of the three Heist payload keywords outside a heist hook', () => {
+    const payloadTypes = ['heist-master-strike-ko', 'heist-scheme-twist-bonus', 'heist-move-villain-ko-hero'];
+    for (const hook of hooks) {
+      for (const effect of hook.effects ?? []) {
+        assert.equal(payloadTypes.includes(effect.type), false, `${hook.cardId} fires ${effect.type} at play`);
+      }
+    }
+  });
+
+  it("Revolutionary Anthem's Microscopic Size-Changing line is unchanged", () => {
+    const anthemHooks = firstCopyHooks(hooks, 'amwp/ant-army/revolutionary-anthem#');
+    const sizeHook = anthemHooks[0];
+    assert.ok(sizeHook !== undefined, 'the Size-Changing line builds a hook');
+    assert.deepEqual(sizeHook.keywords, ['microscopic-size-changing']);
+    assert.deepEqual(sizeHook.effects, [{ type: 'microscopic-size-changing' }]);
+  });
 
   it("Revolutionary Anthem's Antics line keeps its conditional +2 attack", () => {
     const anthemHooks = firstCopyHooks(hooks, 'amwp/ant-army/revolutionary-anthem#');

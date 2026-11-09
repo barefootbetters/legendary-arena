@@ -1478,6 +1478,24 @@ describe('getLegalMoves — Spinning Cyclone move-a-Villain short-circuit (WP-79
     assert.equal(legalMoves.length, 1, 'exactly one legal move while pending');
     assert.deepEqual(legalMoves, [{ name: 'resolveMoveVillainChoice', args: { decline: true } }]);
   });
+
+  test('declines an X-Con Security Van entry even when a Bystander holder could move (WP-876 / D-24823)', () => {
+    // why: the Spinning Cyclone answer would name space 0, which is occupied here; the X-Con
+    // variant rejects an occupied space, so only a decline can resolve the entry.
+    const gameState = makeMoveVillainG(
+      ['villain-a' as CardExtId, 'villain-b' as CardExtId, null, null, null],
+      { 'villain-b': ['bystander-1' as CardExtId] },
+    );
+    gameState.pendingMoveVillainChoices = [
+      {
+        playerID: '0',
+        sourceCardId: 'amwp/scott-lang-cat-burglar/x-con-security-van#0' as CardExtId,
+        variant: 'x-con-security-van',
+      },
+    ];
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+    assert.deepEqual(legalMoves, [{ name: 'resolveMoveVillainChoice', args: { decline: true } }]);
+  });
 });
 
 describe('getLegalMoves — fight-cost reduction reads the same resolvers (WP-794 / D-24663)', () => {
