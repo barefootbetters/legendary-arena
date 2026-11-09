@@ -30,7 +30,7 @@ money, persistence or server surface
   `demolishIfPushed: true`; `N` by `parsePositiveInteger`; anything else → `null`, bare `charge` included (the arm returns before the terminal no-param branch). New optional `VillainEffectDescriptor` field
   `demolishIfPushed?: boolean`. Same validator in the marker script. Marker Bulldozer `ambush: ["charge:1:demolish-if-pushed"]`.
 - **Charge executor:** `villainEffectCharge` returns `{ targets: [] }`, mutates nothing; `charge` is in
-  `DELIBERATE_NO_OP_VILLAIN_PRIMITIVES`. `villainCardChargeEffect(G, cardId, timing): { spaces: number; demolishIfPushed: boolean } |
+  `DELIBERATE_NO_OP_VILLAIN_PRIMITIVES`. If D-24824 (WP-877) has landed, the `charge` Ambush bridge calls `recordVillainSecondarySiteTrace(…, 'villain-ambush-bridge', …)` inside its guard, before the bridge (extending the helper's `effect` / `handler` unions), and its trace test expects `no-op` then `secondary-site`. `villainCardChargeEffect(G, cardId, timing): { spaces: number; demolishIfPushed: boolean } |
   null` (first `charge` descriptor; the `villainCardReenterSewersKinds` guards; `spaces: magnitude ?? 1`, `demolishIfPushed: ===
   true`; the parser never writes `false`).
 - **Pure step** `board/villainCharge.logic.ts` (no boardgame.io / registry) exports types `ChargeStepResult`, `ChargeOutcome` and
