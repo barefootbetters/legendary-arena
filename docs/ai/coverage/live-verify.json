@@ -2142,9 +2142,9 @@
       "card": "Liar, The Mento-Intensifier",
       "ability": "Fight: Look at the top card of another player's deck. Say it is \"Good\" or \"Bad.\" That player chooses to put it in your discard pile or their discard pile.",
       "wp": "WP-872",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-08",
-      "evidence": "",
+      "evidence": "2p Operator match eFuOfsS3j8C (The Mandarin / Midtown Bank Robbery; HYDRA + Spider-Foes; Mandarin's Rings; Spider-Man, Hulk, Wolverine, Black Widow, Iron Man; server build 24055308 and client build 2405530, which contain the WP-872 merge a84d3041; server running since 2026-11-09T01:53:38Z, match created 01:53:42Z after boot; Player 0 operator, Player 1 bot ally): Player 0 defeated Liar (6.2.8); the log read \"Player 0 looks at the top card of Player 1's deck\" (6.2.10) with no card named, then only the claim \"Player 0 says the top card of Player 1's deck is \\\"Bad\\\"\" (6.2.11); Player 1 (the bot, non-active seat) then chose, and the card was named only on landing: \"Player 1 put S.H.I.E.L.D. Agent (starting-shield-agent) in Player 0's discard pile\" (6.2.12, applied). Effect trace look-other-player-deck-top-claim-current fired (turn 7). Not observed live: the other seat's redacted prompt (the second seat was a bot, so there is no human view of it; covered by tests) and the one-seat no-op (covered by tests).",
       "note": "Live check (NEW match created after the deploy (deployed gitSha checked), 2+ seats, Mastermind rvlt/mandarin (Always Leads puts Mandarin's Rings in the Villain Deck); an operator match via ?route=workshop with the setters placing the copy in the City and giving Attack.): defeating henchman-mandarins-rings-03 shows the fighter alone a \"Your choice\" prompt naming the other player's top card (Say \"Good\" (it is <card>) / Say \"Bad\" (it is <card>)); the log shows only \"Player P says the top card of Player T's deck is \\\"Bad\\\" …\"; the other seat's prompt reads Player P says it is \"Bad\": … with no card name; their pick puts the card in that discard pile and the log names it then. One seat: a logged no-op. D-24817."
     },
     {
@@ -2153,9 +2153,9 @@
       "card": "Nightbringer, The Black Light",
       "ability": "Fight: Reveal the top three cards of the Villain Deck. You may defeat a Villain you revealed worth 2VP or less. (Do its Fight effect.) Put the rest back in any order.",
       "wp": "WP-872",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-08",
-      "evidence": "",
+      "evidence": "2p Operator match eFuOfsS3j8C (The Mandarin / Midtown Bank Robbery; HYDRA + Spider-Foes; Mandarin's Rings; Spider-Man, Hulk, Wolverine, Black Widow, Iron Man; server build 24055308 and client build 2405530, which contain the WP-872 merge a84d3041; server running since 2026-11-09T01:53:38Z, match created 01:53:42Z after boot; Player 0 operator, Player 1 bot ally): Fought twice. First (6.2.13): revealed Bystander, HYDRA Kidnappers, Endless Armies of HYDRA (6.2.15); defeated HYDRA Kidnappers from the Villain Deck (6.2.16, no \"fought\" line), put the other 2 back in the chosen order (6.2.17), then Kidnappers' Fight effect \"gained a S.H.I.E.L.D. Officer\" (6.2.18) logged after the put-back line; Kidnappers is in Player 0's Victory Pile in the end-of-match uiStateSnapshot, and the next reveals (Endless Armies 7.1.1, then Bystander-10 at 7.2.10) followed the chosen order. Second, after a Master Strike re-entered it from the Victory Pile (12.1.5): revealed two Scheme Twists and Doctor Octopus (12.2.17); defeated Doctor Octopus (12.2.18), put the twists back (12.2.19), then its Fight effect \"your next hand draws 8 cards instead of 6\" (12.2.20); the two twists were the next two Villain Deck cards (13.1.1, 13.1.4). Effect traces reveal-villain-deck-defeat-low-vp-current fired (turns 7, 13), and the defeated cards' onFight traces fired.",
       "note": "Live check (NEW match created after the deploy (deployed gitSha checked), 2+ seats, Mastermind rvlt/mandarin (Always Leads puts Mandarin's Rings in the Villain Deck); an operator match via ?route=workshop with the setters placing the copy in the City and giving Attack. Put a Henchman near the Villain Deck top first.): defeating henchman-mandarins-rings-05 logs \"Player P revealed <three cards> from the top of the Villain Deck\"; the prompt offers Defeat <Villain> (N VP) for each Villain / Henchman worth 2VP or less; the defeated card is in the Victory Pile; the order prompt lists the Top to bottom permutations; the defeated card's Fight effect (if any) logs after the \"put the other N revealed cards back\" line; no \"fought\" line. D-24817."
     },
     {
@@ -2164,9 +2164,9 @@
       "card": "Remaker, The Matter Rearranger",
       "ability": "Fight: You may choose a card from your hand or discard pile. The player on your right puts it in their hand.",
       "wp": "WP-872",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-08",
-      "evidence": "",
+      "evidence": "2p Operator match eFuOfsS3j8C (The Mandarin / Midtown Bank Robbery; HYDRA + Spider-Foes; Mandarin's Rings; Spider-Man, Hulk, Wolverine, Black Widow, Iron Man; server build 24055308 and client build 2405530, which contain the WP-872 merge a84d3041; server running since 2026-11-09T01:53:38Z, match created 01:53:42Z after boot; Player 0 operator, Player 1 bot ally): Fought twice (10.2.2, and again at 16.2.20 after a Master Strike re-entered it from the Victory Pile): \"Player 0 may give a card from their hand or discard pile to Player 1\" (10.2.3), then \"Player 0 gave S.H.I.E.L.D. Agent (starting-shield-agent) to Player 1, who put it in their hand\" (10.2.4 and 16.2.22, applied); in two seats, seat 0's right is Player 1. Effect trace give-card-to-right-player-current fired (turns 11, 17). Not observed live: the one-seat no-op (covered by tests).",
       "note": "Live check (NEW match created after the deploy (deployed gitSha checked), 2+ seats, Mastermind rvlt/mandarin (Always Leads puts Mandarin's Rings in the Villain Deck); an operator match via ?route=workshop with the setters placing the copy in the City and giving Attack.): defeating henchman-mandarins-rings-06 opens Give nothing / <card> (hand) / <card> (discard pile); picking a discard card logs \"Player P gave <card> to Player R, who put it in their hand\" and it appears in the previous seat's hand (seat 0's right is the last seat). One seat: a logged no-op. D-24817."
     }
   ]
