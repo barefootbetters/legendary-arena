@@ -66,7 +66,17 @@ export function recordHollowEffect(
     return;
   }
 
-  G.diagnostics.hollowEffects.push(record);
+  // why: the record's turn must match the game log's `{turn}.{step}.{action}`
+  // prefix, which is PLAY-RELATIVE (G.logMeta.turn = ctx.turn - firstPlayTurn + 1;
+  // the lobby consumes framework turn 1). Callers pass the raw framework ctx.turn,
+  // so without this the hollow-effects table read one turn higher than the
+  // `[blocked]` log line this same call emits (e.g. log 6.2.2 vs table turn 7).
+  // Stamp from G.logMeta at the one seam so every caller agrees with the log;
+  // narrow fixtures without logMeta keep the caller-supplied turn.
+  const storedRecord: HollowEffectRecord =
+    G.logMeta !== undefined ? { ...record, turn: G.logMeta.turn } : record;
+
+  G.diagnostics.hollowEffects.push(storedRecord);
 
   // why: the G.messages line is operator visibility only (it projects to
   // UIState.log), NOT the contract — tests assert on the record. Guard the push

@@ -135,7 +135,10 @@ export interface EffectExecutionOutcome {
  * @property timing - The hook timing the hollow mechanic was declared at.
  * @property mechanic - The declared mechanic label that reached no handler.
  * @property reason - The hollow reason (one of the three hollow reasons).
- * @property turn - The boardgame.io turn number the record was observed on.
+ * @property turn - The play-relative turn the record was observed on — the same
+ *   number as the game log's `{turn}.{step}.{action}` prefix (`G.logMeta.turn`;
+ *   first play turn = 1). `recordHollowEffect` stamps it from `G.logMeta`; the
+ *   caller-supplied framework turn survives only when `G.logMeta` is absent.
  */
 export interface HollowEffectRecord {
   cardId: string;
