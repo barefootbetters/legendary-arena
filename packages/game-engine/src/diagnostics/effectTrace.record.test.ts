@@ -109,12 +109,16 @@ describe('EFFECT_TRACE_STATUSES canonical-array drift (D-24294)', () => {
 });
 
 describe('EFFECT_TRACE_FIRE_SITES canonical-array drift (D-24294)', () => {
-  it('has exactly the 4 canonical fire sites, in order, no duplicates', () => {
+  // why: WP-877 / D-24824 — the fight and Ambush bridges joined the fire sites (4 → 6), an
+  // intentional contract change.
+  it('has exactly the 6 canonical fire sites, in order, no duplicates', () => {
     const expected: EffectTraceFireSite[] = [
       'villain-executor',
       'hero-executor',
       'hero-primitive',
       'escape-scheme-twist',
+      'villain-fight-bridge',
+      'villain-ambush-bridge',
     ];
     assert.deepStrictEqual([...EFFECT_TRACE_FIRE_SITES], expected);
     assert.equal(new Set(EFFECT_TRACE_FIRE_SITES).size, EFFECT_TRACE_FIRE_SITES.length, 'no duplicates');
@@ -127,6 +131,8 @@ describe('EFFECT_TRACE_FIRE_SITES canonical-array drift (D-24294)', () => {
         case 'hero-executor':
         case 'hero-primitive':
         case 'escape-scheme-twist':
+        case 'villain-fight-bridge':
+        case 'villain-ambush-bridge':
           break;
         default: {
           const neverSite: never = fireSite;

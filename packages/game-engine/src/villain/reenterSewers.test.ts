@@ -181,13 +181,17 @@ describe('WP-868 RS-3 Mr. Immortal reenters the Sewers (D-24811)', () => {
     assert.deepStrictEqual(G.city, [MR_IMMORTAL, CITY_VILLAINS[0], null, null, null]);
   });
 
-  it('the onFight trace for the primitive reads no-op, not fired', () => {
+  // why: WP-877 / D-24824 — intentional behavior change: the bridge now records a secondary-site
+  // trace beside the executor's no-op (superseding D-24811 §3's "No secondary-site trace").
+  it('the onFight trace for the primitive reads no-op, then the fight bridge records secondary-site', () => {
     const G = makeState('villain');
     defeatCityVillainCore(G, FIGHT_CTX, 0, SHUFFLE_CONTEXT);
     const traces = G.diagnostics?.traces ?? [];
     const reenterTraces = traces.filter((trace) => trace.effect === 'reenter-sewers-if-villain-deck-top');
-    assert.equal(reenterTraces.length, 1);
-    assert.equal(reenterTraces[0]!.status, 'no-op');
+    assert.deepStrictEqual(
+      reenterTraces.map((trace) => [trace.status, trace.fireSite]),
+      [['no-op', 'villain-executor'], ['secondary-site', 'villain-fight-bridge']],
+    );
   });
 
   it('a card no longer in the Victory Pile does not reenter', () => {

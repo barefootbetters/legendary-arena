@@ -515,7 +515,7 @@ high-water: 422
 - WP-874 — wrecking-crew-demolish (chmp Wrecking Crew Demolish lines WP-864 left out: The Wrecker Ambush Demolishes each player once per Wrecking Crew Villain in the city, Bulldozer Ambush moves an extra space and Demolishes each player if it pushed a Villain, Thunderball Fight in the Sewers or Bank Demolishes each other player; reuses the D-24807 resolver. reserved 2026-11-07, claude/wp874-reserve)
 - WP-875 — mandarin-master-strike-and-ring-attack (rvlt The Mandarin: Master Strike sends a Mandarin's Ring from each player's Victory Pile back into the City or that player gains a Wound, Mandarin's Rings get +1 Attack, The Mandarin gets -1 Attack per Mandarin's Ring in all Victory Piles. reserved 2026-11-07, claude/wp-mandarin-reserve; LANDED 2026-11-07)
 - WP-876 — heist-deferred-lines (amwp: the four Heist lines WP-865 deferred fire their full printed payloads on a successful Heist - The Big Score, Revolutionary Anthem, Putting a Crew Together, X-Con Security Van. reserved 2026-11-08, claude/wp876-heist-deferred-reserve; LANDED 2026-11-08)
-- WP-877 — secondary-site-traces (villain primitives whose executor handler is a deliberate no-op get a secondary-site effect trace where the real work fires - Endless Armies / The Leader villain-deck play, Mr. Immortal re-entry, stack entry. reserved 2026-11-08, claude/wp877-secondary-site-reserve)
+- WP-877 — secondary-site-traces (villain primitives whose executor handler is a deliberate no-op get a secondary-site effect trace where the real work fires - Endless Armies / The Leader villain-deck play, Mr. Immortal re-entry, stack entry. reserved 2026-11-08, claude/wp877-secondary-site-reserve; LANDED 2026-11-08)
 
 ## EC
 
@@ -993,7 +993,7 @@ high-water: 457
 - EC-912 — wrecking-crew-demolish (WP-874. reserved 2026-11-07, claude/wp874-reserve)
 - EC-913 — mandarin-master-strike-and-ring-attack (WP-875. reserved 2026-11-07, claude/wp-mandarin-reserve; LANDED 2026-11-07)
 - EC-914 — heist-deferred-lines (WP-876. reserved 2026-11-08, claude/wp876-heist-deferred-reserve; LANDED 2026-11-08)
-- EC-915 — secondary-site-traces (WP-877. reserved 2026-11-08, claude/wp877-secondary-site-reserve)
+- EC-915 — secondary-site-traces (WP-877. reserved 2026-11-08, claude/wp877-secondary-site-reserve; LANDED 2026-11-08)
 
 ## D
 
@@ -1595,4 +1595,4 @@ section below) and the allocation protocol in
 - D-24821 — fortifier-chip-under-card-and-fight-status (fix to WP-873 / D-24819, no new WP; the fortifier chip sits under the card it fortifies, not over it, and shows why a fight is blocked. reserved 2026-11-08, claude/wp873-fortifier-chip-reason)
 - D-24822 — mandarin-master-strike-and-ring-attack (WP-875; The Mandarin's Master Strike handler, the Ring +1 Attack modifier and the per-Ring mastermind Attack reduction. reserved 2026-11-07, claude/wp-mandarin-reserve; LANDED 2026-11-07)
 - D-24823 — heist-deferred-lines (WP-876; the four deferred Heist payloads: The Big Score Master Strike KO + Bystander on top, Revolutionary Anthem Scheme Twist bonus + optional Villain Deck shuffle, Putting a Crew Together every-card distinct-cost count, X-Con Security Van move-a-Villain + KO a Hero. reserved 2026-11-08, claude/wp876-heist-deferred-reserve; LANDED 2026-11-08)
-- D-24824 — secondary-site-traces (WP-877; amends D-24294: new EffectTraceFireSite members for the deferred secondary fire sites. reserved 2026-11-08, claude/wp877-secondary-site-reserve)
+- D-24824 — secondary-site-traces (WP-877; amends D-24294: new EffectTraceFireSite members for the deferred secondary fire sites. reserved 2026-11-08, claude/wp877-secondary-site-reserve; LANDED 2026-11-08)

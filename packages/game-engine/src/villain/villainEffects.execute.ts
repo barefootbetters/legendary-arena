@@ -850,6 +850,10 @@ function formatCitySpaceList(spaces: readonly CitySpaceName[]): string {
 // sites, where the RevealContext + implementationMap are in scope). It MUST be listed here or
 // its trace would mislabel `fired` — the same reason become-scheme-twist / gain-attached-hero
 // are here.
+// why: WP-877 / D-24824 — the executor trace for the three bridged primitives below
+// (play-villain-deck-cards, reenter-sewers-if-villain-deck-top, stack-cards-enter-city-as-villains)
+// stays `no-op`; each bridge ALSO records a `secondary-site` trace through
+// recordVillainSecondarySiteTrace where the real work fires, the Mystique shape (D-24287).
 const DELIBERATE_NO_OP_VILLAIN_PRIMITIVES: ReadonlySet<VillainEffectPrimitive> =
   new Set<VillainEffectPrimitive>([
     'become-scheme-twist',
@@ -925,6 +929,51 @@ function buildVillainEffectTrace(
     params: buildVillainEffectTraceParams(descriptor),
     turn,
   };
+}
+
+/**
+ * Records the `secondary-site` trace for a bridged deliberate-no-op villain primitive
+ * (WP-877 / D-24824).
+ *
+ * The executor's trace for these primitives reads `no-op`, because their handlers mutate
+ * nothing; the real work runs in a fire-site bridge (the fight bridge or the Ambush block).
+ * Each bridge calls this immediately before it runs, so the trace list reads "the executor
+ * was a no-op; the work fired at the bridge", the shape Mystique's escape twist has had since
+ * WP-488 (D-24287). Writes only `G.diagnostics.traces`, through recordEffectTrace (lazy
+ * init, cap, never throws); hash-excluded and never read as gameplay input (D-24294).
+ *
+ * @param G - The game state; only its diagnostics channel is written.
+ * @param cardId - The card whose bridged effect is about to run.
+ * @param timing - The timing that fired ('onFight' or 'onAmbush').
+ * @param effect - The bridged primitive token.
+ * @param handler - The bridge function's name.
+ * @param fireSite - The bridge that runs the work.
+ * @param params - The descriptor-snapshot params (`magnitude` is the marked count, D-24824 §4).
+ * @param turn - The framework turn (D-24704).
+ */
+export function recordVillainSecondarySiteTrace(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  effect: 'play-villain-deck-cards' | 'reenter-sewers-if-villain-deck-top' | 'stack-cards-enter-city-as-villains',
+  handler: 'playTopVillainDeckCards' | 'reenterSewersOnVillainDeckReveal' | 'enterStackCardsAsVillains',
+  fireSite: 'villain-fight-bridge' | 'villain-ambush-bridge',
+  params: Record<string, string | number | boolean>,
+  turn: number,
+): void {
+  // why: scope reuses the executor's own card-type resolution, so the secondary trace and the
+  // executor trace for the same card always agree on 'villain' versus 'henchman'.
+  recordEffectTrace(G, {
+    cardId,
+    scope: resolveVillainCardType(G, cardId),
+    timing,
+    effect,
+    handler,
+    status: 'secondary-site',
+    fireSite,
+    params,
+    turn,
+  });
 }
 
 /**
