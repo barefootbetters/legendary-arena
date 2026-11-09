@@ -15,7 +15,7 @@
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { HeroCountSource } from '../rules/heroCountSource.js';
-import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
+import { BYSTANDER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 // why: WP-680 / D-24497, corrected D-24529 — the distinct-class source counts the
 // colors of Heroes you HAVE (hand + play, self-inclusive, order-independent — the
 // rulebook "Heroes you have" term of art), reusing the D-24055 in-play counting for
@@ -415,6 +415,66 @@ function countOddCostCardsPlayedThisTurn(
 }
 
 /**
+ * Collects the "cards you have" for the distinct-costs-you-have source (WP-876 / D-24823):
+ * the cards played this turn, then the hand, then the Hero Artifacts the player controls.
+ *
+ * // why: WP-876 / D-24823 — rules v23 ~l.2164-2167 define "cards you have" as the cards in your
+ * hand plus the cards you played this turn, and ~l.3443-3447 keep a played card that moved
+ * elsewhere as "a card you played this turn", so the played half is playedCardIdsThisTurn (Out
+ * of Time cards, returned Sidekicks and used Ritual Artifacts included), NOT the still-in-play
+ * "Heroes you have" pool. A controlled Hero Artifact joins (rules ~l.930, the distinct-classes
+ * collector precedent), skipped when it is already in the pool so it is listed once. Wounds and
+ * Bystanders print no cost, so they are skipped.
+ *
+ * @param G - Game state (read-only).
+ * @param playerID - The player whose cards to collect.
+ * @returns The pool's ext_ids in that order, or [] when the player has no zones.
+ */
+function collectCardsYouHave(G: LegendaryGameState, playerID: string): CardExtId[] {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) {
+    return [];
+  }
+  const pool: CardExtId[] = [];
+  for (const cardId of [...playedCardIdsThisTurn(G, playerZones.inPlay), ...playerZones.hand]) {
+    if (cardId === WOUND_EXT_ID || cardId === BYSTANDER_EXT_ID) {
+      continue;
+    }
+    pool.push(cardId as CardExtId);
+  }
+  for (const artifactCardId of G.controlledArtifacts?.[playerID] ?? []) {
+    if (pool.includes(artifactCardId)) {
+      continue;
+    }
+    pool.push(artifactCardId);
+  }
+  return pool;
+}
+
+/**
+ * Counts the distinct printed costs among the "cards you have" (WP-876 / D-24823), Putting a
+ * Crew Together's "+1 Attack for each different cost card you have".
+ *
+ * // why: WP-876 / D-24823 — the Weapon X Sequence note (rules v23 ~l.2184-2193) counts 0 as a
+ * cost, so a 0-cost card adds the cost 0 once. An id with no cardStats row reads as cost 0. This
+ * is NOT the Heist Count, which drops 0.
+ *
+ * @param G - Game state (read-only).
+ * @param playerID - The player whose cards to count.
+ * @returns The number of distinct printed costs, 0 included.
+ */
+function countDistinctCostsOfCardsYouHave(G: LegendaryGameState, playerID: string): number {
+  const distinctCosts: number[] = [];
+  for (const cardId of collectCardsYouHave(G, playerID)) {
+    const cost = G.cardStats?.[cardId]?.cost ?? 0;
+    if (!distinctCosts.includes(cost)) {
+      distinctCosts.push(cost);
+    }
+  }
+  return distinctCosts.length;
+}
+
+/**
  * Resolves a count source to the non-negative integer it represents.
  *
  * Pure and total: reads only `G`, never mutates or throws, and returns 0 for
@@ -519,6 +579,12 @@ export function resolveCountSource(
         }
       }
       return nonGreyHeroCount;
+    }
+    case 'distinct-costs-you-have': {
+      // why: WP-876 / D-24823 — Putting a Crew Together's "each different cost card you have":
+      // distinct printed costs over hand + cards played this turn + controlled Hero Artifacts, 0
+      // included, counted when the Heist fires. Self-inclusive; triggeringCardId is unused.
+      return countDistinctCostsOfCardsYouHave(G, playerID);
     }
     default: {
       // why: defensive — the union is closed, but an unrecognized source must
@@ -941,6 +1007,11 @@ export function explainCountSourceInputs(
         }
       }
       return nonGreyHeroIds;
+    }
+    case 'distinct-costs-you-have': {
+      // why: WP-876 / D-24823 — the pool the count reads (a distinct-cost rollup, so the count may
+      // be below the returned length when cards share a cost).
+      return collectCardsYouHave(G, playerID);
     }
     default: {
       // why: defensive — the union is closed, but an unrecognized source explains to no

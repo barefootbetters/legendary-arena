@@ -861,12 +861,13 @@ const EXCESSIVE_VIOLENCE_CARDS: ReadonlySet<string> = new Set<string>([
 const HEIST_LINE_PATTERN = /^\s*(?:\[keyword:Heist\]|Heist):/i;
 
 // why: WP-865 / D-24808 — the Honest-Partial allowlist of Heist cards whose WHOLE Heist ability
-// maps to a shipped executor (+recruit / +attack / rescue / draw), so their Heist line fuses into
-// an EXECUTABLE heist hook. Keyed by the canonical `{setAbbr}/{heroSlug}/{cardSlug}` key (the
-// EXCESSIVE_VIOLENCE_CARDS precedent). Every OTHER Heist line (The Big Score's Master Strike KO,
-// Revolutionary Anthem's Scheme Twist bonus, Putting a Crew Together's every-card count, X-Con
-// Security Van's move-a-Villain) does more than any executor models, so it becomes an honest
-// 'heist' hollow that grants nothing and readies nothing. Resolve ONLY the listed cards.
+// maps to a shipped executor, so their Heist line fuses into an EXECUTABLE heist hook. Keyed by
+// the canonical `{setAbbr}/{heroSlug}/{cardSlug}` key (the EXCESSIVE_VIOLENCE_CARDS precedent).
+// why: WP-876 / D-24823 — now all ten Ant-Man and the Wasp Heist lines: The Big Score, Revolutionary
+// Anthem, Putting a Crew Together and X-Con Security Van joined once their curated markers
+// (heist-master-strike-ko, heist-scheme-twist-bonus, attack-per-count:distinct-costs-you-have,
+// heist-move-villain-ko-hero) had executors. buildHeistHollow and the non-allowlisted branch stay
+// for any future set's Heist line, which stays an honest 'heist' hollow until it is listed here.
 const HEIST_CARDS: ReadonlySet<string> = new Set<string>([
   'amwp/scott-lang-cat-burglar/petty-larceny',
   'amwp/scott-lang-cat-burglar/anything-for-cassie',
@@ -874,6 +875,10 @@ const HEIST_CARDS: ReadonlySet<string> = new Set<string>([
   'amwp/wasp/infiltrate',
   'amwp/ant-man/tiny-little-risk',
   'amwp/ant-army/up-the-ante',
+  'amwp/scott-lang-cat-burglar/the-big-score',
+  'amwp/scott-lang-cat-burglar/putting-a-crew-together',
+  'amwp/scott-lang-cat-burglar/x-con-security-van',
+  'amwp/ant-army/revolutionary-anthem',
 ]);
 
 // why: WP-668 / D-24481, D-24670 — keywords whose handler computes the line's own

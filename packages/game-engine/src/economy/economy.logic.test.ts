@@ -948,30 +948,37 @@ describe('enrollHeistCard / markHeistAttempted (WP-865 / D-24808)', () => {
       'amwp/wasp/infiltrate#1',
       'amwp/wasp/infiltrate#0',
     ]);
-    assert.strictEqual(markHeistAttempted(economy).hasAttemptedHeistThisTurn, true);
+    const attempted = markHeistAttempted(economy, 'test/villain-group/thug#0');
+    assert.strictEqual(attempted.hasAttemptedHeistThisTurn, true);
+    // why: WP-876 / D-24823 — the revealed card is recorded with the latch.
+    assert.strictEqual(attempted.heistRevealedCardId, 'test/villain-group/thug#0');
   });
 
   it('the crew and the latch survive addResources / spendAttack / spendRecruit and coexist with other lazy fields', () => {
     let economy = enrollExcessiveViolenceCard(resetTurnEconomy(), 'vnom/carnage/rending-claws#0');
     economy = enrollHeistCard(economy, 'amwp/wasp/infiltrate#0');
-    economy = markHeistAttempted(economy);
+    economy = markHeistAttempted(economy, 'scheme-twist#0');
     economy = addResources(economy, 3, 2);
     economy = spendAttack(economy, 1);
     economy = spendRecruit(economy, 1);
     assert.deepStrictEqual(economy.heistCrewCards, ['amwp/wasp/infiltrate#0']);
     assert.strictEqual(economy.hasAttemptedHeistThisTurn, true);
+    assert.strictEqual(economy.heistRevealedCardId, 'scheme-twist#0', 'the recorded revealed card survives every rebuild');
     assert.deepStrictEqual(economy.excessiveViolencePlayedCards, ['vnom/carnage/rending-claws#0'], 'the EV ledger is not dropped');
   });
 
   it('the setters never mutate their input, and a reset or round-tripped base carries neither key', () => {
     const base = resetTurnEconomy();
     enrollHeistCard(base, 'x#0');
-    markHeistAttempted(base);
+    markHeistAttempted(base, 'x#1');
     assert.strictEqual('heistCrewCards' in base, false);
     assert.strictEqual('hasAttemptedHeistThisTurn' in base, false);
+    // why: WP-876 / D-24823 — a fresh economy carries no recorded revealed card.
+    assert.strictEqual('heistRevealedCardId' in base, false);
     const roundTripped = JSON.parse(JSON.stringify(spendRecruit(addResources(base, 1, 1), 1))) as Record<string, unknown>;
     assert.strictEqual(Object.keys(roundTripped).includes('heistCrewCards'), false);
     assert.strictEqual(Object.keys(roundTripped).includes('hasAttemptedHeistThisTurn'), false);
+    assert.strictEqual(Object.keys(roundTripped).includes('heistRevealedCardId'), false);
   });
 });
 

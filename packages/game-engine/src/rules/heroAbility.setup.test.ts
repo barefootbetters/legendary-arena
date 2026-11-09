@@ -694,12 +694,15 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'hq-hero-gains-size-changing-tech', // why: WP-862 / D-24804 — Pym Particles: a chosen HQ Hero with no Size-Changing gains Size-Changing [Tech] this turn (handler-bearing)
     'heist', // why: WP-865 / D-24808 — the Ant-Man and the Wasp Heist keyword: heroEffectHeist readies an allowlisted Heist card at play; a successful attemptHeist fires its heistEffects (fireHeistPlays). Appended last.
     'next-hand-extra-draw', // why: WP-866 / D-24809 — "When you draw a new hand … this turn, draw N extra card(s)": the additive handSizeOverrides write consumed by the end-of-turn cleanup. Appended last.
+    'heist-master-strike-ko', // why: WP-876 / D-24823 — The Big Score's Master Strike KO (Heist-only, rides heistEffects)
+    'heist-scheme-twist-bonus', // why: WP-876 / D-24823 — Revolutionary Anthem's Scheme Twist +N and optional shuffle (Heist-only)
+    'heist-move-villain-ko-hero', // why: WP-876 / D-24823 — X-Con Security Van's move to an empty space, then KO one of your Heroes (Heist-only). Appended last.
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      95,
-      'HERO_KEYWORDS must have exactly 95 entries (WP-866 / D-24809 next-hand-extra-draw appended last; WP-865 / D-24808 heist; D-24801 microscopic-size-changing after size-changing; feast, WP-857 / D-24793, after WP-860 / D-24796 discard-artifact-or-three-then-ko; hq-hero-gains-size-changing-tech, WP-862 / D-24804, appended last)',
+      98,
+      'HERO_KEYWORDS must have exactly 98 entries (WP-876 / D-24823 the three Heist payload keywords appended last; WP-866 / D-24809 next-hand-extra-draw; WP-865 / D-24808 heist; D-24801 microscopic-size-changing after size-changing; feast, WP-857 / D-24793, after WP-860 / D-24796 discard-artifact-or-three-then-ko; hq-hero-gains-size-changing-tech, WP-862 / D-24804, appended last)',
     );
 
     assert.deepStrictEqual(

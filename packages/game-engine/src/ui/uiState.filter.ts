@@ -1411,6 +1411,13 @@ export function filterUIStateForAudience(
       playerID: uiState.pendingMoveVillainChoice.playerID,
       villainCityIndices: [...uiState.pendingMoveVillainChoice.villainCityIndices],
     };
+    // why: WP-876 / D-24823 — pass the X-Con Security Van variant through to the chooser (the
+    // D-12803 step 3 whitelist; a field built but not copied here is silently dropped and the prompt
+    // would offer Spinning Cyclone's swaps). Omitted when absent; opponents and spectators never
+    // reach this branch, so they get no prompt at all.
+    if (uiState.pendingMoveVillainChoice.variant !== undefined) {
+      result.pendingMoveVillainChoice.variant = uiState.pendingMoveVillainChoice.variant;
+    }
   }
 
   // why: WP-724 / D-24546 — the pending split-face "choose a side" picker is private to the chooser

@@ -439,3 +439,108 @@ describe('hasPendingMoveVillainChoice block-all guard (WP-795 / D-24664)', () =>
     assert.equal(hasAnyPendingChoice(makeTestGameState()), false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-876 / D-24823 — the X-Con Security Van variant
+// ---------------------------------------------------------------------------
+
+describe('resolveMoveVillainChoice — the x-con-security-van variant (WP-876 / D-24823)', () => {
+  const X_CON = 'amwp/scott-lang-cat-burglar/x-con-security-van#0' as CardExtId;
+  const HERO_A = 'test/hero/a#0' as CardExtId;
+  const HERO_B = 'test/hero/b#0' as CardExtId;
+
+  /** One pending X-Con entry for seat 0. */
+  function xConForSeatZero(): PendingMoveVillainChoice[] {
+    return [{ playerID: '0', sourceCardId: X_CON, variant: 'x-con-security-van' }];
+  }
+
+  it('an occupied destination is an invalid answer: nothing moves and the entry stays open', () => {
+    const gameState = makeTestGameState({
+      city: [VILLAIN_A, null, VILLAIN_B, null, null],
+      pendingMoveVillainChoices: xConForSeatZero(),
+    });
+    gameState.playerZones['0']!.inPlay = [HERO_A];
+    const before = JSON.stringify(gameState);
+    resolveMoveVillainChoice(makeMoveContext(gameState), { fromCityIndex: 0, toCityIndex: 2 });
+    assert.equal(JSON.stringify(gameState), before, 'a swap is never made for X-Con');
+  });
+
+  it('a move to an empty space rescues nothing, then KOs the only Hero with no prompt', () => {
+    const gameState = makeTestGameState({
+      city: [VILLAIN_A, null, null, null, null],
+      attachedBystanders: { [VILLAIN_A]: [BYSTANDER_1] },
+      pendingMoveVillainChoices: xConForSeatZero(),
+    });
+    gameState.playerZones['0']!.inPlay = [HERO_A];
+    resolveMoveVillainChoice(makeMoveContext(gameState), { fromCityIndex: 0, toCityIndex: 3 });
+
+    assert.deepEqual(gameState.city, [null, null, null, VILLAIN_A, null]);
+    assert.deepEqual(gameState.playerZones['0']!.victory, [], 'X-Con rescues nothing');
+    assert.deepEqual(gameState.attachedBystanders[VILLAIN_A], [BYSTANDER_1], 'the Bystander travels with the Villain');
+    assert.deepEqual(gameState.ko, [HERO_A], 'the forced KO');
+    assert.equal(gameState.pendingKoHeroChoices, undefined, 'no prompt for a forced KO');
+    assert.equal(hasPendingMoveVillainChoice(gameState), false);
+    const texts = logTexts(gameState);
+    assert.ok(texts.includes(`Player 0 moved ${ref(gameState, VILLAIN_A)} from the Sewers to the empty Streets (X-Con Security Van).`));
+    assert.ok(texts.includes(`Player 0 KO'd ${ref(gameState, HERO_A)} from the cards they played this turn (X-Con Security Van).`));
+  });
+
+  it('a move with two distinct Heroes parks the ko-hero choice', () => {
+    const gameState = makeTestGameState({
+      city: [VILLAIN_A, null, null, null, null],
+      pendingMoveVillainChoices: xConForSeatZero(),
+    });
+    gameState.playerZones['0']!.hand = [HERO_A];
+    gameState.playerZones['0']!.inPlay = [HERO_B];
+    resolveMoveVillainChoice(makeMoveContext(gameState), { fromCityIndex: 0, toCityIndex: 1 });
+    assert.deepEqual(gameState.pendingKoHeroChoices, [{ choiceType: 'ko-hero', playerID: '0' }]);
+    assert.deepEqual(gameState.ko, []);
+    assert.ok(logTexts(gameState).at(-1)!.startsWith('Player 0 must choose one of their Heroes to KO'));
+  });
+
+  it('a move with no Hero to KO logs the blocked line', () => {
+    const gameState = makeTestGameState({
+      city: [VILLAIN_A, null, null, null, null],
+      pendingMoveVillainChoices: xConForSeatZero(),
+    });
+    resolveMoveVillainChoice(makeMoveContext(gameState), { fromCityIndex: 0, toCityIndex: 1 });
+    assert.deepEqual(gameState.city, [null, VILLAIN_A, null, null, null]);
+    const last = (gameState.messages as unknown as { text: string; outcome?: string }[]).at(-1)!;
+    assert.equal(last.text, 'Player 0 has no Hero to KO (X-Con Security Van).');
+    assert.equal(last.outcome, 'blocked');
+  });
+
+  it('a decline moves nothing, KOs nothing, logs the X-Con decline line and pops', () => {
+    const gameState = makeTestGameState({
+      city: [VILLAIN_A, null, null, null, null],
+      pendingMoveVillainChoices: xConForSeatZero(),
+    });
+    gameState.playerZones['0']!.inPlay = [HERO_A];
+    resolveMoveVillainChoice(makeMoveContext(gameState), { decline: true });
+    assert.deepEqual(gameState.city, [VILLAIN_A, null, null, null, null]);
+    assert.deepEqual(gameState.ko, []);
+    assert.equal(hasPendingMoveVillainChoice(gameState), false);
+    assert.deepEqual(logTexts(gameState), ["Player 0 chose not to move a Villain (X-Con Security Van), so no Hero is KO'd."]);
+  });
+
+  it('a six-space City accepts its empty sixth space', () => {
+    const gameState = makeTestGameState({
+      city: [VILLAIN_A, VILLAIN_B, VILLAIN_B, VILLAIN_B, VILLAIN_B, null],
+      pendingMoveVillainChoices: xConForSeatZero(),
+    });
+    resolveMoveVillainChoice(makeMoveContext(gameState), { fromCityIndex: 0, toCityIndex: 5 });
+    assert.deepEqual(gameState.city, [null, VILLAIN_B, VILLAIN_B, VILLAIN_B, VILLAIN_B, VILLAIN_A]);
+  });
+
+  it('a wrong player, an empty source, and a destination past the City are silent no-ops', () => {
+    const gameState = makeTestGameState({
+      city: [VILLAIN_A, null, null, null, null],
+      pendingMoveVillainChoices: xConForSeatZero(),
+    });
+    const before = JSON.stringify(gameState);
+    resolveMoveVillainChoice(makeMoveContext(gameState, '1'), { fromCityIndex: 0, toCityIndex: 1 });
+    resolveMoveVillainChoice(makeMoveContext(gameState), { fromCityIndex: 2, toCityIndex: 1 });
+    resolveMoveVillainChoice(makeMoveContext(gameState), { fromCityIndex: 0, toCityIndex: 5 });
+    assert.equal(JSON.stringify(gameState), before);
+  });
+});

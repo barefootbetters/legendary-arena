@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2189,
+    "totalEntries": 2193,
     "byScope": {
-      "hero": 859,
+      "hero": 863,
       "villain": 763,
       "mastermind": 567
     },
     "byStatus": {
-      "executable": 780,
+      "executable": 784,
       "deferred": 18,
       "condition": 58,
       "unsupported": 280,
@@ -1315,6 +1315,23 @@
       "name": "Ant Army",
       "set": "amwp",
       "scope": "hero",
+      "mechanic": "heist-scheme-twist-bonus",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#heist-scheme-twist-bonus",
+      "wp": "WP-876",
+      "decision": "D-24823",
+      "designs": [
+        {
+          "slug": "revolutionary-anthem",
+          "name": "Revolutionary Anthem"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/ant-army",
+      "name": "Ant Army",
+      "set": "amwp",
+      "scope": "hero",
       "mechanic": "microscopic-size-changing",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing",
@@ -1690,6 +1707,57 @@
         {
           "slug": "lead-powerful-allies",
           "name": "Lead Powerful Allies"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/scott-lang-cat-burglar",
+      "name": "Scott Lang, Cat Burglar",
+      "set": "amwp",
+      "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "putting-a-crew-together",
+          "name": "Putting a Crew Together"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/scott-lang-cat-burglar",
+      "name": "Scott Lang, Cat Burglar",
+      "set": "amwp",
+      "scope": "hero",
+      "mechanic": "heist-master-strike-ko",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#heist-master-strike-ko",
+      "wp": "WP-876",
+      "decision": "D-24823",
+      "designs": [
+        {
+          "slug": "the-big-score",
+          "name": "The Big Score"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/scott-lang-cat-burglar",
+      "name": "Scott Lang, Cat Burglar",
+      "set": "amwp",
+      "scope": "hero",
+      "mechanic": "heist-move-villain-ko-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#heist-move-villain-ko-hero",
+      "wp": "WP-876",
+      "decision": "D-24823",
+      "designs": [
+        {
+          "slug": "x-con-security-van",
+          "name": "X-Con Security Van"
         }
       ]
     },
@@ -31616,6 +31684,7 @@
         "antics",
         "draw",
         "heist",
+        "heist-scheme-twist-bonus",
         "microscopic-size-changing",
         "size-changing"
       ]
@@ -31665,6 +31734,9 @@
     "amwp/scott-lang-cat-burglar": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
+        "heist-master-strike-ko",
+        "heist-move-villain-ko-hero",
         "rescue"
       ]
     },

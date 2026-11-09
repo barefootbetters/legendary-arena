@@ -57,6 +57,11 @@ import {
 import { hasSeatSubmitted, isSeatAddressed } from '../moves/seatChoice.resolve.js';
 import { TIMESTREAM_PURGE_SEAT_CHOICE_KIND } from '../rules/timestreamPurge.logic.js';
 import { ENIGMA_PEEK_SEAT_CHOICE_KIND } from '../rules/enigmaCode.logic.js';
+import { HEIST_SHUFFLE_SEAT_CHOICE_KIND } from '../hero/heistPayloads.logic.js';
+
+// why: WP-876 / D-24823 — the shuffle prompt's "Leave the Villain Deck as it is" option.
+/** The option index of Revolutionary Anthem's leave option. */
+const HEIST_LEAVE_OPTION_INDEX = 1;
 import { victoryPointValueForCard } from '../economy/bloodFrenzy.logic.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { resolveFightPrice } from '../economy/economy.resolve.js';
@@ -122,6 +127,12 @@ function chooseByKind(
     // why: WP-828 / D-24761 — the granted Hero is played again next turn, so the bot grants the
     // highest-cost listed Hero (first listed on a tie).
     return chooseHighestCostOption(G, options);
+  }
+  if (choice.kind === HEIST_SHUFFLE_SEAT_CHOICE_KIND) {
+    // why: WP-876 / D-24823 — Revolutionary Anthem's optional shuffle: the bot leaves the Villain
+    // Deck as it is (option 1, also the default; belt-and-braces). Never reached while bots do not
+    // attempt a Heist (D-24823 §7).
+    return HEIST_LEAVE_OPTION_INDEX;
   }
   if (choice.kind === ENIGMA_PEEK_SEAT_CHOICE_KIND) {
     // why: WP-830 / D-24763 — a seen Enigma card is a right guess later, worth the 1 Recruit; the

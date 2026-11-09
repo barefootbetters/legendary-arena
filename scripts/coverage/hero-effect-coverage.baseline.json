@@ -1,9 +1,9 @@
 {
   "corpus": {
-    "executable": 3939,
+    "executable": 3946,
     "heroes": 324,
     "hooks": 6397,
-    "noEffect": 2354,
+    "noEffect": 2347,
     "parsedNotExecuted": 104
   },
   "perSet": {
@@ -18,9 +18,9 @@
       "noEffect": 34
     },
     "amwp": {
-      "executable": 143,
+      "executable": 150,
       "hooks": 195,
-      "noEffect": 52
+      "noEffect": 45
     },
     "anni": {
       "executable": 45,

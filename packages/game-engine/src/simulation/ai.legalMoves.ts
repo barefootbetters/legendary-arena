@@ -357,12 +357,19 @@ export function selectDefaultKoDiscardCardIds(gameState: LegendaryGameState): Ca
  *
  * Moves the lowest-index City Villain that holds a captured Bystander to the lowest-index
  * other City space (swapping when occupied), so the printed rescue fires. With no Bystander
- * holder in the City it declines.
+ * holder in the City it declines. An X-Con Security Van entry is always declined.
  *
  * @param gameState - The engine state. Not mutated.
  * @returns The move payload: a move between two City indices, or a decline.
  */
 function selectDefaultMoveVillainArgs(gameState: LegendaryGameState): ResolveMoveVillainChoiceArgs {
+  // why: WP-876 / D-24823 — load-bearing: the Spinning Cyclone answer below may name an occupied
+  // space, which the X-Con variant rejects (empty spaces only), so a bot answering it would never
+  // resolve the entry and a simulation would hang. X-Con's move gains nothing (no rescue) and costs
+  // a Hero, so the bot declines. Never reached while bots do not attempt a Heist (D-24823 §7).
+  if (gameState.pendingMoveVillainChoices?.[0]?.variant === 'x-con-security-van') {
+    return { decline: true };
+  }
   // why: WP-831 / D-24764 — a 1-space City has no other space to move a Villain to.
   if (gameState.city.length < 2) {
     return { decline: true };

@@ -1789,6 +1789,30 @@
       "cardSlug": "mystics",
       "abilityIndex": 0,
       "markupToken": "[keyword:next-hand-extra-draw:1]"
+    },
+    {
+      "heroSlug": "scott-lang-cat-burglar",
+      "cardSlug": "the-big-score",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:heist-master-strike-ko]"
+    },
+    {
+      "heroSlug": "scott-lang-cat-burglar",
+      "cardSlug": "putting-a-crew-together",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:distinct-costs-you-have:1]"
+    },
+    {
+      "heroSlug": "scott-lang-cat-burglar",
+      "cardSlug": "x-con-security-van",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:heist-move-villain-ko-hero]"
+    },
+    {
+      "heroSlug": "ant-army",
+      "cardSlug": "revolutionary-anthem",
+      "abilityIndex": 2,
+      "markupToken": "[keyword:heist-scheme-twist-bonus:2]"
     }
   ],
   "anni": [

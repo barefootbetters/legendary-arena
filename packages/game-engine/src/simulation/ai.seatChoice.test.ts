@@ -30,6 +30,7 @@ import {
   buildEscapeEffectCostDiscardChoice,
 } from '../villainDeck/villainEscapeProcedure.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { parkHeistShuffleChoice } from '../hero/heistPayloads.logic.js';
 
 /**
  * Minimal G carrying only the fields the builders and the policy read.
@@ -350,5 +351,16 @@ describe('WP-837 bot-ally pick for the every-player trait discard (D-24770)', ()
       defaultOptionIndex: 0,
     } as PendingSeatChoice);
     assert.equal(choosePlayingSeatChoiceOption(G, '0'), 1);
+  });
+});
+
+describe('choosePlayingSeatChoiceOption — Revolutionary Anthem shuffle (WP-876 / D-24823)', () => {
+  it('leaves the Villain Deck as it is', () => {
+    const G = makeState({ '0': [] });
+    // why: built by the engine's own park, so the option order is the order the live game shows.
+    parkHeistShuffleChoice(G, undefined, '0', 'amwp/ant-army/revolutionary-anthem#0');
+    assert.equal(G.pendingSeatChoice?.kind, 'heist-shuffle-villain-deck');
+    assert.equal(choosePlayingSeatChoiceOption(G, '0'), 1);
+    assert.equal(G.pendingSeatChoice!.seatPrompts['0']!.options[1]!.label, 'Leave the Villain Deck as it is');
   });
 });

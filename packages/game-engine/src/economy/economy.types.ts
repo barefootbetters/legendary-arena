@@ -301,6 +301,21 @@ export interface TurnEconomy {
    * by `carryConversionFlag`. Absent ≡ not yet attempted this turn.
    */
   hasAttemptedHeistThisTurn?: boolean;
+  /**
+   * WP-876 / D-24823 — the Villain Deck card this turn's Heist revealed. Set by `attemptHeist`
+   * together with `hasAttemptedHeistThisTurn` (via `markHeistAttempted`).
+   *
+   * why: two Heist lines key on "the card revealed from the Villain Deck" (The Big Score's
+   * Master Strike, Revolutionary Anthem's Scheme Twist). An earlier Heist ability in the same
+   * Heist can change the Villain Deck top (The Big Score replaces a Master Strike with a
+   * Bystander), so the revealed card is RECORDED here when the attempt latches and the handlers
+   * read that id's type, never the live top.
+   *
+   * ACTIVE-PLAYER-SCOPED. LAZILY MATERIALIZED: absent until a Heist is attempted, dropped by
+   * `resetTurnEconomy` at turn start, carried by `carryConversionFlag`. String only (CardExtId).
+   * Not projected to the client.
+   */
+  heistRevealedCardId?: CardExtId;
 }
 
 // why: stats resolved at setup time from registry so moves never query
