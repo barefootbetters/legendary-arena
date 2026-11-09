@@ -71,7 +71,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "Heist: You may move a Villain to an empty city space. If you do, KO one of your Heroes."
+            "Heist: You may move a Villain to an empty city space. If you do, KO one of your Heroes. [keyword:heist-move-villain-ko-hero]"
           ]
         },
         {
@@ -85,7 +85,7 @@
           "attack": "3+",
           "recruit": null,
           "abilities": [
-            "Heist: You get +1[icon:attack] for each different cost card you have."
+            "Heist: You get +1[icon:attack] for each different cost card you have. [keyword:attack-per-count:distinct-costs-you-have:1]"
           ]
         },
         {
@@ -99,7 +99,7 @@
           "attack": "4+",
           "recruit": null,
           "abilities": [
-            "Heist: You get +4[icon:attack]. If the card revealed from the Villain Deck is a Master Strike, KO it and put a card from the Bystander Deck on top of the Villain Deck."
+            "Heist: You get +4[icon:attack]. If the card revealed from the Villain Deck is a Master Strike, KO it and put a card from the Bystander Deck on top of the Villain Deck. [keyword:heist-master-strike-ko]"
           ]
         }
       ],
@@ -1210,7 +1210,7 @@
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:tech][hc:tech][hc:tech][hc:tech][hc:tech]",
             "[keyword:Antics]: You get +2[icon:attack].",
-            "[keyword:Heist]: You get +2[icon:attack]. If the card revealed from the Villain Deck is a Scheme Twist, you get another +2[icon:attack], and you may shuffle that deck."
+            "[keyword:Heist]: You get +2[icon:attack]. If the card revealed from the Villain Deck is a Scheme Twist, you get another +2[icon:attack], and you may shuffle that deck. [keyword:heist-scheme-twist-bonus:2]"
           ]
         }
       ],

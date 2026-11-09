@@ -4,7 +4,8 @@
  * Builds the REAL hooks from the committed data/cards/amwp.json, plays Heist cards through the real
  * hero executor, and attempts the Heist through the real attemptHeist move, so the readying, the
  * Heist Count, the revealed-card VP, the three outcomes, the once-per-turn latch and the no-op gates
- * are pinned together.
+ * are pinned together. WP-876 / D-24823 adds the four formerly hollow lines: the recorded revealed
+ * card, mixed-crew order, and the Heist choices that open together.
  *
  * No boardgame.io imports. node:test + node:assert only.
  */
@@ -17,6 +18,9 @@ import { fileURLToPath } from 'node:url';
 import { buildHeroAbilityHooks } from '../setup/heroAbility.setup.js';
 import { executeHeroEffects } from '../hero/heroEffects.execute.js';
 import { attemptHeist, heistCount, heistRevealedVictoryPoints, isHeistAvailable } from './attemptHeist.js';
+import { resolveMoveVillainChoice } from './moveVillainChoice.resolve.js';
+import { resolveSeatChoice } from './seatChoice.resolve.js';
+import { resolveKoHeroChoice } from './koHeroChoice.resolve.js';
 import type { LegendaryGameState, MatchConfiguration } from '../types.js';
 import type { HeroAbilityHook } from '../rules/heroAbility.types.js';
 import type { CardExtId } from '../state/zones.types.js';
@@ -36,6 +40,11 @@ const PETTY_LARCENY = 'amwp/scott-lang-cat-burglar/petty-larceny#0' as CardExtId
 const SHOCKING_SUPPORT = 'amwp/scott-lang-cat-burglar/shocking-support#0' as CardExtId;
 const ANYTHING_FOR_CASSIE = 'amwp/scott-lang-cat-burglar/anything-for-cassie#0' as CardExtId;
 const THE_BIG_SCORE = 'amwp/scott-lang-cat-burglar/the-big-score#0' as CardExtId;
+const PUTTING_A_CREW_TOGETHER = 'amwp/scott-lang-cat-burglar/putting-a-crew-together#0' as CardExtId;
+const X_CON_SECURITY_VAN = 'amwp/scott-lang-cat-burglar/x-con-security-van#0' as CardExtId;
+const X_CON_SECURITY_VAN_SECOND = 'amwp/scott-lang-cat-burglar/x-con-security-van#1' as CardExtId;
+const REVOLUTIONARY_ANTHEM = 'amwp/ant-army/revolutionary-anthem#0' as CardExtId;
+const TOP_VILLAIN_IN_CITY = 'test/villain-group/brute#0' as CardExtId;
 const INFILTRATE = 'amwp/wasp/infiltrate#0' as CardExtId;
 const TINY_LITTLE_RISK = 'amwp/ant-man/tiny-little-risk#0' as CardExtId;
 const UP_THE_ANTE = 'amwp/ant-army/up-the-ante#0' as CardExtId;
@@ -133,6 +142,10 @@ function makeState(): LegendaryGameState {
       [SHOCKING_SUPPORT]: costEntry(4),
       [ANYTHING_FOR_CASSIE]: costEntry(2),
       [THE_BIG_SCORE]: costEntry(8),
+      [PUTTING_A_CREW_TOGETHER]: costEntry(6),
+      [X_CON_SECURITY_VAN]: costEntry(5),
+      [X_CON_SECURITY_VAN_SECOND]: costEntry(5),
+      [REVOLUTIONARY_ANTHEM]: costEntry(9),
       [INFILTRATE]: costEntry(6),
       [TINY_LITTLE_RISK]: costEntry(6),
       [UP_THE_ANTE]: costEntry(1),
@@ -221,13 +234,23 @@ describe('WP-865 Heist readying at play', () => {
     });
   }
 
-  it('The Big Score is a hollow: it grants nothing and readies nothing', () => {
-    const G = makeState();
-    playCard(G, THE_BIG_SCORE);
-    assert.equal(G.turnEconomy.heistCrewCards, undefined);
-    assert.equal(G.turnEconomy.attack, 0);
-    assert.equal(isHeistAvailable(G, '0'), false, 'a hollow alone never offers a Heist');
-  });
+  // why: WP-876 / D-24823 — the four formerly hollow lines now ready like the other six (AC 2): a
+  // turn whose only Heist card is one of them offers the Heist (operator match bo4ZSQLBuQU turn 6).
+  for (const cardId of [THE_BIG_SCORE, REVOLUTIONARY_ANTHEM, PUTTING_A_CREW_TOGETHER, X_CON_SECURITY_VAN]) {
+    it(`${cardId} is readied, grants nothing, parks nothing, and alone offers a Heist`, () => {
+      const G = makeState();
+      G.city = [TOP_VILLAIN_IN_CITY, null, null, null, null];
+      playCard(G, cardId);
+      assert.deepEqual(G.turnEconomy.heistCrewCards, [cardId]);
+      assert.equal(G.turnEconomy.attack, 0, 'no attack at play');
+      assert.equal(G.turnEconomy.recruit, 0, 'no recruit at play');
+      assert.equal(G.pendingSeatChoice, undefined, 'no seat choice at play');
+      assert.equal(G.pendingMoveVillainChoices, undefined, 'no move choice at play');
+      assert.equal(G.ko.length, 0, 'nothing KO\'d at play');
+      assert.equal(outcomeOf(G, 'for a Heist'), 'applied');
+      assert.equal(isHeistAvailable(G, '0'), true, 'the card alone offers a Heist');
+    });
+  }
 });
 
 describe('WP-865 Heist outcomes', () => {
@@ -444,5 +467,177 @@ describe('WP-865 revealed-card VP', () => {
     attemptHeist(moveContext(G));
     assert.equal(G.turnEconomy.attack, 3);
     assert.deepEqual(G.villainDeck.deck, [SCHEME_TWIST, TOP_VILLAIN], 'the Scheme Twist stays on top');
+  });
+});
+
+/**
+ * The resolveSeatChoice move context for player 0 (no live framework events).
+ *
+ * @param G - The game state.
+ * @returns A move context for player 0.
+ */
+function seatChoiceContext(G: LegendaryGameState): never {
+  return { G, playerID: '0', ctx: { ...mockCtx.ctx }, events: {}, random: mockCtx.random } as never;
+}
+
+/**
+ * The first index of a log line containing a fragment, or -1.
+ *
+ * @param G - The game state.
+ * @param fragment - Text the line must contain.
+ * @returns The line index, or -1.
+ */
+function lineIndexOf(G: LegendaryGameState, fragment: string): number {
+  return logLines(G).findIndex((line) => line.includes(fragment));
+}
+
+describe('WP-876 the revealed card is recorded', () => {
+  it('attemptHeist records the revealed card id on the turn economy', () => {
+    const G = makeState();
+    playCard(G, INFILTRATE);
+    attemptHeist(moveContext(G));
+    assert.equal(G.turnEconomy.heistRevealedCardId, TOP_VILLAIN);
+    assert.equal(G.turnEconomy.hasAttemptedHeistThisTurn, true);
+  });
+
+  it('no attempt leaves the field absent', () => {
+    const G = makeState();
+    playCard(G, INFILTRATE);
+    assert.equal('heistRevealedCardId' in G.turnEconomy, false);
+  });
+});
+
+describe('WP-876 mixed crews fire in readying order', () => {
+  it('Petty Larceny, then two Big Scores against a Master Strike: one KO, the second reads the recorded card', () => {
+    const G = makeState();
+    G.villainDeck.deck = [MASTER_STRIKE, TOP_VILLAIN];
+    playCard(G, PETTY_LARCENY);
+    playCard(G, THE_BIG_SCORE);
+    // why: The Big Score is a single-copy rare; readying it twice (the crew keeps duplicates) stands in
+    // for a second copy.
+    playCard(G, THE_BIG_SCORE);
+    // why: Heist Count = costs {1, 8} = 2 against a 0 VP Master Strike.
+    attemptHeist(moveContext(G));
+
+    assert.equal(G.turnEconomy.recruit, 2, 'Petty Larceny +2 Recruit');
+    assert.equal(G.turnEconomy.attack, 8, 'two Big Scores, +4 each');
+    assert.deepEqual(G.ko, [MASTER_STRIKE], 'the first Big Score KOs the Master Strike');
+    assert.deepEqual(G.villainDeck.deck, ['pile-bystander#0', TOP_VILLAIN], 'a Bystander is on top');
+    assert.equal(G.villainDeckCardTypes['pile-bystander#0' as CardExtId], 'bystander');
+    assert.equal(G.piles.bystanders.length, 0, 'the Bystander Deck is one shorter');
+    // why: the second Big Score reads the RECORDED revealed card (a Master Strike), not the live top
+    // (a Bystander): it says the Strike is no longer on top, never "not a Master Strike".
+    const attemptIndex = lineIndexOf(G, 'attempts a Heist');
+    const koIndex = lineIndexOf(G, 'from the Villain Deck and put a Bystander on top');
+    const noLongerIndex = lineIndexOf(G, 'is no longer on top of the Villain Deck');
+    const recruitIndex = logLines(G).findIndex((line, index) => index > attemptIndex && line.includes('recruit'));
+    assert.ok(recruitIndex > attemptIndex && recruitIndex < koIndex, 'readying order: Petty Larceny fires first');
+    assert.ok(koIndex >= 0 && noLongerIndex > koIndex, 'the second Big Score fires after the first');
+    assert.equal(lineIndexOf(G, 'is not a Master Strike'), -1);
+    assert.equal(outcomeOf(G, 'is no longer on top'), 'blocked');
+    assert.equal(logLines(G).at(-1), 'The Heist worked! Player 0 uses 3 Heist abilities.');
+  });
+
+  it('two Revolutionary Anthems against a Scheme Twist: +8 and one shuffle prompt', () => {
+    const G = makeState();
+    G.villainDeck.deck = [SCHEME_TWIST, TOP_VILLAIN];
+    playCard(G, REVOLUTIONARY_ANTHEM);
+    // why: Revolutionary Anthem is a single-copy rare; readying it twice stands in for a second copy.
+    playCard(G, REVOLUTIONARY_ANTHEM);
+    attemptHeist(moveContext(G));
+    assert.equal(G.turnEconomy.attack, 8, 'two Anthems against a Scheme Twist: +2 +2 each');
+    assert.equal(G.pendingSeatChoice?.kind, 'heist-shuffle-villain-deck', 'one shuffle prompt');
+    assert.deepEqual(G.pendingSeatChoice?.addressedSeats, ['0']);
+    assert.ok(lineIndexOf(G, 'has already been offered a shuffle') >= 0, 'the second Anthem offers no second prompt');
+  });
+
+  it('Putting a Crew Together counts cards an earlier Heist ability drew', () => {
+    const G = makeState();
+    G.villainDeck.deck = [SCHEME_TWIST, TOP_VILLAIN];
+    G.playerZones['0']!.deck = [HAND_FIVE, 'deck-02' as CardExtId];
+    playCard(G, TINY_LITTLE_RISK);
+    playCard(G, PUTTING_A_CREW_TOGETHER);
+    // why: Heist Count = cost {6} = 1 against a 0 VP Scheme Twist. Tiny little Risk fires first and
+    // draws HAND_FIVE (cost 5) and deck-02 (no cardStats row, cost 0); Putting a Crew Together then
+    // counts {6, 5, 0} = 3.
+    attemptHeist(moveContext(G));
+    assert.equal(G.playerZones['0']!.hand.length, 2, 'two cards drawn');
+    assert.equal(G.turnEconomy.attack, 3, '+1 per distinct cost among the cards you have');
+  });
+});
+
+describe('WP-876 Heist choices open together (D-24823 §8)', () => {
+  /**
+   * A won Heist with Revolutionary Anthem and X-Con Security Van against a Scheme Twist, with one
+   * City Villain and two Heroes in hand.
+   *
+   * @returns The state after the Heist fired.
+   */
+  function heistWithAnthemAndXCon(): LegendaryGameState {
+    const G = makeState();
+    G.villainDeck.deck = [SCHEME_TWIST, TOP_VILLAIN];
+    G.city = [TOP_VILLAIN_IN_CITY, null, null, null, null];
+    G.playerZones['0']!.hand = [HAND_FIVE, HAND_SIX];
+    playCard(G, REVOLUTIONARY_ANTHEM);
+    playCard(G, X_CON_SECURITY_VAN);
+    attemptHeist(moveContext(G));
+    return G;
+  }
+
+  it('both the shuffle seat choice and the X-Con move choice are open', () => {
+    const G = heistWithAnthemAndXCon();
+    assert.equal(G.turnEconomy.attack, 4, 'Anthem +2 +2');
+    assert.equal(G.pendingSeatChoice?.kind, 'heist-shuffle-villain-deck');
+    assert.deepEqual(G.pendingMoveVillainChoices, [
+      { playerID: '0', sourceCardId: X_CON_SECURITY_VAN, variant: 'x-con-security-van' },
+    ]);
+  });
+
+  it('move first: the shuffle stays open, then the ko-hero choice and the shuffle resolve in turn', () => {
+    const G = heistWithAnthemAndXCon();
+    resolveMoveVillainChoice({ G, playerID: '0' } as never, { fromCityIndex: 0, toCityIndex: 2 });
+    assert.deepEqual(G.city, [null, null, TOP_VILLAIN_IN_CITY, null, null]);
+    assert.equal(G.pendingMoveVillainChoices?.length, 0);
+    assert.deepEqual(G.pendingKoHeroChoices, [{ choiceType: 'ko-hero', playerID: '0' }], 'four Heroes: a genuine KO choice');
+    assert.equal(G.pendingSeatChoice?.kind, 'heist-shuffle-villain-deck', 'the shuffle is still open');
+
+    resolveSeatChoice(seatChoiceContext(G), { optionIndex: 1 });
+    assert.equal(G.pendingSeatChoice, undefined);
+    assert.deepEqual(G.villainDeck.deck, [SCHEME_TWIST, TOP_VILLAIN], 'Leave keeps the deck');
+    assert.equal(G.pendingKoHeroChoices?.length, 1, 'the ko-hero choice is still open');
+
+    resolveKoHeroChoice({ G, playerID: '0' } as never, { zone: 'hand', cardId: HAND_FIVE });
+    assert.deepEqual(G.ko, [HAND_FIVE]);
+    assert.equal(G.pendingKoHeroChoices?.length, 0);
+  });
+
+  it('shuffle first: the move choice stays open and still resolves', () => {
+    const G = heistWithAnthemAndXCon();
+    resolveSeatChoice(seatChoiceContext(G), { optionIndex: 0 });
+    assert.equal(G.pendingSeatChoice, undefined);
+    assert.deepEqual(G.villainDeck.deck, [TOP_VILLAIN, SCHEME_TWIST], 'Shuffle reorders through random.Shuffle');
+    assert.equal(G.pendingMoveVillainChoices?.length, 1, 'the move choice is still open');
+
+    resolveMoveVillainChoice({ G, playerID: '0' } as never, { decline: true });
+    assert.equal(G.pendingMoveVillainChoices?.length, 0);
+    assert.equal(G.pendingKoHeroChoices, undefined, 'a decline KOs nothing');
+    assert.deepEqual(G.city, [TOP_VILLAIN_IN_CITY, null, null, null, null], 'a decline moves nothing');
+  });
+
+  it('two X-Cons: a move parks the ko-hero choice and keeps the second queued entry', () => {
+    const G = makeState();
+    G.villainDeck.deck = [SCHEME_TWIST, TOP_VILLAIN];
+    G.city = [TOP_VILLAIN_IN_CITY, null, null, null, null];
+    G.playerZones['0']!.hand = [HAND_FIVE, HAND_SIX];
+    playCard(G, X_CON_SECURITY_VAN);
+    playCard(G, X_CON_SECURITY_VAN_SECOND);
+    attemptHeist(moveContext(G));
+    assert.equal(G.pendingMoveVillainChoices?.length, 2);
+
+    resolveMoveVillainChoice({ G, playerID: '0' } as never, { fromCityIndex: 0, toCityIndex: 4 });
+    assert.deepEqual(G.pendingKoHeroChoices, [{ choiceType: 'ko-hero', playerID: '0' }]);
+    assert.deepEqual(G.pendingMoveVillainChoices, [
+      { playerID: '0', sourceCardId: X_CON_SECURITY_VAN_SECOND, variant: 'x-con-security-van' },
+    ]);
   });
 });

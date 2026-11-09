@@ -52,7 +52,7 @@ describe('HERO_COUNT_SOURCES drift-detection', () => {
   // why: WP-563 / D-24372 — a RUNTIME assertion, not a bare `satisfies`: engine
   // test files are transpiled by tsx (not typechecked in CI), so a compile-time
   // pin would be documentation only. This keyset check gates on every run.
-  it('contains exactly the 18 canonical count-source values', () => {
+  it('contains exactly the 19 canonical count-source values', () => {
     const expectedSources = [
       'victory-bystanders',
       'worthy-cards-played-this-turn',
@@ -77,12 +77,14 @@ describe('HERO_COUNT_SOURCES drift-detection', () => {
       'shield-heroes-cost-one-plus-played-this-turn',
       // why: WP-859 / D-24795 — World-Spanning Hunger's non-grey Heroes KO'd from your deck this turn.
       'non-grey-heroes-koed-from-deck-this-turn',
+      // why: WP-876 / D-24823 — Putting a Crew Together's distinct costs among the cards you have.
+      'distinct-costs-you-have',
     ];
 
     assert.equal(
       HERO_COUNT_SOURCES.length,
-      18,
-      'HERO_COUNT_SOURCES must have exactly 18 entries',
+      19,
+      'HERO_COUNT_SOURCES must have exactly 19 entries',
     );
 
     assert.deepStrictEqual(
@@ -1177,5 +1179,90 @@ describe('resolveCountSource extra-cards-drawn-this-turn (D-24732)', () => {
     const gameState = makeStateWithVictory([]);
     assert.equal(resolveCountSource(gameState, '0', 'extra-cards-drawn-this-turn'), 0);
     assert.deepStrictEqual(explainCountSourceInputs(gameState, '0', 'extra-cards-drawn-this-turn'), []);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-876 / D-24823 — distinct-costs-you-have (Putting a Crew Together)
+// ---------------------------------------------------------------------------
+
+describe('resolveCountSource distinct-costs-you-have (WP-876 / D-24823)', () => {
+  /**
+   * Builds a state with player 0's hand, in-play cards, printed costs and optional turn ledgers.
+   *
+   * @param hand - Player 0's hand.
+   * @param inPlay - Player 0's cards in play.
+   * @param costs - Printed cost per card id.
+   * @param extra - Extra top-level fields (turnEconomy, controlledArtifacts).
+   * @returns A minimal game state.
+   */
+  function makeCostState(
+    hand: string[],
+    inPlay: string[],
+    costs: Record<string, number>,
+    extra: Record<string, unknown> = {},
+  ): LegendaryGameState {
+    const cardStats: Record<string, { cost: number }> = {};
+    for (const [cardId, cost] of Object.entries(costs)) {
+      cardStats[cardId] = { cost };
+    }
+    return {
+      playerZones: { '0': { deck: [], hand, discard: [], inPlay, victory: [] } },
+      cardStats,
+      ...extra,
+    } as unknown as LegendaryGameState;
+  }
+
+  it('counts distinct printed costs over hand plus played, 0 counted once', () => {
+    const gameState = makeCostState(
+      ['hand-five#0', 'agent#0', 'agent#1'],
+      ['crew#0', 'played-five#0', 'trooper#0'],
+      { 'hand-five#0': 5, 'agent#0': 0, 'agent#1': 0, 'crew#0': 6, 'played-five#0': 5, 'trooper#0': 0 },
+    );
+    // why: costs {5, 0, 6} — equal costs count once and 0 is a cost (the Weapon X Sequence note).
+    assert.equal(resolveCountSource(gameState, '0', 'distinct-costs-you-have', 'crew#0'), 3);
+  });
+
+  it('ignores Wounds and Bystanders (they print no cost)', () => {
+    const gameState = makeCostState(['pile-wound', BYSTANDER_EXT_ID, 'hand-five#0'], ['crew#0'], {
+      'hand-five#0': 5,
+      'crew#0': 6,
+    });
+    assert.equal(resolveCountSource(gameState, '0', 'distinct-costs-you-have'), 2, 'a Wound or a Bystander never adds a phantom 0');
+    assert.deepStrictEqual(explainCountSourceInputs(gameState, '0', 'distinct-costs-you-have'), ['crew#0', 'hand-five#0']);
+  });
+
+  it('a played card that went Out of Time still counts (unlike the Heist Count)', () => {
+    const gameState = makeCostState([], ['crew#0'], { 'crew#0': 6, 'patriot#0': 3 }, {
+      turnEconomy: { attack: 0, recruit: 0, outOfTimePlayedCardIds: ['patriot#0'] },
+    });
+    assert.equal(resolveCountSource(gameState, '0', 'distinct-costs-you-have'), 2);
+  });
+
+  it('a played card that moved elsewhere and is not ledgered does not count (the accepted residual)', () => {
+    const gameState = makeCostState([], ['crew#0'], { 'crew#0': 6, 'koed-played#0': 3 });
+    gameState.playerZones['0']!.discard = ['koed-played#0'];
+    assert.equal(resolveCountSource(gameState, '0', 'distinct-costs-you-have'), 1);
+  });
+
+  it('a controlled Hero Artifact counts, once even when it is also in the played list', () => {
+    const gameState = makeCostState(['hand-five#0'], ['crew#0', 'artifact#0'], {
+      'hand-five#0': 5,
+      'crew#0': 6,
+      'artifact#0': 4,
+      'other-artifact#0': 7,
+    }, { controlledArtifacts: { '0': ['artifact#0', 'other-artifact#0'] } });
+    assert.equal(resolveCountSource(gameState, '0', 'distinct-costs-you-have'), 4, 'costs {6, 4, 5, 7}');
+    assert.deepStrictEqual(
+      explainCountSourceInputs(gameState, '0', 'distinct-costs-you-have'),
+      ['crew#0', 'artifact#0', 'hand-five#0', 'other-artifact#0'],
+      'played, then hand, then the artifacts not already listed',
+    );
+  });
+
+  it('is 0 for a player with no zones', () => {
+    const gameState = makeCostState([], [], {});
+    assert.equal(resolveCountSource(gameState, '7', 'distinct-costs-you-have'), 0);
+    assert.deepStrictEqual(explainCountSourceInputs(gameState, '7', 'distinct-costs-you-have'), []);
   });
 });

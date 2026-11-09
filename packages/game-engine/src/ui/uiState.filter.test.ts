@@ -3717,6 +3717,46 @@ describe('filterUIStateForAudience — pendingMoveVillainChoice redaction (WP-79
   });
 });
 
+describe('filterUIStateForAudience — the x-con-security-van variant (WP-876 / D-24823)', () => {
+  /**
+   * Builds the full UIState with player '0' owing an X-Con Security Van move (Villains at 1 and 3).
+   *
+   * @returns The unfiltered UIState.
+   */
+  function createXConUIState(): UIState {
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    gameState.city = [null, 'villain-a' as CardExtId, null, 'villain-b' as CardExtId, null];
+    gameState.pendingMoveVillainChoices = [
+      {
+        playerID: '0',
+        sourceCardId: 'amwp/scott-lang-cat-burglar/x-con-security-van#0' as CardExtId,
+        variant: 'x-con-security-van',
+      },
+    ];
+    return buildUIState(gameState, mockCtx);
+  }
+
+  it('the chooser sees the variant', () => {
+    const result = filterUIStateForAudience(createXConUIState(), PLAYER_0);
+    assert.deepEqual(result.pendingMoveVillainChoice, {
+      playerID: '0',
+      villainCityIndices: [1, 3],
+      variant: 'x-con-security-van',
+    });
+  });
+
+  it('an opponent and a spectator get no prompt', () => {
+    const full = createXConUIState();
+    assert.equal('pendingMoveVillainChoice' in filterUIStateForAudience(full, PLAYER_1), false);
+    assert.equal('pendingMoveVillainChoice' in filterUIStateForAudience(full, SPECTATOR), false);
+  });
+
+  it('a Spinning Cyclone entry carries no variant key', () => {
+    const result = filterUIStateForAudience(createMoveVillainChoiceUIState(), PLAYER_0);
+    assert.equal('variant' in result.pendingMoveVillainChoice!, false);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // WP-802 / D-24689 §1 — isDebugMatch public pass-through (five-step rule step 4)
 // ---------------------------------------------------------------------------

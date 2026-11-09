@@ -171,10 +171,10 @@ const PARAMETERIZED_COMPOSITION_MARKERS = new Set(PARAMETERIZED_COMPOSITION_MARK
 // Frenzy, Metamorphosis, Hive King Miek, Appetite for Destruction, Bursting with Life); World-Spanning
 // Hunger and The Void Unchained keep an unresolved `feast` marker, so a by-name check would over-claim
 // Sentry's row executable.
-// why: WP-865 / D-24808 — heist is by-hook too. Every Ant-Man and the Wasp Heist line normalizes to
-// `heist`, but only the six HEIST_CARDS lines resolve it to a fused `heist` hook; The Big Score,
-// Putting a Crew Together, X-Con Security Van and Revolutionary Anthem's Heist line keep an
-// unresolved `heist` marker, so a by-name check would over-claim the Ant Army row executable.
+// why: WP-865 / D-24808 — heist is by-hook too. Every Heist line normalizes to `heist`, but only the
+// HEIST_CARDS lines resolve it to a fused `heist` hook. Since WP-876 / D-24823 that is all ten Ant-Man
+// and the Wasp Heist lines; a future set's Heist line keeps an unresolved `heist` marker until it is
+// listed, so a by-name check would over-claim its row executable.
 const BY_HOOK_KEYWORDS = new Set(['transform', 'excessive-violence', 'blood-frenzy', 'day-night-both', 'out-of-time', 'feast', 'heist']);
 // why: D-24055 — condition-gate mechanics (spectrum) are recognized by the parser
 // as conditions, not keywords. They gate effects but are themselves distinct

@@ -1814,6 +1814,12 @@ export interface UIPendingMoveVillainChoice {
   playerID: string;
   /** The ascending engine indices (0..length-1, WP-831) of the City spaces holding a Villain, from the live City. */
   villainCityIndices: number[];
+  // why: WP-876 / D-24823 — X-Con Security Van's entry: the client offers only EMPTY City spaces
+  // (G.city[i] === null on the projected City), never "swap with …", and shows the X-Con heading
+  // and KO note. Absent for Spinning Cyclone (omitted, never an `undefined` literal). Chooser-only,
+  // like the rest of this projection.
+  /** The card variant this prompt resolves as; absent for Spinning Cyclone. */
+  variant?: 'x-con-security-van';
 }
 
 /**

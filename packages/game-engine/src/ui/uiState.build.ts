@@ -2012,6 +2012,11 @@ export function buildUIState(
       playerID: frontChoice.playerID,
       villainCityIndices,
     };
+    // why: WP-876 / D-24823 — the X-Con Security Van variant rides the FRONT entry; set only when
+    // present so a Spinning Cyclone projection stays byte-identical.
+    if (frontChoice.variant !== undefined) {
+      pendingMoveVillainChoice.variant = frontChoice.variant;
+    }
   }
 
   // why: WP-724 / D-24546 — project the FRONT entry of G.pendingSplitFaceChoices as the two-face

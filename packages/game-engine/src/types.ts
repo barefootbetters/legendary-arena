@@ -1364,6 +1364,13 @@ export interface PendingMoveVillainChoice {
   playerID: string;
   /** The Spinning Cyclone card that parked this choice, for log attribution. */
   sourceCardId: CardExtId;
+  // why: WP-876 / D-24823 — X-Con Security Van's Heist ability ("You may move a Villain to an
+  // empty city space. If you do, KO one of your Heroes.") reuses this choice with three
+  // differences: the destination must be an EMPTY space (no swap), the moved Villain's Bystanders
+  // are NOT rescued, and a move (never a decline) is followed by KO one of your Heroes. Absent =
+  // Spinning Cyclone, byte-identical. A plain string literal (JSON-serializable).
+  /** The card variant this choice resolves as; absent for Spinning Cyclone. */
+  variant?: 'x-con-security-van';
 }
 
 /**

@@ -137,6 +137,10 @@ export default defineComponent({
         // decline and take the Wound (rules v23 L3196-3200); the options name the Hero needed.
         case 'reveal-or-wound':
           return 'Reveal a Hero or gain a Wound?';
+        // why: WP-876 / D-24823 — Revolutionary Anthem's optional Villain Deck shuffle after a
+        // Heist that revealed a Scheme Twist (options: Shuffle / Leave).
+        case 'heist-shuffle-villain-deck':
+          return 'Revolutionary Anthem: shuffle the Villain Deck?';
         default:
           return 'Your choice';
       }

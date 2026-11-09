@@ -323,3 +323,25 @@ describe('PendingSeatChoicePrompt — WP-845 reveal or gain a Wound (D-24779)', 
     assert.deepEqual(calls[0]!.args, { optionIndex: 1 });
   });
 });
+
+describe('PendingSeatChoicePrompt — WP-876 Revolutionary Anthem shuffle (D-24823)', () => {
+  test('the heist-shuffle-villain-deck kind shows its heading and the two locked options', async () => {
+    const { calls, submitMove } = recorder();
+    const choice: UIPendingSeatChoice = {
+      kind: 'heist-shuffle-villain-deck',
+      addressedSeats: ['player-0'],
+      outstandingSeats: ['player-0'],
+      seatPrompts: {
+        'player-0': { options: [{ label: 'Shuffle the Villain Deck' }, { label: 'Leave the Villain Deck as it is' }] },
+      },
+    };
+    const wrapper = mount(PendingSeatChoicePrompt, {
+      props: { pendingSeatChoice: choice, viewerPlayerId: 'player-0', submitMove },
+    });
+    assert.equal(wrapper.find('.pending-seat-choice-prompt__heading').text(), 'Revolutionary Anthem: shuffle the Villain Deck?');
+    assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-0"]').text(), 'Shuffle the Villain Deck');
+    assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-1"]').text(), 'Leave the Villain Deck as it is');
+    await wrapper.find('[data-testid="pending-seat-choice-option-0"]').trigger('click');
+    assert.deepEqual(calls, [{ name: 'resolveSeatChoice', args: { optionIndex: 0 } }]);
+  });
+});
