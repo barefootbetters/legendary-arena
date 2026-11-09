@@ -180,6 +180,32 @@ describe('recordHollowEffect', () => {
     assert.deepStrictEqual(G.diagnostics!.hollowEffects[0], record);
   });
 
+  // why: regression — the hollow-effects table showed every turn one higher than
+  // the game log (match bo4ZSQLBuQU: The Big Score logged at 6.2.2 / 10.2.10 /
+  // 12.2.8 but listed as turns 7 / 11 / 13). Callers pass the framework ctx.turn;
+  // the log prefix is play-relative (G.logMeta.turn), because the lobby consumes
+  // framework turn 1. The stored record must carry the log's number.
+  it('stamps the play-relative log turn, so the record matches its [blocked] log line', () => {
+    const G = makeG();
+    const frameworkTurn = 7;
+    const firstPlayTurn = 2;
+    const logTurn = frameworkTurn - firstPlayTurn + 1;
+    G.logMeta = { turn: logTurn, actionInStep: 1, firstPlayTurn };
+    G.currentStage = 'main';
+
+    recordHollowEffect(G, makeRecord({ mechanic: 'heist', turn: frameworkTurn }));
+
+    assert.equal(G.diagnostics!.hollowEffects[0]!.turn, 6, 'record carries the log turn, not ctx.turn');
+    const logLine = G.messages[0]!.text;
+    const logPrefixTurn = Number(logLine.split('.')[0]);
+    assert.equal(logLine.startsWith('6.2.2 '), true, `log line is numbered 6.2.2, got: ${logLine}`);
+    assert.equal(
+      G.diagnostics!.hollowEffects[0]!.turn,
+      logPrefixTurn,
+      'the table turn and the log prefix turn are the same number',
+    );
+  });
+
   it('caps the list at HOLLOW_EFFECTS_CAP and counts dropped overflow', () => {
     const G = makeG();
     const overflow = 5;
