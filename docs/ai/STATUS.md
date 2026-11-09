@@ -37,7 +37,8 @@
      - **Leave on the shuffle prompt is now observed.** Revolutionary Anthem against a staged Scheme Twist gave +2 and +2 and the prompt twice: Shuffle logged "shuffled the Villain Deck" (`6EwvZZ07Oi3` 3.2.10) and Leave logged "left the Villain Deck as it is" (5.2.10).
      - **The Big Score's Bystander is a real Bystander.** It KO'd a staged Master Strike and put a Bystander on top twice (`8JeDMXo7Kob` 6.2.5, 10.2.5). The next villain phase revealed that `pile-bystander` and a Villain captured it (7.1.1, 11.1.1).
      - **X-Con Security Van, more paths.** It moved Villains to empty spaces with nothing rescued (`6EwvZZ07Oi3` 9.2.6, 11.2.17) and KO'd from hand (9.2.8) as well as from in-play (11.2.19). With no Villain in the City it logged that it had nothing to move (17.2.10). The chooser snapshot held `pendingMoveVillainChoice { villainCityIndices: [0, 1], variant: 'x-con-security-van' }` with spaces 2–4 empty.
-     - **Still not observed live** (covered by tests): the single-Hero auto-KO, an occupied non-source space being excluded, and a second The Big Score after its Master Strike left the top.
+     - **Single-Hero auto-KO observed** (2p operator match `rsN3szKz8Wz`, same builds). With X-Con Security Van as the only card in hand and play, it won a Heist against a staged Master Strike (7.2.9) and moved Sentinel from the Sewers to the empty Bridge (7.2.12). It then KO'd X-Con Security Van itself with no "must choose" prompt (7.2.13).
+     - **Still not observed live** (covered by tests): an occupied non-source space being excluded, and a second The Big Score after its Master Strike left the top.
 
 ### Mandarin's Rings: Liar bluffs about another player's deck top, Nightbringer may defeat a revealed Villain Deck Villain worth 2VP or less, Remaker gives a card to the player on your right (WP-872 / EC-910, D-24817) (2026-11-08)
 
