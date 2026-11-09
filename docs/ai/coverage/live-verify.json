@@ -1834,10 +1834,10 @@
       "card": "Scott Lang, Cat Burglar",
       "ability": "Heist — Petty Larceny: +2 Recruit; Anything for Cassie: rescue a Bystander; Shocking Support: +2 Attack; The Big Score: +4 Attack, and on a revealed Master Strike KO it and put a Bystander on top of the Villain Deck; Putting a Crew Together: +1 Attack per different cost card you have; X-Con Security Van: move a Villain to an empty space, then KO one of your Heroes",
       "wp": "WP-876",
-      "state": "pending",
-      "date": "2026-11-08",
-      "evidence": "",
-      "note": "Operator-pending (D-24026), NEW match after the deploy. WP-865 (D-24808), each card: playing it grants nothing and logs it readied for a Heist; Attempt Heist (Heist Count N) appears once; a won Heist fires the ability, a tie does nothing, a lost Heist gains a Wound; the button is gone after one attempt. WP-876 (D-24823): X-Con Security Van alone shows Attempt Heist, a won Heist opens the empty-spaces-only prompt and a move asks for (or auto-KOs) a Hero; The Big Score with a Master Strike staged on top KOs it and a Bystander is on top; Putting a Crew Together's Attack equals the distinct costs over hand plus the cards played this turn; no parse-unrecognized heist line; Play Diagnostics uiStateSnapshot shows pendingMoveVillainChoice.variant 'x-con-security-van' for the chooser."
+      "state": "verified",
+      "date": "2026-11-09",
+      "evidence": "2p Operator match X1kG0uTMEjJ (Red Skull / Midtown Bank Robbery; Brotherhood + HYDRA; Hand Ninjas; Scott Lang, Cat Burglar, Ant Army, Spider-Man, Hulk, Wolverine; server 1a5f9a77 and client af69acf, both containing the WP-876 merge 799463b4; match created 2026-11-09T15:56:03Z after the 15:27:28Z boot, isMatchOlderThanServer false). Each card's play line gave only its printed base and logged it readied for a Heist. X-Con Security Van alone (turn 2): Attempt Heist (Heist Count 1); won against a staged Scheme Twist (2.2.8-2.2.10); the prompt 'X-Con Security Van: move a Villain to an empty space' offered Mystique (Sewers) and only the four empty spaces, not the Sewers; Mystique moved to the Rooftops with nothing rescued (2.2.11); the KO prompt listed hand plus in-play and KO'd a S.H.I.E.L.D. Agent (2.2.12-2.2.13); the chooser's uiState snapshot held pendingMoveVillainChoice { villainCityIndices: [0], variant: 'x-con-security-van' }. The Big Score + Putting a Crew Together (turn 4, Great Responsibility (2) held in hand): Heist Count 3 against a staged Master Strike (0 VP) (4.2.16); Master Strike KO'd to the KO pile and a Bystander put on top, Villain Deck count held at 45 (4.2.17); +4 (4.2.18); Crew +4 for count 4, costs 0/2/6/8 (4.2.19); Attack 7 -> 15. Petty Larceny + Anything for Cassie + Shocking Support (turn 8): Heist Count 5 against a Bystander (1 VP); +2 Recruit, 1 Bystander rescued (Victory 0 -> 1), +2 Attack (8.2.18-8.2.22). Tie (turn 10): Heist Count 3 against Endless Armies of HYDRA (3 VP), nothing happened (10.2.4-10.2.5). Loss (turn 12): The Big Score alone, Heist Count 3 against Juggernaut (4 VP), a Wound gained (woundCount 0 -> 1) and no +4 (12.2.4-12.2.5). The button was gone after every attempt. No parse-unrecognized, hollow or unresolved line in the log; 20 effect traces, 19 fired, 1 no-op (Revolutionary Anthem's Microscopic Size-Changing at play).",
+      "note": "Not observed live: the auto-KO with a single Hero, an occupied space other than the source being excluded (only one Villain was in the City), and The Big Score after its Master Strike left the top; covered by tests. D-24808, D-24823."
     },
     {
       "key": "amwp/wasp|heist",
@@ -1867,10 +1867,10 @@
       "card": "Ant Army",
       "ability": "Up the Ante — Heist: draw a card; Revolutionary Anthem — Heist: +2 Attack, and on a revealed Scheme Twist another +2 Attack and you may shuffle the Villain Deck",
       "wp": "WP-876",
-      "state": "pending",
-      "date": "2026-11-08",
-      "evidence": "",
-      "note": "Operator-pending (D-24026), NEW match after the deploy. WP-865 (D-24808), Up the Ante: playing it grants nothing and logs it readied for a Heist; Attempt Heist (Heist Count N) appears once; a won Heist fires the ability, a tie does nothing, a lost Heist gains a Wound; the button is gone after one attempt. WP-876 (D-24823), Revolutionary Anthem with a Scheme Twist staged on top: a won Heist gives +4 Attack and the 'Revolutionary Anthem: shuffle the Villain Deck?' prompt; no parse-unrecognized heist line."
+      "state": "verified",
+      "date": "2026-11-09",
+      "evidence": "2p Operator match X1kG0uTMEjJ (Red Skull / Midtown Bank Robbery; Brotherhood + HYDRA; Hand Ninjas; Scott Lang, Cat Burglar, Ant Army, Spider-Man, Hulk, Wolverine; server 1a5f9a77 and client af69acf, both containing the WP-876 merge 799463b4; match created 2026-11-09T15:56:03Z after the 15:27:28Z boot, isMatchOlderThanServer false). Up the Ante + Revolutionary Anthem (turn 6): each play line gave only its printed base and logged it readied; Heist Count 4 against a staged Scheme Twist (0 VP) (6.2.14); Up the Ante drew 1 (hand 6 -> 7, 6.2.15); Anthem +2 then +2 (6.2.16, 6.2.18), Attack 7 -> 11; the prompt 'Revolutionary Anthem: shuffle the Villain Deck?' (Shuffle / Leave); Shuffle logged 'shuffled the Villain Deck (Revolutionary Anthem)' (6.2.20) and the deck order changed. The button was gone after the attempt. Tie (turn 10): Up the Ante readied, Heist Count 3 against Endless Armies of HYDRA (3 VP), nothing happened and no card was drawn (10.2.4-10.2.5). The loss path is on the Scott Lang row (same match, turn 12). No parse-unrecognized heist line.",
+      "note": "Not observed live: Leave on the shuffle prompt (tests cover it). The bot seat readied Up the Ante on turn 11 and never attempted (bot Heist attempts are WP-878). D-24808, D-24823."
     },
     {
       "key": "mastermind:cvwr/baron-helmut-zemo|cursed-dynasty",
