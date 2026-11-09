@@ -128,7 +128,8 @@ const ALL_PENDING_FIELDS = [
   'pendingPutCardsOnDeckChoices', 'pendingPutHandOnDeckTop', 'pendingReorderChoices', 'pendingReturnOnDiscard',
   'pendingReturnZeroCostDiscard', 'pendingRevealOrWoundChoices', 'pendingRevealThreeAssign', 'pendingRevealTopDispose', 'pendingRuthlessDictatorChoices', 'pendingScryKoChoices',
   'pendingSeatChoice', 'pendingSmashDiscards', 'pendingTimestreamPurges', 'pendingUndercoverChoice',
-  'pendingVictoryPileCardPick',
+  // why: WP-872 / D-24817 — pendingVillainFightPicks joins the drop set.
+  'pendingVictoryPileCardPick', 'pendingVillainFightPicks',
 ] as const;
 const SINGLE_VALUE_PENDING_FIELDS = new Set(['pendingHeroChoice', 'pendingSeatChoice']);
 

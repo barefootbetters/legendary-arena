@@ -49,6 +49,7 @@ import { openTimestreamPurgeSeatChoiceIfNeeded, sweepPurgedHeroesFromHq } from '
 import { openEnigmaPeekSeatChoiceIfNeeded } from './rules/enigmaCode.logic.js';
 import { openRevealOrWoundSeatChoiceIfNeeded } from './moves/revealOrWoundChoice.logic.js';
 import { openMandarinRingEntriesIfNeeded } from './moves/mandarinRingEntry.logic.js';
+import { openVillainFightPickSeatChoiceIfNeeded } from './moves/villainFightPick.logic.js';
 import { executeRuleHooks } from './rules/ruleRuntime.execute.js';
 import { applyRuleEffects } from './rules/ruleRuntime.effects.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from './rules/ruleRuntime.impl.js';
@@ -996,6 +997,13 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // else the active player's seat choice. The villain executor has no events, so the pick
           // opens here (the D-24779 shape). No-op while another choice is open.
           openNextHandFromPlaySeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
+          // why: WP-872 / D-24817 — open the next owed Mandarin's Rings Liar / Nightbringer / Remaker
+          // pick after the fight that queued it (the villain executor has no events, the D-24779
+          // shape). Here, immediately before the Enigma peek: after WP-875's Ring-entry opener (which
+          // sits before Diving Block), so a Ring entry a Nightbringer-driven Villain Deck play queued
+          // settles first, and after WP-870's Zero opener; the pick's later steps chain from
+          // resolveSeatChoice. No-op while another choice is open.
+          openVillainFightPickSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
           // why: WP-830 / D-24763 — The Unbreakable Enigma Code: open the next owed pay-1-Recruit
           // peek offer from a Villain fight (the fighter's own choice). LAST, so every reaction the
           // fight caused (an escape's steps, a Diving Block wave) resolves first: the peek is
@@ -1098,6 +1106,12 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // applyOnBeginParity mirrors it.
           if (G.pendingMandarinRingEntries !== undefined) {
             delete G.pendingMandarinRingEntries;
+          }
+          // why: WP-872 / D-24817 — an owed Liar / Nightbringer / Remaker pick belongs to the turn
+          // that defeated the Ring. Guarded delete, so a match without these cards is byte-unchanged;
+          // applyOnBeginParity mirrors it.
+          if (G.pendingVillainFightPicks !== undefined) {
+            delete G.pendingVillainFightPicks;
           }
 
           // why: WP-328 — stamp the turn number into G (ctx.turn lives only in ctx, and

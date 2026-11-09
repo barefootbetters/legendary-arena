@@ -50,6 +50,9 @@ import { openNextHandFromPlaySeatChoiceIfNeeded } from '../../moves/nextHandFrom
 // why: WP-875 / D-24822 — the lockstep partner of the simulation.runner.ts Mandarin Ring-entry
 // mirror; an entry's escape needs the implementation map.
 import { openMandarinRingEntriesIfNeeded } from '../../moves/mandarinRingEntry.logic.js';
+// why: WP-872 / D-24817 — the lockstep partner of the simulation.runner.ts Liar / Nightbringer /
+// Remaker pick mirror.
+import { openVillainFightPickSeatChoiceIfNeeded } from '../../moves/villainFightPick.logic.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from '../../rules/ruleRuntime.impl.js';
 import { applyEndOfTurnCleanup } from '../../moves/endOfTurnCleanup.logic.js';
 import { replayOutOfTimeCards } from '../../moves/outOfTime.logic.js';
@@ -447,6 +450,9 @@ function dispatchSingleMove(
   // mirror: a sim-captured trace answers the pick with resolveSeatChoice moves, so the replay must
   // park it too (this harness never runs onMove).
   openNextHandFromPlaySeatChoiceIfNeeded(gameState, undefined, cursor.currentPlayer);
+  // why: WP-872 / D-24817 — the lockstep partner of the simulation.runner.ts Liar / Nightbringer /
+  // Remaker pick mirror, at the same position (after the Zero opener).
+  openVillainFightPickSeatChoiceIfNeeded(gameState, undefined, cursor.currentPlayer);
 
   if (endTurnFlag.triggered) {
     rotateToNextTurn(gameState, cursor, fixture.input.playerOrder, numPlayers, nextRandom, endTurnFlag.nextPlayer);

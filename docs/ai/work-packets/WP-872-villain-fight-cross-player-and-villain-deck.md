@@ -299,6 +299,19 @@ Plus: the runtime count / list / last-entry pins in `rules/villainAbility.types.
 
 ---
 
+## Execution Amendment (2026-11-08, inline)
+
+Re-baselined on `origin/main` @ `52c18a63`. WP-868, WP-869, WP-870, WP-871, WP-873, WP-864 and WP-875 landed between the draft (`e6ec91f5`) and execution. Scope, allowlist intent and behavior are unchanged; these are the stale-baseline deltas.
+
+- **Primitive positions 43-45 → 49-51 (Assumes 2).** WP-873 `fortify` (43), WP-864 `demolish-each-player` (44), WP-869 `stack-cards-enter-city-as-villains` (45) and WP-870's three (46-48) appended first. Every count pin moved 48 → 51 (the canonical-list case, the WP-816 T2, WP-817 T1, WP-836 T1, WP-837 T1, WP-873 T5 and WP-869 length asserts), and the WP-873 T5 `Record<VillainEffectPrimitive, true>` parity literal gains the three keys. The provenance keys follow `next-hand-from-play-zero-cost-current`.
+- **WP-869 landed first (Assumes 2, that branch).** Its two stack-origin routes moved with the routing block; `routeDefeatedVillainCard` returns `stackBystandersRescued`; its pre-event `fightStackEntry` read stays in the core (the fight-narrative clause), and its post-event stack-entry bridge moved into `runVillainFightFireSiteBridges` after the reenter bridge. The helper re-reads `villainCardStackVillainEntry` (a pure read of the setup-captured hooks, equal to the core's read). WP-869 / EC-907 need no amendment.
+- **Routing helper also returns `gainedHeroLogLine`.** INFRA #3229 (after the draft) made the core return a converted card's gain line from the routing and push it after the "fought" line (the gain-order fix, operator match `8eURMq6tTSS`), instead of pushing it during routing. So `routeDefeatedVillainCard` returns `{ skrullGained, officerGained, microSizedGained, stackBystandersRescued, gainedHeroLogLine }`, and the `nightbringer-defeat` apply pushes that line right after its own `defeated … from the Villain Deck` line (the converted-origin route's "own log line" in Locked Values).
+- **A second existing test pinned the three cards unmarked (Assumes 13).** WP-870 added `villain/mandarinsRingsFight.test.ts` T2 ("Liar (-03), Nightbringer (-05) and Remaker (-06) stay unmarked"). It changes for the same intentional reason as `henchmanVariantCopies.test.ts` L219: it now asserts each card's WP-872 primitive. Stated in the `EC-910:` body.
+- **Queue lockstep beside WP-870 and WP-875 (Assumes 7).** `pendingVillainFightPicks` sits after `pendingMandarinRingEntries` in `types.ts`, `ALL_PENDING_FIELDS`, `dropAllPendingPlayerChoices`, `isOperatorChoiceOpen` (+ one row), the `onBegin` delete and `applyOnBeginParity`. The opener is called immediately before `openEnigmaPeekSeatChoiceIfNeeded` in `game.ts` onMove, which is after WP-870's Zero opener and well after WP-875's Mandarin Ring-entry opener (that one sits before Diving Block). The five loop mirrors follow the Zero mirror. Ordering against the Mandarin opener is recorded in D-24817.
+- **Feeds (Assumes 16) from the execution baseline.** Villain ledger executable 253 → 256, unmarked 505 → 502, distinctMechanics 57 → 60, totalRows 763 unchanged; effect index executable 777 → 780, unmarked 1049 → 1046. Card mechanics, runtime-observed hollows and the coverage baseline moved by line endings only (reverted).
+
+---
+
 ## Lint Gate Self-Review (00.3)
 
 From the independent 00.3 run: run 1 FAIL (§15.2 EC Risk Tier not verbatim; §2 the "only existing test that changes" sentence contradicted the lockstep pin edits in Files Expected to Change). Both fixed, plus the optional A1-A3 notes (helper home files, `node:test`, EC type literals).

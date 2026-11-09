@@ -430,7 +430,7 @@ mindmap
         ["WP-866 ✅ Next-hand extra draw hero lines that print When you draw a new hand this turn draw an extra card add N to the next hand through a next-hand-extra-draw hero keyword writing handSizeOverrides at play, twelve lines incl Wasp Infiltrate. game engine plus card data EC-904 D-24809 DONE 2026-11-06"]
         ["WP-871 ✅ Villain fight restrictions, Orrgo unless you already defeated another Villain this turn, Squirrel Girl if you played more than one card this turn, Doop if a Villain is in an adjacent city space, a fight-restriction overlay marker and one predicate gate fightVillain the bot legal moves and the City Fight button with a public reason, Fortify split out. game engine plus arena-client plus card data EC-909 D-24816 DONE 2026-11-06"]
         ["WP-870 ✅ Mandarins Rings own-deck Fight lines, Lightning and Daystar reveal your deck top and may KO it, Spin discards the 0-cost cards from your top six and reorders the rest, Zero adds a 0-cost card you played to your next hand, three villain primitives reusing shipped queues. game engine plus card data EC-908 D-24815 DONE 2026-11-07"]
-        ["WP-872 📝 Mandarins Rings cross-player and Villain Deck Fight lines, Liar looks at another player deck top and says Good or Bad and that player picks whose discard pile gets it without seeing it, Nightbringer reveals three Villain Deck cards and may defeat one worth 2VP or less then puts the rest back in any order before its Fight effect, Remaker gives a hand or discard card to the player on your right, solo no-ops. game engine plus card data EC-910 D-24817 reserved DRAFTED 2026-11-07"]
+        ["WP-872 ✅ Mandarins Rings cross-player and Villain Deck Fight lines, Liar looks at another player deck top and says Good or Bad and that player picks whose discard pile gets it without seeing it, Nightbringer reveals three Villain Deck cards and may defeat one worth 2VP or less then puts the rest back in any order before its Fight effect, Remaker gives a hand or discard card to the player on your right, solo no-ops. game engine plus card data EC-910 D-24817 DONE 2026-11-08"]
         ["WP-873 ✅ Fortify, Squirrel Girl and Colleen Wing escape onto the Sidekick Stack or the Mastermind instead of the Escape Pile and lock it until a player fights them there, a fortify villain primitive a lazy fortifications table a fortifiedPlace fight path with its bot mirror and a fortified-villains strip, other Fortify lines enumerated as follow-ups. game engine plus arena-client plus card data EC-911 D-24818 DONE 2026-11-07"]
         ["WP-874 📝 Wrecking Crew Demolish, The Wrecker Ambush Demolishes each player once per Wrecking Crew Villain in the city, Bulldozer charges an extra space and Demolishes each player if it pushed a Villain, Thunderball fought in the Sewers or Bank Demolishes each other player, reusing the shared Demolish resolver with a seat scope and three villain primitives including a charge bridge. game engine plus card data EC-912 D-24820 reserved DRAFTED 2026-11-07"]
         ["WP-875 ✅ The Mandarin Master Strike sends a Mandarins Ring from each player Victory Pile back into the city or that player gains a Wound, all Mandarins Rings get plus 1 Attack, The Mandarin gets minus 1 Attack per Ring in Victory Piles or minus 3 in solo, two read-time cost terms and an onMove-opened seat choice. game engine plus coverage data EC-913 D-24822 DONE 2026-11-07"]
@@ -1044,7 +1044,7 @@ mindmap
 | Legends Public Scoreboard | 2/2 | — |
 | Villain Deck Pipeline | 5/5 | — |
 | Villain & Henchman Effects | 21/21 | — |
-| Hero Ability Coverage & Markup Pipeline | 231/248 | 17 open |
+| Hero Ability Coverage & Markup Pipeline | 232/248 | 16 open |
 | Notable Events & Overlays | 6/6 | — |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
 | Dashboard & Operator Analytics | 55/55 | — |
@@ -1065,9 +1065,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 4/4 | — |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **846/872 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 25 open |
+| **Total** | **847/872 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 24 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 26):** WP-874 open; WP-872 open; WP-849 open; WP-840 open; WP-839 open; WP-838 open; WP-822 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-745 open; WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 25):** WP-874 open; WP-849 open; WP-840 open; WP-839 open; WP-838 open; WP-822 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-745 open; WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

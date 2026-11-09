@@ -487,15 +487,15 @@ henchman-mandarins-rings-incandescence-the-flame-blast,"Incandescence, The Flame
 henchman-mandarins-rings-influence-the-impact-beam,"Influence, The Impact Beam",rvlt,henchman,gain-recruit-current,executable,WP-541,D-24350,packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current
 rvlt-villain-army-of-evil-klaw,Klaw,rvlt,villain,gain-attached-hero,executable,WP-450,D-24270,packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero
 rvlt-villain-lethal-legion-laser-maze,Laser Maze,rvlt,villain,(unmarked),unmarked,,,
-henchman-mandarins-rings-liar-the-mento-intensifier,"Liar, The Mento-Intensifier",rvlt,henchman,(unmarked),unmarked,,,
+henchman-mandarins-rings-liar-the-mento-intensifier,"Liar, The Mento-Intensifier",rvlt,henchman,look-other-player-deck-top-claim-current,executable,WP-872,D-24817,packages/game-engine/src/villain/villainEffects.execute.ts#look-other-player-deck-top-claim-current
 henchman-mandarins-rings-lightning-the-electro-blast,"Lightning, The Electro-Blast",rvlt,henchman,reveal-top-may-ko-current,executable,WP-870,D-24815,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-top-may-ko-current
 rvlt-villain-lethal-legion-living-laser,Living Laser,rvlt,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 rvlt-villain-lethal-legion-mbaku,M'Baku,rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-hoods-gang-madam-masque,Madam Masque,rvlt,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 rvlt-villain-army-of-evil-mister-hyde,Mister Hyde,rvlt,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
-henchman-mandarins-rings-nightbringer-the-black-light,"Nightbringer, The Black Light",rvlt,henchman,(unmarked),unmarked,,,
+henchman-mandarins-rings-nightbringer-the-black-light,"Nightbringer, The Black Light",rvlt,henchman,reveal-villain-deck-defeat-low-vp-current,executable,WP-872,D-24817,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-villain-deck-defeat-low-vp-current
 rvlt-villain-lethal-legion-power-man-erik-josten,Power Man (Erik Josten),rvlt,villain,(unmarked),unmarked,,,
-henchman-mandarins-rings-remaker-the-matter-rearranger,"Remaker, The Matter Rearranger",rvlt,henchman,(unmarked),unmarked,,,
+henchman-mandarins-rings-remaker-the-matter-rearranger,"Remaker, The Matter Rearranger",rvlt,henchman,give-card-to-right-player-current,executable,WP-872,D-24817,packages/game-engine/src/villain/villainEffects.execute.ts#give-card-to-right-player-current
 rvlt-villain-dark-avengers-sentry,Sentry,rvlt,villain,gainWoundEachPlayer,executable,WP-185,D-18502,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 rvlt-villain-dark-avengers-sentrys-watchtower,Sentry's Watchtower,rvlt,villain,(unmarked),unmarked,,,
 henchman-mandarins-rings-spectral-the-disintegration-beam,"Spectral, The Disintegration Beam",rvlt,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero

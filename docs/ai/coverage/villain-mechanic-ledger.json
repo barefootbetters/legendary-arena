@@ -4,13 +4,13 @@
   "summary": {
     "totalRows": 763,
     "byStatus": {
-      "executable": 253,
+      "executable": 256,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 505,
+      "unmarked": 502,
       "subsystem": 4
     },
-    "distinctMechanics": 57
+    "distinctMechanics": 60
   },
   "rows": [
     {
@@ -5386,11 +5386,11 @@
       "cardName": "Liar, The Mento-Intensifier",
       "set": "rvlt",
       "cardType": "henchman",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "look-other-player-deck-top-claim-current",
+      "status": "executable",
+      "wp": "WP-872",
+      "decision": "D-24817",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#look-other-player-deck-top-claim-current"
     },
     {
       "extId": "henchman-mandarins-rings-lightning-the-electro-blast",
@@ -5452,11 +5452,11 @@
       "cardName": "Nightbringer, The Black Light",
       "set": "rvlt",
       "cardType": "henchman",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-villain-deck-defeat-low-vp-current",
+      "status": "executable",
+      "wp": "WP-872",
+      "decision": "D-24817",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-villain-deck-defeat-low-vp-current"
     },
     {
       "extId": "rvlt-villain-lethal-legion-power-man-erik-josten",
@@ -5474,11 +5474,11 @@
       "cardName": "Remaker, The Matter Rearranger",
       "set": "rvlt",
       "cardType": "henchman",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "give-card-to-right-player-current",
+      "status": "executable",
+      "wp": "WP-872",
+      "decision": "D-24817",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#give-card-to-right-player-current"
     },
     {
       "extId": "rvlt-villain-dark-avengers-sentry",

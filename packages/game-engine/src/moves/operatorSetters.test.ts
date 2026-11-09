@@ -241,6 +241,19 @@ const GATE_BLOCKERS: readonly GateBlocker[] = [
     remove: (G) => { Reflect.deleteProperty(G, 'pendingMandarinRingEntries'); },
   },
   {
+    // why: WP-872 / D-24817 — owed Mandarin's Rings Liar / Nightbringer / Remaker picks are parked
+    // into a seat choice by the onMove opener after the move, like the entry queue above.
+    label: 'pendingVillainFightPicks is non-empty',
+    apply: (G) => {
+      G.pendingVillainFightPicks = [{
+        primitive: 'reveal-villain-deck-defeat-low-vp-current',
+        playerID: '0',
+        sourceCardId: 'henchman-mandarins-rings-05',
+      }];
+    },
+    remove: (G) => { Reflect.deleteProperty(G, 'pendingVillainFightPicks'); },
+  },
+  {
     // why: WP-829 / D-24762 — owed Go Back in Time Purges are opened into a seat choice after
     // the move, like the escape queues above.
     label: 'pendingTimestreamPurges is non-empty',

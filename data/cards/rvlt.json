@@ -1639,7 +1639,7 @@
           "slug": "liar-the-mento-intensifier",
           "imageUrl": "https://images.legendary-arena.com/rvlt/rvlt-hm-mandarins-rings-liar-the-mento-intensifier.webp",
           "abilities": [
-            "Fight: Look at the top card of another player's deck. Say it is “Good“ or “Bad.“ That player chooses to put it in your discard pile or their discard pile."
+            "Fight: Look at the top card of another player's deck. Say it is “Good“ or “Bad.“ That player chooses to put it in your discard pile or their discard pile. [effect:look-other-player-deck-top-claim-current]"
           ]
         },
         {
@@ -1655,7 +1655,7 @@
           "slug": "nightbringer-the-black-light",
           "imageUrl": "https://images.legendary-arena.com/rvlt/rvlt-hm-mandarins-rings-nightbringer-the-black-light.webp",
           "abilities": [
-            "Fight: Reveal the top three cards of the Villain Deck. You may defeat a Villain you revealed worth 2VP or less. (Do its Fight effect.) Put the rest back in any order."
+            "Fight: Reveal the top three cards of the Villain Deck. You may defeat a Villain you revealed worth 2VP or less. (Do its Fight effect.) Put the rest back in any order. [effect:reveal-villain-deck-defeat-low-vp-current]"
           ]
         },
         {
@@ -1663,7 +1663,7 @@
           "slug": "remaker-the-matter-rearranger",
           "imageUrl": "https://images.legendary-arena.com/rvlt/rvlt-hm-mandarins-rings-remaker-the-matter-rearranger.webp",
           "abilities": [
-            "Fight: You may choose a card from your hand or discard pile. The player on your right puts it in their hand."
+            "Fight: You may choose a card from your hand or discard pile. The player on your right puts it in their hand. [effect:give-card-to-right-player-current]"
           ]
         },
         {

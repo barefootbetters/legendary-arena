@@ -216,7 +216,11 @@ describe('variant Fight markers (D-24803)', () => {
     assert.deepStrictEqual(resolvedFor(0), ['draw-cards-current'], 'Daimonic draws a card');
     assert.deepStrictEqual(resolvedFor(1), ['ko-up-to-from-discard-current'], 'Incandescence may KO from the discard pile');
     assert.deepStrictEqual(resolvedFor(2), ['gain-recruit-current'], 'Influence gives +1 Recruit');
-    assert.deepStrictEqual(resolvedFor(3), [], 'Liar is not marked yet');
+    // why: WP-872 / D-24817 — Liar, Nightbringer and Remaker are marked now (an intentional
+    // behavior change: their Fight lines do what they print).
+    assert.deepStrictEqual(resolvedFor(3), ['look-other-player-deck-top-claim-current'], 'Liar looks at another player\'s deck top and claims');
+    assert.deepStrictEqual(resolvedFor(5), ['reveal-villain-deck-defeat-low-vp-current'], 'Nightbringer may defeat a revealed Villain Deck Villain');
+    assert.deepStrictEqual(resolvedFor(6), ['give-card-to-right-player-current'], 'Remaker gives a card to the player on the right');
     // why: a legacy keyword resolves to both its name and its ko-hero descriptor.
     assert.deepStrictEqual(resolvedFor(7), ['ko-hero', 'koHeroCurrentPlayer'], 'Spectral KOs one of your Heroes');
   });

@@ -391,7 +391,14 @@ export type VillainEffectPrimitive =
   // reorders the rest, Zero adds a 0-cost card played this turn to the next hand.
   | 'reveal-top-may-ko-current'
   | 'reveal-top-discard-zero-cost-current'
-  | 'next-hand-from-play-zero-cost-current';
+  | 'next-hand-from-play-zero-cost-current'
+  // why: WP-872 / D-24817 — the Mandarin's Rings cross-player and Villain Deck Fight lines,
+  // appended last: Liar looks at another player's deck top and claims "Good" or "Bad", Nightbringer
+  // may defeat a revealed Villain Deck Villain worth 2VP or less, Remaker gives a card to the
+  // player on your right.
+  | 'look-other-player-deck-top-claim-current'
+  | 'reveal-villain-deck-defeat-low-vp-current'
+  | 'give-card-to-right-player-current';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -587,6 +594,21 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'reveal-top-may-ko-current',
   'reveal-top-discard-zero-cost-current',
   'next-hand-from-play-zero-cost-current',
+  // why: WP-872 / D-24817 — appended at positions 49, 50 and 51, the Mandarin's Rings
+  // cross-player and Villain Deck Fight lines. Liar, The Mento-Intensifier: "Look at the top card
+  // of another player's deck. Say it is "Good" or "Bad." That player chooses to put it in your
+  // discard pile or their discard pile." (`look-other-player-deck-top-claim-current`). Nightbringer,
+  // The Black Light: "Reveal the top three cards of the Villain Deck. You may defeat a Villain you
+  // revealed worth 2VP or less. (Do its Fight effect.) Put the rest back in any order."
+  // (`reveal-villain-deck-defeat-low-vp-current`). Remaker, The Matter Rearranger: "You may choose
+  // a card from your hand or discard pile. The player on your right puts it in their hand."
+  // (`give-card-to-right-player-current`). No params; each queues an owed pick on
+  // G.pendingVillainFightPicks that the play-phase onMove opener parks as seat choices. All three
+  // keyword-less, so all three self-narrate. The marker script's hand-synced copy
+  // (`scripts/convert-cards/apply-effect-markers.mjs`) appends them at the same positions.
+  'look-other-player-deck-top-claim-current',
+  'reveal-villain-deck-defeat-low-vp-current',
+  'give-card-to-right-player-current',
 ] as const;
 
 /**

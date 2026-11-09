@@ -234,12 +234,20 @@ describe('WP-870 Mandarin\'s Rings parser (D-24815)', () => {
     }
   });
 
-  it('T2: Liar (-03), Nightbringer (-05) and Remaker (-06) stay unmarked', () => {
+  // why: WP-872 / D-24817 — an intentional behavior change: WP-870 left these three unmarked, and
+  // WP-872 now marks them with their own primitives (each exercised in
+  // mandarinsRingsCrossPlayerFight.test.ts).
+  it('T2: Liar (-03), Nightbringer (-05) and Remaker (-06) carry the WP-872 primitives, not WP-870\'s', () => {
+    const expectedPrimitives: Record<string, string> = {
+      '03': 'look-other-player-deck-top-claim-current',
+      '05': 'reveal-villain-deck-defeat-low-vp-current',
+      '06': 'give-card-to-right-player-current',
+    };
     for (const suffix of ['03', '05', '06']) {
       const cardId = `henchman-mandarins-rings-${suffix}` as CardExtId;
-      for (const hook of fightHooksFor(RINGS_HOOKS, cardId)) {
-        assert.deepStrictEqual(hook.effects, [], `${cardId} carries no effect`);
-      }
+      const hooks = fightHooksFor(RINGS_HOOKS, cardId);
+      assert.equal(hooks.length, 1, `${cardId} builds one onFight hook`);
+      assert.deepStrictEqual(hooks[0]!.effects, [{ primitive: expectedPrimitives[suffix] }], `${cardId} carries its WP-872 primitive`);
     }
   });
 

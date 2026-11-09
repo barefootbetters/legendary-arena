@@ -65,6 +65,14 @@ import {
   applyMandarinRingEntryResolvedSeatChoice,
   MANDARIN_RING_ENTRY_SEAT_CHOICE_KIND,
 } from '../mastermind/mandarin.logic.js';
+// why: WP-872 / D-24817 — the Mandarin's Rings Liar / Nightbringer / Remaker pick apply, chain and
+// kind guard (same runtime-safe cycle: that module imports parkSeatChoice back, and every binding
+// is read only inside a function body).
+import {
+  applyVillainFightPickResolvedSeatChoice,
+  chainVillainFightPick,
+  isVillainFightPickKind,
+} from './villainFightPick.logic.js';
 // why: WP-863 / D-24805 — Trap Heroes in the Microverse's "choose any player to gain it" apply (same
 // runtime-safe cycle: the binding is read only inside a function body).
 import {
@@ -476,6 +484,9 @@ export function resolveSeatChoice(
     // why: WP-862 / D-24804 — capture a Shrinking Research Budget class pick's seat BEFORE the
     // apply clears the choice, so the next dual-class Hero's pick chains below (the Commune shape).
     const sizeChangingClassPickSeat = readSizeChangingClassPickSeat(choice);
+    // why: WP-872 / D-24817 — capture a Mandarin's Rings pick choice BEFORE the apply (which
+    // writes the step's result onto its payload) and the delete, so its next step chains below.
+    const villainFightPickChoice = isVillainFightPickKind(appliedKind) ? choice : undefined;
     // why: WP-682 / WP-683 — dispatch by kind (diving-block via its own apply; the Deadpool
     // kinds via applySeatChoiceCard; the 'generic' kind via the foundational per-seat log).
     // why: D-24732 — ctx?. because narrow test contexts omit ctx; moves never throw.
@@ -518,6 +529,14 @@ export function resolveSeatChoice(
     if (sizeChangingClassPickSeat !== undefined) {
       // why: the class-pick kind carries no source field; its only source is the tactic (D-24804).
       chainSizeChangingClassPick(G, sizeChangingClassPickSeat, SHRINKING_RESEARCH_BUDGET_TACTIC_ID);
+    }
+    // why: WP-872 / D-24817 — Liar, Nightbringer and Remaker chain their next step here in the
+    // live move context: parking Liar's decide for the NON-ACTIVE target needs the move's
+    // events.setActivePlayers, and Nightbringer's Fight effect needs the turn and random. The
+    // timeout path (applySeatChoiceTimeoutDefault) does not chain: the shared D-24500 / D-24501
+    // residual, since that path is not wired live.
+    if (villainFightPickChoice !== undefined) {
+      chainVillainFightPick(G, villainFightPickChoice, ctx, events, random);
     }
   }
 }
@@ -593,6 +612,14 @@ function applySeatChoiceByKind(
   // card; the next onMove opener enters it (the escape it may cause needs the turn and the map).
   if (choice.kind === MANDARIN_RING_ENTRY_SEAT_CHOICE_KIND) {
     applyMandarinRingEntryResolvedSeatChoice(G, choice);
+    return;
+  }
+  // why: WP-872 / D-24817 — the six Mandarin's Rings pick kinds apply their step here, ctx-free
+  // (so a defaulted choice still moves the card). Required BEFORE the applySeatChoiceCard /
+  // generic applyResolvedSeatChoice fall-through: its public "Seat N resolved <kind> choice:
+  // <label>" line would leak Liar's looked-at card from a 'liar-claim' label.
+  if (isVillainFightPickKind(choice.kind)) {
+    applyVillainFightPickResolvedSeatChoice(G, choice, shuffleContext);
     return;
   }
   // why: WP-694 / D-24511 — Monarch's Decree mode apply: the "draw" branch draws for each
