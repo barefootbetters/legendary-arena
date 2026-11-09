@@ -47784,6 +47784,8 @@ Protect this file.
 
 **Live-verify (D-24026):** pending. After deploy, a match's Play Diagnostics export shows `effectTraces` for villain Ambush / Escape effects on the start-of-turn reveal with the same `turn` as that turn's hero traces, not 0.
 
+**Superseded in part:** §3 (framework turn, not play-relative) is superseded by D-24825 (2026-11-08): traces and hollow records carry the log's play-relative turn.
+
 **Reserved by:** NUMBER-LEDGER D-24704. Related: D-24703 (where this was noted), WP-488 / D-24294 (effect traces, diagnostics hash exclusion), WP-257 / D-24033 (hollow records), D-24351, D-24697, D-24026.
 
 ---
@@ -50759,6 +50761,27 @@ Protect this file.
 **Execution (2026-11-08).** Four engine files (the contract union and array plus the `EffectTraceStatus` JSDoc, the helper, three fight-bridge and two Ambush-bridge emissions). Tests: new `villain/villainSecondarySiteTraces.test.ts` (one `describe`, ten cases, WP AC 2–8, the AC 9 invariant held in the AC 6 case); the drift pin goes to six fire sites; two intentional behavior-change edits (`villain/reenterSewers.test.ts` and `villain/stackVillain.test.ts` now expect the executor `no-op` and then the bridge `secondary-site`). game-engine 6701 -> 6711 / 0; every other package unchanged and 0 fail; `typecheck:tests` 250 errors before and after, none new in a touched file. Revert proof: with the two bridge files reverted, 7 of the 10 new cases fail (every emission case); the gated, direct-helper and negative cases pass, as they should. Inspector (LOW): PASS, no P0 / P1; four comment-only P2s folded (the guard and ordering reasons at each emission, the D-24824 note moved into the allowlist's why-block, "marked count" wording). Live-on-surface (D-24026) is operator-pending.
 
 **Reserved by:** NUMBER-LEDGER D-24824 (#3241). Related: D-24026, D-24270, D-24271, D-24287, D-24294, D-24351, D-24372, D-24384, D-24704, D-24770, D-24811, D-24814, D-24817.
+
+---
+
+### D-24825 — Hollow records and effect traces carry the game log's play-relative turn (direct fix, no WP) (Active 2026-11-08)
+
+**Context.** The game log numbers every line `{turn}.{step}.{action}` with the play-relative turn (`G.logMeta.turn = ctx.turn − firstPlayTurn + 1`, `game.ts` play `onBegin`; the lobby consumes framework turn 1). The HUD, `UIState.game.turn` and the operator bot decisions (D-24697) use the same number. `HollowEffectRecord.turn` and `EffectTrace.turn` were stamped from the framework `ctx.turn` (D-24704 §3 kept traces on the framework turn), so the operator hollow-effects table and the Play Diagnostics traces read one turn higher than the log. Operator matches `mjw8byyMwLY` (X-Con Security Van logged at 11.2.x / 17.2.x / 23.2.x, table 12 / 18 / 24) and `bo4ZSQLBuQU` (The Big Score logged at 6.2.x / 10.2.x / 12.2.x, table 7 / 11 / 13) made cross-referencing error-prone.
+
+**Decision.**
+1. The diagnostic turn is the log's play-relative turn. `recordHollowEffect` (#3237) and `recordEffectTrace` stamp `turn` from `G.logMeta.turn` at their single write seam, so every emitter (hero, villain, Master Strike, villain-deck reveal) agrees with the log without per-site changes. A trace emitted from a turnless context (the D-24704 `0` fallback) also gets the log turn.
+2. When `G.logMeta` is absent (narrow test fixtures; production stamps it at the first play `onBegin`), the emitter-supplied turn is kept.
+3. Supersedes D-24704 §3 ("framework turn, not play-relative"). D-24704 §1, §2 and §4 stand: reveal contexts still forward the framework turn, which the seam now re-bases.
+
+**Determinism.** `G.diagnostics` is hash-excluded (WP-488 / D-24294), so no `finalStateHash`, `PRE_WP080_HASH`, golden, PAR or sim baseline moves. Nothing in gameplay reads either `turn`.
+
+**Files.** `packages/game-engine/src/diagnostics/hollowEffect.record.ts` (#3237), `diagnostics/effectTrace.record.ts`, `diagnostics/hollowEffect.types.ts` (docs), and the two record test files. No HTTP endpoint touched.
+
+**Tests.** `hollowEffect.test.ts`: framework turn 7 with `firstPlayTurn` 2 stores turn 6 and the `[blocked]` line reads `6.2.2`. `effectTrace.record.test.ts`: in the same state a framework-turn trace, a turn-0 trace and a hollow record all store 6, matching the log prefix; with no `logMeta` the emitter's turn is kept. Both new cases fail against the unfixed seams. The D-24704 reveal and fight tests (turn 7 / 9, no `logMeta`) pass unchanged.
+
+**Live-verify (D-24026):** pending. On a match created after deploy, a hollow's Turns column and its effect traces' `turn` equal the `[blocked]` log line's turn prefix.
+
+**Reserved by:** NUMBER-LEDGER D-24825. Related: D-24704 (§3 superseded), D-24697 (same fix for bot decisions), WP-328 (log numbering), WP-257 / D-24033 (hollow records), WP-488 / D-24294 (effect traces), D-24026.
 
 ---
 Protect this file.
