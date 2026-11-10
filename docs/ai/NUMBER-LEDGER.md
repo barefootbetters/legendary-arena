@@ -516,7 +516,7 @@ high-water: 422
 - WP-875 — mandarin-master-strike-and-ring-attack (rvlt The Mandarin: Master Strike sends a Mandarin's Ring from each player's Victory Pile back into the City or that player gains a Wound, Mandarin's Rings get +1 Attack, The Mandarin gets -1 Attack per Mandarin's Ring in all Victory Piles. reserved 2026-11-07, claude/wp-mandarin-reserve; LANDED 2026-11-07)
 - WP-876 — heist-deferred-lines (amwp: the four Heist lines WP-865 deferred fire their full printed payloads on a successful Heist - The Big Score, Revolutionary Anthem, Putting a Crew Together, X-Con Security Van. reserved 2026-11-08, claude/wp876-heist-deferred-reserve; LANDED 2026-11-08)
 - WP-877 — secondary-site-traces (villain primitives whose executor handler is a deliberate no-op get a secondary-site effect trace where the real work fires - Endless Armies / The Leader villain-deck play, Mr. Immortal re-entry, stack entry. reserved 2026-11-08, claude/wp877-secondary-site-reserve; LANDED 2026-11-08)
-- WP-878 — bot-heist-attempts (bots attempt a Heist: getLegalMoves emits attemptHeist when available and the card-count odds favor it - over the multiset of cards left in the Villain Deck, never its order or top card, P(Heist Count > VP) > P(Heist Count < VP); the competent policy attempts after the hand is played out, before plain spends. reserved 2026-11-08, claude/wp878-bot-heist-reserve)
+- WP-878 — bot-heist-attempts (bots attempt a Heist: getLegalMoves emits attemptHeist when available and the card-count odds favor it - over the multiset of cards left in the Villain Deck, never its order or top card, P(Heist Count > VP) > P(Heist Count < VP); the competent policy attempts after the hand is played out, before plain spends. reserved 2026-11-08, claude/wp878-bot-heist-reserve; LANDED 2026-11-09)
 
 ## EC
 
@@ -995,7 +995,7 @@ high-water: 457
 - EC-913 — mandarin-master-strike-and-ring-attack (WP-875. reserved 2026-11-07, claude/wp-mandarin-reserve; LANDED 2026-11-07)
 - EC-914 — heist-deferred-lines (WP-876. reserved 2026-11-08, claude/wp876-heist-deferred-reserve; LANDED 2026-11-08)
 - EC-915 — secondary-site-traces (WP-877. reserved 2026-11-08, claude/wp877-secondary-site-reserve; LANDED 2026-11-08)
-- EC-916 — bot-heist-attempts (WP-878. reserved 2026-11-08, claude/wp878-bot-heist-reserve)
+- EC-916 — bot-heist-attempts (WP-878. reserved 2026-11-08, claude/wp878-bot-heist-reserve; LANDED 2026-11-09)
 
 ## D
 
@@ -1599,5 +1599,5 @@ section below) and the allocation protocol in
 - D-24823 — heist-deferred-lines (WP-876; the four deferred Heist payloads: The Big Score Master Strike KO + Bystander on top, Revolutionary Anthem Scheme Twist bonus + optional Villain Deck shuffle, Putting a Crew Together every-card distinct-cost count, X-Con Security Van move-a-Villain + KO a Hero. reserved 2026-11-08, claude/wp876-heist-deferred-reserve; LANDED 2026-11-08)
 - D-24824 — secondary-site-traces (WP-877; amends D-24294: new EffectTraceFireSite members for the deferred secondary fire sites. reserved 2026-11-08, claude/wp877-secondary-site-reserve; LANDED 2026-11-08)
 - D-24825 — diagnostics-turn-play-relative (direct fix, no WP; hollow records and effect traces carry the game log's play-relative turn, superseding D-24704 §3. reserved 2026-11-08, claude/effect-trace-turn-play-relative)
-- D-24826 — bot-heist-attempts (WP-878; bot Heist policy: card-count odds over the Villain Deck multiset, never the hidden top; closes the D-24808 §7 / D-24823 §7 bot follow-up. reserved 2026-11-08, claude/wp878-bot-heist-reserve)
+- D-24826 — bot-heist-attempts (WP-878; bot Heist policy: card-count odds over the Villain Deck multiset, never the hidden top; closes the D-24808 §7 / D-24823 §7 bot follow-up. reserved 2026-11-08, claude/wp878-bot-heist-reserve; LANDED 2026-11-09)
 - D-24827 — coverage-headline-implemented (direct fix, no WP; the /coverage row headline counts Executable + Condition + Subsystem rows. reserved 2026-11-10, infra/coverage-headline-implemented)
