@@ -308,8 +308,14 @@ function winRateClass(row: ParFidelityRow): string {
         <span class="headline-num">{{ percentImplemented }}%</span>
         <span class="headline-label"
           >hero mechanics implemented<template v-if="isSetScoped">
-            — {{ setDisplayName(selectedSet) }}</template
-          ></span
+            — {{ setDisplayName(selectedSet) }}, hero cards only</template
+          ><template v-else> — hero cards only</template></span
+        >
+        <!-- why: a set-scoped 100% read as "the whole set is done" while that set's
+             Schemes and Masterminds sit outside the hero ledger entirely. Name what
+             the number leaves out so nobody has to know the ledger's scope. -->
+        <span class="headline-sub"
+          >Villains, Henchmen, Masterminds and Schemes are not counted here</span
         >
         <!-- why (WP-561 / D-24370): the two headlines are NOT comparable percentages of
              the same thing. This one is ROW-weighted (share of card x mechanic rows);
