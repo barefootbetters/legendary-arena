@@ -83,7 +83,8 @@ the flat transparent master is `logo-la-emblem.svg`.
 *Traced with [vtracer](https://github.com/visioncortex/vtracer) from the
 matted raster `emblem-trace-source.png` (a flattened export of `segments.zip`).
 Generator: [build-emblem-svg.py](../ewiki/branding/build-emblem-svg.py) —
-regenerate both SVGs with `python build-emblem-svg.py`. This is an autotrace:
+regenerate both SVGs with `py -3 build-emblem-svg.py` (bare `python` may be
+Inkscape's bundled interpreter, which lacks vtracer). This is an autotrace:
 clean and fully scalable, but not a hand-tuned master — a from-scratch vector
 rebuild (see [Figma Logo Design](figma-logo-design.md)) would place every
 anchor by hand.*
