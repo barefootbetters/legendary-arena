@@ -609,7 +609,8 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // useRitualArtifact pattern): once per turn the player attempts a Heist, comparing the Heist
     // Count with the Villain Deck top card's printed VP. Server-only (client: false) per D-10008 —
     // it mutates real G (turnEconomy, and the readied abilities' or the Wound's zones). Not in
-    // CORE_MOVE_NAMES and not emitted by getLegalMoves, so bots never attempt a Heist.
+    // CORE_MOVE_NAMES. WP-878 / D-24826 — getLegalMoves step 4c emits it for a bot when the
+    // card-count odds favor a Heist, and both simulation MOVE_MAPs dispatch it.
     attemptHeist: { move: attemptHeist, client: false },
     // why: WP-502 / D-24306 — endMatchEarly is the player-initiated "End Game"
     // control: it latches the MATCH_ENDED_EARLY endgame counter so the match ends

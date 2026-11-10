@@ -130,8 +130,8 @@ function chooseByKind(
   }
   if (choice.kind === HEIST_SHUFFLE_SEAT_CHOICE_KIND) {
     // why: WP-876 / D-24823 — Revolutionary Anthem's optional shuffle: the bot leaves the Villain
-    // Deck as it is (option 1, also the default; belt-and-braces). Never reached while bots do not
-    // attempt a Heist (D-24823 §7).
+    // Deck as it is (option 1, also the default; belt-and-braces). Reached now that bots attempt a
+    // Heist (WP-878 / D-24826): a bot's won Heist with Revolutionary Anthem readied opens it.
     return HEIST_LEAVE_OPTION_INDEX;
   }
   if (choice.kind === ENIGMA_PEEK_SEAT_CHOICE_KIND) {
