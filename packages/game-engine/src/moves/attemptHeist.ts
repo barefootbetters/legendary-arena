@@ -12,7 +12,10 @@
  * Playing an allowlisted Heist card readies it (heroEffectHeist). `attemptHeist` is the player's
  * action that resolves the Heist; `isHeistAvailable` is the single legality predicate shared by
  * the move and the `economy.heistAvailable` projection, so the button the client shows and the
- * move the engine accepts never disagree. getLegalMoves never emits the move, so bots never Heist.
+ * move the engine accepts never disagree. Bots attempt a Heist through getLegalMoves step 4c, which
+ * emits the move only when shouldBotAttemptHeist (simulation/ai.heist.ts) passes: the Heist is
+ * available, a won Heist pays the bot, and the card-count odds favor it (WP-878 / D-24826). A human
+ * player's Heist is unchanged.
  *
  * This is a non-core move that gates internally (the useRitualArtifact precedent). It is NOT added
  * to CoreMoveName, CORE_MOVE_NAMES, or MOVE_ALLOWED_STAGES.

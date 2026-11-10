@@ -672,8 +672,14 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // hands shift the fixed-seed trajectory (feed regenerated: 7677 -> 7662 raw observations, 77
   // mechanics, 0 dropped). totalObs 8687 -> 8686 (-1); resolvedObs stays 1141, so percentResolved
   // stays 13.1 (1141 / 8686). A trajectory re-pin; no mechanic changed status.
+  // 2026-11-09 (WP-878 / D-24826, re-pin): bots now attempt a Heist when the card-count odds favor
+  // it, which only the sweep's amwp board (Ant Army, Ant-Man) can do, so its fixed-seed trajectory
+  // shifts (feed regenerated: 7660 -> 7676 raw observations; attack-no-magnitude 376 -> 379,
+  // gate-only 361 -> 366, recruit-no-magnitude 426 -> 434, all amwp examples). totalObs
+  // 8686 -> 8702 (+16); resolvedObs stays 1141, so percentResolved stays 13.1 (1141 / 8702). A
+  // trajectory re-pin; no mechanic changed status.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8686);
+  assert.equal(view.totalObs.value, 8702);
   assert.equal(view.resolvedObs.value, 1141);
   assert.equal(view.percentResolved.value, 13.1);
   assert.ok(view.remaining.value.length > 0);

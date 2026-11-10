@@ -641,3 +641,46 @@ describe('WP-873 competent policy — a fortifier fightVillain intent (D-24818)'
     assert.deepStrictEqual(second.move, cityFight);
   });
 });
+
+describe('WP-878 competent policy — attemptHeist scores 175 (D-24826 §4)', () => {
+  const ATTEMPT_HEIST: LegalMove = { name: 'attemptHeist', args: {} };
+  const PLAIN_SPENDS: LegalMove[] = [
+    { name: 'fightVillain', args: { cityIndex: 1 } },
+    { name: 'recruitHero', args: { hqIndex: 0 } },
+    { name: 'exorciseHauntedHero', args: { hqIndex: 2, outcome: 'gain', recipientPlayerId: '0' } },
+    { name: 'advanceStage', args: {} },
+  ];
+
+  /**
+   * A view with one plain Villain (no Bystander, not about to escape) in City space 1.
+   *
+   * @returns The synthetic UIState.
+   */
+  function plainVillainView(): UIState {
+    const villain: UICityCard = { ...makeUICityCard(), extId: 'villain-plain', type: 'villain', keywords: [] };
+    return buildSyntheticUIState([null, villain, null, null, null]);
+  }
+
+  test('the bot plays a card before it attempts a Heist', () => {
+    const policy = createCompetentHeuristicPolicy('heist-vs-play-seed');
+    const intent = policy.decideTurn(plainVillainView(), [
+      ATTEMPT_HEIST,
+      ...PLAIN_SPENDS,
+      { name: 'playCard', args: { cardId: 'hero-card#0' } },
+    ]);
+    assert.equal(intent.move.name, 'playCard', 'playCard (200) outranks attemptHeist (175)');
+  });
+
+  test('with no card to play, the bot attempts a Heist over a plain fight, recruit, exorcise and advance', () => {
+    const policy = createCompetentHeuristicPolicy('heist-vs-spend-seed');
+    const intent = policy.decideTurn(plainVillainView(), [...PLAIN_SPENDS, ATTEMPT_HEIST]);
+    assert.deepStrictEqual(intent.move, ATTEMPT_HEIST, 'attemptHeist (175) outranks every plain spend');
+    assert.equal(intent.decisionLog?.[0], '[Bot] Chose: attemptHeist (score 175)', 'the decision log names the move and its score');
+  });
+
+  test('a Mastermind fight still beats a Heist', () => {
+    const policy = createCompetentHeuristicPolicy('heist-vs-mastermind-seed');
+    const intent = policy.decideTurn(plainVillainView(), [ATTEMPT_HEIST, { name: 'fightMastermind', args: {} }]);
+    assert.equal(intent.move.name, 'fightMastermind', 'fightMastermind (1500) outranks attemptHeist (175)');
+  });
+});

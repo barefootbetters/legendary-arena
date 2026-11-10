@@ -108,6 +108,7 @@ import {
   hasSeatSubmitted,
 } from '../moves/seatChoice.resolve.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { shouldBotAttemptHeist } from './ai.heist.js';
 
 // why: simulation covers the play-phase only; lobby moves (setPlayerReady,
 // startMatchIfReady) are excluded because runSimulation starts the per-game
@@ -254,6 +255,11 @@ export const SIMULATION_MOVE_NAMES = [
   // HQ slot, so it MUST be dispatchable in both sim MOVE_MAPs (and the replay map) or the
   // per-turn loop spins on "unknown move name". Asserted by simulation.moveDispatch.drift.test.ts.
   'exorciseHauntedHero',
+  // why: WP-878 / D-24826 — getLegalMoves step 4c emits attemptHeist when shouldBotAttemptHeist
+  // passes, so it MUST be dispatchable in both sim MOVE_MAPs or the per-turn loop spins on
+  // "unknown move name" (the WP-289 / D-24073 within-turn hang). Asserted by
+  // simulation.moveDispatch.drift.test.ts.
+  'attemptHeist',
 ] as const;
 
 // why: type is exported implicitly via the const array above; external
@@ -366,7 +372,8 @@ function selectDefaultMoveVillainArgs(gameState: LegendaryGameState): ResolveMov
   // why: WP-876 / D-24823 — load-bearing: the Spinning Cyclone answer below may name an occupied
   // space, which the X-Con variant rejects (empty spaces only), so a bot answering it would never
   // resolve the entry and a simulation would hang. X-Con's move gains nothing (no rescue) and costs
-  // a Hero, so the bot declines. Never reached while bots do not attempt a Heist (D-24823 §7).
+  // a Hero, so the bot declines. Reached now that bots attempt a Heist (WP-878 / D-24826), and it
+  // stays load-bearing: a won Heist with X-Con readied parks this entry in a bot game.
   if (gameState.pendingMoveVillainChoices?.[0]?.variant === 'x-con-security-van') {
     return { decline: true };
   }
@@ -450,6 +457,10 @@ function selectDoOverDefault(gameState: LegendaryGameState): { accept: true } | 
  *      FORTIFY_PLACES order (WP-873 / D-24818; empty without a fortification)
  *   4. fightMastermind — one entry (if stage === 'main', tactics remain,
  *      and availableAttack covers the base-card fightCost)
+ *   4b. exorciseHauntedHero intents — HQ slot 0..4 ascending, one per
+ *      affordable Haunted slot (WP-757 / D-24587; empty without a Haunt)
+ *   4c. attemptHeist — one entry (if stage === 'main' and
+ *      shouldBotAttemptHeist passes; WP-878 / D-24826)
  *   5. revealVillainCard — one entry if stage === 'start'
  *   6. advanceStage — one entry if stage !== 'cleanup'
  *   7. endTurn — one entry if stage === 'cleanup'
@@ -1268,6 +1279,17 @@ export function getLegalMoves(
         });
       }
     }
+  }
+
+  // 4c. attemptHeist — one entry when the bot's Heist odds favor it.
+  // why: WP-878 / D-24826 — the card-count gate lives here, in the bot's move menu, so every bot
+  // policy (competent, random, server autoplay, bot ally) attempts only under Jeff's rule.
+  // shouldBotAttemptHeist checks isHeistAvailable first, the move's own legality predicate
+  // (D-24364: a move precondition ships with its enumeration mirror), so every emitted attemptHeist
+  // commits. Appended after step 4b so the locked order of the earlier steps is unchanged; without
+  // a readied Heist card it pushes nothing, so the output is byte-identical.
+  if (stage === 'main' && shouldBotAttemptHeist(gameState, activePlayer)) {
+    legalMoves.push({ name: 'attemptHeist', args: {} });
   }
 
   // 5. revealVillainCard — one entry if stage === 'start' AND the once-per-turn

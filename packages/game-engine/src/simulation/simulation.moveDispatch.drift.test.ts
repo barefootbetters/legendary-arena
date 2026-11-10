@@ -212,3 +212,23 @@ describe('simulation move-dispatch drift guard — exorciseHauntedHero (WP-757 /
     );
   });
 });
+
+describe('simulation move-dispatch drift guard — attemptHeist (WP-878 / D-24826)', () => {
+  it('attemptHeist is emittable AND dispatchable in BOTH maps (else the sim stalls)', () => {
+    // why: getLegalMoves step 4c emits attemptHeist when the bot's Heist odds favor it; a missing
+    // MOVE_MAP entry would make the loop dispatch "unknown move name", re-pick the same move and
+    // burn the per-turn step budget. Pin all three memberships explicitly.
+    assert.ok(
+      SIMULATION_MOVE_NAMES.includes('attemptHeist'),
+      'attemptHeist must be in SIMULATION_MOVE_NAMES (getLegalMoves emits it)',
+    );
+    assert.ok(
+      SIMULATION_RUNNER_MOVE_NAMES.includes('attemptHeist'),
+      'attemptHeist must be a simulation.runner MOVE_MAP key',
+    );
+    assert.ok(
+      PAR_AGGREGATOR_MOVE_NAMES.includes('attemptHeist'),
+      'attemptHeist must be a par.aggregator MOVE_MAP key',
+    );
+  });
+});

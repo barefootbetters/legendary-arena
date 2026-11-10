@@ -28,6 +28,16 @@ import { exorciseHauntedHero } from '../moves/exorciseHauntedHero.js';
 import type { ExorciseHauntedHeroArgs } from '../moves/exorciseHauntedHero.js';
 import { recruitHero } from '../moves/recruitHero.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { buildHeroAbilityHooks } from '../setup/heroAbility.setup.js';
+import { attemptHeist } from '../moves/attemptHeist.js';
+import { resolveMoveVillainChoice } from '../moves/moveVillainChoice.resolve.js';
+import type { ResolveMoveVillainChoiceArgs } from '../moves/moveVillainChoice.resolve.js';
+import type { MatchConfiguration } from '../types.js';
+import type { RevealedCardType } from '../villainDeck/villainDeck.types.js';
+import { makeGlobalPiles, makeMastermindState, makePlayerZones } from '../test/fixtureBuilders.js';
 
 const CONTEXT = { phase: 'play', turn: 1, currentPlayer: '0', numPlayers: 1 };
 
@@ -1916,5 +1926,178 @@ describe('WP-873 getLegalMoves — Fortify mirrors the fortifier fight and the M
       { name: 'fightMastermind', args: {} },
       { name: 'advanceStage', args: {} },
     ]);
+  });
+});
+
+describe('WP-878 getLegalMoves — step 4c attemptHeist when the card-count odds favor it (D-24826)', () => {
+  const CARDS_DIRECTORY = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..', 'data', 'cards');
+  const PETTY_LARCENY = 'amwp/scott-lang-cat-burglar/petty-larceny#0' as CardExtId;
+  const X_CON_SECURITY_VAN = 'amwp/scott-lang-cat-burglar/x-con-security-van#0' as CardExtId;
+  const HAND_TWO = 'test/hand-hero/two-cost#0' as CardExtId;
+  const HAUNTED_HERO = 'test/hq-hero/haunted#0' as CardExtId;
+  const HAUNTER = 'test/villain-group/haunter#0' as CardExtId;
+  const CITY_VILLAIN = 'test/villain-group/brute#0' as CardExtId;
+  const SCHEME_TWIST = 'scheme-twist#0' as CardExtId;
+  const BYSTANDER = 'bystander#0' as CardExtId;
+  const HENCHMAN = 'test/henchman-group/goon#0' as CardExtId;
+  const VILLAIN_FOUR = 'test/villain-group/thug#0' as CardExtId;
+  const VILLAIN_FOUR_SECOND = 'test/villain-group/thug#1' as CardExtId;
+  const WOUND = 'pile-wound#0' as CardExtId;
+
+  /** The real hooks for the Scott Lang, Cat Burglar Hero deck, from the committed card data. */
+  function buildHooks(): LegendaryGameState['heroAbilityHooks'] {
+    const setData = JSON.parse(readFileSync(join(CARDS_DIRECTORY, 'amwp.json'), 'utf8'));
+    const registry = { listCards: () => [], getSet: (abbr: string) => (abbr === 'amwp' ? setData : undefined) };
+    const config = { heroDeckIds: ['amwp/scott-lang-cat-burglar'] } as unknown as MatchConfiguration;
+    return buildHeroAbilityHooks(registry, config);
+  }
+
+  const HOOKS = buildHooks();
+
+  /**
+   * A one-seat main-stage state with the given crew played and readied and a 2-cost Hero in hand.
+   * With Petty Larceny alone the Heist Count is 2 ({1, 2}); every card of the default Villain Deck
+   * (Scheme Twist 0, Bystander 1, henchman 1) would lose to it, so the odds favor a Heist.
+   *
+   * @param crew - The Heist cards played and readied this turn.
+   * @returns A LegendaryGameState wide enough for getLegalMoves and the attemptHeist move.
+   */
+  function makeHeistG(crew: CardExtId[]): LegendaryGameState {
+    const villainDeckCardTypes: Record<CardExtId, RevealedCardType> = {
+      [SCHEME_TWIST]: 'scheme-twist',
+      [BYSTANDER]: 'bystander',
+      [HENCHMAN]: 'henchman',
+      [VILLAIN_FOUR]: 'villain',
+      [VILLAIN_FOUR_SECOND]: 'villain',
+    };
+    return {
+      currentStage: 'main',
+      villainRevealedThisTurn: true,
+      messages: [],
+      counters: {},
+      hookRegistry: [],
+      turnEconomy: { ...makeTurnEconomy(), heistCrewCards: [...crew] },
+      playerZones: { '0': { ...makePlayerZones(), hand: [HAND_TWO], inPlay: [...crew] } },
+      piles: makeGlobalPiles({ wounds: [WOUND] }),
+      mastermind: makeMastermindState(),
+      villainDeck: { deck: [SCHEME_TWIST, BYSTANDER, HENCHMAN], discard: [] },
+      villainDeckCardTypes,
+      cardVictoryPoints: { [HENCHMAN]: 1, [VILLAIN_FOUR]: 4, [VILLAIN_FOUR_SECOND]: 4 },
+      city: [null, null, null, null, null],
+      hq: [null, null, null, null, null],
+      heroDeck: [],
+      escapedPile: [],
+      ko: [],
+      attachedBystanders: {},
+      scheme: { twistPile: [] },
+      heroAbilityHooks: HOOKS,
+      villainAbilityHooks: [],
+      cardStats: {
+        [PETTY_LARCENY]: makeCardStatEntry({ cost: 1 }),
+        [X_CON_SECURITY_VAN]: makeCardStatEntry({ cost: 5 }),
+        [HAND_TWO]: makeCardStatEntry({ cost: 2 }),
+        [HAUNTED_HERO]: makeCardStatEntry({ cost: 2 }),
+      },
+      cardTraits: {},
+      cardKeywords: {},
+      cardDisplayData: {},
+      notableEvents: [],
+    } as unknown as LegendaryGameState;
+  }
+
+  /**
+   * The SimulationMoveContext shape the simulation runner dispatches moves with
+   * (simulation.runner.ts); its MOVE_MAP is module-private, so the test builds the same shape.
+   *
+   * @param gameState - The game state the move mutates.
+   * @returns A runner-shaped move context for player 0.
+   */
+  function runnerContext(gameState: LegendaryGameState): never {
+    return {
+      G: gameState,
+      playerID: '0',
+      ctx: { phase: 'play', turn: 1, currentPlayer: '0', numPlayers: 1 },
+      events: { setPhase: () => {}, endTurn: () => {} },
+      random: { Shuffle: <T>(deck: T[]): T[] => [...deck].reverse() },
+    } as never;
+  }
+
+  /**
+   * The names of the moves getLegalMoves emits, in order.
+   *
+   * @param gameState - The game state to enumerate.
+   * @returns The emitted move names.
+   */
+  function moveNames(gameState: LegendaryGameState): string[] {
+    const names: string[] = [];
+    for (const move of getLegalMoves(gameState, CONTEXT)) {
+      names.push(move.name);
+    }
+    return names;
+  }
+
+  test('emits attemptHeist exactly once, after every step-4b entry and before advanceStage', () => {
+    const gameState = makeHeistG([PETTY_LARCENY]);
+    gameState.hq = [null, HAUNTED_HERO, null, null, null] as LegendaryGameState['hq'];
+    gameState.hqHaunters = [null, { kind: 'villain', cardId: HAUNTER }, null, null, null];
+    gameState.turnEconomy.recruit = 3;
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+    const names = moveNames(gameState);
+    const heistIndices: number[] = [];
+    for (let moveIndex = 0; moveIndex < names.length; moveIndex++) {
+      if (names[moveIndex] === 'attemptHeist') {
+        heistIndices.push(moveIndex);
+      }
+    }
+    assert.equal(heistIndices.length, 1, 'exactly one attemptHeist');
+    const heistIndex = heistIndices[0]!;
+    assert.deepEqual(legalMoves[heistIndex], { name: 'attemptHeist', args: {} });
+    assert.notEqual(names.lastIndexOf('exorciseHauntedHero'), -1, 'the board has a step-4b entry');
+    assert.ok(heistIndex > names.lastIndexOf('exorciseHauntedHero'), 'after every step-4b entry');
+    assert.ok(heistIndex > names.lastIndexOf('playCard'), 'after every playCard entry');
+    assert.equal(names[heistIndex + 1], 'advanceStage', 'immediately before advanceStage');
+  });
+
+  test('omits attemptHeist when the odds do not favor it', () => {
+    const gameState = makeHeistG([PETTY_LARCENY]);
+    gameState.villainDeck.deck = [SCHEME_TWIST, VILLAIN_FOUR, VILLAIN_FOUR_SECOND];
+    assert.ok(!moveNames(gameState).includes('attemptHeist'));
+  });
+
+  test('omits attemptHeist outside the main stage', () => {
+    const gameState = makeHeistG([PETTY_LARCENY]);
+    gameState.currentStage = 'start';
+    assert.ok(!moveNames(gameState).includes('attemptHeist'));
+    gameState.currentStage = 'cleanup';
+    assert.ok(!moveNames(gameState).includes('attemptHeist'));
+  });
+
+  test('omits attemptHeist for an X-Con Security Van crew alone', () => {
+    const gameState = makeHeistG([X_CON_SECURITY_VAN]);
+    assert.ok(!moveNames(gameState).includes('attemptHeist'));
+  });
+
+  test('guard parity: the emitted move commits (the latch is set) and is not emitted again', () => {
+    const gameState = makeHeistG([PETTY_LARCENY]);
+    assert.ok(moveNames(gameState).includes('attemptHeist'));
+    attemptHeist(runnerContext(gameState));
+    assert.equal(gameState.turnEconomy.hasAttemptedHeistThisTurn, true, 'the move committed');
+    assert.equal(gameState.turnEconomy.recruit, 2, 'the won Heist fired Petty Larceny (+2 Recruit)');
+    assert.ok(!moveNames(gameState).includes('attemptHeist'), 'once per turn');
+  });
+
+  test('a won Heist with X-Con Security Van parks its choice, and the bot decline clears it', () => {
+    const gameState = makeHeistG([X_CON_SECURITY_VAN, PETTY_LARCENY]);
+    gameState.city = [CITY_VILLAIN, null, null, null, null] as LegendaryGameState['city'];
+    assert.ok(moveNames(gameState).includes('attemptHeist'), 'X-Con plus Petty Larceny has a payoff');
+    attemptHeist(runnerContext(gameState));
+    assert.equal(gameState.pendingMoveVillainChoices?.length, 1, 'the X-Con choice is parked');
+    assert.equal(gameState.pendingMoveVillainChoices?.[0]?.variant, 'x-con-security-van');
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+    assert.deepEqual(legalMoves, [{ name: 'resolveMoveVillainChoice', args: { decline: true } }]);
+    resolveMoveVillainChoice(runnerContext(gameState), legalMoves[0]!.args as ResolveMoveVillainChoiceArgs);
+    assert.equal(gameState.pendingMoveVillainChoices?.length ?? 0, 0, 'the queue is empty');
+    assert.deepEqual(gameState.city, [CITY_VILLAIN, null, null, null, null], 'a decline moves nothing');
   });
 });
