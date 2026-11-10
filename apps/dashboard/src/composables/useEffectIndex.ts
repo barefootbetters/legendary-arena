@@ -34,7 +34,7 @@ const EMPTY_INDEX: EffectImplementationIndex = {
   generatedAt: '1970-01-01T00:00:00.000Z',
   summary: {
     totalEntries: 0,
-    byScope: { hero: 0, villain: 0, mastermind: 0 },
+    byScope: { hero: 0, villain: 0, mastermind: 0, scheme: 0 },
     byStatus: {
       executable: 0,
       deferred: 0,
@@ -69,6 +69,9 @@ export function scopeLabel(scope: EffectIndexEntryScope): string {
       return 'Villain';
     case 'mastermind':
       return 'Mastermind';
+    // why: WP-879 / D-24828 — the closed-enum "scheme" scope (one row per Scheme line kind).
+    case 'scheme':
+      return 'Scheme';
     default:
       return assertNever(scope);
   }
