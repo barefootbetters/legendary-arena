@@ -18,8 +18,11 @@ Outputs: logo-la-emblem.svg          — transparent vector master.
          for light-background display (on a light page the white villain half
          would otherwise disappear; the emblem is designed for dark surfaces).
 
-Dependencies: pip install vtracer pillow numpy
-Regenerate:   python build-emblem-svg.py   (run from this directory)
+Dependencies: py -3 -m pip install vtracer pillow numpy
+Regenerate:   py -3 build-emblem-svg.py   (run from this directory)
+
+Use the `py -3` launcher, not bare `python`: on the operator PATH bare
+`python` can resolve to Inkscape's bundled interpreter, which lacks vtracer.
 """
 import re
 from pathlib import Path
