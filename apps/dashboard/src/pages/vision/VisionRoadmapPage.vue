@@ -19,7 +19,7 @@ const summary = useBuildRoadmap();
 const coverage = useCoverageLedger();
 const productCoverageLabel = computed(
   () =>
-    `${coverage.percentExecutable.value}% hero mechanics executable · ${coverage.summary.value.byStatus.unsupported} unsupported`,
+    `${coverage.percentImplemented.value}% hero mechanics implemented · ${coverage.summary.value.byStatus.unsupported} unsupported`,
 );
 
 /** Maps a schedule state to its CSS modifier class for the colored badges/banner. */

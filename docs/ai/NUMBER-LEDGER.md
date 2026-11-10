@@ -1600,3 +1600,4 @@ section below) and the allocation protocol in
 - D-24824 — secondary-site-traces (WP-877; amends D-24294: new EffectTraceFireSite members for the deferred secondary fire sites. reserved 2026-11-08, claude/wp877-secondary-site-reserve; LANDED 2026-11-08)
 - D-24825 — diagnostics-turn-play-relative (direct fix, no WP; hollow records and effect traces carry the game log's play-relative turn, superseding D-24704 §3. reserved 2026-11-08, claude/effect-trace-turn-play-relative)
 - D-24826 — bot-heist-attempts (WP-878; bot Heist policy: card-count odds over the Villain Deck multiset, never the hidden top; closes the D-24808 §7 / D-24823 §7 bot follow-up. reserved 2026-11-08, claude/wp878-bot-heist-reserve; LANDED 2026-11-09)
+- D-24827 — coverage-headline-implemented (direct fix, no WP; the /coverage row headline counts Executable + Condition + Subsystem rows. reserved 2026-11-10, infra/coverage-headline-implemented)

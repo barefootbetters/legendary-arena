@@ -269,9 +269,9 @@ contrast, **committed** — and it is load-bearing, not incidental.
 The `/coverage` page carries two headline percentages that look comparable and
 are not:
 
-- **hero mechanics executable** — **row-weighted**: the share of card × mechanic
-  ledger rows whose status is `executable`. It answers *how much of the card
-  corpus is built*.
+- **hero mechanics implemented** — **row-weighted**: the share of card × mechanic
+  ledger rows whose status is `executable`, `condition` or `subsystem` (D-24827).
+  It answers *how much of the card corpus is built*.
 - **in-play hollows resolved** — **observation-weighted**: the share of observed
   in-play hollow *observations* belonging to mechanics that are executable. It
   answers *how often a player hits something unbuilt*. It is the harsher and

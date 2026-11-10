@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import {
   statusLabel,
   buildMechanicDictionary,
-  executablePercent,
-  summaryExecutablePercent,
+  implementedPercent,
+  implementedRowCount,
+  summaryImplementedPercent,
   summarizeRows,
   filterRowsBySet,
   buildSetBreakdown,
@@ -96,15 +97,35 @@ test('buildMechanicDictionary sorts same-status entries by card count then name'
   assert.equal(dict[1]?.mechanic, 'small');
 });
 
-test('executablePercent computes a rounded share and handles an empty ledger', () => {
+test('implementedPercent computes a rounded share and handles an empty ledger', () => {
   const ledger = makeLedger([
     makeRow({ extId: 'a', status: 'executable' }),
     makeRow({ extId: 'b', status: 'unsupported', mechanic: 'x' }),
     makeRow({ extId: 'c', status: 'unsupported', mechanic: 'y' }),
     makeRow({ extId: 'd', status: 'unsupported', mechanic: 'z' }),
   ]);
-  assert.equal(executablePercent(ledger), 25); // 1/4
-  assert.equal(executablePercent(makeLedger([])), 0);
+  assert.equal(implementedPercent(ledger), 25); // 1/4
+  assert.equal(implementedPercent(makeLedger([])), 0);
+});
+
+test('implementedPercent counts Executable, Condition and Subsystem as done, and nothing else (D-24827)', () => {
+  const doneRows = [
+    makeRow({ extId: 'a', mechanic: 'draw', status: 'executable' }),
+    makeRow({ extId: 'b', mechanic: 'outwit', status: 'condition' }),
+    makeRow({ extId: 'c', mechanic: 'reveal-count', status: 'subsystem' }),
+  ];
+  const todoRows = [
+    makeRow({ extId: 'd', mechanic: 'undercover', status: 'deferred' }),
+    makeRow({ extId: 'e', mechanic: 'focus', status: 'unsupported' }),
+    makeRow({ extId: 'f', mechanic: '(unmarked)', status: 'unmarked' }),
+  ];
+  const mixed = summarizeRows([...doneRows, ...todoRows]);
+  assert.equal(implementedRowCount(mixed), 3);
+  assert.equal(summaryImplementedPercent(mixed), 50); // 3/6
+  // A set whose only non-executable rows are Condition / Subsystem reads finished.
+  assert.equal(summaryImplementedPercent(summarizeRows(doneRows)), 100);
+  // A to-do-only set reads zero.
+  assert.equal(summaryImplementedPercent(summarizeRows(todoRows)), 0);
 });
 
 test('useCoverageLedger exposes the injected ledger summary + mechanic dictionary', () => {
@@ -114,7 +135,7 @@ test('useCoverageLedger exposes the injected ledger summary + mechanic dictionar
   ]);
   const view = useCoverageLedger({ ledger });
   assert.equal(view.summary.value.totalRows, 2);
-  assert.equal(view.percentExecutable.value, 50);
+  assert.equal(view.percentImplemented.value, 50);
   assert.equal(view.mechanics.value.length, 2);
   assert.equal(view.rows.value.length, 2);
 });
@@ -185,8 +206,8 @@ test('summarizeRows matches the generator summary shape and excludes unmarked fr
   ];
   assert.deepEqual(summarizeRows(rows), makeLedger(rows).summary);
   assert.equal(summarizeRows(rows).distinctMechanics, 2);
-  assert.equal(summaryExecutablePercent(summarizeRows(rows)), 50);
-  assert.equal(summaryExecutablePercent(summarizeRows([])), 0);
+  assert.equal(summaryImplementedPercent(summarizeRows(rows)), 50);
+  assert.equal(summaryImplementedPercent(summarizeRows([])), 0);
 });
 
 test('filterRowsBySet keeps one set, and every row for the all sentinel', () => {
@@ -225,8 +246,8 @@ test('buildSetBreakdown rolls up per set in name-table order, unnamed sets last 
   assert.ok(core !== undefined && darkCity !== undefined);
   assert.equal(core.summary.totalRows, 2);
   assert.equal(core.summary.byStatus.executable, 1);
-  assert.equal(core.percentExecutable, 50);
-  assert.equal(darkCity.percentExecutable, 0);
+  assert.equal(core.percentImplemented, 50);
+  assert.equal(darkCity.percentImplemented, 0);
 });
 
 test('useCoverageLedger exposes the set breakdown and set display names', () => {

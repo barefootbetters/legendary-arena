@@ -7,7 +7,8 @@ import {
   buildMechanicDictionary,
   filterRowsBySet,
   summarizeRows,
-  summaryExecutablePercent,
+  summaryImplementedPercent,
+  implementedRowCount,
 } from '../../composables/useCoverageLedger.js';
 import { useInPlayCoverage } from '../../composables/useInPlayCoverage.js';
 import { useParFidelity } from '../../composables/useParFidelity.js';
@@ -60,12 +61,10 @@ const selectedSet = computed<string>({
 const isSetScoped = computed(() => selectedSet.value !== 'all');
 const scopedRows = computed(() => filterRowsBySet(rows.value, selectedSet.value));
 const summary = computed(() => summarizeRows(scopedRows.value));
-const percentExecutable = computed(() => summaryExecutablePercent(summary.value));
+const percentImplemented = computed(() => summaryImplementedPercent(summary.value));
 const mechanics = computed(() => buildMechanicDictionary(scopedRows.value));
-// Executable + Subsystem: rows that work in a game, for the legend's Executable % note.
-const doneRows = computed(
-  () => summary.value.byStatus.executable + (summary.value.byStatus.subsystem ?? 0),
-);
+// Executable + Condition + Subsystem (D-24827): the headline's numerator, for the legend.
+const doneRows = computed(() => implementedRowCount(summary.value));
 
 /**
  * Row count behind a by-card status filter button, for the current set scope.
@@ -306,9 +305,9 @@ function winRateClass(row: ParFidelityRow): string {
 
     <section class="summary">
       <div class="headline">
-        <span class="headline-num">{{ percentExecutable }}%</span>
+        <span class="headline-num">{{ percentImplemented }}%</span>
         <span class="headline-label"
-          >hero mechanics executable<template v-if="isSetScoped">
+          >hero mechanics implemented<template v-if="isSetScoped">
             — {{ setDisplayName(selectedSet) }}</template
           ></span
         >
@@ -363,20 +362,19 @@ function winRateClass(row: ParFidelityRow): string {
     <details class="block legend" open>
       <summary><h2>Legend — what the numbers and columns mean</h2></summary>
 
-      <h3>Executable %</h3>
+      <h3>Implemented %</h3>
       <p class="legend-lead">
-        <strong>Executable rows ÷ all rows</strong>, for the selected set (or all sets). A
+        <strong>Implemented rows ÷ all rows</strong>, for the selected set (or all sets). A
         <em>row</em> is one hero card × one mechanic it prints: a hero whose cards draw and rescue
         is two rows. Right now ({{ isSetScoped ? setDisplayName(selectedSet) : 'all sets' }}):
-        {{ summary.byStatus.executable }} Executable of {{ summary.totalRows }} rows =
-        {{ percentExecutable }}%.
+        {{ doneRows }} implemented of {{ summary.totalRows }} rows = {{ percentImplemented }}%.
       </p>
       <ul class="legend-notes">
         <li>
-          Every status is in the denominator. Only <strong>Executable</strong> is in the numerator,
-          so <strong>Subsystem</strong> rows (implemented, just not by the hero-effect pipeline)
-          keep a finished set under 100%. Counting them, {{ doneRows }} of {{ summary.totalRows }}
-          rows here are done.
+          <strong>Implemented</strong> is Executable + Condition + Subsystem: the three statuses the
+          engine has built. Deferred, Unsupported and Unmarked are the to-dos. Here that is
+          {{ summary.byStatus.executable }} Executable, {{ summary.byStatus.condition }} Condition
+          and {{ summary.byStatus.subsystem ?? 0 }} Subsystem.
         </li>
         <li>
           It counts rows, not how often a mechanic comes up in play. That is what
@@ -445,7 +443,7 @@ function winRateClass(row: ParFidelityRow): string {
         <thead>
           <tr>
             <th>Set</th>
-            <th class="num">Executable %</th>
+            <th class="num">Implemented %</th>
             <th class="num">Rows</th>
             <th class="num">Executable</th>
             <th class="num">Subsystem</th>
@@ -467,8 +465,8 @@ function winRateClass(row: ParFidelityRow): string {
               {{ entry.name }} <span class="mono dim">{{ entry.abbr }}</span>
             </td>
             <td class="num">
-              <span class="pct-bar" :style="{ '--pct': `${entry.percentExecutable}%` }"
-                >{{ entry.percentExecutable }}%</span
+              <span class="pct-bar" :style="{ '--pct': `${entry.percentImplemented}%` }"
+                >{{ entry.percentImplemented }}%</span
               >
             </td>
             <td class="num">{{ entry.summary.totalRows }}</td>
