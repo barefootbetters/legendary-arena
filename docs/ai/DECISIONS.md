@@ -50788,4 +50788,24 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24825. Related: D-24704 (§3 superseded), D-24697 (same fix for bot decisions), WP-328 (log numbering), WP-257 / D-24033 (hollow records), WP-488 / D-24294 (effect traces), D-24026.
 
 ---
+
+### D-24827 — The `/coverage` row headline counts implemented rows (Executable + Condition + Subsystem), not Executable alone (Active 2026-11-10 — direct fix, no WP)
+
+**Context.** The `/coverage` row headline ("% hero mechanics executable", the By-set table and the `/vision` coverage label) divided `executable` rows by all rows. D-24370 says that headline answers *how much of the card corpus is built*, but two built statuses sat outside its numerator. `subsystem` rows are implemented outside the `[effect:X]` pipeline (D-24357 / D-24368). `condition` rows gate on a condition the engine already ships: the ledger's `KNOWN_CONDITIONS` lists only shipped conditions, and the in-play gauge already counts Condition as resolved (D-24050). The Core Set read 88.2% (45 / 51) with nothing left to build. Its six non-executable rows are Deadpool's Do-Over (`first-hero-condition`), Emma Frost's Diamond Form and Hawkeye's Impossible Trick Shot (`defeated-villain-or-mastermind`), Thor's Surge of Power (`recruit-threshold`), and The Amazing Spider-Man's `reveal-count` and `reveal-reorder` (`subsystem`). All six are `verified` in `docs/ai/coverage/live-verify.json`.
+
+**Decision.**
+1. The row headline is **implemented rows ÷ all rows**. Implemented = `executable` + `condition` + `subsystem`. `deferred`, `unsupported` and `unmarked` stay in the denominator only; they are the to-dos.
+2. The label reads "hero mechanics implemented", on `/coverage`, its By-set column ("Implemented %") and the `/vision` coverage label. The status chips and By-set columns keep showing each status separately, so the Executable count is still visible.
+3. One helper (`implementedRowCount` in `apps/dashboard/src/composables/useCoverageLedger.ts`) is the numerator for the headline, the By-set table and the legend.
+4. The in-play gauge (D-24050 / D-24370) is unchanged.
+
+**Effect.** Core 88.2% → 100% (51 / 51). All sets 56.2% → 63.3% (546 / 863), as of `47484010`.
+
+**Tests.** `useCoverageLedger.test.ts` pins the numerator: Executable, Condition and Subsystem count, while Deferred, Unsupported and Unmarked do not. A set whose only non-executable rows are Condition and Subsystem reads 100%. The existing tests use only Executable and Unsupported rows, so their values hold; only the function names changed (`executablePercent` → `implementedPercent`, `summaryExecutablePercent` → `summaryImplementedPercent`, `percentExecutable` → `percentImplemented`).
+
+**Live-verify (D-24026):** pending. After deploy, `dashboard.legendary-arena.com/coverage?set=core` reads "100% hero mechanics implemented — Core Set".
+
+**Reserved by:** NUMBER-LEDGER D-24827. Related: D-24050, D-24357, D-24368, D-24370, D-24055.
+
+---
 Protect this file.

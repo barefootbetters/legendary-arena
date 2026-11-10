@@ -53,7 +53,8 @@ function assertNever(value: never): never {
  * Sort rank for the worklist: done states first, Unmarked (data TODO) last. Lower
  * sorts earlier. Order: Executable > Subsystem > Deferred > Condition > Unsupported
  * > Unmarked. `subsystem` (done-elsewhere) ranks alongside Executable as a done
- * state; no hero row carries it today, so the rank is inert for the hero ledger.
+ * state; hero rows carry it since WP-559 / D-24368 (core/spider-man's reveal-count
+ * and reveal-reorder, ca75/agent-x-13's gain-officer).
  */
 function statusRank(status: LedgerStatus): number {
   switch (status) {
@@ -157,19 +158,32 @@ export function buildMechanicDictionary(rows: readonly LedgerRow[]): MechanicEnt
 }
 
 /**
- * Executable share of all ledger rows as a 0–100 number rounded to one decimal.
- * Zero rows yields 0 (avoids divide-by-zero on the empty-stub ledger).
+ * Rows the engine has built: Executable + Condition + Subsystem (D-24827).
+ * why: Condition rows gate on an already-shipped condition (the ledger's
+ * KNOWN_CONDITIONS lists only shipped ones) and Subsystem rows are implemented
+ * outside the hero-effect pipeline (D-24357), so both are done work. Deferred,
+ * Unsupported and Unmarked are the to-dos and stay out of the numerator.
  */
-export function executablePercent(ledger: CoverageLedger): number {
-  return summaryExecutablePercent(ledger.summary);
+export function implementedRowCount(summary: LedgerSummary): number {
+  return (
+    summary.byStatus.executable + summary.byStatus.condition + (summary.byStatus.subsystem ?? 0)
+  );
 }
 
-/** `executablePercent` for a bare summary — the set-scoped headline and By-set table. */
-export function summaryExecutablePercent(summary: LedgerSummary): number {
+/**
+ * Implemented share of all ledger rows as a 0–100 number rounded to one decimal.
+ * Zero rows yields 0 (avoids divide-by-zero on the empty-stub ledger).
+ */
+export function implementedPercent(ledger: CoverageLedger): number {
+  return summaryImplementedPercent(ledger.summary);
+}
+
+/** `implementedPercent` for a bare summary — the set-scoped headline and By-set table. */
+export function summaryImplementedPercent(summary: LedgerSummary): number {
   if (summary.totalRows === 0) {
     return 0;
   }
-  return Math.round((summary.byStatus.executable / summary.totalRows) * 1000) / 10;
+  return Math.round((implementedRowCount(summary) / summary.totalRows) * 1000) / 10;
 }
 
 /**
@@ -248,7 +262,7 @@ export function buildSetBreakdown(
       abbr: setName.abbr,
       name: setName.name,
       summary,
-      percentExecutable: summaryExecutablePercent(summary),
+      percentImplemented: summaryImplementedPercent(summary),
     });
   }
   return entries;
@@ -267,7 +281,7 @@ interface UseCoverageLedgerReturn {
   summary: ComputedRef<LedgerSummary>;
   rows: ComputedRef<readonly LedgerRow[]>;
   mechanics: ComputedRef<MechanicEntry[]>;
-  percentExecutable: ComputedRef<number>;
+  percentImplemented: ComputedRef<number>;
   error: string | undefined;
   /** Runtime-observed hollow tally keyed by mechanic — the overlay join (WP-259). */
   runtimeObservedByMechanic: ComputedRef<Record<string, RuntimeObservedEntry>>;
@@ -303,7 +317,7 @@ export function useCoverageLedger(options?: UseCoverageLedgerOptions): UseCovera
     summary: computed(() => ledger.summary),
     rows: computed(() => ledger.rows),
     mechanics: computed(() => buildMechanicDictionary(ledger.rows)),
-    percentExecutable: computed(() => executablePercent(ledger)),
+    percentImplemented: computed(() => implementedPercent(ledger)),
     error: ledger.error,
     // why (WP-259): the overlay joins each ledger mechanic row onto this lookup
     // by mechanic key — a present key reads its runtime-observed entry, an

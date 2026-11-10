@@ -95,13 +95,14 @@ export interface CoverageSetNames {
 
 /**
  * One row of the By-set table: a card set's ledger rows rolled up by status.
- * `percentExecutable` uses the same row-weighted formula as the page headline.
+ * `percentImplemented` uses the same row-weighted formula as the page headline
+ * (Executable + Condition + Subsystem rows ÷ all rows, D-24827).
  */
 export interface SetCoverageEntry {
   abbr: string;
   name: string;
   summary: LedgerSummary;
-  percentExecutable: number;
+  percentImplemented: number;
 }
 
 /** How many of a mechanic's card rows carry one status. */
