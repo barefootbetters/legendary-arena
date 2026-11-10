@@ -171,19 +171,22 @@ const LANGUAGE_MARKER_PROBES = [
 // (2026-07-21): setting immutable Cache-Control on R2 card-image objects per
 // docs/ops/RUNBOOK-r2-image-cache-control.md, done with boto3's S3 CopyObject
 // (MetadataDirective=REPLACE) against the Cloudflare R2 S3 endpoint. Trap worth
-// recording: the `python` on the operator PATH is Inkscape's bundled interpreter
-// (no boto3); the pip-installed boto3 lives under the Python 3.12 install, which
-// must be invoked by its full path.
+// recording: bare `python` on the operator PATH is Inkscape's bundled interpreter
+// (no pip, no boto3) in any shell that doesn't load the operator's pwsh profile
+// (Bash tool, cmd, CI-style runs). Invoke Python 3.12 with the Windows launcher
+// instead — `py -3 -m pip install boto3`, `py -3 script.py` — which resolves to
+// 3.12 in every shell. Inkscape stays on PATH because
+// ewiki/branding/build-lockup-svg.py calls the `inkscape` CLI.
 const OPERATOR_OPS_TOOLCHAIN = [
   {
     tool: 'Python',
     version: '3.12 (Programs\\Python\\Python312)',
-    role: 'Interpreter for out-of-band ops scripts (R2 object-metadata via boto3). Invoke by full path — the `python` on PATH is Inkscape\'s and lacks boto3.',
+    role: 'Interpreter for out-of-band ops scripts (R2 object-metadata via boto3). Invoke with the Windows launcher, `py -3 script.py` — bare `python` on the operator PATH is Inkscape\'s and lacks boto3.',
   },
   {
     tool: 'pip',
     version: 'bundled with Python 3.12',
-    role: 'Installs boto3 into the Python 3.12 site-packages.',
+    role: 'Installs boto3 into the Python 3.12 site-packages via `py -3 -m pip install boto3`.',
   },
   {
     tool: 'boto3',
