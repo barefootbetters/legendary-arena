@@ -50827,7 +50827,7 @@ Protect this file.
 
 **Tests.** `useCoverageLedger.test.ts` pins the numerator: Executable, Condition and Subsystem count, while Deferred, Unsupported and Unmarked do not. A set whose only non-executable rows are Condition and Subsystem reads 100%. The existing tests use only Executable and Unsupported rows, so their values hold; only the function names changed (`executablePercent` → `implementedPercent`, `summaryExecutablePercent` → `summaryImplementedPercent`, `percentExecutable` → `percentImplemented`).
 
-**Live-verify (D-24026):** pending. After deploy, `dashboard.legendary-arena.com/coverage?set=core` reads "100% hero mechanics implemented — Core Set".
+**Live-verify (D-24026):** verified 2026-11-10 after #3252 deployed, read headlessly with the CF Access service token. The live `CoveragePage` chunk carries "hero mechanics implemented" and "implemented of" and no longer "hero mechanics executable"; the `VisionRoadmapPage` chunk carries the new label too. The live `useCoverageLedger` chunk's numerator is `executable + condition + (subsystem ?? 0)`. Its bundled Core rows are 45 Executable + 4 Condition + 2 Subsystem = 51 of 51, so `/coverage?set=core` reads 100%.
 
 **Reserved by:** NUMBER-LEDGER D-24827. Related: D-24050, D-24357, D-24368, D-24370, D-24055.
 
