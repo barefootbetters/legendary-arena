@@ -9,6 +9,7 @@ import {
   summarizeRows,
   filterRowsBySet,
   buildSetBreakdown,
+  foldRuntimeObservedByLedgerKey,
   useCoverageLedger,
 } from './useCoverageLedger.js';
 import type {
@@ -187,6 +188,83 @@ test('useCoverageLedger joins the runtime-observed overlay by mechanic key (pres
   assert.equal(view.runtimeObservedByMechanic.value['berserk'], undefined);
   // the run-level summary is exposed for the page header
   assert.equal(view.runtimeObservedSummary.value.distinctMechanics, 1);
+});
+
+/** One runtime-observed entry whose every hit is the given hollow reason. */
+function makeObserved(
+  hitCount: number,
+  lastSeenTurn: number,
+  reason: 'no-handler' | 'unsupported-keyword' | 'parse-unrecognized',
+  cardId: string,
+): RuntimeObservedEntry {
+  const byReason = { 'no-handler': 0, 'unsupported-keyword': 0, 'parse-unrecognized': 0 };
+  byReason[reason] = hitCount;
+  return {
+    hitCount,
+    lastSeenTurn,
+    byReason,
+    examples: [{ cardId, cardType: 'hero', timing: 'onPlay', reason }],
+  };
+}
+
+test("foldRuntimeObservedByLedgerKey merges a folded family's variants into its ledger key", () => {
+  const merged = foldRuntimeObservedByLedgerKey(
+    {
+      'patrol-the-bridge': makeObserved(4, 9, 'parse-unrecognized', 'x/bridge'),
+      'patrol-the-sewers': makeObserved(6, 3, 'no-handler', 'x/sewers'),
+      phase: makeObserved(2, 1, 'no-handler', 'x/phase'),
+    },
+    { 'patrol-the-bridge': 'patrol', 'patrol-the-sewers': 'patrol' },
+  );
+  assert.deepEqual(Object.keys(merged).sort(), ['patrol', 'phase']);
+  const patrol = merged['patrol'];
+  assert.equal(patrol?.hitCount, 10, 'hit counts sum across variants');
+  assert.equal(patrol?.lastSeenTurn, 9, 'lastSeenTurn is the latest variant sighting');
+  assert.deepEqual(patrol?.byReason, {
+    'no-handler': 6,
+    'unsupported-keyword': 0,
+    'parse-unrecognized': 4,
+  });
+  assert.deepEqual(
+    patrol?.examples.map((example) => example.cardId),
+    ['x/bridge', 'x/sewers'],
+  );
+  assert.equal(merged['phase']?.hitCount, 2, 'an unfolded key passes through unchanged');
+});
+
+test("useCoverageLedger joins a folded family row to its variants' runtime hits", () => {
+  // why: the worklist badge reads runtimeObservedByLedgerMechanic. Before the fold,
+  // the `patrol` row read "not observed in play" although its variants were hit.
+  const view = useCoverageLedger({
+    ledger: makeLedger([makeRow({ mechanic: 'patrol', status: 'unsupported' })]),
+    runtimeObserved: makeRuntimeObserved({
+      'patrol-the-bridge': makeObserved(4, 9, 'parse-unrecognized', 'x/bridge'),
+      'patrol-the-sewers': makeObserved(6, 3, 'parse-unrecognized', 'x/sewers'),
+    }),
+    mechanicKeyFold: {
+      schemaVersion: 1,
+      ledgerKeyByMechanic: { 'patrol-the-bridge': 'patrol', 'patrol-the-sewers': 'patrol' },
+    },
+  });
+  assert.equal(view.runtimeObservedByLedgerMechanic.value['patrol']?.hitCount, 10);
+  // the raw tally is untouched for the consumers that name the printed variant
+  assert.equal(view.runtimeObservedByMechanic.value['patrol'], undefined);
+  assert.equal(view.runtimeObservedByMechanic.value['patrol-the-bridge']?.hitCount, 4);
+});
+
+test('useCoverageLedger reads the bundled fold map: the real patrol row sees its variants', () => {
+  // why: end-to-end through src/data/mechanic-key-fold.json, written at build time by
+  // the hero ledger's own foldMechanicFamily. The committed sweep hits patrol variants
+  // and the committed ledger has a `patrol` row, so the merged entry must exist.
+  const view = useCoverageLedger();
+  let variantHits = 0;
+  for (const [mechanic, entry] of Object.entries(view.runtimeObservedByMechanic.value)) {
+    if (mechanic.startsWith('patrol-')) {
+      variantHits += entry.hitCount;
+    }
+  }
+  assert.ok(variantHits > 0, 'the committed sweep observes patrol variants');
+  assert.equal(view.runtimeObservedByLedgerMechanic.value['patrol']?.hitCount, variantHits);
 });
 
 test('useCoverageLedger falls back to the bundled runtime-observed artifact when none is injected', () => {
