@@ -1,6 +1,5 @@
 import { computed, type ComputedRef } from 'vue';
 import baselineData from '../data/in-play-hollow-baseline.json';
-import mechanicKeyFoldData from '../data/mechanic-key-fold.json';
 import { useCoverageLedger } from './useCoverageLedger.js';
 import type {
   CoverageLedger,
@@ -137,19 +136,25 @@ interface UseInPlayCoverageReturn {
  */
 export function useInPlayCoverage(options?: UseInPlayCoverageOptions): UseInPlayCoverageReturn {
   const baseline = options?.baseline ?? (baselineData as unknown as InPlayHollowBaseline);
-  const mechanicKeyFold =
-    options?.mechanicKeyFold ?? (mechanicKeyFoldData as unknown as MechanicKeyFold);
   // why: build the forwarded options without undefined keys — the dashboard
   // tsconfig uses exactOptionalPropertyTypes, so an explicit `undefined` is not
   // assignable to `useCoverageLedger`'s optional `ledger` / `runtimeObserved`.
-  const ledgerOptions: { ledger?: CoverageLedger; runtimeObserved?: RuntimeObservedHollows } = {};
+  const ledgerOptions: {
+    ledger?: CoverageLedger;
+    runtimeObserved?: RuntimeObservedHollows;
+    mechanicKeyFold?: MechanicKeyFold;
+  } = {};
   if (options?.ledger !== undefined) {
     ledgerOptions.ledger = options.ledger;
   }
   if (options?.runtimeObserved !== undefined) {
     ledgerOptions.runtimeObserved = options.runtimeObserved;
   }
-  const { mechanics, runtimeObservedByMechanic } = useCoverageLedger(ledgerOptions);
+  if (options?.mechanicKeyFold !== undefined) {
+    ledgerOptions.mechanicKeyFold = options.mechanicKeyFold;
+  }
+  const { mechanics, runtimeObservedByMechanic, ledgerKeyByMechanic } =
+    useCoverageLedger(ledgerOptions);
 
   const metric = computed(() => {
     // The hero ledger's by-mechanic status lookup — the resolution source of
@@ -163,7 +168,7 @@ export function useInPlayCoverage(options?: UseInPlayCoverageOptions): UseInPlay
       baseline.byMechanic,
       runtimeObservedByMechanic.value,
       statusByMechanic,
-      mechanicKeyFold.ledgerKeyByMechanic,
+      ledgerKeyByMechanic,
     );
   });
 
