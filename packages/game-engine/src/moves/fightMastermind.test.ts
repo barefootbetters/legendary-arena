@@ -1316,3 +1316,104 @@ describe('WP-873 fightMastermind — the Mastermind fortified (D-24818)', () => 
     assert.deepStrictEqual(moveContext.G.mastermind.tacticsDefeated, ['tactic-1'], 'the top tactic is defeated');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-758 / D-24588 — Zarathos end to end: strike → haunt → fight refused → exorcise →
+// fight → tactic → re-haunt
+// ---------------------------------------------------------------------------
+
+import { resolveZarathosStrike } from '../mastermind/zarathos.logic.js';
+import { exorciseHauntedHero } from './exorciseHauntedHero.js';
+import { isMastermindHaunting } from '../board/haunt.logic.js';
+
+const ZARATHOS_DEMONIC_TACTIC_ID = 'mdns-mastermind-zarathos-demonic-essence-of-ghost-rider' as CardExtId;
+const ZARATHOS_ERUPTION_TACTIC_ID = 'mdns-mastermind-zarathos-eruption-of-hellfire' as CardExtId;
+
+/**
+ * Builds a solo Zarathos fight state: an HQ of a cost-7 Tech Hero, a cost-5 Ranged Hero
+ * and a cost-3 Strength Hero, the given tactics, and ample Attack and Recruit.
+ */
+function makeZarathosFightState(tacticsDeck: CardExtId[], tacticsDefeated: CardExtId[] = []): LegendaryGameState {
+  const baseState = createMockGameState({
+    turnEconomy: { ...makeTurnEconomy(), attack: 30, recruit: 20, spentAttack: 0, spentRecruit: 0 },
+    mastermind: {
+      ...makeMastermindState(),
+      id: 'mdns/zarathos' as CardExtId,
+      baseCardId: 'test-mastermind-base' as CardExtId,
+      tacticsDeck,
+      tacticsDefeated,
+    },
+    cardStats: {
+      'test-mastermind-base': { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 0, fightCost: 8 },
+      techHero: { ...makeCardStatEntry(), cost: 7 },
+      rangedHero: { ...makeCardStatEntry(), cost: 5 },
+      strengthHero: { ...makeCardStatEntry(), cost: 3 },
+    },
+  });
+  // why: `selection` is readonly on LegendaryGameState, so the Zarathos id is spread in.
+  const gameState: LegendaryGameState = {
+    ...baseState,
+    selection: { ...baseState.selection, mastermindId: 'mdns/zarathos' },
+  };
+  gameState.cardTraits = {
+    techHero: { heroClass: 'tech', team: null },
+    rangedHero: { heroClass: 'ranged', team: null },
+    strengthHero: { heroClass: 'strength', team: null },
+  } as LegendaryGameState['cardTraits'];
+  gameState.cardDisplayData = {} as LegendaryGameState['cardDisplayData'];
+  gameState.hq = ['techHero', 'rangedHero', 'strengthHero', null, null];
+  gameState.heroDeck = ['refillHero'];
+  return gameState;
+}
+
+describe('WP-758 / D-24588 — Zarathos end to end', () => {
+  it('strike haunts → fight refused → exorcise → fight defeats a tactic → the tactic re-haunts', () => {
+    const gameState = makeZarathosFightState([ZARATHOS_ERUPTION_TACTIC_ID, ZARATHOS_DEMONIC_TACTIC_ID]);
+    const moveContext = createMockMoveContext(gameState);
+
+    resolveZarathosStrike(moveContext.G, '0');
+    assert.deepEqual(moveContext.G.hqHaunters, [{ kind: 'mastermind' }, null, null, null, null], 'the cost-7 Hero is haunted');
+
+    fightMastermind(moveContext);
+    assert.deepEqual(moveContext.G.mastermind.tacticsDefeated, [], 'a haunting Zarathos cannot be fought');
+
+    exorciseHauntedHero(moveContext, { hqIndex: 0, outcome: 'ko' });
+    assert.equal(isMastermindHaunting(moveContext.G), false, 'the exorcise returned Zarathos to the Mastermind space');
+
+    fightMastermind(moveContext);
+    assert.deepEqual(moveContext.G.mastermind.tacticsDefeated, [ZARATHOS_ERUPTION_TACTIC_ID]);
+    assert.equal(isMastermindHaunting(moveContext.G), true, 'Eruption re-haunts the priciest covert/ranged Hero');
+    assert.deepEqual(moveContext.G.hqHaunters![1], { kind: 'mastermind' }, 'the Ranged Hero in slot 1');
+  });
+
+  it('Final Blow ON: the last tactic\'s haunt blocks the final fight until the table exorcises', () => {
+    const gameState = {
+      ...makeZarathosFightState([ZARATHOS_DEMONIC_TACTIC_ID], ['t1', 't2', 't3'] as CardExtId[]),
+      finalBlow: true,
+    };
+    const moveContext = createMockMoveContext(gameState);
+
+    fightMastermind(moveContext);
+    assert.equal(moveContext.G.mastermind.finalBlowPending, true, 'the 4th tactic latched the Final Blow');
+    assert.equal(isMastermindHaunting(moveContext.G), true, 'Demonic Essence haunted the Ranged Hero');
+    // why: the solo defeater has no Ranged/Strength Hero in hand or play, so nothing parks.
+    assert.equal(moveContext.G.pendingSeatChoice, undefined);
+
+    fightMastermind(moveContext);
+    assert.equal(moveContext.G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING], undefined, 'the Final Blow is refused while he haunts');
+
+    exorciseHauntedHero(moveContext, { hqIndex: 1, outcome: 'ko' });
+    fightMastermind(moveContext);
+    // why: WP-732 / D-24553 — the Final Blow win defers to turn end like the normal one.
+    assert.equal(moveContext.G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING], 1, 'after the exorcise the Final Blow lands');
+  });
+
+  it('Final Blow OFF: the last tactic still latches the win, haunt or not', () => {
+    const moveContext = createMockMoveContext(
+      makeZarathosFightState([ZARATHOS_DEMONIC_TACTIC_ID], ['t1', 't2', 't3'] as CardExtId[]),
+    );
+    fightMastermind(moveContext);
+    assert.equal(isMastermindHaunting(moveContext.G), true);
+    assert.equal(moveContext.G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING], 1, 'victory is assured at turn end (WP-732)');
+  });
+});

@@ -22,6 +22,12 @@
  *     one active-seat "Player N gains <Hero>" choice (kind 'dominate-the-weak-gain');
  *     Crush Pacifist Resistance is a two-step active-seat "KO up to two" chain (kinds
  *     'crush-pacifist-resistance-ko' then 'crush-pacifist-resistance-last-ko').
+ *   - Zarathos (mdns, WP-758 / D-24588) — Eruption of Hellfire and Corrupted Spirit of
+ *     Vengeance are multi-seat "discard a Hero of the class pair or <alternative>" choices
+ *     (kinds 'zarathos-eruption' / 'zarathos-corrupted-spirit'); Imprison in the Soul
+ *     Crystal is an active-seat optional Victory-Pile Villain KO (kind 'zarathos-imprison');
+ *     Demonic Essence of Ghost Rider is one or two active-seat optional Hero KOs (kinds
+ *     'zarathos-demonic-essence-first' then 'zarathos-demonic-essence-last').
  *
  * This module holds ONLY pure builders + state appliers (no boardgame.io import,
  * no parkSeatChoice import) so it never cycles with seatChoice.resolve.ts — that
@@ -53,6 +59,16 @@ import { pushLog } from '../log/logPush.js';
 import { describeKoSourceZone, resolveCardName } from '../log/logDisplay.js';
 import { getEligibleVictoryVillains } from './resolveVictoryPileCardPick.js';
 import { listCrushEligibleTargets } from '../mastermind/arnimZola.logic.js';
+// why: WP-758 / D-24588 — Zarathos's seat choices. The class read, the Wound chokepoint,
+// the scoring-mirroring VP read and the discard-down-to-N picker are each imported from
+// their one home. wounds.logic and mastermindHandlers reach seatChoice.resolve (and so
+// this module) transitively; every binding here is read only inside function bodies, so
+// the cycle is runtime-safe (the villainEscapeProcedure precedent, D-24656).
+import { offPlayCardHasAnyClass } from '../mastermind/zarathos.logic.js';
+import { gainWoundWithOutcome } from '../board/wounds.logic.js';
+import { victoryPointValueForCard } from '../economy/bloodFrenzy.logic.js';
+import { selectDiscardToLimitCards } from '../rules/mastermindHandlers.js';
+import { BYSTANDER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 
 /** Discriminant for Monarch's Decree's active single-seat draw-vs-discard mode choice. */
 export const MONARCHS_DECREE_MODE_KIND = 'monarchs-decree-mode';
@@ -791,4 +807,526 @@ function readAddressedSeatOption(
     return undefined;
   }
   return { seat, option };
+}
+
+// ---------------------------------------------------------------------------
+// Zarathos (mdns, WP-758 / D-24588) — the four tactics' seat choices
+// ---------------------------------------------------------------------------
+
+/** Discriminant for Eruption of Hellfire's multi-seat "discard a covert/ranged Hero or gain a Wound". */
+export const ZARATHOS_ERUPTION_KIND = 'zarathos-eruption';
+/** Discriminant for Corrupted Spirit of Vengeance's multi-seat "discard an instinct/covert Hero or discard down to 3". */
+export const ZARATHOS_CORRUPTED_SPIRIT_KIND = 'zarathos-corrupted-spirit';
+/** Discriminant for Imprison in the Soul Crystal's active-seat optional Victory-Pile Villain KO. */
+export const ZARATHOS_IMPRISON_KIND = 'zarathos-imprison';
+/** Discriminant for Demonic Essence of Ghost Rider's first of two owed optional KOs. */
+export const ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND = 'zarathos-demonic-essence-first';
+/** Discriminant for Demonic Essence of Ghost Rider's last (or only) owed optional KO. */
+export const ZARATHOS_DEMONIC_ESSENCE_LAST_KIND = 'zarathos-demonic-essence-last';
+
+// why: D-24588 — the printed "discards down to 3 cards" target hand size.
+export const ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT = 3;
+
+/** The Wound option label on an Eruption of Hellfire prompt. */
+const ZARATHOS_GAIN_WOUND_LABEL = 'Gain a Wound';
+/** The discard-down option label on a Corrupted Spirit of Vengeance prompt. */
+const ZARATHOS_DISCARD_DOWN_LABEL = `Discard down to ${String(ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT)} cards`;
+/** The decline option label on an Imprison / Demonic Essence prompt. */
+const ZARATHOS_DECLINE_KO_LABEL = "Don't KO";
+
+/**
+ * Lists a seat's hand Heroes of any of `classes`, ascending by off-play cost, keeping
+ * hand order on a tie and one entry per card id.
+ *
+ * // why: D-24588 — ascending cost puts the cheapest matching Hero at option 0, the
+ * default an absent seat (or the sim) takes, so the default gives up the least. A card
+ * id repeated in the hand is outcome-identical to discard, so it is listed once.
+ *
+ * @param G - The game state (read-only).
+ * @param seat - The seat whose hand is scanned.
+ * @param classes - The tactic's class pair.
+ * @returns The matching hand card ids in option order; `[]` when none match.
+ */
+export function listZarathosHandHeroesByCost(
+  G: LegendaryGameState,
+  seat: string,
+  classes: readonly string[],
+): CardExtId[] {
+  const zones = G.playerZones[seat];
+  if (!zones) {
+    return [];
+  }
+  const entries: { cardId: CardExtId; handIndex: number; cost: number }[] = [];
+  for (let handIndex = 0; handIndex < zones.hand.length; handIndex++) {
+    const cardId = zones.hand[handIndex]!;
+    const isListed = entries.some((entry) => entry.cardId === cardId);
+    if (isListed || !offPlayCardHasAnyClass(G, cardId, classes)) {
+      continue;
+    }
+    entries.push({ cardId, handIndex, cost: offPlayCardStats(G, cardId)?.cost ?? 0 });
+  }
+  entries.sort((left, right) => {
+    if (left.cost !== right.cost) {
+      return left.cost - right.cost;
+    }
+    return left.handIndex - right.handIndex;
+  });
+  const cardIds: CardExtId[] = [];
+  for (const entry of entries) {
+    cardIds.push(entry.cardId);
+  }
+  return cardIds;
+}
+
+/**
+ * Builds a Zarathos multi-seat "discard a matching Hero or <alternative>" choice, or
+ * undefined when no given seat is addressed.
+ *
+ * @param G - The game state (read-only).
+ * @param seats - The seats that hold a matching Hero (ascending).
+ * @param classes - The tactic's class pair.
+ * @param kind - The seat-choice kind to stamp.
+ * @param alternativeLabel - The trailing non-discard option, or undefined to offer none.
+ * @returns The pending choice, or undefined when no seat holds a matching Hero.
+ */
+function buildZarathosHandDiscardChoice(
+  G: LegendaryGameState,
+  seats: readonly string[],
+  classes: readonly string[],
+  kind: string,
+  alternativeLabel: string | undefined,
+): PendingSeatChoice | undefined {
+  const addressedSeats: string[] = [];
+  const seatPrompts: Record<string, { options: SeatChoiceOption[] }> = {};
+  for (const seat of seats) {
+    const options: SeatChoiceOption[] = [];
+    for (const cardId of listZarathosHandHeroesByCost(G, seat, classes)) {
+      options.push({ label: `Discard ${resolveCardName(G.cardDisplayData, cardId)}`, cardId });
+    }
+    if (options.length === 0) {
+      continue;
+    }
+    if (alternativeLabel !== undefined) {
+      options.push({ label: alternativeLabel });
+    }
+    addressedSeats.push(seat);
+    seatPrompts[seat] = { options };
+  }
+  if (addressedSeats.length === 0) {
+    return undefined;
+  }
+  return {
+    kind,
+    addressedSeats,
+    seatPrompts,
+    submissions: {},
+    // why: D-24588 — option 0 (discard the cheapest matching Hero) is the absent-seat and
+    // sim default for both multi-seat kinds: deterministic and always in range.
+    defaultOptionIndex: 0,
+  };
+}
+
+/**
+ * Builds Eruption of Hellfire's multi-seat choice for the seats holding a covert or
+ * ranged Hero.
+ *
+ * // why: rules v23 L3199-3201 / D-24770 — a player picks only an option they can do,
+ * so "Gain a Wound" is offered only while the Wound supply still has one. The caller
+ * builds this AFTER the auto-Wound pass, so the supply check sees those Wounds.
+ *
+ * @param G - The game state (read-only).
+ * @param seats - The other seats holding a matching Hero (ascending).
+ * @param classes - Eruption's class pair (covert, ranged).
+ * @returns The pending choice, or undefined when no seat is addressed.
+ */
+export function buildZarathosEruptionChoice(
+  G: LegendaryGameState,
+  seats: readonly string[],
+  classes: readonly string[],
+): PendingSeatChoice | undefined {
+  const woundLabel = G.piles.wounds.length > 0 ? ZARATHOS_GAIN_WOUND_LABEL : undefined;
+  return buildZarathosHandDiscardChoice(G, seats, classes, ZARATHOS_ERUPTION_KIND, woundLabel);
+}
+
+/**
+ * Builds Corrupted Spirit of Vengeance's multi-seat choice for the seats holding an
+ * instinct or covert Hero and more than 3 cards.
+ *
+ * @param G - The game state (read-only).
+ * @param seats - The other seats with more than 3 cards and a matching Hero (ascending).
+ * @param classes - Corrupted Spirit's class pair (instinct, covert).
+ * @returns The pending choice, or undefined when no seat is addressed.
+ */
+export function buildZarathosCorruptedSpiritChoice(
+  G: LegendaryGameState,
+  seats: readonly string[],
+  classes: readonly string[],
+): PendingSeatChoice | undefined {
+  return buildZarathosHandDiscardChoice(
+    G,
+    seats,
+    classes,
+    ZARATHOS_CORRUPTED_SPIRIT_KIND,
+    ZARATHOS_DISCARD_DOWN_LABEL,
+  );
+}
+
+/**
+ * Gains `seat` a Wound for Eruption of Hellfire through the Wound chokepoint and logs
+ * it honestly (D-24673).
+ *
+ * @param G - The game state, mutated in place.
+ * @param seat - The seat gaining the Wound.
+ */
+export function gainZarathosEruptionWound(G: LegendaryGameState, seat: string): void {
+  const outcome = gainWoundWithOutcome(G, seat);
+  if (outcome === 'gained') {
+    pushLog(G, `Player ${seat} gained a Wound (Eruption of Hellfire).`, 'applied');
+  } else if (outcome === 'diving-block-pending') {
+    pushLog(G, `Player ${seat} would gain a Wound — Diving Block can prevent it (Eruption of Hellfire).`, 'applied');
+  } else {
+    pushLog(G, `Player ${seat} gained no Wound — the Wound supply is empty (Eruption of Hellfire).`, 'blocked');
+  }
+}
+
+/**
+ * Discards `seat`'s hand down to 3 cards for Corrupted Spirit of Vengeance, picking the
+ * cards with selectDiscardToLimitCards.
+ *
+ * // why: D-24588 — the tabletop player chooses which cards to keep; v1 picks them with
+ * the shared deterministic "discard down to N" selector (cheapest first, Wounds before
+ * Heroes, lowest hand index on a tie), a named fidelity gap. Its third argument is a
+ * COUNT to discard, so it receives `hand.length - 3`, not the limit. Every card goes
+ * through the discardFromHand chokepoint (return-on-discard reactions queue there).
+ *
+ * @param G - The game state, mutated in place.
+ * @param seat - The seat discarding down.
+ */
+export function discardZarathosHandDownToThree(G: LegendaryGameState, seat: string): void {
+  const zones = G.playerZones[seat];
+  if (!zones || zones.hand.length <= ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT) {
+    return;
+  }
+  const discardCount = zones.hand.length - ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT;
+  const cardIds = selectDiscardToLimitCards(G, zones.hand, discardCount);
+  const discardedNames: string[] = [];
+  for (const cardId of cardIds) {
+    if (discardFromHand(G, seat, cardId)) {
+      discardedNames.push(resolveCardName(G.cardDisplayData, cardId));
+    }
+  }
+  pushLog(
+    G,
+    `Player ${seat} discarded down to ${String(ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT)} cards: ${discardedNames.join(', ')} (Corrupted Spirit of Vengeance).`,
+    'applied',
+  );
+}
+
+/**
+ * Applies a fully-submitted Eruption of Hellfire choice: each addressed seat discards
+ * its chosen Hero, or gains a Wound.
+ *
+ * // why: D-24780 §6 / D-24501 — a simultaneous seat-choice apply runs in ascending seat
+ * order, so the result is the same whatever order the seats answered in.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param choice - The fully-submitted pending choice (kind 'zarathos-eruption').
+ */
+export function applyZarathosEruption(G: LegendaryGameState, choice: PendingSeatChoice): void {
+  for (const seat of [...choice.addressedSeats].sort()) {
+    const option = readSeatOption(choice, seat);
+    if (option === undefined) {
+      continue;
+    }
+    if (option.cardId === undefined) {
+      gainZarathosEruptionWound(G, seat);
+      continue;
+    }
+    if (discardFromHand(G, seat, option.cardId)) {
+      pushLog(G, `Player ${seat} discarded ${resolveCardName(G.cardDisplayData, option.cardId)} (Eruption of Hellfire).`, 'applied');
+    }
+  }
+}
+
+/**
+ * Applies a fully-submitted Corrupted Spirit of Vengeance choice: each addressed seat
+ * discards its chosen Hero, or discards down to 3 cards. Ascending seat order (D-24780 §6).
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param choice - The fully-submitted pending choice (kind 'zarathos-corrupted-spirit').
+ */
+export function applyZarathosCorruptedSpirit(G: LegendaryGameState, choice: PendingSeatChoice): void {
+  for (const seat of [...choice.addressedSeats].sort()) {
+    const option = readSeatOption(choice, seat);
+    if (option === undefined) {
+      continue;
+    }
+    if (option.cardId === undefined) {
+      discardZarathosHandDownToThree(G, seat);
+      continue;
+    }
+    if (discardFromHand(G, seat, option.cardId)) {
+      pushLog(G, `Player ${seat} discarded ${resolveCardName(G.cardDisplayData, option.cardId)} (Corrupted Spirit of Vengeance).`, 'applied');
+    }
+  }
+}
+
+/**
+ * Reads a Victory-Pile Villain's VP the way final scoring would, floored at 0.
+ *
+ * // why: D-24598 / R-3 — victoryPointValueForCard is the shared scoring mirror (printed
+ * VP, else VP_VILLAIN / VP_HENCHMAN, dynamic VP included), so "draw cards equal to that
+ * Villain's VP" never disagrees with the score. A negative VP draws nothing.
+ *
+ * @param G - The game state (read-only).
+ * @param seat - The Victory Pile's owner.
+ * @param cardId - The Villain in that Victory Pile.
+ * @returns The Villain's VP, at least 0.
+ */
+function readZarathosImprisonVictoryPoints(
+  G: LegendaryGameState,
+  seat: string,
+  cardId: CardExtId,
+): number {
+  const victoryPoints = victoryPointValueForCard(G, seat, cardId) ?? 0;
+  return Math.max(0, victoryPoints);
+}
+
+/**
+ * Builds Imprison in the Soul Crystal's active-seat choice, or undefined when the
+ * seat has no Villain in its Victory Pile.
+ *
+ * // why: D-24742 — "a Villain" is the broad term, so a Henchman counts
+ * (getEligibleVictoryVillains: the villain + henchman entries, a defeated Killbot out).
+ *
+ * @param G - The game state (read-only).
+ * @param seat - The defeating player (the sole addressed seat).
+ * @returns The pending choice, or undefined when no Villain qualifies.
+ */
+export function buildZarathosImprisonChoice(
+  G: LegendaryGameState,
+  seat: string,
+): PendingSeatChoice | undefined {
+  const villainIds = getEligibleVictoryVillains(G, seat);
+  if (villainIds.length === 0) {
+    return undefined;
+  }
+  const options: SeatChoiceOption[] = [];
+  for (const cardId of villainIds) {
+    const victoryPoints = readZarathosImprisonVictoryPoints(G, seat, cardId);
+    options.push({
+      label: `KO ${resolveCardName(G.cardDisplayData, cardId)} — draw ${String(victoryPoints)}`,
+      cardId,
+    });
+  }
+  options.push({ label: ZARATHOS_DECLINE_KO_LABEL });
+  return {
+    kind: ZARATHOS_IMPRISON_KIND,
+    addressedSeats: [seat],
+    seatPrompts: { [seat]: { options } },
+    submissions: {},
+    // why: D-24588 — "you may KO": the absent-seat default is the decline (the last
+    // option), which also keeps the shuffle-less timeout path draw-free.
+    defaultOptionIndex: options.length - 1,
+  };
+}
+
+/**
+ * Applies a fully-submitted Imprison in the Soul Crystal choice: KO the chosen Villain
+ * from the Victory Pile, then draw cards equal to its VP; or log the decline.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param choice - The fully-submitted pending choice (kind 'zarathos-imprison').
+ * @param shuffleContext - Deterministic reshuffle source, or undefined (timeout path).
+ * @param currentPlayer - The turn's active player, or undefined on the timeout path.
+ */
+export function applyZarathosImprison(
+  G: LegendaryGameState,
+  choice: PendingSeatChoice,
+  shuffleContext: ShuffleProvider | undefined,
+  currentPlayer?: string,
+): void {
+  const submitted = readAddressedSeatOption(choice);
+  if (submitted === undefined) {
+    return;
+  }
+  const { seat, option } = submitted;
+  const zones = G.playerZones[seat];
+  if (option.cardId === undefined || !zones) {
+    pushLog(G, `Player ${seat} chose not to KO a Villain (Imprison in the Soul Crystal).`, 'neutral');
+    return;
+  }
+  // why: read the VP while the Villain is still in the pile — a dynamic VP counts the pile.
+  const victoryPoints = readZarathosImprisonVictoryPoints(G, seat, option.cardId);
+  const removal = moveCardFromZone(zones.victory, [], option.cardId);
+  if (!removal.found) {
+    return;
+  }
+  zones.victory = removal.from;
+  G.ko = koCard(G.ko, option.cardId);
+  const drawn = drawZarathosImprisonCards(G, seat, victoryPoints, shuffleContext, currentPlayer);
+  pushLog(
+    G,
+    `Player ${seat} KO'd ${resolveCardName(G.cardDisplayData, option.cardId)} from their Victory Pile and drew ${String(drawn)} card(s) (Imprison in the Soul Crystal).`,
+    'applied',
+  );
+}
+
+/**
+ * Draws Imprison's VP cards for `seat` and counts them toward the turn's cards drawn.
+ *
+ * @param G - Game state (mutated).
+ * @param seat - The drawing seat.
+ * @param count - How many cards to draw (the Villain's VP).
+ * @param shuffleContext - Deterministic reshuffle source, or undefined (timeout path).
+ * @param currentPlayer - The turn's active player, or undefined.
+ * @returns How many cards were actually drawn.
+ */
+function drawZarathosImprisonCards(
+  G: LegendaryGameState,
+  seat: string,
+  count: number,
+  shuffleContext: ShuffleProvider | undefined,
+  currentPlayer: string | undefined,
+): number {
+  const zones = G.playerZones[seat];
+  if (!zones || count === 0) {
+    return 0;
+  }
+  // why: the timeout default is the decline, so it never reaches a draw; an identity
+  // Shuffle keeps the apply total and deterministic anyway (the Monarch's Decree fallback).
+  const effectiveShuffle: ShuffleProvider =
+    shuffleContext ?? { random: { Shuffle: <T>(deck: T[]): T[] => deck } };
+  const handBefore = zones.hand.length;
+  drawCardsIntoHand(zones, count, effectiveShuffle);
+  const drawn = zones.hand.length - handBefore;
+  // why: D-24732 — these are the defeating (current) player's extra cards drawn this
+  // turn, as HYDRA Conspiracy's are.
+  if (seat === currentPlayer && G.turnEconomy !== undefined) {
+    G.turnEconomy.cardsDrawn += drawn;
+  }
+  return drawn;
+}
+
+/**
+ * Lists a player's Heroes Demonic Essence may KO: the hand, then the cards played this
+ * turn, one target per (zone, card id), Wounds and Bystanders excluded.
+ *
+ * // why: rules v23 L3439 — "your Heroes" are your hand plus the cards you played this
+ * turn, never the deck or discard pile (D-24687). The listCrushEligibleTargets shape
+ * without its Attack filter: S.H.I.E.L.D. starter ids repeat, so a zone lists an id once
+ * and the option carries its zone. A Wound or Bystander is not a Hero (the WP-828 rule).
+ *
+ * @param G - The game state (read-only).
+ * @param seat - The defeating player.
+ * @returns The KO targets in option order.
+ */
+function listZarathosDemonicTargets(
+  G: LegendaryGameState,
+  seat: string,
+): { zone: 'hand' | 'inPlay'; cardId: CardExtId }[] {
+  const targets: { zone: 'hand' | 'inPlay'; cardId: CardExtId }[] = [];
+  const zones = G.playerZones[seat];
+  if (!zones) {
+    return targets;
+  }
+  for (const zone of ['hand', 'inPlay'] as const) {
+    const seenCardIds = new Set<CardExtId>();
+    for (const cardId of zones[zone]) {
+      if (cardId === WOUND_EXT_ID || cardId === BYSTANDER_EXT_ID || seenCardIds.has(cardId)) {
+        continue;
+      }
+      seenCardIds.add(cardId);
+      targets.push({ zone, cardId });
+    }
+  }
+  return targets;
+}
+
+/**
+ * Builds one Demonic Essence of Ghost Rider KO pick for `seat`, or undefined when the
+ * seat has no Hero to KO.
+ *
+ * @param G - The game state (read-only).
+ * @param seat - The defeating player (the sole addressed seat).
+ * @param kind - The first or last Demonic Essence kind.
+ * @returns The pending choice, or undefined when nothing can be KO'd.
+ */
+export function buildZarathosDemonicEssenceChoice(
+  G: LegendaryGameState,
+  seat: string,
+  kind: string,
+): PendingSeatChoice | undefined {
+  const targets = listZarathosDemonicTargets(G, seat);
+  if (targets.length === 0) {
+    return undefined;
+  }
+  const options: SeatChoiceOption[] = [];
+  for (const target of targets) {
+    options.push({
+      label: `KO ${resolveCardName(G.cardDisplayData, target.cardId)} from ${describeKoSourceZone(target.zone)}`,
+      cardId: target.cardId,
+      sourceZone: target.zone,
+    });
+  }
+  options.push({ label: ZARATHOS_DECLINE_KO_LABEL });
+  return {
+    kind,
+    addressedSeats: [seat],
+    seatPrompts: { [seat]: { options } },
+    submissions: {},
+    // why: D-24588 — "you may KO": the absent-seat default is the decline (the last option).
+    defaultOptionIndex: options.length - 1,
+  };
+}
+
+/**
+ * Applies a fully-submitted Demonic Essence of Ghost Rider pick (either kind): KO the
+ * chosen Hero from its zone, or log the decline.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param choice - The fully-submitted pending choice (a Demonic Essence kind).
+ */
+export function applyZarathosDemonicEssence(G: LegendaryGameState, choice: PendingSeatChoice): void {
+  const submitted = readAddressedSeatOption(choice);
+  if (submitted === undefined) {
+    return;
+  }
+  const { seat, option } = submitted;
+  const cardId = option.cardId;
+  const sourceZone = option.sourceZone;
+  const zones = G.playerZones[seat];
+  if (cardId === undefined || (sourceZone !== 'hand' && sourceZone !== 'inPlay') || !zones) {
+    pushLog(G, `Player ${seat} chose not to KO a Hero (Demonic Essence of Ghost Rider).`, 'neutral');
+    return;
+  }
+  // why: the zone is read by name from the option, as Crush Pacifist Resistance reads it.
+  const removal = moveCardFromZone(zones[sourceZone], [], cardId);
+  if (!removal.found) {
+    return;
+  }
+  zones[sourceZone] = removal.from;
+  G.ko = koCard(G.ko, cardId);
+  // why: WP-853 / D-24789 — the KO'd card's owner may have a waiting owned-KO grant.
+  recordOwnedCardKoed(G, seat, cardId, sourceZone);
+  pushLog(
+    G,
+    `Player ${seat} KO'd ${resolveCardName(G.cardDisplayData, cardId)} from ${describeKoSourceZone(sourceZone)} (Demonic Essence of Ghost Rider).`,
+    'applied',
+  );
+}
+
+/**
+ * Reads one addressed seat's submitted option on a multi-seat choice.
+ *
+ * @param choice - The fully-submitted pending choice.
+ * @param seat - The addressed seat.
+ * @returns The submitted option, or undefined when the seat submitted nothing valid.
+ */
+function readSeatOption(choice: PendingSeatChoice, seat: string): SeatChoiceOption | undefined {
+  const submission = choice.submissions[seat];
+  if (submission === undefined) {
+    return undefined;
+  }
+  return choice.seatPrompts[seat]?.options[submission.optionIndex];
 }

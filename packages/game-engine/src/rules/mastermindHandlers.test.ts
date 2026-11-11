@@ -2436,3 +2436,35 @@ describe('WP-846 / D-24780 — Master Strike each-player order (AC-8 rotation, A
     assert.deepEqual(strikeSeatOrder(gameState, '[Loki Master Strike]'), ['0', '1', '2']);
   });
 });
+
+describe('WP-758 mastermindStrikeHandler — Zarathos Master Strike (D-24588)', () => {
+  /** A two-player Zarathos strike state with a two-Hero HQ and a Wound supply. */
+  function makeZarathosStrikeState(): LegendaryGameState {
+    const gameState = makeCo2eState(
+      'mdns/zarathos',
+      { '0': [], '1': [] },
+      { cheapHero: co2eStat(3), priceyHero: co2eStat(6) },
+    );
+    gameState.hq = ['cheapHero', 'priceyHero', null, null, null];
+    gameState.piles.wounds = [WOUND_EXT_ID, WOUND_EXT_ID, WOUND_EXT_ID];
+    return gameState;
+  }
+
+  it('the strike reaches the Zarathos arm: first strike haunts, second strike wounds every player from the current one', () => {
+    const gameState = makeZarathosStrikeState();
+
+    mastermindStrikeHandler(gameState, { ctx: { currentPlayer: '1' } }, { cardId: 'strike' }, {});
+    assert.deepEqual(gameState.hqHaunters, [null, { kind: 'mastermind' }, null, null, null], 'the cost-6 Hero is haunted');
+    assert.equal(gameState.piles.wounds.length, 3, 'the first strike wounds nobody');
+
+    mastermindStrikeHandler(gameState, { ctx: { currentPlayer: '1' } }, { cardId: 'strike' }, {});
+    const woundLines = gameState.messages
+      .map((entry) => entry.text)
+      .filter((text) => text.startsWith('[Zarathos Master Strike] Player'));
+    assert.deepEqual(woundLines, [
+      '[Zarathos Master Strike] Player 1 gained a Wound.',
+      '[Zarathos Master Strike] Player 0 gained a Wound.',
+    ]);
+    assert.deepEqual(gameState.hqHaunters, [null, { kind: 'mastermind' }, null, null, null], 'no second haunter');
+  });
+});

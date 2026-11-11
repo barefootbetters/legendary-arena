@@ -493,3 +493,80 @@ describe('WP-821 Arnim Zola seat-choice appliers (D-24754)', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-758 / D-24588 — Zarathos builders
+// ---------------------------------------------------------------------------
+
+import {
+  buildZarathosCorruptedSpiritChoice,
+  buildZarathosDemonicEssenceChoice,
+  buildZarathosEruptionChoice,
+  buildZarathosImprisonChoice,
+  listZarathosHandHeroesByCost,
+  ZARATHOS_DEMONIC_ESSENCE_LAST_KIND,
+} from './seatChoiceTactics.js';
+
+/** A one- or two-seat G with the test Heroes' stats, traits and Villain types. */
+function makeZarathosBuilderState(
+  zonesBySeat: Record<string, { hand?: string[]; inPlay?: string[]; victory?: string[] }>,
+): LegendaryGameState {
+  const playerZones: Record<string, unknown> = {};
+  for (const seat of Object.keys(zonesBySeat)) {
+    const zones = zonesBySeat[seat]!;
+    playerZones[seat] = {
+      deck: [],
+      hand: [...(zones.hand ?? [])],
+      discard: [],
+      inPlay: [...(zones.inPlay ?? [])],
+      victory: [...(zones.victory ?? [])],
+    };
+  }
+  return {
+    playerZones,
+    piles: { bystanders: [], wounds: ['pile-wound'] },
+    messages: [],
+    mastermind: { tacticsDefeated: [], baseCardId: 'mdns-mastermind-zarathos-zarathos' },
+    villainDeckCardTypes: { villainA: 'villain', killbotA: 'villain' },
+    convertedVillainOrigins: { killbotA: 'killbot' },
+    cardStats: { covertA: { attack: 1, cost: 5 }, covertB: { attack: 1, cost: 2 }, techA: { attack: 1, cost: 1 } },
+    cardTraits: {
+      covertA: { heroClass: 'covert', team: null },
+      covertB: { heroClass: 'covert', team: null },
+      techA: { heroClass: 'tech', team: null },
+    },
+    cardDisplayData: {},
+  } as unknown as LegendaryGameState;
+}
+
+describe('WP-758 Zarathos seat-choice builders (D-24588)', () => {
+  it('lists matching hand Heroes ascending by cost, hand order on a tie, each id once', () => {
+    const G = makeZarathosBuilderState({ '0': { hand: ['covertA', 'techA', 'covertB', 'covertA'] } });
+    assert.deepEqual(listZarathosHandHeroesByCost(G, '0', ['covert', 'ranged']), ['covertB', 'covertA']);
+  });
+
+  it('the multi-seat builders return undefined when no seat holds a matching Hero', () => {
+    const G = makeZarathosBuilderState({ '0': { hand: ['techA'] }, '1': { hand: ['techA', 'techA', 'techA', 'techA'] } });
+    assert.equal(buildZarathosEruptionChoice(G, ['0', '1'], ['covert', 'ranged']), undefined);
+    assert.equal(buildZarathosCorruptedSpiritChoice(G, ['0', '1'], ['instinct', 'covert']), undefined);
+  });
+
+  it('Imprison excludes a defeated Killbot (a Bystander in the Victory Pile)', () => {
+    const G = makeZarathosBuilderState({ '0': { victory: ['killbotA', 'villainA'] } });
+    const choice = buildZarathosImprisonChoice(G, '0') as PendingSeatChoice;
+    assert.deepEqual(choice.seatPrompts['0']!.options.map((option) => option.cardId), ['villainA', undefined]);
+  });
+
+  it('Demonic lists each (zone, id) once and skips Wounds and Bystanders; nothing to KO → undefined', () => {
+    const G = makeZarathosBuilderState({
+      '0': { hand: ['covertA', 'covertA', 'pile-wound', 'pile-bystander'], inPlay: ['covertA'] },
+    });
+    const choice = buildZarathosDemonicEssenceChoice(G, '0', ZARATHOS_DEMONIC_ESSENCE_LAST_KIND) as PendingSeatChoice;
+    assert.deepEqual(
+      choice.seatPrompts['0']!.options.map((option) => [option.cardId, option.sourceZone]),
+      [['covertA', 'hand'], ['covertA', 'inPlay'], [undefined, undefined]],
+    );
+    const empty = makeZarathosBuilderState({ '0': { hand: ['pile-wound'] } });
+    assert.equal(buildZarathosDemonicEssenceChoice(empty, '0', ZARATHOS_DEMONIC_ESSENCE_LAST_KIND), undefined);
+  });
+});

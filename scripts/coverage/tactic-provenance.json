@@ -187,6 +187,30 @@
       "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveNextHandExtraCardsTactic",
       "wp": "",
       "decision": "D-24813"
+    },
+    "mdns-mastermind-zarathos-eruption-of-hellfire": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveEruptionOfHellfire",
+      "wp": "WP-758",
+      "decision": "D-24588"
+    },
+    "mdns-mastermind-zarathos-corrupted-spirit-of-vengeance": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveCorruptedSpiritOfVengeance",
+      "wp": "WP-758",
+      "decision": "D-24588"
+    },
+    "mdns-mastermind-zarathos-imprison-in-the-soul-crystal": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveImprisonInTheSoulCrystal",
+      "wp": "WP-758",
+      "decision": "D-24588"
+    },
+    "mdns-mastermind-zarathos-demonic-essence-of-ghost-rider": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveDemonicEssenceOfGhostRider",
+      "wp": "WP-758",
+      "decision": "D-24588"
     }
   }
 }

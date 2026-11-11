@@ -1855,3 +1855,259 @@ describe('WP-846 / D-24780 — tactic each-other order (AC-8 rotation, AC-2, AC-
     assert.deepEqual(G.playerZones['1']!.discard, [], 'the defeating player is skipped');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-758 / D-24588 — Zarathos's four tactics
+// ---------------------------------------------------------------------------
+
+import {
+  ZARATHOS_CORRUPTED_SPIRIT_KIND,
+  ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND,
+  ZARATHOS_DEMONIC_ESSENCE_LAST_KIND,
+  ZARATHOS_ERUPTION_KIND,
+  ZARATHOS_IMPRISON_KIND,
+} from '../moves/seatChoiceTactics.js';
+
+const ZARATHOS_ERUPTION_ID = 'mdns-mastermind-zarathos-eruption-of-hellfire' as CardExtId;
+const ZARATHOS_CORRUPTED_ID = 'mdns-mastermind-zarathos-corrupted-spirit-of-vengeance' as CardExtId;
+const ZARATHOS_IMPRISON_ID = 'mdns-mastermind-zarathos-imprison-in-the-soul-crystal' as CardExtId;
+const ZARATHOS_DEMONIC_ID = 'mdns-mastermind-zarathos-demonic-essence-of-ghost-rider' as CardExtId;
+
+/**
+ * Builds a Zarathos-tactic state: per-seat zones, a five-slot HQ of one Hero per class,
+ * a Wound supply, and the stats / traits / names / Villain types of the test cards.
+ *
+ * @param zonesBySeat - Each seat's hand / inPlay / discard / victory.
+ * @param wounds - The Wound supply size.
+ * @returns A LegendaryGameState carrying only the fields the resolvers read.
+ */
+function makeZarathosTacticState(
+  zonesBySeat: Record<string, { hand?: CardExtId[]; inPlay?: CardExtId[]; discard?: CardExtId[]; victory?: CardExtId[] }>,
+  wounds = 10,
+): LegendaryGameState {
+  const playerZones: Record<string, unknown> = {};
+  for (const seat of Object.keys(zonesBySeat)) {
+    const zones = zonesBySeat[seat]!;
+    playerZones[seat] = {
+      deck: [],
+      hand: [...(zones.hand ?? [])],
+      discard: [...(zones.discard ?? [])],
+      inPlay: [...(zones.inPlay ?? [])],
+      victory: [...(zones.victory ?? [])],
+    };
+  }
+  const woundPile: CardExtId[] = [];
+  for (let index = 0; index < wounds; index++) {
+    woundPile.push(WOUND);
+  }
+  return {
+    messages: [],
+    playerZones,
+    hq: ['hqCovert', 'hqRanged', 'hqStrength', 'hqInstinct', 'hqTech'],
+    heroDeck: [],
+    piles: { bystanders: [], wounds: woundPile },
+    ko: [],
+    mastermind: { tacticsDefeated: [], baseCardId: 'mdns-mastermind-zarathos-zarathos' },
+    turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, cardsDrawn: 0 },
+    villainDeckCardTypes: { villainA: 'villain', henchA: 'henchman', bystA: 'bystander' },
+    cardStats: {
+      hqCovert: { attack: 1, cost: 4 },
+      hqRanged: { attack: 1, cost: 6 },
+      hqStrength: { attack: 1, cost: 5 },
+      hqInstinct: { attack: 1, cost: 3 },
+      hqTech: { attack: 1, cost: 8 },
+      covertCheap: { attack: 1, cost: 2 },
+      covertPricey: { attack: 1, cost: 6 },
+      rangedHero: { attack: 1, cost: 4 },
+      strengthHero: { attack: 1, cost: 4 },
+      instinctHero: { attack: 1, cost: 3 },
+      techHero: { attack: 1, cost: 5 },
+      filler: { attack: 0, cost: 0 },
+    },
+    cardTraits: {
+      hqCovert: { heroClass: 'covert', team: null },
+      hqRanged: { heroClass: 'ranged', team: null },
+      hqStrength: { heroClass: 'strength', team: null },
+      hqInstinct: { heroClass: 'instinct', team: null },
+      hqTech: { heroClass: 'tech', team: null },
+      covertCheap: { heroClass: 'covert', team: null },
+      covertPricey: { heroClass: 'covert', team: null },
+      rangedHero: { heroClass: 'ranged', team: null },
+      strengthHero: { heroClass: 'strength', team: null },
+      instinctHero: { heroClass: 'instinct', team: null },
+      techHero: { heroClass: 'tech', team: null },
+    },
+    cardDisplayData: {
+      covertCheap: { name: 'Covert Cheap' },
+      covertPricey: { name: 'Covert Pricey' },
+      rangedHero: { name: 'Ranged Hero' },
+      strengthHero: { name: 'Strength Hero' },
+      instinctHero: { name: 'Instinct Hero' },
+      villainA: { name: 'Villain A' },
+      henchA: { name: 'Hench A' },
+    },
+    cardVictoryPoints: { villainA: 3 },
+  } as unknown as LegendaryGameState;
+}
+
+/** The log text lines, for exact-order assertions. */
+function zarathosLogTexts(G: LegendaryGameState): string[] {
+  const texts: string[] = [];
+  for (const entry of G.messages) {
+    texts.push(typeof entry === 'string' ? entry : entry.text);
+  }
+  return texts;
+}
+
+/** The option labels a seat sees on the open seat choice. */
+function zarathosOptionLabels(G: LegendaryGameState, seat: string): string[] {
+  const labels: string[] = [];
+  for (const option of G.pendingSeatChoice?.seatPrompts[seat]?.options ?? []) {
+    labels.push(option.label);
+  }
+  return labels;
+}
+
+describe('WP-758 dispatchTacticOnFight — Zarathos tactics (D-24588)', () => {
+  it('Eruption: haunts the priciest covert/ranged Hero, auto-Wounds the seat with no match, parks the rest', () => {
+    const G = makeZarathosTacticState({
+      '0': { hand: ['techHero'] },
+      '1': { hand: ['rangedHero'] },
+      '2': { hand: ['covertPricey', 'techHero', 'covertCheap', 'rangedHero'] },
+    });
+    const events = makeSeatEvents();
+    dispatchTacticOnFight(G, { currentPlayer: '1' }, ZARATHOS_ERUPTION_ID, SHUFFLE, events);
+    assert.deepEqual(G.hqHaunters, [null, { kind: 'mastermind' }, null, null, null], 'hqRanged (cost 6) is haunted');
+    assert.deepEqual(G.playerZones['0']!.discard, [WOUND], 'seat 0 had no covert/ranged Hero: auto-Wound');
+    assert.deepEqual(G.playerZones['1']!.discard, [], 'the defeater is never penalized');
+    const choice = G.pendingSeatChoice!;
+    assert.equal(choice.kind, ZARATHOS_ERUPTION_KIND);
+    assert.deepEqual(choice.addressedSeats, ['2'], 'only the qualifying other seat is addressed');
+    assert.deepEqual(zarathosOptionLabels(G, '2'), [
+      'Discard Covert Cheap',
+      'Discard Ranged Hero',
+      'Discard Covert Pricey',
+      'Gain a Wound',
+    ], 'ascending cost, then the Wound');
+    assert.equal(choice.defaultOptionIndex, 0);
+    assert.equal(events.admitted.length, 1, 'the non-active seat rides the stage');
+  });
+
+  it('Eruption: the auto-Wound pass runs clockwise from the defeater, and an emptied supply drops the Wound option', () => {
+    const G = makeZarathosTacticState({
+      '0': { hand: ['techHero'] },
+      '1': {},
+      '2': { hand: ['covertCheap'] },
+      '3': { hand: ['techHero'] },
+    }, 2);
+    dispatchTacticOnFight(G, { currentPlayer: '2' }, ZARATHOS_ERUPTION_ID, SHUFFLE, makeSeatEvents());
+    assert.deepEqual(G.playerZones['3']!.discard, [WOUND], 'seat 3 (first after the defeater) gains a Wound');
+    assert.deepEqual(G.playerZones['0']!.discard, [WOUND], 'seat 0 gains the last Wound');
+    assert.deepEqual(G.playerZones['1']!.discard, [], 'seat 1 finds the supply empty');
+    assert.equal(G.pendingSeatChoice, undefined, 'the defeater (the only covert holder) is never addressed');
+  });
+
+  it('Eruption: an addressed seat facing an empty supply may only discard', () => {
+    const G = makeZarathosTacticState({ '0': {}, '1': { hand: ['covertCheap'] } }, 0);
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZARATHOS_ERUPTION_ID, SHUFFLE, makeSeatEvents());
+    assert.deepEqual(zarathosOptionLabels(G, '1'), ['Discard Covert Cheap'], 'no "Gain a Wound" option (rules v23 L3199-3201)');
+  });
+
+  it('Eruption / Corrupted Spirit solo: the haunt happens, the second clause logs a no-op, nothing parks', () => {
+    for (const tacticId of [ZARATHOS_ERUPTION_ID, ZARATHOS_CORRUPTED_ID]) {
+      const G = makeZarathosTacticState({ '0': { hand: ['covertCheap', 'instinctHero', 'filler', 'filler'] } });
+      dispatchTacticOnFight(G, { currentPlayer: '0' }, tacticId, SHUFFLE, makeSeatEvents());
+      assert.ok(G.hqHaunters !== undefined, `${tacticId}: Zarathos haunts`);
+      assert.equal(G.pendingSeatChoice, undefined, `${tacticId}: nothing parks solo`);
+      assert.match(zarathosLogTexts(G).at(-1)!, /there is no other player/);
+    }
+  });
+
+  it('Corrupted Spirit: ≤3 cards is logged, >3 with no match discards down to 3, >3 with a match is addressed', () => {
+    const G = makeZarathosTacticState({
+      '0': {},
+      '1': { hand: ['instinctHero', 'filler', 'filler'] },
+      '2': { hand: ['techHero', 'filler', 'rangedHero', WOUND, 'techHero'] },
+      '3': { hand: ['techHero', 'covertPricey', 'filler', 'instinctHero'] },
+    });
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZARATHOS_CORRUPTED_ID, SHUFFLE, makeSeatEvents());
+    assert.deepEqual(G.hqHaunters, [{ kind: 'mastermind' }, null, null, null, null], 'hqCovert (cost 4) beats hqInstinct (cost 3)');
+    assert.equal(G.playerZones['1']!.hand.length, 3, 'seat 1 keeps its 3 cards');
+    // why: selectDiscardToLimitCards(G, hand, 5 - 3) discards the two cheapest (filler 0, then
+    // the Wound 0) — the count, not the limit.
+    assert.deepEqual(G.playerZones['2']!.hand, ['techHero', 'rangedHero', 'techHero']);
+    const choice = G.pendingSeatChoice!;
+    assert.equal(choice.kind, ZARATHOS_CORRUPTED_SPIRIT_KIND);
+    assert.deepEqual(choice.addressedSeats, ['3']);
+    assert.deepEqual(zarathosOptionLabels(G, '3'), [
+      'Discard Instinct Hero',
+      'Discard Covert Pricey',
+      'Discard down to 3 cards',
+    ]);
+    assert.equal(choice.defaultOptionIndex, 0);
+  });
+
+  it('Corrupted Spirit: when every other seat auto-resolves nothing is parked (no unanswerable choice)', () => {
+    const G = makeZarathosTacticState({ '0': {}, '1': { hand: ['techHero', 'filler', 'filler', 'filler'] } });
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZARATHOS_CORRUPTED_ID, SHUFFLE, makeSeatEvents());
+    assert.equal(G.pendingSeatChoice, undefined);
+    assert.equal(G.playerZones['1']!.hand.length, 3);
+  });
+
+  it('Imprison: with a Strength/Instinct Hero, offers each Victory-Pile Villain (Henchmen included) with its VP, decline last', () => {
+    const G = makeZarathosTacticState({ '0': { inPlay: ['strengthHero'], victory: ['bystA', 'villainA', 'henchA'] } });
+    const events = makeSeatEvents();
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZARATHOS_IMPRISON_ID, SHUFFLE, events);
+    assert.deepEqual(G.hqHaunters, [null, null, { kind: 'mastermind' }, null, null], 'hqStrength (cost 5) is haunted');
+    const choice = G.pendingSeatChoice!;
+    assert.equal(choice.kind, ZARATHOS_IMPRISON_KIND);
+    assert.deepEqual(choice.addressedSeats, ['0']);
+    assert.deepEqual(zarathosOptionLabels(G, '0'), [
+      'KO Villain A — draw 3',
+      'KO Hench A — draw 1',
+      "Don't KO",
+    ], 'printed VP, else the scoring fallback (VP_HENCHMAN)');
+    assert.equal(choice.defaultOptionIndex, 2, 'the decline is the default');
+    assert.equal(events.admitted.length, 0, 'an active-seat-only park rides no stage (D-24648)');
+  });
+
+  it('Imprison: no Strength/Instinct Hero, or no Villain in the Victory Pile, parks nothing', () => {
+    const noClass = makeZarathosTacticState({ '0': { hand: ['techHero'], discard: ['strengthHero'], victory: ['villainA'] } });
+    dispatchTacticOnFight(noClass, { currentPlayer: '0' }, ZARATHOS_IMPRISON_ID, SHUFFLE, makeSeatEvents());
+    assert.equal(noClass.pendingSeatChoice, undefined, 'a discard-pile Strength Hero does not count');
+    const noVillain = makeZarathosTacticState({ '0': { hand: ['instinctHero'], victory: ['bystA'] } });
+    dispatchTacticOnFight(noVillain, { currentPlayer: '0' }, ZARATHOS_IMPRISON_ID, SHUFFLE, makeSeatEvents());
+    assert.equal(noVillain.pendingSeatChoice, undefined, 'a Bystander is not a Villain');
+  });
+
+  it('Demonic Essence: a Ranged Hero parks the first pick; Strength only parks the last; neither parks nothing', () => {
+    const both = makeZarathosTacticState({ '0': { hand: ['rangedHero', 'pile-wound'], inPlay: ['strengthHero'], discard: ['covertCheap'] } });
+    dispatchTacticOnFight(both, { currentPlayer: '0' }, ZARATHOS_DEMONIC_ID, SHUFFLE, makeSeatEvents());
+    assert.deepEqual(both.hqHaunters, [null, { kind: 'mastermind' }, null, null, null], 'hqRanged (cost 6) is haunted');
+    assert.equal(both.pendingSeatChoice!.kind, ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND);
+    assert.deepEqual(zarathosOptionLabels(both, '0'), [
+      'KO Ranged Hero from their hand',
+      'KO Strength Hero from the cards they played this turn',
+      "Don't KO",
+    ], 'hand + in play only: no Wound, no discard-pile card');
+    assert.equal(both.pendingSeatChoice!.defaultOptionIndex, 2);
+
+    const strengthOnly = makeZarathosTacticState({ '0': { hand: ['strengthHero'] } });
+    dispatchTacticOnFight(strengthOnly, { currentPlayer: '0' }, ZARATHOS_DEMONIC_ID, SHUFFLE, makeSeatEvents());
+    assert.equal(strengthOnly.pendingSeatChoice!.kind, ZARATHOS_DEMONIC_ESSENCE_LAST_KIND);
+
+    const neither = makeZarathosTacticState({ '0': { hand: ['techHero'] } });
+    dispatchTacticOnFight(neither, { currentPlayer: '0' }, ZARATHOS_DEMONIC_ID, SHUFFLE, makeSeatEvents());
+    assert.equal(neither.pendingSeatChoice, undefined);
+  });
+
+  it('a tactic with no Hero of its class pair in the HQ haunts nothing and logs the no-op', () => {
+    const G = makeZarathosTacticState({ '0': {} });
+    G.hq = ['hqTech', null, null, null, null];
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZARATHOS_DEMONIC_ID, SHUFFLE, makeSeatEvents());
+    assert.equal(G.hqHaunters, undefined);
+    assert.ok(zarathosLogTexts(G).includes(
+      'No unhaunted Hero in the HQ of class ranged or strength to haunt; Zarathos stays in the Mastermind space (Demonic Essence of Ghost Rider).',
+    ));
+  });
+});

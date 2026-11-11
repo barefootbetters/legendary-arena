@@ -50950,3 +50950,31 @@ Protect this file.
 
 ---
 Protect this file.
+
+### D-24588 — Zarathos haunts the highest-cost Hero: strike Wounds before the haunt, four tactics haunt their class pair, then resolve as five seat-choice kinds (Active 2026-11-10 — WP-758 / EC-795)
+
+**Context.** Zarathos (`mdns/zarathos`) is the first Mastermind that haunts an HQ Hero (the WP-757 Haunt substrate, D-24587). Before WP-758 his Master Strike recorded a `master-strike` hollow (D-24810) and all four tactics were silent no-ops. Nothing in production made the Mastermind haunt, so PR #3207's MastermindTile haunt Fight gate could not be observed live. The draft (2026-09-25) was re-baselined at execution against `fb28b03d`. Eight later decisions changed its anchors or behavior (WP-758 §Execution Re-baseline R-1..R-11), and three execution-time gate subagents (01.4 / 01.7 / 00.3) added R-9..R-11.
+
+**Decision.**
+1. **Selector.** Zarathos haunts the highest-cost occupied, unhaunted HQ slot (`selectHighestCostUnhauntedHqIndex`, `mastermind/zarathos.logic.ts`). Cost is the off-play printed cost (`offPlayCardStats`). A tactic's "[A] and/or [B]" is a class OR over the off-play classes, so a dual-class Hero counts once. A cost tie goes to the lowest HQ index. No candidate → a logged no-op, and he stays in the Mastermind space.
+2. **Double-haunt guard.** `zarathosHauntHighestCost` is a logged no-op while `isMastermindHaunting(G)`, for the strike and the tactic callers alike. There is never a second `{ kind: 'mastermind' }` haunter.
+3. **Strike order.** The Wound check runs first: is any **occupied** HQ slot haunted, by either haunter kind? (A haunter left on an empty slot is not a haunted Hero.) If so, every player gains a Wound through `gainWoundWithOutcome`, the current player first and then clockwise (D-24780). Then he haunts, unless he already is. Nothing generic runs beside the arm (D-24654). `strike-provenance.json` gains the row.
+4. **Five kinds.** `zarathos-eruption`, `zarathos-corrupted-spirit` (multi-seat, default 0); `zarathos-imprison`, `zarathos-demonic-essence-first`, `zarathos-demonic-essence-last` (active seat, default = the last option, "Don't KO"). Every tactic haunts its class pair first. A builder with no addressed seat, or no option besides the decline, returns `undefined`, and nothing parks.
+5. **Eruption of Hellfire** (covert | ranged) uses the D-24770 two-pass shape. Pass 1 runs clockwise from the defeater, the defeater skipped: a seat with no such Hero in hand gains a Wound. Pass 2 runs ascending: a holder chooses "Discard <Hero>" (ascending cost, then hand order) or "Gain a Wound", the Wound offered only while the supply has one (rules v23 L3199-3201). **Accepted residual:** seats that choose the Wound beyond the supply at apply time gain nothing (logged).
+6. **Corrupted Spirit of Vengeance** (instinct | covert). A seat with 3 or fewer cards is logged, not asked ("down to 3" is free). A seat with more than 3 and no such Hero discards the cards `selectDiscardToLimitCards(G, hand, hand.length - 3)` picks (a COUNT). The rest choose "Discard <Hero>" or "Discard down to 3 cards". **Named fidelity gap:** a player does not pick which cards "down to 3" drops.
+7. **Imprison in the Soul Crystal** (strength | instinct). Asked only when the defeater has such a Hero (hand + still in play, rules v23 L3439-3447) **and** a Victory-Pile Villain (`getEligibleVictoryVillains`: Henchmen in, defeated Killbots out, D-24742). Each option shows the VP from the shared scoring mirror `victoryPointValueForCard` (D-24598, dynamic VP included). On a KO: the VP is read before the card leaves the pile, the card goes to `G.ko`, the player draws that many cards, and the draw counts in `cardsDrawn` (D-24732).
+8. **Demonic Essence of Ghost Rider** (ranged | strength). Each "if you have" is read when its sentence resolves. A Ranged Hero parks `-first`. Its `resolveSeatChoice` chain re-checks for a Strength Hero and, if one remains, parks `-last`, after an accept or a decline. With no Ranged Hero, a Strength Hero parks `-last` directly. KOing your only Strength Hero with the first pick ends the effect. Options are the hand then the cards in play, one per (zone, id) with `sourceZone`, Wounds and Bystanders out, never the discard pile. A KO calls `recordOwnedCardKoed` (D-24789). A timed-out `-first` does not chain (D-24501).
+9. **Endgame.** With Final Blow on, a haunt from the 4th tactic blocks the fifth fight until the table exorcises. With Final Blow off, the 4th tactic still latches `MASTERMIND_DEFEATED_PENDING` (WP-732), haunt or not. A choice parked by the final tactic resolves before the turn can end.
+
+**Consequences.**
+- Five effect-index rows go `unmarked` → `executable` (four tactics, one strike). The strike-row pin in `mastermindStrike.unresolved.test.ts` moves 14 → 15.
+- No `finalStateHash`, sentinel, PAR, `sim:runtime-observed` or `sim:coverage` baseline moves: no oracle plays Zarathos.
+- Internal exports (`offPlayCardHasAnyClass`, `isAnyHqHeroHaunted` and the rest of `zarathos.logic.ts`) stay out of `index.ts`.
+- `seatChoiceTactics.ts` now imports `wounds.logic` and `mastermindHandlers`, which joins it to the engine's existing runtime-safe import cycle. Every binding is read inside a function body (the `villainEscapeProcedure` precedent).
+- **Follow-ups:** Epic Zarathos (no Epic-face selection, D-24193); `ai.seatChoice.ts` playing-seat answers for the five kinds (the bot ally takes the absent-seat default today); letting a player choose the "down to 3" discards.
+- PR #3207's MastermindTile haunt Fight gate is now reachable in production. The D-24026 live-verify (human-driven Zarathos match) covers both, and it needs WP-759's client haunt UI deployed to exorcise from the board.
+
+**Reserved by:** NUMBER-LEDGER D-24588. Related: D-24026, D-24193, D-24499, D-24501, D-24511, D-24529, D-24553, D-24587, D-24590, D-24598, D-24648, D-24654, D-24673, D-24732, D-24742, D-24754, D-24770, D-24780, D-24789, D-24810.
+
+---
+Protect this file.
