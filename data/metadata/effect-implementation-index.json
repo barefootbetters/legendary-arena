@@ -3,18 +3,18 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2857,
+    "totalEntries": 2868,
     "byScope": {
-      "hero": 863,
+      "hero": 874,
       "villain": 763,
       "mastermind": 567,
       "scheme": 664
     },
     "byStatus": {
-      "executable": 827,
+      "executable": 838,
       "deferred": 19,
-      "condition": 58,
-      "unsupported": 280,
+      "condition": 70,
+      "unsupported": 268,
       "unmarked": 1666,
       "subsystem": 7
     }
@@ -18739,6 +18739,23 @@
       "name": "Blade, Daywalker",
       "set": "mdns",
       "scope": "hero",
+      "mechanic": "draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "designs": [
+        {
+          "slug": "where-monsters-lurk",
+          "name": "Where Monsters Lurk"
+        }
+      ]
+    },
+    {
+      "extId": "mdns/blade-daywalker",
+      "name": "Blade, Daywalker",
+      "set": "mdns",
+      "scope": "hero",
       "mechanic": "moonlight",
       "status": "condition",
       "handler": "",
@@ -18778,10 +18795,10 @@
       "set": "mdns",
       "scope": "hero",
       "mechanic": "patrol",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "designs": [
         {
           "slug": "hunt-high-and-low",
@@ -18790,6 +18807,23 @@
         {
           "slug": "where-monsters-lurk",
           "name": "Where Monsters Lurk"
+        }
+      ]
+    },
+    {
+      "extId": "mdns/blade-daywalker",
+      "name": "Blade, Daywalker",
+      "set": "mdns",
+      "scope": "hero",
+      "mechanic": "reveal-top-may-ko",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-may-ko",
+      "wp": "WP-754",
+      "decision": "D-24581",
+      "designs": [
+        {
+          "slug": "hunt-high-and-low",
+          "name": "Hunt High And Low"
         }
       ]
     },
@@ -18850,10 +18884,10 @@
       "set": "mdns",
       "scope": "hero",
       "mechanic": "patrol",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "designs": [
         {
           "slug": "axe-of-the-slayer",
@@ -19110,11 +19144,32 @@
       "name": "Wong, Master of the Mystic Arts",
       "set": "mdns",
       "scope": "hero",
+      "mechanic": "draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "designs": [
+        {
+          "slug": "bridge-between-dimensions",
+          "name": "Bridge Between Dimensions"
+        },
+        {
+          "slug": "seal-the-rift",
+          "name": "Seal the Rift"
+        }
+      ]
+    },
+    {
+      "extId": "mdns/wong-master-of-the-mystic-arts",
+      "name": "Wong, Master of the Mystic Arts",
+      "set": "mdns",
+      "scope": "hero",
       "mechanic": "patrol",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "designs": [
         {
           "slug": "bridge-between-dimensions",
@@ -29607,11 +29662,28 @@
       "name": "Agent Venom",
       "set": "ssw2",
       "scope": "hero",
+      "mechanic": "draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "designs": [
+        {
+          "slug": "big-slimeportunity",
+          "name": "Big Slimeportunity"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/agent-venom",
+      "name": "Agent Venom",
+      "set": "ssw2",
+      "scope": "hero",
       "mechanic": "patrol",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "designs": [
         {
           "slug": "big-slimeportunity",
@@ -29688,10 +29760,10 @@
       "set": "ssw2",
       "scope": "hero",
       "mechanic": "patrol",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "designs": [
         {
           "slug": "all-terrain-barbarian",
@@ -29766,8 +29838,8 @@
       "mechanic": "patrol",
       "status": "unsupported",
       "handler": "",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "designs": [
         {
           "slug": "upside-down-thinking",
@@ -29831,11 +29903,28 @@
       "name": "Captain and the Devil, The",
       "set": "ssw2",
       "scope": "hero",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "designs": [
+        {
+          "slug": "feeding-grounds",
+          "name": "Feeding Grounds"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/captain-and-the-devil-the",
+      "name": "Captain and the Devil, The",
+      "set": "ssw2",
+      "scope": "hero",
       "mechanic": "patrol",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "designs": [
         {
           "slug": "feeding-grounds",
@@ -29887,10 +29976,10 @@
       "set": "ssw2",
       "scope": "hero",
       "mechanic": "patrol",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "designs": [
         {
           "slug": "raise-the-union-jack",
@@ -29906,8 +29995,8 @@
       "mechanic": "patrol",
       "status": "unsupported",
       "handler": "",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "designs": [
         {
           "slug": "let-none-escape-you",
@@ -29920,11 +30009,28 @@
       "name": "Dr. Punisher, Soldier Supreme",
       "set": "ssw2",
       "scope": "hero",
+      "mechanic": "draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "designs": [
+        {
+          "slug": "sweep-the-streets-of-trash",
+          "name": "Sweep the Streets of Trash"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/dr-punisher-soldier-supreme",
+      "name": "Dr. Punisher, Soldier Supreme",
+      "set": "ssw2",
+      "scope": "hero",
       "mechanic": "patrol",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "designs": [
         {
           "slug": "calm-before-the-storm",
@@ -29976,10 +30082,27 @@
       "set": "ssw2",
       "scope": "hero",
       "mechanic": "patrol",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-881",
+      "decision": "D-24832",
+      "designs": [
+        {
+          "slug": "monster-hunter",
+          "name": "Monster Hunter"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/elsa-bloodstone",
+      "name": "Elsa Bloodstone",
+      "set": "ssw2",
+      "scope": "hero",
+      "mechanic": "rescue",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
+      "wp": "WP-215",
+      "decision": "D-21501",
       "designs": [
         {
           "slug": "monster-hunter",
@@ -30080,10 +30203,10 @@
       "set": "ssw2",
       "scope": "hero",
       "mechanic": "patrol",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "designs": [
         {
           "slug": "acrobatic-kung-fu",
@@ -30252,11 +30375,28 @@
       "name": "Spider-Gwen",
       "set": "ssw2",
       "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "save-the-day",
+          "name": "Save the Day"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/spider-gwen",
+      "name": "Spider-Gwen",
+      "set": "ssw2",
+      "scope": "hero",
       "mechanic": "patrol",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "designs": [
         {
           "slug": "fateful-bridge",
@@ -30269,6 +30409,40 @@
         {
           "slug": "save-the-day",
           "name": "Save the Day"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/spider-gwen",
+      "name": "Spider-Gwen",
+      "set": "ssw2",
+      "scope": "hero",
+      "mechanic": "rescue",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
+      "wp": "WP-215",
+      "decision": "D-21501",
+      "designs": [
+        {
+          "slug": "save-the-day",
+          "name": "Save the Day"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/spider-gwen",
+      "name": "Spider-Gwen",
+      "set": "ssw2",
+      "scope": "hero",
+      "mechanic": "reveal",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal",
+      "wp": "WP-253",
+      "decision": "D-24024",
+      "designs": [
+        {
+          "slug": "fateful-bridge",
+          "name": "Fateful Bridge"
         }
       ]
     },
@@ -30298,11 +30472,28 @@
       "name": "Time-Traveling Jean Grey",
       "set": "ssw2",
       "scope": "hero",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "designs": [
+        {
+          "slug": "bridge-to-a-better-future",
+          "name": "Bridge to a Better Future"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/time-traveling-jean-grey",
+      "name": "Time-Traveling Jean Grey",
+      "set": "ssw2",
+      "scope": "hero",
       "mechanic": "patrol",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "designs": [
         {
           "slug": "bridge-to-a-better-future",
@@ -44301,9 +44492,11 @@
       "scope": "hero",
       "mechanics": [
         "blood-frenzy",
+        "draw",
         "moonlight",
         "optional-put-bottom-hq",
         "patrol",
+        "reveal-top-may-ko",
         "sunlight"
       ]
     },
@@ -44340,6 +44533,7 @@
     "mdns/wong-master-of-the-mystic-arts": {
       "scope": "hero",
       "mechanics": [
+        "draw",
         "patrol",
         "sunlight"
       ]
@@ -47775,6 +47969,7 @@
     "ssw2/agent-venom": {
       "scope": "hero",
       "mechanics": [
+        "draw",
         "patrol",
         "spectrum",
         "wall-crawl"
@@ -47807,6 +48002,7 @@
     "ssw2/captain-and-the-devil-the": {
       "scope": "hero",
       "mechanics": [
+        "optional-ko-hand-discard",
         "patrol",
         "spectrum"
       ]
@@ -47827,6 +48023,7 @@
     "ssw2/dr-punisher-soldier-supreme": {
       "scope": "hero",
       "mechanics": [
+        "draw",
         "patrol",
         "reveal-ko-attack"
       ]
@@ -47836,6 +48033,7 @@
       "mechanics": [
         "optional-ko-reward",
         "patrol",
+        "rescue",
         "spectrum",
         "wall-crawl"
       ]
@@ -47880,13 +48078,17 @@
     "ssw2/spider-gwen": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "patrol",
+        "rescue",
+        "reveal",
         "wall-crawl"
       ]
     },
     "ssw2/time-traveling-jean-grey": {
       "scope": "hero",
       "mechanics": [
+        "next-hand-extra-draw",
         "patrol"
       ]
     },

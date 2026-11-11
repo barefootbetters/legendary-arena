@@ -59,6 +59,12 @@ import { createRegistryFromLocalFiles } from '../packages/registry/dist/index.js
 import { buildHeroAbilityHooks } from '../packages/game-engine/dist/setup/heroAbility.setup.js';
 import { HERO_KEYWORDS } from '../packages/game-engine/dist/rules/heroKeywords.js';
 import { MVP_KEYWORDS } from '../packages/game-engine/dist/hero/heroEffects.execute.js';
+// why: WP-881 / D-24832 — the two hero Patrol condition literals, read from the engine dist so
+// the ledger never re-types them.
+import {
+  PATROL_SPACE_EMPTY_CONDITION_TYPE,
+  PATROL_SPACE_OCCUPIED_CONDITION_TYPE,
+} from '../packages/game-engine/dist/hero/heroConditions.evaluate.js';
 // why: D-24031 — composition markers (berserk) are executable via the primitive
 // interpreter (not a HeroKeyword/handler); sourced from the engine dist so the ledger
 // recognizes them without duplicating the vocabulary. D-24045 — the PARAMETERIZED subset
@@ -222,6 +228,11 @@ const KNOWN_CONDITIONS = {
   // Villain) played this turn: shipped wait-and-see conditions, so the rows read `condition`.
   'master-strike-this-turn': 'masterStrikePlayedThisTurn',                     // Wanda & Vision "Grief"
   'master-strike-or-ambush-this-turn': 'masterStrikeOrAmbushPlayedThisTurn',   // Venom Rocket "Spring the Trap"
+  // why: WP-881 / D-24832 — hero Patrol gates a named-City-space line on patrolSpaceEmpty /
+  // patrolSpaceOccupied. Unlike the entries above it is classified BY HOOK in buildLedger
+  // (patrolStatusForHooks), before this by-name entry is read: a hero whose only Patrol lines
+  // are other-target hollows (Corvus Glaive, Beast) stays `unsupported`.
+  'patrol': PATROL_SPACE_EMPTY_CONDITION_TYPE,                     // "Patrol the <space>: If it's empty, …"
 };
 
 /** Error type signalling a probe failure (exit code 2). */
@@ -305,6 +316,27 @@ function extractMechanics(abilities) {
     }
   }
   return found;
+}
+
+/**
+ * Classifies the folded `patrol` mechanic for one hero BY HOOK (WP-881 / D-24832).
+ *
+ * `condition` only when some hook of the hero carries a Patrol condition (a named-City-space
+ * Patrol line, including a named-space honest hollow such as Raise the Union Jack, which still
+ * carries patrolSpaceEmpty); otherwise `unsupported` (a hero whose only Patrol lines target
+ * something other than one City space: Corvus Glaive, Beast).
+ *
+ * @param {Set<string>} cardConditionTypes - the condition types THIS hero's hooks carry.
+ * @returns {'condition'|'unsupported'} the status.
+ */
+function patrolStatusForHooks(cardConditionTypes) {
+  if (
+    cardConditionTypes.has(PATROL_SPACE_EMPTY_CONDITION_TYPE) ||
+    cardConditionTypes.has(PATROL_SPACE_OCCUPIED_CONDITION_TYPE)
+  ) {
+    return 'condition';
+  }
+  return 'unsupported';
 }
 
 /**
@@ -538,9 +570,15 @@ function buildLedger(registry, provenance) {
     // (transform) is classified per-card: resolved for She-Hulk, an unresolved marker for
     // the other transform heroes.
     const cardResolvedKeywords = new Set();
+    // why: WP-881 / D-24832 — the condition types this hero's hooks carry, so `patrol` is
+    // classified by hook (patrolStatusForHooks) rather than by name.
+    const cardConditionTypes = new Set();
     for (const hook of buildHeroAbilityHooks(registry, { heroDeckIds: [extId] })) {
       for (const marker of hook.resolvedMarkers ?? []) {
         cardResolvedMarkers.add(marker);
+      }
+      for (const condition of hook.conditions ?? []) {
+        cardConditionTypes.add(condition.type);
       }
       for (const keyword of hook.keywords ?? []) {
         cardResolvedKeywords.add(keyword);
@@ -557,7 +595,14 @@ function buildLedger(registry, provenance) {
     for (const mechanic of [...designNamesByMechanic.keys()].sort()) {
       const designs = toSortedDesigns(designNamesByMechanic.get(mechanic));
       const subsystemEntry = subsystemEntryFor(extId, mechanic);
-      const status = statusForMechanic(mechanic, cardResolvedMarkers, cardResolvedKeywords, subsystemEntry);
+      // why: WP-881 / D-24832 — the per-hook `patrol` check runs BEFORE statusForMechanic's
+      // by-name KNOWN_CONDITIONS return, which would otherwise answer `condition` first.
+      let status;
+      if (mechanic === 'patrol' && subsystemEntry === undefined) {
+        status = patrolStatusForHooks(cardConditionTypes);
+      } else {
+        status = statusForMechanic(mechanic, cardResolvedMarkers, cardResolvedKeywords, subsystemEntry);
+      }
       rows.push(buildRow(extId, info, mechanic, status, provenance, designs, subsystemEntry));
     }
   }

@@ -13,9 +13,16 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { buildHeroAbilityHooks, HERO_PARSER_RECOGNIZED_MARKER_NAMES } from './heroAbility.setup.js';
 import { HERO_KEYWORDS } from '../rules/heroKeywords.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
+import {
+  PATROL_SPACE_EMPTY_CONDITION_TYPE,
+  PATROL_SPACE_OCCUPIED_CONDITION_TYPE,
+} from '../hero/heroConditions.evaluate.js';
 
 // ---------------------------------------------------------------------------
 // Mock registry — getSet-based, same shape buildHeroAbilityHooks reads.
@@ -2061,7 +2068,6 @@ describe('buildHeroAbilityHooks — restricted attack clause (WP-790 / D-24652)'
       '[keyword:Focus] 5[icon:recruit] [icon:5] You get +7[icon:attack] usable only against the Mastermind.',
       '[keyword:Lightshow]: You get +3[icon:attack] usable only against the Mastermind.',
       'You get +2[icon:attack].',
-      '[keyword:Patrol the Bridge]: If it\'s empty, draw two cards. If it\'s not, you get +5[icon:attack] usable only to fight Villains on the Bridge.',
     ];
     for (const line of unchangedLines) {
       for (const effect of attackEffectsOf(parseRestrictedCard('test', 'test-hero', 'test-card', [line]))) {
@@ -2429,5 +2435,229 @@ describe('buildHeroAbilityHooks — repeated leading-prefix icons (WP-741 / D-24
     assert.deepEqual(parseOneLineConditions('[team:x-men][team:x-men][team:x-men][team:x-men]: Instead, you get both.'), [
       { type: 'requiresTeam', value: 'x-men', requiredMatches: 4 },
     ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Hero Patrol lines (WP-881 / D-24832)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a one-set registry reader from the COMMITTED data/cards JSON, so the Patrol parse
+ * tests exercise the real marked ability lines (not hand-typed literals).
+ *
+ * @param setAbbr - Set abbreviation (the data/cards/<abbr>.json file).
+ * @returns A structural registry reader for buildHeroAbilityHooks.
+ */
+function patrolRegistryForSet(setAbbr: string): unknown {
+  // why: resolve the repo-root data file from this test's own location, so the test reads
+  // what ships (a marker or parser drift fails here).
+  const here = dirname(fileURLToPath(import.meta.url));
+  const setData = JSON.parse(readFileSync(join(here, '..', '..', '..', '..', 'data', 'cards', `${setAbbr}.json`), 'utf8'));
+  return { listCards: () => [], getSet: (abbr: string) => (abbr === setAbbr ? setData : undefined) };
+}
+
+/**
+ * Returns the hooks of one copy of a real card, in hook order.
+ *
+ * @param setAbbr - Set abbreviation.
+ * @param heroSlug - Hero slug.
+ * @param cardSlug - Card slug.
+ * @param copyIndex - Which copy of the card (0 = the first).
+ * @returns The copy's hooks.
+ */
+function patrolCardHooks(setAbbr: string, heroSlug: string, cardSlug: string, copyIndex = 0) {
+  const hooks = buildHeroAbilityHooks(patrolRegistryForSet(setAbbr), makeConfig(`${setAbbr}/${heroSlug}`));
+  const copyIds: string[] = [];
+  for (const hook of hooks) {
+    if (hook.cardId.startsWith(`${setAbbr}/${heroSlug}/${cardSlug}#`) && !copyIds.includes(hook.cardId)) {
+      copyIds.push(hook.cardId);
+    }
+  }
+  const copyId = copyIds[copyIndex];
+  assert.ok(copyId !== undefined, `${setAbbr}/${heroSlug}/${cardSlug} must have copy ${String(copyIndex)}`);
+  return hooks.filter((hook) => hook.cardId === copyId);
+}
+
+/** The Patrol condition on a hook, or undefined. */
+function patrolConditionOf(hook: ReturnType<typeof buildHeroAbilityHooks>[number]) {
+  return (hook.conditions ?? []).find(
+    (condition) =>
+      condition.type === PATROL_SPACE_EMPTY_CONDITION_TYPE || condition.type === PATROL_SPACE_OCCUPIED_CONDITION_TYPE,
+  );
+}
+
+describe('buildHeroAbilityHooks — hero Patrol lines (WP-881 / D-24832)', () => {
+  it('named single branch: Bridge Between Dimensions draws 1 under patrolSpaceEmpty(bridge)', () => {
+    const hooks = patrolCardHooks('mdns', 'wong-master-of-the-mystic-arts', 'bridge-between-dimensions');
+    assert.equal(hooks.length, 1);
+    assert.deepEqual(hooks[0]!.conditions, [{ type: 'patrolSpaceEmpty', value: 'bridge' }]);
+    assert.deepEqual(hooks[0]!.effects, [{ type: 'draw', magnitude: 1 }]);
+    assert.deepEqual(hooks[0]!.keywords, ['draw', 'conditional']);
+    assert.equal(hooks[0]!.timing, 'onPlay');
+    assert.equal(hooks[0]!.unresolvedMarkers, undefined);
+  });
+
+  it('marker rows resolve to their shipped executors under patrolSpaceEmpty', () => {
+    const rows: Array<[string, string, string, string, string[]]> = [
+      ['mdns', 'blade-daywalker', 'hunt-high-and-low', 'rooftops', ['reveal-top-may-ko']],
+      ['mdns', 'blade-daywalker', 'where-monsters-lurk', 'rooftops', ['draw']],
+      ['ssw2', 'agent-venom', 'big-slimeportunity', 'sewers', ['draw']],
+      ['ssw2', 'captain-and-the-devil-the', 'feeding-grounds', 'streets', ['optional-ko-hand-discard']],
+      ['ssw2', 'dr-punisher-soldier-supreme', 'sweep-the-streets-of-trash', 'streets', ['draw']],
+      ['ssw2', 'elsa-bloodstone', 'monster-hunter', 'sewers', ['rescue']],
+      ['ssw2', 'spider-gwen', 'fateful-bridge', 'bridge', ['reveal']],
+      ['ssw2', 'spider-gwen', 'save-the-day', 'rooftops', ['rescue', 'attack-per-count']],
+      ['ssw2', 'time-traveling-jean-grey', 'bridge-to-a-better-future', 'bridge', ['next-hand-extra-draw']],
+    ];
+    for (const [setAbbr, heroSlug, cardSlug, spaceName, effectTypes] of rows) {
+      // why: Hunt High and Low / Where Monsters Lurk print a second (Sewers) Patrol line, so pick
+      // the marked line's hooks by the space it patrols.
+      const patrolHooks = patrolCardHooks(setAbbr, heroSlug, cardSlug)
+        .filter((hook) => patrolConditionOf(hook)?.value === spaceName);
+      const label = `${setAbbr}/${heroSlug}/${cardSlug}`;
+      assert.equal(patrolHooks.length, 1, `${label}: one Patrol hook`);
+      assert.deepEqual(patrolConditionOf(patrolHooks[0]!), { type: 'patrolSpaceEmpty', value: spaceName }, label);
+      assert.deepEqual((patrolHooks[0]!.effects ?? []).map((effect) => effect.type), effectTypes, label);
+      assert.equal(patrolHooks[0]!.unresolvedMarkers, undefined, `${label}: no hollow`);
+    }
+  });
+
+  it('Save the Day does not also grant its printed +1 attack icon', () => {
+    const hooks = patrolCardHooks('ssw2', 'spider-gwen', 'save-the-day');
+    const effects = hooks[0]!.effects ?? [];
+    assert.equal(effects.some((effect) => effect.type === 'attack'), false);
+    assert.deepEqual(effects[1], { type: 'attack-per-count', magnitude: 1, countSource: 'victory-bystanders', perEach: 2 });
+  });
+
+  it('two branches: Government Payroll is +2 recruit (empty) / +2 attack (occupied) on the Bank', () => {
+    const patrolHooks = patrolCardHooks('ssw2', 'agent-venom', 'government-payroll')
+      .filter((hook) => patrolConditionOf(hook) !== undefined);
+    assert.equal(patrolHooks.length, 2);
+    assert.deepEqual(patrolHooks[0]!.conditions, [{ type: 'patrolSpaceEmpty', value: 'bank' }]);
+    assert.deepEqual(patrolHooks[0]!.effects, [{ type: 'recruit', magnitude: 2 }]);
+    assert.deepEqual(patrolHooks[1]!.conditions, [{ type: 'patrolSpaceOccupied', value: 'bank' }]);
+    assert.deepEqual(patrolHooks[1]!.effects, [{ type: 'attack', magnitude: 2 }]);
+  });
+
+  it('Seal the Rift: draw 2 when the Bridge is empty, a Bridge-restricted +5 under patrolSpaceOccupied (migrated from the fail-closed list; intentional behavior change, D-24832 amends D-24652 §4)', () => {
+    const hooks = patrolCardHooks('mdns', 'wong-master-of-the-mystic-arts', 'seal-the-rift');
+    assert.equal(hooks.length, 2);
+    assert.deepEqual(hooks[0]!.conditions, [{ type: 'patrolSpaceEmpty', value: 'bridge' }]);
+    assert.deepEqual(hooks[0]!.effects, [{ type: 'draw', magnitude: 2 }]);
+    assert.deepEqual(hooks[1]!.conditions, [{ type: 'patrolSpaceOccupied', value: 'bridge' }]);
+    assert.deepEqual(hooks[1]!.effects, [{ type: 'attack', magnitude: 5, attackRestriction: { targets: ['bridge'] } }]);
+    // why: the printed line WITHOUT its curated marker parses the same restriction — the
+    // "usable only to fight" wording now matches ATTACK_RESTRICTION_CLAUSE_PATTERN.
+    const printedLine = '[keyword:Patrol the Bridge]: If it\'s empty, draw two cards. If it\'s not, you get +5[icon:attack] usable only to fight Villains on the Bridge.';
+    const printedHooks = parseRestrictedCard('test', 'test-hero', 'test-card', [printedLine]);
+    const occupiedHook = printedHooks.find((hook) => patrolConditionOf(hook)?.type === PATROL_SPACE_OCCUPIED_CONDITION_TYPE);
+    assert.ok(occupiedHook !== undefined);
+    assert.deepEqual(attackEffectsOf([occupiedHook]), [{ type: 'attack', magnitude: 5, attackRestriction: { targets: ['bridge'] } }]);
+  });
+
+  it('Axe of the Slayer: two branch hooks plus two cross hooks for "[hc:instinct]: Instead, you get both."', () => {
+    const hooks = patrolCardHooks('mdns', 'elsa-bloodstone', 'axe-of-the-slayer');
+    assert.equal(hooks.length, 4);
+    assert.deepEqual(hooks.map((hook) => hook.conditions), [
+      [{ type: 'patrolSpaceEmpty', value: 'streets' }],
+      [{ type: 'patrolSpaceOccupied', value: 'streets' }],
+      [{ type: 'heroClassMatch', value: 'instinct' }, { type: 'patrolSpaceOccupied', value: 'streets' }],
+      [{ type: 'heroClassMatch', value: 'instinct' }, { type: 'patrolSpaceEmpty', value: 'streets' }],
+    ]);
+    assert.deepEqual(hooks.map((hook) => hook.effects), [
+      [{ type: 'recruit', magnitude: 2 }],
+      [{ type: 'attack', magnitude: 2 }],
+      [{ type: 'recruit', magnitude: 2 }],
+      [{ type: 'attack', magnitude: 2 }],
+    ]);
+    for (const hook of hooks) {
+      assert.equal(hook.keywords.filter((keyword) => keyword === 'conditional').length, 1, 'conditional exactly once');
+      assert.equal(hook.unresolvedMarkers, undefined);
+    }
+  });
+
+  it('Axe of the Slayer: no hook shares an effects / conditions / condition object with another hook or copy (D-13502)', () => {
+    const firstCopy = patrolCardHooks('mdns', 'elsa-bloodstone', 'axe-of-the-slayer', 0);
+    const secondCopy = patrolCardHooks('mdns', 'elsa-bloodstone', 'axe-of-the-slayer', 1);
+    const allHooks = [...firstCopy, ...secondCopy];
+    for (let leftIndex = 0; leftIndex < allHooks.length; leftIndex++) {
+      for (let rightIndex = leftIndex + 1; rightIndex < allHooks.length; rightIndex++) {
+        const left = allHooks[leftIndex]!;
+        const right = allHooks[rightIndex]!;
+        assert.notStrictEqual(left.effects, right.effects);
+        assert.notStrictEqual(left.conditions, right.conditions);
+        assert.notStrictEqual(left.keywords, right.keywords);
+        for (const leftCondition of left.conditions ?? []) {
+          for (const rightCondition of right.conditions ?? []) {
+            assert.notStrictEqual(leftCondition, rightCondition);
+          }
+        }
+      }
+    }
+  });
+
+  it('honest partial: Lord of Dragons occupied, Raise the Union Jack and Hunt High and Low (Sewers) record patrol-the-* and grant nothing', () => {
+    const lordOfDragons = patrolCardHooks('ssw2', 'arkon-the-magnificent', 'lord-of-dragons');
+    assert.deepEqual(lordOfDragons[0]!.effects, [{ type: 'recruit', magnitude: 4 }, { type: 'attack', magnitude: 4 }]);
+    assert.deepEqual(lordOfDragons[1]!.conditions, [{ type: 'patrolSpaceOccupied', value: 'rooftops' }]);
+    assert.equal(lordOfDragons[1]!.effects, undefined);
+    assert.deepEqual(lordOfDragons[1]!.unresolvedMarkers, ['patrol-the-rooftops']);
+
+    const unionJack = patrolCardHooks('ssw2', 'captain-britain', 'raise-the-union-jack');
+    assert.deepEqual(unionJack[0]!.conditions, [{ type: 'patrolSpaceEmpty', value: 'rooftops' }]);
+    assert.equal(unionJack[0]!.effects, undefined);
+    assert.deepEqual(unionJack[0]!.unresolvedMarkers, ['patrol-the-rooftops']);
+
+    const huntHighAndLow = patrolCardHooks('mdns', 'blade-daywalker', 'hunt-high-and-low');
+    assert.deepEqual(huntHighAndLow[1]!.conditions, [{ type: 'patrolSpaceEmpty', value: 'sewers' }]);
+    assert.equal(huntHighAndLow[1]!.effects, undefined);
+    assert.deepEqual(huntHighAndLow[1]!.unresolvedMarkers, ['patrol-the-sewers']);
+  });
+
+  it('other target: the eight lines keep only their gate, drop their grants and record their patrol-* slug', () => {
+    const rows: Array<[string, string, string, string]> = [
+      ['mdns', 'elsa-bloodstone', 'vengeance-of-the-bloodstone-gem', 'patrol-any-city-space'],
+      ['ssw2', 'arkon-the-magnificent', 'warlord-of-open-spaces', 'patrol-two-adjacent-city-spaces'],
+      ['ssw2', 'beast', 'upside-down-thinking', 'patrol-any-city-space'],
+      ['ssw2', 'corvus-glaive', 'let-none-escape-you', 'patrol-the-escape-pile'],
+      ['ssw2', 'dr-punisher-soldier-supreme', 'calm-before-the-storm', 'patrol-every-city-space'],
+      ['ssw2', 'shang-chi', 'seek-the-empty-mind', 'patrol-your-discard-pile'],
+      ['ssw2', 'spider-gwen', 'first-adventure', 'patrol-your-victory-pile'],
+    ];
+    for (const [setAbbr, heroSlug, cardSlug, slug] of rows) {
+      const hollow = patrolCardHooks(setAbbr, heroSlug, cardSlug)
+        .find((hook) => (hook.unresolvedMarkers ?? []).includes(slug));
+      const label = `${setAbbr}/${heroSlug}/${cardSlug}`;
+      assert.ok(hollow !== undefined, `${label}: records ${slug}`);
+      assert.deepEqual(hollow.unresolvedMarkers, [slug], label);
+      assert.equal(hollow.effects, undefined, `${label}: no grant`);
+      assert.equal(hollow.conditions, undefined, `${label}: ungated`);
+      assert.deepEqual(hollow.keywords, [], label);
+    }
+    const changeHistory = patrolCardHooks('ssw2', 'time-traveling-jean-grey', 'change-history');
+    assert.equal(changeHistory.length, 1);
+    assert.deepEqual(changeHistory[0]!.conditions, [{ type: 'requiresTeam', value: 'x-men' }]);
+    assert.deepEqual(changeHistory[0]!.keywords, ['conditional']);
+    assert.equal(changeHistory[0]!.effects, undefined);
+    assert.deepEqual(changeHistory[0]!.unresolvedMarkers, ['patrol-any-city-space']);
+  });
+
+  it('every Patrol-conditioned hook in mdns and ssw2 carries the conditional keyword exactly once', () => {
+    let patrolHookCount = 0;
+    for (const setAbbr of ['mdns', 'ssw2']) {
+      const here = dirname(fileURLToPath(import.meta.url));
+      const setData = JSON.parse(readFileSync(join(here, '..', '..', '..', '..', 'data', 'cards', `${setAbbr}.json`), 'utf8')) as { heroes: Array<{ slug: string }> };
+      for (const hero of setData.heroes) {
+        for (const hook of buildHeroAbilityHooks(patrolRegistryForSet(setAbbr), makeConfig(`${setAbbr}/${hero.slug}`))) {
+          if (patrolConditionOf(hook) === undefined) {
+            continue;
+          }
+          patrolHookCount += 1;
+          assert.equal(hook.keywords.filter((keyword) => keyword === 'conditional').length, 1, hook.cardId);
+        }
+      }
+    }
+    assert.ok(patrolHookCount > 0, 'the data must carry Patrol hooks');
   });
 });

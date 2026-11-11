@@ -1281,6 +1281,54 @@
       "cardSlug": "lead-the-captain-britain-corps",
       "abilityIndex": 0,
       "markupToken": "[keyword:next-hand-extra-draw:3]"
+    },
+    {
+      "heroSlug": "agent-venom",
+      "cardSlug": "big-slimeportunity",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "captain-and-the-devil-the",
+      "cardSlug": "feeding-grounds",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:optional-ko-hand-discard]"
+    },
+    {
+      "heroSlug": "dr-punisher-soldier-supreme",
+      "cardSlug": "sweep-the-streets-of-trash",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "elsa-bloodstone",
+      "cardSlug": "monster-hunter",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:rescue:1]"
+    },
+    {
+      "heroSlug": "spider-gwen",
+      "cardSlug": "fateful-bridge",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal:2]"
+    },
+    {
+      "heroSlug": "spider-gwen",
+      "cardSlug": "save-the-day",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:rescue:1]"
+    },
+    {
+      "heroSlug": "spider-gwen",
+      "cardSlug": "save-the-day",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:victory-bystanders:1:2]"
+    },
+    {
+      "heroSlug": "time-traveling-jean-grey",
+      "cardSlug": "bridge-to-a-better-future",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:next-hand-extra-draw:1]"
     }
   ],
   "ssw1": [
@@ -2240,6 +2288,30 @@
       "cardSlug": "scalded-by-sunlight",
       "abilityIndex": 1,
       "markupToken": "[keyword:ko-wound-reward:attack:2]"
+    },
+    {
+      "heroSlug": "blade-daywalker",
+      "cardSlug": "hunt-high-and-low",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal-top-may-ko]"
+    },
+    {
+      "heroSlug": "blade-daywalker",
+      "cardSlug": "where-monsters-lurk",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "wong-master-of-the-mystic-arts",
+      "cardSlug": "bridge-between-dimensions",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "wong-master-of-the-mystic-arts",
+      "cardSlug": "seal-the-rift",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:draw:2]"
     }
   ],
   "nmut": [
@@ -2859,14 +2931,6 @@
       "abilityIndex": 0,
       "abilityText": "[keyword:Focus 2][icon:recruit]  [icon:5] Rescue a Bystander. You may only use this ability up to four times this turn.",
       "reason": "D-21602 — [keyword:Focus 2] modifies how the ability triggers (Focus token mechanic); the Focus condition is not in the hero condition evaluation pipeline. Also carries a per-turn-use-count limit not expressible in the current executor."
-    },
-    {
-      "setAbbr": "mdns",
-      "heroSlug": "blade-daywalker",
-      "cardSlug": "hunt-high-and-low",
-      "abilityIndex": 0,
-      "abilityText": "[keyword:Patrol the Rooftops]: If it's empty, reveal the top card of your deck. You may KO it.",
-      "reason": "D-21602 — keyword timing prefix: not wired to executeHeroEffects; also 'You may KO it' is optional, unlike unconditional reveal-ko"
     },
     {
       "setAbbr": "mdns",

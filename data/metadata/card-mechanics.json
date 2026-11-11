@@ -100,7 +100,7 @@
       "label": "Attack Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 37,
+      "cardCount": 38,
       "cardIds": [
         "amwp/scott-lang-cat-burglar",
         "antm/ant-man",
@@ -134,6 +134,7 @@
         "shld/mockingbird",
         "ssw1/captain-marvel",
         "ssw2/beast",
+        "ssw2/spider-gwen",
         "vill/juggernaut",
         "vill/ultron",
         "vnom/venom",
@@ -616,7 +617,7 @@
       "label": "Draw",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 103,
+      "cardCount": 107,
       "cardIds": [
         "3dtc/black-widow",
         "amwp/ant-army",
@@ -668,7 +669,9 @@
         "dkcy/wolverine",
         "dstr/ancient-one-the",
         "ff04/mr-fantastic",
+        "mdns/blade-daywalker",
         "mdns/werewolf-by-night",
+        "mdns/wong-master-of-the-mystic-arts",
         "mgtg/gamora",
         "mgtg/mantis",
         "msis/black-panther",
@@ -693,7 +696,9 @@
         "ssw1/black-panther",
         "ssw1/captain-marvel",
         "ssw1/superior-iron-man",
+        "ssw2/agent-venom",
         "ssw2/arkon-the-magnificent",
+        "ssw2/dr-punisher-soldier-supreme",
         "ssw2/silk",
         "vill/bullseye",
         "vill/dr-octopus",
@@ -1258,7 +1263,7 @@
       "label": "Next Hand Extra Draw",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 12,
+      "cardCount": 13,
       "cardIds": [
         "amwp/freedom-fighters",
         "amwp/wasp",
@@ -1269,6 +1274,7 @@
         "msmc/warpath",
         "rlmk/karnak",
         "ssw2/captain-britain",
+        "ssw2/time-traveling-jean-grey",
         "vill/dr-octopus",
         "wwhk/bruce-banner",
         "xmen/polaris"
@@ -1307,7 +1313,7 @@
       "label": "Optional Ko Hand Discard",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 14,
+      "cardCount": 15,
       "cardIds": [
         "amwp/ant-man",
         "asrd/warriors-three-the",
@@ -1318,6 +1324,7 @@
         "dkcy/professor-x",
         "dkcy/wolverine",
         "mgtg/gamora",
+        "ssw2/captain-and-the-devil-the",
         "vnom/venom-rocket",
         "wwhk/caiera",
         "wwhk/she-hulk",
@@ -1650,7 +1657,7 @@
       "label": "Rescue",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 18,
+      "cardCount": 20,
       "cardIds": [
         "3dtc/black-widow",
         "amwp/scott-lang-cat-burglar",
@@ -1669,6 +1676,8 @@
         "msp1/black-widow",
         "msp1/hawkeye",
         "rvlt/war-machine",
+        "ssw2/elsa-bloodstone",
+        "ssw2/spider-gwen",
         "vnom/venompool"
       ],
       "hidden": false
@@ -1702,7 +1711,7 @@
       "label": "Reveal",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 14,
+      "cardCount": 15,
       "cardIds": [
         "amwp/ant-man",
         "co2e/gambit",
@@ -1717,6 +1726,7 @@
         "ssw1/ultimate-spider-man",
         "ssw2/beast",
         "ssw2/silk",
+        "ssw2/spider-gwen",
         "vnom/venomized-dr-strange"
       ],
       "hidden": false
@@ -1944,8 +1954,9 @@
       "label": "Reveal Top May Ko",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 4,
+      "cardCount": 5,
       "cardIds": [
+        "mdns/blade-daywalker",
         "mgtg/drax",
         "nmut/wolfsbane",
         "vill/electro",
@@ -3744,9 +3755,11 @@
     "mdns/blade-daywalker": {
       "mechanics": [
         "blood-frenzy",
+        "draw",
         "moonlight",
         "optional-put-bottom-hq",
         "patrol",
+        "reveal-top-may-ko",
         "sunlight"
       ]
     },
@@ -3779,6 +3792,7 @@
     },
     "mdns/wong-master-of-the-mystic-arts": {
       "mechanics": [
+        "draw",
         "patrol",
         "sunlight"
       ]
@@ -4324,6 +4338,7 @@
     },
     "ssw2/agent-venom": {
       "mechanics": [
+        "draw",
         "patrol",
         "spectrum",
         "wall-crawl"
@@ -4352,6 +4367,7 @@
     },
     "ssw2/captain-and-the-devil-the": {
       "mechanics": [
+        "optional-ko-hand-discard",
         "patrol",
         "spectrum"
       ]
@@ -4369,6 +4385,7 @@
     },
     "ssw2/dr-punisher-soldier-supreme": {
       "mechanics": [
+        "draw",
         "patrol",
         "reveal-ko-attack"
       ]
@@ -4377,6 +4394,7 @@
       "mechanics": [
         "optional-ko-reward",
         "patrol",
+        "rescue",
         "spectrum",
         "wall-crawl"
       ]
@@ -4415,12 +4433,16 @@
     },
     "ssw2/spider-gwen": {
       "mechanics": [
+        "attack-per-count",
         "patrol",
+        "rescue",
+        "reveal",
         "wall-crawl"
       ]
     },
     "ssw2/time-traveling-jean-grey": {
       "mechanics": [
+        "next-hand-extra-draw",
         "patrol"
       ]
     },
