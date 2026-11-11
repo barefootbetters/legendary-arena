@@ -45216,7 +45216,7 @@ WP-762 / D-24594 filled the missing printed attack values first, so removing the
 
 ### D-24587 — The Haunt keyword is index-keyed, omit-when-absent HQ-slot state; exorcise spends like a recruit and releases the haunter through a no-Ambush, reveal-parity City entry (Active 2026-09-25 — WP-757 / EC-794)
 
-**Status:** Active — landed 2026-09-25 (WP-757 / EC-794). Live-on-surface (D-24026) is operator-pending and shared with WP-759 (the client affordance): the two deploy together.
+**Status:** Active — landed 2026-09-25 (WP-757 / EC-794). Live-on-surface (D-24026) ✅ verified 2026-11-11 with WP-759 on operator match `g8Mk6740Ddi` (server `f609ddff`, client `510a80b`): a Fallen Ambush and Zarathos both haunted, Recruit locked, Exorcise KO and give resolved, and the released Villain entered the City.
 
 **Context.** Zarathos (`mdns`) set up and ran, but every Zarathos effect and all three Fallen Ambush lines are written in terms of **Haunt** (rulebook v23 p.27), which did not exist in the engine. The Fallen's Ambush lines were unmarked, so they fired nothing.
 
