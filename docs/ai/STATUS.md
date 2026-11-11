@@ -16,7 +16,7 @@
 
 - **Dashboard.** New `useCardCoverage.ts` (`summarizeEntries`, `buildCardTypeBreakdown`, `buildAllTypesSetBreakdown`, `cardTypeLabel`, `cardCoverageLine`); every percent goes through D-24827's `summaryImplementedPercent`. By set gains per-type columns; By card reads the index with a Type filter; By mechanic stays hero-only and says "— Heroes". An index load failure shows a `cov-error` banner and `/vision` drops its line.
 - **Tests.** dashboard 597 -> 609 / 0; hero-scope parity pinned by deep equality against `summarizeRows`; `typecheck` / `lint` / `format:check` / `test:coverage` / `build` 0. Two revert proofs observed and restored.
-- **Live-verify (D-24026): operator-pending.** After deploy, read the live chunk(s) with the CF Access token for "card abilities implemented" and the ca75 per-type tally.
+- **Live-verify (D-24026): verified 2026-11-10** after #3264 deployed, via the CF Access service token: the live `CoveragePage` and `useCardCoverage` chunks carry "card abilities implemented" and drop the hero-only labels; `/vision` imports `useCardCoverage`; the live bundled index (2857 entries) tallies ca75 100% (25/25 · 14/14 · 10/10 · 14/14), Core 99.2% (Schemes 24/25), all sets 31%.
 
 ### Schemes join the effect-implementation index; `/debug/effects` gains a Scheme filter (WP-879 / EC-917, D-24828) (2026-11-10)
 
