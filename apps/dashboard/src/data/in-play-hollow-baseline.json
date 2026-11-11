@@ -2,11 +2,14 @@
   "schemaVersion": 1,
   "generatedAt": "seed",
   "byMechanic": {
+    "\"when-recruited\"-abilities": {
+      "peakObs": 119
+    },
     "abomination": {
       "peakObs": 34
     },
     "ambush": {
-      "peakObs": 103
+      "peakObs": 119
     },
     "antics": {
       "peakObs": 16
@@ -14,35 +17,101 @@
     "artifact": {
       "peakObs": 169
     },
+    "artifact--": {
+      "peakObs": 111
+    },
+    "astral-plane": {
+      "peakObs": 51
+    },
+    "attack-no-magnitude": {
+      "peakObs": 379
+    },
     "bridge": {
       "peakObs": 17
+    },
+    "bridge-conqueror": {
+      "peakObs": 14
+    },
+    "burn-2-shards": {
+      "peakObs": 41
+    },
+    "burn-4-shards": {
+      "peakObs": 10
+    },
+    "cheering-crowds": {
+      "peakObs": 83
     },
     "clone": {
       "peakObs": 89
     },
     "conqueror": {
-      "peakObs": 12
+      "peakObs": 45
     },
     "coordinate": {
-      "peakObs": 262
+      "peakObs": 264
+    },
+    "cosmic-threat": {
+      "peakObs": 4
+    },
+    "cross-dimensional-hulk-rampage": {
+      "peakObs": 6
     },
     "cyber-mod": {
       "peakObs": 12
     },
+    "danger-sense": {
+      "peakObs": 359
+    },
+    "dark-memories": {
+      "peakObs": 95
+    },
     "demolish": {
       "peakObs": 23
+    },
+    "demonic-bargain": {
+      "peakObs": 20
     },
     "dodge": {
       "peakObs": 37
     },
+    "don't-speak": {
+      "peakObs": 2
+    },
+    "double-striker": {
+      "peakObs": 2
+    },
     "empowered": {
-      "peakObs": 1
+      "peakObs": 2
     },
     "endgame": {
       "peakObs": 29
     },
+    "excessive-kindness": {
+      "peakObs": 91
+    },
+    "excessive-violence": {
+      "peakObs": 162
+    },
+    "fated-future": {
+      "peakObs": 19
+    },
+    "focus": {
+      "peakObs": 926
+    },
+    "gate-only": {
+      "peakObs": 366
+    },
     "heist": {
       "peakObs": 50
+    },
+    "highest-abomination": {
+      "peakObs": 13
+    },
+    "hunt-for-victims": {
+      "peakObs": 13
+    },
+    "hyperspeed": {
+      "peakObs": 15
     },
     "indigestion": {
       "peakObs": 38
@@ -50,11 +119,14 @@
     "investigate": {
       "peakObs": 293
     },
+    "last-stand": {
+      "peakObs": 1
+    },
     "liberate": {
-      "peakObs": 2
+      "peakObs": 29
     },
     "lightshow": {
-      "peakObs": 69
+      "peakObs": 96
     },
     "moonlight": {
       "peakObs": 293
@@ -62,11 +134,47 @@
     "outwit": {
       "peakObs": 157
     },
+    "patrol-any-city-space": {
+      "peakObs": 36
+    },
+    "patrol-the-bridge": {
+      "peakObs": 36
+    },
+    "patrol-the-rooftops": {
+      "peakObs": 80
+    },
+    "patrol-the-sewers": {
+      "peakObs": 57
+    },
+    "patrol-the-streets": {
+      "peakObs": 7
+    },
     "phasing": {
       "peakObs": 100
     },
+    "piercing-energy": {
+      "peakObs": 139
+    },
+    "recruit-no-magnitude": {
+      "peakObs": 434
+    },
+    "ritual-artifact": {
+      "peakObs": 6
+    },
     "rooftops": {
-      "peakObs": 4
+      "peakObs": 9
+    },
+    "rule:multicolored": {
+      "peakObs": 9
+    },
+    "rule:shard": {
+      "peakObs": 456
+    },
+    "rule:sidekick": {
+      "peakObs": 51
+    },
+    "s.h.i.e.l.d.-level": {
+      "peakObs": 162
     },
     "sacrifice": {
       "peakObs": 10
@@ -75,10 +183,13 @@
       "peakObs": 23
     },
     "shatter": {
-      "peakObs": 22
+      "peakObs": 23
     },
     "size-changing": {
       "peakObs": 2
+    },
+    "soaring-flight": {
+      "peakObs": 267
     },
     "soulbind": {
       "peakObs": 5
@@ -87,28 +198,64 @@
       "peakObs": 2
     },
     "streets": {
-      "peakObs": 59
+      "peakObs": 65
+    },
+    "streets-abomination": {
+      "peakObs": 1
     },
     "striker": {
-      "peakObs": 18
+      "peakObs": 19
     },
     "sunlight": {
       "peakObs": 109
     },
+    "switcheroo": {
+      "peakObs": 218
+    },
+    "tactical-formation": {
+      "peakObs": 52
+    },
     "teleport": {
-      "peakObs": 187
+      "peakObs": 213
+    },
+    "thrones-favor": {
+      "peakObs": 93
+    },
+    "thrown-artifact": {
+      "peakObs": 255
     },
     "transform": {
       "peakObs": 142
     },
+    "triggered-artifact": {
+      "peakObs": 6
+    },
     "undercover": {
-      "peakObs": 488
+      "peakObs": 521
     },
     "unleash": {
       "peakObs": 4
     },
+    "unmodeled-conditional-grant": {
+      "peakObs": 1
+    },
+    "versatile": {
+      "peakObs": 207
+    },
+    "villain-or-mastermind-has-any-wounds": {
+      "peakObs": 16
+    },
+    "what-if...?": {
+      "peakObs": 41
+    },
     "worthy": {
       "peakObs": 61
+    },
+    "wound-a-villain": {
+      "peakObs": 20
+    },
+    "wounded-fury": {
+      "peakObs": 7
     },
     "x-gene": {
       "peakObs": 23
