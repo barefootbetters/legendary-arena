@@ -364,3 +364,118 @@ describe('choosePlayingSeatChoiceOption — Revolutionary Anthem shuffle (WP-876
     assert.equal(G.pendingSeatChoice!.seatPrompts['0']!.options[1]!.label, 'Leave the Villain Deck as it is');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-882 / D-24833 — Zarathos playing-seat answers
+// ---------------------------------------------------------------------------
+
+import {
+  buildZarathosDiscardDownChoice,
+  ZARATHOS_CORRUPTED_SPIRIT_KIND,
+  ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND,
+  ZARATHOS_DEMONIC_ESSENCE_LAST_KIND,
+  ZARATHOS_ERUPTION_KIND,
+  ZARATHOS_IMPRISON_KIND,
+} from '../moves/seatChoiceTactics.js';
+import type { SeatChoiceOption } from '../types.js';
+
+/** Card stats for the Zarathos bot cases; the S.H.I.E.L.D. starters carry cost 0. */
+const ZARATHOS_BOT_STATS = {
+  cheapHero: { attack: 1, cost: 2 },
+  pricyHero: { attack: 2, cost: 6 },
+  covertHero: { attack: 1, cost: 3 },
+  'starting-shield-agent': { attack: 0, cost: 0 },
+  'starting-shield-trooper': { attack: 1, cost: 0 },
+};
+
+/** A single-seat choice of `kind` for `seat` with the given options and default. */
+function zarathosChoice(
+  kind: string,
+  seat: string,
+  options: SeatChoiceOption[],
+  defaultOptionIndex: number,
+): PendingSeatChoice {
+  return { kind, addressedSeats: [seat], seatPrompts: { [seat]: { options } }, submissions: {}, defaultOptionIndex };
+}
+
+describe('WP-882 choosePlayingSeatChoiceOption — Zarathos kinds (D-24833)', () => {
+  it('discard-down: drops the Wound first, else the cheapest card', () => {
+    const withWound = makeState({ '0': [], '1': ['pricyHero', 'cheapHero', WOUND_EXT_ID, 'covertHero'] }, { cardStats: ZARATHOS_BOT_STATS });
+    withWound.pendingSeatChoice = buildZarathosDiscardDownChoice(withWound, ['1']);
+    const woundIndex = withWound.pendingSeatChoice!.seatPrompts['1']!.options.findIndex((option) => option.cardId === WOUND_EXT_ID);
+    assert.equal(choosePlayingSeatChoiceOption(withWound, '1'), woundIndex);
+
+    const noWound = makeState({ '0': [], '1': ['pricyHero', 'covertHero', 'cheapHero', 'pricyHero'] }, { cardStats: ZARATHOS_BOT_STATS });
+    noWound.pendingSeatChoice = buildZarathosDiscardDownChoice(noWound, ['1']);
+    const options = noWound.pendingSeatChoice!.seatPrompts['1']!.options;
+    assert.equal(options[choosePlayingSeatChoiceOption(noWound, '1')!]!.cardId, 'cheapHero');
+  });
+
+  it('Demonic Essence (both kinds): a played 0-cost starter beats a hand 0-cost starter listed earlier', () => {
+    for (const kind of [ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND, ZARATHOS_DEMONIC_ESSENCE_LAST_KIND]) {
+      const G = makeState({ '0': [] }, { cardStats: ZARATHOS_BOT_STATS });
+      G.pendingSeatChoice = zarathosChoice(kind, '0', [
+        { label: 'KO Cheap', cardId: 'cheapHero', sourceZone: 'hand' },
+        { label: 'KO Agent', cardId: 'starting-shield-agent', sourceZone: 'hand' },
+        { label: 'KO Pricy', cardId: 'pricyHero', sourceZone: 'inPlay' },
+        { label: 'KO Trooper', cardId: 'starting-shield-trooper', sourceZone: 'inPlay' },
+        { label: "Don't KO" },
+      ], 4);
+      assert.equal(choosePlayingSeatChoiceOption(G, '0'), 3, `${kind}: the played starter`);
+    }
+  });
+
+  it('Demonic Essence: a hand starter when none is played, else the decline', () => {
+    const handOnly = makeState({ '0': [] }, { cardStats: ZARATHOS_BOT_STATS });
+    handOnly.pendingSeatChoice = zarathosChoice(ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND, '0', [
+      { label: 'KO Cheap', cardId: 'cheapHero', sourceZone: 'hand' },
+      { label: 'KO Agent', cardId: 'starting-shield-agent', sourceZone: 'hand' },
+      { label: 'KO Pricy', cardId: 'pricyHero', sourceZone: 'inPlay' },
+      { label: "Don't KO" },
+    ], 3);
+    assert.equal(choosePlayingSeatChoiceOption(handOnly, '0'), 1, 'the hand starter');
+
+    const noStarter = makeState({ '0': [] }, { cardStats: ZARATHOS_BOT_STATS });
+    noStarter.pendingSeatChoice = zarathosChoice(ZARATHOS_DEMONIC_ESSENCE_LAST_KIND, '0', [
+      { label: 'KO Cheap', cardId: 'cheapHero', sourceZone: 'hand' },
+      { label: 'KO Pricy', cardId: 'pricyHero', sourceZone: 'inPlay' },
+      { label: "Don't KO" },
+    ], 2);
+    assert.equal(choosePlayingSeatChoiceOption(noStarter, '0'), 2, 'the decline');
+  });
+
+  it('Corrupted Spirit: discards down when the cards owed are no more than the Wounds in hand, else keeps the default', () => {
+    const options: SeatChoiceOption[] = [
+      { label: 'Discard Covert Hero', cardId: 'covertHero' },
+      { label: 'Discard down to 3 cards' },
+    ];
+    const cases: { hand: string[]; expected: number; why: string }[] = [
+      { hand: ['covertHero', 'pricyHero', 'cheapHero', WOUND_EXT_ID], expected: 1, why: '4 cards, one Wound: owes 1' },
+      { hand: ['covertHero', WOUND_EXT_ID, 'pricyHero', WOUND_EXT_ID, 'cheapHero'], expected: 1, why: '5 cards, two Wounds: owes 2' },
+      { hand: ['covertHero', WOUND_EXT_ID, 'pricyHero', 'cheapHero', 'cheapHero'], expected: 0, why: '5 cards, one Wound: owes 2' },
+      { hand: ['covertHero', 'pricyHero', 'cheapHero', 'cheapHero'], expected: 0, why: 'no Wound' },
+    ];
+    for (const { hand, expected, why } of cases) {
+      const G = makeState({ '0': [], '1': hand }, { cardStats: ZARATHOS_BOT_STATS });
+      G.pendingSeatChoice = zarathosChoice(ZARATHOS_CORRUPTED_SPIRIT_KIND, '1', options, 0);
+      assert.equal(choosePlayingSeatChoiceOption(G, '1'), expected, why);
+    }
+  });
+
+  it('Eruption and Imprison return their defaultOptionIndex', () => {
+    const eruption = makeState({ '0': [], '1': ['covertHero', 'cheapHero'] }, { cardStats: ZARATHOS_BOT_STATS });
+    eruption.pendingSeatChoice = zarathosChoice(ZARATHOS_ERUPTION_KIND, '1', [
+      { label: 'Discard Covert Hero', cardId: 'covertHero' },
+      { label: 'Gain a Wound' },
+    ], 0);
+    assert.equal(choosePlayingSeatChoiceOption(eruption, '1'), 0);
+
+    const imprison = makeState({ '0': [] }, { cardStats: ZARATHOS_BOT_STATS });
+    imprison.pendingSeatChoice = zarathosChoice(ZARATHOS_IMPRISON_KIND, '0', [
+      { label: 'KO Villain A — draw 2', cardId: 'villainA' },
+      { label: 'KO Villain B — draw 1', cardId: 'villainB' },
+      { label: "Don't KO" },
+    ], 2);
+    assert.equal(choosePlayingSeatChoiceOption(imprison, '0'), 2);
+  });
+});

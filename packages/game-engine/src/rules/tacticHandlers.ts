@@ -75,7 +75,7 @@ import {
   buildZarathosCorruptedSpiritChoice,
   buildZarathosImprisonChoice,
   buildZarathosDemonicEssenceChoice,
-  discardZarathosHandDownToThree,
+  buildZarathosDiscardDownChoice,
   gainZarathosEruptionWound,
   listZarathosHandHeroesByCost,
   ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT,
@@ -1846,6 +1846,42 @@ export function resolveEruptionOfHellfire(
 }
 
 /**
+ * Sorts the other seats for Corrupted Spirit of Vengeance: a seat with 3 or fewer cards is
+ * logged and left out, a seat with an Instinct / Covert Hero chooses, and every other seat
+ * must discard down (logged; no card moves here).
+ *
+ * @param G - The game state; only G.messages is written (the per-seat log lines).
+ * @param currentPlayer - The player who defeated the tactic (skipped).
+ * @returns The choosing seats and the forced discard-down seats, each in clockwise order.
+ */
+function sortCorruptedSpiritSeats(
+  G: LegendaryGameState,
+  currentPlayer: string,
+): { choosingSeats: string[]; discardDownSeats: string[] } {
+  const choosingSeats: string[] = [];
+  const discardDownSeats: string[] = [];
+  for (const seat of otherSeatsClockwiseFrom(G, currentPlayer)) {
+    const handSize = G.playerZones[seat]?.hand.length ?? 0;
+    // why: D-24588 — with 3 or fewer cards, "discard down to 3" costs nothing, so a player
+    // always takes it; the seat is logged, never asked.
+    if (handSize <= ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT) {
+      pushLog(G, `Fight effect: Player ${seat} already has ${String(ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT)} or fewer cards (Corrupted Spirit of Vengeance).`, 'neutral');
+      continue;
+    }
+    if (listZarathosHandHeroesByCost(G, seat, ZARATHOS_CORRUPTED_SPIRIT_CLASSES).length > 0) {
+      choosingSeats.push(seat);
+      continue;
+    }
+    // why: WP-882 / D-24833 — a seat with no matching Hero must discard down, but it picks its
+    // own cards: no card moves here. It waits for the Hero-holders' answer (carried on their
+    // choice) and joins the first discard-down round.
+    discardDownSeats.push(seat);
+    pushLog(G, `Fight effect: Player ${seat} has no Instinct or Covert Hero, so they must discard down to ${String(ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT)} cards (Corrupted Spirit of Vengeance).`, 'neutral');
+  }
+  return { choosingSeats, discardDownSeats };
+}
+
+/**
  * Resolves Zarathos's "Corrupted Spirit of Vengeance" tactic Fight effect (WP-758 /
  * D-24588): "Zarathos Haunts the highest-cost unhaunted [instinct] and/or [covert] Hero
  * in the HQ. Each other player discards an [instinct] or [covert] Hero or discards down
@@ -1864,23 +1900,20 @@ export function resolveCorruptedSpiritOfVengeance(
   if (logZarathosSoloNoOp(G, currentPlayer, 'Corrupted Spirit of Vengeance')) {
     return;
   }
-  const choosingSeats: string[] = [];
-  for (const seat of otherSeatsClockwiseFrom(G, currentPlayer)) {
-    const handSize = G.playerZones[seat]?.hand.length ?? 0;
-    // why: D-24588 — with 3 or fewer cards, "discard down to 3" costs nothing, so a player
-    // always takes it; the seat is logged, never asked.
-    if (handSize <= ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT) {
-      pushLog(G, `Fight effect: Player ${seat} already has ${String(ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT)} or fewer cards (Corrupted Spirit of Vengeance).`, 'neutral');
-      continue;
-    }
-    if (listZarathosHandHeroesByCost(G, seat, ZARATHOS_CORRUPTED_SPIRIT_CLASSES).length > 0) {
-      choosingSeats.push(seat);
-      continue;
-    }
-    discardZarathosHandDownToThree(G, seat);
-  }
-  const choice = buildZarathosCorruptedSpiritChoice(G, choosingSeats.sort(), ZARATHOS_CORRUPTED_SPIRIT_CLASSES);
+  const { choosingSeats, discardDownSeats } = sortCorruptedSpiritSeats(G, currentPlayer);
+  const choice = buildZarathosCorruptedSpiritChoice(
+    G,
+    choosingSeats.sort(),
+    ZARATHOS_CORRUPTED_SPIRIT_CLASSES,
+    discardDownSeats,
+  );
   if (choice === undefined) {
+    // why: WP-882 / D-24833 — no seat chooses, so the forced seats' first discard-down round
+    // parks directly (no extra log line; each seat's forced line is above).
+    const discardDownChoice = buildZarathosDiscardDownChoice(G, discardDownSeats);
+    if (discardDownChoice !== undefined) {
+      parkSeatChoice(G, events, discardDownChoice);
+    }
     return;
   }
   parkSeatChoice(G, events, choice);

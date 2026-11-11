@@ -14,6 +14,11 @@
  *   - monarchs-decree-mode: "each other player draws" — the co-op answer.
  *   - escape-hq-ko: the cheapest eligible Hero (the builder orders by cost).
  *   - return-on-discard: return the card to hand.
+ *   - zarathos-eruption: discard the cheapest Covert / Ranged Hero (the builder orders by
+ *     cost); the alternative is a Wound (D-24833).
+ *   - zarathos-imprison: decline. A KO gives up the Villain's VP (RawScore weighs VP x10)
+ *     for that many draws, a strategy call with no engine value model (the Dominate the
+ *     Weak keep-default precedent, D-24754; D-24833).
  *
  * here-hold-this and random-acts-pass-left answers were added by D-24745.
  *
@@ -48,6 +53,11 @@ import {
   COMPUTER_UPLOADED_GENIUS_DISCARD_KIND,
   CRUSH_PACIFIST_RESISTANCE_KO_KIND,
   CRUSH_PACIFIST_RESISTANCE_LAST_KO_KIND,
+  ZARATHOS_CORRUPTED_SPIRIT_DISCARD_DOWN_KIND,
+  ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT,
+  ZARATHOS_CORRUPTED_SPIRIT_KIND,
+  ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND,
+  ZARATHOS_DEMONIC_ESSENCE_LAST_KIND,
 } from '../moves/seatChoiceTactics.js';
 import {
   ESCAPE_BYSTANDER_DISCARD_KIND,
@@ -156,6 +166,8 @@ function chooseByKind(
   // cheapest listed Hero.
   // why: WP-829 / D-24762 — the bot Purges the least valuable HQ Hero (its whole Hero Name leaves
   // the HQ for the match), the same pick it makes for a discard.
+  // why: WP-882 / D-24833 — each Corrupted Spirit discard-down round drops a Wound first, else
+  // the cheapest card (the default is the selector's cheapest, which may be a Hero over a Wound).
   if (
     choice.kind === TIMESTREAM_PURGE_SEAT_CHOICE_KIND ||
     choice.kind === MONARCHS_DISCARD_KIND ||
@@ -163,7 +175,8 @@ function chooseByKind(
     choice.kind === ESCAPE_EFFECT_COST_DISCARD_KIND ||
     choice.kind === VILLAIN_EFFECT_TRAIT_DISCARD_KIND ||
     choice.kind === FALLEN_IDOLS_DISCARD_KIND ||
-    choice.kind === COMPUTER_UPLOADED_GENIUS_DISCARD_KIND
+    choice.kind === COMPUTER_UPLOADED_GENIUS_DISCARD_KIND ||
+    choice.kind === ZARATHOS_CORRUPTED_SPIRIT_DISCARD_DOWN_KIND
   ) {
     return indexOfLeastValuableCard(G, options);
   }
@@ -175,6 +188,17 @@ function chooseByKind(
     choice.kind === CRUSH_PACIFIST_RESISTANCE_LAST_KO_KIND
   ) {
     return indexOfZeroCostKoOption(G, options);
+  }
+  // why: WP-882 / D-24833 — Demonic Essence of Ghost Rider is optional; the bot-ally thins a
+  // 0-cost Hero, one it already played first (D-24754 sibling).
+  if (
+    choice.kind === ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND ||
+    choice.kind === ZARATHOS_DEMONIC_ESSENCE_LAST_KIND
+  ) {
+    return indexOfPlayedFirstZeroCostKoOption(G, options);
+  }
+  if (choice.kind === ZARATHOS_CORRUPTED_SPIRIT_KIND) {
+    return indexOfZarathosCorruptedSpiritOption(G, seat, options);
   }
   if (choice.kind === VANISHING_ILLUSIONS_KO_KIND) {
     return indexOfLowestVictoryPointCard(G, seat, options);
@@ -389,6 +413,75 @@ function indexOfZeroCostKoOption(
     }
   }
   return options.length - 1;
+}
+
+/**
+ * Picks the first 0-cost Hero the seat already played, else the first 0-cost Hero in
+ * hand, else the last option ("Don't KO").
+ *
+ * // why: WP-882 / D-24833 — a played S.H.I.E.L.D. starter has already given its +1 this
+ * turn, so KOing it costs nothing now, while a hand starter could still be played. The
+ * Demonic Essence options list the hand first, so indexOfZeroCostKoOption would pick the
+ * hand copy; that helper and the Crush arm stay as they are (duplicate first, 00.6).
+ *
+ * @param G - The game state (read for cardStats).
+ * @param options - The seat's options; KO options carry cardId and sourceZone, the last is the decline.
+ * @returns The chosen option index.
+ */
+function indexOfPlayedFirstZeroCostKoOption(
+  G: LegendaryGameState,
+  options: readonly SeatChoiceOption[],
+): number {
+  for (const sourceZone of ['inPlay', 'hand'] as const) {
+    for (let optionIndex = 0; optionIndex < options.length; optionIndex++) {
+      const option = options[optionIndex]!;
+      if (option.cardId === undefined || option.sourceZone !== sourceZone) {
+        continue;
+      }
+      if ((G.cardStats[option.cardId]?.cost ?? 0) === 0) {
+        return optionIndex;
+      }
+    }
+  }
+  return options.length - 1;
+}
+
+/**
+ * Picks Corrupted Spirit of Vengeance's discard-down option when discarding down would
+ * cost only Wounds, else keeps the default (discard the cheapest matching Hero).
+ *
+ * // why: WP-882 / D-24833 — the cards owed (hand size - 3) are no more than the Wounds in
+ * hand, so every card dropped can be a Wound (the bot's own discard-down rounds drop
+ * Wounds first), which beats losing a Hero. Otherwise discarding down costs at least one
+ * real card more than the single Hero discard.
+ *
+ * @param G - The game state (read for the seat's hand).
+ * @param seat - The addressed seat.
+ * @param options - The seat's options; the discard-down option carries no cardId.
+ * @returns The discard-down option index, or null to keep the default.
+ */
+function indexOfZarathosCorruptedSpiritOption(
+  G: LegendaryGameState,
+  seat: string,
+  options: readonly SeatChoiceOption[],
+): number | null {
+  const hand = G.playerZones[seat]?.hand ?? [];
+  const cardsOwed = hand.length - ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT;
+  let woundsInHand = 0;
+  for (const cardId of hand) {
+    if (cardId === WOUND_EXT_ID) {
+      woundsInHand += 1;
+    }
+  }
+  if (cardsOwed > woundsInHand) {
+    return null;
+  }
+  for (let optionIndex = 0; optionIndex < options.length; optionIndex++) {
+    if (options[optionIndex]!.cardId === undefined) {
+      return optionIndex;
+    }
+  }
+  return null;
 }
 
 /**

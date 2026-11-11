@@ -141,6 +141,19 @@ export default defineComponent({
         // Heist that revealed a Scheme Twist (options: Shuffle / Leave).
         case 'heist-shuffle-villain-deck':
           return 'Revolutionary Anthem: shuffle the Villain Deck?';
+        // why: WP-882 / D-24833 — Zarathos's tactic choices (WP-758 / D-24588) name their tactic
+        // and what is asked; the discard-down kind is asked once per card owed.
+        case 'zarathos-corrupted-spirit-discard-down':
+          return 'Corrupted Spirit of Vengeance — discard down to 3 cards: choose a card to discard';
+        case 'zarathos-eruption':
+          return 'Eruption of Hellfire — discard a Covert or Ranged Hero, or gain a Wound';
+        case 'zarathos-corrupted-spirit':
+          return 'Corrupted Spirit of Vengeance — discard an Instinct or Covert Hero, or discard down to 3 cards';
+        case 'zarathos-imprison':
+          return 'Imprison in the Soul Crystal — KO a Villain from your Victory Pile and draw cards equal to its VP?';
+        case 'zarathos-demonic-essence-first':
+        case 'zarathos-demonic-essence-last':
+          return 'Demonic Essence of Ghost Rider — KO one of your Heroes?';
         default:
           return 'Your choice';
       }
