@@ -45,8 +45,12 @@ export const INFRA_COST_ACTUALS_AS_OF = '2026-10-31';
 //   postgres     — the same invoice's PostgresDB line: 521 h (kept running to
 //                  about 2026-10-22 after the cutover), $38.76.
 //   cloudflare   — $0: carried from the 2026-07-27 billing-dashboard check (Zero
-//                  Trust Teams Free + R2 within free-tier limits). NOT re-checked
-//                  for October — confirm on the next refresh.
+//                  Trust Teams Free + R2 within free-tier limits). Cloudflare
+//                  bills R2 on a 23rd-to-22nd cycle; the Oct 23 – Nov 22 cycle
+//                  is $10.26 to Nov 11 (R2 Infrequent Access operations), shown
+//                  on the Monetization page's Cloudflare panel
+//                  (config/cloudflareBilling.ts). Its October slice is not
+//                  broken out, so October stays $0 here.
 //   hanko        — $0: carried from the 2026-07-27 Hanko Cloud billing check
 //                  (Starter plan). NOT re-checked for October.
 // October total: $88.77. From November only DigitalOcean bills for hosting;
