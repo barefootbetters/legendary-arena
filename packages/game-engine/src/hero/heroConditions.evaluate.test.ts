@@ -21,6 +21,8 @@ import {
   SEQUENCE_GATE_CONDITION_TYPES,
   CARDS_DISCARDED_THIS_TURN_CONDITION_TYPE,
   matchReadsConditionType,
+  PATROL_SPACE_EMPTY_CONDITION_TYPE,
+  PATROL_SPACE_OCCUPIED_CONDITION_TYPE,
 } from './heroConditions.evaluate.js';
 import type { HeroConditionCardData } from './heroConditions.evaluate.js';
 import { WAIT_AND_SEE_CONDITION_TYPES } from './deferredConditionalGrants.js';
@@ -1996,5 +1998,123 @@ describe('requiredMatches — repeated prefix icons need that many OTHER cards (
       describeFailedCondition(gameState, '0', { type: 'requiresTeam', value: 'shield', requiredMatches: 1 }),
       'it needs another S.H.I.E.L.D. Hero played this turn',
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// patrolSpaceEmpty / patrolSpaceOccupied (WP-881 / D-24832)
+// ---------------------------------------------------------------------------
+
+describe('patrolSpaceEmpty / patrolSpaceOccupied (WP-881 / D-24832)', () => {
+  // why: the two Patrol condition types, kept as the runtime drift pin — HeroCondition.type is
+  // a bare string, so no compile-time union can catch a missing case.
+  const PATROL_CONDITION_TYPES = [PATROL_SPACE_EMPTY_CONDITION_TYPE, PATROL_SPACE_OCCUPIED_CONDITION_TYPE];
+
+  /** A state whose City is the given spaces (index 0 = Sewers). */
+  function makePatrolTestState(city: (string | null)[]): LegendaryGameState {
+    const gameState = makeTestState();
+    (gameState as unknown as { city: (string | null)[] }).city = city;
+    return gameState;
+  }
+
+  it('the constants are the locked literals', () => {
+    assert.equal(PATROL_SPACE_EMPTY_CONDITION_TYPE, 'patrolSpaceEmpty');
+    assert.equal(PATROL_SPACE_OCCUPIED_CONDITION_TYPE, 'patrolSpaceOccupied');
+  });
+
+  it('an empty space passes patrolSpaceEmpty and fails patrolSpaceOccupied', () => {
+    const gameState = makePatrolTestState([null, null, null, null, null]);
+    assert.equal(evaluateCondition(gameState, '0', { type: PATROL_SPACE_EMPTY_CONDITION_TYPE, value: 'bridge' }), true);
+    assert.equal(evaluateCondition(gameState, '0', { type: PATROL_SPACE_OCCUPIED_CONDITION_TYPE, value: 'bridge' }), false);
+  });
+
+  it('an occupied space passes patrolSpaceOccupied and fails patrolSpaceEmpty', () => {
+    const gameState = makePatrolTestState([null, null, null, null, 'villain-bridge']);
+    assert.equal(evaluateCondition(gameState, '0', { type: PATROL_SPACE_EMPTY_CONDITION_TYPE, value: 'bridge' }), false);
+    assert.equal(evaluateCondition(gameState, '0', { type: PATROL_SPACE_OCCUPIED_CONDITION_TYPE, value: 'bridge' }), true);
+    // why: only the named space is read — the Sewers is still empty.
+    assert.equal(evaluateCondition(gameState, '0', { type: PATROL_SPACE_EMPTY_CONDITION_TYPE, value: 'sewers' }), true);
+  });
+
+  it('a Bank Villain holding a captured Bystander makes the Bank occupied', () => {
+    const gameState = makePatrolTestState([null, 'villain-bank', null, null, null]);
+    (gameState as unknown as { attachedBystanders: Record<string, string[]> }).attachedBystanders = {
+      'villain-bank': [BYSTANDER_EXT_ID],
+    };
+    assert.equal(evaluateCondition(gameState, '0', { type: PATROL_SPACE_OCCUPIED_CONDITION_TYPE, value: 'bank' }), true);
+    assert.equal(evaluateCondition(gameState, '0', { type: PATROL_SPACE_EMPTY_CONDITION_TYPE, value: 'bank' }), false);
+  });
+
+  it('a space a 3-space City no longer has fails both conditions (D-24764)', () => {
+    const gameState = makePatrolTestState([null, null, null]);
+    for (const conditionType of PATROL_CONDITION_TYPES) {
+      assert.equal(evaluateCondition(gameState, '0', { type: conditionType, value: 'bridge' }), false);
+      assert.equal(evaluateCondition(gameState, '0', { type: conditionType, value: 'streets' }), false);
+      assert.equal(
+        describeFailedCondition(gameState, '0', { type: conditionType, value: 'bridge' }),
+        'there is no Bridge in the City',
+      );
+    }
+    // why: the Rooftops (index 2) still exists in a 3-space City.
+    assert.equal(evaluateCondition(gameState, '0', { type: PATROL_SPACE_EMPTY_CONDITION_TYPE, value: 'rooftops' }), true);
+  });
+
+  it('an unknown value or a non-array City fails both conditions and never throws', () => {
+    const gameState = makePatrolTestState([null, null, null, null, null]);
+    for (const conditionType of PATROL_CONDITION_TYPES) {
+      assert.equal(evaluateCondition(gameState, '0', { type: conditionType, value: 'escape-pile' }), false);
+      assert.equal(evaluateCondition(gameState, '0', { type: conditionType, value: '' }), false);
+    }
+    const minimal = { playerZones: { '0': { inPlay: [] } } } as unknown as LegendaryGameState;
+    for (const conditionType of PATROL_CONDITION_TYPES) {
+      assert.doesNotThrow(() => evaluateCondition(minimal, '0', { type: conditionType, value: 'bridge' }));
+      assert.equal(evaluateCondition(minimal, '0', { type: conditionType, value: 'bridge' }), false);
+    }
+  });
+
+  it('re-reads the City on every evaluation (never cached)', () => {
+    const gameState = makePatrolTestState([null, null, null, null, null]);
+    const condition = { type: PATROL_SPACE_EMPTY_CONDITION_TYPE, value: 'streets' };
+    assert.equal(evaluateCondition(gameState, '0', condition), true);
+    gameState.city[3] = 'villain-streets';
+    assert.equal(evaluateCondition(gameState, '0', condition), false);
+  });
+
+  it('describes a failed Patrol gate with the locked strings', () => {
+    const occupied = makePatrolTestState([null, null, null, null, 'villain-bridge']);
+    assert.equal(
+      describeFailedCondition(occupied, '0', { type: PATROL_SPACE_EMPTY_CONDITION_TYPE, value: 'bridge' }),
+      "there's a card in the Bridge",
+    );
+    const empty = makePatrolTestState([null, null, null, null, null]);
+    assert.equal(
+      describeFailedCondition(empty, '0', { type: PATROL_SPACE_OCCUPIED_CONDITION_TYPE, value: 'sewers' }),
+      'nothing is in the Sewers',
+    );
+  });
+
+  it('runtime pin: both types have a real evaluate case and a real describe case, and are neither wait-and-see nor sequence gates', () => {
+    const emptyCity = makePatrolTestState([null, null, null, null, null]);
+    const fullCity = makePatrolTestState(['a', 'b', 'c', 'd', 'e']);
+    for (const conditionType of PATROL_CONDITION_TYPES) {
+      // why: the default evaluate branch only returns false, so a `true` on a satisfying City
+      // proves the case exists.
+      const satisfyingCity = conditionType === PATROL_SPACE_EMPTY_CONDITION_TYPE ? emptyCity : fullCity;
+      assert.equal(
+        evaluateCondition(satisfyingCity, '0', { type: conditionType, value: 'rooftops' }),
+        true,
+        `"${conditionType}" must have a real evaluateCondition case.`,
+      );
+      const description = describeFailedCondition(emptyCity, '0', { type: conditionType, value: 'rooftops' });
+      assert.ok(
+        !description.includes('could not be evaluated'),
+        `"${conditionType}" must have a real describeFailedCondition case.`,
+      );
+      // why: "If that city space becomes empty later in the turn, it's too late" — never wait-and-see.
+      assert.equal(WAIT_AND_SEE_CONDITION_TYPES.includes(conditionType), false,
+        `"${conditionType}" is resolved per line, never a wait-and-see gate.`);
+      assert.equal(SEQUENCE_GATE_CONDITION_TYPES.includes(conditionType), false,
+        `"${conditionType}" is board state, never a play-order sequence gate.`);
+    }
   });
 });

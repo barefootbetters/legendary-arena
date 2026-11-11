@@ -26,7 +26,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "[keyword:Patrol the Rooftops]: If it's empty, reveal the top card of your deck. You may KO it.",
+            "[keyword:Patrol the Rooftops]: If it's empty, reveal the top card of your deck. You may KO it. [keyword:reveal-top-may-ko]",
             "[keyword:Patrol the Sewers]: If it's empty, reveal the bottom card of your deck. You may KO it."
           ]
         },
@@ -42,7 +42,7 @@
           "attack": null,
           "recruit": "2+",
           "abilities": [
-            "[keyword:Patrol the Rooftops]: If it's empty, draw a card.",
+            "[keyword:Patrol the Rooftops]: If it's empty, draw a card. [keyword:draw:1]",
             "[keyword:Patrol the Sewers]: If it's empty, you get +1[icon:recruit]."
           ]
         },
@@ -472,7 +472,7 @@
           "attack": "1",
           "recruit": null,
           "abilities": [
-            "[keyword:Patrol the Bridge]: If it's empty, draw a card."
+            "[keyword:Patrol the Bridge]: If it's empty, draw a card. [keyword:draw:1]"
           ]
         },
         {
@@ -503,7 +503,7 @@
           "attack": "0+",
           "recruit": null,
           "abilities": [
-            "[keyword:Patrol the Bridge]: If it's empty, draw two cards. If it's not, you get +5[icon:attack] usable only to fight Villains on the Bridge."
+            "[keyword:Patrol the Bridge]: If it's empty, draw two cards. If it's not, you get +5[icon:attack] usable only to fight Villains on the Bridge. [keyword:draw:2]"
           ]
         },
         {

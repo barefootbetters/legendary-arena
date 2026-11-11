@@ -27,6 +27,7 @@ import {
   playedCardIdsThisTurn,
 } from './splitCard.logic.js';
 import { heroClassDisplayName, teamDisplayName } from '../log/logDisplay.js';
+import { CITY_SPACE_NAMES } from '../board/citySpaceNames.js';
 
 // why: WP-777 / D-24616 — the one literal for "If you discarded any cards this turn"
 // (New Wings, Pumpkin Bombs). The setup marker arm, the evaluate + describe cases, the
@@ -59,6 +60,60 @@ export const DECK_CARD_KOED_CONDITION_TYPE = 'deckCardKoedThisTurn';
 // here beside DECK_CARD_KOED_CONDITION_TYPE for the same load-order reason.
 export const ATTACK_ICON_DECK_KO_CONDITION_TYPE = 'attackIconCardKoedFromDeckThisTurn';
 export const NON_GREY_HERO_DECK_KO_CONDITION_TYPE = 'nonGreyHeroKoedFromDeckThisTurn';
+
+// why: WP-881 / D-24832 — the two literals for a hero "[keyword:Patrol the <space>]: If it's
+// empty, … If it's not, …" line (Midnight Sons, Secret Wars Vol. 2). The setup parser, the
+// evaluate + describe cases, the Synergy exclusion, the failed-Patrol clause rule and the hero
+// mechanic ledger all key on these, so a named constant keeps them from drifting apart
+// (HeroCondition.type is a bare string and the evaluator's default is false, so a typo would
+// silently never fire). condition.value is the CitySpaceName ('sewers' … 'bridge'). This is
+// NOT the D-2502 villain board keyword Patrol (+1 fight cost), a different mechanic.
+export const PATROL_SPACE_EMPTY_CONDITION_TYPE = 'patrolSpaceEmpty';
+export const PATROL_SPACE_OCCUPIED_CONDITION_TYPE = 'patrolSpaceOccupied';
+
+// ---------------------------------------------------------------------------
+// Patrol helpers (WP-881 / D-24832)
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the G.city index of the City space a Patrol condition names, or -1 when that
+ * space cannot be patrolled.
+ *
+ * // why: WP-881 / D-24832 — -1 for a value that is not a CITY_SPACE_NAMES entry, a
+ * non-array G.city, or an index at or past G.city.length: a shortened City has lost its far
+ * spaces (D-24764), and rules v23 ~L1780 says that if a card effect makes the City space not
+ * exist, the Patrol ability can't be used at all. Both Patrol gates fail on -1. Pure read.
+ *
+ * @param G - Current game state (read-only).
+ * @param spaceName - The condition's value (a CitySpaceName).
+ * @returns The space's City index, or -1.
+ */
+function patrolSpaceIndex(G: LegendaryGameState, spaceName: string): number {
+  const spaceIndex = (CITY_SPACE_NAMES as readonly string[]).indexOf(spaceName);
+  if (spaceIndex === -1 || !Array.isArray(G.city) || spaceIndex >= G.city.length) {
+    return -1;
+  }
+  return spaceIndex;
+}
+
+/**
+ * Describes why a Patrol condition failed, for the "… ability did not activate — …" log line
+ * (WP-881 / D-24832).
+ *
+ * @param G - Current game state (read-only).
+ * @param condition - The failed patrolSpaceEmpty / patrolSpaceOccupied condition.
+ * @returns The clause naming the space and why the Patrol failed.
+ */
+function describeFailedPatrolCondition(G: LegendaryGameState, condition: HeroCondition): string {
+  const spaceLabel = condition.value.charAt(0).toUpperCase() + condition.value.slice(1);
+  if (patrolSpaceIndex(G, condition.value) === -1) {
+    return `there is no ${spaceLabel} in the City`;
+  }
+  if (condition.type === PATROL_SPACE_EMPTY_CONDITION_TYPE) {
+    return `there's a card in the ${spaceLabel}`;
+  }
+  return `nothing is in the ${spaceLabel}`;
+}
 
 // ---------------------------------------------------------------------------
 // matchReadsConditionType — does any hook in this match read a condition?
@@ -481,6 +536,25 @@ export function evaluateCondition(
       // why: WP-765 / D-24598 — the Moonlight mirror of the case above (most HQ Heroes have odd
       // printed costs); a tie is neither, so both day/night gates fail on a tie.
       return computeDayNight(G) === 'moonlight';
+    }
+
+    case PATROL_SPACE_EMPTY_CONDITION_TYPE: {
+      // why: WP-881 / D-24832 — hero Patrol (rules v23 ~L1772-1780): "Patrol the Bridge: If it's
+      // empty, …" works only while that City space holds no card. Read from G.city as the hook
+      // resolves, never cached (abilities resolve one at a time, ~L2603-2610). A space the City
+      // no longer has (D-24764) cannot be patrolled, so both Patrol gates fail there. A Location
+      // is not stored in G.city, so a Location above an empty space still reads empty (~L2486).
+      // Deliberately NOT a wait-and-see type: "If that city space becomes empty later in the
+      // turn, it's too late."
+      const spaceIndex = patrolSpaceIndex(G, condition.value);
+      return spaceIndex !== -1 && G.city[spaceIndex] === null;
+    }
+
+    case PATROL_SPACE_OCCUPIED_CONDITION_TYPE: {
+      // why: WP-881 / D-24832 — the "If it's not, …" mirror of the case above; a missing space
+      // fails this one too.
+      const spaceIndex = patrolSpaceIndex(G, condition.value);
+      return spaceIndex !== -1 && G.city[spaceIndex] !== null;
     }
 
     default: {
@@ -1041,6 +1115,11 @@ export function describeFailedCondition(
 
     case 'moonlightInEffect':
       return "it isn't Moonlight";
+
+    case PATROL_SPACE_EMPTY_CONDITION_TYPE:
+    case PATROL_SPACE_OCCUPIED_CONDITION_TYPE:
+      // why: WP-881 / D-24832 — a boolean board-state gate on one named City space.
+      return describeFailedPatrolCondition(G, condition);
 
     default:
       return `its play condition could not be evaluated (unrecognized condition type "${condition.type}")`;

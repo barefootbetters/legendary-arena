@@ -409,13 +409,15 @@ gotg/rocket-raccoon,Rocket Raccoon,gotg,artifact,unsupported,,,,incoming-detecto
 gotg/rocket-raccoon,Rocket Raccoon,gotg,optional-discard-draw,executable,WP-754,D-24581,packages/game-engine/src/hero/heroEffects.execute.ts#optional-discard-draw,gritty-scavenger
 gotg/star-lord,Star-Lord,gotg,artifact,unsupported,,,,element-guns|implanted-memory-chip|sentient-starship
 mdns/blade-daywalker,"Blade, Daywalker",mdns,blood-frenzy,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#blood-frenzy,creature-of-dawn-and-dusk
+mdns/blade-daywalker,"Blade, Daywalker",mdns,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,where-monsters-lurk
 mdns/blade-daywalker,"Blade, Daywalker",mdns,moonlight,condition,,,,creature-of-dawn-and-dusk|ride-by-moonlight
 mdns/blade-daywalker,"Blade, Daywalker",mdns,optional-put-bottom-hq,executable,,D-24130,packages/game-engine/src/hero/heroEffects.execute.ts#optional-put-bottom-hq,creature-of-dawn-and-dusk
-mdns/blade-daywalker,"Blade, Daywalker",mdns,patrol,unsupported,,,,hunt-high-and-low|where-monsters-lurk
+mdns/blade-daywalker,"Blade, Daywalker",mdns,patrol,condition,WP-881,D-24832,,hunt-high-and-low|where-monsters-lurk
+mdns/blade-daywalker,"Blade, Daywalker",mdns,reveal-top-may-ko,executable,WP-754,D-24581,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-may-ko,hunt-high-and-low
 mdns/blade-daywalker,"Blade, Daywalker",mdns,sunlight,condition,,,,creature-of-dawn-and-dusk
 mdns/elsa-bloodstone,Elsa Bloodstone,mdns,blood-frenzy,unsupported,,,,vengeance-of-the-bloodstone-gem
 mdns/elsa-bloodstone,Elsa Bloodstone,mdns,hunt-for-victims,unsupported,,,,stalk-the-night-stalkers
-mdns/elsa-bloodstone,Elsa Bloodstone,mdns,patrol,unsupported,,,,axe-of-the-slayer|silver-bullets|vengeance-of-the-bloodstone-gem
+mdns/elsa-bloodstone,Elsa Bloodstone,mdns,patrol,condition,WP-881,D-24832,,axe-of-the-slayer|silver-bullets|vengeance-of-the-bloodstone-gem
 mdns/morbius,Morbius,mdns,blood-frenzy,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#blood-frenzy,insatiable-craving|its-morbin-time|mesmerize
 mdns/morbius,Morbius,mdns,blood-frenzy-recruit,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#blood-frenzy-recruit,mesmerize
 mdns/morbius,Morbius,mdns,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,scalded-by-sunlight
@@ -428,7 +430,8 @@ mdns/werewolf-by-night,Werewolf by Night,mdns,moonlight,condition,,,,release-the
 mdns/werewolf-by-night,Werewolf by Night,mdns,optional-ko-your-hero,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-your-hero,snarling-fangs
 mdns/werewolf-by-night,Werewolf by Night,mdns,optional-put-bottom-hq,executable,,D-24130,packages/game-engine/src/hero/heroEffects.execute.ts#optional-put-bottom-hq,snarling-fangs
 mdns/werewolf-by-night,Werewolf by Night,mdns,sunlight,condition,,,,release-the-beast|snarling-fangs|starlit-path
-mdns/wong-master-of-the-mystic-arts,"Wong, Master of the Mystic Arts",mdns,patrol,unsupported,,,,bridge-between-dimensions|seal-the-rift
+mdns/wong-master-of-the-mystic-arts,"Wong, Master of the Mystic Arts",mdns,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,bridge-between-dimensions|seal-the-rift
+mdns/wong-master-of-the-mystic-arts,"Wong, Master of the Mystic Arts",mdns,patrol,condition,WP-881,D-24832,,bridge-between-dimensions|seal-the-rift
 mdns/wong-master-of-the-mystic-arts,"Wong, Master of the Mystic Arts",mdns,sunlight,condition,,,,face-your-demons|searing-shards-of-sunlight
 mgtg/drax,Drax,mgtg,excessive-violence,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#excessive-violence,i-am-invisible|nothing-goes-over-my-head|prison-riot|remove-his-spine|revenge-for-my-family
 mgtg/drax,Drax,mgtg,reveal-top-may-ko,executable,WP-754,D-24581,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-may-ko,remove-his-spine
@@ -629,33 +632,37 @@ ssw1/superior-iron-man,Superior Iron Man,ssw1,draw,executable,WP-022,D-2201,pack
 ssw1/thanos,Thanos,ssw1,teleport,unsupported,,,,transdimensional-overlord
 ssw1/ultimate-spider-man,Ultimate Spider-Man,ssw1,gain-sidekick,executable,WP-844,D-24778,packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick,marvel-team-up
 ssw1/ultimate-spider-man,Ultimate Spider-Man,ssw1,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal,leaping-spider|marvel-team-up|web-slinger
-ssw2/agent-venom,Agent Venom,ssw2,patrol,unsupported,,,,big-slimeportunity|government-payroll
+ssw2/agent-venom,Agent Venom,ssw2,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,big-slimeportunity
+ssw2/agent-venom,Agent Venom,ssw2,patrol,condition,WP-881,D-24832,,big-slimeportunity|government-payroll
 ssw2/agent-venom,Agent Venom,ssw2,spectrum,condition,,,,multi-gun
 ssw2/agent-venom,Agent Venom,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts,big-slimeportunity|government-payroll|shapeshifting-symbiote
 ssw2/arkon-the-magnificent,Arkon the Magnificent,ssw2,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,quiver-of-thunderbolts
-ssw2/arkon-the-magnificent,Arkon the Magnificent,ssw2,patrol,unsupported,,,,all-terrain-barbarian|lord-of-dragons|warlord-of-open-spaces
+ssw2/arkon-the-magnificent,Arkon the Magnificent,ssw2,patrol,condition,WP-881,D-24832,,all-terrain-barbarian|lord-of-dragons|warlord-of-open-spaces
 ssw2/arkon-the-magnificent,Arkon the Magnificent,ssw2,spectrum,condition,,,,quiver-of-thunderbolts
 ssw2/arkon-the-magnificent,Arkon the Magnificent,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts,all-terrain-barbarian
 ssw2/beast,Beast,ssw2,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,doctor-of-beatdown
-ssw2/beast,Beast,ssw2,patrol,unsupported,,,,upside-down-thinking
+ssw2/beast,Beast,ssw2,patrol,unsupported,WP-881,D-24832,,upside-down-thinking
 ssw2/beast,Beast,ssw2,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal,balanced-attack
 ssw2/beast,Beast,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts,upside-down-thinking
 ssw2/black-swan,Black Swan,ssw2,optional-ko-reward,executable,WP-248,D-24019,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,witness-the-end
 ssw2/captain-britain,Captain Britain,ssw2,next-hand-extra-draw,executable,WP-866,D-24809,packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw,lead-the-captain-britain-corps
-ssw2/captain-britain,Captain Britain,ssw2,patrol,unsupported,,,,raise-the-union-jack
-ssw2/captain-and-the-devil-the,"Captain and the Devil, The",ssw2,patrol,unsupported,,,,feeding-grounds
+ssw2/captain-britain,Captain Britain,ssw2,patrol,condition,WP-881,D-24832,,raise-the-union-jack
+ssw2/captain-and-the-devil-the,"Captain and the Devil, The",ssw2,optional-ko-hand-discard,executable,WP-667,D-24480,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,feeding-grounds
+ssw2/captain-and-the-devil-the,"Captain and the Devil, The",ssw2,patrol,condition,WP-881,D-24832,,feeding-grounds
 ssw2/captain-and-the-devil-the,"Captain and the Devil, The",ssw2,spectrum,condition,,,,jurassic-america|patriotic-chomp
-ssw2/corvus-glaive,Corvus Glaive,ssw2,patrol,unsupported,,,,let-none-escape-you
-ssw2/dr-punisher-soldier-supreme,"Dr. Punisher, Soldier Supreme",ssw2,patrol,unsupported,,,,calm-before-the-storm|sweep-the-streets-of-trash
+ssw2/corvus-glaive,Corvus Glaive,ssw2,patrol,unsupported,WP-881,D-24832,,let-none-escape-you
+ssw2/dr-punisher-soldier-supreme,"Dr. Punisher, Soldier Supreme",ssw2,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,sweep-the-streets-of-trash
+ssw2/dr-punisher-soldier-supreme,"Dr. Punisher, Soldier Supreme",ssw2,patrol,condition,WP-881,D-24832,,calm-before-the-storm|sweep-the-streets-of-trash
 ssw2/dr-punisher-soldier-supreme,"Dr. Punisher, Soldier Supreme",ssw2,reveal-ko-attack,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-ko-attack,youre-a-slow-learner
 ssw2/elsa-bloodstone,Elsa Bloodstone,ssw2,optional-ko-reward,executable,WP-248,D-24019,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,bloodstone-pendant
-ssw2/elsa-bloodstone,Elsa Bloodstone,ssw2,patrol,unsupported,,,,monster-hunter
+ssw2/elsa-bloodstone,Elsa Bloodstone,ssw2,patrol,condition,WP-881,D-24832,,monster-hunter
+ssw2/elsa-bloodstone,Elsa Bloodstone,ssw2,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,monster-hunter
 ssw2/elsa-bloodstone,Elsa Bloodstone,ssw2,spectrum,condition,,,,bloodstone-pendant|prodigy-of-ulysses-bloodstone
 ssw2/elsa-bloodstone,Elsa Bloodstone,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts,defend-the-shield-wall
 ssw2/phoenix-force-cyclops,Phoenix Force Cyclops,ssw2,(unmarked),unmarked,,,,
 ssw2/ruby-summers,Ruby Summers,ssw2,discard-to-play,executable,WP-383,D-24184,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play,extinction-blast|heir-to-legends
 ssw2/ruby-summers,Ruby Summers,ssw2,teleport,unsupported,,,,guerrilla-warfare
-ssw2/shang-chi,Shang-Chi,ssw2,patrol,unsupported,,,,acrobatic-kung-fu|seek-the-empty-mind
+ssw2/shang-chi,Shang-Chi,ssw2,patrol,condition,WP-881,D-24832,,acrobatic-kung-fu|seek-the-empty-mind
 ssw2/shang-chi,Shang-Chi,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts,acrobatic-kung-fu|muscle-memory
 ssw2/silk,Silk,ssw2,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,cascading-maneuver
 ssw2/silk,Silk,ssw2,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal,long-range-spider-sense
@@ -664,9 +671,13 @@ ssw2/silk,Silk,ssw2,reveal-multi-take,unsupported,,,,borrowed-cloaking-device
 ssw2/silk,Silk,ssw2,spectrum,condition,,,,borrowed-cloaking-device|cascading-maneuver|long-range-spider-sense
 ssw2/silk,Silk,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts,borrowed-cloaking-device|cascading-maneuver
 ssw2/soulsword-colossus,Soulsword Colossus,ssw2,cross-dimensional-rampage,unsupported,,,,possessed-by-the-soulsword
-ssw2/spider-gwen,Spider-Gwen,ssw2,patrol,unsupported,,,,fateful-bridge|first-adventure|save-the-day
+ssw2/spider-gwen,Spider-Gwen,ssw2,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,save-the-day
+ssw2/spider-gwen,Spider-Gwen,ssw2,patrol,condition,WP-881,D-24832,,fateful-bridge|first-adventure|save-the-day
+ssw2/spider-gwen,Spider-Gwen,ssw2,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,save-the-day
+ssw2/spider-gwen,Spider-Gwen,ssw2,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal,fateful-bridge
 ssw2/spider-gwen,Spider-Gwen,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts,first-adventure|intertwining-webs
-ssw2/time-traveling-jean-grey,Time-Traveling Jean Grey,ssw2,patrol,unsupported,,,,bridge-to-a-better-future|change-history
+ssw2/time-traveling-jean-grey,Time-Traveling Jean Grey,ssw2,next-hand-extra-draw,executable,WP-866,D-24809,packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw,bridge-to-a-better-future
+ssw2/time-traveling-jean-grey,Time-Traveling Jean Grey,ssw2,patrol,condition,WP-881,D-24832,,bridge-to-a-better-future|change-history
 vill/bullseye,Bullseye,vill,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts,fulfill-the-contract
 vill/bullseye,Bullseye,vill,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,everythings-a-weapon
 vill/dr-octopus,Dr. Octopus,vill,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,crazed-experiments

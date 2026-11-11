@@ -122,6 +122,7 @@
     "feast": { "wp": "WP-857", "decision": "D-24793" },
     "hq-hero-gains-size-changing-tech": { "wp": "WP-862", "decision": "D-24804" },
     "next-hand-extra-draw": { "wp": "WP-866", "decision": "D-24809" },
+    "patrol": { "wp": "WP-881", "decision": "D-24832" },
     "heist-master-strike-ko": { "wp": "WP-876", "decision": "D-24823" },
     "heist-scheme-twist-bonus": { "wp": "WP-876", "decision": "D-24823" },
     "heist-move-villain-ko-hero": { "wp": "WP-876", "decision": "D-24823" },

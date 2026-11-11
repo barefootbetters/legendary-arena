@@ -2168,6 +2168,28 @@
       "date": "2026-11-08",
       "evidence": "2p Operator match eFuOfsS3j8C (The Mandarin / Midtown Bank Robbery; HYDRA + Spider-Foes; Mandarin's Rings; Spider-Man, Hulk, Wolverine, Black Widow, Iron Man; server build 24055308 and client build 2405530, which contain the WP-872 merge a84d3041; server running since 2026-11-09T01:53:38Z, match created 01:53:42Z after boot; Player 0 operator, Player 1 bot ally): Fought twice (10.2.2, and again at 16.2.20 after a Master Strike re-entered it from the Victory Pile): \"Player 0 may give a card from their hand or discard pile to Player 1\" (10.2.3), then \"Player 0 gave S.H.I.E.L.D. Agent (starting-shield-agent) to Player 1, who put it in their hand\" (10.2.4 and 16.2.22, applied); in two seats, seat 0's right is Player 1. Effect trace give-card-to-right-player-current fired (turns 11, 17). Not observed live: the one-seat no-op (covered by tests).",
       "note": "Live check (NEW match created after the deploy (deployed gitSha checked), 2+ seats, Mastermind rvlt/mandarin (Always Leads puts Mandarin's Rings in the Villain Deck); an operator match via ?route=workshop with the setters placing the copy in the City and giving Attack.): defeating henchman-mandarins-rings-06 opens Give nothing / <card> (hand) / <card> (discard pile); picking a discard card logs \"Player P gave <card> to Player R, who put it in their hand\" and it appears in the previous seat's hand (seat 0's right is the last seat). One seat: a logged no-op. D-24817."
+    },
+    {
+      "key": "mdns/wong-master-of-the-mystic-arts|patrol",
+      "kind": "hero",
+      "card": "Wong, Master of the Mystic Arts",
+      "ability": "Bridge Between Dimensions — Patrol the Bridge: If it's empty, draw a card",
+      "wp": "WP-881",
+      "state": "pending",
+      "date": "2026-11-11",
+      "evidence": "",
+      "note": "Live check (NEW match created after the deploy, deployed gitSha checked; an operator match with the setters staging the City): with the Bridge empty, Bridge Between Dimensions draws a card; with a Villain on the Bridge it logs \"… ability did not activate — there's a card in the Bridge.\" and draws nothing. D-24832."
+    },
+    {
+      "key": "mdns/elsa-bloodstone|patrol",
+      "kind": "hero",
+      "card": "Elsa Bloodstone",
+      "ability": "Axe of the Slayer — Patrol the Streets: If it's empty, +2 Recruit. If it's not, +2 Attack. [Instinct]: Instead, you get both",
+      "wp": "WP-881",
+      "state": "pending",
+      "date": "2026-11-11",
+      "evidence": "",
+      "note": "Live check (NEW match created after the deploy, deployed gitSha checked): with the Streets empty and no other Instinct Hero played, Axe of the Slayer gives +2 Recruit only; with a Villain in the Streets, +2 Attack only; after another Instinct Hero, both. D-24832."
     }
   ]
 }

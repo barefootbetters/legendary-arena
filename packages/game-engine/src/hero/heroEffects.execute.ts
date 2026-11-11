@@ -32,8 +32,11 @@ import type { EffectNode } from '../rules/effectPrimitive.types.js';
 import type { RevealRule, RevealAction, RevealPredicate, RevealActionKind } from '../rules/revealRule.js';
 import {
   evaluateAllConditions,
+  evaluateCondition,
   findFailedCondition,
   describeFailedCondition,
+  PATROL_SPACE_EMPTY_CONDITION_TYPE,
+  PATROL_SPACE_OCCUPIED_CONDITION_TYPE,
   OWNED_CARD_KOED_CONDITION_TYPE,
   OWNED_HERO_KOED_CONDITION_TYPE,
   DECK_CARD_KOED_CONDITION_TYPE,
@@ -997,8 +1000,14 @@ export function executeHeroEffects(
     // only effects are magnitude-less icons ("use this bonus [icon:attack] against the
     // Mastermind") or a keyword with no play-time handler (Goblin Glider's gated Dodge)
     // does nothing when its condition holds, so counting it would log a fake "assembled".
+    // why: WP-881 / D-24832 — a hook whose Patrol condition fails on this play is not a clause
+    // either: the City decided it, not the player. Without this, Elsa Bloodstone's Axe of the
+    // Slayer off-branch cross hook ([hc:instinct] AND the other Patrol state) would log a
+    // guaranteed miss on every play.
     const isCountableConditionalClause =
-      countSynergyConditions(hook) > 0 && hookHasDispatchableEffect(hook);
+      countSynergyConditions(hook) > 0 &&
+      hookHasDispatchableEffect(hook) &&
+      allPatrolConditionsPass(G, playerID, hook, cardId);
 
     // why: WP-853 / D-24789 — an owned-KO trigger ("Whenever a card you own is KO'd this
     // turn") starts when the card is played, so it ALWAYS waits once its other conditions
@@ -1494,11 +1503,48 @@ function hookHasHollowBody(hook: HeroAbilityHook): boolean {
 function countSynergyConditions(hook: HeroAbilityHook): number {
   let count = 0;
   for (const condition of hook.conditions ?? []) {
-    if (condition.type !== 'sunlightInEffect' && condition.type !== 'moonlightInEffect') {
+    // why: WP-881 / D-24832 — the two Patrol gates are board state too (the City decides them,
+    // not the player), so they are excluded exactly like day/night (D-24598 sibling).
+    if (
+      condition.type !== 'sunlightInEffect' &&
+      condition.type !== 'moonlightInEffect' &&
+      condition.type !== PATROL_SPACE_EMPTY_CONDITION_TYPE &&
+      condition.type !== PATROL_SPACE_OCCUPIED_CONDITION_TYPE
+    ) {
       count += 1;
     }
   }
   return count;
+}
+
+/**
+ * Whether every Patrol condition on a hook passes on this play (WP-881 / D-24832).
+ *
+ * // why: each Patrol condition is evaluated directly, never through findFailedCondition, which
+ * stops at the first failed condition and would report Axe of the Slayer's [hc:instinct] gate
+ * first on its off-branch cross hook. A hook with no Patrol condition passes trivially.
+ *
+ * @param G - Current game state (read-only).
+ * @param playerID - The acting player.
+ * @param hook - The hero ability hook.
+ * @param cardId - The played hero card's CardExtId.
+ * @returns false when some Patrol condition on the hook fails, else true.
+ */
+function allPatrolConditionsPass(
+  G: LegendaryGameState,
+  playerID: string,
+  hook: HeroAbilityHook,
+  cardId: CardExtId,
+): boolean {
+  for (const condition of hook.conditions ?? []) {
+    const isPatrolCondition =
+      condition.type === PATROL_SPACE_EMPTY_CONDITION_TYPE ||
+      condition.type === PATROL_SPACE_OCCUPIED_CONDITION_TYPE;
+    if (isPatrolCondition && !evaluateCondition(G, playerID, condition, cardId)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /**

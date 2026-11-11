@@ -718,8 +718,18 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // gate-only 361 -> 366, recruit-no-magnitude 426 -> 434, all amwp examples). totalObs
   // 8686 -> 8702 (+16); resolvedObs stays 1141, so percentResolved stays 13.1 (1141 / 8702). A
   // trajectory re-pin; no mechanic changed status.
+  // 2026-11-11 (WP-881 / D-24832, re-pin): hero Patrol lines now gate each printed branch on their
+  // City space, so the mdns / ssw2 Patrol heroes stop over-granting and the sweep plays out
+  // differently (feed regenerated: 7676 -> 7510 raw observations; patrol-the-bridge 36,
+  // patrol-the-rooftops 80 and patrol-the-streets 7 leave the live sweep, patrol-the-sewers
+  // 57 -> 16, patrol-any-city-space 36 -> 38, patrol-two-adjacent-city-spaces 0 -> 8,
+  // recruit-no-magnitude 434 -> 437). totalObs 8702 -> 8715 (+13: totalObs sums each key's
+  // max(baseline, live) peak, so only the three rises above their baseline peaks count). The
+  // folded `patrol` family stays unresolved because Corvus Glaive and Beast keep `unsupported`
+  // ledger rows (least-done), so resolvedObs stays 1141 and percentResolved stays 13.1
+  // (1141 / 8715). A trajectory re-pin.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8702);
+  assert.equal(view.totalObs.value, 8715);
   assert.equal(view.resolvedObs.value, 1141);
   assert.equal(view.percentResolved.value, 13.1);
   assert.ok(view.remaining.value.length > 0);

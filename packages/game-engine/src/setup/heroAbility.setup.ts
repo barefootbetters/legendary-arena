@@ -48,6 +48,8 @@ import {
   DECK_CARD_KOED_CONDITION_TYPE,
   ATTACK_ICON_DECK_KO_CONDITION_TYPE,
   NON_GREY_HERO_DECK_KO_CONDITION_TYPE,
+  PATROL_SPACE_EMPTY_CONDITION_TYPE,
+  PATROL_SPACE_OCCUPIED_CONDITION_TYPE,
 } from '../hero/heroConditions.evaluate.js';
 
 // ---------------------------------------------------------------------------
@@ -506,10 +508,13 @@ const ICON_MAGNITUDE_PATTERN = /\+?(\d+)\s*\[icon:(attack|recruit)\]/g;
 
 // why: WP-790 / D-24652 — the printed "usable only against …" clause that follows a
 // `+N[icon:attack]` grant (rules v23, the Liberate entry: a bonus spendable only on the named
-// targets). Matched on the text AFTER the attack icon-magnitude. "usable only to fight …"
-// (mdns Wong Seal the Rift) deliberately does not match.
+// targets). Matched on the text AFTER the attack icon-magnitude.
+// why: WP-881 / D-24832 (amends D-24652 §4) — also "usable only to fight …", the wording mdns
+// Wong's Seal the Rift prints ("+5[icon:attack] usable only to fight Villains on the Bridge"),
+// the only data line that uses it. It used to fail closed while its +5 fired ungated; it is now
+// a Bridge-restricted grant gated on its Patrol condition.
 /** Regex for the restriction clause, e.g. ", usable only against Villains on the Rooftops." */
-const ATTACK_RESTRICTION_CLAUSE_PATTERN = /,?\s*usable only against (.+?)\.?$/i;
+const ATTACK_RESTRICTION_CLAUSE_PATTERN = /,?\s*usable only (?:against|to fight) (.+?)\.?$/i;
 /** Regex for a Mastermind target word inside the clause ("Commander" is fear/vill wording). */
 const ATTACK_RESTRICTION_MASTERMIND_PATTERN = /\b(mastermind|commander)\b/i;
 /** Regex for an exclusion clause ("other Villains", nmut Karma) — left unmodeled (fails closed). */
@@ -879,6 +884,38 @@ const HEIST_CARDS: ReadonlySet<string> = new Set<string>([
   'amwp/scott-lang-cat-burglar/putting-a-crew-together',
   'amwp/scott-lang-cat-burglar/x-con-security-van',
   'amwp/ant-army/revolutionary-anthem',
+]);
+
+// why: WP-881 / D-24832 — identifies a hero Patrol line: an optional leading [hc:X] / [team:X]
+// gate prefix (group 1, ssw2 Change History's "[team:x-men]:"), then a leading
+// "[keyword:Patrol <target>]" token (group 2 = the target), then the line body (group 3). The
+// token has spaces, so KEYWORD_PATTERN never matches it and nothing gated the line before this.
+// Non-global, so `.exec` is stateless. Not the D-2502 villain board keyword Patrol.
+const PATROL_LINE_PATTERN =
+  /^\s*((?:\[(?:hc|team):[^\]]+\]\s*)*:?\s*)\[keyword:Patrol\s+([^\]]+)\]\s*:?\s*(.*)$/i;
+
+// why: WP-881 / D-24832 — a Patrol target that names exactly one City space. Any other target
+// (any / two adjacent / every city space, the Escape Pile, your discard pile, your Victory Pile)
+// is an honest hollow until its own WP models it.
+const PATROL_NAMED_SPACE_PATTERN = /^the\s+(sewers|bank|rooftops|streets|bridge)$/i;
+
+// why: WP-881 / D-24832 — the "If it's empty," / "If it's not," branch heads (straight or curly
+// apostrophe). Case-insensitive, non-global.
+const PATROL_EMPTY_HEAD_PATTERN = /^\s*If it[’']s empty,\s*/i;
+const PATROL_NOT_SPLIT_PATTERN = /\s*If it[’']s not,\s*/i;
+
+// why: WP-881 / D-24832 — the curated [keyword:…] marker tokens apply-hero-ability-markers.mjs
+// appends at line end. They are stripped from the line BEFORE the "If it's not," split and given
+// to the EMPTY branch: left in place they would land on the occupied branch, where Seal the Rift's
+// $-anchored "usable only to fight …" restriction clause would swallow them.
+const PATROL_TRAILING_MARKERS_PATTERN = /((?:\s*\[keyword:[^\]]+\])+)\s*$/;
+
+// why: WP-881 / D-24832 — cards whose "[gate]: Instead, you get both." line upgrades a two-branch
+// Patrol line. The line becomes two cross hooks, each gated on the gate AND one Patrol state, that
+// grant the OTHER branch's body: with the gate met, the base branch hook plus its cross hook give
+// both branches whichever state the City space is in (HeroCondition lists are AND-only).
+const PATROL_BOTH_CARDS: ReadonlySet<string> = new Set<string>([
+  'mdns/elsa-bloodstone/axe-of-the-slayer',
 ]);
 
 // why: WP-668 / D-24481, D-24670 — keywords whose handler computes the line's own
@@ -4630,6 +4667,205 @@ function isDayNightUnmodeledLine(cardKey: string, abilityText: string): boolean 
   return false;
 }
 
+/** The parts of one hero Patrol line (WP-881 / D-24832). */
+interface PatrolLineParts {
+  /** The leading [hc:X] / [team:X] gate prefix, trimmed ('' when ungated). */
+  gatePrefix: string;
+  /** The lower-case City space name, or undefined for any other Patrol target. */
+  spaceName: string | undefined;
+  /** The line's honest-hollow slug, e.g. 'patrol-the-rooftops' (D-24623 normalization). */
+  hollowSlug: string;
+  /** The "If it's empty," branch body (curated trailing markers appended). */
+  emptyBody: string;
+  /** The "If it's not," branch body, or undefined when the line prints none. */
+  occupiedBody: string | undefined;
+}
+
+/**
+ * Splits one hero Patrol line into its gate prefix, target and branch bodies (WP-881 / D-24832).
+ *
+ * @param abilityText - One hero ability line.
+ * @returns The line's parts, or undefined when the line is not a Patrol line.
+ */
+function matchPatrolLine(abilityText: string): PatrolLineParts | undefined {
+  const lineMatch = PATROL_LINE_PATTERN.exec(abilityText);
+  if (lineMatch === null) {
+    return undefined;
+  }
+  const target = lineMatch[2]!.trim();
+  const hollowSlug = collectUnmatchedKeywordSlugs(`[keyword:Patrol ${target}]`)[0] ?? 'patrol';
+  const spaceMatch = PATROL_NAMED_SPACE_PATTERN.exec(target);
+  // why: WP-881 / D-24832 — trailing curated markers go to the EMPTY branch, stripped before the
+  // split (see PATROL_TRAILING_MARKERS_PATTERN).
+  let body = lineMatch[3]!;
+  let trailingMarkers = '';
+  const markersMatch = PATROL_TRAILING_MARKERS_PATTERN.exec(body);
+  if (markersMatch !== null) {
+    trailingMarkers = markersMatch[1]!.trim();
+    body = body.slice(0, markersMatch.index);
+  }
+  const notMatch = PATROL_NOT_SPLIT_PATTERN.exec(body);
+  const emptyPart = notMatch === null ? body : body.slice(0, notMatch.index);
+  const occupiedBody = notMatch === null ? undefined : body.slice(notMatch.index + notMatch[0].length).trim();
+  const emptyText = emptyPart.replace(PATROL_EMPTY_HEAD_PATTERN, '').trim();
+  return {
+    gatePrefix: lineMatch[1]!.trim(),
+    spaceName: spaceMatch === null ? undefined : spaceMatch[1]!.toLowerCase(),
+    hollowSlug,
+    emptyBody: trailingMarkers === '' ? emptyText : `${emptyText} ${trailingMarkers}`,
+    occupiedBody,
+  };
+}
+
+/**
+ * Builds one hook from a parseAbilityText result with the per-line loop's omit-when-empty
+ * construction (WP-881 / D-24832). Every array on the hook is the parse result's own array, so a
+ * hook built from its own parseAbilityText call never aliases another hook (D-13502).
+ *
+ * @param cardId - The hero card copy's CardExtId (the hook's cardId).
+ * @param parsedAbility - A fresh parseAbilityText result.
+ * @returns The hook.
+ */
+function buildHookFromParsedAbility(
+  cardId: CardExtId,
+  parsedAbility: ReturnType<typeof parseAbilityText>,
+): HeroAbilityHook {
+  const hook: HeroAbilityHook = { cardId, timing: 'onPlay', keywords: parsedAbility.keywords };
+  if (parsedAbility.conditions.length > 0) {
+    hook.conditions = parsedAbility.conditions;
+  }
+  if (parsedAbility.effects.length > 0) {
+    hook.effects = parsedAbility.effects;
+  }
+  if (parsedAbility.primitiveEffects.length > 0) {
+    hook.primitiveEffects = parsedAbility.primitiveEffects;
+  }
+  if (parsedAbility.unresolvedMarkers.length > 0) {
+    hook.unresolvedMarkers = parsedAbility.unresolvedMarkers;
+  }
+  if (parsedAbility.resolvedMarkers.length > 0) {
+    hook.resolvedMarkers = parsedAbility.resolvedMarkers;
+  }
+  if (parsedAbility.sizeChangingClasses.length > 0) {
+    hook.sizeChangingClasses = parsedAbility.sizeChangingClasses;
+  }
+  if (parsedAbility.microscopicSizeChangingClasses.length > 0) {
+    hook.microscopicSizeChangingClasses = parsedAbility.microscopicSizeChangingClasses;
+  }
+  return hook;
+}
+
+/**
+ * Builds one Patrol branch hook: the gate prefix plus the branch body, parsed by its own
+ * parseAbilityText call, gated on its Patrol condition (WP-881 / D-24832).
+ *
+ * // why: HeroCondition lists are AND-only, so each printed branch is its own hook (the WP-859
+ * split shape). The Patrol condition is appended after the gate conditions; the hook carries the
+ * 'conditional' keyword exactly once. A branch that resolves nothing records the line's
+ * `patrol-*` slug as an honest hollow instead of granting its printed effect (D-24570 sibling).
+ *
+ * @param cardId - The hero card copy's CardExtId.
+ * @param gatePrefix - The line's [hc:X] / [team:X] gate prefix ('' when ungated).
+ * @param branchBody - The branch's effect text.
+ * @param patrolConditionType - PATROL_SPACE_EMPTY_CONDITION_TYPE or PATROL_SPACE_OCCUPIED_CONDITION_TYPE.
+ * @param spaceName - The patrolled City space name.
+ * @param hollowSlug - The line's `patrol-*` honest-hollow slug.
+ * @returns The branch hook.
+ */
+function buildPatrolBranchHook(
+  cardId: CardExtId,
+  gatePrefix: string,
+  branchBody: string,
+  patrolConditionType: string,
+  spaceName: string,
+  hollowSlug: string,
+): HeroAbilityHook {
+  const parsedAbility = parseAbilityText(gatePrefix === '' ? branchBody : `${gatePrefix} ${branchBody}`);
+  parsedAbility.conditions.push({ type: patrolConditionType, value: spaceName });
+  if (!parsedAbility.keywords.includes('conditional')) {
+    parsedAbility.keywords.push('conditional');
+  }
+  const resolvesNothing =
+    parsedAbility.effects.length === 0 &&
+    parsedAbility.primitiveEffects.length === 0 &&
+    parsedAbility.unresolvedMarkers.length === 0;
+  if (resolvesNothing) {
+    parsedAbility.unresolvedMarkers.push(hollowSlug);
+  }
+  return buildHookFromParsedAbility(cardId, parsedAbility);
+}
+
+/**
+ * Builds the hooks for one hero Patrol line (WP-881 / D-24832).
+ *
+ * A line naming one City space becomes one hook per printed branch ("If it's empty" under
+ * patrolSpaceEmpty, "If it's not" under patrolSpaceOccupied). Any other target becomes one honest
+ * hollow hook: the gate prefix's conditions only, no effects, the line's `patrol-*` slug.
+ *
+ * @param cardId - The hero card copy's CardExtId.
+ * @param patrolLine - The line's parts from matchPatrolLine.
+ * @returns The line's hooks, in branch order.
+ */
+function buildPatrolLineHooks(cardId: CardExtId, patrolLine: PatrolLineParts): HeroAbilityHook[] {
+  if (patrolLine.spaceName === undefined) {
+    // why: WP-881 / D-24832 — an other-target Patrol line is an honest hollow: its printed grants
+    // are dropped (the D-24570 / D-24598 suppression sibling) and only its gate prefix is kept.
+    const parsedGate = parseAbilityText(patrolLine.gatePrefix);
+    const hollowHook: HeroAbilityHook = { cardId, timing: 'onPlay', keywords: [] };
+    if (parsedGate.conditions.length > 0) {
+      hollowHook.conditions = parsedGate.conditions;
+      hollowHook.keywords = ['conditional'];
+    }
+    hollowHook.unresolvedMarkers = [patrolLine.hollowSlug];
+    return [hollowHook];
+  }
+  const hooks: HeroAbilityHook[] = [
+    buildPatrolBranchHook(cardId, patrolLine.gatePrefix, patrolLine.emptyBody,
+      PATROL_SPACE_EMPTY_CONDITION_TYPE, patrolLine.spaceName, patrolLine.hollowSlug),
+  ];
+  if (patrolLine.occupiedBody !== undefined) {
+    hooks.push(buildPatrolBranchHook(cardId, patrolLine.gatePrefix, patrolLine.occupiedBody,
+      PATROL_SPACE_OCCUPIED_CONDITION_TYPE, patrolLine.spaceName, patrolLine.hollowSlug));
+  }
+  return hooks;
+}
+
+/**
+ * Builds the two cross hooks for a PATROL_BOTH_CARDS "[gate]: Instead, you get both." line
+ * (WP-881 / D-24832): (gate AND patrolSpaceOccupied) grants the EMPTY branch's body, and (gate
+ * AND patrolSpaceEmpty) grants the OCCUPIED branch's body. Both read the card's own two-branch
+ * Patrol line.
+ *
+ * @param cardId - The hero card copy's CardExtId.
+ * @param bothLine - The "Instead, you get both." line.
+ * @param abilityLines - The card's ability lines.
+ * @returns The two cross hooks, or undefined when the card has no two-branch named Patrol line.
+ */
+function buildPatrolBothHooks(
+  cardId: CardExtId,
+  bothLine: string,
+  abilityLines: string[],
+): HeroAbilityHook[] | undefined {
+  let patrolLine: PatrolLineParts | undefined;
+  for (const line of abilityLines) {
+    const candidate = typeof line === 'string' ? matchPatrolLine(line) : undefined;
+    if (candidate !== undefined && candidate.spaceName !== undefined && candidate.occupiedBody !== undefined) {
+      patrolLine = candidate;
+      break;
+    }
+  }
+  if (patrolLine === undefined || patrolLine.spaceName === undefined || patrolLine.occupiedBody === undefined) {
+    return undefined;
+  }
+  const gatePrefix = bothLine.slice(0, bothLine.search(/\bInstead\b/i)).trim();
+  return [
+    buildPatrolBranchHook(cardId, gatePrefix, patrolLine.emptyBody,
+      PATROL_SPACE_OCCUPIED_CONDITION_TYPE, patrolLine.spaceName, patrolLine.hollowSlug),
+    buildPatrolBranchHook(cardId, gatePrefix, patrolLine.occupiedBody,
+      PATROL_SPACE_EMPTY_CONDITION_TYPE, patrolLine.spaceName, patrolLine.hollowSlug),
+  ];
+}
+
 /**
  * Builds hero ability hooks from registry card data at setup time.
  *
@@ -4796,6 +5032,37 @@ export function buildHeroAbilityHooks(
           hooks.push(heistHook);
           previousLineHook = null;
           continue;
+        }
+
+        // why: WP-881 / D-24832 — a hero Patrol line is consumed here, at its own line index (the
+        // Heist precedent above, D-24808), so hook order still follows line order. HeroCondition
+        // lists are AND-only, so a two-branch line becomes two hooks with complementary Patrol
+        // conditions (the WP-859 / D-24795 split shape); an other-target line becomes one honest
+        // hollow. Without this the [keyword:Patrol the X] token gated nothing and every printed
+        // icon on the line fired on every play. Resetting previousLineHook keeps a later line from
+        // widen-fusing into a Patrol hook (WP-790).
+        const patrolLine = matchPatrolLine(abilityText);
+        if (patrolLine !== undefined) {
+          for (const patrolHook of buildPatrolLineHooks(instance.extId, patrolLine)) {
+            hooks.push(patrolHook);
+          }
+          previousLineHook = null;
+          continue;
+        }
+        // why: WP-881 / D-24832 — on a PATROL_BOTH_CARDS card, the "[gate]: Instead, you get
+        // both." line becomes two cross hooks that give the other branch under the gate.
+        if (
+          PATROL_BOTH_CARDS.has(`${parsed.setAbbr}/${parsed.slug}/${instance.cardSlug}`) &&
+          DIGEST_BOTH_LINE_PATTERN.test(abilityText)
+        ) {
+          const patrolBothHooks = buildPatrolBothHooks(instance.extId, abilityText, abilityLines);
+          if (patrolBothHooks !== undefined) {
+            for (const patrolHook of patrolBothHooks) {
+              hooks.push(patrolHook);
+            }
+            previousLineHook = null;
+            continue;
+          }
         }
 
         // why: WP-658 / D-24469 — resolve whether this base card's transform is
