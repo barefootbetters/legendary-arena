@@ -22,6 +22,7 @@ import assert from 'node:assert/strict';
 import { SIMULATION_MOVE_NAMES } from './ai.legalMoves.js';
 import { SIMULATION_RUNNER_MOVE_NAMES } from './simulation.runner.js';
 import { PAR_AGGREGATOR_MOVE_NAMES } from './par.aggregator.js';
+import { RUN_FIXTURE_MOVE_NAMES } from '../test/fixtures/runFixture.js';
 import { REPLAY_MOVE_NAMES } from '../replay/replay.execute.js';
 import { LegendaryGame } from '../game.js';
 
@@ -291,5 +292,31 @@ describe('replay move-dispatch drift guard (D-24830)', () => {
       registeredMoveNames(),
       'dropping attemptHeist from the replay key set must break the equality the guard asserts',
     );
+  });
+});
+
+describe('fixture-runner move-dispatch drift guard (D-24831)', () => {
+  it('runFixture MOVE_MAP dispatches every simulation-runner move (a sim capture always replays)', () => {
+    // why: D-24831 — the D-24273 capture -> replay lockstep. runFixture THROWS on an unknown
+    // move name, so a simulation-dispatchable move missing here breaks recording any capture that
+    // holds it. A bot attemptHeist (WP-878), exorciseHauntedHero and 31 resolve moves shipped that way.
+    const fixtureKeySet = new Set(RUN_FIXTURE_MOVE_NAMES);
+    const missing: string[] = [];
+    for (const moveName of SIMULATION_RUNNER_MOVE_NAMES) {
+      if (!fixtureKeySet.has(moveName)) {
+        missing.push(moveName);
+      }
+    }
+    assert.deepStrictEqual(missing, [], 'a simulation-runner move has no runFixture MOVE_MAP entry');
+  });
+
+  it('attemptHeist is a runFixture MOVE_MAP key (explicit membership)', () => {
+    assert.ok(RUN_FIXTURE_MOVE_NAMES.includes('attemptHeist'), 'attemptHeist must be a runFixture MOVE_MAP key');
+  });
+
+  it('the operator setters stay out of runFixture (D-24713 §7)', () => {
+    for (const moveName of RUN_FIXTURE_MOVE_NAMES) {
+      assert.ok(!moveName.startsWith('operator'), `${moveName} must not be a runFixture MOVE_MAP key`);
+    }
   });
 });

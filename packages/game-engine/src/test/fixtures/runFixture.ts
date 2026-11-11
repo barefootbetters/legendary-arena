@@ -63,6 +63,39 @@ import { fightMastermind } from '../../moves/fightMastermind.js';
 import { setPlayerReady, startMatchIfReady } from '../../lobby/lobby.moves.js';
 import { resolvePutCardsOnDeckChoice } from '../../moves/putCardsOnDeckChoice.resolve.js';
 import { resolveSeatChoice } from '../../moves/seatChoice.resolve.js';
+import { exorciseHauntedHero } from '../../moves/exorciseHauntedHero.js';
+import { attemptHeist } from '../../moves/attemptHeist.js';
+import { resolveHeroChoice } from '../../moves/heroChoice.resolve.js';
+import { resolveKoHeroChoice } from '../../moves/koHeroChoice.resolve.js';
+import { resolveScryKoChoice } from '../../moves/scryKoChoice.resolve.js';
+import { resolveMelterKoChoice } from '../../moves/melterKoChoice.resolve.js';
+import { resolveRuthlessDictatorChoice } from '../../moves/ruthlessDictatorChoice.resolve.js';
+import { resolveElectromagneticBubbleChoice } from '../../moves/electromagneticBubbleChoice.resolve.js';
+import { resolveDiscardChoice } from '../../moves/discardChoice.resolve.js';
+import { resolveReorderChoice } from '../../moves/reorderChoice.resolve.js';
+import { resolveDefeatChoice } from '../../moves/defeatChoice.resolve.js';
+import { resolveKoDiscardChoice } from '../../moves/koDiscardChoice.resolve.js';
+import { resolveOptionalKoReward } from '../../moves/optionalKoReward.resolve.js';
+import { resolveSmashDiscard } from '../../moves/smashDiscard.resolve.js';
+import { resolvePutHandOnDeckTop } from '../../moves/putHandOnDeckTop.resolve.js';
+import { resolveRevealTopDispose } from '../../moves/revealTopDispose.resolve.js';
+import { resolveRevealThreeAssign } from '../../moves/revealThreeAssign.resolve.js';
+import { resolveDoOver } from '../../moves/doOver.resolve.js';
+import { resolvePlayVillainTopChoice } from '../../moves/playVillainTop.resolve.js';
+import { resolveOptionalPutBottomHQ } from '../../moves/resolveOptionalPutBottomHQ.js';
+import { resolvePutAnyNumberBottomHQ } from '../../moves/resolvePutAnyNumberBottomHQ.js';
+import { resolveVictoryPileCardPick } from '../../moves/resolveVictoryPileCardPick.js';
+import { resolveDrawOrEmpowered } from '../../moves/drawOrEmpowered.resolve.js';
+import { resolveCoveringFireChoice } from '../../moves/coveringFireChoice.resolve.js';
+import { resolveMoveVillainChoice } from '../../moves/moveVillainChoice.resolve.js';
+import { resolveSplitFaceChoice } from '../../moves/splitFaceChoice.resolve.js';
+import { resolveCountScaledChoice } from '../../moves/countScaledChoice.resolve.js';
+import { resolveUndercoverChoice } from '../../moves/undercover.resolve.js';
+import { resolveReturnZeroCostDiscard } from '../../moves/resolveReturnZeroCostDiscard.js';
+import { resolveDiscardToPlay } from '../../moves/resolveDiscardToPlay.js';
+import { resolveReturnOnDiscard } from '../../moves/resolveReturnOnDiscard.js';
+import { resolveGiveHqHeroChoice } from '../../moves/giveHqHeroChoice.resolve.js';
+import { resolveCopyPowersChoice } from '../../moves/copyPowersChoice.resolve.js';
 import { advanceTurnStage } from '../../turn/turnLoop.js';
 import { hashGameState } from './hashGameState.js';
 
@@ -181,9 +214,8 @@ function fixtureAdvanceStage(context: FixtureMoveContext): void {
 // because the canonical array is locked at exactly three entries by the
 // drift-detection test in coreMoves.types.test.ts; if a future packet
 // extends it, this file refuses to compile rather than silently drift.
-// The nine non-core entries (advanceStage / revealVillainCard /
-// fightVillain / recruitHero / fightMastermind / setPlayerReady /
-// startMatchIfReady / resolvePutCardsOnDeckChoice / resolveSeatChoice) use
+// The non-core entries (advanceStage, the lobby moves, attemptHeist, the
+// resolve moves, …) use
 // string literals because no canonical move-name array covers them — same
 // pragmatic gap that simulation.runner.ts and replay.execute.ts already
 // exhibit. The closed set of dispatchable
@@ -225,7 +257,63 @@ const MOVE_MAP: Record<string, MoveDispatch> = {
   // move replays as the addressed seat with no other change.
   resolveSeatChoice: (context, args) =>
     resolveSeatChoice(context as never, args as never),
+  // why: D-24831 — the D-24273 capture -> replay lockstep: every move the simulation runner
+  // dispatches can appear in a sim capture, so each needs an entry here or the capture throws
+  // "unknown move name" (a bot attemptHeist did since WP-878 / D-24826). Each entry reuses the
+  // registered move function; the dispatch shape matches simulation.runner.ts's MOVE_MAP. The
+  // drift guard (simulation.moveDispatch.drift.test.ts) pins SIMULATION_RUNNER_MOVE_NAMES as a
+  // subset of this map. Operator setters stay out (D-24713 §7).
+  exorciseHauntedHero: (context, args) =>
+    exorciseHauntedHero(context as never, args as never),
+  attemptHeist: (context) => attemptHeist(context as never),
+  resolveHeroChoice: (context, args) => resolveHeroChoice(context as never, args as never),
+  resolveKoHeroChoice: (context, args) => resolveKoHeroChoice(context as never, args as never),
+  resolveScryKoChoice: (context, args) => resolveScryKoChoice(context as never, args as never),
+  resolveMelterKoChoice: (context, args) => resolveMelterKoChoice(context as never, args as never),
+  resolveRuthlessDictatorChoice: (context, args) =>
+    resolveRuthlessDictatorChoice(context as never, args as never),
+  resolveElectromagneticBubbleChoice: (context, args) =>
+    resolveElectromagneticBubbleChoice(context as never, args as never),
+  resolveDiscardChoice: (context, args) => resolveDiscardChoice(context as never, args as never),
+  resolveReorderChoice: (context, args) => resolveReorderChoice(context as never, args as never),
+  resolveDefeatChoice: (context, args) => resolveDefeatChoice(context as never, args as never),
+  resolveKoDiscardChoice: (context, args) => resolveKoDiscardChoice(context as never, args as never),
+  resolveOptionalKoReward: (context, args) => resolveOptionalKoReward(context as never, args as never),
+  resolveSmashDiscard: (context, args) => resolveSmashDiscard(context as never, args as never),
+  resolvePutHandOnDeckTop: (context, args) => resolvePutHandOnDeckTop(context as never, args as never),
+  resolveRevealTopDispose: (context, args) => resolveRevealTopDispose(context as never, args as never),
+  resolveRevealThreeAssign: (context, args) =>
+    resolveRevealThreeAssign(context as never, args as never),
+  resolveDoOver: (context, args) => resolveDoOver(context as never, args as never),
+  resolvePlayVillainTopChoice: (context, args) =>
+    resolvePlayVillainTopChoice(context as never, args as never),
+  resolveOptionalPutBottomHQ: (context, args) =>
+    resolveOptionalPutBottomHQ(context as never, args as never),
+  resolvePutAnyNumberBottomHQ: (context, args) =>
+    resolvePutAnyNumberBottomHQ(context as never, args as never),
+  resolveVictoryPileCardPick: (context, args) =>
+    resolveVictoryPileCardPick(context as never, args as never),
+  resolveDrawOrEmpowered: (context, args) => resolveDrawOrEmpowered(context as never, args as never),
+  resolveCoveringFireChoice: (context, args) =>
+    resolveCoveringFireChoice(context as never, args as never),
+  resolveMoveVillainChoice: (context, args) =>
+    resolveMoveVillainChoice(context as never, args as never),
+  resolveSplitFaceChoice: (context, args) => resolveSplitFaceChoice(context as never, args as never),
+  resolveCountScaledChoice: (context, args) =>
+    resolveCountScaledChoice(context as never, args as never),
+  resolveUndercoverChoice: (context, args) => resolveUndercoverChoice(context as never, args as never),
+  resolveReturnZeroCostDiscard: (context, args) =>
+    resolveReturnZeroCostDiscard(context as never, args as never),
+  resolveDiscardToPlay: (context, args) => resolveDiscardToPlay(context as never, args as never),
+  resolveReturnOnDiscard: (context, args) => resolveReturnOnDiscard(context as never, args as never),
+  resolveGiveHqHeroChoice: (context, args) => resolveGiveHqHeroChoice(context as never, args as never),
+  resolveCopyPowersChoice: (context, args) => resolveCopyPowersChoice(context as never, args as never),
 };
+
+// why: D-24831 — exposed for the move-dispatch drift guard, which asserts every
+// SIMULATION_RUNNER_MOVE_NAMES move is a key here. Derived from Object.keys(MOVE_MAP), never a
+// hand-maintained list (mirrors SIMULATION_RUNNER_MOVE_NAMES, WP-289 / D-24073).
+export const RUN_FIXTURE_MOVE_NAMES: readonly string[] = Object.keys(MOVE_MAP);
 
 /**
  * Constructs a `FixtureMoveContext` for a single move dispatch. The

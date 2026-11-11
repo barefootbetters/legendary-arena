@@ -50896,3 +50896,21 @@ Protect this file.
 
 ---
 Protect this file.
+
+### D-24831 — The fixture runner dispatches every move the simulation runner can capture, and the drift guard pins it (Active 2026-11-10 — direct fix, no WP)
+
+**Context.** `test/fixtures/runFixture.ts` is the seed-faithful fixture oracle that `scripts/record-game-fixture.mjs` records through, and the D-24273 capture -> replay contract makes it the lockstep partner of `simulation.runner.ts`: a sim capture must replay through it. Its `MOVE_MAP` held 12 moves and **throws** on an unknown name (EC-172 strictness). The simulation runner dispatches 33 more: `exorciseHauntedHero`, `attemptHeist` (bots since WP-878 / D-24826) and 31 pending-choice resolve moves. So any capture holding one of them could not become a fixture. Observed directly: a one-seat core board with the amwp Heist decks, driven by a Heist-first policy, threw `unknown move name "attemptHeist" at input.moves[49]`. The D-24073 drift guard only checked the two sim maps; D-24830 added the determinism replay, not this runner.
+
+**Decision.**
+1. `runFixture`'s `MOVE_MAP` gains the 33 moves, each calling the registered move function with the same dispatch shape as `simulation.runner.ts`. `RUN_FIXTURE_MOVE_NAMES = Object.keys(MOVE_MAP)` is exported.
+2. The drift guard (`simulation/simulation.moveDispatch.drift.test.ts`) asserts `SIMULATION_RUNNER_MOVE_NAMES` is a subset of `RUN_FIXTURE_MOVE_NAMES`. It is a subset, not equality: this runner also keeps the lobby moves, and moves that never come from a capture stay optional. It also pins that no operator setter is a key, because D-24713 §7 still keeps them out of the fixture runner.
+3. Unknown names still throw. The strictness is unchanged; only the known set grows.
+
+**Consequences.**
+- `simulation/heistCaptureRoundTrip.test.ts` drives the real-data Heist game through the sim, asserts the capture holds `attemptHeist`, replays it through `runFixture`, and checks that the Heist log lines (count, revealed card, order) match the sim's.
+- No committed fixture holds a newly mapped move (none could: it would have thrown), so no `finalStateHash`, sentinel, PAR or sim baseline moves.
+
+**Reserved by:** NUMBER-LEDGER D-24831. Related: D-24073, D-24273, D-24713, D-24826, D-24830.
+
+---
+Protect this file.
