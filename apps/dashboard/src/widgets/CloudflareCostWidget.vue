@@ -63,19 +63,15 @@ const rows = CLOUDFLARE_BILLING_CYCLES.map((billingCycle) => ({
           </template>
         </span>
         <span class="metric-fraction">{{ row.billingCycle.attribution }}</span>
-        <span
-          v-for="line in row.billingCycle.lines"
-          :key="line.product"
-          class="metric-fraction"
-        >
+        <span v-for="line in row.billingCycle.lines" :key="line.product" class="metric-fraction">
           {{ line.product }} ({{ line.usage }}) {{ formatCents(line.cents) }}
         </span>
         <span class="metric-fraction">{{ row.billingCycle.note }}</span>
       </div>
 
       <p class="metric-fraction">
-        R2 bills on a 23rd-to-22nd cycle. Infrequent Access operations have no
-        free tier and bill by the million, rounded up.
+        R2 bills on a 23rd-to-22nd cycle. Infrequent Access operations have no free tier and bill by
+        the million, rounded up.
         <a :href="CLOUDFLARE_BILLING_URL" target="_blank" rel="noopener">Billing ↗</a>
       </p>
     </div>
