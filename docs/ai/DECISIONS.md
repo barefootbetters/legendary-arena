@@ -51001,7 +51001,7 @@ Protect this file.
 
 **Pins.** No core sentinel, `finalStateHash`, PAR, hash-oracle or `sim:coverage` baseline moved (`sim:coverage --check` 0, no `--update-baseline`). `sim:runtime-observed` regenerated: 7676 -> 7510 observations; `patrol-the-bridge`, `patrol-the-rooftops` and `patrol-the-streets` leave the sweep, `patrol-the-sewers` 57 -> 16 (Hunt High and Low's honest Sewers line), `patrol-any-city-space` and `patrol-two-adjacent-city-spaces` remain. Dashboard `useInPlayCoverage` `totalObs` 8702 -> 8715 (+13); resolvedObs stays 1141 because the folded `patrol` family keeps two `unsupported` rows (least-done).
 
-**Live-verify (D-24026): operator-pending.** On an operator match created after the deploy with Wong and Elsa Bloodstone: Bridge Between Dimensions draws with the Bridge empty and logs "… ability did not activate — there's a card in the Bridge." with a Villain there; Axe of the Slayer gives +2 Recruit with the Streets empty and +2 Attack otherwise. `live-verify.json` carries both rows as `pending`.
+**Live-verify (D-24026): PASS 2026-11-11** on operator matches `L1sTwYCh2CC` and `R4G14FeLbja` (server `a5b7debf`, both created after the deploy). Axe of the Slayer resolved all four Streets × Instinct states; Bridge Between Dimensions drew with the Bridge empty and logged "… there's a card in the Bridge." with it occupied; Seal the Rift drew two, or granted +5 held in a Bridge-only pool that paid for a Bridge Villain while Zarathos was paid from unrestricted Attack. Detail in the STATUS entry; `live-verify.json` rows `verified`.
 
 **Follow-ups.** Other-target Patrol forms and the three unmodelled named branches (one named WP); villain and bystander Patrol lines (5 ssw2 lines). Both reuse these conditions.
 
