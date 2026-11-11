@@ -345,3 +345,48 @@ describe('PendingSeatChoicePrompt — WP-876 Revolutionary Anthem shuffle (D-248
     assert.deepEqual(calls, [{ name: 'resolveSeatChoice', args: { optionIndex: 0 } }]);
   });
 });
+
+describe('PendingSeatChoicePrompt — WP-882 Zarathos tactic headings (D-24833)', () => {
+  // why: the five WP-758 kinds showed "Your choice"; each now names its tactic and the ask.
+  const zarathosHeadings: { kind: string; heading: string }[] = [
+    {
+      kind: 'zarathos-corrupted-spirit-discard-down',
+      heading: 'Corrupted Spirit of Vengeance — discard down to 3 cards: choose a card to discard',
+    },
+    {
+      kind: 'zarathos-eruption',
+      heading: 'Eruption of Hellfire — discard a Covert or Ranged Hero, or gain a Wound',
+    },
+    {
+      kind: 'zarathos-corrupted-spirit',
+      heading: 'Corrupted Spirit of Vengeance — discard an Instinct or Covert Hero, or discard down to 3 cards',
+    },
+    {
+      kind: 'zarathos-imprison',
+      heading: 'Imprison in the Soul Crystal — KO a Villain from your Victory Pile and draw cards equal to its VP?',
+    },
+    {
+      kind: 'zarathos-demonic-essence-first',
+      heading: 'Demonic Essence of Ghost Rider — KO one of your Heroes?',
+    },
+    {
+      kind: 'zarathos-demonic-essence-last',
+      heading: 'Demonic Essence of Ghost Rider — KO one of your Heroes?',
+    },
+  ];
+  for (const { kind, heading } of zarathosHeadings) {
+    test(`the ${kind} kind renders its exact heading`, () => {
+      const { submitMove } = recorder();
+      const choice: UIPendingSeatChoice = {
+        kind,
+        addressedSeats: ['player-1'],
+        outstandingSeats: ['player-1'],
+        seatPrompts: { 'player-1': { options: [{ label: 'Option A' }, { label: 'Option B' }] } },
+      };
+      const wrapper = mount(PendingSeatChoicePrompt, {
+        props: { pendingSeatChoice: choice, viewerPlayerId: 'player-1', submitMove },
+      });
+      assert.equal(wrapper.find('.pending-seat-choice-prompt__heading').text(), heading);
+    });
+  }
+});

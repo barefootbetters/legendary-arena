@@ -118,6 +118,12 @@ import {
   applyZarathosImprison,
   applyZarathosDemonicEssence,
   buildZarathosDemonicEssenceChoice,
+  // why: WP-882 / D-24833 — the Corrupted Spirit discard-down rounds: the apply, the
+  // round builder and the reader of the seats that owe it.
+  applyZarathosDiscardDown,
+  buildZarathosDiscardDownChoice,
+  readZarathosDiscardDownSeats,
+  ZARATHOS_CORRUPTED_SPIRIT_DISCARD_DOWN_KIND,
   ZARATHOS_ERUPTION_KIND,
   ZARATHOS_CORRUPTED_SPIRIT_KIND,
   ZARATHOS_IMPRISON_KIND,
@@ -518,6 +524,16 @@ export function resolveSeatChoice(
     // why: WP-872 / D-24817 — capture a Mandarin's Rings pick choice BEFORE the apply (which
     // writes the step's result onto its payload) and the delete, so its next step chains below.
     const villainFightPickChoice = isVillainFightPickKind(appliedKind) ? choice : undefined;
+    // why: WP-882 / D-24833 — capture the seats that owe Corrupted Spirit's discard-down BEFORE
+    // the apply and the delete clear the choice: after a Corrupted Spirit choice, the forced seats
+    // plus the seats that chose it; after a discard-down round, the round's own seats. The chain
+    // below re-reads their CURRENT hands, so a seat that reached 3 drops out.
+    let zarathosDiscardDownSeats: string[] | undefined;
+    if (appliedKind === ZARATHOS_CORRUPTED_SPIRIT_KIND) {
+      zarathosDiscardDownSeats = readZarathosDiscardDownSeats(choice);
+    } else if (appliedKind === ZARATHOS_CORRUPTED_SPIRIT_DISCARD_DOWN_KIND) {
+      zarathosDiscardDownSeats = [...choice.addressedSeats];
+    }
     // why: WP-682 / WP-683 — dispatch by kind (diving-block via its own apply; the Deadpool
     // kinds via applySeatChoiceCard; the 'generic' kind via the foundational per-seat log).
     // why: D-24732 — ctx?. because narrow test contexts omit ctx; moves never throw.
@@ -574,6 +590,12 @@ export function resolveSeatChoice(
     // residual, since that path is not wired live.
     if (villainFightPickChoice !== undefined) {
       chainVillainFightPick(G, villainFightPickChoice, ctx, events, random);
+    }
+    // why: WP-882 / D-24833 — Corrupted Spirit's discard-down chains its next one-card round here
+    // in the live move context (the Monarch's / Crush shape): admitting the NON-ACTIVE owing
+    // seats needs the move's events.setActivePlayers. The timeout path does not chain (D-24501).
+    if (zarathosDiscardDownSeats !== undefined) {
+      chainZarathosDiscardDown(G, zarathosDiscardDownSeats, events);
     }
   }
 }
@@ -709,6 +731,11 @@ function applySeatChoiceByKind(
   }
   if (choice.kind === ZARATHOS_CORRUPTED_SPIRIT_KIND) {
     applyZarathosCorruptedSpirit(G, choice);
+    return;
+  }
+  // why: WP-882 / D-24833 — one discard-down round: each owing seat's chosen card, ascending.
+  if (choice.kind === ZARATHOS_CORRUPTED_SPIRIT_DISCARD_DOWN_KIND) {
+    applyZarathosDiscardDown(G, choice);
     return;
   }
   if (choice.kind === ZARATHOS_IMPRISON_KIND) {
@@ -941,6 +968,31 @@ function chainZarathosDemonicEssenceLast(
     `Fight effect: Player ${activeSeat} may KO one more of their Heroes (Demonic Essence of Ghost Rider).`,
     'neutral',
   );
+}
+
+/**
+ * Chains Corrupted Spirit of Vengeance's next discard-down round: builds it from the
+ * owing seats' CURRENT hands and parks it for the seats still above 3 cards.
+ *
+ * // why: WP-882 / D-24833 — parked from the live move context, exactly where Crush chains
+ * its second KO (D-24754), so parkSeatChoice stage-rides the owing NON-ACTIVE seats. No
+ * active-seat skip: the defeating player is never addressed. No log line on a re-chain;
+ * when every seat holds 3 the builder returns undefined and the chain ends.
+ *
+ * @param G - Game state (mutated: may set G.pendingSeatChoice for the next round).
+ * @param seats - The seats that owe the discard-down (any order).
+ * @param events - The move's boardgame.io events (for the stage ride).
+ */
+function chainZarathosDiscardDown(
+  G: LegendaryGameState,
+  seats: readonly string[],
+  events: SeatChoiceEvents | undefined,
+): void {
+  const nextRound = buildZarathosDiscardDownChoice(G, seats);
+  if (nextRound === undefined) {
+    return;
+  }
+  parkSeatChoice(G, events, nextRound);
 }
 
 /**

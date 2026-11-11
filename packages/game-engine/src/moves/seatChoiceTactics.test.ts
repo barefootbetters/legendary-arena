@@ -570,3 +570,117 @@ describe('WP-758 Zarathos seat-choice builders (D-24588)', () => {
     assert.equal(buildZarathosDemonicEssenceChoice(empty, '0', ZARATHOS_DEMONIC_ESSENCE_LAST_KIND), undefined);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-882 / D-24833 — Corrupted Spirit's discard-down builder, payload and reader
+// ---------------------------------------------------------------------------
+
+import {
+  buildZarathosDiscardDownChoice,
+  readZarathosDiscardDownSeats,
+  ZARATHOS_CORRUPTED_SPIRIT_DISCARD_DOWN_KIND,
+} from './seatChoiceTactics.js';
+import { buildInitialGameState } from '../setup/buildInitialGameState.js';
+import { buildUIState } from '../ui/uiState.build.js';
+import { filterUIStateForAudience } from '../ui/uiState.filter.js';
+import { makeMockCtx } from '../test/mockCtx.js';
+import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
+import type { UIAudience } from '../ui/uiAudience.types.js';
+
+/** The card ids a seat's options name, in option order. */
+function optionCardIds(choice: PendingSeatChoice, seat: string): (string | undefined)[] {
+  const cardIds: (string | undefined)[] = [];
+  for (const option of choice.seatPrompts[seat]?.options ?? []) {
+    cardIds.push(option.cardId);
+  }
+  return cardIds;
+}
+
+describe('WP-882 Corrupted Spirit discard-down builder (D-24833)', () => {
+  it('lists the hand in selectDiscardToLimitCards order, one option per distinct id; a Wound and a starter read cost 0; default 0', () => {
+    const G = makeZarathosBuilderState({
+      '1': { hand: ['covertA', 'techA', 'pile-wound', 'covertB', 'starter', 'covertA', 'techA'] },
+    });
+    const choice = buildZarathosDiscardDownChoice(G, ['1']) as PendingSeatChoice;
+    assert.equal(choice.kind, ZARATHOS_CORRUPTED_SPIRIT_DISCARD_DOWN_KIND);
+    assert.deepEqual(choice.addressedSeats, ['1']);
+    assert.deepEqual(optionCardIds(choice, '1'), ['pile-wound', 'starter', 'techA', 'covertB', 'covertA']);
+    assert.equal(choice.seatPrompts['1']!.options[0]!.label, 'Discard pile-wound');
+    assert.equal(choice.defaultOptionIndex, 0);
+  });
+
+  it('leaves out seats with 3 or fewer cards, addresses the rest ascending, and is undefined when none remains', () => {
+    const G = makeZarathosBuilderState({
+      '1': { hand: ['techA', 'techA', 'techA'] },
+      '2': { hand: ['techA', 'techA', 'techA', 'techA'] },
+      '3': { hand: ['covertA', 'covertA', 'covertA', 'covertA', 'covertA'] },
+    });
+    assert.deepEqual(buildZarathosDiscardDownChoice(G, ['3', '1', '2'])!.addressedSeats, ['2', '3']);
+    assert.equal(buildZarathosDiscardDownChoice(G, ['1']), undefined);
+    assert.equal(buildZarathosDiscardDownChoice(G, []), undefined);
+  });
+
+  it('the Corrupted Spirit payload is absent with no forced seat, sorted when present, and never stamped on an undefined choice', () => {
+    const G = makeZarathosBuilderState({
+      '1': { hand: ['covertA', 'techA', 'techA', 'techA'] },
+      '2': { hand: ['techA', 'techA', 'techA', 'techA'] },
+    });
+    const plain = buildZarathosCorruptedSpiritChoice(G, ['1'], ['instinct', 'covert']) as PendingSeatChoice;
+    assert.equal('zarathosDiscardDownSeats' in plain, false, 'no key at all (AC-4)');
+    const emptyList = buildZarathosCorruptedSpiritChoice(G, ['1'], ['instinct', 'covert'], []) as PendingSeatChoice;
+    assert.equal('zarathosDiscardDownSeats' in emptyList, false);
+    const carried = buildZarathosCorruptedSpiritChoice(G, ['1'], ['instinct', 'covert'], ['3', '2']) as PendingSeatChoice;
+    assert.deepEqual(carried.zarathosDiscardDownSeats, ['2', '3']);
+    assert.equal(buildZarathosCorruptedSpiritChoice(G, ['2'], ['instinct', 'covert'], ['3']), undefined, 'no chooser → undefined');
+  });
+
+  it('the reader returns the payload plus the seats that chose discard-down, deduped and sorted; a Hero-discarder is excluded', () => {
+    const G = makeZarathosBuilderState({
+      '1': { hand: ['covertA', 'techA', 'techA', 'techA', 'techA'] },
+      '2': { hand: ['covertB', 'techA', 'techA', 'techA'] },
+      '3': { hand: ['covertA', 'techA', 'techA', 'techA'] },
+    });
+    const choice = buildZarathosCorruptedSpiritChoice(G, ['1', '2', '3'], ['instinct', 'covert'], ['4', '3']) as PendingSeatChoice;
+    choice.submissions['1'] = { optionIndex: 0 };
+    choice.submissions['2'] = { optionIndex: 1 };
+    choice.submissions['3'] = { optionIndex: 1 };
+    assert.deepEqual(readZarathosDiscardDownSeats(choice), ['2', '3', '4']);
+  });
+
+  it('AC-4: zarathosDiscardDownSeats never appears in any audience\'s UIState', () => {
+    const gameState = buildInitialGameState(
+      {
+        schemeId: 'test-scheme-001',
+        mastermindId: 'test-mastermind-001',
+        villainGroupIds: ['test-villain-group-001'],
+        henchmanGroupIds: ['test-henchman-group-001'],
+        heroDeckIds: ['test-hero-deck-001', 'test-hero-deck-002'],
+        bystandersCount: 10,
+        woundsCount: 15,
+        officersCount: 20,
+        sidekicksCount: 5,
+      },
+      { ...makeCardRegistryReader(), listCards: () => [] },
+      makeMockCtx(),
+    );
+    gameState.pendingSeatChoice = {
+      kind: 'zarathos-corrupted-spirit',
+      addressedSeats: ['0'],
+      seatPrompts: { '0': { options: [{ label: 'Discard Covert Hero', cardId: 'covertA' }, { label: 'Discard down to 3 cards' }] } },
+      submissions: {},
+      defaultOptionIndex: 0,
+      zarathosDiscardDownSeats: ['1'],
+    };
+    const uiState = buildUIState(gameState, { phase: 'play', turn: 1, currentPlayer: '0' });
+    const audiences: UIAudience[] = [
+      { kind: 'player', playerId: '0' },
+      { kind: 'player', playerId: '1' },
+      { kind: 'spectator' },
+    ];
+    for (const audience of audiences) {
+      const projected = JSON.stringify(filterUIStateForAudience(uiState, audience));
+      assert.equal(projected.includes('zarathosDiscardDownSeats'), false, `audience ${JSON.stringify(audience)}`);
+    }
+    assert.ok(JSON.stringify(uiState).includes('zarathos-corrupted-spirit'), 'the choice itself is projected (the test is live)');
+  });
+});

@@ -27,7 +27,10 @@
  *     (kinds 'zarathos-eruption' / 'zarathos-corrupted-spirit'); Imprison in the Soul
  *     Crystal is an active-seat optional Victory-Pile Villain KO (kind 'zarathos-imprison');
  *     Demonic Essence of Ghost Rider is one or two active-seat optional Hero KOs (kinds
- *     'zarathos-demonic-essence-first' then 'zarathos-demonic-essence-last').
+ *     'zarathos-demonic-essence-first' then 'zarathos-demonic-essence-last'). Corrupted
+ *     Spirit's "discards down to 3" is a multi-seat one-card-per-round discard (kind
+ *     'zarathos-corrupted-spirit-discard-down', WP-882 / D-24833) that resolveSeatChoice
+ *     re-chains until every owing seat holds 3 cards.
  *
  * This module holds ONLY pure builders + state appliers (no boardgame.io import,
  * no parkSeatChoice import) so it never cycles with seatChoice.resolve.ts — that
@@ -823,6 +826,8 @@ export const ZARATHOS_IMPRISON_KIND = 'zarathos-imprison';
 export const ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND = 'zarathos-demonic-essence-first';
 /** Discriminant for Demonic Essence of Ghost Rider's last (or only) owed optional KO. */
 export const ZARATHOS_DEMONIC_ESSENCE_LAST_KIND = 'zarathos-demonic-essence-last';
+/** Discriminant for Corrupted Spirit of Vengeance's multi-seat one-card-per-round discard down to 3. */
+export const ZARATHOS_CORRUPTED_SPIRIT_DISCARD_DOWN_KIND = 'zarathos-corrupted-spirit-discard-down';
 
 // why: D-24588 — the printed "discards down to 3 cards" target hand size.
 export const ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT = 3;
@@ -952,23 +957,115 @@ export function buildZarathosEruptionChoice(
  * Builds Corrupted Spirit of Vengeance's multi-seat choice for the seats holding an
  * instinct or covert Hero and more than 3 cards.
  *
+ * // why: WP-882 / D-24833 — the forced seats (more than 3 cards, no matching Hero) wait
+ * for the Hero-holders' answer and then join the first discard-down round, but a seat
+ * that discarded a Hero may still hold more than 3 cards and must not join. Nothing in G
+ * tells them apart after the apply, so the forced seats ride on this choice as
+ * `zarathosDiscardDownSeats` (the communeSpiritWorld payload precedent). It is stamped
+ * only on a defined choice and only when non-empty, so a choice with no forced seat is
+ * byte-identical to the WP-758 one.
+ *
  * @param G - The game state (read-only).
  * @param seats - The other seats with more than 3 cards and a matching Hero (ascending).
  * @param classes - Corrupted Spirit's class pair (instinct, covert).
+ * @param discardDownSeats - The seats that must discard down with no choice (any order).
  * @returns The pending choice, or undefined when no seat is addressed.
  */
 export function buildZarathosCorruptedSpiritChoice(
   G: LegendaryGameState,
   seats: readonly string[],
   classes: readonly string[],
+  discardDownSeats: readonly string[] = [],
 ): PendingSeatChoice | undefined {
-  return buildZarathosHandDiscardChoice(
+  const choice = buildZarathosHandDiscardChoice(
     G,
     seats,
     classes,
     ZARATHOS_CORRUPTED_SPIRIT_KIND,
     ZARATHOS_DISCARD_DOWN_LABEL,
   );
+  if (choice === undefined) {
+    return undefined;
+  }
+  if (discardDownSeats.length > 0) {
+    choice.zarathosDiscardDownSeats = [...discardDownSeats].sort();
+  }
+  return choice;
+}
+
+/**
+ * Builds Corrupted Spirit of Vengeance's multi-seat discard-down round for the given
+ * seats still holding more than 3 cards, or undefined when none does.
+ *
+ * // why: WP-882 / D-24833 — closes D-24588 §6's named fidelity gap: the player picks
+ * which cards to drop. Each seat's options list its hand in selectDiscardToLimitCards
+ * order (one option per distinct id), so option 0 is the selector's next pick. The
+ * selector is greedy over the remaining hand and discardFromHand removes the FIRST copy
+ * of the id (equal ids share a cost, so it is the copy the selector would take), so N
+ * defaulted rounds discard exactly the cards, in order, that the WP-758 auto-pick did.
+ *
+ * // why: one card per round — a seat choice resolves one optionIndex per seat (the
+ * WP-860 Commune precedent, D-24796); resolveSeatChoice re-chains the next round.
+ *
+ * @param G - The game state (read-only).
+ * @param seats - The seats that owe the discard-down (any order).
+ * @returns The pending choice, or undefined when every given seat holds 3 or fewer cards.
+ */
+export function buildZarathosDiscardDownChoice(
+  G: LegendaryGameState,
+  seats: readonly string[],
+): PendingSeatChoice | undefined {
+  const addressedSeats: string[] = [];
+  const seatPrompts: Record<string, { options: SeatChoiceOption[] }> = {};
+  for (const seat of [...seats].sort()) {
+    const zones = G.playerZones[seat];
+    if (!zones || zones.hand.length <= ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT) {
+      continue;
+    }
+    const options: SeatChoiceOption[] = [];
+    for (const cardId of selectDiscardToLimitCards(G, zones.hand, zones.hand.length)) {
+      const isListed = options.some((option) => option.cardId === cardId);
+      if (!isListed) {
+        options.push({ label: `Discard ${resolveCardName(G.cardDisplayData, cardId)}`, cardId });
+      }
+    }
+    addressedSeats.push(seat);
+    seatPrompts[seat] = { options };
+  }
+  if (addressedSeats.length === 0) {
+    return undefined;
+  }
+  return {
+    kind: ZARATHOS_CORRUPTED_SPIRIT_DISCARD_DOWN_KIND,
+    addressedSeats,
+    seatPrompts,
+    submissions: {},
+    // why: option 0 is the selector's next pick, so the absent-seat / sim / PAR default
+    // reproduces the WP-758 auto-pick in set and order (the parity test proves it).
+    defaultOptionIndex: 0,
+  };
+}
+
+/**
+ * Lists the seats that owe Corrupted Spirit's discard-down once its choice resolved:
+ * the forced seats carried on the choice plus every addressed seat whose submitted
+ * option is the discard-down (no cardId). Deduplicated, ascending.
+ *
+ * // why: WP-882 / D-24833 — read from the submitted option, not addressedSeats, so a
+ * seat that discarded a Hero and still holds more than 3 cards is not asked again.
+ *
+ * @param choice - The fully-submitted Corrupted Spirit choice.
+ * @returns The owing seats, ascending.
+ */
+export function readZarathosDiscardDownSeats(choice: PendingSeatChoice): string[] {
+  const seats: string[] = [...(choice.zarathosDiscardDownSeats ?? [])];
+  for (const seat of choice.addressedSeats) {
+    const option = readSeatOption(choice, seat);
+    if (option !== undefined && option.cardId === undefined && !seats.includes(seat)) {
+      seats.push(seat);
+    }
+  }
+  return seats.sort();
 }
 
 /**
@@ -990,36 +1087,27 @@ export function gainZarathosEruptionWound(G: LegendaryGameState, seat: string): 
 }
 
 /**
- * Discards `seat`'s hand down to 3 cards for Corrupted Spirit of Vengeance, picking the
- * cards with selectDiscardToLimitCards.
+ * Applies one fully-submitted Corrupted Spirit discard-down round: each addressed seat
+ * discards its chosen card through the discardFromHand chokepoint.
  *
- * // why: D-24588 — the tabletop player chooses which cards to keep; v1 picks them with
- * the shared deterministic "discard down to N" selector (cheapest first, Wounds before
- * Heroes, lowest hand index on a tie), a named fidelity gap. Its third argument is a
- * COUNT to discard, so it receives `hand.length - 3`, not the limit. Every card goes
- * through the discardFromHand chokepoint (return-on-discard reactions queue there).
+ * // why: WP-882 / D-24833 §5 — ascending seat order (D-24501, the D-24780 §8 / §13
+ * ascending-apply exception), so the result is the same whatever order the seats
+ * answered in. The forced seats' return-on-discard reactions therefore queue in
+ * ascending seat order, not clockwise as the WP-758 handler-time discard queued them.
  *
- * @param G - The game state, mutated in place.
- * @param seat - The seat discarding down.
+ * @param G - Game state (mutated under Immer draft).
+ * @param choice - The fully-submitted pending choice (kind 'zarathos-corrupted-spirit-discard-down').
  */
-export function discardZarathosHandDownToThree(G: LegendaryGameState, seat: string): void {
-  const zones = G.playerZones[seat];
-  if (!zones || zones.hand.length <= ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT) {
-    return;
-  }
-  const discardCount = zones.hand.length - ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT;
-  const cardIds = selectDiscardToLimitCards(G, zones.hand, discardCount);
-  const discardedNames: string[] = [];
-  for (const cardId of cardIds) {
-    if (discardFromHand(G, seat, cardId)) {
-      discardedNames.push(resolveCardName(G.cardDisplayData, cardId));
+export function applyZarathosDiscardDown(G: LegendaryGameState, choice: PendingSeatChoice): void {
+  for (const seat of [...choice.addressedSeats].sort()) {
+    const option = readSeatOption(choice, seat);
+    if (option === undefined || option.cardId === undefined) {
+      continue;
+    }
+    if (discardFromHand(G, seat, option.cardId)) {
+      pushLog(G, `Player ${seat} discarded ${resolveCardName(G.cardDisplayData, option.cardId)} (Corrupted Spirit of Vengeance).`, 'applied');
     }
   }
-  pushLog(
-    G,
-    `Player ${seat} discarded down to ${String(ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT)} cards: ${discardedNames.join(', ')} (Corrupted Spirit of Vengeance).`,
-    'applied',
-  );
 }
 
 /**
@@ -1050,7 +1138,11 @@ export function applyZarathosEruption(G: LegendaryGameState, choice: PendingSeat
 
 /**
  * Applies a fully-submitted Corrupted Spirit of Vengeance choice: each addressed seat
- * discards its chosen Hero, or discards down to 3 cards. Ascending seat order (D-24780 §6).
+ * discards its chosen Hero, or chooses to discard down to 3 cards. Ascending seat order
+ * (D-24780 §6).
+ *
+ * // why: WP-882 / D-24833 — the discard-down option discards nothing here; the seat
+ * picks its own cards in the discard-down rounds resolveSeatChoice chains next.
  *
  * @param G - Game state (mutated under Immer draft).
  * @param choice - The fully-submitted pending choice (kind 'zarathos-corrupted-spirit').
@@ -1062,7 +1154,7 @@ export function applyZarathosCorruptedSpirit(G: LegendaryGameState, choice: Pend
       continue;
     }
     if (option.cardId === undefined) {
-      discardZarathosHandDownToThree(G, seat);
+      pushLog(G, `Player ${seat} chose to discard down to ${String(ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT)} cards (Corrupted Spirit of Vengeance).`, 'neutral');
       continue;
     }
     if (discardFromHand(G, seat, option.cardId)) {
