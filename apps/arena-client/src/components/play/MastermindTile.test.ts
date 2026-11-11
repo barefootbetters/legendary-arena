@@ -1046,3 +1046,35 @@ describe('MastermindTile — Fortify blocks the Fight (WP-873 / D-24818)', () =>
     }
   });
 });
+
+describe('MastermindTile — Haunting badge (WP-759 / D-24587)', () => {
+  test('while haunting, the Haunting badge shows outside the Fight button', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive({ isHaunting: true }),
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    const badge = wrapper.find('[data-testid="play-mastermind-haunting"]');
+    assert.equal(badge.exists(), true);
+    assert.equal(badge.attributes('role'), 'status');
+    assert.match(badge.text(), /exorcise it to fight/);
+    assert.equal(badge.element.closest('[data-testid="play-mastermind-button"]'), null);
+  });
+
+  test('with no isHaunting there is no badge', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive(),
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    assert.equal(wrapper.find('[data-testid="play-mastermind-haunting"]').exists(), false);
+  });
+});
