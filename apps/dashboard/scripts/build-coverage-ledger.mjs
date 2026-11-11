@@ -10,7 +10,9 @@
  *   - docs/ai/coverage/runtime-observed-hollows.json → src/data/runtime-observed-hollows.json  (WP-259)
  *   - docs/ai/coverage/live-verify.json              → src/data/live-verify.json  (hand-curated D-24026 record)
  * plus a slim `{ abbr, name }` projection of data/metadata/sets.json →
- * src/data/coverage-set-names.json, so the Set selector reads "Core Set", not `core`.
+ * src/data/coverage-set-names.json, so the Set selector reads "Core Set", not `core`,
+ * and src/data/mechanic-key-fold.json: every runtime-observed / in-play-baseline
+ * mechanic key that the hero ledger's family fold rewrites, mapped to its ledger key.
  *
  * On any read/parse failure for an artifact this writes that artifact's empty
  * stub (with an `error` field) and continues — aborting the build is strictly
@@ -22,6 +24,8 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname, resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { foldMechanicFamily } from '../../../scripts/coverage/mechanic-family-fold.mjs';
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const DASHBOARD_DIR = resolve(SCRIPT_DIR, '..');
@@ -35,6 +39,8 @@ const LIVE_VERIFY_SOURCE_PATH = join(REPO_ROOT, 'docs/ai/coverage/live-verify.js
 const LIVE_VERIFY_OUTPUT_PATH = join(DASHBOARD_DIR, 'src/data/live-verify.json');
 const SETS_SOURCE_PATH = join(REPO_ROOT, 'data/metadata/sets.json');
 const SETS_OUTPUT_PATH = join(DASHBOARD_DIR, 'src/data/coverage-set-names.json');
+const BASELINE_SOURCE_PATH = join(DASHBOARD_DIR, 'src/data/in-play-hollow-baseline.json');
+const FOLD_OUTPUT_PATH = join(DASHBOARD_DIR, 'src/data/mechanic-key-fold.json');
 
 const EMPTY_LEDGER_STUB = {
   schemaVersion: 1,
@@ -125,7 +131,62 @@ async function writeSetNames() {
   await writeFile(SETS_OUTPUT_PATH, `${JSON.stringify({ sets }, null, 2)}\n`, 'utf-8');
 }
 
+/**
+ * Reads the mechanic keys of one `byMechanic`-shaped artifact. Returns an empty
+ * list on any failure: the fold map is a join aid, and a missing source only
+ * means there are no keys of that source to fold.
+ *
+ * @param {string} sourcePath - a JSON artifact with a `byMechanic` object.
+ * @returns {Promise<string[]>} the artifact's mechanic keys.
+ */
+async function readMechanicKeys(sourcePath) {
+  try {
+    const parsed = JSON.parse(await readFile(sourcePath, 'utf-8'));
+    return Object.keys(parsed.byMechanic ?? {});
+  } catch (caught) {
+    const detail = caught instanceof Error ? caught.message : 'unknown read failure';
+    process.stderr.write(
+      `mechanic-key fold warning: could not read/parse ${sourcePath} (detail: ${detail}); ` +
+        'its keys are not folded, so the in-play gauge joins them to the ledger unfolded.\n',
+    );
+    return [];
+  }
+}
+
+/**
+ * Writes the runtime-key → ledger-key fold map the in-play gauge reads.
+ *
+ * why: the runtime harness and the in-play baseline record the PRE-fold mechanic
+ * slug (`patrol-the-bridge`, `"when-recruited"-abilities`), but the hero ledger
+ * keys its rows by the folded slug (`patrol`, `when-recruited-abilities`). The
+ * gauge resolves a key by its LEDGER status, so without this map a folded family
+ * could never read resolved, even after its WP ships. The fold runs here, at
+ * build time, through the ledger's own `foldMechanicFamily` (one shared module),
+ * so the dashboard never re-encodes the rules. Only keys the fold rewrites are
+ * listed; every other key joins as-is.
+ */
+async function writeMechanicKeyFold() {
+  const keys = new Set([
+    ...(await readMechanicKeys(RUNTIME_SOURCE_PATH)),
+    ...(await readMechanicKeys(BASELINE_SOURCE_PATH)),
+  ]);
+  const ledgerKeyByMechanic = {};
+  for (const key of [...keys].sort()) {
+    const folded = foldMechanicFamily(key);
+    if (folded !== key && folded !== '') {
+      ledgerKeyByMechanic[key] = folded;
+    }
+  }
+  await mkdir(dirname(FOLD_OUTPUT_PATH), { recursive: true });
+  await writeFile(
+    FOLD_OUTPUT_PATH,
+    `${JSON.stringify({ schemaVersion: 1, ledgerKeyByMechanic }, null, 2)}\n`,
+    'utf-8',
+  );
+}
+
 await copyArtifact(LEDGER_SOURCE_PATH, LEDGER_OUTPUT_PATH, EMPTY_LEDGER_STUB);
 await writeSetNames();
 await copyArtifact(RUNTIME_SOURCE_PATH, RUNTIME_OUTPUT_PATH, EMPTY_RUNTIME_STUB);
 await copyArtifact(LIVE_VERIFY_SOURCE_PATH, LIVE_VERIFY_OUTPUT_PATH, EMPTY_LIVE_VERIFY_STUB);
+await writeMechanicKeyFold();

@@ -132,6 +132,34 @@ test('computeInPlayCoverage sorts remaining by peakObs desc, then mechanic key a
   );
 });
 
+test('computeInPlayCoverage resolves a folded family variant by its LEDGER key status', () => {
+  // why: the runtime sweep records the pre-fold slug (`patrol-the-bridge`); the hero
+  // ledger folds the printed family to one row (`patrol`). The fold map routes the
+  // status lookup; the obs stay per raw key, so the denominator is unchanged.
+  const baseline = makeBaseline({ 'patrol-the-bridge': 4, 'patrol-the-sewers': 6, other: 10 });
+  const statuses = makeStatuses({ patrol: 'condition', other: 'unsupported' });
+  const fold = { 'patrol-the-bridge': 'patrol', 'patrol-the-sewers': 'patrol' };
+
+  const unfolded = computeInPlayCoverage(baseline, makeLive({}), statuses);
+  assert.equal(unfolded.resolvedObs, 0, 'without the fold no variant can match the `patrol` row');
+
+  const folded = computeInPlayCoverage(baseline, makeLive({}), statuses, fold);
+  assert.equal(folded.totalObs, 20, 'the denominator is the same summed per-key peaks');
+  assert.equal(folded.resolvedObs, 10, 'both patrol variants resolve through the `patrol` row');
+  assert.deepEqual(folded.remaining, [{ mechanic: 'other', peakObs: 10 }]);
+});
+
+test('computeInPlayCoverage keeps an unresolved folded variant on the worklist under its raw key', () => {
+  const metric = computeInPlayCoverage(
+    makeBaseline({ 'bridge-conqueror': 3 }),
+    makeLive({}),
+    makeStatuses({ conqueror: 'unsupported' }),
+    { 'bridge-conqueror': 'conqueror' },
+  );
+  assert.equal(metric.resolvedObs, 0);
+  assert.deepEqual(metric.remaining, [{ mechanic: 'bridge-conqueror', peakObs: 3 }]);
+});
+
 function makeRow(overrides: Partial<LedgerRow>): LedgerRow {
   return {
     extId: 'set/card',
@@ -695,6 +723,23 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   assert.equal(view.resolvedObs.value, 1141);
   assert.equal(view.percentResolved.value, 13.1);
   assert.ok(view.remaining.value.length > 0);
+});
+
+test('useInPlayCoverage credits a patrol-the-bridge obs once the ledger reads patrol = condition', () => {
+  // why: end-to-end through the BUNDLED fold map (src/data/mechanic-key-fold.json),
+  // which `build-coverage-ledger.mjs` writes with the hero ledger's own
+  // `foldMechanicFamily`. If the map stops folding `patrol-the-bridge` -> `patrol`
+  // (rules drift, or the build step drops it), this fails: the gauge could then
+  // never credit hero Patrol (WP-881) however the ledger reads.
+  const view = useInPlayCoverage({
+    baseline: { schemaVersion: 1, generatedAt: 'test', byMechanic: {} },
+    ledger: makeLedger([makeRow({ mechanic: 'patrol', status: 'condition' })]),
+    runtimeObserved: makeRuntimeObserved(makeLive({ 'patrol-the-bridge': 5 })),
+  });
+  assert.equal(view.totalObs.value, 5);
+  assert.equal(view.resolvedObs.value, 5);
+  assert.equal(view.percentResolved.value, 100);
+  assert.deepEqual(view.remaining.value, []);
 });
 
 test('a mechanic flipped to executable MOVES its obs into resolvedObs, denominator held', () => {
