@@ -54,6 +54,9 @@ import { BARON_ZEMO_MASTERMIND_ID } from '../economy/rescueOnFight.logic.js';
 // resolveOptionalPutBottomHQ idiom), and auto-picks each player's discard through the
 // WP-817 cost-filtered default pick.
 import { ARNIM_ZOLA_MASTERMIND_ID, listZolaWeakHqSlots } from '../mastermind/arnimZola.logic.js';
+// why: WP-758 / D-24588 — Zarathos's strike lives with his shared Haunt reads; that module
+// never imports this one, so the edge adds no cycle.
+import { resolveZarathosStrike, ZARATHOS_MASTERMIND_ID } from '../mastermind/zarathos.logic.js';
 import { refillHqSlot } from '../board/city.logic.js';
 import { selectDefaultCostDiscardCard } from '../moves/villainDefeatRequirement.logic.js';
 import { demolishEachPlayer } from '../board/demolish.logic.js';
@@ -1582,6 +1585,11 @@ export function mastermindStrikeHandler(
     // why: WP-864 / D-24807 — "[Demolish] each player, then do it again for each Monsters
     // Unleashed Villain in the city and Escape Pile."
     resolveFinFangFoomStrike(gameState, resolveCurrentPlayer(strikeContext));
+  } else if (mastermindId === ZARATHOS_MASTERMIND_ID) {
+    // why: WP-758 / D-24588 — "If any Heroes in the HQ are haunted, each player gains a
+    // Wound. Then if Zarathos is not already haunting, he Haunts the highest-cost unhaunted
+    // Hero in the HQ." Wounds first (current player first, clockwise), then the haunt.
+    resolveZarathosStrike(gameState, resolveCurrentPlayer(strikeContext));
   } else if (mastermindId === MANDARIN_MASTERMIND_ID) {
     // why: WP-875 / D-24822 — "Each player chooses a Mandarin's Ring from their Victory Pile to
     // enter the city. Any player who didn't have a Ring gains a Wound instead." Wounds now; Ring

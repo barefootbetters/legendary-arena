@@ -70,7 +70,20 @@ import {
   gainDominateTheWeakHero,
   buildCrushPacifistResistanceChoice,
   CRUSH_PACIFIST_RESISTANCE_KO_KIND,
+  // why: WP-758 / D-24588 — Zarathos's tactic builders and the shared auto-resolve steps.
+  buildZarathosEruptionChoice,
+  buildZarathosCorruptedSpiritChoice,
+  buildZarathosImprisonChoice,
+  buildZarathosDemonicEssenceChoice,
+  discardZarathosHandDownToThree,
+  gainZarathosEruptionWound,
+  listZarathosHandHeroesByCost,
+  ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT,
+  ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND,
+  ZARATHOS_DEMONIC_ESSENCE_LAST_KIND,
 } from '../moves/seatChoiceTactics.js';
+// why: WP-758 / D-24588 — the Zarathos haunt call and the "you have a Hero of class X" read.
+import { playerHasHeroOfClasses, zarathosHauntHighestCost } from '../mastermind/zarathos.logic.js';
 // why: WP-821 / D-24754 — the one "less than 2 printed Attack" HQ read.
 import { listZolaWeakHqSlots } from '../mastermind/arnimZola.logic.js';
 // why: WP-818 / D-24752 — Baron Zemo's tactics read Savior status and the first
@@ -94,6 +107,28 @@ import {
 const ALIEN_DRAGON_TECHNOLOGY_TACTIC_ID: CardExtId =
   'chmp-mastermind-fin-fang-foom-alien-dragon-technology';
 const ALIEN_DRAGON_TECHNOLOGY_CLASSES: readonly string[] = ['strength', 'instinct', 'covert', 'tech', 'ranged'];
+
+// why: WP-758 / D-24588 — mdns Zarathos's four tactic ext_ids
+// (`${setAbbr}-mastermind-${slug}-${tacticSlug}`, data/cards/mdns.json). Each Fight first
+// has Zarathos Haunt the highest-cost unhaunted Hero of its class pair ("[A] and/or [B]"
+// = class A or class B), then resolves its second clause.
+const ZARATHOS_ERUPTION_OF_HELLFIRE_TACTIC_ID: CardExtId =
+  'mdns-mastermind-zarathos-eruption-of-hellfire';
+const ZARATHOS_CORRUPTED_SPIRIT_TACTIC_ID: CardExtId =
+  'mdns-mastermind-zarathos-corrupted-spirit-of-vengeance';
+const ZARATHOS_IMPRISON_TACTIC_ID: CardExtId =
+  'mdns-mastermind-zarathos-imprison-in-the-soul-crystal';
+const ZARATHOS_DEMONIC_ESSENCE_TACTIC_ID: CardExtId =
+  'mdns-mastermind-zarathos-demonic-essence-of-ghost-rider';
+const ZARATHOS_ERUPTION_CLASSES: readonly string[] = ['covert', 'ranged'];
+const ZARATHOS_CORRUPTED_SPIRIT_CLASSES: readonly string[] = ['instinct', 'covert'];
+const ZARATHOS_IMPRISON_CLASSES: readonly string[] = ['strength', 'instinct'];
+const ZARATHOS_DEMONIC_ESSENCE_RANGED_CLASS = 'ranged';
+const ZARATHOS_DEMONIC_ESSENCE_STRENGTH_CLASS = 'strength';
+const ZARATHOS_DEMONIC_ESSENCE_CLASSES: readonly string[] = [
+  ZARATHOS_DEMONIC_ESSENCE_RANGED_CLASS,
+  ZARATHOS_DEMONIC_ESSENCE_STRENGTH_CLASS,
+];
 
 // why: OCTET_HAND_SIZE = 8 is the printed draw count of Doctor Octopus's "Octet
 // of Valence Electrons" tactic (co2e, corrected 9→8 in #1214) — distinct from
@@ -1712,6 +1747,219 @@ export function dispatchTacticOnFight(
     resolveShrinkingResearchBudget(G, currentPlayer);
     return;
   }
+  // why: WP-758 / D-24588 — Zarathos's four tactics: each first Haunts the highest-cost
+  // Hero of its class pair, then resolves its second clause (two multi-seat choices that
+  // thread events for the stage ride, two active-seat optional KOs).
+  if (defeatedTacticId === ZARATHOS_ERUPTION_OF_HELLFIRE_TACTIC_ID) {
+    resolveEruptionOfHellfire(G, events, currentPlayer);
+    return;
+  }
+  if (defeatedTacticId === ZARATHOS_CORRUPTED_SPIRIT_TACTIC_ID) {
+    resolveCorruptedSpiritOfVengeance(G, events, currentPlayer);
+    return;
+  }
+  if (defeatedTacticId === ZARATHOS_IMPRISON_TACTIC_ID) {
+    resolveImprisonInTheSoulCrystal(G, events, currentPlayer);
+    return;
+  }
+  if (defeatedTacticId === ZARATHOS_DEMONIC_ESSENCE_TACTIC_ID) {
+    resolveDemonicEssenceOfGhostRider(G, events, currentPlayer);
+    return;
+  }
+}
+
+/**
+ * Lists every seat except the defeating player, starting after them and going clockwise.
+ *
+ * // why: rules v23 L2247 / D-24780 — an order-sensitive "each other player" pass rotates
+ * to the current player first, then drops them (the helper does not "start after" an
+ * absent player).
+ *
+ * @param G - The game state (read for the seats).
+ * @param currentPlayer - The player who defeated the tactic.
+ * @returns The other seats, clockwise from the defeater.
+ */
+function otherSeatsClockwiseFrom(G: LegendaryGameState, currentPlayer: string): string[] {
+  return seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)
+    .filter((seat) => seat !== currentPlayer);
+}
+
+/**
+ * Logs the "each other player" clause as a no-op when there is no other player (solo).
+ *
+ * // why: D-24659 precedent — a solo match has nobody for the second clause to reach;
+ * the haunt still happened, and the log says the rest did nothing.
+ *
+ * @param G - The game state (G.messages appended).
+ * @param currentPlayer - The player who defeated the tactic.
+ * @param sourceName - The printed tactic name.
+ * @returns true when there is no other player (the caller stops).
+ */
+function logZarathosSoloNoOp(G: LegendaryGameState, currentPlayer: string, sourceName: string): boolean {
+  if (Object.keys(G.playerZones).some((seat) => seat !== currentPlayer)) {
+    return false;
+  }
+  pushLog(G, `Fight effect: there is no other player to discard or be penalized (${sourceName}).`, 'neutral');
+  return true;
+}
+
+/**
+ * Resolves Zarathos's "Eruption of Hellfire" tactic Fight effect (WP-758 / D-24588):
+ * "Zarathos Haunts the highest-cost unhaunted [covert] and/or [ranged] Hero in the HQ.
+ * Each other player discards a [covert] or [ranged] Hero or gains a Wound."
+ *
+ * Pass 1 (clockwise, D-24780): an other player with no such Hero in hand gains a Wound.
+ * Pass 2: the rest choose at once, the Wound offered only while the supply has one.
+ *
+ * @param G - The game state, mutated in place.
+ * @param events - The move's boardgame.io events (for the stage-ride admission).
+ * @param currentPlayer - The player who defeated the tactic (skipped).
+ */
+export function resolveEruptionOfHellfire(
+  G: LegendaryGameState,
+  events: TacticSeatChoiceEvents | undefined,
+  currentPlayer: string,
+): void {
+  zarathosHauntHighestCost(G, 'Eruption of Hellfire', ZARATHOS_ERUPTION_CLASSES);
+  if (logZarathosSoloNoOp(G, currentPlayer, 'Eruption of Hellfire')) {
+    return;
+  }
+  const choosingSeats: string[] = [];
+  for (const seat of otherSeatsClockwiseFrom(G, currentPlayer)) {
+    if (listZarathosHandHeroesByCost(G, seat, ZARATHOS_ERUPTION_CLASSES).length > 0) {
+      choosingSeats.push(seat);
+      continue;
+    }
+    pushLog(G, `Fight effect: Player ${seat} has no Covert or Ranged Hero to discard (Eruption of Hellfire).`, 'neutral');
+    gainZarathosEruptionWound(G, seat);
+  }
+  // why: D-24780 §6 / D-24501 — the simultaneous prompt is built in ascending seat order.
+  const choice = buildZarathosEruptionChoice(G, choosingSeats.sort(), ZARATHOS_ERUPTION_CLASSES);
+  if (choice === undefined) {
+    return;
+  }
+  parkSeatChoice(G, events, choice);
+  pushLog(G,
+    `Fight effect: each other player with a Covert or Ranged Hero must discard one or gain a Wound (Eruption of Hellfire).`,
+    'neutral',
+  );
+}
+
+/**
+ * Resolves Zarathos's "Corrupted Spirit of Vengeance" tactic Fight effect (WP-758 /
+ * D-24588): "Zarathos Haunts the highest-cost unhaunted [instinct] and/or [covert] Hero
+ * in the HQ. Each other player discards an [instinct] or [covert] Hero or discards down
+ * to 3 cards."
+ *
+ * @param G - The game state, mutated in place.
+ * @param events - The move's boardgame.io events (for the stage-ride admission).
+ * @param currentPlayer - The player who defeated the tactic (skipped).
+ */
+export function resolveCorruptedSpiritOfVengeance(
+  G: LegendaryGameState,
+  events: TacticSeatChoiceEvents | undefined,
+  currentPlayer: string,
+): void {
+  zarathosHauntHighestCost(G, 'Corrupted Spirit of Vengeance', ZARATHOS_CORRUPTED_SPIRIT_CLASSES);
+  if (logZarathosSoloNoOp(G, currentPlayer, 'Corrupted Spirit of Vengeance')) {
+    return;
+  }
+  const choosingSeats: string[] = [];
+  for (const seat of otherSeatsClockwiseFrom(G, currentPlayer)) {
+    const handSize = G.playerZones[seat]?.hand.length ?? 0;
+    // why: D-24588 — with 3 or fewer cards, "discard down to 3" costs nothing, so a player
+    // always takes it; the seat is logged, never asked.
+    if (handSize <= ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT) {
+      pushLog(G, `Fight effect: Player ${seat} already has ${String(ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT)} or fewer cards (Corrupted Spirit of Vengeance).`, 'neutral');
+      continue;
+    }
+    if (listZarathosHandHeroesByCost(G, seat, ZARATHOS_CORRUPTED_SPIRIT_CLASSES).length > 0) {
+      choosingSeats.push(seat);
+      continue;
+    }
+    discardZarathosHandDownToThree(G, seat);
+  }
+  const choice = buildZarathosCorruptedSpiritChoice(G, choosingSeats.sort(), ZARATHOS_CORRUPTED_SPIRIT_CLASSES);
+  if (choice === undefined) {
+    return;
+  }
+  parkSeatChoice(G, events, choice);
+  pushLog(G,
+    `Fight effect: each other player with an Instinct or Covert Hero must discard one or discard down to ${String(ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT)} cards (Corrupted Spirit of Vengeance).`,
+    'neutral',
+  );
+}
+
+/**
+ * Resolves Zarathos's "Imprison in the Soul Crystal" tactic Fight effect (WP-758 /
+ * D-24588): "Zarathos Haunts the highest-cost unhaunted [strength] and/or [instinct] Hero
+ * in the HQ. If you have a [strength] or [instinct] Hero, you may KO a Villain from your
+ * Victory Pile. If you do, draw cards equal to that Villain's VP."
+ *
+ * @param G - The game state, mutated in place.
+ * @param events - The move's boardgame.io events (unused for an active-seat-only park).
+ * @param currentPlayer - The player who defeated the tactic (the one who may KO).
+ */
+export function resolveImprisonInTheSoulCrystal(
+  G: LegendaryGameState,
+  events: TacticSeatChoiceEvents | undefined,
+  currentPlayer: string,
+): void {
+  zarathosHauntHighestCost(G, 'Imprison in the Soul Crystal', ZARATHOS_IMPRISON_CLASSES);
+  if (!playerHasHeroOfClasses(G, currentPlayer, ZARATHOS_IMPRISON_CLASSES)) {
+    pushLog(G, `Fight effect: Player ${currentPlayer} has no Strength or Instinct Hero, so they may not KO a Villain (Imprison in the Soul Crystal).`, 'neutral');
+    return;
+  }
+  const choice = buildZarathosImprisonChoice(G, currentPlayer);
+  if (choice === undefined) {
+    pushLog(G, `Fight effect: Player ${currentPlayer} has no Villain in their Victory Pile to KO (Imprison in the Soul Crystal).`, 'neutral');
+    return;
+  }
+  // why: D-24648 — the defeating player is the only addressed seat, so no stage ride runs.
+  parkSeatChoice(G, events, choice, currentPlayer);
+  pushLog(G, `Fight effect: Player ${currentPlayer} may KO a Villain from their Victory Pile and draw cards equal to its VP (Imprison in the Soul Crystal).`, 'neutral');
+}
+
+/**
+ * Resolves Zarathos's "Demonic Essence of Ghost Rider" tactic Fight effect (WP-758 /
+ * D-24588): "Zarathos Haunts the highest-cost unhaunted [ranged] and/or [strength] Hero in
+ * the HQ. If you have a [ranged] Hero, you may KO one of your Heroes. If you have a
+ * [strength] Hero, you may KO one of your Heroes."
+ *
+ * // why: D-24588 — the two sentences resolve in printed order, and each "if you have"
+ * is read when its own sentence resolves (rules v23 L3443-3447: a played card that left
+ * play no longer counts). So the Ranged line parks the first pick, and
+ * seatChoice.resolve.ts re-checks for a Strength Hero before it chains the last pick: KO
+ * your only Strength Hero with the first pick and the second KO is gone. With no Ranged
+ * Hero, the Strength line parks the last pick directly.
+ *
+ * @param G - The game state, mutated in place.
+ * @param events - The move's boardgame.io events (unused for an active-seat-only park).
+ * @param currentPlayer - The player who defeated the tactic (the one who may KO).
+ */
+export function resolveDemonicEssenceOfGhostRider(
+  G: LegendaryGameState,
+  events: TacticSeatChoiceEvents | undefined,
+  currentPlayer: string,
+): void {
+  zarathosHauntHighestCost(G, 'Demonic Essence of Ghost Rider', ZARATHOS_DEMONIC_ESSENCE_CLASSES);
+  let kind: string;
+  if (playerHasHeroOfClasses(G, currentPlayer, [ZARATHOS_DEMONIC_ESSENCE_RANGED_CLASS])) {
+    kind = ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND;
+  } else if (playerHasHeroOfClasses(G, currentPlayer, [ZARATHOS_DEMONIC_ESSENCE_STRENGTH_CLASS])) {
+    kind = ZARATHOS_DEMONIC_ESSENCE_LAST_KIND;
+  } else {
+    pushLog(G, `Fight effect: Player ${currentPlayer} has no Ranged or Strength Hero, so they may not KO a Hero (Demonic Essence of Ghost Rider).`, 'neutral');
+    return;
+  }
+  const choice = buildZarathosDemonicEssenceChoice(G, currentPlayer, kind);
+  if (choice === undefined) {
+    pushLog(G, `Fight effect: Player ${currentPlayer} has no Hero to KO (Demonic Essence of Ghost Rider).`, 'neutral');
+    return;
+  }
+  // why: D-24648 — the defeating player is the only addressed seat, so no stage ride runs.
+  parkSeatChoice(G, events, choice, currentPlayer);
+  pushLog(G, `Fight effect: Player ${currentPlayer} may KO one of their Heroes (Demonic Essence of Ghost Rider).`, 'neutral');
 }
 
 /**

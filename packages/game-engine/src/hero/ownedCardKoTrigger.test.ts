@@ -392,6 +392,11 @@ const LOCKED_TABLE: Record<string, KoSiteCounts> = {
   'moves/scryKoChoice.resolve.ts#resolveScryKoChoice': { koSites: 1, ownedRecords: 1 },
   'moves/seatChoiceTactics.ts#applyVanishingIllusionsKo': { koSites: 1, ownedRecords: 0 },
   'moves/seatChoiceTactics.ts#applyCrushPacifistResistanceKo': { koSites: 1, ownedRecords: 1 },
+  // why: WP-758 / D-24588 — Imprison in the Soul Crystal KOs a Victory-Pile Villain (x/0, the
+  // Vanishing Illusions precedent); Demonic Essence of Ghost Rider KOs one of the player's Heroes
+  // from hand or cards in play (owned, the Crush Pacifist Resistance precedent).
+  'moves/seatChoiceTactics.ts#applyZarathosImprison': { koSites: 1, ownedRecords: 0 },
+  'moves/seatChoiceTactics.ts#applyZarathosDemonicEssence': { koSites: 1, ownedRecords: 1 },
   'moves/operatorSetters.ts#koFromPlayerZone': { koSites: 1, ownedRecords: 1 },
   'rules/mastermindHandlers.ts#resolveRedSkullStrike': { koSites: 1, ownedRecords: 1 },
   'rules/mastermindHandlers.ts#resolveBaronZemoStrike': { koSites: 1, ownedRecords: 0 },

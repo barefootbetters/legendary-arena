@@ -85,6 +85,12 @@
       "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveGeneralRossStrike",
       "wp": "WP-669",
       "decision": "D-24483"
+    },
+    "mdns-mastermind-zarathos-master-strike": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/mastermind/zarathos.logic.ts#resolveZarathosStrike",
+      "wp": "WP-758",
+      "decision": "D-24588"
     }
   }
 }

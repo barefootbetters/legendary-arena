@@ -1479,8 +1479,11 @@ export interface SeatChoiceOption {
   // why: WP-683 / D-24500 — for a 'random-acts-pass-left' option, cardId is the exact hand
   // instance the seat passes to the seat on its left. Hand instances are copy-suffixed and
   // unique, so the atomic apply moves this exact card. WP-821 / WP-863 also set it on
-  // 'dominate-the-weak-gain' and 'micro-sized-gain' options (the card being gained). Absent for
-  // every other kind. NOT projected to the client.
+  // 'dominate-the-weak-gain' and 'micro-sized-gain' options (the card being gained). WP-758 /
+  // D-24588 sets it on the Zarathos kinds' discard / KO options (the hand card, the Victory-Pile
+  // Villain or the Hero); their "Gain a Wound" / "Discard down to 3 cards" / "Don't KO" options
+  // leave it absent, and the applies read its absence as that option. The many other discard
+  // and KO kinds that also carry it say so at their builders. NOT projected to the client.
   cardId?: CardExtId;
   // why: WP-821 / D-24754 — for a 'dominate-the-weak-gain' option, recipientSeat names
   // the player who gains the option's HQ Hero (cardId), so one option pairs the
@@ -1490,8 +1493,9 @@ export interface SeatChoiceOption {
   recipientSeat?: string;
   // why: WP-821 / D-24754 — for a Crush Pacifist Resistance KO option, sourceZone names
   // the zone the cardId is KO'd from, because S.H.I.E.L.D. starter ids repeat across the
-  // hand and the cards played this turn. Consumer-added. Absent for every other kind.
-  // NOT projected to the client.
+  // hand and the cards played this turn. Consumer-added. WP-758 / D-24588: also on the two
+  // Zarathos Demonic Essence kinds' KO options, for the same reason. Absent for every other
+  // kind. NOT projected to the client.
   // why: WP-860 / D-24796 — widened with 'discard' for Commune with the Spirit World's KO pick
   // ("KO a card from your hand or discard pile"); the same starter / Wound ids repeat across hand
   // and discard pile.

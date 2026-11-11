@@ -11,11 +11,11 @@
       "scheme": 664
     },
     "byStatus": {
-      "executable": 822,
+      "executable": 827,
       "deferred": 19,
       "condition": 58,
       "unsupported": 280,
-      "unmarked": 1671,
+      "unmarked": 1666,
       "subsystem": 7
     }
   },
@@ -18327,10 +18327,10 @@
       "set": "mdns",
       "scope": "mastermind",
       "mechanic": "corrupted-spirit-of-vengeance",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveCorruptedSpiritOfVengeance",
+      "wp": "WP-758",
+      "decision": "D-24588"
     },
     {
       "extId": "mdns-mastermind-zarathos-demonic-essence-of-ghost-rider",
@@ -18338,10 +18338,10 @@
       "set": "mdns",
       "scope": "mastermind",
       "mechanic": "demonic-essence-of-ghost-rider",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveDemonicEssenceOfGhostRider",
+      "wp": "WP-758",
+      "decision": "D-24588"
     },
     {
       "extId": "mdns-mastermind-zarathos-eruption-of-hellfire",
@@ -18349,10 +18349,10 @@
       "set": "mdns",
       "scope": "mastermind",
       "mechanic": "eruption-of-hellfire",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveEruptionOfHellfire",
+      "wp": "WP-758",
+      "decision": "D-24588"
     },
     {
       "extId": "mdns-mastermind-zarathos-imprison-in-the-soul-crystal",
@@ -18360,10 +18360,10 @@
       "set": "mdns",
       "scope": "mastermind",
       "mechanic": "imprison-in-the-soul-crystal",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveImprisonInTheSoulCrystal",
+      "wp": "WP-758",
+      "decision": "D-24588"
     },
     {
       "extId": "mdns-mastermind-zarathos-master-strike",
@@ -18371,10 +18371,10 @@
       "set": "mdns",
       "scope": "mastermind",
       "mechanic": "master-strike",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/mastermind/zarathos.logic.ts#resolveZarathosStrike",
+      "wp": "WP-758",
+      "decision": "D-24588"
     },
     {
       "extId": "mdns-scheme-great-old-one-chthon",

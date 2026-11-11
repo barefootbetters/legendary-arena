@@ -111,6 +111,18 @@ import {
   DOMINATE_THE_WEAK_GAIN_KIND,
   CRUSH_PACIFIST_RESISTANCE_KO_KIND,
   CRUSH_PACIFIST_RESISTANCE_LAST_KO_KIND,
+  // why: WP-758 / D-24588 — Zarathos's five tactic kinds, their appliers, and the Demonic
+  // Essence second-pick builder.
+  applyZarathosEruption,
+  applyZarathosCorruptedSpirit,
+  applyZarathosImprison,
+  applyZarathosDemonicEssence,
+  buildZarathosDemonicEssenceChoice,
+  ZARATHOS_ERUPTION_KIND,
+  ZARATHOS_CORRUPTED_SPIRIT_KIND,
+  ZARATHOS_IMPRISON_KIND,
+  ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND,
+  ZARATHOS_DEMONIC_ESSENCE_LAST_KIND,
 } from './seatChoiceTactics.js';
 // why: WP-793 / D-24656 — the rulebook escape procedure's two kind-specific applies (HQ KO,
 // Bystander discard). villainEscapeProcedure imports parkSeatChoice from this module, so the
@@ -133,6 +145,13 @@ import {
   RETURN_ON_DISCARD_SEAT_CHOICE_KIND,
 } from './resolveReturnOnDiscard.js';
 import { pushLog } from '../log/logPush.js';
+// why: WP-758 / D-24588 — the Demonic Essence chain re-reads "you have a Strength Hero".
+// zarathos.logic imports wounds.logic, which reaches this module through divingBlock.logic:
+// the same runtime-safe cycle as the imports above (function bodies only).
+import { playerHasHeroOfClasses } from '../mastermind/zarathos.logic.js';
+
+// why: WP-758 / D-24588 — Demonic Essence's second sentence: "If you have a [strength] Hero".
+const ZARATHOS_DEMONIC_ESSENCE_LAST_CLASS = 'strength';
 // why: WP-829 / D-24762 — the Purge apply (a runtime-safe cycle: function-body references only).
 import {
   applyTimestreamPurgeResolvedSeatChoice,
@@ -478,6 +497,12 @@ export function resolveSeatChoice(
       appliedKind === CRUSH_PACIFIST_RESISTANCE_KO_KIND ? choice.addressedSeats[0] : undefined;
     const crushChoseKo =
       appliedKind === CRUSH_PACIFIST_RESISTANCE_KO_KIND && didCrushChooseKo(choice);
+    // why: WP-758 / D-24588 — capture the Demonic Essence seat before the apply clears the
+    // choice; the Strength line's KO chains below after an accept OR a decline of the Ranged
+    // line's (each "if you have" sentence is its own optional KO), unlike Crush, which
+    // chains only after a KO.
+    const demonicEssenceSeat =
+      appliedKind === ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND ? choice.addressedSeats[0] : undefined;
     // why: WP-860 / D-24796 — capture Commune with the Spirit World's seat, source card, chosen cost
     // branch and discards left BEFORE the apply clears the choice (the Crush capture above); the
     // readers re-check the card, so a stale option chains nothing (no KO without payment).
@@ -520,6 +545,12 @@ export function resolveSeatChoice(
     // last-ko kind never chains, so at most two KOs.
     if (crushChoseKo && crushActiveSeat !== undefined) {
       chainCrushPacifistResistanceLastKo(G, crushActiveSeat, events);
+    }
+    // why: WP-758 / D-24588 — Demonic Essence's Strength line, built fresh from the seat's
+    // current zones and re-checked there. The timeout path does not chain (D-24501), so a
+    // defaulted first pick is a decline of both.
+    if (demonicEssenceSeat !== undefined) {
+      chainZarathosDemonicEssenceLast(G, demonicEssenceSeat, events);
     }
     // why: WP-860 / D-24796 — Commune chains its next step (discard picks, then the KO pick) here in
     // the live move context, exactly where Crush chains its second KO (D-24754).
@@ -667,6 +698,28 @@ function applySeatChoiceByKind(
     choice.kind === CRUSH_PACIFIST_RESISTANCE_LAST_KO_KIND
   ) {
     applyCrushPacifistResistanceKo(G, choice);
+    return;
+  }
+  // why: WP-758 / D-24588 — Zarathos's tactic choices. The two multi-seat kinds apply in
+  // ascending seat order (no draw); Imprison draws its Villain's VP, so it takes the shuffle
+  // context and the current player (cardsDrawn, D-24732); both Demonic kinds share one apply.
+  if (choice.kind === ZARATHOS_ERUPTION_KIND) {
+    applyZarathosEruption(G, choice);
+    return;
+  }
+  if (choice.kind === ZARATHOS_CORRUPTED_SPIRIT_KIND) {
+    applyZarathosCorruptedSpirit(G, choice);
+    return;
+  }
+  if (choice.kind === ZARATHOS_IMPRISON_KIND) {
+    applyZarathosImprison(G, choice, shuffleContext, currentPlayer);
+    return;
+  }
+  if (
+    choice.kind === ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND ||
+    choice.kind === ZARATHOS_DEMONIC_ESSENCE_LAST_KIND
+  ) {
+    applyZarathosDemonicEssence(G, choice);
     return;
   }
   // why: WP-793 / D-24656 — the escape procedure's HQ KO (the current player's pick) and
@@ -841,6 +894,51 @@ function chainCrushPacifistResistanceLastKo(
   parkSeatChoice(G, events, lastChoice, activeSeat);
   pushLog(G,
     `Fight effect: Player ${activeSeat} may KO one more Hero with less than 2 printed Attack (Crush Pacifist Resistance).`,
+    'neutral',
+  );
+}
+
+/**
+ * Chains Demonic Essence of Ghost Rider's second owed KO after the first pick resolved:
+ * builds the last pick from the seat's current hand and played cards and parks it for
+ * that seat alone.
+ *
+ * // why: WP-758 / D-24588 — parked from the live move context, like
+ * chainCrushPacifistResistanceLastKo (D-24754). A seat with no Hero left logs the no-op.
+ *
+ * @param G - Game state (mutated: may set G.pendingSeatChoice for the second pick).
+ * @param activeSeat - The defeating player who made the first pick.
+ * @param events - The move's boardgame.io events (unused for an active-seat-only park).
+ */
+function chainZarathosDemonicEssenceLast(
+  G: LegendaryGameState,
+  activeSeat: string,
+  events: SeatChoiceEvents | undefined,
+): void {
+  // why: D-24588 — "If you have a [strength] Hero" is read now, when the sentence resolves
+  // (rules v23 L3443-3447): KOing the only Strength Hero with the first pick ends it here.
+  if (!playerHasHeroOfClasses(G, activeSeat, [ZARATHOS_DEMONIC_ESSENCE_LAST_CLASS])) {
+    pushLog(G,
+      `Fight effect: Player ${activeSeat} no longer has a Strength Hero, so there is no second KO (Demonic Essence of Ghost Rider).`,
+      'neutral',
+    );
+    return;
+  }
+  const lastChoice = buildZarathosDemonicEssenceChoice(
+    G,
+    activeSeat,
+    ZARATHOS_DEMONIC_ESSENCE_LAST_KIND,
+  );
+  if (lastChoice === undefined) {
+    pushLog(G,
+      `Fight effect: Player ${activeSeat} has no other Hero to KO (Demonic Essence of Ghost Rider).`,
+      'neutral',
+    );
+    return;
+  }
+  parkSeatChoice(G, events, lastChoice, activeSeat);
+  pushLog(G,
+    `Fight effect: Player ${activeSeat} may KO one more of their Heroes (Demonic Essence of Ghost Rider).`,
     'neutral',
   );
 }

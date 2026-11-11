@@ -629,3 +629,145 @@ describe('reveal-or-wound seat choice across the rebuilt turn loops (WP-845 / D-
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-758 / D-24588 — Zarathos in a seeded two-seat sim game. The single Tactic is
+// Eruption of Hellfire, so the one Mastermind defeat forces "each other player discards a
+// [covert] or [ranged] Hero or gains a Wound": seat 1 recruits free Covert Heroes every
+// turn, so once one is in its hand the choice is addressed to the NON-active seat 1 and
+// the WP-749 dispatch answers it. Zarathos's Master Strikes haunt a free Hero, so seat 0
+// exorcises (a free, legal move) before it can fight him.
+// ---------------------------------------------------------------------------
+
+// why: the locked WP-758 lines (rules/tacticHandlers.ts park line; moves/seatChoiceTactics.ts
+// apply lines), matched as substrings of LogEntry.text.
+const ERUPTION_PARK_LINE =
+  'Fight effect: each other player with a Covert or Ranged Hero must discard one or gain a Wound (Eruption of Hellfire).';
+const ERUPTION_APPLY_PATTERN = /Player 1 discarded .+ \(Eruption of Hellfire\)\./;
+const ZARATHOS_SEED = 'wp758-zarathos-eruption-seed';
+// why: seat 0 holds off fighting until seat 1 has had several turns to recruit and draw
+// Covert Heroes, so the Eruption choice is addressed to seat 1 rather than auto-Wounding it.
+const ZARATHOS_FIGHT_FROM_TURN = 9;
+
+/**
+ * Builds the Loki registry re-themed for Zarathos: set `mdns`, a Zarathos Mastermind with
+ * a fightCost-0 base card and ONE Tactic slugged `eruption-of-hellfire` (ext id
+ * `mdns-mastermind-zarathos-eruption-of-hellfire`), and every Spider-Man card a free Covert
+ * Hero.
+ *
+ * @returns A hand-built registry reader (engine tests never import the registry layer).
+ */
+function buildZarathosRegistry(): CardRegistryReader {
+  const loki = buildLokiRegistry() as unknown as {
+    getSet: (abbr: string) => {
+      abbr: string;
+      masterminds: unknown[];
+      heroes: Array<{ cards: Array<{ cost: number; hc?: string }> }>;
+    };
+  };
+  const setData = structuredClone(loki.getSet('core'));
+  setData.abbr = 'mdns';
+  setData.masterminds = [
+    {
+      slug: 'zarathos',
+      cards: [
+        { name: 'Zarathos', slug: 'zarathos', tactic: false, vAttack: '0', abilities: [] },
+        { name: 'Eruption of Hellfire', slug: 'eruption-of-hellfire', tactic: true, vAttack: '0', abilities: [] },
+      ],
+    },
+  ];
+  for (const hero of setData.heroes) {
+    for (const card of hero.cards) {
+      card.cost = 0;
+      card.hc = 'covert';
+    }
+  }
+  return {
+    listCards: () => [],
+    listSets: () => [{ abbr: 'mdns' }],
+    getSet: (abbr: string) => (abbr === 'mdns' ? setData : undefined),
+  } as unknown as CardRegistryReader;
+}
+
+/**
+ * The two-seat Zarathos match config (the Loki config re-pointed at set `mdns`).
+ *
+ * @returns A 9-field MatchSetupConfig over the Zarathos registry.
+ */
+function buildZarathosConfig(): MatchSetupConfig {
+  return {
+    ...buildLokiConfig(),
+    schemeId: 'mdns/bank-job',
+    mastermindId: 'mdns/zarathos',
+    villainGroupIds: ['mdns/enemies-of-asgard'],
+    henchmanGroupIds: ['mdns/doombot-legion'],
+    heroDeckIds: ['mdns/spider-man'],
+  };
+}
+
+/**
+ * Seat 0 answers seat choices, reveals, and from ZARATHOS_FIGHT_FROM_TURN exorcises a
+ * haunted Hero or fights Zarathos; seat 1 answers seat choices, reveals and recruits.
+ * Both then advance and end. Every observed log line is collected.
+ *
+ * @param seat - The seat this policy drives.
+ * @param observedLogs - The sink of every log line the policy observed.
+ * @returns The AIPolicy for the seat.
+ */
+function createZarathosPolicy(seat: string, observedLogs: Set<string>): AIPolicy {
+  return {
+    name: `wp758-zarathos-seat-${seat}`,
+    decideTurn(playerView: UIState, legalMoves: LegalMove[]): ClientTurnIntent {
+      for (const entry of playerView.log) {
+        observedLogs.add(entry.text);
+      }
+      let chosen: LegalMove | undefined =
+        findMove(legalMoves, 'resolveSeatChoice') ?? findMove(legalMoves, 'revealVillainCard');
+      if (chosen === undefined && seat === '0' && playerView.game.turn >= ZARATHOS_FIGHT_FROM_TURN) {
+        chosen = findMove(legalMoves, 'fightMastermind') ?? findMove(legalMoves, 'exorciseHauntedHero');
+      }
+      if (chosen === undefined && seat === '1') {
+        chosen = findMove(legalMoves, 'recruitHero');
+      }
+      chosen = chosen ?? findMove(legalMoves, 'advanceStage') ?? findMove(legalMoves, 'endTurn') ?? { name: 'endTurn', args: {} };
+      return {
+        matchId: `simulation-${ZARATHOS_SEED}`,
+        playerId: playerView.game.activePlayerId,
+        turnNumber: playerView.game.turn,
+        move: { name: chosen.name, args: chosen.args },
+      };
+    },
+  };
+}
+
+describe('Zarathos Eruption of Hellfire across the rebuilt turn loops (WP-758 / D-24588)', () => {
+  test('the Eruption choice addressed to seat 1 is answered, the game terminates, and runFixture replays it', () => {
+    const setupConfig = buildZarathosConfig();
+    const registry = buildZarathosRegistry();
+    const observedLogs = new Set<string>();
+    const policies: AIPolicy[] = [createZarathosPolicy('0', observedLogs), createZarathosPolicy('1', observedLogs)];
+
+    const captured = simulateOneGameAndCaptureMoves(setupConfig, registry, policies, ZARATHOS_SEED, 0);
+
+    // Loud precondition: the Eruption choice was parked for another seat.
+    const observed = [...observedLogs];
+    assert.ok(
+      observed.some((text) => text.includes(ERUPTION_PARK_LINE)),
+      'Precondition failed: the Eruption of Hellfire choice was never parked for seat 1; the locked seed / fight turn no longer puts a Covert Hero in seat 1\'s hand when seat 0 defeats the Tactic.',
+    );
+    const fightIndex = captured.moves.findIndex((move) => move.playerId === '0' && move.moveName === 'fightMastermind');
+    const resolveIndex = captured.moves.findIndex(
+      (move, index) => index > fightIndex && move.moveName === 'resolveSeatChoice' && move.playerId === '1',
+    );
+    assert.notEqual(resolveIndex, -1, 'seat 1 answered the Eruption choice after seat 0\'s fight (WP-749 dispatch)');
+    assert.equal(captured.endgameReached, true, 'the game terminates rather than being flagged stuck');
+    assert.equal(captured.outcome.winner, 'heroes-win', 'defeating the only Tactic wins once the choice resolves');
+
+    // The capture -> replay lockstep: runFixture reproduces seat 1's discard line.
+    const fixture = buildFixtureFromCapture(captured.moves, ZARATHOS_SEED, setupConfig, 'wp758-zarathos-eruption');
+    const replay = runFixture(fixture, registry);
+    const replayDiscards = replay.messages.filter((entry) => ERUPTION_APPLY_PATTERN.test(entry.text));
+    assert.equal(replayDiscards.length, 1, 'runFixture replays seat 1\'s Eruption discard');
+    assert.ok(observed.includes(replayDiscards[0]!.text), 'the replayed line matches the sim line');
+  });
+});
