@@ -232,6 +232,17 @@ export interface InPlayHollowBaseline {
 }
 
 /**
+ * The runtime-key → ledger-key fold map — `src/data/mechanic-key-fold.json`,
+ * written by `scripts/build-coverage-ledger.mjs` through the hero ledger's own
+ * `foldMechanicFamily`. Lists only the runtime-observed / baseline keys the fold
+ * rewrites (`patrol-the-bridge` → `patrol`); any other key IS its ledger key.
+ */
+export interface MechanicKeyFold {
+  schemaVersion: number;
+  ledgerKeyByMechanic: Record<string, string>;
+}
+
+/**
  * One unresolved mechanic in the in-play coverage worklist — the obs-weighted
  * priority is `peakObs` (the high-water-mark in-play hollow count).
  */

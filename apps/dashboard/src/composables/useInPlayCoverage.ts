@@ -1,5 +1,6 @@
 import { computed, type ComputedRef } from 'vue';
 import baselineData from '../data/in-play-hollow-baseline.json';
+import mechanicKeyFoldData from '../data/mechanic-key-fold.json';
 import { useCoverageLedger } from './useCoverageLedger.js';
 import type {
   CoverageLedger,
@@ -7,6 +8,7 @@ import type {
   InPlayHollowBaseline,
   InPlayHollowBaselineEntry,
   LedgerStatus,
+  MechanicKeyFold,
   RemainingMechanic,
   RuntimeObservedEntry,
   RuntimeObservedHollows,
@@ -22,17 +24,21 @@ import type {
  * @param baselineByMechanic - the committed frozen peak per mechanic.
  * @param liveByMechanic - the live sweep tally per mechanic (`hitCount`).
  * @param statusByMechanic - the hero ledger's by-mechanic status lookup.
+ * @param ledgerKeyByMechanic - the runtime-key → ledger-key family fold
+ *   (`patrol-the-bridge` → `patrol`); a key absent from it is its own ledger key.
  * @returns the computed metric (percentResolved, resolvedObs, totalObs, remaining).
  */
 export function computeInPlayCoverage(
   baselineByMechanic: Readonly<Record<string, InPlayHollowBaselineEntry>>,
   liveByMechanic: Readonly<Record<string, RuntimeObservedEntry>>,
   statusByMechanic: ReadonlyMap<string, LedgerStatus>,
+  ledgerKeyByMechanic: Readonly<Record<string, string>> = {},
 ): InPlayCoverageMetric {
   // why (D-24050): the metric is OBS-WEIGHTED — it weights each mechanic by its
   // runtime-observed in-play hollow count (player impact), not by mechanic count
-  // like the `%-executable` headline. Join on the raw mechanic key across all
-  // three sources (no lowercasing/slugifying — re-casing would break the join).
+  // like the `%-executable` headline. Join baseline and live on the raw mechanic
+  // key (no lowercasing/slugifying — re-casing would break the join); only the
+  // ledger lookup goes through the build-time family fold (below).
   const mechanics = new Set<string>([
     ...Object.keys(baselineByMechanic),
     ...Object.keys(liveByMechanic),
@@ -60,7 +66,13 @@ export function computeInPlayCoverage(
     // implemented; its outer `parse-unrecognized` hollow no longer fires. Without
     // this a condition mechanic in the baseline seed would be a permanent
     // unresolved drag on the gauge (these four are seeded; Spectrum was not).
-    const status = statusByMechanic.get(mechanic);
+    // why: the runtime harness records the PRE-fold slug (`patrol-the-bridge`)
+    // while the ledger keys the folded family (`patrol`), so look the status up
+    // under the ledger key. Only the LOOKUP folds: obs stay per raw key (summed
+    // into totalObs as before, so the denominator never shrinks) and the worklist
+    // keeps the raw key, which names the variant that actually hollowed in play.
+    const ledgerKey = ledgerKeyByMechanic[mechanic] ?? mechanic;
+    const status = statusByMechanic.get(ledgerKey);
     const isResolved = status === 'executable' || status === 'condition';
     if (isResolved) {
       resolvedObs += peakObs;
@@ -103,6 +115,8 @@ interface UseInPlayCoverageOptions {
   ledger?: CoverageLedger;
   /** Injectable runtime-observed overlay (forwarded). Defaults to bundled. */
   runtimeObserved?: RuntimeObservedHollows;
+  /** Injectable runtime-key → ledger-key fold. Defaults to the build-time bundled map. */
+  mechanicKeyFold?: MechanicKeyFold;
 }
 
 interface UseInPlayCoverageReturn {
@@ -123,6 +137,8 @@ interface UseInPlayCoverageReturn {
  */
 export function useInPlayCoverage(options?: UseInPlayCoverageOptions): UseInPlayCoverageReturn {
   const baseline = options?.baseline ?? (baselineData as unknown as InPlayHollowBaseline);
+  const mechanicKeyFold =
+    options?.mechanicKeyFold ?? (mechanicKeyFoldData as unknown as MechanicKeyFold);
   // why: build the forwarded options without undefined keys — the dashboard
   // tsconfig uses exactOptionalPropertyTypes, so an explicit `undefined` is not
   // assignable to `useCoverageLedger`'s optional `ledger` / `runtimeObserved`.
@@ -147,6 +163,7 @@ export function useInPlayCoverage(options?: UseInPlayCoverageOptions): UseInPlay
       baseline.byMechanic,
       runtimeObservedByMechanic.value,
       statusByMechanic,
+      mechanicKeyFold.ledgerKeyByMechanic,
     );
   });
 

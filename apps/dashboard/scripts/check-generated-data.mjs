@@ -49,6 +49,10 @@ const GENERATED_DATA_FILES = [
     remedy: "pnpm --filter @legendary-arena/dashboard prebuild:coverage",
   },
   {
+    relativePath: join("src", "data", "mechanic-key-fold.json"),
+    remedy: "pnpm --filter @legendary-arena/dashboard prebuild:coverage",
+  },
+  {
     relativePath: join("src", "data", "effect-implementation-index.json"),
     remedy: "pnpm --filter @legendary-arena/dashboard prebuild:effect-index",
   },
