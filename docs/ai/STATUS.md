@@ -18,11 +18,16 @@
 - **Re-baseline.** The draft dated from 2026-09-25. The 01.4 / 01.7 / 00.3 gates re-ran on `f609ddff` and found drift from D-24614 and D-24801. It is folded in as WP-759 §Execution Amendments A-1..A-5: three new props, not four; the heal-before-Haunted precedence; the printed exorcise cost; the exorcise heal wording; and the sticky chooser. No scope change.
 - **Tests.** arena-client 2581 -> 2610 / 0 (+29), typecheck 0, `pnpm -r --no-bail test` 0 fail (server 207 DB-backed skipped). No existing assertion was edited. Preview on `?fixture=haunted-hq&play=1` at 1280×720 and 375×812: the strips, the Recruit lock, the enabled and resource-blocked Exorcise, Fight's haunt tooltip, and the badge all appear. The chooser stays inside the HQ panel with no page growth or sideways scroll. A spy on the real clicks captured `{hqIndex:0,outcome:'ko'}` and `{hqIndex:0,outcome:'gain',recipientPlayerId:'1'}`, and Escape returned focus to Exorcise.
 - **Accepted residual.** Like Recruit and both Fight buttons, Exorcise is not pending-choice aware: while a choice is open the engine's block-all guards no-op it. Making every board button pending-aware is a separate follow-up.
-- **Live-verify (D-24026): operator-pending.** It is shared with WP-757, WP-758 and #3207. The ready prompt is `session-live-verify-mastermind-haunt-gate.md` in the side-session notes. In a live Zarathos / Fallen match, with the deployed `/api/version` gitSha checked:
-  - a haunted Hero shows its haunter;
-  - Exorcise → KO works, and Exorcise → give works;
-  - the Villain enters the City;
-  - Fight is locked while Zarathos haunts.
+- **Live-verify (D-24026): PASS 2026-11-11.** Shared with WP-757, WP-758 and #3207. On operator match `g8Mk6740Ddi` (Zarathos / Midtown Bank Robbery, 2p, The Fallen + Lilin, five mdns Heroes), created 2026-11-11 after both deploys (server `f609ddff`, built 2026-11-11T02:36Z; client `510a80b`, which contains #3270 `30d42352`), human seat driven with real clicks:
+  - **Villain haunt (WP-757).** 1.1.1-1.1.2: Metarchus's Ambush haunts Stalk the Night Stalkers (slot 4). The slot shows "Haunted by Metarchus" with its art, and Recruit is disabled with "Haunted — exorcise it first".
+  - **Mastermind haunt (WP-758).** 1.2.1-1.2.4, from the "Reveal a Master Strike now" setter: each player gains a Wound, then Zarathos haunts Creature of Dawn and Dusk (slot 0, the priciest at 7). `isHaunting` is true, the slot reads "Haunted by Zarathos", and the tile shows the Haunting badge.
+  - **Fight lock (#3207).** With 20 Attack against fightCost 7, Fight is disabled. Its `title` and the tile tooltip read "The Mastermind is haunting a Hero in the HQ. Exorcise that Hero first." (#3207's wording; WP-759 kept it). A click left the log at 8 entries, and the Excessive Violence button is absent.
+  - **Exorcise gating.** At 0 Recruit, Exorcise (7) and (6) are disabled with "Needs N recruit, you have 0."; with 20 Recruit both are enabled.
+  - **Exorcise → give to Player 2.** 1.2.8-1.2.9: the Hero goes to Player 1's discard and 6 Recruit is spent. Metarchus enters the City "(exorcised; Ambush ignored)".
+  - **Exorcise → KO.** 1.2.10-1.2.11: the Hero goes to the KO pile, 7 is spent, and Zarathos returns to the Mastermind space. The badge, strips and Exorcise buttons clear, and Fight turns on.
+  - **Fight accepted.** 1.2.12-1.2.14: Attack goes from 20 to 13 and Demonic Essence of Ghost Rider is defeated. Its fight effect re-haunts Bridge Between Dimensions (slot 3), and the client re-locks Fight at once. Its second clause takes the "no Ranged or Strength Hero" branch.
+  - **Exorcise → give to You, then a tactic's second clause.** 1.2.15-1.2.20: the Hero goes to the viewer's own discard. Fighting again defeats Eruption of Hellfire, which re-haunts Insatiable Craving (slot 1); its second clause gives Player 1, who has no Covert or Ranged Hero, a Wound.
+  - **Not seen live:** a tactic second clause that opens a seat-choice prompt (the bot held only S.H.I.E.L.D. cards), and Epic Zarathos.
 
 ### Zarathos haunts the HQ: his Master Strike and all four tactics resolve as printed (WP-758 / EC-795, D-24588) (2026-11-10)
 
@@ -33,7 +38,7 @@
 - **Tests.** game-engine 6810 -> 6853 / 0 (+43, including a seeded two-seat sim game where seat 1 answers Eruption through the WP-749 dispatch and `runFixture` replays it). Every other package is unchanged at 0 fail (server 207 DB-backed skipped). `typecheck:tests` stays at 250. Two pins moved intentionally: the strike-row count 14 -> 15, and the KO-site table gained two classified rows.
 - **Pins and feeds.** `effect-index:check` passes at 2857 entries, with five Zarathos rows (four tactics, one strike) moved unmarked -> executable. `sim:runtime-observed:check` and `sim:coverage --check` both pass. No `finalStateHash`, sentinel or PAR pin moved.
 - **Follow-ups.** Epic Zarathos (no Epic-face selection); `ai.seatChoice.ts` playing-seat answers for the five kinds (the bot ally takes the absent-seat default today); letting the player choose the "discard down to 3" cards.
-- **Live-verify (D-24026): operator-pending, and blocked on WP-759.** WP-759 (the Haunt client UI with the Exorcise action) is still a Draft. Without it a haunting Zarathos can't be exorcised from the board. Once both are deployed, the prompt in the side-session notes (`session-live-verify-mastermind-haunt-gate.md`) covers this item and PR #3207 together. In a human-driven Zarathos match, observe: a strike haunting a Hero, the Mastermind unfightable until exorcised, and a tactic's second clause resolving.
+- **Live-verify (D-24026): PASS 2026-11-11** on operator match `g8Mk6740Ddi` (Zarathos / Midtown Bank Robbery, 2p, The Fallen + Lilin, five mdns Heroes), created 2026-11-11 after both deploys (server `f609ddff`, built 2026-11-11T02:36Z; client `510a80b`, which contains #3270 `30d42352`), recorded in full under the WP-759 entry above. Observed: the strike haunting the priciest Hero after the Wounds, the Mastermind unfightable until exorcised (PR #3207's gate), and two tactics re-haunting with their second clauses resolving (Eruption of Hellfire wounded Player 1).
 ### `/coverage` counts every card type in a set (WP-880 / EC-918, D-24829) (2026-11-10)
 
 **User-visible on dashboard.legendary-arena.com/coverage and `/vision` after deploy.** The headline reads "N% card abilities implemented — {set}" and counts Heroes, Villains & Henchmen, Masterminds and Schemes from the effect-implementation index, with a per-type `implemented/total` line under it. `/coverage?set=ca75` reads 100% with Heroes 25/25 · Villains & Henchmen 14/14 · Masterminds 10/10 · Schemes 14/14. Core reads 99.2% (Schemes 24/25: Secret Invasion `special-rules` is deferred, D-24327). All sets read 31% (887/2857), down from 63.3% hero-only, because most Schemes and non-Core Masterminds are unaudited.
@@ -2573,8 +2578,8 @@ exorcise it — KO it or give it to any player — and the Villain drops into th
   existing reveal test unchanged). `pnpm -r build && pnpm -r --no-bail test` 0 fail in every package
   (server 1636 / 1430 pass / 206 skip DB-less; arena-client 2115/0). `cards:check`, effect-index,
   mechanics, `ledger:villains`, `sim:runtime-observed`, `sim:coverage --check` all 0. No hash re-pin.
-- **Live-verify (operator-pending, after WP-759 deploys).** Human-driven solo `mdns/zarathos` match:
-  a Fallen Ambush haunts a Hero; Recruit is refused on it; exorcising drops the Villain into the City.
+- **Live-verify (D-24026): PASS 2026-11-11** (see the WP-759 entry). Metarchus's Ambush haunted a Hero, its Recruit was locked,
+  and exorcising it dropped Metarchus into the City with its Ambush ignored.
 - **Unblocks.** WP-759 (client) now; WP-758 (Zarathos) once WP-749 lands; WP-760 sequenced after.
 
 ### WP-747 — A Villain-Deck Bystander is captured by the Villain closest to the Villain Deck (EC-784 / D-24571) (2026-09-26)
