@@ -30,7 +30,14 @@
 - **Pins and feeds.** No sentinel, `finalStateHash`, PAR or `sim:coverage` pin moved. `sim:runtime-observed` moved for its `amwp` board only (7660 -> 7676 observations, `gamesNotTerminated` 0); the dashboard `useInPlayCoverage` `totalObs` pin 8686 -> 8702 (+16, same delta).
 - **Termination probe.** 8 one-player competent games (sentinel core + Scott Lang, Ant Army, Wasp, Ant-Man, Black Widow): all 8 reached endgame; 68 Heist attempts; 9 X-Con declines; Anthem shuffle answer not reached in the sample (upper bound 0).
 - **Papercut (not in this PR).** `apps/dashboard/src/data/in-play-hollow-baseline.json` lags the runtime-observed feed by several WPs (`build:in-play-baseline` would add about a dozen mechanics, e.g. `attack-no-magnitude`, `astral-plane`, `cheering-crowds`); a separate hygiene commit should refresh it and re-pin the dashboard test that reads the seed alone.
-- **Live-verify (D-24026): operator-pending.** After deploy, a NEW bot-ally match whose loadout includes Scott Lang, Cat Burglar and Ant Army (operator setters put Heist cards in the bot seat's hand): on a turn where the bot readies a Heist card and the odds favor it, the log shows `Player N attempts a Heist …` and its outcome line, the decision log shows `attemptHeist (score 175)`, and the bot never stalls on the X-Con or Anthem choices.
+- **Live-verified (D-24026), 2026-11-11.** 2p operator match `3dDyup6ZeQk` (Fin Fang Foom / Midtown Bank Robbery; Iron Man, Wasp, Scott Lang, Cat Burglar, Bishop, Ant Army). Player 1 was the bot ally. Server `f983793a` and client `f983793` both contain the WP-878 merge `15244591`. The match was created 76 s before the boot, but bot moves run on the live server.
+  - **Attempts.** The bot attempted 12 Heists: 10 worked, one tied (nothing happened) and one failed (a Wound, Heist Count 3 against Goom, 4 VP).
+  - **Ordering.** On every attempt turn it played its whole hand before the attempt. The only cards played afterward were drawn by the Heist (Up the Ante, turns 22 and 32).
+    - The only spends before the Heist were two Mastermind fights (turns 30 and 34, scored 1500).
+    - Every other fight or recruit came after it.
+  - **X-Con.** Readied alone on turn 38, it was not attempted. Whenever X-Con's choice opened (turns 4, 18, 24) the bot declined it, and it never stalled.
+  - **Not observed live.** The `[Bot] Chose: attemptHeist (score 175)` line (server-side, not in the client artifacts) and the Anthem shuffle answer (Anthem was Demolished to the bottom of the Hero Deck). Both are test-covered.
+  - **Result.** Heroes won on turn 39.
 
 ### Effect traces say where Endless Armies, The Leader, Mr. Immortal and the stack-entry cards really fire (WP-877 / EC-915, D-24824) (2026-11-08)
 
