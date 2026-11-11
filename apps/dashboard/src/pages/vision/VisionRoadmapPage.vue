@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useBuildRoadmap, taskStateLabel } from '../../composables/useBuildRoadmap.js';
-import { useCoverageLedger } from '../../composables/useCoverageLedger.js';
+import { useCardCoverage, cardCoverageLine } from '../../composables/useCardCoverage.js';
 import type { TaskState } from '../../types/roadmap.js';
 import VisionCard from '../../widgets/VisionCard.vue';
 import GovernanceKpiStrip from '../../widgets/GovernanceKpiStrip.vue';
@@ -13,13 +13,14 @@ import StatusFeedWidget from '../../widgets/StatusFeedWidget.vue';
 // page is thin presentation over the composable.
 const summary = useBuildRoadmap();
 
-// why: surface live hero-effect coverage on the product-content workstream so the
+// why: surface live card-ability coverage on the product-content workstream so the
 // roadmap reflects real progress (e.g. Berserk shipping) instead of only the
-// hand-set task statuses. Reads the same bundled ledger as the Coverage page.
-const coverage = useCoverageLedger();
-const productCoverageLabel = computed(
-  () =>
-    `${coverage.percentImplemented.value}% hero mechanics implemented · ${coverage.summary.value.byStatus.unsupported} unsupported`,
+// hand-set task statuses. Reads the same bundled effect index as the Coverage page,
+// every card type (WP-880 / D-24829); the line is dropped, never a silent 0%, when
+// the index fails to load.
+const coverage = useCardCoverage();
+const productCoverageLabel = computed(() =>
+  cardCoverageLine(coverage.summary.value, coverage.error),
 );
 
 /** Maps a schedule state to its CSS modifier class for the colored badges/banner. */
@@ -113,7 +114,7 @@ const bannerMessage = computed(() => {
           {{ taskStateLabel(workstream.state) }}
         </span>
       </div>
-      <p v-if="workstream.id === 'product-content'" class="coverage-line">
+      <p v-if="workstream.id === 'product-content' && productCoverageLabel" class="coverage-line">
         {{ productCoverageLabel }} —
         <RouterLink to="/coverage">full coverage ledger →</RouterLink>
       </p>

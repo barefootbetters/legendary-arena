@@ -448,7 +448,9 @@ hand:
   handler during play. It is a handler-reachability detector, not a
   state-diff detector.
 - **The `/coverage` dashboard** — [`CoveragePage.vue`](../apps/dashboard/src/pages/coverage/CoveragePage.vue)
-  renders the ledger as a by-mechanic worklist plus a by-card index. Its
+  renders the effect-implementation index as an all-card-types headline and
+  by-card index (Heroes, Villains & Henchmen, Masterminds, Schemes; D-24829),
+  plus the hero ledger's by-mechanic worklist. Its
   in-play headline is obs-weighted and its denominator is a monotonic
   high-water-mark, so fixing a mechanic cannot shrink the denominator and
   inflate the percentage — the metric is a floor, not a census.

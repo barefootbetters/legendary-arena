@@ -6,6 +6,8 @@
  * the generator in `scripts/hero-mechanic-ledger.mjs`.
  */
 
+import type { EffectIndexEntryScope } from '@legendary-arena/registry/schema';
+
 /**
  * The six kinds of coverage state (drift-pinned by `types/coverage.drift.test.ts`).
  * `subsystem` (WP-548 / D-24357) marks a card implemented by a subsystem OTHER than
@@ -103,6 +105,32 @@ export interface SetCoverageEntry {
   name: string;
   summary: LedgerSummary;
   percentImplemented: number;
+}
+
+/**
+ * One card type's slice of a set in the effect-implementation index (WP-880 /
+ * D-24829): `implemented` uses D-24827's formula (Executable + Condition +
+ * Subsystem); `total` is every entry of that scope. `label` is the plural
+ * display label (`cardTypeLabel`).
+ */
+export interface CardTypeCoverage {
+  scope: EffectIndexEntryScope;
+  label: string;
+  implemented: number;
+  total: number;
+}
+
+/**
+ * One row of the all-types By-set table (WP-880 / D-24829): a card set's
+ * effect-index entries rolled up by status across every card type, plus the
+ * per-type breakdown. Same release order as `SetCoverageEntry`.
+ */
+export interface AllTypesSetCoverageEntry {
+  abbr: string;
+  name: string;
+  summary: LedgerSummary;
+  percentImplemented: number;
+  byType: CardTypeCoverage[];
 }
 
 /** How many of a mechanic's card rows carry one status. */
