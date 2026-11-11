@@ -6,16 +6,29 @@ import {
   statusLabel,
   buildMechanicDictionary,
   filterRowsBySet,
-  summarizeRows,
   summaryImplementedPercent,
   implementedRowCount,
 } from '../../composables/useCoverageLedger.js';
+import {
+  useCardCoverage,
+  summarizeEntries,
+  filterEntriesBySet,
+  buildCardTypeBreakdown,
+  formatCardTypeLine,
+  cardTypeLabel,
+} from '../../composables/useCardCoverage.js';
+import { filterEntries } from '../../composables/useEffectIndex.js';
 import { useInPlayCoverage } from '../../composables/useInPlayCoverage.js';
 import { useParFidelity } from '../../composables/useParFidelity.js';
 import { useLiveVerify, liveVerifyLabel, entryMechanic } from '../../composables/useLiveVerify.js';
 import ParSweetSpotChart from '../../components/charts/ParSweetSpotChart.vue';
+import {
+  EFFECT_INDEX_ENTRY_SCOPES,
+  type EffectIndexEntryScope,
+} from '@legendary-arena/registry/schema';
 import type {
-  LedgerRow,
+  AllTypesSetCoverageEntry,
+  LedgerDesign,
   LedgerStatus,
   LiveVerifyEntry,
   LiveVerifyState,
@@ -23,18 +36,23 @@ import type {
 } from '../../types/coverage.js';
 import type { ParFidelityRow } from '../../types/parFidelity.js';
 
+// The hero mechanic ledger still drives By mechanic (mechanic tokens and provenance
+// are hero-ledger concepts) and the in-play headline's gate.
+const { rows, error, runtimeObservedByMechanic, runtimeObservedSummary } = useCoverageLedger();
+
+// WP-880 / D-24829: the headline, status chips, By set and By card count every card
+// type in the effect-implementation index — Heroes, Villains & Henchmen, Masterminds
+// and Schemes — with D-24827's formula unchanged.
 const {
-  rows,
-  error,
-  runtimeObservedByMechanic,
-  runtimeObservedSummary,
+  entries: indexEntries,
   setBreakdown,
   setDisplayName,
-} = useCoverageLedger();
+  error: indexError,
+} = useCardCoverage();
 
-// Set scope: one of the registered card sets (e.g. `core`), or every set. Kept in
+// Set scope: one of the card sets in the index (e.g. `core`), or every set. Kept in
 // the `?set=` query so a set-scoped view is linkable (/coverage?set=core). The
-// headline, status chips, by-card and by-mechanic tables all read the scoped rows.
+// headline, status chips, by-card and by-mechanic tables all read the scoped set.
 const route = useRoute();
 const router = useRouter();
 
@@ -59,23 +77,25 @@ const selectedSet = computed<string>({
 });
 
 const isSetScoped = computed(() => selectedSet.value !== 'all');
-const scopedRows = computed(() => filterRowsBySet(rows.value, selectedSet.value));
-const summary = computed(() => summarizeRows(scopedRows.value));
+const scopedEntries = computed(() => filterEntriesBySet(indexEntries.value, selectedSet.value));
+const summary = computed(() => summarizeEntries(scopedEntries.value));
 const percentImplemented = computed(() => summaryImplementedPercent(summary.value));
-const mechanics = computed(() => buildMechanicDictionary(scopedRows.value));
+const cardTypeBreakdown = computed(() => buildCardTypeBreakdown(scopedEntries.value));
+const cardTypeLine = computed(() => formatCardTypeLine(cardTypeBreakdown.value));
+// why: By mechanic stays hero-only — mechanic tokens and provenance (WP, handler, the
+// runtime-observed join) are hero-ledger concepts, so it keeps the hero ledger rows.
+const scopedHeroRows = computed(() => filterRowsBySet(rows.value, selectedSet.value));
+const mechanics = computed(() => buildMechanicDictionary(scopedHeroRows.value));
 // Executable + Condition + Subsystem (D-24827): the headline's numerator, for the legend.
 const doneRows = computed(() => implementedRowCount(summary.value));
 
-/**
- * Row count behind a by-card status filter button, for the current set scope.
- * why: the table opens on Unsupported, which is empty for a finished set (Core);
- * the counts make "0 rows" read as "nothing left", not as a broken table.
- */
-function statusFilterCount(filter: LedgerStatus | 'all'): number {
-  if (filter === 'all') {
-    return summary.value.totalRows;
+/** One By-set cell: `implemented/total` for a card type, or "—" when the set has none. */
+function setTypeCell(setEntry: AllTypesSetCoverageEntry, scope: EffectIndexEntryScope): string {
+  const typeCoverage = setEntry.byType.find((candidate) => candidate.scope === scope);
+  if (typeCoverage === undefined) {
+    return '—';
   }
-  return summary.value.byStatus[filter] ?? 0;
+  return `${typeCoverage.implemented}/${typeCoverage.total}`;
 }
 
 /** Clicking a By-set row scopes the page to it; clicking the scoped set clears it. */
@@ -102,9 +122,9 @@ function statusClass(status: LedgerStatus): string {
 /**
  * The Design column label (WP-491): the card design name(s) that print this
  * mechanic, comma-joined, or an em dash when there is no carrying design (an
- * `(unmarked)` row, or an older schemaVersion-1 ledger without the field).
+ * `(unmarked)` row, or any non-hero entry — only hero entries carry designs).
  */
-function designLabel(designs: LedgerRow['designs']): string {
+function designLabel(designs: readonly LedgerDesign[] | undefined): string {
   if (!designs || designs.length === 0) {
     return '—';
   }
@@ -129,16 +149,57 @@ function dominantReason(entry: RuntimeObservedEntry): string {
   return topReason;
 }
 
-// By-card index (the debugging lookup): status filter + free-text search over
-// card name / ext_id / mechanic, capped so the table stays responsive.
+// By-card index (the debugging lookup): every card ability in the scoped set, all
+// card types. Type + status filters and a free-text search over card name / ext_id /
+// design, through the shared `filterEntries`; capped so the table stays responsive.
+const typeFilter = ref<EffectIndexEntryScope | 'all'>('all');
 const statusFilter = ref<LedgerStatus | 'all'>('unsupported');
 const search = ref('');
 
+const TYPE_FILTERS: readonly (EffectIndexEntryScope | 'all')[] = [
+  ...EFFECT_INDEX_ENTRY_SCOPES,
+  'all',
+];
+
+// The scoped set narrowed to the selected type: the base the status buttons count.
+const typeScopedSummary = computed(() =>
+  summarizeEntries(
+    filterEntries(indexEntries.value, {
+      search: '',
+      scope: typeFilter.value,
+      status: 'all',
+      handlerOnly: false,
+      set: selectedSet.value,
+    }),
+  ),
+);
+
+/** Entry count behind a by-card Type filter button, for the current set scope. */
+function typeFilterCount(filter: EffectIndexEntryScope | 'all'): number {
+  if (filter === 'all') {
+    return summary.value.totalRows;
+  }
+  const typeCoverage = cardTypeBreakdown.value.find((candidate) => candidate.scope === filter);
+  return typeCoverage === undefined ? 0 : typeCoverage.total;
+}
+
+/**
+ * Entry count behind a by-card status filter button, for the current set + type.
+ * why: the table opens on Unsupported, which is empty for a finished set (Core);
+ * the counts make "0 rows" read as "nothing left", not as a broken table.
+ */
+function statusFilterCount(filter: LedgerStatus | 'all'): number {
+  if (filter === 'all') {
+    return typeScopedSummary.value.totalRows;
+  }
+  return typeScopedSummary.value.byStatus[filter] ?? 0;
+}
+
 // why: the index opens on Unsupported, which is empty for a finished set (Core).
-// When the scoped set has no rows under the current filter, fall back to All
+// When the scoped set + type has no rows under the current filter, fall back to All
 // rather than greet the operator with "Showing 0 of 0".
 watch(
-  selectedSet,
+  [selectedSet, typeFilter],
   () => {
     if (statusFilterCount(statusFilter.value) === 0) {
       statusFilter.value = 'all';
@@ -147,25 +208,17 @@ watch(
   { immediate: true },
 );
 
-const filteredRows = computed(() => {
-  const needle = search.value.trim().toLowerCase();
-  const result = [];
-  for (const row of scopedRows.value) {
-    if (statusFilter.value !== 'all' && row.status !== statusFilter.value) {
-      continue;
-    }
-    if (needle !== '') {
-      const haystack = `${row.heroName} ${row.extId} ${row.mechanic}`.toLowerCase();
-      if (!haystack.includes(needle)) {
-        continue;
-      }
-    }
-    result.push(row);
-  }
-  return result;
-});
+const filteredEntries = computed(() =>
+  filterEntries(indexEntries.value, {
+    search: search.value,
+    scope: typeFilter.value,
+    status: statusFilter.value,
+    handlerOnly: false,
+    set: selectedSet.value,
+  }),
+);
 
-const displayedRows = computed(() => filteredRows.value.slice(0, DISPLAY_CAP));
+const displayedEntries = computed(() => filteredEntries.value.slice(0, DISPLAY_CAP));
 
 const STATUS_FILTERS: readonly (LedgerStatus | 'all')[] = [
   'unsupported',
@@ -282,12 +335,15 @@ function winRateClass(row: ParFidelityRow): string {
     <header class="page-header">
       <h1>Mechanic Coverage</h1>
       <p class="subtitle">
-        Every hero card × mechanic — the authoring worklist and the bug→code index. Source:
-        <code>docs/ai/coverage/hero-mechanic-ledger.json</code> (regenerated by
-        <code>pnpm ledger:heroes</code>; CI-gated). Updates on every mechanic WP.
+        Every card ability in every card type — Heroes, Villains &amp; Henchmen, Masterminds and
+        Schemes — the authoring worklist and the bug→code index. Source:
+        <code>data/metadata/effect-implementation-index.json</code> (built from the hero, villain,
+        mastermind and scheme feeds; CI-gated). By mechanic reads the hero ledger,
+        <code>docs/ai/coverage/hero-mechanic-ledger.json</code>.
       </p>
     </header>
 
+    <p v-if="indexError" class="cov-error">Effect index failed to load: {{ indexError }}</p>
     <p v-if="error" class="cov-error">Coverage ledger failed to load: {{ error }}</p>
 
     <div class="set-bar">
@@ -304,26 +360,26 @@ function winRateClass(row: ParFidelityRow): string {
     </div>
 
     <section class="summary">
-      <div class="headline">
+      <!-- why (WP-880 / D-24829): when the index fails to load, hide the all-types
+           headline and per-type line instead of reading a silent 0%; the cov-error
+           banner above says why. -->
+      <div v-if="!indexError" class="headline">
         <span class="headline-num">{{ percentImplemented }}%</span>
         <span class="headline-label"
-          >hero mechanics implemented<template v-if="isSetScoped">
-            — {{ setDisplayName(selectedSet) }}, hero cards only</template
-          ><template v-else> — hero cards only</template></span
+          >card abilities implemented —
+          {{ isSetScoped ? setDisplayName(selectedSet) : 'all sets' }}</span
         >
-        <!-- why: a set-scoped 100% read as "the whole set is done" while that set's
-             Schemes and Masterminds sit outside the hero ledger entirely. Name what
-             the number leaves out so nobody has to know the ledger's scope. -->
-        <span class="headline-sub"
-          >Villains, Henchmen, Masterminds and Schemes are not counted here</span
-        >
+        <!-- why: name every card type the number counts, so a set reading 100% can be
+             checked type by type. An `unmarked` Scheme means "not audited yet" (WP-879
+             seed), so it counts against the set. -->
+        <span class="headline-sub type-line">{{ cardTypeLine }}</span>
         <!-- why (WP-561 / D-24370): the two headlines are NOT comparable percentages of
-             the same thing. This one is ROW-weighted (share of card x mechanic rows);
+             the same thing. This one is ROW-weighted (share of card x ability rows);
              its neighbour is OBSERVATION-weighted (share of in-play hollow observations).
              Saying so stops the pair reading as a before/after of one measure. -->
         <span class="headline-sub"
-          >per card × mechanic row — {{ summary.distinctMechanics }} distinct mechanics ·
-          {{ summary.totalRows }} rows</span
+          >per card × ability row — {{ summary.totalRows }} rows ·
+          {{ summary.distinctMechanics }} distinct abilities</span
         >
       </div>
       <div class="headline">
@@ -337,7 +393,7 @@ function winRateClass(row: ParFidelityRow): string {
              cannot be scoped; say so rather than let it read as the set's number. -->
         <span v-if="isSetScoped" class="headline-sub">all sets (not set-scoped)</span>
       </div>
-      <div class="summary-chips">
+      <div v-if="!indexError" class="summary-chips">
         <div class="count-chip cov-executable">
           <span class="count-num">{{ summary.byStatus.executable }}</span
           ><span>Executable</span>
@@ -370,17 +426,33 @@ function winRateClass(row: ParFidelityRow): string {
 
       <h3>Implemented %</h3>
       <p class="legend-lead">
-        <strong>Implemented rows ÷ all rows</strong>, for the selected set (or all sets). A
-        <em>row</em> is one hero card × one mechanic it prints: a hero whose cards draw and rescue
-        is two rows. Right now ({{ isSetScoped ? setDisplayName(selectedSet) : 'all sets' }}):
-        {{ doneRows }} implemented of {{ summary.totalRows }} rows = {{ percentImplemented }}%.
+        <strong>Implemented rows ÷ all rows</strong>, for the selected set (or all sets), across
+        every card type: Heroes, Villains &amp; Henchmen, Masterminds (Master Strike and Tactics)
+        and Schemes. A <em>row</em> is one card × one ability it prints: a hero whose cards draw and
+        rescue is two rows; a Scheme has a row per printed line kind (setup, special rules, twist,
+        evil wins, good wins).
+        <template v-if="!indexError"
+          >Right now ({{ isSetScoped ? setDisplayName(selectedSet) : 'all sets' }}):
+          {{ doneRows }} implemented of {{ summary.totalRows }} rows = {{ percentImplemented }}% —
+          {{ cardTypeLine }}.</template
+        >
       </p>
       <ul class="legend-notes">
         <li>
           <strong>Implemented</strong> is Executable + Condition + Subsystem: the three statuses the
-          engine has built. Deferred, Unsupported and Unmarked are the to-dos. Here that is
-          {{ summary.byStatus.executable }} Executable, {{ summary.byStatus.condition }} Condition
-          and {{ summary.byStatus.subsystem ?? 0 }} Subsystem.
+          engine has built. Deferred, Unsupported and Unmarked are the to-dos, in every card type.
+          <template v-if="!indexError"
+            >Here that is {{ summary.byStatus.executable }} Executable,
+            {{ summary.byStatus.condition }} Condition and
+            {{ summary.byStatus.subsystem ?? 0 }} Subsystem.</template
+          >
+        </li>
+        <!-- why: an `unmarked` Scheme means "not audited yet" (WP-879 seed), so it counts
+             against the set; say so, or a Schemes 0/n reads as a bug. -->
+        <li>
+          An <strong>Unmarked</strong> Scheme row means the Scheme has not been audited yet (most
+          sets outside Core and Captain America 75th). It counts against the set until someone shows
+          the line works, so a set's Schemes figure can read <code>0/n</code>.
         </li>
         <li>
           It counts rows, not how often a mechanic comes up in play. That is what
@@ -409,21 +481,33 @@ function winRateClass(row: ParFidelityRow): string {
         <dd>No handler for this mechanic on this card. A code to-do.</dd>
         <dt><span class="badge cov-unmarked">Unmarked</span></dt>
         <dd>
-          The card has ability text but no mechanic tag in the card data. A data to-do; it has no
-          mechanic, so it never appears in the by-mechanic table.
+          Heroes and Villains: the card has ability text but no mechanic tag in the card data. A
+          data to-do; it has no mechanic, so it never appears in the by-mechanic table. Masterminds
+          and Schemes: no curated provenance yet, i.e. not audited.
         </dd>
       </dl>
 
       <h3>Columns</h3>
       <dl class="legend-grid">
         <dt>Rows</dt>
-        <dd>Card × mechanic rows in the set; the status columns beside it add up to it.</dd>
+        <dd>
+          Card × ability rows in the set, every card type; the status columns beside it add up to
+          it.
+        </dd>
+        <dt>Heroes · Villains &amp; Henchmen · Masterminds · Schemes</dt>
+        <dd>
+          Implemented ÷ rows for that card type in the set; "—" when the set has none. Villains and
+          Henchmen are one type here (the index does not split them).
+        </dd>
+        <dt>Type</dt>
+        <dd>The card type a By card row belongs to.</dd>
         <dt>Design</dt>
-        <dd>The printed card design(s) that carry the mechanic.</dd>
+        <dd>The printed hero card design(s) that carry the ability; "—" for other card types.</dd>
         <dt>Verified</dt>
         <dd>
           Confirmed in a real match on play.legendary-arena.com (the Core playtest record below).
-          "—" means not tracked yet (only Core is seeded), not failed.
+          "—" means not tracked yet (only Core is seeded), not failed. Mastermind and Scheme rows
+          always show "—" here; their record is in the Core playtest table.
         </dd>
         <dt>WP · Decision</dt>
         <dd>The work packet that shipped the mechanic, and its DECISIONS.md entry.</dd>
@@ -435,21 +519,24 @@ function winRateClass(row: ParFidelityRow): string {
           common reason. All sets, regardless of the Set selector.
         </dd>
         <dt>Cards</dt>
-        <dd>Rows using the mechanic within the selected scope.</dd>
+        <dd>Hero rows using the mechanic within the selected scope.</dd>
       </dl>
     </details>
 
     <section class="block">
       <h2>By set</h2>
       <p class="block-note">
-        Every card set with hero ledger rows, in release order. Click a set to scope the page to it;
-        click it again (or Show all sets) to clear.
+        Every card set in the effect-implementation index, in release order, counting every card
+        type. Click a set to scope the page to it; click it again (or Show all sets) to clear.
       </p>
       <table class="cov-table set-table">
         <thead>
           <tr>
             <th>Set</th>
             <th class="num">Implemented %</th>
+            <th v-for="scope in EFFECT_INDEX_ENTRY_SCOPES" :key="scope" class="num">
+              {{ cardTypeLabel(scope) }}
+            </th>
             <th class="num">Rows</th>
             <th class="num">Executable</th>
             <th class="num">Subsystem</th>
@@ -475,6 +562,9 @@ function winRateClass(row: ParFidelityRow): string {
                 >{{ entry.percentImplemented }}%</span
               >
             </td>
+            <td v-for="scope in EFFECT_INDEX_ENTRY_SCOPES" :key="scope" class="num type-cell">
+              {{ setTypeCell(entry, scope) }}
+            </td>
             <td class="num">{{ entry.summary.totalRows }}</td>
             <td class="num cov-executable">{{ entry.summary.byStatus.executable }}</td>
             <td class="num cov-subsystem">{{ entry.summary.byStatus.subsystem ?? 0 }}</td>
@@ -496,6 +586,18 @@ function winRateClass(row: ParFidelityRow): string {
       <div class="controls">
         <div class="filter-buttons">
           <button
+            v-for="filter in TYPE_FILTERS"
+            :key="filter"
+            type="button"
+            :class="{ active: typeFilter === filter }"
+            @click="typeFilter = filter"
+          >
+            {{ filter === 'all' ? 'All types' : cardTypeLabel(filter) }}
+            <span class="filter-count">{{ typeFilterCount(filter) }}</span>
+          </button>
+        </div>
+        <div class="filter-buttons">
+          <button
             v-for="filter in STATUS_FILTERS"
             :key="filter"
             type="button"
@@ -509,18 +611,21 @@ function winRateClass(row: ParFidelityRow): string {
         <input
           v-model="search"
           type="search"
-          placeholder="Search card or mechanic…"
+          placeholder="Search card or design…"
           class="search-input"
         />
       </div>
       <p class="block-note">
-        Showing {{ displayedRows.length }} of {{ filteredRows.length }} matching rows.
-        <span v-if="filteredRows.length > displayedRows.length">Refine the search to narrow.</span>
+        Showing {{ displayedEntries.length }} of {{ filteredEntries.length }} matching rows.
+        <span v-if="filteredEntries.length > displayedEntries.length"
+          >Refine the search to narrow.</span
+        >
       </p>
       <table class="cov-table">
         <thead>
           <tr>
             <th>Card</th>
+            <th>Type</th>
             <th>Design</th>
             <th>Set</th>
             <th>Mechanic</th>
@@ -532,13 +637,14 @@ function winRateClass(row: ParFidelityRow): string {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="row in displayedRows" :key="`${row.extId}-${row.mechanic}`">
+          <tr v-for="row in displayedEntries" :key="`${row.scope}-${row.extId}-${row.mechanic}`">
             <td>
-              <span class="card-name">{{ row.heroName }}</span>
+              <span class="card-name">{{ row.name }}</span>
               <span class="mono dim ext">{{ row.extId }}</span>
             </td>
-            <!-- why: WP-491 — the card design(s) that print this mechanic; "—" for a
-                 villain-less/unmarked row (hero-level, no carrying design). -->
+            <td class="dim">{{ cardTypeLabel(row.scope) }}</td>
+            <!-- why: WP-491 — the hero card design(s) that print this ability; "—" for a
+                 hero (unmarked) row or any non-hero entry (no carrying design). -->
             <td>{{ designLabel(row.designs) }}</td>
             <td class="mono dim">{{ row.set }}</td>
             <td class="mono">{{ row.mechanic }}</td>
@@ -548,7 +654,9 @@ function winRateClass(row: ParFidelityRow): string {
               }}</span>
             </td>
             <!-- why: the hand-curated live-verify record (docs/ai/coverage/live-verify.json);
-                 "—" means the row is not tracked yet (only Core is seeded), not "failed". -->
+                 "—" means the row is not tracked yet (only Core is seeded), not "failed".
+                 The join keys `<extId>|<mechanic>` match hero and villain entries only;
+                 mastermind and scheme keys use another grammar, so those rows read "—". -->
             <td>
               <span
                 v-if="liveVerifyForRow(row)"
@@ -648,8 +756,10 @@ function winRateClass(row: ParFidelityRow): string {
     </section>
 
     <section class="block">
+      <!-- why: By mechanic stays hero-only — mechanic tokens and provenance are
+           hero-ledger concepts — so the heading says so rather than read as the set. -->
       <h2>
-        By mechanic — the implementation worklist<template v-if="isSetScoped">
+        By mechanic — the implementation worklist — Heroes<template v-if="isSetScoped">
           · {{ setDisplayName(selectedSet) }}</template
         >
       </h2>

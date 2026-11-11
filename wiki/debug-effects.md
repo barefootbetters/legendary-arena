@@ -122,7 +122,7 @@ hidden behind a no-op executor. See [Card Effect System](card-effect-system.md#v
 | **Hollow-effect detector** | "declared but reached no handler" at runtime (reachability, not a state diff) | [`hollowEffect.record.ts`](../packages/game-engine/src/diagnostics/hollowEffect.record.ts) → `docs/ai/coverage/runtime-observed-hollows.json` |
 | **`unresolvedMarkers`** | A mis-authored `[effect:X]` marker, detectable at the fire site | [`villainAbility.types.ts`](../packages/game-engine/src/rules/villainAbility.types.ts) (WP-257 / D-24034) |
 | **Play Diagnostics provenance** | What one live seat saw: `awaitingPlayerInput` + `recentlyPlayedCards.outcome` | [`effectProvenance.ts`](../apps/arena-client/src/diagnostics/effectProvenance.ts) |
-| **`/coverage` dashboard** | The ledger rendered as a by-mechanic worklist + by-card index | [`CoveragePage.vue`](../apps/dashboard/src/pages/coverage/CoveragePage.vue) (see [Dashboard](dashboard.md)) |
+| **`/coverage` dashboard** | The effect index rendered as an all-card-types set headline (D-24829) + by-card index, plus the hero ledger's by-mechanic worklist | [`CoveragePage.vue`](../apps/dashboard/src/pages/coverage/CoveragePage.vue) (see [Dashboard](dashboard.md)) |
 
 The load-bearing property shared by all of them: every one is **derived from
 the real engine parser or a runtime hook** over `data/cards/*.json` — none is a

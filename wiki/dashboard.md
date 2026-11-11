@@ -118,7 +118,7 @@ except `/login` sits behind an authenticated `AppLayout`:
 |---|---|---|
 | `/overview` | `OverviewPage` | Morning glance — KPI strip, funnel, revenue, governance |
 | `/vision` | `VisionRoadmapPage` | Build vision + dated roadmap |
-| `/coverage` | `CoveragePage` | Hero-mechanic + in-play effect coverage |
+| `/coverage` | `CoveragePage` | Card-ability coverage across every card type (Heroes, Villains & Henchmen, Masterminds, Schemes; D-24829) + in-play effect coverage |
 | `/players` | `PlayerAnalyticsPage` | A player-records table + traffic-sources, activation-funnel, retention-cohorts trend widgets (see [Data provenance](#the-players-page-data-provenance-and-what-it-is-not)) |
 | `/monetization` | `MonetizationPage` | Revenue, net revenue, paid-action errors |
 | `/gameplay` | `GameplayPage` | Match / gameplay analytics |
@@ -269,9 +269,13 @@ contrast, **committed** — and it is load-bearing, not incidental.
 The `/coverage` page carries two headline percentages that look comparable and
 are not:
 
-- **hero mechanics implemented** — **row-weighted**: the share of card × mechanic
-  ledger rows whose status is `executable`, `condition` or `subsystem` (D-24827).
-  It answers *how much of the card corpus is built*.
+- **card abilities implemented** — **row-weighted**: the share of card × ability
+  rows in the effect-implementation index whose status is `executable`,
+  `condition` or `subsystem` (D-24827), across every card type: Heroes, Villains
+  & Henchmen, Masterminds and Schemes (D-24829, WP-880). A per-type
+  `implemented/total` line sits under it, and an `unmarked` Scheme (not audited
+  yet) counts against the set. It answers *how much of the card corpus is
+  built*. The By mechanic worklist under it stays hero-only and says so.
 - **in-play hollows resolved** — **observation-weighted**: the share of observed
   in-play hollow *observations* belonging to mechanics that are executable. It
   answers *how often a player hits something unbuilt*. It is the harsher and
