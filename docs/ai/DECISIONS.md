@@ -50874,3 +50874,25 @@ Protect this file.
 
 ---
 Protect this file.
+
+### D-24830 — The determinism-only replay dispatches every registered move, and the drift guard pins it (Active 2026-11-10 — direct fix, no WP)
+
+**Context.** `replay/replay.execute.ts` dispatches a recorded move list through a static `MOVE_MAP`. It covered 13 of the 58 registered moves (`LegendaryGame.moves` plus the two lobby phase moves). An unmapped name is not an error: `applyReplayStep` pushes `Replay warning: unknown move name "…" — skipped.` and leaves `G` otherwise untouched. So a recorded game that used any of the other 45 moves reconstructed a wrong `G` silently: the move's effect was missing and a warning line stood in its place. The 45 were `attemptHeist` (humans since WP-865 / D-24808, bots since WP-878 / D-24826, where the WP-878 Inspector review noticed the gap), `dodgeCard`, `healWounds`, `phaseCard`, `useRitualArtifact`, `endMatchEarly`, the six operator setters, and every pending-choice resolve move, including `resolveMoveVillainChoice` and `resolveSeatChoice`. D-24073's scope note had left the replay map's completeness out of that guard, and D-24713 §7 listed the operator setters, `phaseCard` and `endMatchEarly` as absent from the determinism-only replay.
+
+**Impact (diagnosed before the fix).** Not a scoring or verification bug. D-24119 replay and score verification, replay artifacts, the result LAGN and the competition verifier all re-run `bgio.replay_artifacts` through boardgame.io's own reducer (`reduceReplayByHash`, WP-336), which never reads this map. The map is consumed only by `replayGame` / `verifyDeterminism` (the D-0205 reducer-determinism harness) and `buildSnapshotSequence`, which `apps/replay-producer` wraps. Those offline outputs were wrong for any input that held an unmapped move. No committed fixture fed through this path holds one: the `PRE_WP080_HASH` input has no moves, the sentinel `.replay.json` fixtures run through `runFixture`, and the WP-732 capture round-trip is `advanceStage` / `fightMastermind` only.
+
+**Decision.**
+1. The replay `MOVE_MAP` dispatches **every** registered move: `LegendaryGame.moves` plus the lobby phase moves. Each entry calls the registered move function with the recorded args. Nothing is re-implemented.
+2. `replay.execute.ts` exports `REPLAY_MOVE_NAMES = Object.keys(MOVE_MAP)`. The WP-289 / D-24073 drift guard (`simulation/simulation.moveDispatch.drift.test.ts`) asserts that key set **equals** the registered set (no move missing, none stale), that every sim-dispatchable move is replay-dispatchable, and that dropping `attemptHeist` breaks the equality (non-vacuous).
+3. This amends **D-24713 §7** for this harness only. The operator setters, `phaseCard` and `endMatchEarly` now have replay entries. §7's purpose, keeping them away from the bot, is unchanged: they stay out of `getLegalMoves`, the sim and PAR dispatch, and the fixture runner. The setters still gate on `G.isDebugMatch`, so a replayed setter is a no-op outside an operator match. It also narrows **D-24073's scope note**: the replay map's completeness is now guarded, but the fixture runner's (`test/fixtures/runFixture.ts`) is still not.
+4. D-24322 is unchanged. The harness still runs no bgio turn hooks, so a pending choice that only a hook opens is never parked here, and its resolve move returns without changing `G` under its own validation contract.
+
+**Consequences.**
+- `attemptHeist.test.ts` replays a recorded Heist turn (`attemptHeist`, then the shuffle `resolveSeatChoice`, the X-Con `resolveMoveVillainChoice` and the `resolveKoHeroChoice` it parks) through `applyReplayStep`. It asserts the result is byte-equal to the live moves' `G`, with no skipped-move warning.
+- Replay output changes **only** for inputs that held a previously unmapped move. Those were already wrong, and now they replay the move. No `finalStateHash`, `PRE_WP080_HASH`, sentinel, PAR or sim baseline moves.
+- **Follow-up (not done here).** `runFixture`'s map (13 entries, unknown names throw) has the same gap for sim captures. Once a bot Heist is captured into a fixture, it would throw.
+
+**Reserved by:** NUMBER-LEDGER D-24830. Related: D-0205, D-6304, D-24073, D-24119, D-24322, D-24713, D-24808, D-24826.
+
+---
+Protect this file.

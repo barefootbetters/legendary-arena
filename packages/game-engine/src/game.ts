@@ -748,9 +748,10 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // why: WP-806 / D-24713 §7 — the six operator setters run ONLY in an operator match
     // (each gates on G.isDebugMatch, the operator's own turn, the main stage and no open
     // choice, and returns silently otherwise). They are deliberately absent from
-    // getLegalMoves, SIMULATION_MOVE_NAMES, both MOVE_MAPs, the determinism-only replay
-    // and the fixture runner, so no bot, simulation, PAR run or fixture ever makes one
-    // (the phaseCard / endMatchEarly precedent). Server-only (client: false) per D-10008.
+    // getLegalMoves, SIMULATION_MOVE_NAMES, both sim MOVE_MAPs and the fixture runner, so
+    // no bot, simulation, PAR run or fixture ever makes one (the phaseCard / endMatchEarly
+    // precedent). The determinism-only replay dispatches them like every registered move
+    // (D-24830 amends §7). Server-only (client: false) per D-10008.
     operatorSetSupplyCount: { move: operatorSetSupplyCount, client: false },
     operatorMoveToDeckTop: { move: operatorMoveToDeckTop, client: false },
     operatorRevealNow: { move: operatorRevealNow, client: false },

@@ -21,6 +21,8 @@ import { attemptHeist, heistCount, heistRevealedVictoryPoints, isHeistAvailable 
 import { resolveMoveVillainChoice } from './moveVillainChoice.resolve.js';
 import { resolveSeatChoice } from './seatChoice.resolve.js';
 import { resolveKoHeroChoice } from './koHeroChoice.resolve.js';
+import { applyReplayStep } from '../replay/replay.execute.js';
+import type { ReplayMove } from '../replay/replay.types.js';
 import type { LegendaryGameState, MatchConfiguration } from '../types.js';
 import type { HeroAbilityHook } from '../rules/heroAbility.types.js';
 import type { CardExtId } from '../state/zones.types.js';
@@ -639,5 +641,57 @@ describe('WP-876 Heist choices open together (D-24823 §8)', () => {
     assert.deepEqual(G.pendingMoveVillainChoices, [
       { playerID: '0', sourceCardId: X_CON_SECURITY_VAN_SECOND, variant: 'x-con-security-van' },
     ]);
+  });
+});
+
+describe('D-24830 a recorded Heist replays through the replay dispatch', () => {
+  /**
+   * The pre-Heist board both paths start from: Revolutionary Anthem and X-Con Security Van readied
+   * against a Scheme Twist, one City Villain and two Heroes in hand.
+   *
+   * @returns A fresh state, built the same way on every call.
+   */
+  function preHeistState(): LegendaryGameState {
+    const G = makeState();
+    G.villainDeck.deck = [SCHEME_TWIST, TOP_VILLAIN];
+    G.city = [TOP_VILLAIN_IN_CITY, null, null, null, null];
+    G.playerZones['0']!.hand = [HAND_FIVE, HAND_SIX];
+    playCard(G, REVOLUTIONARY_ANTHEM);
+    playCard(G, X_CON_SECURITY_VAN);
+    return G;
+  }
+
+  // why: the recorded log a live game writes for this turn: the Heist, then the shuffle seat
+  // choice, the X-Con move and the ko-hero pick it parks, each with the args the client sent.
+  const RECORDED_MOVES: ReplayMove[] = [
+    { moveName: 'attemptHeist', playerId: '0', args: undefined },
+    { moveName: 'resolveSeatChoice', playerId: '0', args: { optionIndex: 0 } },
+    { moveName: 'resolveMoveVillainChoice', playerId: '0', args: { fromCityIndex: 0, toCityIndex: 2 } },
+    { moveName: 'resolveKoHeroChoice', playerId: '0', args: { zone: 'hand', cardId: HAND_FIVE } },
+  ];
+
+  it('replaying the log reaches the same G as the live moves, with no skipped-move warning', () => {
+    const live = preHeistState();
+    attemptHeist(moveContext(live));
+    resolveSeatChoice(seatChoiceContext(live), { optionIndex: 0 });
+    resolveMoveVillainChoice({ G: live, playerID: '0' } as never, { fromCityIndex: 0, toCityIndex: 2 });
+    resolveKoHeroChoice({ G: live, playerID: '0' } as never, { zone: 'hand', cardId: HAND_FIVE });
+
+    const replayed = preHeistState();
+    for (const move of RECORDED_MOVES) {
+      applyReplayStep(replayed, move, 2);
+    }
+
+    // why: non-vacuous — the live turn really ran the Heist and every choice it opened.
+    assert.equal(live.turnEconomy.attack, 4, 'Anthem +2 +2 on the live path');
+    assert.deepEqual(live.villainDeck.deck, [TOP_VILLAIN, SCHEME_TWIST], 'the live shuffle reordered the deck');
+    assert.deepEqual(live.city, [null, null, TOP_VILLAIN_IN_CITY, null, null], 'the live X-Con moved the Villain');
+    assert.deepEqual(live.ko, [HAND_FIVE], 'the live ko-hero pick KO\'d the Hero');
+
+    assert.ok(
+      !logLines(replayed).some((line) => line.includes('Replay warning')),
+      'no recorded move is skipped as unknown',
+    );
+    assert.equal(JSON.stringify(replayed), JSON.stringify(live), 'the replayed G equals the live G');
   });
 });
