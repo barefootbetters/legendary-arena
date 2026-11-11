@@ -2,9 +2,8 @@
 // metered-usage budget email and the account's billing page (no billing API is
 // wired). Cloudflare bills R2 on a cycle that runs from the 23rd to the 22nd,
 // not by calendar month. It feeds the Monetization page's Cloudflare panel,
-// which labels it CACHED. Refresh workflow: when a cycle's invoice lands, mark
-// that cycle `invoiced` with its final lines, add the new cycle-to-date row,
-// and update CLOUDFLARE_BILLING_AS_OF.
+// which labels it CACHED. Refresh workflow: CLOUDFLARE_REFRESH_STEPS below,
+// which the panel also shows under "How to update".
 //
 // why: the Cloudflare account is shared with another business, and its bill is
 // account-wide. Each cycle records the account total AND Legendary Arena's
@@ -80,6 +79,50 @@ export const CLOUDFLARE_BILLING_CYCLES: readonly CloudflareBillingCycle[] = [
     attribution:
       "Every billed line is another business's bucket on the shared account. Legendary Arena's R2 (about 2.2 GB, Standard class) stays inside the free tier.",
     note: 'Usage observed Oct 23 – Nov 11 (20 of 31 days).',
+  },
+];
+
+/**
+ * One step of the refresh workflow the panel shows under "How to update".
+ * `command`, when present, is a command to run from the repo root.
+ */
+export interface CloudflareRefreshStep {
+  readonly text: string;
+  readonly command?: string;
+}
+
+// why: the refresh workflow lives here, next to the figures it updates, so the
+// panel's "How to update" list and this file cannot drift apart. Legendary
+// Arena's buckets are named; anything else on the shared account is another
+// business's and is LA's cost only if an LA bucket caused the line.
+export const CLOUDFLARE_REFRESH_STEPS: readonly CloudflareRefreshStep[] = [
+  {
+    text: 'Shortcut: paste the Cloudflare email or invoice into Claude Code and ask it to update the Cloudflare panel. It follows the steps below.',
+  },
+  {
+    text: 'When a Cloudflare budget email or invoice arrives (the cycle runs the 23rd to the 22nd; the invoice follows the 22nd), open Billing and note every line: product, usage, and cost.',
+  },
+  {
+    text: 'Attribute the bill. List the buckets, then check each one’s size, storage class, and lifecycle rules. Legendary Arena’s buckets are legendary-images, legendary-arena-db-backups, and legendary-arena-db-backups-rehearsal. A line is LA’s cost only if an LA bucket caused it. While LA’s buckets alone fit the free tier (under 10 GB of Standard storage, no Infrequent Access), LA’s share is $0.',
+    command: 'npx wrangler r2 bucket list',
+  },
+  {
+    text: 'Per bucket:',
+    command: 'npx wrangler r2 bucket info <bucket>; npx wrangler r2 bucket lifecycle list <bucket>',
+  },
+  {
+    text: 'Edit apps/dashboard/src/config/cloudflareBilling.ts. If the email or invoice is for a cycle already listed, replace its lines; when the invoice is final, set status to invoiced and projectedCycleCents to the invoiced total. For a new cycle, add it at the top of CLOUDFLARE_BILLING_CYCLES with its lines, projectedCycleCents, legendaryArenaCents, attribution, and note. Add a line to the sourcing comment, and set CLOUDFLARE_BILLING_AS_OF to the last day of usage the figures cover.',
+  },
+  {
+    text: 'Pin the new figures in apps/dashboard/src/config/cloudflareBilling.test.ts: the cycle total, the projection, and Legendary Arena’s share.',
+  },
+  {
+    text: 'If Legendary Arena’s share is not $0, also put it in the Infra Cost Watchdog (the cloudflare row of apps/dashboard/src/config/infraCostActuals.ts) and in the ledger actuals of dashboard.json.',
+  },
+  {
+    text: 'Run the Dashboard Gates checks locally, then open an INFRA: pull request. Merging to main deploys the dashboard.',
+    command:
+      'pnpm --filter @legendary-arena/dashboard test; pnpm --filter @legendary-arena/dashboard lint; pnpm --filter @legendary-arena/dashboard typecheck; pnpm --filter @legendary-arena/dashboard format:check',
   },
 ];
 
