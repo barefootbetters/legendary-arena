@@ -38,7 +38,8 @@ import type { ParFidelityRow } from '../../types/parFidelity.js';
 
 // The hero mechanic ledger still drives By mechanic (mechanic tokens and provenance
 // are hero-ledger concepts) and the in-play headline's gate.
-const { rows, error, runtimeObservedByMechanic, runtimeObservedSummary } = useCoverageLedger();
+const { rows, error, runtimeObservedByLedgerMechanic, runtimeObservedSummary } =
+  useCoverageLedger();
 
 // WP-880 / D-24829: the headline, status chips, By set and By card count every card
 // type in the effect-implementation index — Heroes, Villains & Henchmen, Masterminds
@@ -131,9 +132,12 @@ function designLabel(designs: readonly LedgerDesign[] | undefined): string {
   return designs.map((design) => design.name).join(', ');
 }
 
-/** The runtime-observed entry for a mechanic, or undefined if never hit in play. */
+/**
+ * The runtime-observed entry for a ledger mechanic, or undefined if never hit in
+ * play. Folded families (`patrol`) read the merged tally of their printed variants.
+ */
 function runtimeObservedFor(mechanic: string): RuntimeObservedEntry | undefined {
-  return runtimeObservedByMechanic.value[mechanic];
+  return runtimeObservedByLedgerMechanic.value[mechanic];
 }
 
 /** The most-hit hollow reason for an entry (drives the overlay badge label). */
