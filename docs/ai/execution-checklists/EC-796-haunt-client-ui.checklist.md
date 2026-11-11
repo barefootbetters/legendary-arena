@@ -3,11 +3,13 @@
 **Source:** docs/ai/work-packets/WP-759-haunt-client-ui.md
 **Layer:** App (arena-client)
 
+> **Executed 2026-11-10 on `f609ddff` with WP-759 §Execution Amendments A-1..A-5**, which override the Locked Values below where they differ: three new props (`hasHealedThisTurn` already existed), Recruit precedence stage → heal → Haunted → resource, and Exorcise at the printed cost.
+
 ## Before Starting
-- [ ] WP-757 merged. `UIHQHaunter` (`{ kind: 'villain'; extId; display: UICardDisplay } | { kind: 'mastermind' }`), `UIHQState.haunters?` and `UIMastermindState.isHaunting?` are all exported from `@legendary-arena/game-engine`. Move `exorciseHauntedHero` is registered. On any mismatch, STOP.
-- [ ] `pnpm -r build` exits 0 (the client reads the engine's built `dist`).
-- [ ] `pnpm --filter @legendary-arena/arena-client typecheck` and `test` exit 0 on baseline.
-- [ ] The WP Assumes 2–9 anchors are unchanged: HQRow `gateForCell`, MastermindTile `gateForFight` / `showEvFight`, `useTurnActions` explicit return type, fixture registry, and the HQRow mount outside `viewer !== null`.
+- [x] WP-757 merged. `UIHQHaunter` (`{ kind: 'villain'; extId; display: UICardDisplay } | { kind: 'mastermind' }`), `UIHQState.haunters?` and `UIMastermindState.isHaunting?` are all exported from `@legendary-arena/game-engine`. Move `exorciseHauntedHero` is registered. On any mismatch, STOP.
+- [x] `pnpm -r build` exits 0 (the client reads the engine's built `dist`).
+- [x] `pnpm --filter @legendary-arena/arena-client typecheck` and `test` exit 0 on baseline.
+- [x] The WP Assumes 2–9 anchors are unchanged (re-baselined; drift recorded as WP-759 A-1..A-5): HQRow `gateForCell`, MastermindTile `gateForFight` / `showEvFight`, `useTurnActions` explicit return type, fixture registry, and the HQRow mount outside `viewer !== null`.
 
 ## Locked Values (do not re-derive)
 - Move: `'exorciseHauntedHero'`. Payloads: `{ hqIndex, outcome: 'ko' }` (no recipient) or `{ hqIndex, outcome: 'gain', recipientPlayerId }`.
@@ -59,14 +61,14 @@
 - `apps/arena-client/src/fixtures/uiState/index.ts`, `typed.ts`, `index.test.ts` — **modified**
 
 ## After Completing
-- [ ] `pnpm -r build` exits 0.
-- [ ] arena-client `typecheck` exits 0 and `test` passes.
-- [ ] `pnpm -r --no-bail test` has 0 failures.
-- [ ] Preview `?fixture=haunted-hq&play=1` shows the strip, Recruit disabled, the Exorcise states and the chooser payloads. Screenshots at desktop and mobile.
-- [ ] `STATUS.md` updated. `WORK_INDEX.md` `[x]`. `EC_INDEX.md` Done. Mindmap `✅`. `roadmap:counts:check` 0.
-- [ ] Allowlist-only diff.
-- [ ] Two-commit topology.
-- [ ] Live-verify (D-24026) recorded as a post-deploy STATUS-flip, shared with WP-757.
+- [x] `pnpm -r build` exits 0.
+- [x] arena-client `typecheck` exits 0 and `test` passes (2610 / 0).
+- [x] `pnpm -r --no-bail test` has 0 failures.
+- [x] Preview `?fixture=haunted-hq&play=1` shows the strip, Recruit disabled, the Exorcise states and the chooser payloads, at desktop 1280×720 and mobile 375×812.
+- [x] `STATUS.md` updated. `WORK_INDEX.md` `[x]`. `EC_INDEX.md` Done. Mindmap `✅`. `roadmap:counts:check` 0.
+- [x] Allowlist-only diff.
+- [x] Two-commit topology.
+- [x] Live-verify (D-24026) recorded as operator-pending in STATUS, shared with WP-757 / WP-758 / #3207.
 
 ## Common Failure Smells
 - Villain strip shows a hyphenated id instead of a name → reading `extId` instead of the embedded `display`.

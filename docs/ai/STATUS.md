@@ -10,6 +10,20 @@
 
 ## Current State
 
+### Haunted HQ Heroes show their haunter, and the player can exorcise them (WP-759 / EC-796, consumes D-24587) (2026-11-10)
+
+**User-visible on `play.legendary-arena.com` after deploy.** In a match with Haunt (Zarathos, The Fallen), each Haunted HQ Hero shows a "Haunted by …" strip with the Villain's art and name, or the Mastermind's name. Its Recruit button is disabled with "Haunted — exorcise it first", so clicking it no longer does nothing without a reason. An **Exorcise (N)** button under the card, priced at the Hero's cost, opens a chooser: **KO the Hero**, or **Give it to:** You / Player N. The Mastermind tile shows a "Haunting an HQ Hero — exorcise it to fight" badge. This closes the gap from operator match `YkewuXWQWQV`, where the human seat could not recruit or exorcise a haunted Hero at all.
+
+- **Client.** `useHqRow` adds `haunter` to the hero cell. HQRow adds the haunter strip, the Haunted Recruit lock (stage → heal → Haunted → resource), and the Exorcise gate, which mirrors `exorciseHauntedHero`: turn + main, then "You healed this turn — you can't exorcise", then the **printed** cost. That is not the Size-Changing `recruitCosts`, because the engine prices exorcise from `G.cardStats`. The new `HauntedExorciseChooser` is in normal flow below the slot list, sticky-left and capped at viewport width on mobile; KO sends no recipient. MastermindTile adds the `play-mastermind-haunting` badge, and the PR #3207 Fight lock is untouched. `useTurnActions.canExorciseHauntedHero` and the `'exorciseHauntedHero'` move name are added. The pages pass `players` / `viewerPlayerId` / `mastermindName`. The new fixture is `haunted-hq`.
+- **Re-baseline.** The draft dated from 2026-09-25. The 01.4 / 01.7 / 00.3 gates re-ran on `f609ddff` and found drift from D-24614 and D-24801. It is folded in as WP-759 §Execution Amendments A-1..A-5: three new props, not four; the heal-before-Haunted precedence; the printed exorcise cost; the exorcise heal wording; and the sticky chooser. No scope change.
+- **Tests.** arena-client 2581 -> 2610 / 0 (+29), typecheck 0, `pnpm -r --no-bail test` 0 fail (server 207 DB-backed skipped). No existing assertion was edited. Preview on `?fixture=haunted-hq&play=1` at 1280×720 and 375×812: the strips, the Recruit lock, the enabled and resource-blocked Exorcise, Fight's haunt tooltip, and the badge all appear. The chooser stays inside the HQ panel with no page growth or sideways scroll. A spy on the real clicks captured `{hqIndex:0,outcome:'ko'}` and `{hqIndex:0,outcome:'gain',recipientPlayerId:'1'}`, and Escape returned focus to Exorcise.
+- **Accepted residual.** Like Recruit and both Fight buttons, Exorcise is not pending-choice aware: while a choice is open the engine's block-all guards no-op it. Making every board button pending-aware is a separate follow-up.
+- **Live-verify (D-24026): operator-pending.** It is shared with WP-757, WP-758 and #3207. The ready prompt is `session-live-verify-mastermind-haunt-gate.md` in the side-session notes. In a live Zarathos / Fallen match, with the deployed `/api/version` gitSha checked:
+  - a haunted Hero shows its haunter;
+  - Exorcise → KO works, and Exorcise → give works;
+  - the Villain enters the City;
+  - Fight is locked while Zarathos haunts.
+
 ### Zarathos haunts the HQ: his Master Strike and all four tactics resolve as printed (WP-758 / EC-795, D-24588) (2026-11-10)
 
 **User-visible on `play.legendary-arena.com` after deploy.** In a Zarathos (`mdns/zarathos`) match, a Master Strike wounds every player while any HQ Hero is haunted, then Zarathos haunts the highest-cost unhaunted Hero. While he haunts, he can't be fought until that Hero is exorcised. Each tactic re-haunts the priciest Hero of its class pair, then resolves its printed second clause through the generic seat-choice prompt. Before this, his strike logged a `master-strike` hollow and all four tactics did nothing. Nothing else in the game makes a Mastermind haunt, so this is also what makes PR #3207's MastermindTile haunt Fight gate reachable.
