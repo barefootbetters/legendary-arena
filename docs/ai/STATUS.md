@@ -27,7 +27,7 @@
 - **Index.** 2193 -> 2857 entries; `byScope.scheme` 664 (setup 195, special-rules 104, twist 200, evil-wins 154, good-wins 11); executable 784 -> 822, deferred 18 -> 19, unmarked 1046 -> 1671.
 - **Seed (12 Schemes, 39 rows).** 38 `executable`, 1 `deferred` (Secret Invasion `special-rules`: Skrull Attack is cost + 2, a proxy for the printed VP + 2, D-24327), none left out. Change the Outcome of WWII and Go Back in Time `evil-wins` rest on #3015 naming the Scheme and its loss config; the loss itself did not fire live in those matches.
 - **Tests.** registry 311 -> 313 / 0, dashboard 595 -> 597 / 0, `effect-index:test` 14 -> 31; every other package unchanged and 0 fail (server 207 DB-backed skipped). `effect-index:check` 0 at 2857; dashboard `typecheck` / `lint` / `format:check` / `test:coverage` / `build` 0; `pnpm -r build` 0. Revert proofs: no `scheme: 0` seed, no quoted-title strip, a blank seeded handler each fail.
-- **Live-verify (D-24026): operator-pending.** After deploy, on `/debug/effects` filter to Scheme and set `ca75`: Brainwash the Military shows four `executable` rows; an `anni` Scheme shows `unmarked`.
+- **Live-verify (D-24026): verified 2026-11-10** after #3259 deployed, via the CF Access service token: the live `EffectsPage-NCV8unvs.js` chunk carries 864 `scope:"scheme"` records (664 entries + 200-card join), `SCOPE_FILTERS` with `"scheme"`, and Brainwash the Military's Twist handler `schemeTwistResolvers.ts#brainwash-the-military`; `EffectsPage-CdWM2vJ0.css` defines `.fx-scope-scheme`.
 
 ### Bots attempt a Heist when the card-count odds favor it (WP-878 / EC-916, D-24826) (2026-11-09)
 
