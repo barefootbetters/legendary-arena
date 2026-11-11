@@ -63,12 +63,26 @@ test('diving-block-wound fixture carries a pending diving-block seat choice for 
   assert.equal(fixture.pendingSeatChoice.seatPrompts['0']?.options.length, 2);
 });
 
+test('haunted-hq fixture carries a Villain haunter, a Mastermind haunter and a haunting Mastermind', () => {
+  const fixture = loadUiStateFixture('haunted-hq');
+  const haunters = fixture.hq.haunters;
+  assert.ok(haunters, 'haunted-hq fixture must include hq.haunters');
+  assert.equal(haunters.length, fixture.hq.slots.length, 'haunters are index-aligned with the slots');
+  assert.equal(haunters[0]?.kind, 'villain');
+  assert.equal(haunters[2]?.kind, 'mastermind');
+  assert.equal(fixture.mastermind.isHaunting, true);
+  assert.ok(fixture.hq.slotDisplay, 'haunted-hq fixture must include hq.slotDisplay with costs');
+  assert.equal(typeof fixture.hq.slotDisplay[0]?.display.cost, 'number');
+  assert.equal(fixture.players.length, 2);
+});
+
 test('isFixtureName accepts the known names', () => {
   assert.equal(isFixtureName('mid-turn'), true);
   assert.equal(isFixtureName('endgame-win'), true);
   assert.equal(isFixtureName('endgame-loss'), true);
   assert.equal(isFixtureName('final-turn'), true);
   assert.equal(isFixtureName('diving-block-wound'), true);
+  assert.equal(isFixtureName('haunted-hq'), true);
 });
 
 test('isFixtureName rejects unknown and malformed names', () => {

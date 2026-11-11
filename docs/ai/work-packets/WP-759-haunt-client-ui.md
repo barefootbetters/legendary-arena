@@ -1,6 +1,6 @@
 # WP-759 — Haunt client UI: haunted HQ cards, Exorcise action, and the haunting-Mastermind tile (Arena Client)
 
-**Status:** Draft 2026-09-25 — **BLOCKED on WP-757** (reads its UIState fields and submits its move)
+**Status:** Done 2026-11-10 (EC-796). Drafted 2026-09-25; unblocked once WP-757 ✅ (2026-09-25) and WP-758 ✅ (2026-11-10) landed. Executed with the §Execution Amendments below. D-24026 live-verify operator-pending.
 **Primary Layer:** App (`apps/arena-client`)
 **Dependencies:**
 - **WP-757 / D-24587** — `UIHQState.haunters?`, `UIHQHaunter`, `UIMastermindState.isHaunting?`, and the move `exorciseHauntedHero`.
@@ -12,7 +12,7 @@
 **Lane:** Standard (two-session). It is a single app, but it has more than 4 files and adds a new move affordance. Any ambiguity routes to standard.
 **Arc:** 3 of 3. It runs after WP-757 and is parallel-safe with WP-758 (the two touch disjoint files). No D-entry: it consumes D-24587.
 
-> Baseline: `origin/main` at `02769e98`, plus reserve commit #2356. At execution, re-baseline on the WP-757 merge commit.
+> Baseline: `origin/main` at `02769e98`, plus reserve commit #2356. **Re-baselined at execution on `f609ddff`** (WP-758 merge); see §Execution Amendments.
 
 ---
 
@@ -238,12 +238,12 @@ That is 17 code/test files against the ~8 guideline. The count is justified: sev
 
 ## Definition of Done
 
-- [ ] Every Acceptance Criterion passes, and the diff is allowlist-only.
-- [ ] `docs/ai/STATUS.md` is updated.
-- [ ] `DECISIONS.md`: no new entry. This packet consumes D-24587, and that is recorded in the STATUS line.
-- [ ] `WORK_INDEX.md` WP-759 is `[x]`, `EC_INDEX.md` EC-796 is Done, the mindmap node is `✅`, and `pnpm roadmap:counts:check` is 0.
-- [ ] Two-commit topology: `EC-796:` implementation, then a `SPEC:` governance close.
-- [ ] **D-24026 live-verify** (post-merge, REQUIRED, shared with WP-757). In a live Zarathos / Fallen match on `play.legendary-arena.com`, with the deployed `/api/version` gitSha checked:
+- [x] Every Acceptance Criterion passes, and the diff is allowlist-only.
+- [x] `docs/ai/STATUS.md` is updated.
+- [x] `DECISIONS.md`: no new entry. This packet consumes D-24587, and that is recorded in the STATUS line.
+- [x] `WORK_INDEX.md` WP-759 is `[x]`, `EC_INDEX.md` EC-796 is Done, the mindmap node is `✅`, and `pnpm roadmap:counts:check` is 0.
+- [x] Two-commit topology: `EC-796:` implementation, then a `SPEC:` governance close.
+- [ ] **D-24026 live-verify** (operator-pending) (post-merge, REQUIRED, shared with WP-757). In a live Zarathos / Fallen match on `play.legendary-arena.com`, with the deployed `/api/version` gitSha checked:
   - a haunted Hero shows its haunter;
   - Exorcise → KO works, and Exorcise → give works;
   - the Villain appears in the City.
@@ -251,6 +251,19 @@ That is 17 code/test files against the ~8 guideline. The count is justified: sev
   This is recorded as operator-pending until it is seen live.
 
 ---
+
+## Execution Amendments (2026-11-10, re-baseline on `f609ddff`)
+
+The 01.4 / 01.7 / 00.3 gate subagents re-ran against `f609ddff` (pre-flight READY after text amendments; copilot RISK, documented; lint FAIL → PASS after these). The draft predates D-24614 (#2442, 2026-09-26) and D-24801 (Size-Changing). These amendments override the locked text above where they differ:
+
+- **A-1: three new HQRow props, not four.** `hasHealedThisTurn` already exists on HQRow (D-24614) and both pages already pass it. New props: `players`, `viewerPlayerId`, `mastermindName`.
+- **A-2: Recruit precedence on a haunted slot is stage → heal lock → Haunted → display-null fallback → resource.** The D-24614 heal tooltip keeps winning (its tests stay untouched), and Haunted sits before the display-null fallback so a Haunted slot with no `slotDisplay` is still locked.
+- **A-3: Exorcise prices at the PRINTED cost.** The engine reads `G.cardStats[heroId]?.cost ?? 0` (`exorciseHauntedHero.ts`), not the D-24801 Size-Changing `recruitCosts` the recruit gate now uses. Exorcise calls `canRecruit(display)` with no `recruitCosts` argument and treats a null cost as 0; `Exorcise (N)` shows the printed cost. The sentence "the same cost source the engine's recruit path uses" above is superseded.
+- **A-4: the exorcise heal lock keeps its locked wording** (`You healed this turn — you can't exorcise`), applied in HQRow. `canExorciseHauntedHero()` is turn + stage only; the shared `healLockGate` reason names recruit and fight, and exorcise is neither (rulebook v23 p.27).
+- **A-5: chooser placement.** It stays in normal flow below `<ol class="hq-slots">` and adds `position: sticky; left` with a viewport-width cap, so on PlayMobile's `--scroll-x` band every choice is reachable without scrolling the band. Sticky stays in flow; it is not absolute or fixed.
+- **Accepted residual (copilot #11).** The client has no board-level pending-choice freeze: Recruit, City Fight and Mastermind Fight are all live while a choice is open, and the engine's block-all guards no-op them. Exorcise matches Recruit. Making every board button pending-aware is a separate follow-up.
+- **Fixture.** `haunted-hq` also sets `mastermind.fightCost: 4`. Without a projected fight cost the cost gate fires first (#3207 places the haunt lock after cost), and the fixture would not show the haunt tooltip.
+- Anchor drift only (no scope change): `useTurnActions` return type at ~325, `gateForFight` at ~200 (stage → heal → cost → haunt → WP-873 fortify → tactics), HQRow mounts at PlayDesktop ~972 / PlayMobile ~632, `hasHealedThisTurn` at `uiState.types.ts:66`.
 
 ## Lint Gate Self-Review (00.3)
 

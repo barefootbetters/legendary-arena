@@ -460,7 +460,7 @@ mindmap
         ["WP-756 ✅ Slash gesture to fight arena-client plus ewiki EC-793 D-24585 Active DONE 2026-09-25 Extends WP-755. A stroke that fully crosses an enabled City villain fights it; several chain one fight at a time keyed by extId and confirmed by the engine; taps stay clicks; SVG blade trail on the VfxOverlay and the WP-755 slice follows the stroke; persisted Slash to fight toggle"]
         ["WP-757 ✅ Haunt keyword haunted HQ Heroes exorcise and The Fallen Ambush Haunts game engine plus card-data EC-794 D-24587 Active DONE 2026-09-25. Per-HQ-slot haunter state, recruit and fight blocks, the exorcise move, a haunt villain primitive for Metarchus Atrocity Patriarch, UIState five-step"]
         ["WP-758 ✅ Zarathos Mastermind Master Strike plus four tactic Fight effects game engine EC-795 D-24588 Active DONE 2026-11-10. Strike wounds every player while any Hero is haunted then Zarathos haunts the highest-cost Hero, four tactics haunt by class pair then resolve five seat-choice kinds"]
-        ["WP-759 📝 Haunt client UI haunted HQ overlay Exorcise chooser and haunting Mastermind tile arena-client DRAFTED 2026-09-25 EC-796 unblocked (WP-757 done)"]
+        ["WP-759 ✅ Haunt client UI haunted HQ overlay Exorcise chooser and haunting Mastermind tile arena-client EC-796 DONE 2026-11-10. HQRow shows the haunter, locks Recruit, offers Exorcise at the printed cost and a KO-or-give chooser"]
         ["WP-760 ✅ The Fallen fight-side Blood Frenzy Atrocity rescue Patriarch reveal-draw Salome KO-from-discard game engine plus card-data EC-797 D-24589 Active DONE 2026-09-26. Blood Frenzy in the single fight-cost authority, two villain primitives, Ascend deferred"]
         ["WP-761 ✅ Long-press slash arena-client plus ewiki EC-798 D-24592 Active DONE 2026-09-25 Extends WP-756. On a scrolling City row a touch or pen press held still for 350 ms arms a slash; the armed stroke stops the pan and fights each villain it fully crosses through the WP-756 chain; moving first still scrolls, releasing early is still a tap"]
         ["WP-744 ✅ Sim PAR and fixture turn loops resolve and clear deferred conditional grants game engine simulation DONE 2026-09-22 engine 4124 of 0. The three rebuilt turn loops now fire wait-and-see hero grants after every move and drop them at the turn boundary, mirroring game.ts, replay harness excluded, oracles unchanged. EC-781 D-24567 Active"]
@@ -1050,7 +1050,7 @@ mindmap
 | Legends Public Scoreboard | 2/2 | — |
 | Villain Deck Pipeline | 5/5 | — |
 | Villain & Henchman Effects | 21/21 | — |
-| Hero Ability Coverage & Markup Pipeline | 237/253 | 16 open |
+| Hero Ability Coverage & Markup Pipeline | 238/253 | 15 open |
 | Notable Events & Overlays | 6/6 | — |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
 | Dashboard & Operator Analytics | 55/55 | — |
@@ -1071,9 +1071,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 4/4 | — |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **853/878 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 24 open |
+| **Total** | **854/878 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 23 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 25):** WP-881 open; WP-874 open; WP-849 open; WP-840 open; WP-839 open; WP-838 open; WP-822 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-745 open; WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 24):** WP-881 open; WP-874 open; WP-849 open; WP-840 open; WP-839 open; WP-838 open; WP-822 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-745 open; WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

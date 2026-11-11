@@ -666,3 +666,25 @@ describe('useTurnActions — heal lock on recruit and fight (D-24180 / D-24614)'
     assert.match(cleanup.reason!, /Only available during the Main/);
   });
 });
+
+describe('useTurnActions — canExorciseHauntedHero (WP-759 / D-24587)', () => {
+  test('gates on the viewer\'s turn, then the main stage', () => {
+    const offTurn = useTurnActions('main', false).canExorciseHauntedHero();
+    assert.deepEqual(offTurn, { allowed: false, reason: 'It is not your turn.' });
+    const atStart = useTurnActions('start', true).canExorciseHauntedHero();
+    assert.equal(atStart.allowed, false);
+    assert.match(atStart.reason!, /Only available during the Main/);
+    const atCleanup = useTurnActions('cleanup', true).canExorciseHauntedHero();
+    assert.equal(atCleanup.allowed, false);
+    const atMain = useTurnActions('main', true).canExorciseHauntedHero();
+    assert.deepEqual(atMain, { allowed: true, reason: null });
+  });
+
+  test('is turn + stage only: HQRow layers the exorcise-worded heal lock on top', () => {
+    // why: the generic heal-lock reason says "recruit or fight"; exorcise carries its own
+    // wording in HQRow, so this predicate stays allowed after a heal.
+    const noPendingFlags = [false, false, false, false, false, false, false, false, false, false] as const;
+    const healed = useTurnActions('main', true, ...noPendingFlags, false, false, true).canExorciseHauntedHero();
+    assert.deepEqual(healed, { allowed: true, reason: null });
+  });
+});

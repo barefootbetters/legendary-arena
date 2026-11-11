@@ -980,6 +980,9 @@ export default defineComponent({
                     :submit-move="submitMove"
                     :is-column-aligned="true"
                     :is-tilt-lift-enabled="isBoardLiftEnabled"
+                    :players="snapshot.players"
+                    :viewer-player-id="viewer?.playerId ?? null"
+                    :mastermind-name="snapshot.mastermind.display.name"
                   />
                   <TransformDeck :transform-deck="snapshot.transformDeck ?? []" />
                 </div>

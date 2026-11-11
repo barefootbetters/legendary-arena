@@ -58,6 +58,10 @@ export type UiMoveName =
   // viewer's discard, once per turn. Dispatched with an empty payload; the engine
   // move takes no arguments (all Sidekicks are identical tokens).
   | 'recruitSidekick'
+  // why: WP-759 / D-24587 — pays a Haunted HQ Hero's cost, then KOs it or gives it to a
+  // chosen player. Payload `{ hqIndex, outcome: 'ko' }` or `{ hqIndex, outcome: 'gain',
+  // recipientPlayerId }`; the engine (exorciseHauntedHero) validates and decides.
+  | 'exorciseHauntedHero'
   | 'fightMastermind'
   | 'resolveHeroChoice'
   | 'resolveKoHeroChoice'

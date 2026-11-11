@@ -436,6 +436,19 @@ export default defineComponent({
         Final blow — fight the Mastermind
       </span>
     </button>
+    <!-- why: WP-759 / D-24587 — while the Mastermind haunts an HQ Hero it can't be
+         fought (the gateForFight haunt lock, PR #3207, already disables the button and
+         hides Excessive Violence); this badge says so without a hover. A sibling of the
+         Fight button in normal flow, like the Fortify chip below. role="status"
+         announces it. -->
+    <span
+      v-if="mastermind.isHaunting === true"
+      class="mastermind-haunting"
+      data-testid="play-mastermind-haunting"
+      role="status"
+    >
+      Haunting an HQ Hero — exorcise it to fight
+    </span>
     <!-- why: D-24819 — Fortify puts the Villain near the Mastermind (rules v23 L1454). A
          sibling of the Fight button (a button cannot hold a button), under it in normal
          flow, never over the card. -->
@@ -653,6 +666,18 @@ export default defineComponent({
   padding: 0.1rem 0.45rem;
   border-radius: 0.75rem;
   background: var(--color-warning, #b45309);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+/* why: WP-759 — the Haunting badge, in the haunter-strip purple HQRow uses, so the
+   locked Mastermind reads as tied to the haunted HQ Hero. */
+.mastermind-haunting {
+  align-self: flex-start;
+  padding: 0.1rem 0.45rem;
+  border-radius: 0.75rem;
+  background: var(--color-haunt, #5b21b6);
   color: #fff;
   font-size: 0.72rem;
   font-weight: 700;

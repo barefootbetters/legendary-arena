@@ -638,6 +638,9 @@ export default defineComponent({
             :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
             :economy="snapshot.economy"
             :submit-move="submitMove"
+            :players="snapshot.players"
+            :viewer-player-id="viewer?.playerId ?? null"
+            :mastermind-name="snapshot.mastermind.display.name"
           />
           <!-- why: WP-664 / D-24475 — face-up Transform side deck beside the hero
                row; hidden when empty (inert for non-transform games). -->
