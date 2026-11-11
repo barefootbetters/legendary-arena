@@ -88,6 +88,12 @@ import {
   isHeistRevealedSchemeTwist,
   parkHeistShuffleChoice,
 } from './heistPayloads.logic.js';
+// why: WP-883 / D-24834 — the gain-wound-reward builder. That module never imports this one; it
+// reaches seatChoice.resolve only through wounds.logic (a runtime-safe cycle, function bodies only).
+import {
+  buildGainWoundReward,
+  buildGainWoundRewardChoice,
+} from './gainWoundReward.logic.js';
 import { countRevealableDivingBlockCopies } from '../moves/divingBlock.logic.js';
 // why: WP-828 / D-24761 — the grant handler only queues; the module references this one back only
 // inside function bodies (a runtime-safe cycle).
@@ -409,6 +415,10 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   'heist-master-strike-ko',
   'heist-scheme-twist-bonus',
   'heist-move-villain-ko-hero',
+  // why: WP-883 / D-24834 — "You may gain a Wound. If you do, you get +N Attack"; has a
+  // HERO_EFFECT_HANDLERS entry (heroEffectGainWoundReward), so it belongs here (MVP_KEYWORDS
+  // derives from this set). Carries the reward magnitude → NOT in NO_MAGNITUDE_KEYWORDS.
+  'gain-wound-reward',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -7562,6 +7572,65 @@ function heroEffectHeistMoveVillainKoHero(
   applyHeistMoveVillain(G, playerID, cardId);
 }
 
+/**
+ * Hero handler for the `gain-wound-reward` keyword (WP-883 / D-24834).
+ *
+ * "You may gain a Wound. If you do, you get +N[icon:attack]" (co2e Hulk Smash!, mdns Scalded by
+ * Sunlight's Sunlight line). Parks an active-player gain / don't seat choice; the apply
+ * (hero/gainWoundReward.logic.ts) gains through the Wound chokepoint and grants +N only for a
+ * Wound kept.
+ *
+ * // why: a prompt, not an auto-resolve — unlike ko-wound-reward (D-24183), where KOing a Wound
+ * is always good, gaining one adds a dead card for the rest of the game: a real trade the player
+ * must be able to decline. The seat choice (D-24500's Random Acts precedent) brings the resolve
+ * move, the projection, the generic client prompt, the block-all guard, the disconnect default and
+ * the bot hook, so no new move or UIState field is needed.
+ *
+ * // why: parking does not halt this card's hook loop — later hooks of the same play still run
+ * before the prompt resolves. Harmless for both cards (Hulk Smash! has one line; Scalded by
+ * Sunlight's Sunlight and Moonlight lines are mutually exclusive); the follow-up that adds
+ * multi-line cards must revisit it.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Unused (the gain happens at resolve time).
+ * @param playerID - The player who played the card (the active player).
+ * @param cardId - The played card.
+ * @param effect - The descriptor carrying `rewardType` + `magnitude` (>= 1; failsMagnitudePreGate
+ *   drops the rest).
+ */
+function heroEffectGainWoundReward(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  const reward = buildGainWoundReward(effect.rewardType, effect.magnitude ?? 0, cardId);
+  if (reward === undefined) {
+    pushLog(G,
+      `Player ${playerID} played a hero ability whose gain-a-Wound reward is not yet supported, so it was skipped.`,
+      'blocked',
+      cardId,
+    );
+    return;
+  }
+  const cardRef = formatCardRef(G.cardDisplayData, cardId);
+  // why: rules v23 L3199-3201 / D-24779 — "you can't choose an option that you can't do": with
+  // an empty Wound supply there is nothing to gain, so no prompt opens.
+  if (G.piles.wounds.length === 0) {
+    pushLog(G, `Player ${playerID}'s ${cardRef} did nothing — the Wound supply is empty.`, 'blocked', cardId);
+    return;
+  }
+  // why: defensive — only one seat choice is open at a time; neither card can reach this.
+  if (G.pendingSeatChoice !== undefined) {
+    pushLog(G, `Player ${playerID}'s ${cardRef} could not offer its Wound choice — another choice is open.`, 'blocked', cardId);
+    return;
+  }
+  // why: active-scoped (the playing seat already accepts moves), so no stage ride: events undefined.
+  parkSeatChoice(G, undefined, buildGainWoundRewardChoice(playerID, reward));
+  pushLog(G, `Player ${playerID} may gain a Wound for +${reward.magnitude} Attack (${cardRef}).`, 'neutral', cardId);
+}
+
 export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler>> = {
   draw: heroEffectDraw,
   attack: heroEffectAttack,
@@ -7797,6 +7866,10 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   'heist-master-strike-ko': heroEffectHeistMasterStrikeKo,
   'heist-scheme-twist-bonus': heroEffectHeistSchemeTwistBonus,
   'heist-move-villain-ko-hero': heroEffectHeistMoveVillainKoHero,
+  // why: WP-883 / D-24834 — the optional gain-a-Wound reward: parks an active-player gain / don't
+  // seat choice; +N only for a Wound kept. Carries the reward magnitude → NOT in
+  // NO_MAGNITUDE_KEYWORDS.
+  'gain-wound-reward': heroEffectGainWoundReward,
 };
 
 // ---------------------------------------------------------------------------

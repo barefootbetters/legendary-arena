@@ -1610,7 +1610,8 @@ describe('buildHeroAbilityHooks — X-Gene (WP-723 / D-24544)', () => {
     // why: WP-862 / D-24804 — hq-hero-gains-size-changing-tech added (92 → 93).
     // why: WP-865 / D-24808 — heist added (93 → 94).
     // why: WP-876 / D-24823 — the three Heist payload keywords added (95 → 98).
-    assert.equal(HERO_KEYWORDS.length, 98, 'HERO_KEYWORDS stays 98 (X-Gene is not a keyword; WP-876 / D-24823 the three Heist payload keywords; WP-866 / D-24809 next-hand-extra-draw; WP-865 / D-24808 heist; WP-862 / D-24804 hq-hero-gains-size-changing-tech; D-24801 microscopic-size-changing; WP-857 / D-24793 feast; WP-860 / D-24796 discard-artifact-or-three-then-ko; WP-858 / D-24794 ritual-recruited-hero + ritual-hero-classes; WP-736 excessive-violence + D-24558 reveal-top-dispose-ko + WP-753 reveal-three-assign / reveal-three-assign-again + WP-754 optional-discard-draw / reveal-top-may-ko + WP-765 blood-frenzy / blood-frenzy-recruit / day-night-both + WP-767 optional-ko-your-hero + WP-780 play-both-sides + WP-783 phasing + WP-794 fight-cost-reduction + WP-795 spinning-cyclone + WP-803 out-of-time + WP-826 ko-up-to-shield-hand-discard / attack-per-ko-this-way / optional-ko-shield-played-rescue + WP-827 flying-shield-block + WP-828 grant-out-of-time + WP-843 reveal-or-gain-wound-each + WP-844 gain-sidekick (D-24778) + WP-850 discard-top-printed-attack / ko-discarded-this-way (D-24786) added)');
+    // why: WP-883 / D-24834 — gain-wound-reward added (98 → 99).
+    assert.equal(HERO_KEYWORDS.length, 99, 'HERO_KEYWORDS stays 99 (X-Gene is not a keyword; WP-883 / D-24834 gain-wound-reward; WP-876 / D-24823 the three Heist payload keywords; WP-866 / D-24809 next-hand-extra-draw; WP-865 / D-24808 heist; WP-862 / D-24804 hq-hero-gains-size-changing-tech; D-24801 microscopic-size-changing; WP-857 / D-24793 feast; WP-860 / D-24796 discard-artifact-or-three-then-ko; WP-858 / D-24794 ritual-recruited-hero + ritual-hero-classes; WP-736 excessive-violence + D-24558 reveal-top-dispose-ko + WP-753 reveal-three-assign / reveal-three-assign-again + WP-754 optional-discard-draw / reveal-top-may-ko + WP-765 blood-frenzy / blood-frenzy-recruit / day-night-both + WP-767 optional-ko-your-hero + WP-780 play-both-sides + WP-783 phasing + WP-794 fight-cost-reduction + WP-795 spinning-cyclone + WP-803 out-of-time + WP-826 ko-up-to-shield-hand-discard / attack-per-ko-this-way / optional-ko-shield-played-rescue + WP-827 flying-shield-block + WP-828 grant-out-of-time + WP-843 reveal-or-gain-wound-each + WP-844 gain-sidekick (D-24778) + WP-850 discard-top-printed-attack / ko-discarded-this-way (D-24786) added)');
     assert.ok(!HERO_KEYWORDS.includes('x-gene' as never), 'x-gene is not a HeroKeyword');
   });
 });
@@ -1762,7 +1763,7 @@ const DAY_NIGHT_LINES = {
     '[keyword:Sunlight]: You get +1[icon:attack] for each other [team:x-men] card you played this turn.',
   ],
   scaldedBySunlight: [
-    '[keyword:Sunlight]: You may gain a Wound. If you do, you get +2[icon:attack].',
+    '[keyword:Sunlight]: You may gain a Wound. If you do, you get +2[icon:attack]. [keyword:gain-wound-reward:attack:2]',
     '[keyword:Moonlight]: You may KO a Wound from your hand or discard pile. If you do, you get +2[icon:attack]. [keyword:ko-wound-reward:attack:2]',
   ],
   mesmerize: [
@@ -1854,13 +1855,37 @@ describe('buildHeroAbilityHooks — Sunlight / Moonlight (WP-765 / D-24598)', ()
     assert.deepStrictEqual(sunlightHook.unresolvedMarkers, ['sunlight']);
   });
 
-  it('Scalded by Sunlight: the Sunlight line is an honest hollow; the Moonlight line is the Wound-gated reward only', () => {
+  // why: WP-883 / D-24834 — intentional behavior change. The Sunlight line was an honest hollow
+  // (DAY_NIGHT_UNMODELED_LINES) until the gain-wound-reward marker modelled it; it now keeps its
+  // Sunlight gate and parses to the Wound-gated reward, with no plain +2 and no hollow marker.
+  it('Scalded by Sunlight: the Sunlight line is the gain-a-Wound reward; the Moonlight line is the Wound-gated KO reward', () => {
     const hooks = buildDayNightCardHooks('mdns', 'morbius', 'scalded-by-sunlight', DAY_NIGHT_LINES.scaldedBySunlight);
-    assert.equal(hooks[0]!.effects, undefined);
-    assert.deepStrictEqual(hooks[0]!.unresolvedMarkers, ['sunlight']);
+    assert.deepStrictEqual(hooks[0]!.conditions, [{ type: 'sunlightInEffect', value: '' }]);
+    assert.deepStrictEqual(hooks[0]!.effects, [{ type: 'gain-wound-reward', magnitude: 2, rewardType: 'attack' }]);
+    assert.equal(hooks[0]!.unresolvedMarkers, undefined);
     assert.deepStrictEqual(hooks[1]!.conditions, [{ type: 'moonlightInEffect', value: '' }]);
     assert.deepStrictEqual(hooks[1]!.effects, [{ type: 'ko-wound-reward', magnitude: 2, rewardType: 'attack' }]);
     assert.equal(hooks[1]!.unresolvedMarkers, undefined);
+  });
+
+  it('Hulk Smash! (WP-883 / D-24834): the Strength gate and the gain-a-Wound reward, no plain +5', () => {
+    // why: the exact generated line after the WP-883 marker, verified against data/cards/co2e.json.
+    const hulkSmash = ['[hc:strength]: You may gain a Wound. If you do, you get +5[icon:attack]. [keyword:gain-wound-reward:attack:5]'];
+    const hooks = buildDayNightCardHooks('co2e', 'hulk', 'hulk-smash', hulkSmash);
+    assert.equal(hooks.length, 1);
+    assert.deepStrictEqual(hooks[0]!.conditions, [{ type: 'heroClassMatch', value: 'strength' }]);
+    assert.deepStrictEqual(hooks[0]!.effects, [{ type: 'gain-wound-reward', magnitude: 5, rewardType: 'attack' }]);
+    assert.ok(!hooks[0]!.keywords.includes('attack'), 'the printed +5 icon is subsumed by the Wound-gated reward (D-24570)');
+    assert.equal(hooks[0]!.unresolvedMarkers, undefined);
+  });
+
+  it('gain-wound-reward with an unseeded reward emits no descriptor (WP-883 / D-24834)', () => {
+    const unseeded = ['You may gain a Wound. If you do, draw a card. [keyword:gain-wound-reward:draw:1]'];
+    const hooks = buildDayNightCardHooks('co2e', 'hulk', 'hulk-smash', unseeded);
+    for (const hook of hooks) {
+      assert.ok(!(hook.effects ?? []).some((effect) => effect.type === 'gain-wound-reward'), 'no gain-wound-reward descriptor for an unseeded reward');
+      assert.ok(!hook.keywords.includes('gain-wound-reward'), 'no gain-wound-reward keyword for an unseeded reward');
+    }
   });
 
   it('Mesmerize parses to blood-frenzy-recruit only — its descriptive icons grant nothing', () => {

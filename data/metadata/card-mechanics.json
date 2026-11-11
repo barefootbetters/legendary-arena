@@ -940,6 +940,18 @@
       "hidden": true
     },
     {
+      "slug": "gain-wound-reward",
+      "label": "Gain Wound Reward",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 2,
+      "cardIds": [
+        "co2e/hulk",
+        "mdns/morbius"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "gain-wound-self",
       "label": "Gain Wound Self",
       "scope": "hero",
@@ -3161,6 +3173,7 @@
     },
     "co2e/hulk": {
       "mechanics": [
+        "gain-wound-reward",
         "ko-wound-reward",
         "reveal-or-gain-wound-each"
       ]
@@ -3774,6 +3787,7 @@
       "mechanics": [
         "blood-frenzy",
         "blood-frenzy-recruit",
+        "gain-wound-reward",
         "ko-wound-reward",
         "moonlight",
         "sunlight"

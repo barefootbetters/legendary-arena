@@ -317,6 +317,12 @@
       "markupToken": "[keyword:reveal-or-gain-wound-each]"
     },
     {
+      "heroSlug": "hulk",
+      "cardSlug": "hulk-smash",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:gain-wound-reward:attack:5]"
+    },
+    {
       "heroSlug": "spider-man",
       "cardSlug": "witty-banter",
       "abilityIndex": 0,
@@ -2282,6 +2288,12 @@
       "cardSlug": "insatiable-craving",
       "abilityIndex": 0,
       "markupToken": "[keyword:blood-frenzy]"
+    },
+    {
+      "heroSlug": "morbius",
+      "cardSlug": "scalded-by-sunlight",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:gain-wound-reward:attack:2]"
     },
     {
       "heroSlug": "morbius",

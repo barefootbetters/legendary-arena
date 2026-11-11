@@ -3,15 +3,15 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2868,
+    "totalEntries": 2870,
     "byScope": {
-      "hero": 874,
+      "hero": 876,
       "villain": 763,
       "mastermind": 567,
       "scheme": 664
     },
     "byStatus": {
-      "executable": 838,
+      "executable": 840,
       "deferred": 19,
       "condition": 70,
       "unsupported": 268,
@@ -8940,6 +8940,23 @@
         {
           "slug": "quick-draw",
           "name": "Quick Draw"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/hulk",
+      "name": "Hulk",
+      "set": "co2e",
+      "scope": "hero",
+      "mechanic": "gain-wound-reward",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-reward",
+      "wp": "WP-883",
+      "decision": "D-24834",
+      "designs": [
+        {
+          "slug": "hulk-smash",
+          "name": "Hulk Smash!"
         }
       ]
     },
@@ -18942,6 +18959,23 @@
         {
           "slug": "mesmerize",
           "name": "Mesmerize"
+        }
+      ]
+    },
+    {
+      "extId": "mdns/morbius",
+      "name": "Morbius",
+      "set": "mdns",
+      "scope": "hero",
+      "mechanic": "gain-wound-reward",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-reward",
+      "wp": "WP-883",
+      "decision": "D-24834",
+      "designs": [
+        {
+          "slug": "scalded-by-sunlight",
+          "name": "Scalded by Sunlight"
         }
       ]
     },
@@ -41204,6 +41238,7 @@
     "co2e/hulk": {
       "scope": "hero",
       "mechanics": [
+        "gain-wound-reward",
         "ko-wound-reward",
         "reveal-or-gain-wound-each"
       ]
@@ -44513,6 +44548,7 @@
       "mechanics": [
         "blood-frenzy",
         "blood-frenzy-recruit",
+        "gain-wound-reward",
         "ko-wound-reward",
         "moonlight",
         "sunlight"

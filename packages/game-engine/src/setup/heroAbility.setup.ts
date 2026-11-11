@@ -321,6 +321,13 @@ const OPTIONAL_KO_REWARD_PATTERN = /\[keyword:optional-ko-reward:([a-z][a-z-]*):
 /** Regex for [keyword:ko-wound-reward:<reward>:<n>] KO-a-Wound-then-reward markup. */
 const KO_WOUND_REWARD_PATTERN = /\[keyword:ko-wound-reward:([a-z][a-z-]*):(\d+)\]/g;
 
+// why: WP-883 / D-24834 — the gain-wound-reward token mirrors ko-wound-reward's three-segment
+// shape ([keyword:gain-wound-reward:<reward>:<n>]), so KEYWORD_PATTERN cannot match it and it
+// never reaches the unresolved-marker scan. The (\d+) capture follows the same precedent; the
+// strict [1-9]\d* gate is the apply-script's job and n >= 1 is checked in Step 2g.
+/** Regex for [keyword:gain-wound-reward:<reward>:<n>] gain-a-Wound-then-reward markup. */
+const GAIN_WOUND_REWARD_PATTERN = /\[keyword:gain-wound-reward:([a-z][a-z-]*):(\d+)\]/g;
+
 // why: [keyword:optional-put-bottom-hq:<n>] token for "You may put a card from the
 // HQ on the bottom of the Hero Deck". Simple 2-segment token carrying just the
 // magnitude (always 1 for this MVP form). Follows the COUNT_SCALED_PATTERN precedent.
@@ -481,6 +488,14 @@ const KO_WOUND_REWARD_SEEDED_REWARDS: ReadonlySet<HeroKeyword> = new Set<HeroKey
   'draw',
   'attack',
   'recruit',
+]);
+
+// why: WP-883 / D-24834 — the seeded reward vocabulary for gain-wound-reward. Only `attack`
+// today (co2e Hulk Smash!, mdns Scalded by Sunlight); the follow-up for the non-attack
+// "If you do" lines adds members. An unseeded reward emits no descriptor (Honest-Partial).
+// Mirrors the same constant in hero/gainWoundReward.logic.ts (two copies, per duplicate-first).
+const GAIN_WOUND_REWARD_SEEDED_REWARDS: ReadonlySet<HeroKeyword> = new Set<HeroKeyword>([
+  'attack',
 ]);
 
 // why: D-24148 — the shuffle-discard-empty-reward token has three segments
@@ -966,10 +981,11 @@ const MOONLIGHT_MARKER_PATTERN = /\[keyword:Moonlight\]/i;
 // "+1[icon:attack] for each …" would fire as a flat grant (the D-24570 parsed-grant suppression
 // sibling). They stay visibly hollow (parse-unrecognized) until a named follow-up models them.
 const DAY_NIGHT_UNMODELED_LINES: ReadonlySet<string> = new Set<string>([
-  // why: WP-767 / D-24606 — Snarling Fangs' Moonlight line is now modelled (the per-defeat
-  // trigger + optional-ko-your-hero markers), so it left this list; eight entries remain.
+  // why: WP-767 / D-24600 — Snarling Fangs' Moonlight line is now modelled (the per-defeat
+  // trigger + optional-ko-your-hero markers), so it left this list. WP-883 / D-24834 — Scalded by
+  // Sunlight's Sunlight line is now modelled (the gain-wound-reward marker), so it left too (the
+  // D-24600 precedent, amending D-24598's list); seven entries remain.
   'mdns/werewolf-by-night/track-the-captives:moonlight',
-  'mdns/morbius/scalded-by-sunlight:sunlight',
   'nmut/sunspot/solar-powered:sunlight',
   'nmut/sunspot/thermokinetic-fury:sunlight',
   'nmut/sunspot/empyreal-force:sunlight',
@@ -2257,6 +2273,25 @@ function parseAbilityText(
     koWoundRewardMatch = koWoundRewardRegex.exec(abilityText);
   }
 
+  // Step 2g: Extract [keyword:gain-wound-reward:<reward>:<n>] markup (WP-883 / D-24834).
+  // why: mirrors Step 2f — the gain-wound-reward token has three segments; the reward is granted
+  // only for a Wound gained and kept, and the magnitude is the reward magnitude. A descriptor is
+  // emitted ONLY when the reward is seeded AND n >= 1 (an unseeded reward emits nothing).
+  const gainWoundRewardRegex = new RegExp(GAIN_WOUND_REWARD_PATTERN.source, 'g');
+  let gainWoundRewardMatch: RegExpExecArray | null = gainWoundRewardRegex.exec(abilityText);
+  while (gainWoundRewardMatch !== null) {
+    const gainRewardCandidate = gainWoundRewardMatch[1]!;
+    const gainRewardMagnitude = parseInt(gainWoundRewardMatch[2]!, 10);
+    if (isValidHeroKeyword(gainRewardCandidate)
+      && GAIN_WOUND_REWARD_SEEDED_REWARDS.has(gainRewardCandidate)
+      && gainRewardMagnitude >= 1) {
+      keywords.push('gain-wound-reward');
+      magnitudes.set('gain-wound-reward', gainRewardMagnitude);
+      rewardTypes.set('gain-wound-reward', gainRewardCandidate);
+    }
+    gainWoundRewardMatch = gainWoundRewardRegex.exec(abilityText);
+  }
+
   // Step 2e-bis: Extract [keyword:shuffle-discard-empty-reward:<reward>:<n>]
   // markup (D-24148). Mirrors Step 2e: the reward is stored in rewardTypes and
   // the grant magnitude in magnitudes so the effect builder can attach both. A
@@ -2610,6 +2645,25 @@ function parseAbilityText(
     magnitudes.delete(koWoundRewardIconType);
   }
 
+  // Icon-suppression (sibling): a gain-wound-reward effect subsumes the printed reward icon on the
+  // same line. Without this, Hulk Smash!'s "You may gain a Wound. If you do, you get
+  // +5[icon:attack]" also emits a plain 'attack' effect granted UNCONDITIONALLY (no Wound, no
+  // choice) next to the Wound-gated reward. Drop the plain keyword matching the seeded rewardType
+  // and its magnitude so only the Wound-gated reward remains.
+  // why: D-24570 — the Wound-gated reward subsumes the printed reward icon (the gain-wound-reward
+  // sibling of the ko-wound-reward suppression above; WP-883 / D-24834).
+  const gainWoundRewardIconType = rewardTypes.get('gain-wound-reward');
+  if (gainWoundRewardIconType !== undefined) {
+    const keywordsWithoutGainRewardIcon: HeroKeyword[] = [];
+    for (const keyword of uniqueKeywords) {
+      if (keyword !== gainWoundRewardIconType) {
+        keywordsWithoutGainRewardIcon.push(keyword);
+      }
+    }
+    uniqueKeywords = keywordsWithoutGainRewardIcon;
+    magnitudes.delete(gainWoundRewardIconType);
+  }
+
   // Icon-suppression (sibling): a put-bottom-hq-icon-reward effect subsumes BOTH
   // printed reward icons on the same line. Wonder Man's Absorb Ambient Power reads
   // "If that card had a [icon:recruit] icon, you get +3[icon:recruit]. If that card
@@ -2817,6 +2871,14 @@ function parseAbilityText(
         const koWoundRewardType = rewardTypes.get('ko-wound-reward');
         if (magnitude !== undefined && koWoundRewardType !== undefined) {
           effects.push({ type: keyword, magnitude, rewardType: koWoundRewardType });
+        }
+      } else if (keyword === 'gain-wound-reward') {
+        // why: WP-883 / D-24834 — the gain-wound-reward effect carries its rewardType so the
+        // handler can grant the right resource for a Wound kept; magnitude is the reward
+        // magnitude. Step 2g records both together, so the guard narrows the optional Map reads.
+        const gainWoundRewardType = rewardTypes.get('gain-wound-reward');
+        if (magnitude !== undefined && gainWoundRewardType !== undefined) {
+          effects.push({ type: keyword, magnitude, rewardType: gainWoundRewardType });
         }
       } else if (keyword === 'shuffle-discard-empty-reward') {
         // why: D-24148 — the shuffle-discard-empty-reward effect carries its

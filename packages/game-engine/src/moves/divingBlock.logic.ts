@@ -24,7 +24,7 @@
  * imports. No .reduce(). Never throws.
  */
 
-import type { LegendaryGameState, PendingSeatChoice } from '../types.js';
+import type { LegendaryGameState, PendingDivingBlockWound, PendingSeatChoice } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { getHooksForCard } from '../rules/heroAbility.types.js';
@@ -36,6 +36,9 @@ import { pushLog } from '../log/logPush.js';
 // why: WP-827 / D-24760 — a declined Diving Block hands the Wound to Flying Shield Block.
 // flyingShieldBlock.logic and this module reference each other only inside function bodies.
 import { checkFlyingShieldBlock } from './flyingShieldBlock.logic.js';
+// why: WP-883 / D-24834 — a leaf module (it imports only the economy helper, the log helpers and
+// types), so this import adds no cycle edge.
+import { grantGainWoundReward, logGainWoundRewardForfeited } from '../hero/gainWoundRewardGrant.js';
 
 /** The seat-choice kind discriminant for a Diving-Block reveal/decline wave. */
 export const DIVING_BLOCK_SEAT_CHOICE_KIND = 'diving-block';
@@ -267,7 +270,7 @@ export function openDivingBlockSeatChoiceIfNeeded(
     seatPrompts[seat] = {
       options: [
         { label: 'Reveal Diving Block: prevent the Wound and draw a card' },
-        { label: 'Take the Wound' },
+        { label: buildDivingBlockDeclineLabel(G, seat) },
       ],
     };
   }
@@ -281,6 +284,25 @@ export function openDivingBlockSeatChoiceIfNeeded(
     defaultOptionIndex: DIVING_BLOCK_DECLINE_OPTION_INDEX,
   };
   parkSeatChoice(G, events, choice, currentPlayer);
+}
+
+/**
+ * The decline label for a seat's Diving Block prompt: "Take the Wound", or, when that Wound was
+ * gained on purpose for a reward, "Take the Wound (keep +N Attack)".
+ *
+ * // why: WP-883 / D-24834 — the label reads the seat's FIRST entry, the one the apply resolves
+ * (`findIndex` on playerID), so the prompt always describes the Wound it decides.
+ *
+ * @param G - The game state to inspect (not mutated).
+ * @param seat - The addressed seat.
+ * @returns The decline option's label.
+ */
+function buildDivingBlockDeclineLabel(G: LegendaryGameState, seat: string): string {
+  const entry = (G.pendingDivingBlockWounds ?? []).find((pending) => pending.playerID === seat);
+  if (entry?.gainWoundReward === undefined) {
+    return 'Take the Wound';
+  }
+  return `Take the Wound (keep +${entry.gainWoundReward.magnitude} Attack)`;
 }
 
 /**
@@ -330,13 +352,21 @@ export function applyDivingBlockResolvedSeatChoice(
     const woundEntry = queue[woundIndex]!;
     if (submission.optionIndex === DIVING_BLOCK_REVEAL_OPTION_INDEX) {
       applyDivingBlockReveal(G, seat, woundEntry.woundCardId, shuffleContext, seat === currentPlayer);
+      // why: WP-883 / D-24834 — "draw a card instead": the Wound was never gained, so a reward
+      // held for it is forfeited.
+      if (woundEntry.gainWoundReward !== undefined) {
+        logGainWoundRewardForfeited(G, seat, woundEntry.gainWoundReward);
+      }
     } else {
       pushLog(G,
         `Player ${seat} took the Wound (declined Diving Block).`,
       );
       // why: WP-827 / D-24760 — the Wound is kept, so a seat holding Flying Shield Block may
       // still prevent it; its wave opens after the Diving Block queue drains.
-      checkFlyingShieldBlock(G, seat, woundEntry.woundCardId);
+      const isFlyingShieldBlockParked = checkFlyingShieldBlock(G, seat, woundEntry.woundCardId);
+      if (woundEntry.gainWoundReward !== undefined) {
+        holdOrGrantAfterDivingBlockDecline(G, seat, woundEntry.gainWoundReward, isFlyingShieldBlockParked);
+      }
     }
     // Drain this seat's resolved Wound from the FIFO (front-pop per seat).
     queue.splice(woundIndex, 1);
@@ -344,6 +374,33 @@ export function applyDivingBlockResolvedSeatChoice(
   if ((G.pendingDivingBlockWounds?.length ?? 0) === 0) {
     delete G.pendingDivingBlockWounds;
   }
+}
+
+/**
+ * Settles a gain-wound reward after its Wound's Diving Block was declined.
+ *
+ * // why: WP-883 / D-24834 — D-24760 hands a declined Diving Block's Wound to Flying Shield Block,
+ * which may still prevent it, so the reward moves onto the entry checkFlyingShieldBlock just
+ * parked (the queue's last). With no Flying Shield Block to offer, the Wound is kept now and the
+ * reward is granted (the recipient is the active player).
+ *
+ * @param G - The game state, mutated in place.
+ * @param seat - The seat that declined (the reward's recipient).
+ * @param reward - The held reward.
+ * @param isFlyingShieldBlockParked - Whether checkFlyingShieldBlock parked an entry.
+ */
+function holdOrGrantAfterDivingBlockDecline(
+  G: LegendaryGameState,
+  seat: string,
+  reward: NonNullable<PendingDivingBlockWound['gainWoundReward']>,
+  isFlyingShieldBlockParked: boolean,
+): void {
+  const flyingShieldBlockQueue = G.pendingFlyingShieldBlockWounds ?? [];
+  if (isFlyingShieldBlockParked && flyingShieldBlockQueue.length > 0) {
+    flyingShieldBlockQueue[flyingShieldBlockQueue.length - 1]!.gainWoundReward = reward;
+    return;
+  }
+  grantGainWoundReward(G, seat, reward, true);
 }
 
 /**

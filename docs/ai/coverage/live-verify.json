@@ -2190,6 +2190,28 @@
       "date": "2026-11-11",
       "evidence": "",
       "note": "Live check (NEW match created after the deploy, deployed gitSha checked): with the Streets empty and no other Instinct Hero played, Axe of the Slayer gives +2 Recruit only; with a Villain in the Streets, +2 Attack only; after another Instinct Hero, both. D-24832."
+    },
+    {
+      "key": "co2e/hulk|gain-wound-reward",
+      "kind": "hero",
+      "card": "Hulk",
+      "ability": "Hulk Smash! — [Strength]: You may gain a Wound. If you do, you get +5 Attack",
+      "wp": "WP-883",
+      "state": "pending",
+      "date": "2026-11-11",
+      "evidence": "",
+      "note": "Live check (NEW match created after the deploy, deployed gitSha checked; an operator match): Hulk Smash! after another Strength Hero prompts 'Gain a Wound for extra Attack?'. Gain -> +5 Attack and a Wound in the discard pile; decline -> neither. With Diving Block in hand, gain then reveal -> a card drawn, no Attack. Without another Strength Hero, no prompt and no Attack. D-24834."
+    },
+    {
+      "key": "mdns/morbius|gain-wound-reward",
+      "kind": "hero",
+      "card": "Morbius",
+      "ability": "Scalded by Sunlight — Sunlight: You may gain a Wound. If you do, you get +2 Attack",
+      "wp": "WP-883",
+      "state": "pending",
+      "date": "2026-11-11",
+      "evidence": "",
+      "note": "Live check (NEW match created after the deploy, deployed gitSha checked; an operator match with the HQ staged for Sunlight): Scalded by Sunlight prompts for +2 under Sunlight (gain -> +2 Attack and a Wound; decline -> neither) and logs no sunlight hollow; under Moonlight its Sunlight line prompts nothing. D-24834."
     }
   ]
 }

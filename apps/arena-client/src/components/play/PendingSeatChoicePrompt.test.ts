@@ -390,3 +390,25 @@ describe('PendingSeatChoicePrompt — WP-882 Zarathos tactic headings (D-24833)'
     });
   }
 });
+
+describe('PendingSeatChoicePrompt — WP-883 gain-wound-reward (D-24834)', () => {
+  test('the gain-wound-reward kind shows its heading and the two projected options', async () => {
+    const { calls, submitMove } = recorder();
+    const choice: UIPendingSeatChoice = {
+      kind: 'gain-wound-reward',
+      addressedSeats: ['player-0'],
+      outstandingSeats: ['player-0'],
+      seatPrompts: {
+        'player-0': { options: [{ label: 'Gain a Wound: you get +5 Attack' }, { label: "Don't gain a Wound" }] },
+      },
+    };
+    const wrapper = mount(PendingSeatChoicePrompt, {
+      props: { pendingSeatChoice: choice, viewerPlayerId: 'player-0', submitMove },
+    });
+    assert.equal(wrapper.find('.pending-seat-choice-prompt__heading').text(), 'Gain a Wound for extra Attack?');
+    assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-0"]').text(), 'Gain a Wound: you get +5 Attack');
+    assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-1"]').text(), "Don't gain a Wound");
+    await wrapper.find('[data-testid="pending-seat-choice-option-0"]').trigger('click');
+    assert.deepEqual(calls, [{ name: 'resolveSeatChoice', args: { optionIndex: 0 } }]);
+  });
+});
