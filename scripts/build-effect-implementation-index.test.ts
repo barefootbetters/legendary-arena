@@ -102,6 +102,19 @@ describe('readMastermindTactics — card-data enumeration + overlay resolution (
     assert.equal(bubble.wp, '');
     assert.equal(bubble.decision, '');
   });
+
+  it('fails on an overlay key that matches no Mastermind tactic in the card data', () => {
+    assert.throws(
+      () => readMastermindTactics({ 'core-mastermind-no-such-mastermind-no-such-tactic': { status: 'executable' } }),
+      /The tactic provenance overlay row "core-mastermind-no-such-mastermind-no-such-tactic" matches no Mastermind tactic in the card data./,
+    );
+  });
+
+  it('accepts every row of the committed tactic overlay (no orphan keys)', () => {
+    const overlayPath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'coverage', 'tactic-provenance.json');
+    const committed = JSON.parse(readFileSync(overlayPath, 'utf8')) as { tactics: Record<string, object> };
+    assert.doesNotThrow(() => readMastermindTactics(committed.tactics));
+  });
 });
 
 describe('buildSummary — byScope.mastermind tally (WP-507)', () => {
