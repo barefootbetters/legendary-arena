@@ -518,7 +518,7 @@ high-water: 422
 - WP-877 — secondary-site-traces (villain primitives whose executor handler is a deliberate no-op get a secondary-site effect trace where the real work fires - Endless Armies / The Leader villain-deck play, Mr. Immortal re-entry, stack entry. reserved 2026-11-08, claude/wp877-secondary-site-reserve; LANDED 2026-11-08)
 - WP-878 — bot-heist-attempts (bots attempt a Heist: getLegalMoves emits attemptHeist when available and the card-count odds favor it - over the multiset of cards left in the Villain Deck, never its order or top card, P(Heist Count > VP) > P(Heist Count < VP); the competent policy attempts after the hand is played out, before plain spends. reserved 2026-11-08, claude/wp878-bot-heist-reserve; LANDED 2026-11-09)
 - WP-879 — scheme-effect-feed (schemes join the effect-implementation index: one row per scheme per printed line kind - setup, special rules, twist, evil wins - status from a curated overlay, Core and Captain America 75th seeded. reserved 2026-11-10, claude/coverage-all-cards-reserve; LANDED 2026-11-10)
-- WP-880 — coverage-all-card-types (/coverage headline and By-set table count every card type in a set, not just Heroes. reserved 2026-11-10, claude/coverage-all-cards-reserve)
+- WP-880 — coverage-all-card-types (/coverage headline and By-set table count every card type in a set, not just Heroes. reserved 2026-11-10, claude/coverage-all-cards-reserve; LANDED 2026-11-10)
 
 ## EC
 
@@ -999,7 +999,7 @@ high-water: 457
 - EC-915 — secondary-site-traces (WP-877. reserved 2026-11-08, claude/wp877-secondary-site-reserve; LANDED 2026-11-08)
 - EC-916 — bot-heist-attempts (WP-878. reserved 2026-11-08, claude/wp878-bot-heist-reserve; LANDED 2026-11-09)
 - EC-917 — scheme-effect-feed (WP-879. reserved 2026-11-10, claude/coverage-all-cards-reserve; LANDED 2026-11-10)
-- EC-918 — coverage-all-card-types (WP-880. reserved 2026-11-10, claude/coverage-all-cards-reserve)
+- EC-918 — coverage-all-card-types (WP-880. reserved 2026-11-10, claude/coverage-all-cards-reserve; LANDED 2026-11-10)
 
 ## D
 
@@ -1606,6 +1606,6 @@ section below) and the allocation protocol in
 - D-24826 — bot-heist-attempts (WP-878; bot Heist policy: card-count odds over the Villain Deck multiset, never the hidden top; closes the D-24808 §7 / D-24823 §7 bot follow-up. reserved 2026-11-08, claude/wp878-bot-heist-reserve; LANDED 2026-11-09)
 - D-24827 — coverage-headline-implemented (direct fix, no WP; the /coverage row headline counts Executable + Condition + Subsystem rows. reserved 2026-11-10, infra/coverage-headline-implemented)
 - D-24828 — scheme-effect-feed (WP-879; "scheme" joins the effect-implementation index scopes: one row per scheme per printed line kind, status from a curated scheme-provenance overlay. reserved 2026-11-10, claude/coverage-all-cards-reserve; LANDED 2026-11-10)
-- D-24829 — coverage-all-card-types (WP-880; /coverage counts every card type in a set - Heroes, Villains, Henchmen, Masterminds, Schemes - from the effect-implementation index. reserved 2026-11-10, claude/coverage-all-cards-reserve)
+- D-24829 — coverage-all-card-types (WP-880; /coverage counts every card type in a set - Heroes, Villains, Henchmen, Masterminds, Schemes - from the effect-implementation index. reserved 2026-11-10, claude/coverage-all-cards-reserve; LANDED 2026-11-10)
 - D-24830 — replay-movemap-every-move (direct fix, no WP; the determinism-only replay MOVE_MAP dispatches every registered move, attemptHeist included, pinned by the D-24073 drift guard; amends D-24713 §7 for this harness. reserved 2026-11-10, claude/replay-movemap-attemptheist-fe4cd2)
 - D-24831 — runfixture-movemap (direct fix, no WP; the fixture runner MOVE_MAP dispatches every simulation-runner move, attemptHeist included, pinned by the D-24073 drift guard. reserved 2026-11-10, claude/runfixture-movemap)

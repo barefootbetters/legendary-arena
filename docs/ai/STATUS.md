@@ -10,6 +10,14 @@
 
 ## Current State
 
+### `/coverage` counts every card type in a set (WP-880 / EC-918, D-24829) (2026-11-10)
+
+**User-visible on dashboard.legendary-arena.com/coverage and `/vision` after deploy.** The headline reads "N% card abilities implemented — {set}" and counts Heroes, Villains & Henchmen, Masterminds and Schemes from the effect-implementation index, with a per-type `implemented/total` line under it. `/coverage?set=ca75` reads 100% with Heroes 25/25 · Villains & Henchmen 14/14 · Masterminds 10/10 · Schemes 14/14. Core reads 99.2% (Schemes 24/25: Secret Invasion `special-rules` is deferred, D-24327). All sets read 31% (887/2857), down from 63.3% hero-only, because most Schemes and non-Core Masterminds are unaudited.
+
+- **Dashboard.** New `useCardCoverage.ts` (`summarizeEntries`, `buildCardTypeBreakdown`, `buildAllTypesSetBreakdown`, `cardTypeLabel`, `cardCoverageLine`); every percent goes through D-24827's `summaryImplementedPercent`. By set gains per-type columns; By card reads the index with a Type filter; By mechanic stays hero-only and says "— Heroes". An index load failure shows a `cov-error` banner and `/vision` drops its line.
+- **Tests.** dashboard 597 -> 609 / 0; hero-scope parity pinned by deep equality against `summarizeRows`; `typecheck` / `lint` / `format:check` / `test:coverage` / `build` 0. Two revert proofs observed and restored.
+- **Live-verify (D-24026): operator-pending.** After deploy, read the live chunk(s) with the CF Access token for "card abilities implemented" and the ca75 per-type tally.
+
 ### Schemes join the effect-implementation index; `/debug/effects` gains a Scheme filter (WP-879 / EC-917, D-24828) (2026-11-10)
 
 **User-visible on dashboard.legendary-arena.com/debug/effects after deploy.** A **Scheme** chip sits beside Hero / Villain / Mastermind, and the summary line counts scheme rows. Each of the 200 Schemes has one row per printed line kind (Setup, Special Rules, Twist, Evil Wins, Good Wins). The 8 Core and 4 Captain America 75th Schemes show `executable` where live-verified; the other 188 read `unmarked` (no curated evidence yet). This is the data WP-880 needs to count every card type on `/coverage`.

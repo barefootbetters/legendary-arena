@@ -50841,6 +50841,8 @@ Protect this file.
 
 **Reserved by:** NUMBER-LEDGER D-24827. Related: D-24050, D-24357, D-24368, D-24370, D-24055.
 
+**Scope note (2026-11-10):** the row set widened from hero ledger rows to every card type in the effect-implementation index by D-24829 (WP-880); the formula and the `implementedRowCount` helper are unchanged, and the label now reads "card abilities implemented".
+
 ---
 Protect this file.
 
@@ -50871,6 +50873,40 @@ Protect this file.
 **Live-verify (D-24026): operator-pending.** After deploy, on dashboard.legendary-arena.com/debug/effects, filter to Scheme and set `ca75`: Brainwash the Military shows four `executable` rows, The Unbreakable Enigma Code three; another set's Schemes (e.g. `anni`) show `unmarked`.
 
 **Reserved by:** NUMBER-LEDGER D-24828 (#3257). Related: D-24289 (the effect index), D-24313 (the tactic overlay pattern), D-24810 (the strike overlay and the orphan rule), D-24327 (the Skrull attack proxy), D-24595 (WP-763's Scheme audit), D-24829 (WP-880), D-24026.
+
+---
+Protect this file.
+
+### D-24829 — `/coverage` counts every card type in a set: the headline, status chips, By set and By card read the effect-implementation index across Heroes, Villains & Henchmen, Masterminds and Schemes, with D-24827's formula unchanged (Active 2026-11-10 — WP-880 / EC-918)
+
+**Context.** The `/coverage` headline counted hero card × mechanic rows only, so Captain America 75th read 100% while its four Schemes, two Masterminds and two Villain groups were never in the number (Jeff, 2026-11-10). #3256 relabelled the headline ", hero cards only" as the interim fix. WP-879 / D-24828 gave Schemes rows in `data/metadata/effect-implementation-index.json`, which already held Heroes (the hero ledger, one for one), Villains + Henchmen (one `villain` scope), Master Strikes and Tactics. Jeff asked for every card in the set to count on the one page, not separate per-type pages.
+
+**Decision.**
+1. **Row set.** The `/coverage` headline, status chips, By set table and By card table read the bundled effect-implementation index across every `EFFECT_INDEX_ENTRY_SCOPES` scope. The `/vision` product-content line reads the same.
+2. **One formula.** Implemented = Executable + Condition + Subsystem (D-24827), applied through `summaryImplementedPercent(summarizeEntries(entries))`; `summarizeEntries` (new `apps/dashboard/src/composables/useCardCoverage.ts`) returns a full `LedgerSummary` whose `distinctMechanics` excludes the `(unmarked)` sentinel, as `summarizeRows` does. No second copy of the formula or the rounding. Unmarked, Deferred and Unsupported are to-dos in every scope; an `unmarked` Scheme means "not audited yet" and counts against the set.
+3. **Labels.** Headline: "N% card abilities implemented — {set name}" (or "— all sets"). Under it, the per-type line `Heroes i/n · Villains & Henchmen i/n · Masterminds i/n · Schemes i/n` in `EFFECT_INDEX_ENTRY_SCOPES` order, zero-row types omitted, then "per card × ability row — {rows} rows · {distinct} distinct abilities". `cardTypeLabel` is an exhaustive switch with `assertNever`. Villains and Henchmen are one type because the index has no card-type split. `/vision`: "N% card abilities implemented · U unsupported".
+4. **By set** keeps Implemented %, Rows and the six status columns (now all types) and adds one `implemented/total` column per type. **By card** filters through `useEffectIndex.filterEntries` with a Type filter beside Status; the live-verify cell keeps `entryForRow`, so Mastermind and Scheme rows show "—".
+5. **Stays hero-only, and says so.** By mechanic (heading "— Heroes"; mechanic tokens and provenance are hero-ledger concepts), the in-play hollows headline and the Core live-verify table keep their data sources.
+6. **Never silent.** When the index fails to load, `/coverage` shows a `cov-error` banner ("Effect index failed to load: …") and hides the all-types headline, per-type line and chips; `/vision` drops its line.
+
+Chosen over separate per-type coverage pages, so one set has one completion number. Supersedes the **scope** (not the formula) of D-24827.
+
+**Effect** (index at `fb28b03d`, 2857 entries):
+
+| Set | All types | Heroes | Villains & Henchmen | Masterminds | Schemes |
+|---|---|---|---|---|---|
+| Core | 99.2% (131/132) | 51/51 | 36/36 | 20/20 | 24/25 |
+| Captain America 75th | 100% (63/63) | 25/25 | 14/14 | 10/10 | 14/14 |
+| Annihilation | 14% (6/43) | 4/13 | 2/8 | 0/10 | 0/12 |
+| All sets | 31% (887/2857) | 546/863 | 260/763 | 43/567 | 38/664 |
+
+Core's 24/25 is Secret Invasion of the Skrull Shapeshifters' `special-rules`, `deferred` (D-24327, the cost + 2 proxy); it is correct and was not adjusted. Hero figures are unchanged from the hero ledger (Core 51/51, all sets 546/863). The all-sets figure falls from 63.3% hero-only to 31% because most non-Core villain abilities, Masterminds and Schemes are unaudited; that is the honest reading.
+
+**Tests.** Dashboard 597 -> 609 / 0 (new `useCardCoverage.test.ts`, 12). Hero-scope parity: `summarizeEntries(heroScopeEntries)` deep-equals `summarizeRows(ledgerRows)` on a shared fixture with an `(unmarked)` hero row, whole and per set; no literal counts in tests. Also: breakdown order and omission, set breakdown release order, the label switch and its throw, the `/vision` line text, a failing index (error surfaced, no figures, line dropped), the bundled default. `typecheck`, `lint`, `format:check`, `test:coverage` (useCardCoverage.ts 100% lines), `build` 0. Revert proofs observed and restored: dropping the `(unmarked)` exclusion fails the parity test and the distinct-abilities test (2 fail); inlining the percent formula in `buildAllTypesSetBreakdown` keeps tests green (same arithmetic) but the review grep `grep -nE "\* 1000\)|totalRows\) \*|/ [a-zA-Z.]*totalRows"` over the three WP files flags it, and is clean on the restored tree. Local preview (`?set=core`, `ca75`, `anni`, all sets, Type filter on Core Schemes → Deferred → 1 row, `/vision`): figures as in the table, no console errors.
+
+**Live-verify (D-24026): operator-pending until deploy.** Read the live chunk(s) with the CF Access service token: the label "card abilities implemented" on `/coverage` and `/vision`, and the bundled ca75 rows tallying Heroes 25/25 · Villains & Henchmen 14/14 · Masterminds 10/10 · Schemes 14/14.
+
+**Reserved by:** NUMBER-LEDGER D-24829 (#3257). Related: D-24827, D-24828, D-24289, D-24313, D-24810, D-24327, D-24370, D-24026.
 
 ---
 Protect this file.
