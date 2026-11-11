@@ -51008,23 +51008,4 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24832 (#3269). Related: D-2501, D-2502, D-13502, D-24026, D-24295, D-24570, D-24598, D-24623, D-24624, D-24652, D-24764, D-24795, D-24808.
 
 ---
-
-### D-24834 — "You may gain a Wound. If you do, you get +N Attack": the `gain-wound-reward` hero keyword, an active-seat prompt through the Wound chokepoint, and a reward that waits for Diving Block / Flying Shield Block (Drafted 2026-11-11; not yet landed — WP-883 / EC-921)
-
-**Context.** Two hero lines print the same optional trade. co2e Hulk's Hulk Smash! reads "[hc:strength]: You may gain a Wound. If you do, you get +5[icon:attack]." and parses to a plain `attack` 5 behind the Strength gate, so it grants +5 with no Wound and no choice. Morbius's Scalded by Sunlight reads "[keyword:Sunlight]: You may gain a Wound. If you do, you get +2[icon:attack]."; it is on `DAY_NIGHT_UNMODELED_LINES` (D-24598), so it keeps the gate, drops the +2 and records a `sunlight` hollow. No keyword models "you may gain a Wound; if you do, <reward>". `ko-wound-reward` (D-24183) auto-resolves because KOing a Wound is always good; gaining one is not.
-
-**Decision.**
-1. **Keyword.** A new `HeroKeyword` `'gain-wound-reward'` with all six lockstep sites. Marker `[keyword:gain-wound-reward:<reward>:<n>]`, the three-segment `ko-wound-reward` shape. Seeded rewards `{ attack }` (two copies, duplicate-first); an unseeded reward emits nothing. It carries the reward magnitude, so it is not in `NO_MAGNITUDE_KEYWORDS`. The reward icon on the same line is suppressed (the D-24570 sibling), which ends Hulk Smash!'s free +5.
-2. **A prompt, on the existing seat choice.** The handler parks an active-scoped `G.pendingSeatChoice` of kind `'gain-wound-reward'`: option 0 "Gain a Wound: you get +N Attack", option 1 "Don't gain a Wound" (the default). It is the Random Acts shape (D-24500): no new move, no UIState field, the generic client prompt with one heading ("Gain a Wound for extra Attack?"). With an empty Wound supply no prompt opens and the card logs that it did nothing (rules v23 L3199-3201, D-24779).
-3. **The chokepoint.** Gaining goes through `gainWoundWithOutcome`, so Diving Block and Flying Shield Block are offered as for any other Wound. D-24678 kept Random Acts off the chokepoint only because its Wound goes to the hand and races the pass-left. This Wound goes to the discard pile. `woundsDrawn` bumps when the Wound lands (D-24808).
-4. **"If you do" waits for the interception.** Both reactions print "instead", so a revealed Wound was never gained. The Wound lands first and the reveal resolves in a later wave (D-24673). The reward (`GainWoundAttackReward { attack, sourceCardId }`) is therefore held on the interception entry (`woundAttackReward` on the Diving Block or Flying Shield Block entry). It is granted when the Wound is kept and dropped with a log line when it is prevented. A declined Diving Block that hands the Wound to Flying Shield Block carries the reward over. `gainWoundWithOutcome` reports `'gained'` even when Flying Shield Block parked, so the apply checks that queue's length. Untagged entries behave exactly as before. Granting at land was rejected: a Diving Block holder would get +N and a card with no Wound.
-5. **Bots.** The bot ally gains only when +N newly enables a fight (`fightVillain` / `fightMastermind` from `getLegalMoves`, with and without the +N). It declines Diving Block and Flying Shield Block on a Wound tagged with a reward, because that Wound was taken on purpose. Autoplay, the simulation runner and PAR stay on the default, decline (D-24745).
-6. **Scalded by Sunlight leaves `DAY_NIGHT_UNMODELED_LINES`** (8 → 7 entries; the D-24600 precedent) and keeps its Sunlight gate. Hulk Smash! keeps its Strength gate.
-7. **Replay.** Setup output plus code only the new hooks reach. Pre-deploy match blobs keep their stored hooks (Hulk Smash!'s +5) and replay identically. The new optional fields exist only in matches that play these cards. No new top-level `G` field, no randomness.
-
-**Follow-ups.** The other "may gain a Wound. If you do" lines need non-attack rewards: anni Put to the Torch (Conqueror), msis Hulk Gets Smashed (KO up to two), wpnx Violent Conditioning (Berserk twice, which today fires on every play with no Wound) and wwhk Mood Swings (Transform). One named WP extends this reward mechanism.
-
-**Reserved by:** NUMBER-LEDGER D-24834 (#3278). Related: D-24183, D-24570, D-24598, D-24600, D-24499, D-24651, D-24673, D-24678, D-24760, D-24500, D-24501, D-24779, D-24808, D-24744, D-24745, D-24026.
-
----
 Protect this file.
