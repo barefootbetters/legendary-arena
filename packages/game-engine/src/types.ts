@@ -1601,6 +1601,12 @@ export interface PendingSeatChoice {
     revealedCardIds?: CardExtId[];
     defeatedCardId?: CardExtId;
   };
+  // why: WP-882 / D-24833 — present only on a 'zarathos-corrupted-spirit' choice that has forced
+  // seats (more than 3 cards, no Instinct / Covert Hero): those seats, sorted ascending. They wait
+  // for the Hero-holders' answer and join the first discard-down round; a Hero-discarder still
+  // above 3 must not, and nothing in G tells them apart after the apply. Omitted when empty. Read
+  // by the chain in resolveSeatChoice. NOT projected to the client.
+  zarathosDiscardDownSeats?: string[];
 }
 
 /**

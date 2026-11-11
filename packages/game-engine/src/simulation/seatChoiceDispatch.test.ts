@@ -771,3 +771,85 @@ describe('Zarathos Eruption of Hellfire across the rebuilt turn loops (WP-758 / 
     assert.ok(observed.includes(replayDiscards[0]!.text), 'the replayed line matches the sim line');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-882 / D-24833 — Corrupted Spirit of Vengeance in a seeded two-seat sim game. The single
+// Tactic is Corrupted Spirit, and every Spider-Man card is a free single-class Tech Hero (no
+// hc2), so the non-defeating seat 1 never holds an Instinct or Covert Hero: when seat 0
+// defeats the Tactic, seat 1 must discard down to 3 cards, one chosen card per round, and the
+// WP-749 dispatch answers each round at its default.
+// ---------------------------------------------------------------------------
+
+// why: the locked WP-882 lines (rules/tacticHandlers.ts forced line; moves/seatChoiceTactics.ts
+// per-card discard line), matched against LogEntry.text.
+const CORRUPTED_SPIRIT_FORCED_LINE =
+  'Fight effect: Player 1 has no Instinct or Covert Hero, so they must discard down to 3 cards (Corrupted Spirit of Vengeance).';
+const CORRUPTED_SPIRIT_DISCARD_PATTERN = /Player 1 discarded .+ \(Corrupted Spirit of Vengeance\)\./;
+const CORRUPTED_SPIRIT_SEED = 'wp882-zarathos-corrupted-spirit-seed';
+
+/**
+ * Builds the Zarathos registry with Corrupted Spirit of Vengeance as its ONE Tactic (ext id
+ * `mdns-mastermind-zarathos-corrupted-spirit-of-vengeance`) and every Spider-Man card a free
+ * single-class Tech Hero.
+ *
+ * @returns A hand-built registry reader (engine tests never import the registry layer).
+ */
+function buildCorruptedSpiritRegistry(): CardRegistryReader {
+  const zarathos = buildZarathosRegistry() as unknown as {
+    getSet: (abbr: string) => {
+      masterminds: Array<{ cards: Array<{ name: string; slug: string }> }>;
+      heroes: Array<{ cards: Array<{ hc?: string; hc2?: string }> }>;
+    };
+  };
+  const setData = structuredClone(zarathos.getSet('mdns'));
+  const tactic = setData.masterminds[0]!.cards[1]!;
+  tactic.name = 'Corrupted Spirit of Vengeance';
+  tactic.slug = 'corrupted-spirit-of-vengeance';
+  for (const hero of setData.heroes) {
+    for (const card of hero.cards) {
+      card.hc = 'tech';
+      delete card.hc2;
+    }
+  }
+  return {
+    listCards: () => [],
+    listSets: () => [{ abbr: 'mdns' }],
+    getSet: (abbr: string) => (abbr === 'mdns' ? setData : undefined),
+  } as unknown as CardRegistryReader;
+}
+
+describe('Zarathos Corrupted Spirit of Vengeance across the rebuilt turn loops (WP-882 / D-24833)', () => {
+  test('seat 1 discards down to 3 one chosen card per round, the game terminates, and runFixture replays the same lines', () => {
+    const setupConfig = buildZarathosConfig();
+    const registry = buildCorruptedSpiritRegistry();
+    const observedLogs = new Set<string>();
+    const policies: AIPolicy[] = [createZarathosPolicy('0', observedLogs), createZarathosPolicy('1', observedLogs)];
+
+    const captured = simulateOneGameAndCaptureMoves(setupConfig, registry, policies, CORRUPTED_SPIRIT_SEED, 0);
+
+    // The capture -> replay lockstep reads the authoritative message log from runFixture.
+    const fixture = buildFixtureFromCapture(captured.moves, CORRUPTED_SPIRIT_SEED, setupConfig, 'wp882-zarathos-corrupted-spirit');
+    const replay = runFixture(fixture, registry);
+    const replayTexts = replay.messages.map((entry) => entry.text);
+    assert.ok(
+      replayTexts.some((text) => text.includes(CORRUPTED_SPIRIT_FORCED_LINE)),
+      'Precondition failed: seat 1 was never forced to discard down; the locked seed / fight turn no longer leaves seat 1 above 3 cards when seat 0 defeats the Tactic.',
+    );
+    const discardLines = replayTexts.filter((text) => CORRUPTED_SPIRIT_DISCARD_PATTERN.test(text));
+    // why: seat 1 holds the 6 cards it drew for its next turn when seat 0 fights, so it owes 3.
+    assert.equal(discardLines.length, 3, 'seat 1 discards from 6 cards down to 3, one line per card');
+
+    const fightIndex = captured.moves.findIndex((move) => move.playerId === '0' && move.moveName === 'fightMastermind');
+    const seatOneResolves = captured.moves.filter(
+      (move, index) => index > fightIndex && move.moveName === 'resolveSeatChoice' && move.playerId === '1',
+    );
+    assert.equal(seatOneResolves.length, discardLines.length, 'one resolveSeatChoice per card owed (WP-749 dispatch)');
+    assert.equal(captured.endgameReached, true, 'the game terminates rather than being flagged stuck');
+    assert.equal(captured.outcome.winner, 'heroes-win', 'defeating the only Tactic wins once the rounds resolve');
+
+    // Every per-card line the sim produced, runFixture reproduces in the same order.
+    const observedDiscardLines = [...observedLogs].filter((text) => CORRUPTED_SPIRIT_DISCARD_PATTERN.test(text));
+    assert.deepEqual(observedDiscardLines, discardLines, 'runFixture replays the sim per-card lines in order');
+    assert.ok([...observedLogs].some((text) => text.includes(CORRUPTED_SPIRIT_FORCED_LINE)), 'the sim logged the same forced line');
+  });
+});

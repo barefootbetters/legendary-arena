@@ -1861,6 +1861,7 @@ describe('WP-846 / D-24780 — tactic each-other order (AC-8 rotation, AC-2, AC-
 // ---------------------------------------------------------------------------
 
 import {
+  ZARATHOS_CORRUPTED_SPIRIT_DISCARD_DOWN_KIND,
   ZARATHOS_CORRUPTED_SPIRIT_KIND,
   ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND,
   ZARATHOS_DEMONIC_ESSENCE_LAST_KIND,
@@ -2023,7 +2024,7 @@ describe('WP-758 dispatchTacticOnFight — Zarathos tactics (D-24588)', () => {
     }
   });
 
-  it('Corrupted Spirit: ≤3 cards is logged, >3 with no match discards down to 3, >3 with a match is addressed', () => {
+  it('Corrupted Spirit: ≤3 cards is logged, >3 with no match is carried to discard down by choice, >3 with a match is addressed', () => {
     const G = makeZarathosTacticState({
       '0': {},
       '1': { hand: ['instinctHero', 'filler', 'filler'] },
@@ -2033,12 +2034,16 @@ describe('WP-758 dispatchTacticOnFight — Zarathos tactics (D-24588)', () => {
     dispatchTacticOnFight(G, { currentPlayer: '0' }, ZARATHOS_CORRUPTED_ID, SHUFFLE, makeSeatEvents());
     assert.deepEqual(G.hqHaunters, [{ kind: 'mastermind' }, null, null, null, null], 'hqCovert (cost 4) beats hqInstinct (cost 3)');
     assert.equal(G.playerZones['1']!.hand.length, 3, 'seat 1 keeps its 3 cards');
-    // why: selectDiscardToLimitCards(G, hand, 5 - 3) discards the two cheapest (filler 0, then
-    // the Wound 0) — the count, not the limit.
-    assert.deepEqual(G.playerZones['2']!.hand, ['techHero', 'rangedHero', 'techHero']);
+    // why: WP-882 / D-24833 — seat 2 (no Instinct / Covert Hero) picks its own cards later, so
+    // no card leaves its hand at handler time; it rides on seat 3's choice.
+    assert.deepEqual(G.playerZones['2']!.hand, ['techHero', 'filler', 'rangedHero', WOUND, 'techHero']);
+    assert.ok(zarathosLogTexts(G).includes(
+      'Fight effect: Player 2 has no Instinct or Covert Hero, so they must discard down to 3 cards (Corrupted Spirit of Vengeance).',
+    ));
     const choice = G.pendingSeatChoice!;
     assert.equal(choice.kind, ZARATHOS_CORRUPTED_SPIRIT_KIND);
     assert.deepEqual(choice.addressedSeats, ['3']);
+    assert.deepEqual(choice.zarathosDiscardDownSeats, ['2']);
     assert.deepEqual(zarathosOptionLabels(G, '3'), [
       'Discard Instinct Hero',
       'Discard Covert Pricey',
@@ -2047,11 +2052,16 @@ describe('WP-758 dispatchTacticOnFight — Zarathos tactics (D-24588)', () => {
     assert.equal(choice.defaultOptionIndex, 0);
   });
 
-  it('Corrupted Spirit: when every other seat auto-resolves nothing is parked (no unanswerable choice)', () => {
+  it('Corrupted Spirit: with no chooser, a forced seat\'s discard-down round parks directly (WP-882 / D-24833)', () => {
     const G = makeZarathosTacticState({ '0': {}, '1': { hand: ['techHero', 'filler', 'filler', 'filler'] } });
-    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZARATHOS_CORRUPTED_ID, SHUFFLE, makeSeatEvents());
-    assert.equal(G.pendingSeatChoice, undefined);
-    assert.equal(G.playerZones['1']!.hand.length, 3);
+    const events = makeSeatEvents();
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZARATHOS_CORRUPTED_ID, SHUFFLE, events);
+    assert.equal(G.playerZones['1']!.hand.length, 4, 'no card moves at handler time');
+    const choice = G.pendingSeatChoice!;
+    assert.equal(choice.kind, ZARATHOS_CORRUPTED_SPIRIT_DISCARD_DOWN_KIND);
+    assert.deepEqual(choice.addressedSeats, ['1']);
+    assert.equal(choice.defaultOptionIndex, 0);
+    assert.equal(events.admitted.length, 1, 'the non-active seat rides the stage');
   });
 
   it('Imprison: with a Strength/Instinct Hero, offers each Victory-Pile Villain (Henchmen included) with its VP, decline last', () => {
