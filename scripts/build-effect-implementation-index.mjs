@@ -328,7 +328,8 @@ export function normalizeTactic(extId, name, setAbbr, tacticSlug, overlay, scope
  * committed provenance overlay only. Files are read in a sorted order for a stable
  * intermediate (the terminal (extId, mechanic) sort normalizes final order anyway). A
  * missing/malformed card file, or a masterminds-bearing set with no file-level `abbr`,
- * is a transform failure — the ext_id grammar depends on both.
+ * is a transform failure — the ext_id grammar depends on both. An overlay key that matches no
+ * enumerated tactic is also a transform failure (same rule as the strike and Scheme feeds).
  *
  * @param {Record<string, object>} provenance - the tactic provenance overlay map.
  * @returns {object[]} the mastermind-scoped tactic entries (unsorted).
@@ -347,6 +348,7 @@ export function readMastermindTactics(provenance) {
   }
 
   const entries = [];
+  const enumeratedExtIds = new Set();
   for (const fileName of fileNames) {
     const filePath = join(CARD_DATA_DIRECTORY, fileName);
     let setData;
@@ -399,8 +401,21 @@ export function readMastermindTactics(provenance) {
           );
         }
         const extId = `${setAbbr}-mastermind-${mastermindSlug}-${tacticSlug}`;
+        enumeratedExtIds.add(extId);
         entries.push(normalizeTactic(extId, tacticName, setAbbr, tacticSlug, provenance[extId]));
       }
+    }
+  }
+
+  // why: same orphan rule as the strike and Scheme feeds (WP-867 / WP-879) — an overlay row that
+  // names no enumerated tactic is a stale or misspelled claim that a resolver ran, and it would
+  // otherwise drop out of the index without a trace.
+  for (const overlayExtId of Object.keys(provenance).sort()) {
+    if (!enumeratedExtIds.has(overlayExtId)) {
+      throw new TransformFailure(
+        `The tactic provenance overlay row "${overlayExtId}" matches no Mastermind tactic in the card data. ` +
+          'Fix the key to "${setAbbr}-mastermind-${mastermindSlug}-${tacticSlug}" for an existing tactic, or remove the row.',
+      );
     }
   }
   return entries;
