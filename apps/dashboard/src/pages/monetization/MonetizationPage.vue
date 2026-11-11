@@ -9,6 +9,7 @@ import NetRevenueChartWidget from '../../widgets/NetRevenueChartWidget.vue';
 import PaidActionErrorsWidget from '../../widgets/PaidActionErrorsWidget.vue';
 import GitHubActionsCostWidget from '../../widgets/GitHubActionsCostWidget.vue';
 import DigitalOceanCostWidget from '../../widgets/DigitalOceanCostWidget.vue';
+import CloudflareCostWidget from '../../widgets/CloudflareCostWidget.vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 
@@ -40,6 +41,7 @@ const { relativeTime, sourceLabel } = useDataFreshness(updatedAt, source);
       <PaidActionErrorsWidget />
       <GitHubActionsCostWidget />
       <DigitalOceanCostWidget />
+      <CloudflareCostWidget />
     </div>
 
     <div v-if="loading && !data" class="page-loading">
