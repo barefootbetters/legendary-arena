@@ -38,7 +38,8 @@ import type { ParFidelityRow } from '../../types/parFidelity.js';
 
 // The hero mechanic ledger still drives By mechanic (mechanic tokens and provenance
 // are hero-ledger concepts) and the in-play headline's gate.
-const { rows, error, runtimeObservedByLedgerMechanic, runtimeObservedSummary } = useCoverageLedger();
+const { rows, error, runtimeObservedByLedgerMechanic, runtimeObservedSummary } =
+  useCoverageLedger();
 
 // WP-880 / D-24829: the headline, status chips, By set and By card count every card
 // type in the effect-implementation index — Heroes, Villains & Henchmen, Masterminds
