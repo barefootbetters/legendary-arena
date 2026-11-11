@@ -4,6 +4,7 @@ import {
   CLOUDFLARE_BILLING_CYCLES,
   CLOUDFLARE_BILLING_URL,
   CLOUDFLARE_MONTHLY_BUDGET_CENTS,
+  CLOUDFLARE_REFRESH_STEPS,
   sumCloudflareCycleCents,
 } from '../config/cloudflareBilling.js';
 
@@ -74,6 +75,16 @@ const rows = CLOUDFLARE_BILLING_CYCLES.map((billingCycle) => ({
         the million, rounded up.
         <a :href="CLOUDFLARE_BILLING_URL" target="_blank" rel="noopener">Billing ↗</a>
       </p>
+
+      <details class="refresh-steps">
+        <summary>How to update when a new bill arrives</summary>
+        <ol>
+          <li v-for="step in CLOUDFLARE_REFRESH_STEPS" :key="step.text">
+            {{ step.text }}
+            <code v-if="step.command">{{ step.command }}</code>
+          </li>
+        </ol>
+      </details>
     </div>
   </div>
 </template>
@@ -153,5 +164,34 @@ const rows = CLOUDFLARE_BILLING_CYCLES.map((billingCycle) => ({
 
 .metric-fraction a {
   color: var(--p-primary-color);
+}
+
+.refresh-steps {
+  font-size: 0.75rem;
+  color: var(--p-text-muted-color);
+}
+
+.refresh-steps summary {
+  cursor: pointer;
+  color: var(--p-primary-color);
+}
+
+.refresh-steps ol {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.refresh-steps code {
+  display: block;
+  margin-top: 0.2rem;
+  padding: 0.2rem 0.35rem;
+  border-radius: 3px;
+  background: var(--p-surface-border, var(--p-content-border-color));
+  color: var(--p-text-color);
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 </style>
