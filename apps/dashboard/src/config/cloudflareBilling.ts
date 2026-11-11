@@ -5,6 +5,12 @@
 // which labels it CACHED. Refresh workflow: when a cycle's invoice lands, mark
 // that cycle `invoiced` with its final lines, add the new cycle-to-date row,
 // and update CLOUDFLARE_BILLING_AS_OF.
+//
+// why: the Cloudflare account is shared with another business, and its bill is
+// account-wide. Each cycle records the account total AND Legendary Arena's
+// share; the panel headlines LA's share, because that is the cost on LA's
+// books. Attribute per bucket with `wrangler r2 bucket info <name>` (size and
+// default storage class) and `wrangler r2 bucket lifecycle list <name>`.
 
 /**
  * One product line on a Cloudflare bill. `usage` is the billable quantity as
@@ -20,13 +26,16 @@ export interface CloudflareBillLine {
 /**
  * One Cloudflare billing cycle. `invoiced` cycles are final; a `cycle-to-date`
  * cycle is the running metered summary, with Cloudflare's projection for the
- * full cycle.
+ * full cycle. `lines` and `projectedCycleCents` are account-wide;
+ * `legendaryArenaCents` is the part of the account total LA caused.
  */
 export interface CloudflareBillingCycle {
   readonly cycle: string;
   readonly status: 'invoiced' | 'cycle-to-date';
   readonly lines: readonly CloudflareBillLine[];
   readonly projectedCycleCents: number;
+  readonly legendaryArenaCents: number;
+  readonly attribution: string;
   readonly note: string;
 }
 
@@ -44,13 +53,17 @@ export const CLOUDFLARE_MONTHLY_BUDGET_CENTS = 5000;
 //   2026-10-23 to 2026-11-22 — the "Metered usage has reached your configured
 //             budget" email, usage observed Oct 23 – Nov 11 (20 of 31 days).
 //             The paid lines sum to $10.26 (the email's "Current total"; its
-//             spend summary rounds to $10.25). Projected cycle cost $15.90,
-//             average $0.51 a day. Standard-class R2 stayed inside the free
-//             tier: 28.18 GB-months storage (10 included, 19 billed), 17.27k
-//             Class A ops (1M included), 84.03k Class B ops (10M included).
-//             Infrequent Access operations have no free tier and bill by the
-//             million rounded up, so 457 Class A ops cost a full $9.00 and one
-//             Class B op a full $0.90.
+//             spend summary rounds to $10.25). Projected cycle cost $15.90.
+//             Attribution, from `wrangler r2 bucket info` on 2026-11-11: LA's
+//             buckets hold about 2.2 GB (legendary-images 1.63 GB, the DB
+//             backups 0.56 GB, all Standard class, no IA lifecycle rules),
+//             inside the account's 10 GB-month free tier, and LA's
+//             operations are far under the 1M / 10M free tiers. Every billed
+//             line comes from the other business's bucket: the only
+//             Infrequent Access lifecycle rules on the account are its, and
+//             its ~50 GB of Standard storage is what pushes the account past
+//             the free tier. IA operations have no free tier and bill by the
+//             million rounded up, so 457 Class A ops cost a full $9.00.
 export const CLOUDFLARE_BILLING_CYCLES: readonly CloudflareBillingCycle[] = [
   {
     cycle: 'Oct 23 – Nov 22, 2026',
@@ -63,12 +76,15 @@ export const CLOUDFLARE_BILLING_CYCLES: readonly CloudflareBillingCycle[] = [
       { product: 'R2 Infrequent Access – Data Retrieval', usage: '1 GB', cents: 1 },
     ],
     projectedCycleCents: 1590,
-    note: 'Usage observed Oct 23 – Nov 11 (20 of 31 days). Standard R2 operations stayed inside the free tier.',
+    legendaryArenaCents: 0,
+    attribution:
+      "Every billed line is another business's bucket on the shared account. Legendary Arena's R2 (about 2.2 GB, Standard class) stays inside the free tier.",
+    note: 'Usage observed Oct 23 – Nov 11 (20 of 31 days).',
   },
 ];
 
 /**
- * Sum a billing cycle's product lines into its total, in cents.
+ * Sum a billing cycle's product lines into the account-wide total, in cents.
  */
 export function sumCloudflareCycleCents(billingCycle: CloudflareBillingCycle): number {
   let totalCents = 0;

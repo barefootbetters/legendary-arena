@@ -49,17 +49,20 @@ const rows = CLOUDFLARE_BILLING_CYCLES.map((billingCycle) => ({
           {{ row.billingCycle.status === 'invoiced' ? '(invoiced)' : '(cycle to date)' }}
         </span>
         <span class="metric-rate">
-          {{ formatCents(row.totalCents) }}
-          <span class="metric-unit">
-            {{ row.billingCycle.status === 'invoiced' ? 'charged' : 'so far' }}
-          </span>
+          {{ formatCents(row.billingCycle.legendaryArenaCents) }}
+          <span class="metric-unit">Legendary Arena</span>
           <span class="metric-unit">
             of {{ formatCents(CLOUDFLARE_MONTHLY_BUDGET_CENTS) }} budget
           </span>
         </span>
-        <span v-if="row.billingCycle.status === 'cycle-to-date'" class="metric-fraction">
-          Projected cycle cost {{ formatCents(row.billingCycle.projectedCycleCents) }}
+        <span class="metric-fraction">
+          Account total {{ formatCents(row.totalCents) }}
+          {{ row.billingCycle.status === 'invoiced' ? 'charged' : 'so far' }}
+          <template v-if="row.billingCycle.status === 'cycle-to-date'">
+            · projected {{ formatCents(row.billingCycle.projectedCycleCents) }} for the cycle
+          </template>
         </span>
+        <span class="metric-fraction">{{ row.billingCycle.attribution }}</span>
         <span
           v-for="line in row.billingCycle.lines"
           :key="line.product"

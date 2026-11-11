@@ -22,6 +22,22 @@ test('Oct 23 – Nov 22, 2026 cycle to date matches the budget email: $10.26, pr
   assert.equal(cycle.projectedCycleCents, 1590);
 });
 
+test("Legendary Arena's share of the Oct 23 – Nov 22, 2026 cycle is $0", () => {
+  const cycle = findCycle('Oct 23 – Nov 22, 2026');
+  assert.equal(cycle.legendaryArenaCents, 0);
+});
+
+test("Legendary Arena's share never exceeds the account-wide total", () => {
+  for (const billingCycle of CLOUDFLARE_BILLING_CYCLES) {
+    assert.ok(
+      Number.isInteger(billingCycle.legendaryArenaCents) &&
+        billingCycle.legendaryArenaCents >= 0 &&
+        billingCycle.legendaryArenaCents <= sumCloudflareCycleCents(billingCycle),
+      `${billingCycle.cycle} LA share ${billingCycle.legendaryArenaCents} must be whole cents between 0 and the account total.`,
+    );
+  }
+});
+
 test('a cycle-to-date projection is never below what has already been billed', () => {
   for (const billingCycle of CLOUDFLARE_BILLING_CYCLES) {
     assert.ok(
