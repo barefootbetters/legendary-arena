@@ -214,15 +214,27 @@ test('useInPlayCoverage credits a fixed mechanic from the committed seed', () =>
   // 1.6 -> 1.2 purely because the denominator caught up. The large snapshot test below
   // (real live sweep) passes UNCHANGED at 2965 — the confirmation the runtime
   // max(baseline, live) denominator held (D-24050 / D-24370).
+  // 2026-11-10 (baseline-refresh hygiene after WP-878, re-pin): the seed had fallen
+  // behind the live sweep again, across every WP since the 2026-09-16 refresh (the
+  // D-24623 / D-24624 parse-only hollows, D-24649's magnitude-less icons, Focus, the
+  // Patrol and Artifact families, and WP-878's amwp peaks). Re-running the monotonic
+  // writer (`build:in-play-baseline`) on the current feed: 37 -> 86 mechanics (49
+  // added, e.g. `attack-no-magnitude`, `astral-plane`, `cheering-crowds`,
+  // `"when-recruited"-abilities`), 12 peaks raised (e.g. `undercover` 488 -> 521),
+  // none lowered. Summed peaks 2965 -> 8702, so this empty-live test's totalObs moves
+  // 2965 -> 8702. resolvedObs holds at 37 (dodge's peak did not move); percentResolved
+  // falls 1.2 -> 0.4 purely because the denominator caught up. The real-live snapshot
+  // test below passes UNCHANGED at 8702 / 1141 / 13.1, because the runtime
+  // max(baseline, live) already read every one of these higher live values.
   const baseline = baselineSeed as unknown as InPlayHollowBaseline;
   const view = useInPlayCoverage({
     baseline,
     ledger: makeLedger([makeRow({ mechanic: 'dodge', status: 'executable' })]),
     runtimeObserved: makeRuntimeObserved({}),
   });
-  assert.equal(view.totalObs.value, 2965);
+  assert.equal(view.totalObs.value, 8702);
   assert.equal(view.resolvedObs.value, 37);
-  assert.equal(view.percentResolved.value, 1.2);
+  assert.equal(view.percentResolved.value, 0.4);
 });
 
 test('useInPlayCoverage reads the real committed seed + ledger and computes the in-play coverage snapshot', () => {
