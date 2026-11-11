@@ -10,6 +10,17 @@
 
 ## Current State
 
+### Schemes join the effect-implementation index; `/debug/effects` gains a Scheme filter (WP-879 / EC-917, D-24828) (2026-11-10)
+
+**User-visible on dashboard.legendary-arena.com/debug/effects after deploy.** A **Scheme** chip sits beside Hero / Villain / Mastermind, and the summary line counts scheme rows. Each of the 200 Schemes has one row per printed line kind (Setup, Special Rules, Twist, Evil Wins, Good Wins). The 8 Core and 4 Captain America 75th Schemes show `executable` where live-verified; the other 188 read `unmarked` (no curated evidence yet). This is the data WP-880 needs to count every card type on `/coverage`.
+
+- **Registry.** `EFFECT_INDEX_ENTRY_SCOPES` gains `"scheme"`; `byScope` gains a required `scheme`; the `scopeTally` seed gains `scheme: 0`.
+- **Generator.** `readSchemes` classifies each printed line by its label (quoted title and Twist-number list stripped) through a closed map; unlabelled lines fold into `special-rules`, and a loss printed on a Twist line counts in `twist`. Status from the new `scripts/coverage/scheme-provenance.json`. An orphan key or mechanic, or an `executable` row with a blank handler, fails the build. `normalizeTactic` gains a `scope` parameter (default `'mastermind'`). Still engine-free.
+- **Index.** 2193 -> 2857 entries; `byScope.scheme` 664 (setup 195, special-rules 104, twist 200, evil-wins 154, good-wins 11); executable 784 -> 822, deferred 18 -> 19, unmarked 1046 -> 1671.
+- **Seed (12 Schemes, 39 rows).** 38 `executable`, 1 `deferred` (Secret Invasion `special-rules`: Skrull Attack is cost + 2, a proxy for the printed VP + 2, D-24327), none left out. Change the Outcome of WWII and Go Back in Time `evil-wins` rest on #3015 naming the Scheme and its loss config; the loss itself did not fire live in those matches.
+- **Tests.** registry 311 -> 313 / 0, dashboard 595 -> 597 / 0, `effect-index:test` 14 -> 31; every other package unchanged and 0 fail (server 207 DB-backed skipped). `effect-index:check` 0 at 2857; dashboard `typecheck` / `lint` / `format:check` / `test:coverage` / `build` 0; `pnpm -r build` 0. Revert proofs: no `scheme: 0` seed, no quoted-title strip, a blank seeded handler each fail.
+- **Live-verify (D-24026): operator-pending.** After deploy, on `/debug/effects` filter to Scheme and set `ca75`: Brainwash the Military shows four `executable` rows; an `anni` Scheme shows `unmarked`.
+
 ### Bots attempt a Heist when the card-count odds favor it (WP-878 / EC-916, D-24826) (2026-11-09)
 
 **User-visible on `play.legendary-arena.com` after deploy.** In a match whose loadout includes the Scott Lang, Cat Burglar, Wasp, Ant-Man or Ant Army Hero decks, a bot (bot ally or autoplay) that readies a Heist card now attempts the Heist when the odds favor it: the log shows `Player N attempts a Heist: Heist Count C against <card> (V VP).` and the worked / sideways / caught line, and the bot's decision log shows `[Bot] Chose: attemptHeist (score 175)`. Before, no bot ever attempted one (operator match `mjw8byyMwLY`: Petty Larceny readied on turns 8, 10 and 14 and never used). A human player's Heist is unchanged.

@@ -4,8 +4,9 @@
  *
  * Joins the two committed mechanic ledgers
  * (docs/ai/coverage/hero-mechanic-ledger.json +
- * docs/ai/coverage/villain-mechanic-ledger.json) AND a mastermind-tactic feed read
- * from the card data into one published, three-scope effect-implementation index at
+ * docs/ai/coverage/villain-mechanic-ledger.json) AND the mastermind-tactic, Master Strike
+ * and Scheme feeds read from the card data into one published, four-scope
+ * (hero / villain / mastermind / scheme) effect-implementation index at
  * data/metadata/effect-implementation-index.json. The index is the data backbone the
  * /debug/effects viewer reads: for every card x mechanic it surfaces status + handler
  * + wp + decision so "did card X's printed effect fire, and which handler ran?" has a
@@ -33,6 +34,11 @@
  * WP-867 / D-24810 adds a Master Strike feed beside the tactic feed: one mastermind-scoped
  * row per Mastermind (mechanic 'master-strike'), identity from the card data and
  * status/handler/wp/decision from scripts/coverage/strike-provenance.json, absent = 'unmarked'.
+ *
+ * WP-879 / D-24828 adds the Scheme feed: one scheme-scoped row per (Scheme, printed line kind)
+ * — setup / special-rules / twist / evil-wins / good-wins — identity from the card data
+ * (`${setAbbr}-scheme-${schemeSlug}`), status/handler/wp/decision from
+ * scripts/coverage/scheme-provenance.json, absent = 'unmarked'.
  *
  * Deterministic: identical inputs always yield byte-identical output. No wall-clock
  * reads — see resolveGeneratedAt below. This transform is a pure re-projection; it
@@ -66,6 +72,9 @@ const TACTIC_PROVENANCE_PATH = join(REPO_ROOT, 'scripts', 'coverage', 'tactic-pr
 // why: WP-867 / D-24810 — the Master Strike feed's curated overlay (status/handler/wp/decision
 // for the Masterminds whose strike has a dispatcher arm); identity comes from the card data.
 const STRIKE_PROVENANCE_PATH = join(REPO_ROOT, 'scripts', 'coverage', 'strike-provenance.json');
+// why: WP-879 / D-24828 — the Scheme feed's curated overlay (status/handler/wp/decision per
+// Scheme line kind, seeded for the live-verified Schemes); identity comes from the card data.
+const SCHEME_PROVENANCE_PATH = join(REPO_ROOT, 'scripts', 'coverage', 'scheme-provenance.json');
 const OUTPUT_DIRECTORY = join(REPO_ROOT, 'data', 'metadata');
 const OUTPUT_PATH = join(OUTPUT_DIRECTORY, 'effect-implementation-index.json');
 
@@ -90,6 +99,36 @@ const STATUS_ORDER = ['executable', 'deferred', 'condition', 'unsupported', 'unm
 // blank handler/wp/decision (the "no handler ran" signal), never a fabricated
 // attribution. This is the default overlay for a tactic absent from tactic-provenance.json.
 const UNMARKED_TACTIC_STATUS = 'unmarked';
+
+// why: WP-879 / D-24828 — the closed printed-label -> mechanic map for Scheme lines. A
+// label is the text before a line's first ':', with a trailing quoted title and a trailing
+// Twist-number list stripped (see classifySchemeLine). Any label not listed here folds
+// into SCHEME_FALLBACK_MECHANIC.
+const SCHEME_LABEL_MECHANICS = new Map([
+  ['Setup', 'setup'],
+  ['Special Rules', 'special-rules'],
+  ['When revealed', 'special-rules'],
+  ['Twist', 'twist'],
+  ['Twists', 'twist'],
+  ['Other Twists', 'twist'],
+  ['Master Strike or Twist', 'twist'],
+  ['Evil Wins', 'evil-wins'],
+  ['Chthon Wins', 'evil-wins'],
+  ['Good Wins', 'good-wins'],
+  ['When the players win', 'good-wins'],
+]);
+
+// why: WP-879 / D-24828 — unlabelled rules text, `[hc:…]` lead-ins, `{"points":…}` strings,
+// Twist sub-bullets and reminder text all fold into 'special-rules'. The vocabulary stays
+// closed (it never grows per Scheme), and every printed line is still accounted for in some
+// row; the cost is that six Schemes gain a 'special-rules' row only from such lines.
+const SCHEME_FALLBACK_MECHANIC = 'special-rules';
+
+// Step 1 of the label rule: strip a trailing quoted title (`Twist 7“Unleash Weapon X“`).
+const SCHEME_LABEL_QUOTED_TITLE = /\s*“[^“”]*[“”]\s*$/;
+// Step 2: strip a trailing Twist-number list — a number, a range (`1-6`), a comma list
+// (`1,3,5,7`) or an "and" list (`1, 3, and 5`).
+const SCHEME_LABEL_NUMBER_LIST = /\s+\d+(?:\s*-\s*\d+)?(?:\s*,\s*(?:and\s+)?\d+)*$/;
 
 /** Error type signalling a probe/transform failure (exit code 2). */
 class TransformFailure extends Error {}
@@ -128,7 +167,7 @@ function resolveGeneratedAt(heroLedger, villainLedger) {
 
 /**
  * Reads and shape-checks one mechanic ledger. A wrong shape is a transform failure:
- * the index pins a three-scope contract, so a mis-scoped or shapeless ledger must
+ * the index pins a fixed-scope contract, so a mis-scoped or shapeless ledger must
  * STOP rather than silently publish a mislabeled index.
  *
  * @param {string} ledgerPath - absolute path to the ledger JSON file.
@@ -148,7 +187,7 @@ function readLedger(ledgerPath, expectedCardType) {
   if (parsed.cardType !== expectedCardType) {
     throw new TransformFailure(
       `The ledger at ${ledgerPath} has cardType "${parsed.cardType}", expected "${expectedCardType}". ` +
-        `The effect index pins a three-scope join; reconcile the ledger scope before regenerating.`,
+        `The effect index joins each ledger under its own fixed scope; reconcile the ledger scope before regenerating.`,
     );
   }
   if (!Array.isArray(parsed.rows)) {
@@ -215,6 +254,32 @@ function readStrikeProvenance() {
 }
 
 /**
+ * Reads the committed Scheme provenance overlay (WP-879 / D-24828). Mirrors
+ * readStrikeProvenance: the overlay carries ONLY status/handler/wp/decision per Scheme line
+ * kind, keyed `schemes[extId][mechanic]`; a missing or malformed overlay is a transform failure.
+ *
+ * @returns {Record<string, Record<string, object>>} the `schemes` map (ext_id -> mechanic -> overlay).
+ */
+function readSchemeProvenance() {
+  let parsed;
+  try {
+    parsed = JSON.parse(readFileSync(SCHEME_PROVENANCE_PATH, 'utf8'));
+  } catch (error) {
+    throw new TransformFailure(
+      `Cannot read the Scheme provenance overlay at ${SCHEME_PROVENANCE_PATH}. It supplies status/handler/wp/decision ` +
+        `for live-verified Scheme lines. Restore the committed file. Underlying error: ${error.message}`,
+    );
+  }
+  if (parsed === null || typeof parsed !== 'object' || typeof parsed.schemes !== 'object' || parsed.schemes === null) {
+    throw new TransformFailure(
+      `The Scheme provenance overlay at ${SCHEME_PROVENANCE_PATH} has no "schemes" object. ` +
+        `Expected { schemaVersion, _comment, schemes: { "<ext_id>": { "<mechanic>": { status, handler, wp, decision } } } }.`,
+    );
+  }
+  return parsed.schemes;
+}
+
+/**
  * Normalizes one mastermind tactic into a mastermind-scoped effect-index entry in the
  * locked property order. Identity (extId/name/set/mechanic) comes from the card data;
  * status/handler/wp/decision come from the provenance overlay VERBATIM, or the
@@ -225,9 +290,11 @@ function readStrikeProvenance() {
  * @param {string} setAbbr - the file-level set abbreviation.
  * @param {string} tacticSlug - the tactic card's slug (also the entry's `mechanic`).
  * @param {object|undefined} overlay - the provenance overlay for this tactic, if any.
- * @returns {object} the normalized mastermind entry.
+ * @param {'mastermind'|'scheme'} [scope='mastermind'] - the entry scope. The tactic and strike
+ *   feeds keep the default; the Scheme feed (WP-879 / D-24828) passes 'scheme'.
+ * @returns {object} the normalized entry.
  */
-export function normalizeTactic(extId, name, setAbbr, tacticSlug, overlay) {
+export function normalizeTactic(extId, name, setAbbr, tacticSlug, overlay, scope = 'mastermind') {
   // why: verbatim honesty (WP-493 / AC-5) — a tactic absent from the provenance overlay
   // is 'unmarked' with blank handler/wp/decision; the transform never synthesizes a
   // handler path, WP, or decision a tactic does not have. "" is a meaningful
@@ -246,7 +313,7 @@ export function normalizeTactic(extId, name, setAbbr, tacticSlug, overlay) {
     extId,
     name,
     set: setAbbr,
-    scope: 'mastermind',
+    scope,
     mechanic: tacticSlug,
     status,
     handler,
@@ -455,6 +522,179 @@ export function readMastermindStrikes(provenance, tacticEntries) {
 }
 
 /**
+ * Classifies one printed Scheme line into its mechanic under the locked two-step label rule
+ * (WP-879 / D-24828): take the text before the first ':', strip a trailing quoted title, strip
+ * a trailing Twist-number list, then look the label up in the closed map. A line with no ':'
+ * or an unlisted label folds into 'special-rules'.
+ *
+ * @param {string} line - one printed ability line of a Scheme card.
+ * @returns {string} the mechanic: setup | special-rules | twist | evil-wins | good-wins.
+ */
+export function classifySchemeLine(line) {
+  const colonIndex = line.indexOf(':');
+  if (colonIndex < 0) {
+    return SCHEME_FALLBACK_MECHANIC;
+  }
+  const label = line
+    .slice(0, colonIndex)
+    .replace(SCHEME_LABEL_QUOTED_TITLE, '')
+    .replace(SCHEME_LABEL_NUMBER_LIST, '');
+  const mechanic = SCHEME_LABEL_MECHANICS.get(label);
+  if (mechanic === undefined) {
+    return SCHEME_FALLBACK_MECHANIC;
+  }
+  return mechanic;
+}
+
+/**
+ * Reads every card-data set file that carries Schemes, in sorted file order, with its
+ * file-level abbr (WP-879). Mirrors readMastermindSets so the read and validation match.
+ *
+ * @returns {{ filePath: string, setAbbr: string, schemes: object[] }[]} the Scheme-bearing sets.
+ */
+function readSchemeSets() {
+  let fileNames;
+  try {
+    fileNames = readdirSync(CARD_DATA_DIRECTORY)
+      .filter((name) => name.endsWith('.json'))
+      .sort();
+  } catch (error) {
+    throw new TransformFailure(
+      `Cannot read the card-data directory at ${CARD_DATA_DIRECTORY}. It supplies Scheme identity ` +
+        `for the effect index. Underlying error: ${error.message}`,
+    );
+  }
+
+  const sets = [];
+  for (const fileName of fileNames) {
+    const filePath = join(CARD_DATA_DIRECTORY, fileName);
+    let setData;
+    try {
+      setData = JSON.parse(readFileSync(filePath, 'utf8'));
+    } catch (error) {
+      throw new TransformFailure(
+        `Cannot read or parse the card-data set at ${filePath}. Re-check the card data before regenerating ` +
+          `the effect index. Underlying error: ${error.message}`,
+      );
+    }
+    if (!Array.isArray(setData.schemes) || setData.schemes.length === 0) {
+      continue;
+    }
+    const setAbbr = setData.abbr;
+    if (typeof setAbbr !== 'string' || setAbbr.length === 0) {
+      throw new TransformFailure(
+        `The card-data set at ${filePath} carries schemes but no file-level "abbr" string. ` +
+          `The Scheme ext_id grammar "\${setAbbr}-scheme-\${schemeSlug}" needs it; add the "abbr" field.`,
+      );
+    }
+    sets.push({ filePath, setAbbr, schemes: setData.schemes });
+  }
+  return sets;
+}
+
+/**
+ * Collects the distinct mechanics a Scheme prints, across all of its cards, in first-seen order.
+ *
+ * @param {object} scheme - a card-data Scheme (`cards[].abilities[]`).
+ * @returns {string[]} the distinct mechanics.
+ */
+function collectSchemeMechanics(scheme) {
+  const mechanics = new Set();
+  if (!Array.isArray(scheme.cards)) {
+    return [];
+  }
+  for (const card of scheme.cards) {
+    if (!Array.isArray(card.abilities)) {
+      continue;
+    }
+    for (const line of card.abilities) {
+      if (typeof line === 'string') {
+        mechanics.add(classifySchemeLine(line));
+      }
+    }
+  }
+  return [...mechanics];
+}
+
+/**
+ * Fails the build on a Scheme overlay row that names no enumerated Scheme line, or on an
+ * 'executable' row with a blank handler (WP-879 / D-24828). Iterates `schemes` only.
+ *
+ * @param {Record<string, Record<string, object>>} provenance - the Scheme overlay map.
+ * @param {Map<string, Set<string>>} mechanicsBySchemeExtId - every enumerated Scheme's mechanics.
+ * @returns {void}
+ */
+function assertSchemeProvenanceMatches(provenance, mechanicsBySchemeExtId) {
+  for (const overlayExtId of Object.keys(provenance).sort()) {
+    const printedMechanics = mechanicsBySchemeExtId.get(overlayExtId);
+    // why: the WP-867 orphan rule — a stale or misspelled key would otherwise drop out of the
+    // index silently, taking its claimed coverage with it.
+    if (printedMechanics === undefined) {
+      throw new TransformFailure(
+        `The Scheme provenance overlay row "${overlayExtId}" matches no Scheme in the card data. ` +
+          `Fix the key to "\${setAbbr}-scheme-\${schemeSlug}" for an existing Scheme, or remove the row.`,
+      );
+    }
+    const overlayRows = provenance[overlayExtId] ?? {};
+    for (const mechanic of Object.keys(overlayRows).sort()) {
+      if (!printedMechanics.has(mechanic)) {
+        throw new TransformFailure(
+          `The Scheme provenance overlay row "${overlayExtId}" mechanic "${mechanic}" matches no line that Scheme prints ` +
+            `(it prints: ${[...printedMechanics].sort().join(', ')}). Fix the mechanic, or remove the row.`,
+        );
+      }
+      const overlayRow = overlayRows[mechanic];
+      const handler = overlayRow !== null && typeof overlayRow === 'object' ? overlayRow.handler : undefined;
+      // why: the evidence rule, enforced rather than only listed — an 'executable' Scheme line
+      // must name the engine symbol that runs it.
+      if (overlayRow?.status === 'executable' && (typeof handler !== 'string' || handler.trim().length === 0)) {
+        throw new TransformFailure(
+          `The Scheme provenance overlay row "${overlayExtId}" mechanic "${mechanic}" is "executable" with a blank handler. ` +
+            `Name the engine symbol that runs the line (file#symbol), or remove the row so it reads "unmarked".`,
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Enumerates one scheme-scoped row per (Scheme, distinct printed line kind) across all card-data
+ * sets (WP-879 / D-24828). Identity comes from the card data (`${setAbbr}-scheme-${schemeSlug}`,
+ * the Scheme name, the file-level abbr, the classified mechanic); status/handler/wp/decision come
+ * from the Scheme provenance overlay or the 'unmarked' default. Stays engine-free.
+ *
+ * @param {Record<string, Record<string, object>>} provenance - the Scheme overlay map.
+ * @returns {object[]} the scheme-scoped entries (unsorted).
+ */
+export function readSchemes(provenance) {
+  // why: one row per line KIND, not per Scheme — a Scheme's Setup, Special Rules, Twist and
+  // Evil Wins are implemented by different engine code and go live separately (WP-763 found a
+  // 'counter-only' Twist beside a real loss), so a single row would hide exactly that gap.
+  const entries = [];
+  const mechanicsBySchemeExtId = new Map();
+  for (const schemeSet of readSchemeSets()) {
+    for (const scheme of schemeSet.schemes) {
+      const schemeSlug = scheme.slug;
+      const schemeName = scheme.name;
+      if (typeof schemeSlug !== 'string' || schemeSlug.length === 0 || typeof schemeName !== 'string' || schemeName.length === 0) {
+        throw new TransformFailure(
+          `A Scheme in ${schemeSet.filePath} is missing its slug or name. Every Scheme needs both to build its ext_id and index rows.`,
+        );
+      }
+      const extId = `${schemeSet.setAbbr}-scheme-${schemeSlug}`;
+      const mechanics = collectSchemeMechanics(scheme);
+      mechanicsBySchemeExtId.set(extId, new Set(mechanics));
+      const overlayRows = provenance[extId] ?? {};
+      for (const mechanic of mechanics) {
+        entries.push(normalizeTactic(extId, schemeName, schemeSet.setAbbr, mechanic, overlayRows[mechanic], 'scheme'));
+      }
+    }
+  }
+  assertSchemeProvenanceMatches(provenance, mechanicsBySchemeExtId);
+  return entries;
+}
+
+/**
  * Normalizes one ledger row into a scope-tagged effect-index entry in the locked
  * property order. The name is read from the scope's ledger field (hero rows carry
  * `heroName`, villain rows carry `cardName`) — the only cross-ledger field-name
@@ -527,9 +767,10 @@ function normalizeRow(row, scope, name) {
  * @param {object} heroLedger - the parsed hero ledger.
  * @param {object} villainLedger - the parsed villain ledger.
  * @param {object[]} tacticEntries - the mastermind-scoped tactic entries.
+ * @param {object[]} schemeEntries - the scheme-scoped entries (WP-879).
  * @returns {object[]} the sorted entry list.
  */
-function collectEntries(heroLedger, villainLedger, tacticEntries) {
+function collectEntries(heroLedger, villainLedger, tacticEntries, schemeEntries) {
   const entries = [];
   for (const row of heroLedger.rows) {
     entries.push(normalizeRow(row, 'hero', row.heroName));
@@ -539,6 +780,9 @@ function collectEntries(heroLedger, villainLedger, tacticEntries) {
   }
   for (const tacticEntry of tacticEntries) {
     entries.push(tacticEntry);
+  }
+  for (const schemeEntry of schemeEntries) {
+    entries.push(schemeEntry);
   }
   entries.sort((left, right) => {
     if (left.extId !== right.extId) {
@@ -555,9 +799,9 @@ function collectEntries(heroLedger, villainLedger, tacticEntries) {
 /**
  * Builds the per-card cards{} join from the entries: keys sorted ascending, each
  * card carrying its single scope and a sorted, de-duplicated mechanics[] list.
- * Throws if one extId ever carries two different scopes (the hero, villain, and
- * mastermind-tactic feeds use disjoint id-spaces, so this would signal a corrupted
- * source rather than valid data).
+ * Throws if one extId ever carries two different scopes (the hero `{set}/{hero}`, villain
+ * `{set}-villain-…`, mastermind `{set}-mastermind-…` and scheme `{set}-scheme-…` feeds use
+ * disjoint id-spaces, so this would signal a corrupted source rather than valid data).
  *
  * @param {object[]} entries - the sorted entry list.
  * @returns {object} the cards{} join object with sorted keys.
@@ -570,7 +814,7 @@ function buildCards(entries) {
     if (existingScope !== undefined && existingScope !== entry.scope) {
       throw new TransformFailure(
         `Card "${entry.extId}" appears with both scope "${existingScope}" and "${entry.scope}". ` +
-          `The hero, villain, and mastermind-tactic feeds use disjoint id-spaces; a shared extId signals a corrupted source.`,
+          `The hero, villain, mastermind and scheme feeds use disjoint id-spaces; a shared extId signals a corrupted source.`,
       );
     }
     scopeByCard.set(entry.extId, entry.scope);
@@ -592,16 +836,16 @@ function buildCards(entries) {
 
 /**
  * Computes the summary (total + counts by scope + counts by status) over the final
- * entries. byStatus emits all five status keys in the fixed STATUS_ORDER.
+ * entries. byStatus emits all six status keys in the fixed STATUS_ORDER.
  *
  * @param {object[]} entries - the sorted entry list.
  * @returns {object} the summary object in locked property order.
  */
 export function buildSummary(entries) {
-  // why: WP-507 — byScope seeds all three scopes at 0 (a zero-count scope stays 0
-  // in the published shape); the mastermind seed matches the schema's byScope object
-  // and its superRefine tally, so a scope with no entries never drops the key.
-  const byScope = { hero: 0, villain: 0, mastermind: 0 };
+  // why: WP-507 / WP-879 — byScope seeds all four scopes at 0 (a zero-count scope stays 0
+  // in the published shape); the mastermind and scheme seeds match the schema's byScope
+  // object and its superRefine tally, so a scope with no entries never drops the key.
+  const byScope = { hero: 0, villain: 0, mastermind: 0, scheme: 0 };
   const byStatus = {};
   for (const statusName of STATUS_ORDER) {
     byStatus[statusName] = 0;
@@ -625,10 +869,11 @@ export function buildSummary(entries) {
  * @param {object} heroLedger - the parsed hero ledger.
  * @param {object} villainLedger - the parsed villain ledger.
  * @param {object[]} tacticEntries - the mastermind-scoped tactic entries.
+ * @param {object[]} schemeEntries - the scheme-scoped entries (WP-879).
  * @returns {object} the validated effect-implementation index.
  */
-function buildIndex(heroLedger, villainLedger, tacticEntries) {
-  const entries = collectEntries(heroLedger, villainLedger, tacticEntries);
+function buildIndex(heroLedger, villainLedger, tacticEntries, schemeEntries) {
+  const entries = collectEntries(heroLedger, villainLedger, tacticEntries, schemeEntries);
   const cards = buildCards(entries);
   const summary = buildSummary(entries);
 
@@ -680,7 +925,8 @@ function main() {
   // why: WP-867 / D-24810 — the Master Strike rows join the tactic rows in the mastermind
   // input; collectEntries sorts every entry, so concatenation order is not load-bearing.
   const mastermindEntries = [...tacticEntries, ...strikeEntries];
-  const index = buildIndex(heroLedger, villainLedger, mastermindEntries);
+  const schemeEntries = readSchemes(readSchemeProvenance());
+  const index = buildIndex(heroLedger, villainLedger, mastermindEntries, schemeEntries);
   const freshText = serializeJson(index);
 
   if (mode === '--check') {
@@ -710,7 +956,8 @@ function main() {
   console.log(`Effect-implementation index written (${index.entries.length} entries):`);
   console.log(
     `  scope ${index.scope} · ${index.summary.byScope.hero} hero + ${index.summary.byScope.villain} villain + ` +
-      `${index.summary.byScope.mastermind} mastermind · ${Object.keys(index.cards).length} cards`,
+      `${index.summary.byScope.mastermind} mastermind + ${index.summary.byScope.scheme} scheme · ` +
+      `${Object.keys(index.cards).length} cards`,
   );
   console.log(`  ${OUTPUT_PATH}`);
   return 0;

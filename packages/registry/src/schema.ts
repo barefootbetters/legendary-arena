@@ -781,6 +781,12 @@ export const EFFECT_INDEX_ENTRY_SCOPES = [
   "hero",
   "villain",
   "mastermind",
+  // why: WP-879 / D-24828 — "scheme" is a closed-enum widening (a registry contract
+  // change) so each Scheme printed line kind (setup / special-rules / twist /
+  // evil-wins / good-wins) gets its own row; Schemes were the only card type with no
+  // row in the index. Widened in lockstep with byScope, the scopeTally seed below, the
+  // generator buildSummary literal and every dashboard consumer.
+  "scheme",
 ] as const;
 
 export const EFFECT_INDEX_STATUSES = [
@@ -855,6 +861,7 @@ export const EffectImplementationSummarySchema = z
         hero:       z.number().int().nonnegative(),
         villain:    z.number().int().nonnegative(),
         mastermind: z.number().int().nonnegative(),
+        scheme:     z.number().int().nonnegative(),
       })
       .strict(),
     // why: byStatus emits all six status keys in the fixed union order, a
@@ -910,7 +917,8 @@ export const EffectImplementationIndexSchema = z
     // accumulator is a hardcoded literal — the WP-507 "mastermind" scope needs its
     // own `mastermind: 0` seed here, else a mastermind entry does
     // `scopeTally['mastermind'] += 1` on undefined → NaN and every regenerated index fails.
-    const scopeTally = { hero: 0, villain: 0, mastermind: 0 };
+    // WP-879 / D-24828: the "scheme" scope needs its `scheme: 0` seed for the same reason.
+    const scopeTally = { hero: 0, villain: 0, mastermind: 0, scheme: 0 };
     // why: WP-548 / D-24357 — the statusTally accumulator is a hardcoded literal
     // (like scopeTally above); the new `subsystem` status needs its own `subsystem: 0`
     // seed here, else a subsystem entry does `statusTally['subsystem'] += 1` on

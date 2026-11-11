@@ -1,0 +1,264 @@
+{
+  "schemaVersion": 1,
+  "_comment": "Scheme ext_id -> mechanic -> {status, handler, wp, decision} provenance overlay for the effect-implementation index's Scheme rows (WP-879 / D-24828). Scheme IDENTITY is generated: scripts/build-effect-implementation-index.mjs enumerates every Scheme in data/cards/*.json and emits one scope 'scheme' row per printed line kind it prints (setup / special-rules / twist / evil-wins / good-wins), so every Scheme appears in the index without an entry here. This file curates ONLY status/handler/wp/decision. why: a Scheme's lines are implemented by different engine code (setup builders, schemeTwistResolvers.ts, the loss conditions in schemeTwistConfigs.ts) and go live separately, so status is per line, never per Scheme. The seed is limited to the 8 Core and 4 Captain America 75th Schemes, which have live-verify evidence (docs/ai/coverage/live-verify.json scheme: entries; #2976; #3015). A row is 'executable' only with that evidence plus the engine symbol that runs the line as `handler` (file#symbol); the generator throws on an 'executable' row with a blank handler, and on a key or mechanic that matches no enumerated Scheme line. 'deferred' marks a line honoured only by a documented proxy. wp / decision are copied where a source names them, else blank. A Scheme or line absent from this map reads 'unmarked' with blank handler/wp/decision: 'no curated evidence', not 'broken'. Line classification: the label before the first ':' (a trailing quoted title and Twist-number list stripped) maps through a closed vocabulary; unlabelled lines, Twist sub-bullets and reminder text fold into 'special-rules', and a loss printed on a Twist line (e.g. 'Twist 8: Evil Wins!') counts in the 'twist' row, so a missing 'evil-wins' row does not mean a missing loss.",
+  "schemes": {
+    "core-scheme-midtown-bank-robbery": {
+      "setup": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/villainDeck/villainDeck.setup.ts#buildVillainDeck",
+        "wp": "",
+        "decision": ""
+      },
+      "special-rules": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/economy/economy.resolve.ts#bystanderVillainAttackBonus",
+        "wp": "WP-748",
+        "decision": "D-24572"
+      },
+      "twist": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/rules/schemeTwistResolvers.ts#midtown-bank-robbery",
+        "wp": "WP-748",
+        "decision": ""
+      },
+      "evil-wins": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/rules/schemeTwistConfigs.ts#core/midtown-bank-robbery",
+        "wp": "WP-508",
+        "decision": "D-24315"
+      }
+    },
+    "core-scheme-legacy-virus-the": {
+      "setup": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/setup/schemeSetupSizing.ts#resolveEffectiveWoundsCount",
+        "wp": "WP-511",
+        "decision": "D-24321"
+      },
+      "twist": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/rules/schemeTwistResolvers.ts#reveal-or-punish",
+        "wp": "WP-511",
+        "decision": ""
+      },
+      "evil-wins": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/rules/schemeTwistConfigs.ts#core/legacy-virus-the",
+        "wp": "WP-511",
+        "decision": "D-24320"
+      }
+    },
+    "core-scheme-negative-zone-prison-breakout": {
+      "setup": {
+        "status": "executable",
+        "handler": "packages/registry/src/playerCountSetup.ts#resolveEffectiveHenchmenCount",
+        "wp": "",
+        "decision": "D-24666"
+      },
+      "twist": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/rules/schemeTwistResolvers.ts#chained-reveals",
+        "wp": "",
+        "decision": ""
+      },
+      "evil-wins": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/rules/schemeTwistConfigs.ts#core/negative-zone-prison-breakout",
+        "wp": "WP-509",
+        "decision": "D-24316"
+      }
+    },
+    "core-scheme-unleash-the-power-of-the-cosmic-cube": {
+      "setup": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/villainDeck/villainDeck.setup.ts#buildVillainDeck",
+        "wp": "",
+        "decision": ""
+      },
+      "twist": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/rules/schemeTwistResolvers.ts#wound-all",
+        "wp": "WP-540",
+        "decision": "D-24349"
+      }
+    },
+    "core-scheme-super-hero-civil-war": {
+      "setup": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/setup/schemeSetupSizing.ts#resolveEffectiveTwistCount",
+        "wp": "",
+        "decision": "D-24733"
+      },
+      "twist": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/rules/schemeTwistResolvers.ts#ko-from-hq",
+        "wp": "WP-540",
+        "decision": "D-24349"
+      },
+      "evil-wins": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/rules/schemeTwistConfigs.ts#core/super-hero-civil-war",
+        "wp": "WP-510",
+        "decision": "D-24318"
+      }
+    },
+    "core-scheme-replace-earths-leaders-with-killbots": {
+      "setup": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/villainDeck/villainDeck.setup.ts#buildVillainDeck",
+        "wp": "WP-513",
+        "decision": "D-24324"
+      },
+      "special-rules": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/economy/economy.resolve.ts#resolveBaseFightCost",
+        "wp": "WP-513",
+        "decision": "D-24325"
+      },
+      "twist": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/rules/schemeTwistResolvers.ts#killbots",
+        "wp": "WP-513",
+        "decision": "D-24325"
+      },
+      "evil-wins": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/rules/schemeTwistConfigs.ts#core/replace-earths-leaders-with-killbots",
+        "wp": "WP-513",
+        "decision": "D-24325"
+      }
+    },
+    "core-scheme-secret-invasion-of-the-skrull-shapeshifters": {
+      "setup": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/setup/convertHeroesToSkrulls.ts#convertHeroesToSkrulls",
+        "wp": "WP-514",
+        "decision": "D-24326"
+      },
+      "special-rules": {
+        "status": "deferred",
+        "handler": "packages/game-engine/src/economy/economy.resolve.ts#resolveBaseFightCost",
+        "wp": "WP-514",
+        "decision": "D-24327"
+      },
+      "twist": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/rules/schemeTwistResolvers.ts#secret-invasion",
+        "wp": "WP-514",
+        "decision": "D-24327"
+      },
+      "evil-wins": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/rules/schemeTwistConfigs.ts#core/secret-invasion-of-the-skrull-shapeshifters",
+        "wp": "WP-514",
+        "decision": "D-24326"
+      }
+    },
+    "core-scheme-portals-to-the-dark-dimension": {
+      "setup": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/villainDeck/villainDeck.setup.ts#buildVillainDeck",
+        "wp": "",
+        "decision": ""
+      },
+      "twist": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/rules/schemeTwistResolvers.ts#portals",
+        "wp": "WP-539",
+        "decision": "D-24348"
+      }
+    },
+    "ca75-scheme-brainwash-the-military": {
+      "setup": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/villainDeck/villainDeck.setup.ts#buildVillainDeck",
+        "wp": "WP-823",
+        "decision": "D-24756"
+      },
+      "special-rules": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/economy/economy.resolve.ts#resolveBaseFightCost",
+        "wp": "WP-823",
+        "decision": "D-24756"
+      },
+      "twist": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/rules/schemeTwistResolvers.ts#brainwash-the-military",
+        "wp": "WP-823",
+        "decision": "D-24756"
+      },
+      "evil-wins": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/rules/schemeTwistConfigs.ts#ca75/brainwash-the-military",
+        "wp": "WP-823",
+        "decision": "D-24756"
+      }
+    },
+    "ca75-scheme-go-back-in-time-to-slay-heroes-ancestors": {
+      "setup": {
+        "status": "executable",
+        "handler": "packages/registry/src/playerCountSetup.ts#resolveEffectiveHeroCount",
+        "wp": "",
+        "decision": ""
+      },
+      "special-rules": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/rules/timestreamPurge.logic.ts#sweepPurgedHeroesFromHq",
+        "wp": "WP-829",
+        "decision": "D-24762"
+      },
+      "twist": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/rules/schemeTwistResolvers.ts#go-back-in-time",
+        "wp": "WP-829",
+        "decision": "D-24762"
+      },
+      "evil-wins": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/rules/schemeTwistConfigs.ts#ca75/go-back-in-time-to-slay-heroes-ancestors",
+        "wp": "WP-829",
+        "decision": "D-24762"
+      }
+    },
+    "ca75-scheme-unbreakable-enigma-code-the": {
+      "setup": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/villainDeck/villainDeck.setup.ts#buildVillainDeck",
+        "wp": "",
+        "decision": ""
+      },
+      "special-rules": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/rules/enigmaCode.logic.ts#settleEnigmaGuess",
+        "wp": "WP-830",
+        "decision": "D-24763"
+      },
+      "twist": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/rules/schemeTwistResolvers.ts#enigma-code",
+        "wp": "WP-830",
+        "decision": "D-24763"
+      }
+    },
+    "ca75-scheme-change-the-outcome-of-wwii": {
+      "setup": {
+        "status": "executable",
+        "handler": "packages/registry/src/playerCountSetup.ts#resolveEffectiveVillainGroupCount",
+        "wp": "",
+        "decision": "D-24766"
+      },
+      "twist": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/rules/schemeTwistResolvers.ts#change-the-outcome-of-wwii",
+        "wp": "WP-832",
+        "decision": "D-24765"
+      },
+      "evil-wins": {
+        "status": "executable",
+        "handler": "packages/game-engine/src/rules/schemeTwistConfigs.ts#ca75/change-the-outcome-of-wwii",
+        "wp": "WP-832",
+        "decision": "D-24765"
+      }
+    }
+  }
+}

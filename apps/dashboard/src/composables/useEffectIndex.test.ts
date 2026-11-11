@@ -35,7 +35,7 @@ function makeEntry(overrides: Partial<EffectImplementationEntry>): EffectImpleme
  * per-card join are derived), so the fixture passes EffectImplementationIndexSchema.
  */
 function makeIndex(entries: EffectImplementationEntry[]): EffectImplementationIndex {
-  const byScope = { hero: 0, villain: 0, mastermind: 0 };
+  const byScope = { hero: 0, villain: 0, mastermind: 0, scheme: 0 };
   const byStatus = {
     executable: 0,
     deferred: 0,
@@ -77,6 +77,7 @@ test('scopeLabel covers every scope and throws on an unknown one', () => {
   assert.equal(scopeLabel('hero'), 'Hero');
   assert.equal(scopeLabel('villain'), 'Villain');
   assert.equal(scopeLabel('mastermind'), 'Mastermind');
+  assert.equal(scopeLabel('scheme'), 'Scheme');
   assert.throws(() => scopeLabel('sidekick' as unknown as EffectIndexEntryScope));
 });
 
@@ -111,6 +112,43 @@ test('filterEntries narrows to the mastermind scope (WP-507)', () => {
   const result = filterEntries(entries, { ...NO_FILTER, scope: 'mastermind' });
   assert.equal(result.length, 1);
   assert.equal(result[0]?.extId, 'core-mastermind-magneto-crushing-shockwave');
+});
+
+test('filterEntries narrows to the scheme scope (WP-879)', () => {
+  const entries = [
+    makeEntry({ extId: 'core/hulk', scope: 'hero' }),
+    makeEntry({
+      extId: 'ca75-scheme-brainwash-the-military',
+      name: 'Brainwash the Military',
+      set: 'ca75',
+      scope: 'scheme',
+      mechanic: 'twist',
+    }),
+    makeEntry({
+      extId: 'ca75-scheme-brainwash-the-military',
+      name: 'Brainwash the Military',
+      set: 'ca75',
+      scope: 'scheme',
+      mechanic: 'evil-wins',
+    }),
+  ];
+  const result = filterEntries(entries, { ...NO_FILTER, scope: 'scheme' });
+  assert.equal(result.length, 2);
+  assert.ok(result.every((entry) => entry.scope === 'scheme'));
+});
+
+test('useEffectIndex tallies scheme entries into byScope.scheme (WP-879)', () => {
+  const index = makeIndex([
+    makeEntry({ extId: 'core/hulk', scope: 'hero' }),
+    makeEntry({
+      extId: 'core-scheme-portals-to-the-dark-dimension',
+      scope: 'scheme',
+      mechanic: 'twist',
+    }),
+  ]);
+  const view = useEffectIndex({ index });
+  assert.equal(view.error, undefined);
+  assert.equal(view.summary.value.byScope.scheme, 1);
 });
 
 test('filterEntries narrows by status', () => {
@@ -225,7 +263,7 @@ test('useEffectIndex surfaces the raw stub error message when present', () => {
     generatedAt: '1970-01-01T00:00:00.000Z',
     summary: {
       totalEntries: 0,
-      byScope: { hero: 0, villain: 0, mastermind: 0 },
+      byScope: { hero: 0, villain: 0, mastermind: 0, scheme: 0 },
       byStatus: {
         executable: 0,
         deferred: 0,
