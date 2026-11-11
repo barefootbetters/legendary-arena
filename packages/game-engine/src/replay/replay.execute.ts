@@ -60,6 +60,53 @@ import { exorciseHauntedHero } from '../moves/exorciseHauntedHero.js';
 import { recruitOfficer } from '../moves/recruitOfficer.js';
 import { recruitSidekick } from '../moves/recruitSidekick.js';
 import { fightMastermind } from '../moves/fightMastermind.js';
+import { dodgeCard } from '../moves/dodgeCard.js';
+import { healWounds } from '../moves/healWounds.js';
+import { phaseCard } from '../moves/phaseCard.js';
+import { useRitualArtifact } from '../moves/ritualArtifact.js';
+import { attemptHeist } from '../moves/attemptHeist.js';
+import { endMatchEarly } from '../moves/endMatchEarly.js';
+import { resolveHeroChoice } from '../moves/heroChoice.resolve.js';
+import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
+import { resolveScryKoChoice } from '../moves/scryKoChoice.resolve.js';
+import { resolveMelterKoChoice } from '../moves/melterKoChoice.resolve.js';
+import { resolveRuthlessDictatorChoice } from '../moves/ruthlessDictatorChoice.resolve.js';
+import { resolveElectromagneticBubbleChoice } from '../moves/electromagneticBubbleChoice.resolve.js';
+import { resolveDiscardChoice } from '../moves/discardChoice.resolve.js';
+import { resolvePutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resolve.js';
+import { resolveReorderChoice } from '../moves/reorderChoice.resolve.js';
+import { resolveDefeatChoice } from '../moves/defeatChoice.resolve.js';
+import { resolveKoDiscardChoice } from '../moves/koDiscardChoice.resolve.js';
+import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
+import { resolveSmashDiscard } from '../moves/smashDiscard.resolve.js';
+import { resolvePutHandOnDeckTop } from '../moves/putHandOnDeckTop.resolve.js';
+import { resolveRevealTopDispose } from '../moves/revealTopDispose.resolve.js';
+import { resolveRevealThreeAssign } from '../moves/revealThreeAssign.resolve.js';
+import { resolveDoOver } from '../moves/doOver.resolve.js';
+import { resolvePlayVillainTopChoice } from '../moves/playVillainTop.resolve.js';
+import { resolveOptionalPutBottomHQ } from '../moves/resolveOptionalPutBottomHQ.js';
+import { resolvePutAnyNumberBottomHQ } from '../moves/resolvePutAnyNumberBottomHQ.js';
+import { resolveVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
+import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
+import { resolveCoveringFireChoice } from '../moves/coveringFireChoice.resolve.js';
+import { resolveMoveVillainChoice } from '../moves/moveVillainChoice.resolve.js';
+import { resolveSplitFaceChoice } from '../moves/splitFaceChoice.resolve.js';
+import { resolveCountScaledChoice } from '../moves/countScaledChoice.resolve.js';
+import { resolveUndercoverChoice } from '../moves/undercover.resolve.js';
+import { resolveReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostDiscard.js';
+import { resolveDiscardToPlay } from '../moves/resolveDiscardToPlay.js';
+import { resolveReturnOnDiscard } from '../moves/resolveReturnOnDiscard.js';
+import { resolveGiveHqHeroChoice } from '../moves/giveHqHeroChoice.resolve.js';
+import { resolveCopyPowersChoice } from '../moves/copyPowersChoice.resolve.js';
+import { resolveSeatChoice } from '../moves/seatChoice.resolve.js';
+import {
+  operatorSetSupplyCount,
+  operatorMoveToDeckTop,
+  operatorRevealNow,
+  operatorMoveCard,
+  operatorAddEconomy,
+  operatorEscapeVillain,
+} from '../moves/operatorSetters.js';
 import { setPlayerReady, startMatchIfReady } from '../lobby/lobby.moves.js';
 import { advanceTurnStage } from '../turn/turnLoop.js';
 import { applyEndOfTurnCleanup } from '../moves/endOfTurnCleanup.logic.js';
@@ -92,9 +139,10 @@ interface ReplayMoveContext {
 }
 
 // why: static exhaustive map from move name to move function. No dynamic
-// dispatch. Covers all moves registered in LegendaryGame.moves plus lobby
-// moves. advanceStage uses advanceTurnStage directly because the game.ts
-// wrapper is not exported.
+// dispatch. Covers every move registered in LegendaryGame.moves plus the lobby
+// phase moves (D-24830, pinned by simulation.moveDispatch.drift.test.ts).
+// advanceStage uses advanceTurnStage directly because the game.ts wrapper is
+// not exported.
 
 /** Move function type for the replay move map. */
 type MoveFn = (context: ReplayMoveContext, args?: unknown) => void;
@@ -132,9 +180,12 @@ function replayAdvanceStage(context: ReplayMoveContext): void {
 /**
  * Static map from move name strings to move functions.
  *
- * Covers the moves the determinism harness replays — not every entry in
- * LegendaryGame.moves. A move name with no entry here (unlisted or unknown)
- * logs a replay warning and is skipped (see applyReplayStep).
+ * Covers every entry in LegendaryGame.moves plus the lobby phase moves
+ * (D-24830). The drift guard in simulation.moveDispatch.drift.test.ts asserts
+ * the key set equals the registered move set, so a newly registered move
+ * cannot ship without a replay entry. A move name with no entry here (an
+ * unknown or retired name) logs a replay warning and is skipped (see
+ * applyReplayStep).
  */
 const MOVE_MAP: Record<string, MoveFn> = {
   drawCards: (context, args) => drawCards(context as never, args as never),
@@ -155,9 +206,71 @@ const MOVE_MAP: Record<string, MoveFn> = {
   recruitSidekick: (context) => recruitSidekick(context as never),
   // why: WP-830 / D-24763 — pass the args through: the Enigma Code guess rides on them.
   fightMastermind: (context, args) => fightMastermind(context as never, args as never),
+  // why: D-24830 — before this entry set, a recorded game that used any of the moves below
+  // reconstructed a wrong G here: the move was skipped and a "Replay warning: unknown move
+  // name" line was pushed in its place. The live game, the sim and PAR dispatch them, and
+  // humans can make every one (attemptHeist since WP-865 / D-24808, bots too since WP-878 /
+  // D-24826). Each entry reuses the registered move function, with no re-implementation.
+  // Pending choices that only the bgio turn hooks open (D-24322) still are not opened by this
+  // harness, so a resolve move whose choice was never parked returns without changing G,
+  // which is the move's own validation contract.
+  dodgeCard: (context, args) => dodgeCard(context as never, args as never),
+  healWounds: (context) => healWounds(context as never),
+  phaseCard: (context, args) => phaseCard(context as never, args as never),
+  useRitualArtifact: (context, args) => useRitualArtifact(context as never, args as never),
+  attemptHeist: (context) => attemptHeist(context as never),
+  endMatchEarly: (context) => endMatchEarly(context as never),
+  resolveHeroChoice: (context, args) => resolveHeroChoice(context as never, args as never),
+  resolveKoHeroChoice: (context, args) => resolveKoHeroChoice(context as never, args as never),
+  resolveScryKoChoice: (context, args) => resolveScryKoChoice(context as never, args as never),
+  resolveMelterKoChoice: (context, args) => resolveMelterKoChoice(context as never, args as never),
+  resolveRuthlessDictatorChoice: (context, args) => resolveRuthlessDictatorChoice(context as never, args as never),
+  resolveElectromagneticBubbleChoice: (context, args) => resolveElectromagneticBubbleChoice(context as never, args as never),
+  resolveDiscardChoice: (context, args) => resolveDiscardChoice(context as never, args as never),
+  resolvePutCardsOnDeckChoice: (context, args) => resolvePutCardsOnDeckChoice(context as never, args as never),
+  resolveReorderChoice: (context, args) => resolveReorderChoice(context as never, args as never),
+  resolveDefeatChoice: (context, args) => resolveDefeatChoice(context as never, args as never),
+  resolveKoDiscardChoice: (context, args) => resolveKoDiscardChoice(context as never, args as never),
+  resolveOptionalKoReward: (context, args) => resolveOptionalKoReward(context as never, args as never),
+  resolveSmashDiscard: (context, args) => resolveSmashDiscard(context as never, args as never),
+  resolvePutHandOnDeckTop: (context, args) => resolvePutHandOnDeckTop(context as never, args as never),
+  resolveRevealTopDispose: (context, args) => resolveRevealTopDispose(context as never, args as never),
+  resolveRevealThreeAssign: (context, args) => resolveRevealThreeAssign(context as never, args as never),
+  resolveDoOver: (context, args) => resolveDoOver(context as never, args as never),
+  resolvePlayVillainTopChoice: (context, args) => resolvePlayVillainTopChoice(context as never, args as never),
+  resolveOptionalPutBottomHQ: (context, args) => resolveOptionalPutBottomHQ(context as never, args as never),
+  resolvePutAnyNumberBottomHQ: (context, args) => resolvePutAnyNumberBottomHQ(context as never, args as never),
+  resolveVictoryPileCardPick: (context, args) => resolveVictoryPileCardPick(context as never, args as never),
+  resolveDrawOrEmpowered: (context, args) => resolveDrawOrEmpowered(context as never, args as never),
+  resolveCoveringFireChoice: (context, args) => resolveCoveringFireChoice(context as never, args as never),
+  resolveMoveVillainChoice: (context, args) => resolveMoveVillainChoice(context as never, args as never),
+  resolveSplitFaceChoice: (context, args) => resolveSplitFaceChoice(context as never, args as never),
+  resolveCountScaledChoice: (context, args) => resolveCountScaledChoice(context as never, args as never),
+  resolveUndercoverChoice: (context, args) => resolveUndercoverChoice(context as never, args as never),
+  resolveReturnZeroCostDiscard: (context, args) => resolveReturnZeroCostDiscard(context as never, args as never),
+  resolveDiscardToPlay: (context, args) => resolveDiscardToPlay(context as never, args as never),
+  resolveReturnOnDiscard: (context, args) => resolveReturnOnDiscard(context as never, args as never),
+  resolveGiveHqHeroChoice: (context, args) => resolveGiveHqHeroChoice(context as never, args as never),
+  resolveCopyPowersChoice: (context, args) => resolveCopyPowersChoice(context as never, args as never),
+  // why: WP-684 / D-24501 — a seat choice is resolved by the addressed seat; applyReplayStep
+  // already passes move.playerId as playerID, so a non-active seat's resolve replays as that seat.
+  resolveSeatChoice: (context, args) => resolveSeatChoice(context as never, args as never),
+  // why: WP-802 / D-24689 — the operator setters guard on G.isDebugMatch themselves, so an entry
+  // here replays a debug match's log faithfully and stays a no-op for any other match.
+  operatorSetSupplyCount: (context, args) => operatorSetSupplyCount(context as never, args as never),
+  operatorMoveToDeckTop: (context, args) => operatorMoveToDeckTop(context as never, args as never),
+  operatorRevealNow: (context, args) => operatorRevealNow(context as never, args as never),
+  operatorMoveCard: (context, args) => operatorMoveCard(context as never, args as never),
+  operatorAddEconomy: (context, args) => operatorAddEconomy(context as never, args as never),
+  operatorEscapeVillain: (context, args) => operatorEscapeVillain(context as never, args as never),
   setPlayerReady: (context, args) => setPlayerReady(context as never, args as never),
   startMatchIfReady: (context) => startMatchIfReady(context as never),
 };
+
+// why: D-24830 — exposed for the move-dispatch drift guard, which asserts this key set equals
+// LegendaryGame.moves plus the lobby phase moves. Derived from Object.keys(MOVE_MAP), never a
+// hand-maintained list (mirrors SIMULATION_RUNNER_MOVE_NAMES, WP-289 / D-24073).
+export const REPLAY_MOVE_NAMES: readonly string[] = Object.keys(MOVE_MAP);
 
 /**
  * Constructs a ReplayMoveContext for executing a single move during replay.

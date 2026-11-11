@@ -9,6 +9,11 @@
  * move-steps; the WP-286 One-Hit-Wonder hang). This guard pins the invariant: every
  * SIMULATION_MOVE_NAMES move MUST be a key in BOTH MOVE_MAPs.
  *
+ * D-24830 extends the guard to the replay MOVE_MAP (replay/replay.execute.ts), which dispatches
+ * RECORDED move lists rather than getLegalMoves output: its key set must EQUAL every move the game
+ * registers (LegendaryGame.moves plus the lobby phase moves), so a newly registered move cannot
+ * ship without a replay entry the way attemptHeist (WP-865) and the resolve moves did.
+ *
  * Uses node:test + node:assert only. No engine state — pure key-set assertions.
  */
 
@@ -17,6 +22,8 @@ import assert from 'node:assert/strict';
 import { SIMULATION_MOVE_NAMES } from './ai.legalMoves.js';
 import { SIMULATION_RUNNER_MOVE_NAMES } from './simulation.runner.js';
 import { PAR_AGGREGATOR_MOVE_NAMES } from './par.aggregator.js';
+import { REPLAY_MOVE_NAMES } from '../replay/replay.execute.js';
+import { LegendaryGame } from '../game.js';
 
 /** The three resolve moves WP-289 added (resolveDrawOrEmpowered was added by WP-286). */
 const WP289_ADDED_MOVES = [
@@ -229,6 +236,60 @@ describe('simulation move-dispatch drift guard — attemptHeist (WP-878 / D-2482
     assert.ok(
       PAR_AGGREGATOR_MOVE_NAMES.includes('attemptHeist'),
       'attemptHeist must be a par.aggregator MOVE_MAP key',
+    );
+  });
+});
+
+/**
+ * Returns every move name the game registers: the top-level LegendaryGame.moves plus the lobby
+ * phase moves (setPlayerReady, startMatchIfReady), which are registered on the phase, not the game.
+ */
+function registeredMoveNames(): string[] {
+  const names = Object.keys(LegendaryGame.moves ?? {});
+  const lobbyMoves = LegendaryGame.phases?.lobby?.moves ?? {};
+  for (const moveName of Object.keys(lobbyMoves)) {
+    names.push(moveName);
+  }
+  return names.sort();
+}
+
+describe('replay move-dispatch drift guard (D-24830)', () => {
+  it('the replay MOVE_MAP dispatches exactly the registered move set (no move missing, none stale)', () => {
+    // why: D-24830 — an unmapped name is skipped with a "Replay warning: unknown move name" line,
+    // so a recorded game using it reconstructs a wrong G with no error. attemptHeist (WP-865) and
+    // 44 other registered moves shipped that way. Equality, not superset, also catches a retired
+    // move left behind in the map.
+    assert.deepStrictEqual(
+      [...REPLAY_MOVE_NAMES].sort(),
+      registeredMoveNames(),
+      'replay/replay.execute.ts MOVE_MAP must dispatch exactly LegendaryGame.moves plus the lobby phase moves',
+    );
+  });
+
+  it('attemptHeist and the pending-choice resolve moves are replay MOVE_MAP keys (explicit membership)', () => {
+    const pinned = ['attemptHeist', 'resolveMoveVillainChoice', 'resolveSeatChoice', 'resolveHeroChoice'];
+    for (const moveName of pinned) {
+      assert.ok(REPLAY_MOVE_NAMES.includes(moveName), `${moveName} must be a replay MOVE_MAP key`);
+    }
+  });
+
+  it('every simulation-dispatchable move is also replay-dispatchable (a sim capture always replays)', () => {
+    const replayKeySet = new Set(REPLAY_MOVE_NAMES);
+    const missing: string[] = [];
+    for (const moveName of SIMULATION_RUNNER_MOVE_NAMES) {
+      if (!replayKeySet.has(moveName)) {
+        missing.push(moveName);
+      }
+    }
+    assert.deepStrictEqual(missing, [], 'a sim-dispatchable move has no replay MOVE_MAP entry');
+  });
+
+  it('NEGATIVE: the equality check fails when a registered move is missing from the map (non-vacuous)', () => {
+    const withoutHeist = REPLAY_MOVE_NAMES.filter((moveName) => moveName !== 'attemptHeist');
+    assert.notDeepStrictEqual(
+      [...withoutHeist].sort(),
+      registeredMoveNames(),
+      'dropping attemptHeist from the replay key set must break the equality the guard asserts',
     );
   });
 });

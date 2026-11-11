@@ -14,8 +14,10 @@
  * (4) mutate through helpers and write an "Operator:" log line. Any failure at 1–3
  * returns void with G untouched. Moves never throw.
  *
- * Not in getLegalMoves, the simulation or PAR dispatch, the determinism-only replay
- * or the fixture runner (D-24713 §7), so bots never make them.
+ * Not in getLegalMoves, the simulation or PAR dispatch, or the fixture runner
+ * (D-24713 §7), so bots never make them. The determinism-only replay dispatches them
+ * like every registered move (D-24830 amends §7); the operator gate keeps a replayed
+ * setter a no-op outside an operator match.
  *
  * No registry imports. No .reduce().
  */
