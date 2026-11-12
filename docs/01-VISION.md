@@ -1,6 +1,6 @@
 # Legendary Arena — Vision & Direction
 
-> **Last updated:** 2026-07-23
+> **Last updated:** 2026-11-12
 
 ## Purpose
 
@@ -29,6 +29,19 @@ Success means:
 - A self-sustaining competitive ecosystem
 - Revenue that fully funds operations, royalties, and the next wave of
   content — without compromising a primary goal
+
+**How we know it's working.** Each success condition has a measurable
+proxy. The figures live on the operator dashboard, not here:
+this document names what is measured, never a target — targets date, and
+dated aspiration belongs in `docs/05-ROADMAP.md` (D-24204).
+
+- **High-quality play** — completed-match rate; returning players with
+  verified runs across distinct scenarios
+- **Content keeping pace** — the lag between a physical set's release
+  and its cards being playable
+- **Competitive ecosystem** — replay-verified submissions, verification
+  failures and disputes, organized-play events hosted
+- **Revenue** — contribution margin after royalties; operating runway
 
 ### The Player Promise
 
@@ -399,6 +412,7 @@ forbade the correct future decision would be worse than no clause.
 - Full keyboard navigation, screen-reader support, high-contrast modes, and color-blind friendly indicators
 - Tooltips, rules explanations, and the game log must be clear and comprehensive
 - Accessibility enhancements must never alter rules or give any player an advantage
+- Accessibility of the core rules experience is a correctness concern, not polish — the same standard §16 sets for performance
 
 #### 18. Replayability & Spectation
 
@@ -410,7 +424,9 @@ forbade the correct future decision would be worse than no clause.
 
 - The game provides clean, structured, machine-readable exports of game logs, replay files, deck compositions, and state snapshots
 - Exports are designed for use with external LLMs for post-game analysis, setup generation, and strategy review
-- No in-game AI assistance or prompting — all AI interaction is external and player-initiated, preserving Primary Goals 3 and 4
+- **The AI line is the live match.** During a match, no AI hints, strategic advice, or auto-play acts for or advises a human player, preserving Primary Goals 3 and 4
+- **After the match, AI analysis is open commercial space.** External, player-initiated LLM analysis of exports, in-product coaching such as the Legendary Pass endgame coach (D-24403), and AI-assisted authoring tools (non-merit-bearing per §19a) are permitted and may be paid products. They change no game state, so they are not power purchases under NG‑1
+- **AI never touches merit.** No AI output feeds a score, ranking, badge, or PAR value unless it is deterministic and replay-verifiable (§22, §24)
 
 #### 19a. Player Profiles Are Reflective, Not Authoritative
 

@@ -24,30 +24,39 @@ source:
   - ../docs/ai/ARCHITECTURE.md
   - ../docs/ai/DECISIONS.md
 canonical-source: docs/01-VISION.md
-last-reviewed: 2026-09-09
+last-reviewed: 2026-11-12
 ---
 
 # Vision
 
 ## Summary
 
-A reader's map of [`docs/01-VISION.md`](../docs/01-VISION.md) — the
-document that defines what Legendary Arena *is*, how it is currently
-built, how it will never make money, and how it will. This page
-summarizes and links; the vision document itself is authoritative and
+Legendary Arena exists to be the definitive, most-trusted digital home
+for *Marvel Legendary* — exact rules, real cards, verifiable fairness,
+skill over grind, no pay-to-win — and it is a business first: sales
+fund payroll, Upper Deck and Marvel royalties, and the next round of
+content (*no margin, no mission*). This page is a reader's map of
+[`docs/01-VISION.md`](../docs/01-VISION.md), which is authoritative and
 sits at tier 3 of the authority hierarchy, above `.claude/rules/*.md`
 and every Work Packet.
 
+> **Read this first — the three misreadings that do the most damage.**
+> (1) This page is not the vision; gates and reviews read
+> `docs/01-VISION.md` itself. (2) The non-goals are narrow bright lines
+> (NG-1 bans buying a mechanical edge, not paid content). (3) The
+> commercial space outside them is open-ended, not a closed list. Details
+> in [Edge Cases](#edge-cases).
+
 > **Vision-tier edits need approval.** This page mirrors
-> `docs/01-VISION.md`, which sits at tier 3 of the authority hierarchy —
-> present any change to the vision for explicit approval before writing,
-> per [`.claude/CLAUDE.md`](../.claude/CLAUDE.md). Where this page and the
-> vision disagree, the vision wins and this page is wrong; update this page
-> in the same cycle as any vision change. (Edit mechanics for both files
-> are in the **Editing this page** panel at the foot of the page.)
+> `docs/01-VISION.md`, whose wording is normative: present any change to
+> the vision to the operator for explicit approval before writing it.
+> Where this page and the vision disagree, the vision wins and this page
+> is wrong; update this page in the same commit as any vision change.
+> (Edit mechanics for both files are in the **Editing this page** panel
+> at the foot of the page.)
 
 **Audience:** contributors, reviewers, operators, and designers who
-need the vision's shape without reading all 1,053 lines of it. Players
+need the vision's shape without reading the whole document. Players
 are served by the public game documentation, not this page.
 
 ## Mechanics
@@ -59,7 +68,12 @@ are served by the public game documentation, not this page.
   and expands the game for decades. Success is sustained high-quality
   play, content that keeps pace with the physical game, a
   self-sustaining competitive ecosystem, and revenue that funds
-  operations and royalties without compromising a primary goal.
+  operations and royalties without compromising a primary goal. Each
+  condition names a measurable proxy (completed-match rate and
+  returning verified players; set-release-to-playable lag; verified
+  submissions, verification failures, disputes, and organized-play
+  events; contribution margin after royalties and runway). The figures
+  live on the operator dashboard; the vision sets no targets (D-24843).
 - **The player promise** — exact rules, real cards, verifiable
   fairness, skill over grind, no pay-to-win; your results are yours and
   your data is portable. Close decisions break toward what a player who
@@ -111,6 +125,29 @@ guarantee is *firm* while sitting inside a secondary goal, because the
 data commitment protects customers and the business regardless of where
 anything runs, while the infrastructure guidance beside it stays
 revisable as costs and scale change (D-24203).
+
+### Deciding between goals
+
+The vision's tiebreak rules are spread across the document. Gathered
+here in the order they apply — each line is a pointer, and the cited
+section governs:
+
+1. **A primary goal is never traded.** Violating one is a hard failure,
+   not a cost to weigh (VISION §Primary Vision Goals).
+2. **Revenue never buys a compromise** of a primary goal, secondary
+   goal, or non-goal; inside those lines, pricing and packaging are open
+   commercial decisions (§Financial Sustainability → Core Requirements).
+3. **A secondary goal bends only on purpose** — intentional, recorded in
+   [DECISIONS.md](../docs/ai/DECISIONS.md), and violating no primary goal
+   (§Secondary Vision Goals).
+4. **Close calls break toward the Player Promise** — the option a player
+   who believed it would expect (§North Star → The Player Promise).
+5. **When money is short, cut features first** — non-essential features
+   go before rules, fairness, accessibility, or royalties
+   (§Financial Sustainability → Operational Guardrails).
+6. **Technology choices: time-to-ship dominates early**; cost and
+   migration risk gain weight as revenue and scale grow. Data
+   portability does not bend with them (§12a).
 
 ### The frame: business survival first
 
@@ -189,10 +226,18 @@ primary goal.
   work; bugs treated as execution-contract violations; explicit
   decisions with no silent drift; a codebase approachable without
   tribal knowledge.
-- **Player experience (16–19b)** — performance as a correctness
-  concern; accessibility that never confers advantage; replay and
-  spectation as first-class; machine-readable exports for *external*,
-  player-initiated LLM analysis (no in-game AI assistance).
+- **Player experience (16–19b)** — performance and accessibility as
+  correctness concerns, not polish (accessibility never confers
+  advantage); replay and spectation as first-class; machine-readable
+  exports built for external analysis.
+- **§19 The AI line is the live match** — during a match, no AI hints,
+  strategic advice, or auto-play acts for or advises a human player.
+  After the match, AI analysis is open commercial space: external LLM
+  analysis of exports, in-product coaching such as the Legendary Pass
+  endgame coach (D-24403), and AI-assisted authoring tools — none of it
+  changes game state, so none of it is a power purchase under NG-1. No
+  AI output feeds a score, ranking, badge, or PAR value unless it is
+  deterministic and replay-verifiable (D-24843).
 - **§19a Profiles are reflective, not authoritative** — decorative
   fields (handle, bio, avatar, links) are editable; merit-bearing
   surfaces (badges, rank, replay history, competitive submissions) are
@@ -328,7 +373,9 @@ Work-Packet pre-flight, and contributor onboarding.
   (§25b), D-1004 (badge tiers), D-24092 (access model), D-24203
   (§12a data portability / infrastructure posture), D-24204 (North
   Star, §10b, and what was kept out of the vision), D-24235 (The
-  Fantasy — the game's articulated emotional identity).
+  Fantasy — the game's articulated emotional identity), D-24843 (§19
+  AI line at the live match, North Star success proxies, §17
+  accessibility as correctness).
 - **[05-ROADMAP.md](../docs/05-ROADMAP.md)** — carries the dated,
   explicitly non-binding 3–5 year success picture. The vision holds the
   durable statement of success; the roadmap holds the version that is
@@ -338,7 +385,7 @@ Work-Packet pre-flight, and contributor onboarding.
 
 The common misreadings, in the order they cause damage:
 
-- **This page is not the vision.** It compresses 1,053 lines into a map.
+- **This page is not the vision.** It compresses the whole document into a map.
   Any decision, review, or Work-Packet gate reads
   [`docs/01-VISION.md`](../docs/01-VISION.md) itself — summaries drop
   the qualifying clauses that usually decide the question.
@@ -367,7 +414,7 @@ The common misreadings, in the order they cause damage:
 - [docs/ai/ARCHITECTURE.md](../docs/ai/ARCHITECTURE.md) — tier-2
   authority; layer boundaries and persistence rules
 - [docs/ai/DECISIONS.md](../docs/ai/DECISIONS.md) — D-0005, D-0006,
-  D-1004, D-24092
+  D-1004, D-24092, D-24203, D-24204, D-24235, D-24843
 - [.claude/CLAUDE.md](../.claude/CLAUDE.md) — operating posture and the
   authority hierarchy
 - [Monetization Model](monetization-model.md),

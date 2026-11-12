@@ -33,6 +33,9 @@ import { gainOfficerToHand } from './recruitOfficer.js';
 import { pushLog } from '../log/logPush.js';
 import { formatCardRef, describeKoSourceZone } from '../log/logDisplay.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+// why: WP-885 / D-24836 — the spare-a-Wound count lives in the gain-wound-reward grant leaf, which
+// imports no moves/, ui/ or simulation/ module, so this adds no import-cycle edge.
+import { isWoundSparedFromKo } from '../hero/gainWoundRewardGrant.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -159,6 +162,18 @@ export function resolveOptionalKoReward(
   // Wounds, so a well-behaved client never submits one; this guards a malformed payload.
   if (front.koHeroesOnly === true && cardId === WOUND_EXT_ID) {
     return;
+  }
+
+  // why: WP-885 / D-24836 — enforce the entry's koSparesGainedWound. ABSENT = no filter (every
+  // existing entry is unchanged); true (Hulk Gets Smashed's "KO up to two OTHER cards") rejects a
+  // Wound unless hand ∪ discard still hold at least two, so the Wound just gained is never KO'd.
+  // Wounds are fungible, so the rule is a count, recounted from current G. Silent no-op (queue
+  // intact, resubmit); the projection omits such a Wound, so a well-behaved client never sends one.
+  if (front.koSparesGainedWound === true) {
+    const spareZones = G.playerZones[playerID];
+    if (spareZones && isWoundSparedFromKo(cardId as CardExtId, spareZones.hand, spareZones.discard)) {
+      return;
+    }
   }
 
   // Step 4: KO request — the chosen card must be present in the named zone right

@@ -22,6 +22,19 @@
 - **01.6 post-mortem:** triggered (new contract: tier keys and manifest v1); verdict WP COMPLETE.
 - **Follow-ups (named in D-24840).** Client tier use (CardTile `thumb`, zoom `phone`); airplane mode per `wiki/airplane-mode.md`.
 
+### Violent Conditioning, Hulk Gets Smashed and Mood Swings gain their reward only for a Wound kept (WP-885 / EC-923, D-24836) (2026-11-12)
+
+**User-visible on `play.legendary-arena.com` after deploy.** Three hero lines that print "You may gain a Wound. If you do, <reward>" now ask "Gain a Wound?" and pay off only for a Wound gained and kept. wpnx Violent Conditioning Berserks twice for a kept Wound; it used to Berserk twice on every play for free. msis Hulk Gets Smashed, after another Strength Hero, offers up to two "KO a card from your hand or discard pile" prompts that never offer the Wound just gained; it used to do nothing. wwhk Mood Swings, after another Instinct Hero, Transforms into Raging Savage (+3 Attack, the Transform animation); it used to do nothing. The prompt heading is now "Gain a Wound?" for every gain-a-Wound card, Hulk Smash! and Scalded by Sunlight included (it read "Gain a Wound for extra Attack?"); their options and logs are unchanged.
+
+- **Engine.** `GainWoundReward.rewardType` gains `berserk` / `optional-ko-hand-discard` / `transform`; `HeroEffectDescriptor.rewardComposition?` carries Berserk (a composition marker, not a `HeroKeyword`). The parser consumes the printed Berserk / Transform on a reward line, so neither fires unconditionally nor reads as a hollow. The grant leaf runs Berserk N times, parks `min(N, eligible)` optional-KO entries flagged `koSparesGainedWound` (a Wound is a target only while hand + discard hold two), or Transforms. The Transform swap moved verbatim to `hero/heroTransform.logic.ts`. Diving Block / Flying Shield Block keep or forfeit the reward exactly as for Attack.
+- **Bot.** Declines Berserk (the payoff is the hidden deck top); gains the KO with two cost-0 cards in hand + discard; gains the Transform when the base is in play and a Raging Savage copy remains. Autoplay, sim and PAR keep the decline default.
+- **Tests.** game-engine 6988 -> 7015 / 0 (19 behavior cases incl. the KO drain loop, 4 parse, 4 bot); `pnpm -r --no-bail test` 0 fail; arena-client and dashboard typecheck 0. The one edited existing assertion is the client heading (intentional). Core `finalStateHash` / `PRE_WP080_HASH` unchanged.
+- **Feeds.** Ledger: `gain-wound-reward` executable for all three heroes; `transform` executable for Skaar. Runtime hitCounts: `gate-only` 349 -> 344, `transform` 109 -> 109, `berserk` absent. Eight data gates 0.
+- **Replay.** Setup-level change: matches created before the deploy keep their stored hooks; only new matches see the new behavior.
+- **01.6 post-mortem:** evaluated, not triggered (reuses D-24834 / D-24031 / D-24469 / D-24480 / D-24600; the spare-a-Wound count rule follows the `koHeroesOnly` three-reader pattern).
+- **Put to the Torch.** Its gain-a-Wound line (Rooftops Conqueror 4) was drafted as blocked on Conqueror; WP-886 shipped hero Conqueror since, so it now waits only on its own follow-up WP.
+- **Live-verify (D-24026): operator-pending.** On a NEW operator match after the deploy: Violent Conditioning gain / decline, Hulk Gets Smashed's KO prompts skipping the gained Wound, Mood Swings' Transform. Three `pending` rows in `live-verify.json`.
+
 ### Java isn't the game's primary platform; it stays on its TypeScript stack (D-24838, operator decision, no WP) (2026-11-12)
 
 **No user-visible change.** Jeff accepted the studio Java audit's recommendation (bb-studio-dashboard `docs/research/java-cross-platform-audit.md`): no Java rules, server, or client; store builds wrap the web client; a 3D arena, if wanted, is prototyped in a web renderer first, with Godot as the comparison.

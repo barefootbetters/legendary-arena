@@ -1890,6 +1890,45 @@ describe('buildHeroAbilityHooks — Sunlight / Moonlight (WP-765 / D-24598)', ()
     }
   });
 
+  // why: WP-885 / D-24836 — the three non-Attack gain-a-Wound rewards, parsed from the committed
+  // card data (the marker pass output), so a marker or parser drift fails here.
+  it('Violent Conditioning (WP-885): no gate, no unconditional Berserk, one gain-wound-reward with rewardComposition berserk', () => {
+    const hooks = patrolCardHooks('wpnx', 'weapon-x-wolverine', 'violent-conditioning');
+    assert.equal(hooks.length, 1);
+    assert.equal(hooks[0]!.conditions, undefined);
+    assert.equal(hooks[0]!.primitiveEffects, undefined, 'the printed Berserks are the reward, never unconditional');
+    assert.deepStrictEqual(hooks[0]!.effects, [{ type: 'gain-wound-reward', magnitude: 2, rewardComposition: 'berserk' }]);
+    assert.deepStrictEqual(hooks[0]!.resolvedMarkers, ['berserk', 'berserk'], 'the ledger keeps Berserk executable');
+    assert.equal(hooks[0]!.unresolvedMarkers, undefined);
+  });
+
+  it('Hulk Gets Smashed (WP-885): the Strength gate and an optional-KO gain-wound-reward, no gate-only hollow', () => {
+    const hooks = patrolCardHooks('msis', 'bruce-banner', 'hulk-gets-smashed');
+    assert.equal(hooks.length, 1);
+    assert.deepStrictEqual(hooks[0]!.conditions, [{ type: 'heroClassMatch', value: 'strength' }]);
+    assert.deepStrictEqual(hooks[0]!.effects, [{ type: 'gain-wound-reward', magnitude: 2, rewardType: 'optional-ko-hand-discard' }]);
+    assert.equal(hooks[0]!.unresolvedMarkers, undefined);
+  });
+
+  it('Mood Swings (WP-885): the Instinct gate and a transform gain-wound-reward, no transform keyword or hollow', () => {
+    const hooks = patrolCardHooks('wwhk', 'skaar-son-of-hulk', 'mood-swings');
+    assert.equal(hooks.length, 1);
+    assert.deepStrictEqual(hooks[0]!.conditions, [{ type: 'heroClassMatch', value: 'instinct' }]);
+    assert.deepStrictEqual(hooks[0]!.effects, [{ type: 'gain-wound-reward', magnitude: 1, rewardType: 'transform' }]);
+    assert.ok(!hooks[0]!.keywords.includes('transform'), 'no unconditional swap');
+    assert.deepStrictEqual(hooks[0]!.resolvedMarkers, ['transform']);
+    assert.equal(hooks[0]!.unresolvedMarkers, undefined);
+  });
+
+  it('gain-wound-reward with an unseeded composition reward emits no descriptor (WP-885 / D-24836)', () => {
+    const unseeded = ['You may gain a Wound. If you do, [keyword:Empowered] by [hc:tech]. [keyword:gain-wound-reward:empowered:1]'];
+    const hooks = buildDayNightCardHooks('co2e', 'hulk', 'hulk-smash', unseeded);
+    for (const hook of hooks) {
+      assert.ok(!(hook.effects ?? []).some((effect) => effect.type === 'gain-wound-reward'), 'no gain-wound-reward descriptor for an unseeded composition');
+      assert.ok(!hook.keywords.includes('gain-wound-reward'), 'no gain-wound-reward keyword for an unseeded composition');
+    }
+  });
+
   it('Mesmerize parses to blood-frenzy-recruit only — its descriptive icons grant nothing', () => {
     const hooks = buildDayNightCardHooks('mdns', 'morbius', 'mesmerize', DAY_NIGHT_LINES.mesmerize);
     assert.deepStrictEqual(hooks[0]!.conditions, [{ type: 'moonlightInEffect', value: '' }]);

@@ -95,6 +95,9 @@ import {
   buildGainWoundReward,
   buildGainWoundRewardChoice,
 } from './gainWoundReward.logic.js';
+// why: WP-885 / D-24836 — the reward phrasing for N1 lives in the grant leaf, which imports nothing
+// from this module (no cycle edge).
+import { describeGainWoundRewardPhrases } from './gainWoundRewardGrant.js';
 import { countRevealableDivingBlockCopies } from '../moves/divingBlock.logic.js';
 // why: WP-828 / D-24761 — the grant handler only queues; the module references this one back only
 // inside function bodies (a runtime-safe cycle).
@@ -116,6 +119,9 @@ import {
   buildPassLeftChoice,
 } from '../moves/seatChoiceCards.js';
 import { formatCardRef, heroClassDisplayName, resolveCardName, teamDisplayName } from '../log/logDisplay.js';
+// why: WP-885 / D-24836 — the Transform swap and its name helper moved to a leaf so the
+// gain-wound-reward grant can run it too; that leaf imports nothing from this module (no cycle).
+import { applyHeroTransform, resolveTransformCardName } from './heroTransform.logic.js';
 import {
   describeRevealPredicate,
   describeRevealActions,
@@ -136,7 +142,6 @@ import { grantSizeChangingToHqHero } from './sizeChangingGrant.logic.js';
 import { hasAnyPendingChoice } from '../moves/phaseCard.js';
 import type { LogOutcome } from '../log/logOutcome.types.js';
 import {
-  composeTransformNarrative,
   composeHeroRevealAttackNarrative,
   composeHeroRevealTopNarrative,
   composeNoOtherDeckNarrative,
@@ -1919,6 +1924,11 @@ function buildHeroEffectTraceParams(
   }
   if (effect.rewardType !== undefined) {
     params.rewardType = effect.rewardType;
+  }
+  // why: WP-885 / D-24836 — a gain-wound-reward composition reward (Berserk) names its reward here
+  // instead of in rewardType, so the trace shows what the Wound was offered for.
+  if (effect.rewardComposition !== undefined) {
+    params.rewardComposition = effect.rewardComposition;
   }
   if (effect.empoweredClass !== undefined) {
     params.empoweredClass = effect.empoweredClass;
@@ -6862,7 +6872,9 @@ function describeInvestigateCriterion(criterion: InvestigateCriterion): string {
  * the played base card for its stronger second-form, pulled out of the G.transformDeck
  * side deck (D-24468). The condition gate ("made ≥6 Recruit this turn") is the shipped
  * recruit-threshold condition (D-24354), evaluated by evaluateAllConditions BEFORE this
- * handler runs — so this handler only executes when the gate passed.
+ * handler runs — so this handler only executes when the gate passed. The swap itself lives in
+ * the leaf hero/heroTransform.logic.ts (applyHeroTransform), which the WP-885 / D-24836
+ * gain-wound-reward transform reward (wwhk Mood Swings, for a Wound kept) also calls.
  *
  * Placement (Jeff-confirmed permanent-upgrade rule): the second-form leaves the side
  * deck and enters play in the base card's slot; the base card goes BACK to the side
@@ -6898,154 +6910,7 @@ function heroEffectTransform(
   cardId: CardExtId,
   _effect: HeroEffectDescriptor,
 ): void {
-  const playerZones = G.playerZones[playerID];
-  if (!playerZones) {
-    return;
-  }
-
-  // why: guard against G states that predate WP-658 (older test mocks with no
-  // transformTargets / transformDeck). A real match always seeds both at setup;
-  // an absent map/side deck is a silent no-op, never a throw (mirrors the
-  // executeHeroEffects heroAbilityHooks guard).
-  if (!G.transformTargets || !G.transformDeck) {
-    return;
-  }
-
-  // why: strip the `#copy` suffix so the played base instance ext_id
-  // (`wwhk/she-hulk/hurl-legal-objections#3`) resolves to the copy-agnostic card
-  // key (`wwhk/she-hulk/hurl-legal-objections`) buildTransformTargets stored.
-  const hashIndex = cardId.indexOf('#');
-  const baseKey = (hashIndex === -1 ? cardId : cardId.slice(0, hashIndex)) as CardExtId;
-  const targetKey = G.transformTargets[baseKey];
-  if (targetKey === undefined) {
-    // why: defensive — the setup parser only emits an executable transform for a
-    // SUPPORTED_TRANSFORM_BASES card, every one of which is in transformTargets, so a
-    // missing key is unreachable in practice. A silent no-op, never a throw.
-    return;
-  }
-
-  // why: find the FIRST matching second-form copy still in the side deck. Instance
-  // ids are `{targetKey}#{copy}`; the appended `#` stops a target key prefix-matching
-  // a longer sibling slug. Front-of-zone, deterministic — no ctx.random.
-  const targetPrefix = `${targetKey}#`;
-  let targetInstanceId: CardExtId | undefined;
-  for (const sideDeckId of G.transformDeck) {
-    if (sideDeckId.startsWith(targetPrefix)) {
-      targetInstanceId = sideDeckId;
-      break;
-    }
-  }
-  if (targetInstanceId === undefined) {
-    // why: AC-5 — the side deck ran out of this second-form copy (multi-player
-    // contention). The transform simply does not happen: log and continue. WP-434 —
-    // nothing happened, so the outcome is `blocked`.
-    pushLog(G,
-      `Player ${playerID} could not Transform ${formatCardRef(G.cardDisplayData, cardId)} — no matching second-form copy remained in the transform side deck.`,
-      'blocked',
-      cardId, // why: WP-438 — the played base card whose transform could not resolve.
-    );
-    return;
-  }
-
-  // Route the base card back to the side deck (set aside): a permanent deck upgrade —
-  // the player's deck loses the base as it gains the second-form, no net card change.
-  const baseMove = moveCardFromZone(playerZones.inPlay, G.transformDeck, cardId);
-  if (!baseMove.found) {
-    // why: WP-859 / D-24795 — a deferred (wait-and-see) Transform can fire after its base card
-    // left play (KO'd from play, say). Swapping then would put the second form into play while
-    // the base stays wherever it went: a free card. Refuse before any zone is assigned, so the
-    // side deck and inPlay are untouched. Covers Hurl Legal Objections and Gamma-Draining
-    // Nanites too, which have had this window since WP-658 / WP-665.
-    pushLog(G,
-      `Player ${playerID} could not Transform ${formatCardRef(G.cardDisplayData, cardId)} — it is no longer in play.`,
-      'blocked',
-      cardId,
-    );
-    return;
-  }
-  playerZones.inPlay = baseMove.from;
-  G.transformDeck = baseMove.to;
-
-  // Bring the second-form into play in the base card's slot.
-  const targetMove = moveCardFromZone(G.transformDeck, playerZones.inPlay, targetInstanceId);
-  G.transformDeck = targetMove.from;
-  playerZones.inPlay = targetMove.to;
-
-  // why: apply the second-form's printed attack/recruit — the transform makes it the
-  // card now in play, and printed icons are applied imperatively at play time
-  // (applyCardPlay). The base's already-applied recruit is intentionally NOT refunded.
-  const targetStats = G.cardStats[targetInstanceId];
-  const targetAttack = targetStats ? targetStats.attack : 0;
-  const targetRecruit = targetStats ? targetStats.recruit : 0;
-  G.turnEconomy = addResources(G.turnEconomy, targetAttack, targetRecruit);
-
-  // why: WP-434 — a completed transform that applied the second-form is `applied` (green).
-  pushLog(G,
-    `Player ${playerID} Transformed ${formatCardRef(G.cardDisplayData, cardId)} into ${formatCardRef(G.cardDisplayData, targetInstanceId)}${formatTransformEconomyClause(targetAttack, targetRecruit)}.`,
-    'applied',
-    targetInstanceId, // why: WP-438 — the second-form now in play is the play identity the log associates.
-  );
-
-  // why: WP-672 / D-24487 — emit the transformResolved notable event LAST (after the
-  // swap settled and the applied log pushed), observing final state — the healWounds /
-  // bystanderRevealed emission precedent. G.messages is not projected to clients, so this
-  // event is what drives the arena-client "Transformed!" overlay + the transform VFX beat.
-  // Names resolve HERE via G.cardDisplayData (the composer stays pure), with a defensive
-  // raw-ext_id fallback when display data is absent (legacy test states may omit it).
-  // Guarded push: the minimal heroEffects test builder omits G.notableEvents; a real match
-  // always seeds it at setup ([] in buildInitialGameState). Handlers never throw, so an
-  // absent array is a silent skip, mirroring the transformTargets / transformDeck guards.
-  if (Array.isArray(G.notableEvents)) {
-    const baseName = resolveTransformCardName(G, cardId);
-    const secondFormName = resolveTransformCardName(G, targetInstanceId);
-    G.notableEvents.push({
-      type: 'transformResolved',
-      playerId: playerID,
-      narrative: composeTransformNarrative(baseName, secondFormName),
-    });
-  }
-}
-
-/**
- * Resolves a card's display name from `G.cardDisplayData` for the transform
- * narrative, falling back to the raw ext_id when no display entry exists (WP-672).
- * Mirrors the `villainDeck.reveal.ts` bystanderRevealed name-resolution so the
- * `composeTransformNarrative` composer keeps its no-`G` purity.
- *
- * @param G - Game state (read-only here).
- * @param cardId - The card ext_id to resolve to a display name.
- * @returns The card's display name, or the raw ext_id when display data is absent.
- */
-function resolveTransformCardName(G: LegendaryGameState, cardId: CardExtId): string {
-  const display = G.cardDisplayData?.[cardId];
-  if (display && typeof display.name === 'string' && display.name.length > 0) {
-    return display.name;
-  }
-  return cardId;
-}
-
-/**
- * Builds the trailing " (+N attack, +M recruit)" clause for a transform log line,
- * omitting either half that is zero and the whole clause when the second-form has no
- * printed economy (WP-658 / D-24469). Mirrors the intent of formatBaseEconomyClause but
- * is local to keep heroEffects.execute.ts free of a moves-layer import (avoids a cycle).
- *
- * @param attack - The second-form's printed attack (>= 0).
- * @param recruit - The second-form's printed recruit (>= 0).
- * @returns The clause including a leading space, or an empty string when both are zero.
- */
-function formatTransformEconomyClause(attack: number, recruit: number): string {
-  const parts: string[] = [];
-  if (attack > 0) {
-    parts.push(`+${attack} attack`);
-  }
-  if (recruit > 0) {
-    parts.push(`+${recruit} recruit`);
-  }
-  if (parts.length === 0) {
-    return '';
-  }
-  return ` (${parts.join(', ')})`;
+  applyHeroTransform(G, playerID, cardId);
 }
 
 /**
@@ -7630,7 +7495,7 @@ function heroEffectGainWoundReward(
   cardId: CardExtId,
   effect: HeroEffectDescriptor,
 ): void {
-  const reward = buildGainWoundReward(effect.rewardType, effect.magnitude ?? 0, cardId);
+  const reward = buildGainWoundReward(effect.rewardType, effect.rewardComposition, effect.magnitude ?? 0, cardId);
   if (reward === undefined) {
     pushLog(G,
       `Player ${playerID} played a hero ability whose gain-a-Wound reward is not yet supported, so it was skipped.`,
@@ -7652,8 +7517,13 @@ function heroEffectGainWoundReward(
     return;
   }
   // why: active-scoped (the playing seat already accepts moves), so no stage ride: events undefined.
-  parkSeatChoice(G, undefined, buildGainWoundRewardChoice(playerID, reward));
-  pushLog(G, `Player ${playerID} may gain a Wound for +${reward.magnitude} Attack (${cardRef}).`, 'neutral', cardId);
+  parkSeatChoice(G, undefined, buildGainWoundRewardChoice(playerID, reward, G));
+  if (reward.rewardType === 'attack') {
+    pushLog(G, `Player ${playerID} may gain a Wound for +${reward.magnitude} Attack (${cardRef}).`, 'neutral', cardId);
+    return;
+  }
+  // why: WP-885 / D-24836 — N1, the non-Attack offer, names the reward in the third person.
+  pushLog(G, `Player ${playerID} may gain a Wound to ${describeGainWoundRewardPhrases(reward, G).logPhrase} (${cardRef}).`, 'neutral', cardId);
 }
 
 /**

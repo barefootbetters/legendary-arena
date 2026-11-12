@@ -54,9 +54,10 @@ last-reviewed: 2026-11-12
 
 # Airplane Mode
 
-> **Status: design research. Nothing built, nothing decided.** No WP, EC, or
-> DECISIONS entry covers airplane mode. Everything this page recommends is a
-> *candidate* for a future WP or decision, not a commitment. Code facts come
+> **Status: design research, decisions made, nothing built.** The four
+> decisions this page raised are recorded as D-24844 to D-24847 (2026-11-12).
+> Slice 0, the spike, is drafted as WP-890 (D-24842). Everything else here is
+> a *candidate* for a future WP, not a commitment. Code facts come
 > from `main` at `38238583` (2026-11-12). Facts about other products come from
 > their help pages and reviews, read 2026-11-12 and linked under References;
 > anything marked *unverified* wasn't confirmed from a primary source.
@@ -92,33 +93,33 @@ checked by the server when the player is back online.
     Storage, through a service worker
     ([Card Image Acquisition › Size tiers](card-image-acquisition.md#size-tiers-for-mobile-and-offline)).
   - Saved games and the offline results queue kept in IndexedDB.
-- **Decisions needed before a WP, cheapest first:**
-  1. **Running the rules on the device.** The engine already ships in the
-     client bundle, but today it only renders: moves are `client: false`
-     (D-10008), the seed is server-held, and a client-side bot was rejected
-     for online play. Offline solo needs a decision that the device may host a
-     single-seat match, plus a ruling on how that sits with the persistence
-     boundary (see [Saving the game](#saving-the-game)). `Game.setup()` also
-     needs a card registry reader, and the import rules bar arena-client from
-     importing `registry` at runtime
-     ([architecture rules](../.claude/rules/architecture.md)). The candidate
-     answer is a server-built setup bundle (see
-     [Card data for the setup](#card-data-for-the-setup)), not a registry
-     exception.
-  2. **Who gets it.** Airplane mode is a convenience feature, so it fits as a
-     Legendary Pass perk ([Monetization Model](monetization-model.md)) as well
-     as a free one. That's a business call. Either way it never changes a game
-     outcome, so it stays clear of NG-1.
-  3. **Rights.** The live game already sends every card image to players'
-     browsers with `Cache-Control: public, max-age=31536000, immutable`
-     ([RUNBOOK](../docs/ops/RUNBOOK-r2-image-cache-control.md)), so the art
-     already sits on their devices for up to a year. The digital character
-     rights gap that [IP Licensing](ip-licensing.md) records applies to the
-     whole game today, not to airplane mode alone. What airplane mode adds is
-     an explicit "download" and durable storage that the browser is less likely
-     to evict, which makes that same exposure more visible. A future license
-     might require an expiry or periodic check-in; that would set the refresh
-     rule below.
+- **Decisions (Jeff, 2026-11-12):**
+  1. **The rules may run on the device (D-24844)** for a single-seat solo
+     match with a device-generated seed, on a `Local()` master. Multiplayer,
+     guest seats and the bot ally stay on the server. Only the match record
+     (setup, seed, move log) is saved, so the persistence boundary holds and
+     D-24095 isn't extended to devices. D-10008 is unchanged: moves stay
+     `client: false`, and the local master runs them. arena-client still
+     doesn't import `registry` at runtime, so card data comes from a
+     server-built setup bundle (see
+     [Card data for the setup](#card-data-for-the-setup)). If the WP-890 spike
+     shows the engine can't run this way, the decision is revisited.
+  2. **One featured setup is free; every other setup needs the Legendary Pass
+     (D-24845)** ([Monetization Model](monetization-model.md)). The device
+     checks the entitlement quietly when online. After 30 days without a
+     check-in, Pass setups don't start a new game until the device reconnects,
+     and nothing is deleted. Airplane mode never changes a game outcome, so it
+     stays clear of NG-1.
+  3. **Rights: accepted under the existing gap, no expiry (D-24846).** The live
+     game already sends every card image to players' browsers with
+     `Cache-Control: public, max-age=31536000, immutable`
+     ([RUNBOOK](../docs/ops/RUNBOOK-r2-image-cache-control.md)), so the digital
+     character rights gap that [IP Licensing](ip-licensing.md) records applies
+     to the whole game, not to airplane mode alone. The explicit download makes
+     that exposure more visible, and that's accepted. If a license later
+     requires a check-in or expiry, it's one uniform rule for every setup.
+  4. **Verified offline games count exactly like online ones (D-24847)**, on
+     leaderboards and seed challenges. No offline flag, no separate board.
 
 ### What the code does today
 
@@ -336,17 +337,21 @@ shape ([LAGN v1](lagn-v1.md)), so the same record can be verified later.
 It also stays clear of the persistence boundary, which keeps application code
 from persisting `G` ([ARCHITECTURE.md §Persistence Boundaries](../docs/ai/ARCHITECTURE.md)).
 boardgame.io's own local storage options would save the framework's state
-object. Whether D-24095's framework-store exemption covers that on a device is
-for the decision in gate 1, not this page.
+object instead. D-24844 rules that out: the device saves only the match
+record, so D-24095's framework-store exemption isn't extended to devices.
 
 #### Syncing when back online
 
 Finished offline games go into a results queue. On reconnect, each record goes
 to a new server endpoint. The server replays it with the real engine (the
 D-24119 replay pattern). If it replays legally to the claimed end, the result
-is recorded like any other finished game. How verified offline results count
-toward leaderboards and seed challenges is open question 4. Queued analytics
+is recorded like any other finished game, and it counts toward leaderboards
+and seed challenges exactly as an online one would (D-24847). Queued analytics
 events go out with it.
+
+The endpoint takes a record the client uploads, not a match the server
+captured. That's consistent with D-5301, since the server re-runs every move
+and never trusts a client score, but the upload needs size and rate limits.
 
 The seed in an offline record is the device's own random seed. The server
 mints online seeds from random bytes ([`matchSeed.mjs`](../apps/server/src/game/matchSeed.mjs)),
@@ -375,7 +380,7 @@ it.
 |---|---|
 | Online multiplayer, guest seats, lobby | Online only. Hidden offline, with one line saying why |
 | Bot ally | Online only in version 1. The policies could run on the device later, but that needs its own decision against DESIGN-SOLO-BOT-ALLY |
-| Score submission, seed challenges, leaderboard | Submitted from the results queue once the replay verifies; how they count is open question 4 |
+| Score submission, seed challenges, leaderboard | Submitted from the results queue once the replay verifies; a verified result counts the same as an online one (D-24847) |
 | Coach, battle plan | Wait for a connection |
 | Phone-to-phone offline play | Future. Leave room by keeping the match record transport-neutral (setup + seed + log), which a later peer transport could exchange. Not built |
 
@@ -386,7 +391,7 @@ it.
 
 | # | Slice | How it's checked |
 |---|---|---|
-| 0 | **Spike:** one hard-coded Core setup, the engine on a `Local()` master in the browser, images fetched online | The match plays to an end in the browser with no socket. It replays identically from its saved setup, seed and log |
+| 0 | **Spike** (drafted as WP-890, D-24842): one hard-coded Core setup, the engine on a `Local()` master in the browser, images fetched online | The match plays to an end in the browser with no socket. It replays identically from its saved setup, seed and log |
 | 1 | **Smallest offline version:** a web app manifest, a service worker caching the app shell, plus the spike setup's images and card data | In Chrome DevTools, Network → **Offline**, then reload and play to the end. On a real phone: install to the home screen, turn on airplane mode, cold-start, and play |
 | 2 | On-device save and resume | Kill the tab mid-turn, reopen offline, and the game resumes on the same turn with the same deck order |
 | 3 | Any setup: the setup-bundle endpoint, the download button, the size label from the WP-888 manifests, and the badge | The label's bytes match what Cache Storage ends up holding. Every image in the setup renders offline |
@@ -424,7 +429,8 @@ The phone test matters because iOS behaves differently (see Edge Cases).
 - **[LAGN v1](lagn-v1.md) / [Scoring](scoring.md):** the record shape a synced
   offline game would share, and the scoring a verified replay recomputes.
 - **[Monetization Model](monetization-model.md) / [IP Licensing](ip-licensing.md):**
-  who gets airplane mode, and whether rights allow caching art on devices.
+  one featured setup free and the rest on the Pass (D-24845); downloads
+  accepted under the existing rights gap (D-24846).
 - **Layer boundary:** arena-client may already import the engine's `.`
   surface (WP-090), but not `registry` at runtime, so card data arrives as a
   server-built setup bundle. The server gains two endpoints: the setup bundle
@@ -457,9 +463,11 @@ The phone test matters because iOS behaves differently (see Edge Cases).
   to either replay on that version or accept the mismatch.
 - **App update mid-game.** A new service worker shouldn't take over during an
   offline match. Activate it between matches.
-- **Signed out while offline.** If the entitlement check (for a Pass-gated
-  version) can't run, a cached entitlement with a refresh window, Spotify
-  style, decides it.
+- **Offline past the check-in window.** The Pass entitlement is cached and
+  refreshed whenever the device is online. After 30 days without a check-in,
+  Pass setups don't start a new game until it reconnects (D-24845). Downloads,
+  saved games and the results queue are kept, and the featured setup still
+  plays.
 
 ## Code Touchpoints
 
@@ -473,21 +481,16 @@ The phone test matters because iOS behaves differently (see Edge Cases).
 
 ## Open Questions
 
-**Decisions (each changes the design):**
+The four design decisions are made (D-24844 to D-24847). These are left for
+the WP that builds the feature:
 
-1. **On-device rules:** may a single-seat match run on a `Local()` master in
-   the browser? How does saving a match record sit with the persistence
-   boundary and D-24095?
-2. **Access:** free, or a Legendary Pass perk? If it's Pass-gated, what does
-   a player see when the cached entitlement lapses while they're still
-   offline: does the downloaded setup stay playable?
-3. **Rights and expiry:** is the extra visibility of an explicit download an
-   acceptable risk while the digital rights gap stands, given the art is
-   already browser-cached for a year? Would a license require an expiry or
-   periodic check-in, and if so, what window?
-   (Spotify uses 30 days, YouTube 29, Google Maps a year.)
-4. **Offline results:** do verified offline games count toward leaderboards
-   and seed challenges the same as online games, or differently?
+- **Which setup is the free one?** The guest-solo featured table (D-24636) is
+  the natural candidate and is what the WP-890 spike plays (D-24845).
+- **Can a signed-out guest download the featured setup?** (D-24845)
+- **Can a game already in progress finish after the 30-day check-in window
+  lapses?** (D-24845)
+- **Data version:** does the verifier replay an old record on the engine and
+  card data it was played on, or reject a mismatch? (D-24847)
 
 **Facts to settle by spike:**
 
@@ -506,10 +509,16 @@ Repo:
 - [ARCHITECTURE.md](../docs/ai/ARCHITECTURE.md): engine owns truth, persistence boundaries, layer boundary
 - [DECISIONS.md](../docs/ai/DECISIONS.md):
   - D-0002, determinism
+  - D-5301, the server enforces and never trusts a client score
   - D-10008, `client: false` moves
   - D-24095, the `bgio` framework store
   - D-24119, server-side replay from `initialState` plus `log`
   - D-24838, store builds wrap the web client
+  - D-24842, the WP-890 local-match spike (reserved)
+  - D-24844, a single-seat solo match may run its rules on the device
+  - D-24845, one featured setup free, the rest on the Legendary Pass
+  - D-24846, downloads accepted under the existing rights gap
+  - D-24847, verified offline games count like online ones
 - [DESIGN-SOLO-BOT-ALLY.md](../docs/ai/DESIGN-SOLO-BOT-ALLY.md): why the bot runs server-side
 - [RUNBOOK-r2-image-cache-control.md](../docs/ops/RUNBOOK-r2-image-cache-control.md): image cache headers
 - [13-REPLAYS-REFERENCE.md](../docs/13-REPLAYS-REFERENCE.md): local replay files, already usable offline
