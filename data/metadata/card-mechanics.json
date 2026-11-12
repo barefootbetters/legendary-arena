@@ -1047,7 +1047,18 @@
       "slug": "hunt-for-victims",
       "label": "Hunt For Victims",
       "scope": "hero",
-      "source": "free-text",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "mdns/elsa-bloodstone"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "hunt-for-victims-rescue",
+      "label": "Hunt For Victims Rescue",
+      "scope": "hero",
+      "source": "keyword",
       "cardCount": 1,
       "cardIds": [
         "mdns/elsa-bloodstone"
@@ -3780,6 +3791,7 @@
       "mechanics": [
         "blood-frenzy",
         "hunt-for-victims",
+        "hunt-for-victims-rescue",
         "patrol"
       ]
     },

@@ -697,13 +697,15 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'heist-master-strike-ko', // why: WP-876 / D-24823 — The Big Score's Master Strike KO (Heist-only, rides heistEffects)
     'heist-scheme-twist-bonus', // why: WP-876 / D-24823 — Revolutionary Anthem's Scheme Twist +N and optional shuffle (Heist-only)
     'heist-move-villain-ko-hero', // why: WP-876 / D-24823 — X-Con Security Van's move to an empty space, then KO one of your Heroes (Heist-only)
-    'gain-wound-reward', // why: WP-883 / D-24834 — "You may gain a Wound. If you do, you get +N Attack": an active-scoped gain / don't seat choice; +N only for a Wound kept. Appended last.
+    'gain-wound-reward', // why: WP-883 / D-24834 — "You may gain a Wound. If you do, you get +N Attack": an active-scoped gain / don't seat choice; +N only for a Wound kept.
+    'hunt-for-victims', // why: WP-884 / D-24835 — Stalk the Night Stalkers: have a Villain or Mastermind Hunt for Victims, then an optional KO of a Hero (two chained seat choices).
+    'hunt-for-victims-rescue', // why: WP-884 / D-24835 — Stalk the Night Stalkers' [hc:tech] line: the rescue twins on the hunt choice. Appended last.
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      99,
-      'HERO_KEYWORDS must have exactly 99 entries (WP-883 / D-24834 gain-wound-reward appended last; WP-876 / D-24823 the three Heist payload keywords appended last; WP-866 / D-24809 next-hand-extra-draw; WP-865 / D-24808 heist; D-24801 microscopic-size-changing after size-changing; feast, WP-857 / D-24793, after WP-860 / D-24796 discard-artifact-or-three-then-ko; hq-hero-gains-size-changing-tech, WP-862 / D-24804, appended last)',
+      101,
+      'HERO_KEYWORDS must have exactly 101 entries (WP-884 / D-24835 hunt-for-victims + hunt-for-victims-rescue appended last; WP-883 / D-24834 gain-wound-reward; WP-876 / D-24823 the three Heist payload keywords appended last; WP-866 / D-24809 next-hand-extra-draw; WP-865 / D-24808 heist; D-24801 microscopic-size-changing after size-changing; feast, WP-857 / D-24793, after WP-860 / D-24796 discard-artifact-or-three-then-ko; hq-hero-gains-size-changing-tech, WP-862 / D-24804, appended last)',
     );
 
     assert.deepStrictEqual(

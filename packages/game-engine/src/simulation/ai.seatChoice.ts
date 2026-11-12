@@ -23,6 +23,9 @@
  * here-hold-this and random-acts-pass-left answers were added by D-24745.
  * gain-wound-reward, and the Diving Block / Flying Shield Block decline on a Wound gained on
  * purpose for a reward, were added by WP-883 / D-24834.
+ * hunt-for-victims (rescue from the Escape Pile, else KO from it, else another rescue, else
+ * decline) and hunt-for-victims-ko-hero (a 0-cost Hero, else decline) were added by WP-884 /
+ * D-24835.
  *
  * The absent-seat default and getLegalMoves are untouched, so autoplay, the
  * simulation runner and PAR keep their D-24590 / D-24573 behaviour (D-24745
@@ -76,6 +79,10 @@ import {
   GAIN_WOUND_REWARD_SEAT_CHOICE_KIND,
 } from '../hero/gainWoundReward.logic.js';
 import { addResources } from '../economy/economy.logic.js';
+import {
+  HUNT_FOR_VICTIMS_KO_HERO_SEAT_CHOICE_KIND,
+  HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND,
+} from '../moves/huntForVictims.logic.js';
 
 // why: WP-876 / D-24823 — the shuffle prompt's "Leave the Villain Deck as it is" option.
 /** The option index of Revolutionary Anthem's leave option. */
@@ -213,6 +220,14 @@ function chooseByKind(
   ) {
     return indexOfZeroCostKoOption(G, options);
   }
+  // why: WP-884 / D-24835 — the KO-a-Hero pick after Hunt for Victims is optional; the bot-ally
+  // thins a 0-cost Hero (deck thinning, the Crush arm above) or declines.
+  if (choice.kind === HUNT_FOR_VICTIMS_KO_HERO_SEAT_CHOICE_KIND) {
+    return indexOfZeroCostKoOption(G, options);
+  }
+  if (choice.kind === HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND) {
+    return indexOfHuntForVictimsOption(options);
+  }
   // why: WP-882 / D-24833 — Demonic Essence of Ghost Rider is optional; the bot-ally thins a
   // 0-cost Hero, one it already played first (D-24754 sibling).
   if (
@@ -238,6 +253,38 @@ function chooseByKind(
     return indexOfLeastValuableCard(G, options);
   }
   return null;
+}
+
+/**
+ * Picks the Hunt for Victims option a playing bot takes: rescue from the Escape Pile, else KO from
+ * it, else the first other rescue, else null (the decline default).
+ *
+ * // why: WP-884 / D-24835 — an escaped Bystander is otherwise lost (it counts in bystanderLost), so
+ * taking it back out of the Escape Pile is pure gain, and a rescue adds its VP. The bot never takes
+ * a capture or a KO from a Villain or the Mastermind: those remove the VP it would rescue by
+ * fighting.
+ *
+ * @param options - The seat's options; each carries huntAction / huntSource, the decline neither.
+ * @returns The chosen option index, or null to keep the decline.
+ */
+function indexOfHuntForVictimsOption(options: readonly SeatChoiceOption[]): number | null {
+  let escapePileKoIndex: number | null = null;
+  let firstOtherRescueIndex: number | null = null;
+  for (let optionIndex = 0; optionIndex < options.length; optionIndex++) {
+    const option = options[optionIndex]!;
+    if (option.huntSource === 'escape-pile' && option.huntAction === 'rescue') {
+      return optionIndex;
+    }
+    if (option.huntSource === 'escape-pile' && option.huntAction === 'ko' && escapePileKoIndex === null) {
+      escapePileKoIndex = optionIndex;
+    } else if (option.huntAction === 'rescue' && firstOtherRescueIndex === null) {
+      firstOtherRescueIndex = optionIndex;
+    }
+  }
+  if (escapePileKoIndex !== null) {
+    return escapePileKoIndex;
+  }
+  return firstOtherRescueIndex;
 }
 
 /**

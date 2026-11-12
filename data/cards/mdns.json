@@ -170,8 +170,8 @@
           "attack": "3",
           "recruit": null,
           "abilities": [
-            "You may have a Villain or Mastermind [keyword:Hunt for Victims]. If it KOs a Bystander this way, you may KO a Hero from your hand or discard pile.",
-            "[hc:tech]: If a Bystander is KO'd this way, you may also rescue that Bystander instead of putting it in the KO pile."
+            "You may have a Villain or Mastermind [keyword:Hunt for Victims]. If it KOs a Bystander this way, you may KO a Hero from your hand or discard pile. [keyword:hunt-for-victims]",
+            "[hc:tech]: If a Bystander is KO'd this way, you may also rescue that Bystander instead of putting it in the KO pile. [keyword:hunt-for-victims-rescue]"
           ]
         },
         {

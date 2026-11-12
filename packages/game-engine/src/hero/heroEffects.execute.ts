@@ -124,6 +124,9 @@ import {
 import { formatCountScaledRate } from './countSourceLabel.js';
 import { pushLog } from '../log/logPush.js';
 import { parkCommuneCostChoice } from '../moves/communeSpiritWorld.logic.js';
+// why: WP-884 / D-24835 — Hunt for Victims' park and Tech rescue allow (the same runtime-safe cycle
+// as Commune: the bindings are read only inside the two handlers).
+import { allowHuntForVictimsRescue, parkHuntForVictimsChoice } from '../moves/huntForVictims.logic.js';
 // why: WP-862 / D-24804 — Pym Particles' HQ Size-Changing grant (read inside the handler only).
 import { grantSizeChangingToHqHero } from './sizeChangingGrant.logic.js';
 // why: WP-855 / D-24791 — the deck-KO draw hold reads every parked choice queue. This file
@@ -419,6 +422,11 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // HERO_EFFECT_HANDLERS entry (heroEffectGainWoundReward), so it belongs here (MVP_KEYWORDS
   // derives from this set). Carries the reward magnitude → NOT in NO_MAGNITUDE_KEYWORDS.
   'gain-wound-reward',
+  // why: WP-884 / D-24835 — Stalk the Night Stalkers' two lines; each has a HERO_EFFECT_HANDLERS
+  // entry (heroEffectHuntForVictims parks the hunt choice, heroEffectHuntForVictimsRescue adds its
+  // rescue options), so each belongs here. Both carry NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
+  'hunt-for-victims',
+  'hunt-for-victims-rescue',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -766,6 +774,12 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // Master Strike clause and X-Con Security Van fire nothing.
   'heist-master-strike-ko',
   'heist-move-villain-ko-hero',
+  // why: WP-884 / D-24835 — hunt-for-victims (one pick of a Bystander holder or a hunter) and
+  // hunt-for-victims-rescue (adds rescue options to that pick) carry NO magnitude. The magnitude
+  // pre-gate must not drop them, or the hunt choice never parks and the Tech line never adds its
+  // rescue options.
+  'hunt-for-victims',
+  'hunt-for-victims-rescue',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -7631,6 +7645,62 @@ function heroEffectGainWoundReward(
   pushLog(G, `Player ${playerID} may gain a Wound for +${reward.magnitude} Attack (${cardRef}).`, 'neutral', cardId);
 }
 
+/**
+ * Hero handler for the `hunt-for-victims` keyword (WP-884 / D-24835).
+ *
+ * Stalk the Night Stalkers' first line: "You may have a Villain or Mastermind Hunt for Victims. If it
+ * KOs a Bystander this way, you may KO a Hero from your hand or discard pile." Parks the
+ * 'hunt-for-victims' seat choice for the playing player (or logs why nothing opens); the KO-a-Hero
+ * pick chains from resolveSeatChoice. Never throws.
+ *
+ * // why: parking does not halt this card's hook loop, and here that is load-bearing: the card's
+ * Tech line runs next in the same executeHeroEffects call and edits the choice this line parked.
+ *
+ * @param G - The game state, mutated in place.
+ * @param _ctx - Unused move context.
+ * @param playerID - The player who played the card (the active player).
+ * @param cardId - The card played.
+ * @param _effect - The `{ type: 'hunt-for-victims' }` descriptor (no magnitude).
+ */
+function heroEffectHuntForVictims(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  // why: WP-884 / D-24835 — a hero handler parks a seat choice at play (the Here, Hold This /
+  // Commune precedent); the options, applies and chain live in moves/huntForVictims.logic.ts.
+  parkHuntForVictimsChoice(G, playerID, cardId);
+}
+
+/**
+ * Hero handler for the `hunt-for-victims-rescue` keyword (WP-884 / D-24835).
+ *
+ * Stalk the Night Stalkers' Tech line: "If a Bystander is KO'd this way, you may also rescue that
+ * Bystander instead of putting it in the KO pile." The existing pipeline gates the line on another
+ * Tech Hero (its blocked log and Synergy clause behave like any [hc:X] line); this handler marks the
+ * still-unsubmitted hunt choice its own card parked and rebuilds its options with the rescue twins.
+ * Silent when no such choice is open. Never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param _ctx - Unused move context.
+ * @param playerID - The player who played the card.
+ * @param cardId - The card played.
+ * @param _effect - The `{ type: 'hunt-for-victims-rescue' }` descriptor (no magnitude).
+ */
+function heroEffectHuntForVictimsRescue(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  // why: WP-884 / D-24835 — Tech is evaluated by the line's own gate, not inside the hunt line's
+  // handler, so this line is never a hollow and keeps its Synergy clause.
+  allowHuntForVictimsRescue(G, playerID, cardId);
+}
+
 export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler>> = {
   draw: heroEffectDraw,
   attack: heroEffectAttack,
@@ -7870,6 +7940,11 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // seat choice; +N only for a Wound kept. Carries the reward magnitude → NOT in
   // NO_MAGNITUDE_KEYWORDS.
   'gain-wound-reward': heroEffectGainWoundReward,
+  // why: WP-884 / D-24835 — Stalk the Night Stalkers: the hunt line parks the 'hunt-for-victims'
+  // seat choice (the KO-a-Hero pick chains from resolveSeatChoice); the Tech line adds the rescue
+  // options to that still-unsubmitted choice. Both carry NO magnitude → in NO_MAGNITUDE_KEYWORDS.
+  'hunt-for-victims': heroEffectHuntForVictims,
+  'hunt-for-victims-rescue': heroEffectHuntForVictimsRescue,
 };
 
 // ---------------------------------------------------------------------------

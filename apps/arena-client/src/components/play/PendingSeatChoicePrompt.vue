@@ -158,6 +158,14 @@ export default defineComponent({
         // Smash!, Scalded by Sunlight). The two options carry the +N.
         case 'gain-wound-reward':
           return 'Gain a Wound for extra Attack?';
+        // why: WP-884 / D-24835 — Stalk the Night Stalkers' Hunt for Victims: the options name each
+        // Bystander holder (or, with none, each hunter) and the decline.
+        case 'hunt-for-victims':
+          return 'Have a Villain or Mastermind Hunt for Victims?';
+        // why: WP-884 / D-24835 — the optional KO that follows a Bystander KO or rescue; the options
+        // name each Hero and its zone.
+        case 'hunt-for-victims-ko-hero':
+          return 'KO a Hero from your hand or discard pile?';
         default:
           return 'Your choice';
       }

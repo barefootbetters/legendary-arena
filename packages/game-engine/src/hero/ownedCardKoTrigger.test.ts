@@ -385,6 +385,10 @@ const LOCKED_TABLE: Record<string, KoSiteCounts> = {
   'moves/melterKoChoice.resolve.ts#resolveMelterKoChoice': { koSites: 1, ownedRecords: 1 },
   // why: WP-860 / D-24796 — Commune with the Spirit World's KO pick (hand or discard pile, owned).
   'moves/communeSpiritWorld.logic.ts#applyCommuneKoResolvedSeatChoice': { koSites: 1, ownedRecords: 1 },
+  // why: WP-884 / D-24835 — Hunt for Victims KOs a captured or escaped Bystander (not an owned card,
+  // x/0), and the KO-a-Hero pick that follows KOs from the hand or discard pile (owned, 1/1).
+  'moves/huntForVictims.logic.ts#applyHuntForVictimsResolvedSeatChoice': { koSites: 1, ownedRecords: 0 },
+  'moves/huntForVictims.logic.ts#applyHuntForVictimsKoHeroResolvedSeatChoice': { koSites: 1, ownedRecords: 1 },
   'moves/optionalKoReward.resolve.ts#resolveOptionalKoReward': { koSites: 1, ownedRecords: 1 },
   'moves/revealThreeAssign.resolve.ts#applyRevealThreeDisposition': { koSites: 1, ownedRecords: 1 },
   'moves/revealTopDispose.resolve.ts#resolveRevealTopDispose': { koSites: 1, ownedRecords: 1 },

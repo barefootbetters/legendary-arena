@@ -2324,6 +2324,18 @@
       "cardSlug": "seal-the-rift",
       "abilityIndex": 0,
       "markupToken": "[keyword:draw:2]"
+    },
+    {
+      "heroSlug": "elsa-bloodstone",
+      "cardSlug": "stalk-the-night-stalkers",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:hunt-for-victims]"
+    },
+    {
+      "heroSlug": "elsa-bloodstone",
+      "cardSlug": "stalk-the-night-stalkers",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:hunt-for-victims-rescue]"
     }
   ],
   "nmut": [
