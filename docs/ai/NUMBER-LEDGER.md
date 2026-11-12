@@ -523,6 +523,7 @@ high-water: 422
 - WP-882 — zarathos-discard-down-choice-and-bot-answers (Corrupted Spirit of Vengeance's "discards down to 3" becomes the player's pick; playing-seat bot answers for the Zarathos seat-choice kinds. reserved 2026-11-11, claude/zarathos-followups-reserve; LANDED 2026-11-11)
 - WP-883 — optional-gain-wound-attack-reward ("You may gain a Wound. If you do, you get +N[icon:attack]": Morbius Scalded by Sunlight's Sunlight line + co2e Hulk Smash!. reserved 2026-11-11, claude/zarathos-followups-reserve; LANDED 2026-11-11)
 - WP-885 — gain-wound-nonattack-rewards ("You may gain a Wound. If you do, <reward>" for the non-Attack rewards: wpnx Violent Conditioning (Berserk twice), msis Hulk Gets Smashed (KO up to two other cards), wwhk Mood Swings (Transform). reserved 2026-11-11, claude/wp885-gain-wound-nonattack-reserve)
+- WP-884 — hero-hunt-for-victims (Stalk the Night Stalkers: "You may have a Villain or Mastermind Hunt for Victims" + the Tech rescue line. reserved 2026-11-11, claude/wp884-hunt-for-victims-reserve)
 
 ## EC
 
@@ -1008,6 +1009,7 @@ high-water: 457
 - EC-920 — zarathos-discard-down-choice-and-bot-answers (WP-882. reserved 2026-11-11, claude/zarathos-followups-reserve; LANDED 2026-11-11)
 - EC-921 — optional-gain-wound-attack-reward (WP-883. reserved 2026-11-11, claude/zarathos-followups-reserve; LANDED 2026-11-11)
 - EC-923 — gain-wound-nonattack-rewards (WP-885. reserved 2026-11-11, claude/wp885-gain-wound-nonattack-reserve)
+- EC-922 — hero-hunt-for-victims (WP-884. reserved 2026-11-11, claude/wp884-hunt-for-victims-reserve)
 
 ## D
 
@@ -1621,3 +1623,4 @@ section below) and the allocation protocol in
 - D-24833 — zarathos-discard-down-choice-and-bot-answers (WP-882; Corrupted Spirit discard-down as a player choice + Zarathos bot answers. reserved 2026-11-11, claude/zarathos-followups-reserve; LANDED 2026-11-11)
 - D-24834 — optional-gain-wound-attack-reward (WP-883; the optional gain-a-Wound to attack reward keyword. reserved 2026-11-11, claude/zarathos-followups-reserve; LANDED 2026-11-11)
 - D-24836 — gain-wound-nonattack-rewards (WP-885; berserk / ko-other / transform gain-wound-reward members. reserved 2026-11-11, claude/wp885-gain-wound-nonattack-reserve)
+- D-24835 — hero-hunt-for-victims (WP-884; the hero Hunt for Victims seat-choice chain, the Tech rescue flag and the Escape Pile scoring consequence. reserved 2026-11-11, claude/wp884-hunt-for-victims-reserve)
