@@ -46,6 +46,31 @@ export function statusLabel(status: LedgerStatus): string {
   }
 }
 
+/**
+ * Text for the By-mechanic "Observed in play" cell when the sim sweep recorded no
+ * hollow hit for the mechanic. The exhaustive switch anchors the `LedgerStatus` union.
+ *
+ * why: the column counts HOLLOW hits only, so an implemented mechanic (Executable,
+ * Condition, Subsystem) never appears in it by design. Its empty cell read "not
+ * observed in play", which looked like a coverage gap on rows that are built and
+ * live-verified (core attack-per-count, 2026-11-12). Implemented rows say that no
+ * hollow path was hit; to-do rows keep "not observed in play" (the sweep is a sample).
+ */
+export function noRuntimeObservationLabel(status: LedgerStatus): string {
+  switch (status) {
+    case 'executable':
+    case 'condition':
+    case 'subsystem':
+      return 'no hollow hits';
+    case 'deferred':
+    case 'unsupported':
+    case 'unmarked':
+      return 'not observed in play';
+    default:
+      return assertNever(status);
+  }
+}
+
 /** Compile-time exhaustiveness guard for `statusLabel` / `statusRank`. */
 function assertNever(value: never): never {
   throw new Error(`Unhandled ledger status: ${String(value)}`);

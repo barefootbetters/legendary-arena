@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import {
   useCoverageLedger,
   statusLabel,
+  noRuntimeObservationLabel,
   buildMechanicDictionary,
   filterRowsBySet,
   summaryImplementedPercent,
@@ -520,7 +521,9 @@ function winRateClass(row: ParFidelityRow): string {
         <dt>Observed in play</dt>
         <dd>
           ⚡ = times this mechanic hit a hollow path in a fixed-seed simulation sweep, plus the most
-          common reason. All sets, regardless of the Set selector.
+          common reason. All sets, regardless of the Set selector. An implemented mechanic has no
+          hollow path to hit, so it reads "no hollow hits"; for a to-do mechanic, "not observed in
+          play" means the sweep didn't reach it.
         </dd>
         <dt>Cards</dt>
         <dd>Hero rows using the mechanic within the selected scope.</dd>
@@ -826,7 +829,7 @@ function winRateClass(row: ParFidelityRow): string {
                 ⚡ {{ runtimeObservedFor(entry.mechanic)!.hitCount }}× ·
                 {{ dominantReason(runtimeObservedFor(entry.mechanic)!) }}
               </span>
-              <span v-else class="not-observed">not observed in play</span>
+              <span v-else class="not-observed">{{ noRuntimeObservationLabel(entry.status) }}</span>
             </td>
             <td class="num">{{ entry.cardCount }}</td>
             <td class="mono dim">{{ entry.wp || '—' }}</td>
