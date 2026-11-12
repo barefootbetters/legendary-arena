@@ -2175,10 +2175,10 @@
       "card": "Wong, Master of the Mystic Arts",
       "ability": "Bridge Between Dimensions — Patrol the Bridge: If it's empty, draw a card",
       "wp": "WP-881",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-11",
-      "evidence": "",
-      "note": "Live check (NEW match created after the deploy, deployed gitSha checked; an operator match with the setters staging the City): with the Bridge empty, Bridge Between Dimensions draws a card; with a Villain on the Bridge it logs \"… ability did not activate — there's a card in the Bridge.\" and draws nothing. D-24832."
+      "evidence": "Operator matches R4G14FeLbja (server a5b7debf, client d13a625, created 2026-11-11T19:59Z) and L1sTwYCh2CC (server a5b7debf, client 96809ea, created 18:20Z), Zarathos / Midtown Bank Robbery 2p. Bridge empty: Bridge Between Dimensions drew (L1sTwYCh2CC 15/15; R4G14FeLbja 21.2.2, 27.2.2). Bridge occupied: \"ability did not activate — there's a card in the Bridge.\" with no draw (13.2.2, 23.2.2, 37.2.5). Seal the Rift: Bridge empty drew two (29.2.6); occupied gave \"+5 attack (only against: Bridge)\" (13.2.5, 25.2.9, 37.2.3); on turn 37 Zarathos (7) was paid from unrestricted Attack and HYDRA Kidnappers on the Bridge (3) from the restricted pool (final snapshot restrictedAttack remaining 2, targets [bridge]).",
+      "note": "Both branches of Bridge Between Dimensions and Seal the Rift seen live, including the Bridge-only +5 pool. D-24832."
     },
     {
       "key": "mdns/elsa-bloodstone|patrol",
@@ -2186,10 +2186,10 @@
       "card": "Elsa Bloodstone",
       "ability": "Axe of the Slayer — Patrol the Streets: If it's empty, +2 Recruit. If it's not, +2 Attack. [Instinct]: Instead, you get both",
       "wp": "WP-881",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-11",
-      "evidence": "",
-      "note": "Live check (NEW match created after the deploy, deployed gitSha checked): with the Streets empty and no other Instinct Hero played, Axe of the Slayer gives +2 Recruit only; with a Villain in the Streets, +2 Attack only; after another Instinct Hero, both. D-24832."
+      "evidence": "Operator match L1sTwYCh2CC (server a5b7debf, client 96809ea, created 2026-11-11T18:20Z), Zarathos / Midtown Bank Robbery 2p. Axe of the Slayer: Streets empty, no Instinct +2 Recruit only (10.2.11, 12.2.18, 14.2.1, 16.2.5); occupied, no Instinct +2 Attack only (8.2.11); after another Instinct Hero both (6.2.17, 14.2.6, 16.2.23; occupied 8.2.16). Synergy tally 19 played / 10 assembled reconciles (Axe 9/4, Silver Bullets 9/5, Searing Shards 1/1). Silver Bullets +1 with the Streets empty.",
+      "note": "All four Streets × Instinct states seen live; one Synergy clause per Axe play. D-24832."
     },
     {
       "key": "co2e/hulk|gain-wound-reward",
