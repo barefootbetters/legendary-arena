@@ -108,6 +108,9 @@ import {
   hasSeatSubmitted,
 } from '../moves/seatChoice.resolve.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+// why: WP-885 / D-24836 — the spare-a-Wound count lives in the gain-wound-reward grant leaf, which
+// imports no moves/, ui/ or simulation/ module, so this adds no import-cycle edge.
+import { isWoundSparedFromKo } from '../hero/gainWoundRewardGrant.js';
 import { shouldBotAttemptHeist } from './ai.heist.js';
 
 // why: simulation covers the play-phase only; lobby moves (setPlayerReady,
@@ -744,6 +747,11 @@ export function getLegalMoves(
       isEligible = (cardId: CardExtId) => cardCountsAsShieldHero(gameState, cardId);
     } else if (front.koHeroesOnly === true) {
       isEligible = (cardId: CardExtId) => cardId !== WOUND_EXT_ID;
+    } else if (front.koSparesGainedWound === true) {
+      // why: WP-885 / D-24836 — a Hulk Gets Smashed entry spares the Wound just gained: a Wound is
+      // a legal target only while hand ∪ discard hold at least two (the resolve's count rule,
+      // recounted from current G). Emitting a spared Wound would be rejected and hang the sim.
+      isEligible = (cardId: CardExtId) => !isWoundSparedFromKo(cardId, zones.hand, zones.discard);
     }
     const allowInPlay = front.koZones === undefined || front.koZones.includes('inPlay');
     // why: WP-767 / D-24600 — mirrors allowInPlay: a koZones that omits discard (Snarling

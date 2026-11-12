@@ -614,6 +614,11 @@ function buildLedger(registry, provenance) {
         for (const branchEffect of [...(effect.sunlightEffects ?? []), ...(effect.moonlightEffects ?? [])]) {
           cardResolvedKeywords.add(branchEffect.type);
         }
+        // why: WP-885 / D-24836 — a Wound-gated reward resolves its keyword inside the descriptor
+        // (Mood Swings' Transform rides a gain-wound-reward rewardType), like the day-night branches.
+        if (effect.type === 'gain-wound-reward' && effect.rewardType !== undefined) {
+          cardResolvedKeywords.add(effect.rewardType);
+        }
       }
     }
     for (const mechanic of [...designNamesByMechanic.keys()].sort()) {

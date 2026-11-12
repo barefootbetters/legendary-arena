@@ -1032,6 +1032,12 @@
   "msis": [
     {
       "heroSlug": "bruce-banner",
+      "cardSlug": "hulk-gets-smashed",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:gain-wound-reward:optional-ko-hand-discard:2]"
+    },
+    {
+      "heroSlug": "bruce-banner",
       "cardSlug": "hulkbuster-armor",
       "abilityIndex": 0,
       "markupToken": "[keyword:ko-wound-reward:recruit:2]"
@@ -1474,6 +1480,12 @@
     }
   ],
   "wwhk": [
+    {
+      "heroSlug": "skaar-son-of-hulk",
+      "cardSlug": "mood-swings",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:gain-wound-reward:transform:1]"
+    },
     {
       "heroSlug": "no-name-brood-queen",
       "cardSlug": "appetite-for-destruction",
@@ -2735,6 +2747,12 @@
     }
   ],
   "wpnx": [
+    {
+      "heroSlug": "weapon-x-wolverine",
+      "cardSlug": "violent-conditioning",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:gain-wound-reward:berserk:2]"
+    },
     {
       "heroSlug": "weapon-h",
       "cardSlug": "the-future-of-warfare",

@@ -432,7 +432,8 @@ describe('PendingSeatChoicePrompt — WP-883 gain-wound-reward (D-24834)', () =>
     const wrapper = mount(PendingSeatChoicePrompt, {
       props: { pendingSeatChoice: choice, viewerPlayerId: 'player-0', submitMove },
     });
-    assert.equal(wrapper.find('.pending-seat-choice-prompt__heading').text(), 'Gain a Wound for extra Attack?');
+    // why: WP-885 / D-24836 — the heading is reward-neutral now (amends D-24834 §5); the options name the reward.
+    assert.equal(wrapper.find('.pending-seat-choice-prompt__heading').text(), 'Gain a Wound?');
     assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-0"]').text(), 'Gain a Wound: you get +5 Attack');
     assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-1"]').text(), "Don't gain a Wound");
     await wrapper.find('[data-testid="pending-seat-choice-option-0"]').trigger('click');

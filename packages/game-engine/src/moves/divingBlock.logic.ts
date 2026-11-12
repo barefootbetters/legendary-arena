@@ -38,7 +38,7 @@ import { pushLog } from '../log/logPush.js';
 import { checkFlyingShieldBlock } from './flyingShieldBlock.logic.js';
 // why: WP-883 / D-24834 — a leaf module (it imports only the economy helper, the log helpers and
 // types), so this import adds no cycle edge.
-import { grantGainWoundReward, logGainWoundRewardForfeited } from '../hero/gainWoundRewardGrant.js';
+import { describeGainWoundRewardPhrases, grantGainWoundReward, logGainWoundRewardForfeited } from '../hero/gainWoundRewardGrant.js';
 
 /** The seat-choice kind discriminant for a Diving-Block reveal/decline wave. */
 export const DIVING_BLOCK_SEAT_CHOICE_KIND = 'diving-block';
@@ -291,7 +291,8 @@ export function openDivingBlockSeatChoiceIfNeeded(
  * gained on purpose for a reward, "Take the Wound (keep +N Attack)".
  *
  * // why: WP-883 / D-24834 — the label reads the seat's FIRST entry, the one the apply resolves
- * (`findIndex` on playerID), so the prompt always describes the Wound it decides.
+ * (`findIndex` on playerID), so the prompt always describes the Wound it decides. WP-885 /
+ * D-24836: a non-Attack reward reads "Take the Wound (then {reward})".
  *
  * @param G - The game state to inspect (not mutated).
  * @param seat - The addressed seat.
@@ -301,6 +302,9 @@ function buildDivingBlockDeclineLabel(G: LegendaryGameState, seat: string): stri
   const entry = (G.pendingDivingBlockWounds ?? []).find((pending) => pending.playerID === seat);
   if (entry?.gainWoundReward === undefined) {
     return 'Take the Wound';
+  }
+  if (entry.gainWoundReward.rewardType !== 'attack') {
+    return `Take the Wound (then ${describeGainWoundRewardPhrases(entry.gainWoundReward, G).labelPhrase})`;
   }
   return `Take the Wound (keep +${entry.gainWoundReward.magnitude} Attack)`;
 }
