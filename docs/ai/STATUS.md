@@ -19,7 +19,7 @@
 - **Tests.** game-engine 6988 -> 7010 / 0 (new `villainHuntForVictims.test.ts`, 21 cases; compose +1 case; primitive / condition pins and the KO-site table moved by +1 inside existing cases); arena-client 2619 -> 2620 / 0 (+1 heading); `pnpm -r --no-bail test` 0 fail; arena-client and dashboard `typecheck` 0. The hero hunt's tests pass unedited.
 - **Feeds and pins.** Villain ledger: Skinner, Meatmarket and Blackout `villain-hunt-for-victims` executable under WP-889 / D-24841; hero ledger unchanged. `effect-implementation-index` regenerated. `runtime-observed-hollows.json`, `hero-effect-coverage.baseline.json` and every `finalStateHash` sentinel / PAR value unchanged.
 - **Replay.** Setup-level: matches created before the deploy keep their stored hooks and replay identically; only new matches hunt.
-- **WP-887 coordination.** `koVillainHuntedBystander` is a from-play Bystander KO site for D-24839 (noted on #3302).
+- **WP-887 coordination.** `koVillainHuntedBystander` is a from-play Bystander KO site for D-24839 (recorded in D-24841 §7; the note on #3302 is still to be posted).
 - **01.6 post-mortem:** evaluated, not triggered.
 - **Live-verify (D-24026): operator-pending.** On an operator match created after the deploy with `mdns/lilin`, put Skinner on top of the Villain Deck (Villain deck → "Move villain card to top") and reveal: (a) one holder (a Bystander on the Mastermind or in the Escape Pile) → KO'd with no prompt; (b) two holders → the heading and buttons, a real click KOs that holder's Bystander; (c) no holder → Skinner captures one. Blackout under Moonlight (HQ staged to odd costs) hunts twice. Three `pending` rows in `live-verify.json`.
 
