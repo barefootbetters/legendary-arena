@@ -12,6 +12,7 @@ related:
   - webos-tv-port.md
   - windows-engine-exe.md
   - r2-image-naming-convention.md
+  - card-image-acquisition.md
   - guest-accounts.md
   - bot-ally.md
   - monetization-model.md
@@ -46,6 +47,8 @@ source:
   - ../docs/13-REPLAYS-REFERENCE.md
   - ../docs/ai/ARCHITECTURE.md
   - ../docs/ai/DECISIONS.md
+  - ../docs/ai/NUMBER-LEDGER.md
+  - ../.claude/rules/architecture.md
 last-reviewed: 2026-11-12
 ---
 
@@ -54,7 +57,7 @@ last-reviewed: 2026-11-12
 > **Status: design research. Nothing built, nothing decided.** No WP, EC, or
 > DECISIONS entry covers airplane mode. Everything this page recommends is a
 > *candidate* for a future WP or decision, not a commitment. Code facts come
-> from `main` at `a34b66a5` (2026-11-12). Facts about other products come from
+> from `main` at `38238583` (2026-11-12). Facts about other products come from
 > their help pages and reviews, read 2026-11-12 and linked under References;
 > anything marked *unverified* wasn't confirmed from a primary source.
 
@@ -81,8 +84,11 @@ checked by the server when the player is back online.
 - **Candidate architecture:**
   - A boardgame.io client with the in-browser `Local()` master, running the
     same `LegendaryGame` the server runs.
-  - Card data cached in full: about 2 MB of JSON, small enough to take all of it.
-  - Card art cached **per setup** in Cache Storage, through a service worker.
+  - The setup's card data and image list supplied by the server at download
+    time, because arena-client may not import the registry at runtime.
+  - Card art cached **per setup** at the planned `phone` tier, in Cache
+    Storage, through a service worker
+    ([Card Image Acquisition › Size tiers](card-image-acquisition.md#size-tiers-for-mobile-and-offline-planned)).
   - Saved games and the offline results queue kept in IndexedDB.
 - **Decisions needed before a WP, cheapest first:**
   1. **Running the rules on the device.** The engine already ships in the
@@ -90,7 +96,13 @@ checked by the server when the player is back online.
      (D-10008), the seed is server-held, and a client-side bot was rejected
      for online play. Offline solo needs a decision that the device may host a
      single-seat match, plus a ruling on how that sits with the persistence
-     boundary (see [Saving the game](#saving-the-game)).
+     boundary (see [Saving the game](#saving-the-game)). `Game.setup()` also
+     needs a card registry reader, and the import rules bar arena-client from
+     importing `registry` at runtime
+     ([architecture rules](../.claude/rules/architecture.md)). The candidate
+     answer is a server-built setup bundle (see
+     [Card data for the setup](#card-data-for-the-setup)), not a registry
+     exception.
   2. **Who gets it.** Airplane mode is a convenience feature, so it fits as a
      Legendary Pass perk ([Monetization Model](monetization-model.md)) as well
      as a free one. That's a business call. Either way it never changes a game
@@ -107,12 +119,12 @@ checked by the server when the player is back online.
 | Where rules run | Server only. [`server.mjs`](../apps/server/src/server.mjs) loads the registry from disk and serves `LegendaryGame` from boardgame.io `Server()`. The client builds `Client({ game: LegendaryGame, multiplayer: SocketIO(...) })` in [`bgioClient.ts`](../apps/arena-client/src/client/bgioClient.ts). There's no `Local()` transport, practice or hotseat mode | A local master in the browser for single-seat matches |
 | Moves | Every move is long-form `client: false` (D-10008, [`game.ts`](../packages/game-engine/src/game.ts)). The client sees only the `playerView` UIState, never raw `G` | Unchanged: with a local master, the master runs the moves and the client still sees only `playerView` *(inferred from boardgame.io's design; not yet tested)* |
 | Engine in the browser | The runtime-safe `.` export has no `node:*` imports. The Node-only pieces sit behind `./setup` ([`package.json`](../packages/game-engine/package.json)). [`vite.config.ts`](../apps/arena-client/vite.config.ts) fails the build on any `node:*` leak. Today the client imports only small helpers at runtime | `Game.setup()` in the browser, fed by a registry reader |
-| Card data for setup | Setup needs a `CardRegistryReader` to build `cardDisplayData`; without one it falls back to an empty registry and builds an empty match. The browser-capable reader is [`httpRegistry.ts`](../packages/registry/src/impl/httpRegistry.ts). The registry barrel also re-exports the `node:fs` loader, and there's no browser subpath | A browser entry point for the registry, reading cached JSON |
+| Card data for setup | Setup needs a `CardRegistryReader` to build `cardDisplayData`; without one it falls back to an empty registry and builds an empty match. A browser-capable reader exists ([`httpRegistry.ts`](../packages/registry/src/impl/httpRegistry.ts)), but arena-client may not import `registry` at runtime, and the barrel also re-exports the `node:fs` loader | A server-built setup bundle the client reads through a small reader of its own (see [Card data for the setup](#card-data-for-the-setup)) |
 | Seed | Server-generated ([`matchSeed.mjs`](../apps/server/src/game/matchSeed.mjs), WP-809) and kept from clients by [`syncRedaction.mjs`](../apps/server/src/game/syncRedaction.mjs) | Generated on the device. The device then knows its seed (see [Edge Cases](#edge-cases)) |
 | Bot ally | Server-side ([`botAllyDriver.mjs`](../apps/server/src/bot-ally/botAllyDriver.mjs)). [DESIGN-SOLO-BOT-ALLY](../docs/ai/DESIGN-SOLO-BOT-ALLY.md) rejects a client-side bot for online play. The policies are in the runtime-safe engine export | Left out of version 1 |
 | Saved state | Postgres `bgio` schema ([`bgioPgStore.js`](../apps/server/src/db/bgioPgStore.js), D-24095). The client has no IndexedDB and no game save; localStorage holds prefs only | An on-device save (see [Saving the game](#saving-the-game)) |
 | Card images | One WebP per card at `images.legendary-arena.com/{set}/{set}-{ribbon}-{slug}.webp` ([R2 Image Naming Convention](r2-image-naming-convention.md)). A match's image list is `UIState.matchCardImageUrls` (`buildMatchCardImageManifest` in [`uiState.build.ts`](../packages/game-engine/src/ui/uiState.build.ts)). [`useCardImagePrefetch.ts`](../apps/arena-client/src/composables/useCardImagePrefetch.ts) warms them into the browser's HTTP cache, 6 at a time | Durable caching, plus a size estimate before download |
-| Image sizes | **No size tiers exist.** There's no thumbnail or phone variant, no `srcset`, and no manifest with byte sizes. A sampled card is 489×687, 87 KB; 15 random Core images averaged 96 KB (70–128 KB) | A per-image byte list for the download-size label |
+| Image sizes | **Planned, not built.** Every screen gets the original. Most sets are about 490×690 at about 100 KB per card, but six high-resolution sets run about 1 MB per card, and `co2e` 2.7 MB. `thumb` / `phone` / `large` tiers and per-set byte manifests are planned under WP-888 (reserved; [Card Image Acquisition](card-image-acquisition.md#size-tiers-for-mobile-and-offline-planned)) | The `phone` tier and its byte manifests |
 | Image headers | `public, max-age=31536000, immutable` ([RUNBOOK](../docs/ops/RUNBOOK-r2-image-cache-control.md)) and `Access-Control-Allow-Origin: *` (checked 2026-11-12) | Already enough for a service worker to cache non-opaque responses |
 | PWA | None: no service worker, no web app manifest, no icons. The client is Vite 5, Vue 3 and Pinia on Cloudflare Pages; [`_headers`](../apps/arena-client/public/_headers) already marks `/assets/*` immutable | A manifest, icons, and a service worker that caches the app shell |
 
@@ -193,48 +205,77 @@ The setup screen gets a **Download for airplane mode** button. Before
 downloading, it shows the size, for example *"Download 4.2 MB (52 cards) for
 offline play"*.
 
-- **Image list.** The engine already builds the image list for a match,
-  `buildMatchCardImageManifest`. Run in the browser at download time, it gives
-  the exact list for the setup, with no new data file.
-- **Byte sizes.** The label needs each image's size, which doesn't exist yet.
-  Two options:
-  - **A size manifest:** one generated JSON of `imageUrl → bytes`, built with
-    the card data. This is the "list of images" the image-sizes work was meant
-    to produce, and the dependency the original prompt names.
-  - **HEAD requests** at download time, as a fallback. That's about 50 small
-    requests.
-- **Rough figures** at today's single tier (sampled 70–128 KB per card):
-  - A typical solo setup is roughly 40–60 unique images, about 4–6 MB
+- **Image list.** The engine builds a match's image list,
+  `buildMatchCardImageManifest` (`UIState.matchCardImageUrls`), but only once
+  a match exists. On the setup screen there's no match yet, so the server
+  supplies the list as part of the setup bundle (see
+  [Card data for the setup](#card-data-for-the-setup)).
+- **Byte sizes.** The planned size step writes a per-set manifest of each
+  card's bytes per tier, at `metadata/image-sizes/{setAbbr}.json` on R2
+  ([Card Image Acquisition › Size tiers](card-image-acquisition.md#size-tiers-for-mobile-and-offline-planned)).
+  The label is the sum of the setup's cards at the chosen tier, read from the
+  manifests of the sets the setup uses.
+- **Rough figures** at the `phone` tier, from that page's test encode (about
+  94 KB per card for `core` and `cvwr`, 131 KB for `co2e`):
+  - A typical solo setup is roughly 40–60 unique images, about 4–8 MB
     *(estimate; the count depends on the heroes and villain groups)*.
-  - All 3,104 unique card images across the 41 sets come to about 270 MB.
+  - The whole library is roughly 300 MB at `phone`, against 1,137 MB for the
+    originals.
+  - Without tiers, a `co2e` setup would run to hundreds of megabytes, which is
+    why airplane mode waits on the tier work.
 
 When every file is cached, the setup shows **Ready offline**.
 
 #### Which image sizes
 
-The setup offers two sizes:
+The tiers and their URLs are owned by
+[Card Image Acquisition › Size tiers](card-image-acquisition.md#size-tiers-for-mobile-and-offline-planned).
+In short:
 
-- **Standard (default):** the 489×687 image every card has today, with no new
-  pipeline.
-- **Data saver:** a smaller phone tier, once the image-sizes work produces one.
-  A setting picks the size.
+- **`phone` (840 px long edge) is the airplane-mode download.** It's large
+  enough for tap-to-zoom on a phone.
+- **`thumb` (280 px)** is the board, hand, City and HQ size. It's about 15 KB
+  per card, so a data-saver setting could download `thumb` only, at the cost
+  of a blurrier zoom.
+- **`large` (1680 px)** is for desktop and 4K zoom. A desktop player could
+  choose it, at a much bigger download for the high-resolution sets.
 
-Because the file names follow [R2 Image Naming Convention](r2-image-naming-convention.md),
-a tier can be a parallel prefix or a suffix without touching card data.
+A tier URL is the card's existing `imageUrl` with `/{tier}` inserted before
+the file name, so no card data changes.
 
 #### Caching
 
 | What | Where | Why |
 |---|---|---|
 | App shell (built JS/CSS, fonts, icons, skins, ability icons) | Service worker precache | Vite's hashed `/assets/*` are already immutable; a Workbox-style precache (for example `vite-plugin-pwa`) is the usual fit *(candidate; not tried)* |
-| Card art for a downloaded setup | Cache Storage, keyed by `imageUrl` | `CardTile` keeps requesting the same URL and the service worker answers from cache, so no component changes. `ACAO: *` means the responses are non-opaque, so quota is counted at real size |
-| Card data (all sets) and metadata | IndexedDB | About 2.2 MB of card JSON plus 1.6 MB of metadata as files on disk, and smaller compressed. Caching all of it is simpler than per-setup subsets and lets any downloaded setup build |
+| Card art for a downloaded setup | Cache Storage, keyed by the tier URL | Offline, the service worker answers a request for any size of a card from the copy it holds, so a component asking for the original or another tier still gets an image. `ACAO: *` means the responses are non-opaque, so quota is counted at real size |
+| The setup bundle (card data and image list) | IndexedDB | Small, and it's what `Game.setup()` reads offline |
 | Saved games, results queue, downloads index | IndexedDB | Structured, queryable, survives reloads |
 
 **Desktop app later.** D-24838 already says store builds wrap the web client
 (Capacitor, Electron or Tauri). The same caches work inside a wrapper's
 webview. A wrapper could later swap Cache Storage for its own file storage
 without changing the design.
+
+#### Card data for the setup
+
+`Game.setup()` reads cards through a `CardRegistryReader`. arena-client may
+not import `registry` at runtime, so the candidate is a **setup bundle**
+built by the server, which already loads the registry:
+
+- At download time, the client sends the setup config. The server returns the
+  card records that setup draws on, plus the image list.
+- The client saves the bundle in IndexedDB. A small reader of its own serves
+  the bundle through the reader interface the engine expects. The engine's
+  types for that interface can come in through the engine's `.` surface or as
+  type-only imports.
+- The bundle carries the card-data version, so a saved game can say which
+  data it was played on (see [Edge Cases](#edge-cases)).
+
+The endpoint is new, so it gets an
+[`api-endpoints.md`](../docs/ai/REFERENCE/api-endpoints.md) row when built.
+Whether the reader interface takes plain data without the registry package
+is a spike question.
 
 #### The storage page
 
@@ -315,10 +356,10 @@ it.
 | 0 | **Spike:** one hard-coded Core setup, the engine on a `Local()` master in the browser, images fetched online | The match plays to an end in the browser with no socket. It replays identically from its saved setup, seed and log |
 | 1 | **Smallest offline version:** a web app manifest, a service worker caching the app shell, plus the spike setup's images and card data | In Chrome DevTools, Network → **Offline**, then reload and play to the end. On a real phone: install to the home screen, turn on airplane mode, cold-start, and play |
 | 2 | On-device save and resume | Kill the tab mid-turn, reopen offline, and the game resumes on the same turn with the same deck order |
-| 3 | Any setup: the download button, the size label (manifest or HEAD), and the badge | The label's bytes match what Cache Storage ends up holding. Every image in the setup renders offline |
+| 3 | Any setup: the setup-bundle endpoint, the download button, the size label from the WP-888 manifests, and the badge | The label's bytes match what Cache Storage ends up holding. Every image in the setup renders offline |
 | 4 | The storage page and delete | Deleting one of two setups that share heroes keeps the shared images |
 | 5 | The results queue, the replay-verify endpoint, and recording verified results | A finished offline game appears in history after reconnect. A tampered log is rejected |
-| 6 | Caching viewed cards online, image-size setting, optional audio | The size cap holds, and the setting changes what downloads |
+| 6 | Caching viewed cards online, a tier setting (`thumb` / `phone` / `large`), optional audio | The size cap holds, and the setting changes what downloads |
 
 DevTools checks that apply to every slice:
 
@@ -338,8 +379,12 @@ The phone test matters because iOS behaves differently (see Edge Cases).
 - **[Windows Engine Exe](windows-engine-exe.md):** the other "engine runs
   locally" study, headless and for verification. Both rely on the engine's
   runtime-safe export being free of Node-only code.
+- **[Card Image Acquisition](card-image-acquisition.md):** owns the planned
+  size tiers (WP-888), their URLs, and the per-set byte manifests. Airplane
+  mode downloads the `phone` tier and sizes the download from those
+  manifests. Slice 3 below waits on that work.
 - **[R2 Image Naming Convention](r2-image-naming-convention.md):** the URLs
-  the cache is keyed by. Any size tier extends that convention.
+  the cache is keyed by. The tier URLs add a `/{tier}` folder to them.
 - **[Guest Accounts](guest-accounts.md):** guest solo runs a fixed featured
   table on the server today. Airplane mode is the on-device sibling.
 - **[Bot Ally](bot-ally.md):** server-side by design; out of version 1.
@@ -348,8 +393,9 @@ The phone test matters because iOS behaves differently (see Edge Cases).
 - **[Monetization Model](monetization-model.md) / [IP Licensing](ip-licensing.md):**
   who gets airplane mode, and whether rights allow caching art on devices.
 - **Layer boundary:** arena-client may already import the engine's `.`
-  surface (WP-090). The registry needs a browser entry point. The server gains
-  one verify endpoint. The engine itself doesn't change.
+  surface (WP-090), but not `registry` at runtime, so card data arrives as a
+  server-built setup bundle. The server gains two endpoints: the setup bundle
+  and replay verification. The engine itself doesn't change.
 
 ## Edge Cases
 
@@ -409,13 +455,12 @@ The phone test matters because iOS behaves differently (see Edge Cases).
 **Facts to settle by spike:**
 
 - Does `LegendaryGame` run unchanged on a `Local()` master in the browser,
-  including `Game.setup()` with a browser registry? How big is the bundle?
+  including `Game.setup()` reading a server-built setup bundle through a
+  plain-data reader? How much does the client bundle grow?
 - How many unique images does a real setup have? This replaces the 40–60
   estimate.
 - What do current iOS and Android browsers actually do about storage eviction
   for an installed PWA?
-- Does the image-sizes work produce a phone tier and a byte-size manifest?
-  This page assumes neither exists yet.
 
 ## References
 
@@ -434,7 +479,7 @@ Repo:
 - Measured 2026-11-12:
   - 15 random Core images by `HEAD`
   - one image's headers (`ACAO: *`, immutable) and its dimensions (489×687)
-  - unique image URLs counted across `data/cards/*.json` (3,104)
+- [Card Image Acquisition › Size tiers](card-image-acquisition.md#size-tiers-for-mobile-and-offline-planned): the planned tiers, tier URLs, per-set byte manifests, and the library and per-set sizes this page quotes (WP-888, reserved in [NUMBER-LEDGER.md](../docs/ai/NUMBER-LEDGER.md))
 
 Other products, read 2026-11-12:
 
