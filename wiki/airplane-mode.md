@@ -109,10 +109,16 @@ checked by the server when the player is back online.
      Legendary Pass perk ([Monetization Model](monetization-model.md)) as well
      as a free one. That's a business call. Either way it never changes a game
      outcome, so it stays clear of NG-1.
-  3. **Rights.** Caching Marvel art on players' devices is a new form of digital
-     distribution. [IP Licensing](ip-licensing.md) records that the digital
-     character rights aren't in hand yet. A license might require download
-     expiry; that would set the refresh rule below.
+  3. **Rights.** The live game already sends every card image to players'
+     browsers with `Cache-Control: public, max-age=31536000, immutable`
+     ([RUNBOOK](../docs/ops/RUNBOOK-r2-image-cache-control.md)), so the art
+     already sits on their devices for up to a year. The digital character
+     rights gap that [IP Licensing](ip-licensing.md) records applies to the
+     whole game today, not to airplane mode alone. What airplane mode adds is
+     an explicit "download" and durable storage that the browser is less likely
+     to evict, which makes that same exposure more visible. A future license
+     might require an expiry or periodic check-in; that would set the refresh
+     rule below.
 
 ### What the code does today
 
@@ -477,8 +483,10 @@ The phone test matters because iOS behaves differently (see Edge Cases).
 2. **Access:** free, or a Legendary Pass perk? If it's Pass-gated, what does
    a player see when the cached entitlement lapses while they're still
    offline: does the downloaded setup stay playable?
-3. **Rights and expiry:** do the digital rights allow caching art on devices?
-   Do they require an expiry or periodic check-in, and if so, what window?
+3. **Rights and expiry:** is the extra visibility of an explicit download an
+   acceptable risk while the digital rights gap stands, given the art is
+   already browser-cached for a year? Would a license require an expiry or
+   periodic check-in, and if so, what window?
    (Spotify uses 30 days, YouTube 29, Google Maps a year.)
 4. **Offline results:** do verified offline games count toward leaderboards
    and seed challenges the same as online games, or differently?
