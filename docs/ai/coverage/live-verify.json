@@ -2223,6 +2223,28 @@
       "date": "2026-11-11",
       "evidence": "",
       "note": "Live check (NEW match after the deploy; operator setters stage a Villain holding a Bystander): playing Stalk opens \"Have a Villain or Mastermind Hunt for Victims?\" (uiStateSnapshot.pendingSeatChoice options); KO that Bystander, then \"KO a Hero from your hand or discard pile?\" KOs a S.H.I.E.L.D. Agent from the discard pile; after another Tech Hero each holder also offers a rescue; with no Bystander anywhere the capture options appear. No hunt-for-victims or gate-only hollow. D-24835."
+    },
+    {
+      "key": "anni/super-skrull|conqueror",
+      "kind": "hero",
+      "card": "Super-Skrull",
+      "ability": "Put to the Torch — Bridge Conqueror 1 / Streets Conqueror 1; Transparent Motives — Bank Conqueror 1",
+      "wp": "WP-886",
+      "state": "pending",
+      "date": "2026-11-11",
+      "evidence": "",
+      "note": "Live check (NEW match created after the deploy, with Super-Skrull; operator setters stage Villains in the City): Put to the Torch adds +1 for each of the Bridge and Streets holding a Villain (nothing for its Wound line); with the Bank empty, Transparent Motives logs \"Player N's Transparent Motives did not activate one of its abilities — no Villain is in the Bank.\" and adds nothing. D-24837."
+    },
+    {
+      "key": "asrd/warriors-three-the|conqueror",
+      "kind": "hero",
+      "card": "The Warriors Three",
+      "ability": "Volstagg the Valiant — Bridge Conqueror 1. [Instinct]: Instead, Bridge Conqueror 3",
+      "wp": "WP-886",
+      "state": "pending",
+      "date": "2026-11-11",
+      "evidence": "",
+      "note": "Live check (NEW match created after the deploy, with the Warriors Three; operator setters stage a Bridge Villain): Volstagg adds +3 with a Bridge Villain after another Instinct Hero, +1 without one, and nothing with the Bridge empty. D-24837."
     }
   ]
 }

@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 877,
+    "totalRows": 872,
     "byStatus": {
       "executable": 500,
       "deferred": 16,
-      "condition": 70,
-      "unsupported": 266,
+      "condition": 76,
+      "unsupported": 255,
       "unmarked": 22,
       "subsystem": 3
     },
-    "distinctMechanics": 185
+    "distinctMechanics": 182
   },
   "rows": [
     {
@@ -728,6 +728,26 @@
       "extId": "amwp/freedom-fighters",
       "heroName": "Freedom Fighters",
       "set": "amwp",
+      "mechanic": "conqueror",
+      "status": "condition",
+      "wp": "WP-886",
+      "decision": "D-24837",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "steel-warrior",
+          "name": "Steel Warrior"
+        },
+        {
+          "slug": "xolum",
+          "name": "Xolum"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/freedom-fighters",
+      "heroName": "Freedom Fighters",
+      "set": "amwp",
       "mechanic": "draw",
       "status": "executable",
       "wp": "WP-022",
@@ -809,9 +829,9 @@
       "heroName": "Jentorra",
       "set": "amwp",
       "mechanic": "conqueror",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "status": "condition",
+      "wp": "WP-886",
+      "decision": "D-24837",
       "handler": "",
       "designs": [
         {
@@ -1077,9 +1097,9 @@
       "heroName": "Heralds of Galactus",
       "set": "anni",
       "mechanic": "conqueror",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "status": "condition",
+      "wp": "WP-886",
+      "decision": "D-24837",
       "handler": "",
       "designs": [
         {
@@ -1172,26 +1192,10 @@
       "extId": "anni/super-skrull",
       "heroName": "Super-Skrull",
       "set": "anni",
-      "mechanic": "bridge",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": [
-        {
-          "slug": "put-to-the-torch",
-          "name": "Put to the Torch"
-        }
-      ]
-    },
-    {
-      "extId": "anni/super-skrull",
-      "heroName": "Super-Skrull",
-      "set": "anni",
       "mechanic": "conqueror",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "status": "condition",
+      "wp": "WP-886",
+      "decision": "D-24837",
       "handler": "",
       "designs": [
         {
@@ -1229,38 +1233,6 @@
         {
           "slug": "transparent-motives",
           "name": "Transparent Motives"
-        }
-      ]
-    },
-    {
-      "extId": "anni/super-skrull",
-      "heroName": "Super-Skrull",
-      "set": "anni",
-      "mechanic": "rooftops",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": [
-        {
-          "slug": "put-to-the-torch",
-          "name": "Put to the Torch"
-        }
-      ]
-    },
-    {
-      "extId": "anni/super-skrull",
-      "heroName": "Super-Skrull",
-      "set": "anni",
-      "mechanic": "streets",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": [
-        {
-          "slug": "put-to-the-torch",
-          "name": "Put to the Torch"
         }
       ]
     },
@@ -1804,26 +1776,10 @@
       "extId": "asrd/valkyrie",
       "heroName": "Valkyrie",
       "set": "asrd",
-      "mechanic": "bridge",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": [
-        {
-          "slug": "usher-to-valhalla",
-          "name": "Usher to Valhalla"
-        }
-      ]
-    },
-    {
-      "extId": "asrd/valkyrie",
-      "heroName": "Valkyrie",
-      "set": "asrd",
       "mechanic": "conqueror",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "status": "condition",
+      "wp": "WP-886",
+      "decision": "D-24837",
       "handler": "",
       "designs": [
         {
@@ -1841,26 +1797,6 @@
         {
           "slug": "usher-to-valhalla",
           "name": "Usher to Valhalla"
-        }
-      ]
-    },
-    {
-      "extId": "asrd/valkyrie",
-      "heroName": "Valkyrie",
-      "set": "asrd",
-      "mechanic": "streets",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": [
-        {
-          "slug": "flying-stallion",
-          "name": "Flying Stallion"
-        },
-        {
-          "slug": "ride-of-the-valkyries",
-          "name": "Ride of the Valkyries"
         }
       ]
     },
@@ -1884,26 +1820,10 @@
       "extId": "asrd/warriors-three-the",
       "heroName": "Warriors Three, The",
       "set": "asrd",
-      "mechanic": "bridge",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": [
-        {
-          "slug": "volstagg-the-valiant",
-          "name": "Volstagg the Valiant"
-        }
-      ]
-    },
-    {
-      "extId": "asrd/warriors-three-the",
-      "heroName": "Warriors Three, The",
-      "set": "asrd",
       "mechanic": "conqueror",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "status": "condition",
+      "wp": "WP-886",
+      "decision": "D-24837",
       "handler": "",
       "designs": [
         {

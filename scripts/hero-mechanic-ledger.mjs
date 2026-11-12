@@ -61,9 +61,11 @@ import { HERO_KEYWORDS } from '../packages/game-engine/dist/rules/heroKeywords.j
 import { MVP_KEYWORDS } from '../packages/game-engine/dist/hero/heroEffects.execute.js';
 // why: WP-881 / D-24832 — the two hero Patrol condition literals, read from the engine dist so
 // the ledger never re-types them.
+// why: WP-886 / D-24837 — the hero Conqueror condition literal, read from the same dist module.
 import {
   PATROL_SPACE_EMPTY_CONDITION_TYPE,
   PATROL_SPACE_OCCUPIED_CONDITION_TYPE,
+  CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE,
 } from '../packages/game-engine/dist/hero/heroConditions.evaluate.js';
 // why: D-24031 — composition markers (berserk) are executable via the primitive
 // interpreter (not a HeroKeyword/handler); sourced from the engine dist so the ledger
@@ -233,6 +235,11 @@ const KNOWN_CONDITIONS = {
   // (patrolStatusForHooks), before this by-name entry is read: a hero whose only Patrol lines
   // are other-target hollows (Corvus Glaive, Beast) stays `unsupported`.
   'patrol': PATROL_SPACE_EMPTY_CONDITION_TYPE,                     // "Patrol the <space>: If it's empty, …"
+  // why: WP-886 / D-24837 — hero Conqueror gates a "[keyword:<Space> Conqueror N]" line on
+  // conquerorSpaceHasVillain. Classified BY HOOK like `patrol` (conquerorStatusForHooks): a hero
+  // whose only Conqueror lines are inside another mechanic's line (honest hollows) stays
+  // `unsupported`.
+  'conqueror': CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE,         // "Bridge Conqueror 1"
 };
 
 /** Error type signalling a probe failure (exit code 2). */
@@ -334,6 +341,23 @@ function patrolStatusForHooks(cardConditionTypes) {
     cardConditionTypes.has(PATROL_SPACE_EMPTY_CONDITION_TYPE) ||
     cardConditionTypes.has(PATROL_SPACE_OCCUPIED_CONDITION_TYPE)
   ) {
+    return 'condition';
+  }
+  return 'unsupported';
+}
+
+/**
+ * Classifies the folded `conqueror` mechanic for one hero BY HOOK (WP-886 / D-24837).
+ *
+ * `condition` only when some hook of the hero carries a conquerorSpaceHasVillain condition (a
+ * pure "[gate] [keyword:<Space> Conqueror N]" line); otherwise `unsupported` (a hero whose only
+ * Conqueror tokens sit inside another mechanic's line, which stay honest hollows).
+ *
+ * @param {Set<string>} cardConditionTypes - the condition types THIS hero's hooks carry.
+ * @returns {'condition'|'unsupported'} the status.
+ */
+function conquerorStatusForHooks(cardConditionTypes) {
+  if (cardConditionTypes.has(CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE)) {
     return 'condition';
   }
   return 'unsupported';
@@ -600,6 +624,10 @@ function buildLedger(registry, provenance) {
       let status;
       if (mechanic === 'patrol' && subsystemEntry === undefined) {
         status = patrolStatusForHooks(cardConditionTypes);
+      } else if (mechanic === 'conqueror' && subsystemEntry === undefined) {
+        // why: WP-886 / D-24837 — the same per-hook check for `conqueror`, before the by-name
+        // KNOWN_CONDITIONS entry.
+        status = conquerorStatusForHooks(cardConditionTypes);
       } else {
         status = statusForMechanic(mechanic, cardResolvedMarkers, cardResolvedKeywords, subsystemEntry);
       }

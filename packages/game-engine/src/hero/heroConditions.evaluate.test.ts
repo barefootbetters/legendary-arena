@@ -23,6 +23,7 @@ import {
   matchReadsConditionType,
   PATROL_SPACE_EMPTY_CONDITION_TYPE,
   PATROL_SPACE_OCCUPIED_CONDITION_TYPE,
+  CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE,
 } from './heroConditions.evaluate.js';
 import type { HeroConditionCardData } from './heroConditions.evaluate.js';
 import { WAIT_AND_SEE_CONDITION_TYPES } from './deferredConditionalGrants.js';
@@ -2116,5 +2117,106 @@ describe('patrolSpaceEmpty / patrolSpaceOccupied (WP-881 / D-24832)', () => {
       assert.equal(SEQUENCE_GATE_CONDITION_TYPES.includes(conditionType), false,
         `"${conditionType}" is board state, never a play-order sequence gate.`);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// conquerorSpaceHasVillain (WP-886 / D-24837)
+// ---------------------------------------------------------------------------
+
+describe('conquerorSpaceHasVillain (WP-886 / D-24837)', () => {
+  /** A state whose City is the given spaces (index 0 = Sewers). */
+  function makeConquerorTestState(city: (string | null)[]): LegendaryGameState {
+    const gameState = makeTestState();
+    (gameState as unknown as { city: (string | null)[] }).city = city;
+    return gameState;
+  }
+
+  it('the constant is the locked literal', () => {
+    assert.equal(CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, 'conquerorSpaceHasVillain');
+  });
+
+  it('an occupied space passes and an empty space fails, reading only the named space', () => {
+    const gameState = makeConquerorTestState([null, null, null, null, 'villain-bridge']);
+    assert.equal(
+      evaluateCondition(gameState, '0', { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'bridge' }),
+      true,
+    );
+    assert.equal(
+      evaluateCondition(gameState, '0', { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'streets' }),
+      false,
+    );
+    assert.equal(
+      describeFailedCondition(gameState, '0', { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'streets' }),
+      'no Villain is in the Streets',
+    );
+  });
+
+  it('a space a 3-space City no longer has fails and is described as missing (D-24764)', () => {
+    const gameState = makeConquerorTestState(['villain-sewers', 'villain-bank', 'villain-rooftops']);
+    assert.equal(
+      evaluateCondition(gameState, '0', { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'bridge' }),
+      false,
+    );
+    assert.equal(
+      describeFailedCondition(gameState, '0', { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'bridge' }),
+      'there is no Bridge in the City',
+    );
+    assert.equal(
+      describeFailedCondition(gameState, '0', { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'streets' }),
+      'there is no Streets in the City',
+    );
+    // why: the Rooftops (index 2) still exists in a 3-space City.
+    assert.equal(
+      evaluateCondition(gameState, '0', { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'rooftops' }),
+      true,
+    );
+  });
+
+  it('an unknown value or a non-array City fails and never throws', () => {
+    const gameState = makeConquerorTestState(['a', 'b', 'c', 'd', 'e']);
+    assert.equal(
+      evaluateCondition(gameState, '0', { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'escape-pile' }),
+      false,
+    );
+    assert.equal(
+      evaluateCondition(gameState, '0', { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'Bridge' }),
+      false,
+    );
+    const minimal = { playerZones: { '0': { inPlay: [] } } } as unknown as LegendaryGameState;
+    const condition = { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'bridge' };
+    assert.doesNotThrow(() => evaluateCondition(minimal, '0', condition));
+    assert.equal(evaluateCondition(minimal, '0', condition), false);
+  });
+
+  it('re-reads the City on every evaluation (never cached)', () => {
+    const gameState = makeConquerorTestState([null, null, null, null, null]);
+    const condition = { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'bank' };
+    assert.equal(evaluateCondition(gameState, '0', condition), false);
+    gameState.city[1] = 'villain-bank';
+    assert.equal(evaluateCondition(gameState, '0', condition), true);
+  });
+
+  it('runtime pin: a real evaluate case and a real describe case, neither wait-and-see nor a sequence gate', () => {
+    const fullCity = makeConquerorTestState(['a', 'b', 'c', 'd', 'e']);
+    const emptyCity = makeConquerorTestState([null, null, null, null, null]);
+    const conditionType = CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE;
+    // why: the default evaluate branch only returns false, so a `true` on an occupied space
+    // proves the case exists.
+    assert.equal(
+      evaluateCondition(fullCity, '0', { type: conditionType, value: 'rooftops' }),
+      true,
+      `"${conditionType}" must have a real evaluateCondition case.`,
+    );
+    const description = describeFailedCondition(emptyCity, '0', { type: conditionType, value: 'rooftops' });
+    assert.ok(
+      !description.includes('could not be evaluated'),
+      `"${conditionType}" must have a real describeFailedCondition case.`,
+    );
+    // why: the hero "if" is read when the line resolves (rules v23 L1157-1159) — never wait-and-see.
+    assert.equal(WAIT_AND_SEE_CONDITION_TYPES.includes(conditionType), false,
+      `"${conditionType}" is resolved per line, never a wait-and-see gate.`);
+    assert.equal(SEQUENCE_GATE_CONDITION_TYPES.includes(conditionType), false,
+      `"${conditionType}" is board state, never a play-order sequence gate.`);
   });
 });

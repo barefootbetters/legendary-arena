@@ -280,7 +280,7 @@
           "attack": "0+",
           "recruit": "4",
           "abilities": [
-            "[keyword:Focus] 4[icon:recruit] [icon:5][keyword:Conqueror]",
+            "[keyword:Focus] 4[icon:recruit] [icon:5] [keyword:Rooftops Conqueror 4]",
             "[keyword:Focus] 11[icon:recruit] [icon:5] Search the Hero Deck, HQ, or your deck or discard pile for “Galactus Hungers“ and put it on top of your deck. Shuffle any deck you searched."
           ]
         },
@@ -486,7 +486,7 @@
           "attack": "2+",
           "recruit": "0+",
           "abilities": [
-            "[hc:strength]: [keyword:Conqueror]",
+            "[hc:strength]: [keyword:Sewers Conqueror 1]",
             "[keyword:Focus] 3[icon:attack] [icon:5] You get +2[icon:recruit]."
           ]
         },
@@ -502,7 +502,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "[keyword:Conqueror]",
+            "[keyword:Bank Conqueror 1]",
             "[keyword:Focus] 3[icon:attack] [icon:5] You may KO a card from your hand or discard pile."
           ]
         },
@@ -518,9 +518,9 @@
           "attack": "4+",
           "recruit": null,
           "abilities": [
-            "[keyword:Bridge] [keyword:Conqueror] 1",
-            "[keyword:Streets] [keyword:Conqueror] 1",
-            "You may gain a Wound. If you do, get [keyword:Rooftops] [keyword:Conqueror] 4."
+            "[keyword:Bridge Conqueror 1]",
+            "[keyword:Streets Conqueror 1]",
+            "You may gain a Wound. If you do, you get [keyword:Rooftops Conqueror 4]."
           ]
         }
       ],

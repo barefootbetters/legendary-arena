@@ -50,6 +50,7 @@ import {
   NON_GREY_HERO_DECK_KO_CONDITION_TYPE,
   PATROL_SPACE_EMPTY_CONDITION_TYPE,
   PATROL_SPACE_OCCUPIED_CONDITION_TYPE,
+  CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE,
 } from '../hero/heroConditions.evaluate.js';
 
 // ---------------------------------------------------------------------------
@@ -913,6 +914,16 @@ const PATROL_LINE_PATTERN =
 // (any / two adjacent / every city space, the Escape Pile, your discard pile, your Victory Pile)
 // is an honest hollow until its own WP models it.
 const PATROL_NAMED_SPACE_PATTERN = /^the\s+(sewers|bank|rooftops|streets|bridge)$/i;
+
+// why: WP-886 / D-24837 — identifies a pure hero Conqueror line: an optional [hc:X] / [team:X]
+// gate prefix (group 1), an optional "Instead," (group 2), then one
+// "[keyword:<Space> Conqueror N]" token (group 3 = the space, group 4 = N) and nothing else. A
+// line with any other text (Put to the Torch's Wound line, Stardust's Focus line, Dragonfang's
+// Thrown Artifact line) is not a Conqueror line and keeps its generic-parse honest hollow. The
+// ^…$ anchors are load-bearing: without them Put to the Torch's line 2 would grant +4 on every
+// play. Non-global, so `.exec` is stateless.
+const CONQUEROR_LINE_PATTERN =
+  /^\s*((?:\[(?:hc|team):[^\]]+\]\s*)*:?)\s*(Instead,\s*)?\[keyword:(Sewers|Bank|Rooftops|Streets|Bridge)\s+Conqueror\s+(\d+)\]\.?\s*$/i;
 
 // why: WP-881 / D-24832 — the "If it's empty," / "If it's not," branch heads (straight or curly
 // apostrophe). Case-insensitive, non-global.
@@ -4929,6 +4940,84 @@ function buildPatrolBothHooks(
 }
 
 /**
+ * Finds the printed amount of a card's base Conqueror line for one City space (WP-886 / D-24837):
+ * the first line that is a pure Conqueror line with no gate prefix, no "Instead," and the same
+ * space.
+ *
+ * @param abilityLines - The card's ability lines.
+ * @param spaceName - The lower-cased City space name.
+ * @returns The base line's N, or undefined when the card has no such line.
+ */
+function findBaseConquerorAmount(abilityLines: string[], spaceName: string): number | undefined {
+  for (const line of abilityLines) {
+    if (typeof line !== 'string') {
+      continue;
+    }
+    const lineMatch = CONQUEROR_LINE_PATTERN.exec(line);
+    if (lineMatch === null) {
+      continue;
+    }
+    const isUngated = lineMatch[1]!.trim() === '';
+    const isInstead = lineMatch[2] !== undefined;
+    if (isUngated && !isInstead && lineMatch[3]!.toLowerCase() === spaceName) {
+      return Number(lineMatch[4]);
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Builds the one hook for a pure hero Conqueror line (WP-886 / D-24837).
+ *
+ * A base line "[gate] [keyword:<Space> Conqueror N]" grants +N Attack under the gate plus
+ * conquerorSpaceHasVillain. An "[gate]: Instead, [keyword:<Space> Conqueror N]" line grants the
+ * delta over the card's base line for the same space (Volstagg: 3 - 1 = +2), on top of the base
+ * hook; with no such base line, or no positive delta, it is an honest hollow.
+ *
+ * @param cardId - The hero card copy's CardExtId.
+ * @param conquerorMatch - The line's CONQUEROR_LINE_PATTERN match.
+ * @param abilityLines - The card's ability lines (for the Instead base lookup).
+ * @returns The line's hook.
+ */
+function buildConquerorLineHook(
+  cardId: CardExtId,
+  conquerorMatch: RegExpExecArray,
+  abilityLines: string[],
+): HeroAbilityHook {
+  const gatePrefix = conquerorMatch[1]!.trim();
+  const isInstead = conquerorMatch[2] !== undefined;
+  // why: the condition value is a CITY_SPACE_NAMES member ('bridge'); the captured "Bridge"
+  // would make patrolSpaceIndex return -1 and the hook would never fire.
+  const spaceName = conquerorMatch[3]!.toLowerCase();
+  const printedAmount = Number(conquerorMatch[4]);
+  const hollowSlug = `${spaceName}-conqueror`;
+  let grantedAmount = printedAmount;
+  if (isInstead) {
+    // why: "Instead, Bridge Conqueror 3" upgrades the card's base "Bridge Conqueror 1"; Attack
+    // adds, so the upgrade is the delta on its own hook (no fusion needed).
+    const baseAmount = findBaseConquerorAmount(abilityLines, spaceName);
+    grantedAmount = baseAmount === undefined ? 0 : printedAmount - baseAmount;
+  }
+  if (grantedAmount <= 0) {
+    // why: an "Instead" line with no same-space base line to upgrade is an honest hollow in the
+    // other-target Patrol hollow shape: the gate prefix's conditions only, no effects.
+    const parsedGate = parseAbilityText(gatePrefix);
+    const hollowHook: HeroAbilityHook = { cardId, timing: 'onPlay', keywords: [] };
+    if (parsedGate.conditions.length > 0) {
+      hollowHook.conditions = parsedGate.conditions;
+      hollowHook.keywords = ['conditional'];
+    }
+    hollowHook.unresolvedMarkers = [hollowSlug];
+    return hollowHook;
+  }
+  // why: buildPatrolBranchHook (WP-881 / D-24832) already builds "<gate> <body>" plus one appended
+  // City-space condition and the 'conditional' keyword, each from its own parseAbilityText call
+  // (no shared arrays, D-13502); it is reused unchanged with the Conqueror condition type.
+  return buildPatrolBranchHook(cardId, gatePrefix, `You get +${grantedAmount}[icon:attack].`,
+    CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, spaceName, hollowSlug);
+}
+
+/**
  * Builds hero ability hooks from registry card data at setup time.
  *
  * Called during Game.setup() via buildInitialGameState. Resolves hero
@@ -5125,6 +5214,19 @@ export function buildHeroAbilityHooks(
             previousLineHook = null;
             continue;
           }
+        }
+
+        // why: WP-886 / D-24837 — a pure hero Conqueror line ("[gate] [keyword:<Space> Conqueror
+        // N]", rules v23 L1157-1159) is consumed here, at its own line index (the Patrol / Heist
+        // precedent above), so hook order still follows line order. Without this the multi-word
+        // token resolved nothing and every Conqueror line was hollow. The base line grants +N under
+        // conquerorSpaceHasVillain; an "Instead," line grants its delta over the base line.
+        // Resetting previousLineHook keeps a later line from widen-fusing into it (WP-790).
+        const conquerorMatch = CONQUEROR_LINE_PATTERN.exec(abilityText);
+        if (conquerorMatch !== null) {
+          hooks.push(buildConquerorLineHook(instance.extId, conquerorMatch, abilityLines));
+          previousLineHook = null;
+          continue;
         }
 
         // why: WP-658 / D-24469 — resolve whether this base card's transform is

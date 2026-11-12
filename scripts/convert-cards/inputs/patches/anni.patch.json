@@ -92,7 +92,7 @@
           "slug": "stardust",
           "imageUrl": "https://images.legendary-arena.com/anni/anni-hr-heralds-of-galactus-6u.webp",
           "abilities": [
-            "[keyword:Focus] 4[icon:recruit] [icon:5][keyword:Conqueror]",
+            "[keyword:Focus] 4[icon:recruit] [icon:5] [keyword:Rooftops Conqueror 4]",
             "[keyword:Focus] 11[icon:recruit] [icon:5] Search the Hero Deck, HQ, or your deck or discard pile for “Galactus Hungers“ and put it on top of your deck. Shuffle any deck you searched."
           ]
         },
@@ -167,7 +167,7 @@
           "slug": "rock-solid",
           "imageUrl": "https://images.legendary-arena.com/anni/anni-hr-super-skrull-4c2.webp",
           "abilities": [
-            "[hc:strength]: [keyword:Conqueror]",
+            "[hc:strength]: [keyword:Sewers Conqueror 1]",
             "[keyword:Focus] 3[icon:attack] [icon:5] You get +2[icon:recruit]."
           ]
         },
@@ -175,7 +175,7 @@
           "slug": "transparent-motives",
           "imageUrl": "https://images.legendary-arena.com/anni/anni-hr-super-skrull-5u.webp",
           "abilities": [
-            "[keyword:Conqueror]",
+            "[keyword:Bank Conqueror 1]",
             "[keyword:Focus] 3[icon:attack] [icon:5] You may KO a card from your hand or discard pile."
           ]
         },
@@ -183,9 +183,9 @@
           "slug": "put-to-the-torch",
           "imageUrl": "https://images.legendary-arena.com/anni/anni-hr-super-skrull-7r.webp",
           "abilities": [
-            "[keyword:Bridge] [keyword:Conqueror] 1",
-            "[keyword:Streets] [keyword:Conqueror] 1",
-            "You may gain a Wound. If you do, get [keyword:Rooftops] [keyword:Conqueror] 4."
+            "[keyword:Bridge Conqueror 1]",
+            "[keyword:Streets Conqueror 1]",
+            "You may gain a Wound. If you do, you get [keyword:Rooftops Conqueror 4]."
           ]
         }
       ],

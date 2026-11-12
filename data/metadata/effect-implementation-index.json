@@ -3,9 +3,9 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2871,
+    "totalEntries": 2866,
     "byScope": {
-      "hero": 877,
+      "hero": 872,
       "villain": 763,
       "mastermind": 567,
       "scheme": 664
@@ -13,8 +13,8 @@
     "byStatus": {
       "executable": 842,
       "deferred": 19,
-      "condition": 70,
-      "unsupported": 267,
+      "condition": 76,
+      "unsupported": 256,
       "unmarked": 1666,
       "subsystem": 7
     }
@@ -1915,6 +1915,27 @@
       "name": "Freedom Fighters",
       "set": "amwp",
       "scope": "hero",
+      "mechanic": "conqueror",
+      "status": "condition",
+      "handler": "",
+      "wp": "WP-886",
+      "decision": "D-24837",
+      "designs": [
+        {
+          "slug": "steel-warrior",
+          "name": "Steel Warrior"
+        },
+        {
+          "slug": "xolum",
+          "name": "Xolum"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/freedom-fighters",
+      "name": "Freedom Fighters",
+      "set": "amwp",
+      "scope": "hero",
       "mechanic": "draw",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
@@ -2001,10 +2022,10 @@
       "set": "amwp",
       "scope": "hero",
       "mechanic": "conqueror",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-886",
+      "decision": "D-24837",
       "designs": [
         {
           "slug": "conquer-the-conqueror",
@@ -2613,10 +2634,10 @@
       "set": "anni",
       "scope": "hero",
       "mechanic": "conqueror",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-886",
+      "decision": "D-24837",
       "designs": [
         {
           "slug": "firelord",
@@ -2712,28 +2733,11 @@
       "name": "Super-Skrull",
       "set": "anni",
       "scope": "hero",
-      "mechanic": "bridge",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
-      "designs": [
-        {
-          "slug": "put-to-the-torch",
-          "name": "Put to the Torch"
-        }
-      ]
-    },
-    {
-      "extId": "anni/super-skrull",
-      "name": "Super-Skrull",
-      "set": "anni",
-      "scope": "hero",
       "mechanic": "conqueror",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-886",
+      "decision": "D-24837",
       "designs": [
         {
           "slug": "put-to-the-torch",
@@ -2771,40 +2775,6 @@
         {
           "slug": "transparent-motives",
           "name": "Transparent Motives"
-        }
-      ]
-    },
-    {
-      "extId": "anni/super-skrull",
-      "name": "Super-Skrull",
-      "set": "anni",
-      "scope": "hero",
-      "mechanic": "rooftops",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
-      "designs": [
-        {
-          "slug": "put-to-the-torch",
-          "name": "Put to the Torch"
-        }
-      ]
-    },
-    {
-      "extId": "anni/super-skrull",
-      "name": "Super-Skrull",
-      "set": "anni",
-      "scope": "hero",
-      "mechanic": "streets",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
-      "designs": [
-        {
-          "slug": "put-to-the-torch",
-          "name": "Put to the Torch"
         }
       ]
     },
@@ -4204,28 +4174,11 @@
       "name": "Valkyrie",
       "set": "asrd",
       "scope": "hero",
-      "mechanic": "bridge",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
-      "designs": [
-        {
-          "slug": "usher-to-valhalla",
-          "name": "Usher to Valhalla"
-        }
-      ]
-    },
-    {
-      "extId": "asrd/valkyrie",
-      "name": "Valkyrie",
-      "set": "asrd",
-      "scope": "hero",
       "mechanic": "conqueror",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-886",
+      "decision": "D-24837",
       "designs": [
         {
           "slug": "dragonfang",
@@ -4242,27 +4195,6 @@
         {
           "slug": "usher-to-valhalla",
           "name": "Usher to Valhalla"
-        }
-      ]
-    },
-    {
-      "extId": "asrd/valkyrie",
-      "name": "Valkyrie",
-      "set": "asrd",
-      "scope": "hero",
-      "mechanic": "streets",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
-      "designs": [
-        {
-          "slug": "flying-stallion",
-          "name": "Flying Stallion"
-        },
-        {
-          "slug": "ride-of-the-valkyries",
-          "name": "Ride of the Valkyries"
         }
       ]
     },
@@ -4288,28 +4220,11 @@
       "name": "Warriors Three, The",
       "set": "asrd",
       "scope": "hero",
-      "mechanic": "bridge",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
-      "designs": [
-        {
-          "slug": "volstagg-the-valiant",
-          "name": "Volstagg the Valiant"
-        }
-      ]
-    },
-    {
-      "extId": "asrd/warriors-three-the",
-      "name": "Warriors Three, The",
-      "set": "asrd",
-      "scope": "hero",
       "mechanic": "conqueror",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-886",
+      "decision": "D-24837",
       "designs": [
         {
           "slug": "three-stand-as-one",
@@ -39329,6 +39244,7 @@
     "amwp/freedom-fighters": {
       "scope": "hero",
       "mechanics": [
+        "conqueror",
         "draw",
         "next-hand-extra-draw"
       ]
@@ -39537,11 +39453,8 @@
     "anni/super-skrull": {
       "scope": "hero",
       "mechanics": [
-        "bridge",
         "conqueror",
-        "focus",
-        "rooftops",
-        "streets"
+        "focus"
       ]
     },
     "antm-mastermind-morgan-le-fay-master-strike": {
@@ -39972,16 +39885,13 @@
     "asrd/valkyrie": {
       "scope": "hero",
       "mechanics": [
-        "bridge",
         "conqueror",
-        "streets",
         "thrown-artifact"
       ]
     },
     "asrd/warriors-three-the": {
       "scope": "hero",
       "mechanics": [
-        "bridge",
         "conqueror",
         "draw",
         "optional-ko-hand-discard"

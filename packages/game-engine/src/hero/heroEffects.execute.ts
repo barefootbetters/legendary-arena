@@ -37,6 +37,7 @@ import {
   describeFailedCondition,
   PATROL_SPACE_EMPTY_CONDITION_TYPE,
   PATROL_SPACE_OCCUPIED_CONDITION_TYPE,
+  CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE,
   OWNED_CARD_KOED_CONDITION_TYPE,
   OWNED_HERO_KOED_CONDITION_TYPE,
   DECK_CARD_KOED_CONDITION_TYPE,
@@ -1028,10 +1029,13 @@ export function executeHeroEffects(
     // either: the City decided it, not the player. Without this, Elsa Bloodstone's Axe of the
     // Slayer off-branch cross hook ([hc:instinct] AND the other Patrol state) would log a
     // guaranteed miss on every play.
+    // why: WP-886 / D-24837 — extends D-24832's failed-Patrol clause rule to the Conqueror type:
+    // a hook whose Conqueror space holds no Villain on this play is not a clause either (Rock
+    // Solid with the Sewers empty logs 0 played / 0 assembled, not a miss).
     const isCountableConditionalClause =
       countSynergyConditions(hook) > 0 &&
       hookHasDispatchableEffect(hook) &&
-      allPatrolConditionsPass(G, playerID, hook, cardId);
+      allCitySpaceConditionsPass(G, playerID, hook, cardId);
 
     // why: WP-853 / D-24789 — an owned-KO trigger ("Whenever a card you own is KO'd this
     // turn") starts when the card is played, so it ALWAYS waits once its other conditions
@@ -1533,7 +1537,10 @@ function countSynergyConditions(hook: HeroAbilityHook): number {
       condition.type !== 'sunlightInEffect' &&
       condition.type !== 'moonlightInEffect' &&
       condition.type !== PATROL_SPACE_EMPTY_CONDITION_TYPE &&
-      condition.type !== PATROL_SPACE_OCCUPIED_CONDITION_TYPE
+      condition.type !== PATROL_SPACE_OCCUPIED_CONDITION_TYPE &&
+      // why: WP-886 / D-24837 — the Conqueror gate is board state as well (a Villain in the City
+      // space, not a synergy the player built), excluded like the Patrol pair (D-24832 sibling).
+      condition.type !== CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE
     ) {
       count += 1;
     }
@@ -1542,29 +1549,33 @@ function countSynergyConditions(hook: HeroAbilityHook): number {
 }
 
 /**
- * Whether every Patrol condition on a hook passes on this play (WP-881 / D-24832).
+ * Whether every City-space condition (Patrol or Conqueror) on a hook passes on this play
+ * (WP-881 / D-24832; Conqueror added by WP-886 / D-24837).
  *
- * // why: each Patrol condition is evaluated directly, never through findFailedCondition, which
- * stops at the first failed condition and would report Axe of the Slayer's [hc:instinct] gate
- * first on its off-branch cross hook. A hook with no Patrol condition passes trivially.
+ * // why: each City-space condition is evaluated directly, never through findFailedCondition,
+ * which stops at the first failed condition and would report Axe of the Slayer's [hc:instinct]
+ * gate first on its off-branch cross hook (or Rock Solid's [hc:strength] gate before its Sewers
+ * condition). The City decides these, not the player, so a hook whose City-space condition fails
+ * is not a Synergy clause. A hook with no City-space condition passes trivially.
  *
  * @param G - Current game state (read-only).
  * @param playerID - The acting player.
  * @param hook - The hero ability hook.
  * @param cardId - The played hero card's CardExtId.
- * @returns false when some Patrol condition on the hook fails, else true.
+ * @returns false when some City-space condition on the hook fails, else true.
  */
-function allPatrolConditionsPass(
+function allCitySpaceConditionsPass(
   G: LegendaryGameState,
   playerID: string,
   hook: HeroAbilityHook,
   cardId: CardExtId,
 ): boolean {
   for (const condition of hook.conditions ?? []) {
-    const isPatrolCondition =
+    const isCitySpaceCondition =
       condition.type === PATROL_SPACE_EMPTY_CONDITION_TYPE ||
-      condition.type === PATROL_SPACE_OCCUPIED_CONDITION_TYPE;
-    if (isPatrolCondition && !evaluateCondition(G, playerID, condition, cardId)) {
+      condition.type === PATROL_SPACE_OCCUPIED_CONDITION_TYPE ||
+      condition.type === CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE;
+    if (isCitySpaceCondition && !evaluateCondition(G, playerID, condition, cardId)) {
       return false;
     }
   }
