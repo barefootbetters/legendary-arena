@@ -223,7 +223,8 @@ offline play"*.
   - A typical solo setup is roughly 40–60 unique images, about 4–8 MB
     *(estimate; the count depends on the heroes and villain groups)*.
   - The whole library is roughly 300 MB at `phone`, against 1,137 MB for the
-    originals.
+    originals. That's every card in every set, not what any one player
+    downloads.
   - Without tiers, a `co2e` setup would run to hundreds of megabytes, which is
     why airplane mode waits on the tier work.
 
@@ -245,6 +246,13 @@ In short:
 
 A tier URL is the card's existing `imageUrl` with `/{tier}` inserted before
 the file name, so no card data changes.
+
+**If the tiers aren't ready first.** 78% of card images already have a long
+edge under 840 px, so for those sets the original is effectively the `phone`
+image. A first version could download originals for setups drawn only from
+those sets, with the six high-resolution sets (`amwp`, `bkpt`, `bkwd`,
+`mdns`, `msis`, `co2e`) waiting for the tiers. The size label would then need
+byte counts some other way, such as HEAD requests.
 
 #### Caching
 
@@ -274,6 +282,15 @@ built by the server, which already loads the registry:
   type-only imports.
 - The bundle carries the card-data version, so a saved game can say which
   data it was played on (see [Edge Cases](#edge-cases)).
+- **The bundle has to be complete for setup, not just for the cards on
+  screen.** Sixteen engine setup builders call `listCards()`, `listSets()` or
+  `getSet()` (for example `buildInitialGameState.ts`, `buildHeroDeck.ts`,
+  `villainDeck.setup.ts`, `mastermind.setup.ts`, `buildCardDisplayData.ts`).
+  A reader that answers with only the setup's own cards would build a match
+  that's silently missing cards, the same failure as the empty-registry
+  fallback. So the server builds the bundle by running setup against the real
+  registry and recording every record the builders read. The client reader
+  replays exactly that set.
 
 The endpoint is new, so it gets an
 [`api-endpoints.md`](../docs/ai/REFERENCE/api-endpoints.md) row when built.
@@ -289,9 +306,12 @@ One page, under the player's profile, lists:
 - a total, plus `navigator.storage.estimate()` for the space left;
 - **Delete** per setup and **Delete all**.
 
-Deleting a setup removes only the images no other downloaded setup uses (the
-caches are reference-counted by URL). A setup with a game in progress asks
-before deleting.
+Deleting a setup removes only the images no other downloaded setup uses.
+Cache Storage keeps no reference counts, so the downloads index in IndexedDB
+maps each image URL to the setups that use it. The client deletes the cache
+entry when a URL's last setup goes. A crash between the two writes leaves an
+orphan or a dangling entry, which the storage page reconciles when it next
+loads. A setup with a game in progress asks before deleting.
 
 #### Caching cards viewed online
 
@@ -323,6 +343,12 @@ D-24119 replay pattern). If it replays legally to the claimed end, the result
 is recorded like any other finished game. How verified offline results count
 toward leaderboards and seed challenges is open question 4. Queued analytics
 events go out with it.
+
+The seed in an offline record is the device's own random seed. The server
+mints online seeds from random bytes ([`matchSeed.mjs`](../apps/server/src/game/matchSeed.mjs)),
+not from the setup, so there's nothing to re-derive and any seed is valid for
+an ordinary game. The one case with an expected seed is a seed challenge,
+where the record's setup and seed must match the published challenge.
 
 The endpoint is new, so its row in
 [`api-endpoints.md`](../docs/ai/REFERENCE/api-endpoints.md) would land with
@@ -448,7 +474,9 @@ The phone test matters because iOS behaves differently (see Edge Cases).
 1. **On-device rules:** may a single-seat match run on a `Local()` master in
    the browser? How does saving a match record sit with the persistence
    boundary and D-24095?
-2. **Access:** free, or a Legendary Pass perk?
+2. **Access:** free, or a Legendary Pass perk? If it's Pass-gated, what does
+   a player see when the cached entitlement lapses while they're still
+   offline: does the downloaded setup stay playable?
 3. **Rights and expiry:** do the digital rights allow caching art on devices?
    Do they require an expiry or periodic check-in, and if so, what window?
    (Spotify uses 30 days, YouTube 29, Google Maps a year.)
