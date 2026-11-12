@@ -449,6 +449,7 @@ mgtg/star-lord,Star-Lord,mgtg,triggered-artifact,unsupported,,,,borrowed-nova-bl
 msis/black-panther,Black Panther,msis,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,fateful-return
 msis/black-panther,Black Panther,msis,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,wakanda-forever
 msis/black-panther,Black Panther,msis,sacrifice,unsupported,,,,great-many-lives-lost
+msis/bruce-banner,Bruce Banner,msis,gain-wound-reward,executable,WP-883,D-24834,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-reward,hulk-gets-smashed
 msis/bruce-banner,Bruce Banner,msis,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,hulkbuster-armor
 msis/bruce-banner,Bruce Banner,msis,sacrifice,unsupported,,,,burst-of-rage|reverse-the-snap
 msis/captain-marvel,Captain Marvel,msis,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,dawning-hope|infused-by-the-tesseract
@@ -733,6 +734,7 @@ wpnx/weapon-h,Weapon H,wpnx,berserk,executable,WP-256,D-24031,packages/game-engi
 wpnx/weapon-h,Weapon H,wpnx,reveal-top-dispose,executable,WP-702,D-24521,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose,the-future-of-warfare
 wpnx/weapon-h,Weapon H,wpnx,weapon-x-sequence,unsupported,,,,ultimate-killing-machine
 wpnx/weapon-x-wolverine,Weapon X (Wolverine),wpnx,berserk,executable,WP-256,D-24031,packages/game-engine/src/hero/effectPrimitive.interpret.ts,escape-the-weapon-x-lab|raging-regeneration|violent-conditioning
+wpnx/weapon-x-wolverine,Weapon X (Wolverine),wpnx,gain-wound-reward,executable,WP-883,D-24834,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-reward,violent-conditioning
 wpnx/weapon-x-wolverine,Weapon X (Wolverine),wpnx,weapon-x-sequence,unsupported,,,,escape-the-weapon-x-lab|infuse-skeleton-with-adamantium
 wtif/apocalyptic-black-widow,Apocalyptic Black Widow,wtif,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,plant-hidden-asset|relentless
 wtif/apocalyptic-black-widow,Apocalyptic Black Widow,wtif,liberate,unsupported,,,,relentless|the-last-avenger|time-to-save-the-multiverse
@@ -818,8 +820,9 @@ wwhk/she-hulk,She-Hulk,wwhk,recruit-threshold,condition,,,,hurl-legal-objections
 wwhk/she-hulk,She-Hulk,wwhk,reveal-herodeck-attack,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-herodeck-attack,jade-giantess
 wwhk/she-hulk,She-Hulk,wwhk,smash,executable,WP-676,D-24492,packages/game-engine/src/hero/heroEffects.execute.ts#smash,hurl-trucks
 wwhk/she-hulk,She-Hulk,wwhk,transform,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#transform,hurl-legal-objections
+wwhk/skaar-son-of-hulk,"Skaar, Son of Hulk",wwhk,gain-wound-reward,executable,WP-883,D-24834,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-reward,mood-swings
 wwhk/skaar-son-of-hulk,"Skaar, Son of Hulk",wwhk,smash,executable,WP-676,D-24492,packages/game-engine/src/hero/heroEffects.execute.ts#smash,anger-management
-wwhk/skaar-son-of-hulk,"Skaar, Son of Hulk",wwhk,transform,unsupported,,,,mood-swings
+wwhk/skaar-son-of-hulk,"Skaar, Son of Hulk",wwhk,transform,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#transform,mood-swings
 wwhk/skaar-son-of-hulk,"Skaar, Son of Hulk",wwhk,wounded-fury,unsupported,,,,planetary-level-revenge|raging-savage|scarred-past
 xmen/aurora-northstar,Aurora & Northstar,xmen,berserk,executable,WP-256,D-24031,packages/game-engine/src/hero/effectPrimitive.interpret.ts,blazing-fists
 xmen/aurora-northstar,Aurora & Northstar,xmen,lightshow,unsupported,,,,blazing-flare|mach-10|northern-lights|twin-blast

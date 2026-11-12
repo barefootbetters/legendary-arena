@@ -570,6 +570,72 @@ describe('WP-883 choosePlayingSeatChoiceOption — gain-wound-reward (D-24834)',
   });
 });
 
+describe('WP-885 choosePlayingSeatChoiceOption — non-Attack gain-wound-reward answers (D-24836)', () => {
+  const VIOLENT_CONDITIONING = 'wpnx/weapon-x-wolverine/violent-conditioning#0';
+  const HULK_GETS_SMASHED = 'msis/bruce-banner/hulk-gets-smashed#0';
+  const MOOD_SWINGS = 'wwhk/skaar-son-of-hulk/mood-swings#0';
+  const RAGING_SAVAGE = 'wwhk/skaar-son-of-hulk/raging-savage#0';
+  const AGENT = 'starter-agent#0';
+  const TROOPER = 'starter-trooper#0';
+  const PRICEY_HERO = 'test/hero/pricey#0';
+
+  it('berserk: declines (the payoff is the hidden deck top), even with Attack-rich cards on top', () => {
+    const G = makeState({ '0': [] }, { cardStats: { 'deck-top#0': makeCardStatEntry({ attack: 9 }) } });
+    G.playerZones['0']!.deck = ['deck-top#0'];
+    withChoice(G, buildGainWoundRewardChoice('0', { rewardType: 'berserk', magnitude: 2, sourceCardId: VIOLENT_CONDITIONING }));
+    assert.equal(choosePlayingSeatChoiceOption(G, '0'), 1);
+  });
+
+  it('optional-ko-hand-discard: gains with two cost-0 cards in hand ∪ discard; declines with one', () => {
+    const reward = { rewardType: 'optional-ko-hand-discard' as const, magnitude: 2, sourceCardId: HULK_GETS_SMASHED };
+    const two = makeState({ '0': [AGENT] }, { cardStats: { [PRICEY_HERO]: makeCardStatEntry({ cost: 6 }) } });
+    two.playerZones['0']!.discard = [TROOPER, PRICEY_HERO];
+    withChoice(two, buildGainWoundRewardChoice('0', reward));
+    assert.equal(choosePlayingSeatChoiceOption(two, '0'), 0, 'Agent + Trooper are worth two KOs');
+
+    const one = makeState({ '0': [AGENT] }, { cardStats: { [PRICEY_HERO]: makeCardStatEntry({ cost: 6 }) } });
+    one.playerZones['0']!.discard = [PRICEY_HERO];
+    withChoice(one, buildGainWoundRewardChoice('0', reward));
+    assert.equal(choosePlayingSeatChoiceOption(one, '0'), 1, 'one cost-0 card is not worth a Wound');
+  });
+
+  it('transform: gains with the base in play and a second-form copy in the side deck; declines without', () => {
+    const reward = { rewardType: 'transform' as const, magnitude: 1, sourceCardId: MOOD_SWINGS };
+    const targets = { 'wwhk/skaar-son-of-hulk/mood-swings': 'wwhk/skaar-son-of-hulk/raging-savage' };
+    const withCopy = makeState({ '0': [] }, { transformTargets: targets, transformDeck: [RAGING_SAVAGE] });
+    withCopy.playerZones['0']!.inPlay = [MOOD_SWINGS];
+    withChoice(withCopy, buildGainWoundRewardChoice('0', reward));
+    assert.equal(choosePlayingSeatChoiceOption(withCopy, '0'), 0);
+
+    const noCopy = makeState({ '0': [] }, { transformTargets: targets, transformDeck: [] });
+    noCopy.playerZones['0']!.inPlay = [MOOD_SWINGS];
+    withChoice(noCopy, buildGainWoundRewardChoice('0', reward));
+    assert.equal(choosePlayingSeatChoiceOption(noCopy, '0'), 1, 'no Raging Savage left: the Wound buys nothing');
+
+    const baseGone = makeState({ '0': [] }, { transformTargets: targets, transformDeck: [RAGING_SAVAGE] });
+    withChoice(baseGone, buildGainWoundRewardChoice('0', reward));
+    assert.equal(choosePlayingSeatChoiceOption(baseGone, '0'), 1, 'the base card is no longer in play');
+  });
+
+  it('never writes G for any non-Attack reward (purity)', () => {
+    const targets = { 'wwhk/skaar-son-of-hulk/mood-swings': 'wwhk/skaar-son-of-hulk/raging-savage' };
+    const rewards = [
+      { rewardType: 'berserk' as const, magnitude: 2, sourceCardId: VIOLENT_CONDITIONING },
+      { rewardType: 'optional-ko-hand-discard' as const, magnitude: 2, sourceCardId: HULK_GETS_SMASHED },
+      { rewardType: 'transform' as const, magnitude: 1, sourceCardId: MOOD_SWINGS },
+    ];
+    for (const reward of rewards) {
+      const G = makeState({ '0': [AGENT] }, { transformTargets: targets, transformDeck: [RAGING_SAVAGE] });
+      G.playerZones['0']!.inPlay = [MOOD_SWINGS];
+      G.playerZones['0']!.deck = ['deck-top#0'];
+      withChoice(G, buildGainWoundRewardChoice('0', reward, G));
+      const before = structuredClone(G);
+      choosePlayingSeatChoiceOption(G, '0');
+      assert.deepEqual(G, before, `${reward.rewardType}: G unchanged`);
+    }
+  });
+});
+
 describe('WP-884 choosePlayingSeatChoiceOption — Hunt for Victims (D-24835)', () => {
   const VILLAIN = 'test/villain/hand-ninjas#0';
   const BYSTANDER = 'pile-bystander';

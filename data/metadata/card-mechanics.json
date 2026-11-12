@@ -932,10 +932,13 @@
       "label": "Gain Wound Reward",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 2,
+      "cardCount": 5,
       "cardIds": [
         "co2e/hulk",
-        "mdns/morbius"
+        "mdns/morbius",
+        "msis/bruce-banner",
+        "wpnx/weapon-x-wolverine",
+        "wwhk/skaar-son-of-hulk"
       ],
       "hidden": true
     },
@@ -3827,6 +3830,7 @@
     },
     "msis/bruce-banner": {
       "mechanics": [
+        "gain-wound-reward",
         "ko-wound-reward",
         "sacrifice"
       ]
@@ -4583,6 +4587,7 @@
     "wpnx/weapon-x-wolverine": {
       "mechanics": [
         "berserk",
+        "gain-wound-reward",
         "weapon-x-sequence"
       ]
     },
@@ -4760,6 +4765,7 @@
     },
     "wwhk/skaar-son-of-hulk": {
       "mechanics": [
+        "gain-wound-reward",
         "smash",
         "transform",
         "wounded-fury"

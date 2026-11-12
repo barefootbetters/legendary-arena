@@ -335,8 +335,9 @@ function indexOfHereHoldThisTarget(
 }
 
 /**
- * The bot's answer to "You may gain a Wound. If you do, you get +N Attack": gain only when the
- * +N newly enables a fight (a City Villain or the Mastermind) right now; otherwise decline.
+ * The bot's answer to "You may gain a Wound. If you do, <reward>". For +N Attack: gain only when
+ * the +N newly enables a fight (a City Villain or the Mastermind) right now; otherwise decline.
+ * Berserk declines; the KO and Transform rewards have their own answers (WP-885 / D-24836).
  *
  * // why: WP-883 / D-24834 — a Wound is a dead card for the rest of the game, so it is worth
  * taking only for a fight the bot could not make without the +N. getLegalMoves is the single
@@ -357,6 +358,22 @@ function chooseGainWoundRewardOption(
   if (reward === undefined) {
     return GAIN_WOUND_REWARD_DECLINE_OPTION_INDEX;
   }
+  switch (reward.rewardType) {
+    case 'berserk': {
+      // why: WP-885 / D-24836 — Berserk's payoff is the hidden top card of the deck. The bot must
+      // not read it to decide, so it declines (the default).
+      return choice.defaultOptionIndex;
+    }
+    case 'optional-ko-hand-discard': {
+      return chooseGainWoundForKoOption(G, seat, reward.magnitude);
+    }
+    case 'transform': {
+      return chooseGainWoundForTransformOption(G, seat, reward.sourceCardId);
+    }
+    case 'attack': {
+      break;
+    }
+  }
   const stateWithoutSeatChoice = { ...G, pendingSeatChoice: undefined } as LegendaryGameState;
   const stateWithReward = {
     ...G,
@@ -365,6 +382,78 @@ function chooseGainWoundRewardOption(
   } as LegendaryGameState;
   if (countLegalFights(stateWithReward, seat) > countLegalFights(stateWithoutSeatChoice, seat)) {
     return GAIN_WOUND_REWARD_GAIN_OPTION_INDEX;
+  }
+  return GAIN_WOUND_REWARD_DECLINE_OPTION_INDEX;
+}
+
+/**
+ * The bot's answer to "You may gain a Wound. If you do, KO up to N other cards from your hand
+ * and/or discard pile": gain only when it already holds N cards worth thinning.
+ *
+ * // why: WP-885 / D-24836 — a Wound is a dead card; trading one for N KOs pays off only when
+ * there are at least N cost-0 cards (Wounds and the starting S.H.I.E.L.D. cards) to KO, counted
+ * before the gain. Cost reads G.cardStats the way selectDefaultOptionalKoTarget does. G is never
+ * written.
+ *
+ * @param G - The game state (read only).
+ * @param seat - The addressed seat (the active player).
+ * @param magnitude - How many cards the reward may KO.
+ * @returns The gain option when enough cost-0 cards exist, else the decline option.
+ */
+function chooseGainWoundForKoOption(G: LegendaryGameState, seat: string, magnitude: number): number {
+  const zones = G.playerZones[seat];
+  if (!zones) {
+    return GAIN_WOUND_REWARD_DECLINE_OPTION_INDEX;
+  }
+  let costZeroCount = 0;
+  for (const cardId of zones.hand) {
+    if ((G.cardStats[cardId]?.cost ?? 0) === 0) {
+      costZeroCount += 1;
+    }
+  }
+  for (const cardId of zones.discard) {
+    if ((G.cardStats[cardId]?.cost ?? 0) === 0) {
+      costZeroCount += 1;
+    }
+  }
+  if (costZeroCount >= magnitude) {
+    return GAIN_WOUND_REWARD_GAIN_OPTION_INDEX;
+  }
+  return GAIN_WOUND_REWARD_DECLINE_OPTION_INDEX;
+}
+
+/**
+ * The bot's answer to "You may gain a Wound. If you do, Transform this into <second form>": gain
+ * only when the Transform can happen.
+ *
+ * // why: WP-885 / D-24836 — the second form is a permanent deck upgrade, worth a Wound, but only
+ * when the base card is still in play and a second-form copy remains in the transform side deck
+ * (otherwise the Wound buys nothing). G is never written.
+ *
+ * @param G - The game state (read only).
+ * @param seat - The addressed seat (the active player).
+ * @param sourceCardId - The played base card.
+ * @returns The gain option when the Transform can resolve, else the decline option.
+ */
+function chooseGainWoundForTransformOption(G: LegendaryGameState, seat: string, sourceCardId: string): number {
+  const zones = G.playerZones[seat];
+  if (!zones || !zones.inPlay.includes(sourceCardId) || !G.transformTargets || !G.transformDeck) {
+    return GAIN_WOUND_REWARD_DECLINE_OPTION_INDEX;
+  }
+  const hashIndex = sourceCardId.indexOf('#');
+  let baseKey = sourceCardId;
+  if (hashIndex !== -1) {
+    baseKey = sourceCardId.slice(0, hashIndex);
+  }
+  const targetKey = G.transformTargets[baseKey];
+  if (targetKey === undefined) {
+    return GAIN_WOUND_REWARD_DECLINE_OPTION_INDEX;
+  }
+  const targetPrefix = `${targetKey}#`;
+  for (const sideDeckId of G.transformDeck) {
+    if (sideDeckId.startsWith(targetPrefix)) {
+      return GAIN_WOUND_REWARD_GAIN_OPTION_INDEX;
+    }
   }
   return GAIN_WOUND_REWARD_DECLINE_OPTION_INDEX;
 }

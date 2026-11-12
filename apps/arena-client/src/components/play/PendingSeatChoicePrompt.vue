@@ -154,10 +154,11 @@ export default defineComponent({
         case 'zarathos-demonic-essence-first':
         case 'zarathos-demonic-essence-last':
           return 'Demonic Essence of Ghost Rider — KO one of your Heroes?';
-        // why: WP-883 / D-24834 — "You may gain a Wound. If you do, you get +N Attack" (Hulk
-        // Smash!, Scalded by Sunlight). The two options carry the +N.
+        // why: WP-883 / D-24834 — "You may gain a Wound. If you do, <reward>" (Hulk Smash!, Scalded
+        // by Sunlight; WP-885 / D-24836 adds Violent Conditioning, Hulk Gets Smashed, Mood Swings).
+        // One heading for every reward (amends D-24834 §5); the two options name the reward.
         case 'gain-wound-reward':
-          return 'Gain a Wound for extra Attack?';
+          return 'Gain a Wound?';
         // why: WP-884 / D-24835 — Stalk the Night Stalkers' Hunt for Victims: the options name each
         // Bystander holder (or, with none, each hunter) and the decline.
         case 'hunt-for-victims':

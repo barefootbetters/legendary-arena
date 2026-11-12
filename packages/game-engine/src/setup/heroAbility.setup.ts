@@ -491,12 +491,23 @@ const KO_WOUND_REWARD_SEEDED_REWARDS: ReadonlySet<HeroKeyword> = new Set<HeroKey
   'recruit',
 ]);
 
-// why: WP-883 / D-24834 — the seeded reward vocabulary for gain-wound-reward. Only `attack`
-// today (co2e Hulk Smash!, mdns Scalded by Sunlight); the follow-up for the non-attack
-// "If you do" lines adds members. An unseeded reward emits no descriptor (Honest-Partial).
-// Mirrors the same constant in hero/gainWoundReward.logic.ts (two copies, per duplicate-first).
+// why: WP-883 / D-24834, WP-885 / D-24836 — the seeded HeroKeyword reward vocabulary for
+// gain-wound-reward: `attack` (co2e Hulk Smash!, mdns Scalded by Sunlight),
+// `optional-ko-hand-discard` (msis Hulk Gets Smashed) and `transform` (wwhk Mood Swings). An
+// unseeded reward emits no descriptor (Honest-Partial). Mirrors the same constant in
+// hero/gainWoundReward.logic.ts (two copies, per duplicate-first).
 const GAIN_WOUND_REWARD_SEEDED_REWARDS: ReadonlySet<HeroKeyword> = new Set<HeroKeyword>([
   'attack',
+  'optional-ko-hand-discard',
+  'transform',
+]);
+
+// why: WP-885 / D-24836 — the seeded composition-marker rewards for gain-wound-reward (wpnx
+// Violent Conditioning's "If you do, Berserk, Berserk"). Each member is a HERO_COMPOSITION_MARKERS
+// key; Berserk is not a HeroKeyword (D-24031), so it travels in the descriptor's
+// rewardComposition, not rewardType. Mirrors the same constant in hero/gainWoundReward.logic.ts.
+const GAIN_WOUND_REWARD_SEEDED_COMPOSITIONS: ReadonlySet<string> = new Set<string>([
+  'berserk',
 ]);
 
 // why: D-24148 — the shuffle-discard-empty-reward token has three segments
@@ -715,11 +726,14 @@ const SPECTRUM_CLASS_THRESHOLD = 3;
 // recruit-threshold condition (D-24354), authored on the card as `[keyword:recruit-threshold:6]`,
 // and its destination is a plain in-play swap. Every OTHER wwhk transform card carries a
 // condition the engine does NOT yet model (drew-2, discarded-≥2, KO-pile counts, combat
-// outcomes, reveal-cost, feast+KO, gain-a-Wound, …); resolving those would fire an
+// outcomes, reveal-cost, feast+KO, …); resolving those would fire an
 // UNCONDITIONAL — and therefore unfaithful — swap, so they stay unresolved markers (an
 // honest parse-unrecognized hollow, unchanged from today). Each future WP that models a
 // card's transform condition adds that card here + its condition marker. Honest-Partial
 // Invariant — mirrors the investigate resolver's static-criterion subset.
+// why: WP-885 / D-24836 — Mood Swings' gain-a-Wound condition is modelled by gain-wound-reward
+// (its Transform is the reward of a Wound gained and kept), NOT by this allowlist, which means an
+// unconditional swap. Its [keyword:Transform] is consumed by the reward pre-scan instead.
 const SUPPORTED_TRANSFORM_BASES: ReadonlySet<string> = new Set<string>([
   'wwhk/she-hulk/hurl-legal-objections',
   // why: WP-665 / D-24476 — Amadeus Cho's Gamma-Draining Nanites. Its transform gates on
@@ -1683,6 +1697,15 @@ function parseAbilityText(
     }
   }
 
+  // why: WP-885 / D-24836 — per-line pre-scan for a seeded gain-wound-reward token (the
+  // xGeneSupported / teleportOnDiscardSupported precedent). On a line whose reward is Berserk or
+  // Transform, the printed [keyword:Berserk] / [keyword:Transform] IS the reward: the Step 2 loop
+  // consumes it (no primitive, no keyword, no unresolved marker) so it never fires unconditionally
+  // and never reads as a hollow — the D-24570 reward-icon suppression's siblings.
+  const gainWoundRewardTokenReward = findSeededGainWoundRewardToken(abilityText);
+  const lineConsumesBerserkReward = gainWoundRewardTokenReward === 'berserk';
+  const lineConsumesTransformReward = gainWoundRewardTokenReward === 'transform';
+
   // Step 2: Extract [keyword:X] or [keyword:X:N] markup
   // Collect magnitudes keyed by keyword — explicit markup wins over icon-derived.
   const magnitudes: Map<string, number> = new Map();
@@ -1742,7 +1765,12 @@ function parseAbilityText(
       // before this WP — the Honest-Partial Invariant (mirrors the investigate
       // resolver above). Checked BEFORE isValidHeroKeyword so the generic push
       // does not fire for a held-back card.
-      if (transformSupported) {
+      if (lineConsumesTransformReward) {
+        // why: WP-885 / D-24836 — on a gain-wound-reward Transform line the Transform is the
+        // reward of a Wound kept: no keyword (no unconditional swap), no unresolved marker (not
+        // a hollow); recorded as resolved for the ledger (D-24045).
+        resolvedMarkers.push('transform');
+      } else if (transformSupported) {
         keywords.push('transform');
       } else {
         unresolvedMarkers.push('transform');
@@ -1897,7 +1925,12 @@ function parseAbilityText(
       // over the plain-JSON AST) forecloses both aliasing the shared registry const
       // (D-13502) and hand-literal drift. A cousin is a registry row, not an engine edit.
       const composition = HERO_COMPOSITION_MARKERS[normalizedKeyword];
-      if (composition !== undefined) {
+      if (composition !== undefined && lineConsumesBerserkReward && normalizedKeyword === 'berserk') {
+        // why: WP-885 / D-24836 — on a gain-wound-reward Berserk line each printed Berserk is the
+        // reward of a Wound kept, so no primitive is attached (no unconditional Berserk); the
+        // resolved marker is still recorded (one per token) so the ledger keeps Berserk executable.
+        resolvedMarkers.push(normalizedKeyword);
+      } else if (composition !== undefined) {
         primitiveEffects.push(structuredClone(composition));
         // why: D-24045 — record the resolved composition marker (same gate as the
         // primitiveEffects push). A static composition (berserk) always resolves here, so it
@@ -2288,6 +2321,9 @@ function parseAbilityText(
   // why: mirrors Step 2f — the gain-wound-reward token has three segments; the reward is granted
   // only for a Wound gained and kept, and the magnitude is the reward magnitude. A descriptor is
   // emitted ONLY when the reward is seeded AND n >= 1 (an unseeded reward emits nothing).
+  // why: WP-885 / D-24836 — a seeded composition reward (Berserk) is recorded as the line's
+  // composition reward instead of a rewardType; the descriptor arm emits rewardComposition.
+  let gainWoundRewardComposition: string | undefined;
   const gainWoundRewardRegex = new RegExp(GAIN_WOUND_REWARD_PATTERN.source, 'g');
   let gainWoundRewardMatch: RegExpExecArray | null = gainWoundRewardRegex.exec(abilityText);
   while (gainWoundRewardMatch !== null) {
@@ -2299,6 +2335,11 @@ function parseAbilityText(
       keywords.push('gain-wound-reward');
       magnitudes.set('gain-wound-reward', gainRewardMagnitude);
       rewardTypes.set('gain-wound-reward', gainRewardCandidate);
+    } else if (GAIN_WOUND_REWARD_SEEDED_COMPOSITIONS.has(gainRewardCandidate)
+      && gainRewardMagnitude >= 1) {
+      keywords.push('gain-wound-reward');
+      magnitudes.set('gain-wound-reward', gainRewardMagnitude);
+      gainWoundRewardComposition = gainRewardCandidate;
     }
     gainWoundRewardMatch = gainWoundRewardRegex.exec(abilityText);
   }
@@ -2890,6 +2931,10 @@ function parseAbilityText(
         const gainWoundRewardType = rewardTypes.get('gain-wound-reward');
         if (magnitude !== undefined && gainWoundRewardType !== undefined) {
           effects.push({ type: keyword, magnitude, rewardType: gainWoundRewardType });
+        } else if (magnitude !== undefined && gainWoundRewardComposition !== undefined) {
+          // why: WP-885 / D-24836 — a composition reward (Berserk) carries rewardComposition and
+          // no rewardType (Berserk is not a HeroKeyword, D-24031).
+          effects.push({ type: keyword, magnitude, rewardComposition: gainWoundRewardComposition });
         }
       } else if (keyword === 'shuffle-discard-empty-reward') {
         // why: D-24148 — the shuffle-discard-empty-reward effect carries its
@@ -3343,6 +3388,30 @@ function isValidHeroKeyword(value: string): value is HeroKeyword {
     }
   }
   return false;
+}
+
+/**
+ * Finds the reward of the line's first seeded gain-wound-reward token (WP-885 / D-24836).
+ *
+ * @param abilityText - One ability line.
+ * @returns The reward (a seeded HeroKeyword reward or a seeded composition marker) of the first
+ *   token with n >= 1 whose reward is seeded, or undefined when the line has none.
+ */
+function findSeededGainWoundRewardToken(abilityText: string): string | undefined {
+  const tokenRegex = new RegExp(GAIN_WOUND_REWARD_PATTERN.source, 'g');
+  let tokenMatch: RegExpExecArray | null = tokenRegex.exec(abilityText);
+  while (tokenMatch !== null) {
+    const rewardCandidate = tokenMatch[1]!;
+    const rewardMagnitude = parseInt(tokenMatch[2]!, 10);
+    const isSeededKeywordReward = isValidHeroKeyword(rewardCandidate)
+      && GAIN_WOUND_REWARD_SEEDED_REWARDS.has(rewardCandidate);
+    const isSeededCompositionReward = GAIN_WOUND_REWARD_SEEDED_COMPOSITIONS.has(rewardCandidate);
+    if (rewardMagnitude >= 1 && (isSeededKeywordReward || isSeededCompositionReward)) {
+      return rewardCandidate;
+    }
+    tokenMatch = tokenRegex.exec(abilityText);
+  }
+  return undefined;
 }
 
 /**

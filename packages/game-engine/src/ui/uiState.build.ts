@@ -151,6 +151,9 @@ import { WOUND_EXT_ID } from '../setup/buildInitialGameState.js';
 import { isFinalBlowAvailable } from '../mastermind/mastermind.logic.js';
 import { isMastermindHaunting } from '../board/haunt.logic.js';
 import { SHIELD_OFFICER_EXT_ID, SIDEKICK_EXT_ID } from '../setup/pilesInit.js';
+// why: WP-885 / D-24836 — the spare-a-Wound count lives in the gain-wound-reward grant leaf, which
+// imports no moves/, ui/ or simulation/ module, so this adds no import-cycle edge.
+import { isWoundSparedFromKo } from '../hero/gainWoundRewardGrant.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { buildKoEligibleTargets } from '../villain/villainEffects.execute.js';
 import { getEligibleKoDiscardCards } from '../moves/koDiscardChoice.resolve.js';
@@ -1874,6 +1877,10 @@ export function buildUIState(
       // Wounds from all three lists, matching the resolve's Wound rejection. Absent = no
       // filter, so every existing entry lists every card unchanged.
       const heroesOnly = frontReward.koHeroesOnly === true;
+      // why: WP-885 / D-24836 — koSparesGainedWound (Hulk Gets Smashed's "KO up to two OTHER
+      // cards") omits a Wound from the hand and discard lists unless hand ∪ discard hold at least
+      // two, matching the resolve's count rule (recounted from current G). Absent = no filter.
+      const sparesGainedWound = frontReward.koSparesGainedWound === true;
       // why: WP-826 / D-24759 — mirrors the discard / inPlay gates below: list hand cards ONLY
       // when the entry's koZones permits hand. Reassign to Civilian Duty's entry sets ['inPlay']
       // (a Hero you played this turn), so its hand list is empty. Absent koZones = the wide set,
@@ -1885,6 +1892,7 @@ export function buildUIState(
         for (const cardId of chooserZones.hand) {
           if (shieldOnly && !cardCountsAsShieldHero(gameState, cardId)) { continue; }
           if (heroesOnly && cardId === WOUND_EXT_ID) { continue; }
+          if (sparesGainedWound && isWoundSparedFromKo(cardId, chooserZones.hand, chooserZones.discard)) { continue; }
           eligibleHand.push({
             zone: 'hand',
             cardId,
@@ -1903,6 +1911,7 @@ export function buildUIState(
         for (const cardId of chooserZones.discard) {
           if (shieldOnly && !cardCountsAsShieldHero(gameState, cardId)) { continue; }
           if (heroesOnly && cardId === WOUND_EXT_ID) { continue; }
+          if (sparesGainedWound && isWoundSparedFromKo(cardId, chooserZones.hand, chooserZones.discard)) { continue; }
           eligibleDiscard.push({
             zone: 'discard',
             cardId,
