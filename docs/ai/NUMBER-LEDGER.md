@@ -1637,3 +1637,4 @@ section below) and the allocation protocol in
 - D-24840 — card-image-size-tiers (WP-888; tier URL = path rule off the existing image URL, tier set, manifest location. reserved 2026-11-12, claude/wp888-card-image-size-tiers-reserve)
 - D-24839 — bystander-lost-from-play-ko (WP-887; amends D-24339: which Bystander KOs count as lost, how they are recorded, and the scoringConfigVersion posture. reserved 2026-11-12, claude/bystander-lost-ko-reserve)
 - D-24841 — villain-ambush-hunt-for-victims (WP-889; a Villain's Ambush Hunt for Victims: who picks the Bystander, capture-by-this fallback, no decline. reserved 2026-11-12, claude/wp889-villain-hunt-reserve)
+- D-24843 — vision-ai-posture-and-success-proxies (operator decision, no WP; VISION §19 draws the AI line at the live match, North Star gains success proxies, §17 accessibility is correctness. reserved 2026-11-12, claude/vision-ai-posture-reserve)
