@@ -526,6 +526,7 @@ high-water: 422
 - WP-884 — hero-hunt-for-victims (Stalk the Night Stalkers: "You may have a Villain or Mastermind Hunt for Victims" + the Tech rescue line. reserved 2026-11-11, claude/wp884-hunt-for-victims-reserve; LANDED 2026-11-11)
 - WP-886 — hero-conqueror-keyword (the hero Conqueror keyword: "<City space> Conqueror N" gives +N Attack while any Villain is in that City space; amwp, anni, asrd. reserved 2026-11-11, claude/wp886-conqueror-reserve; LANDED 2026-11-11)
 - WP-888 — card-image-size-tiers (generate thumb/phone/large WebP tiers + per-set byte manifests from the staged card images, and an R2 upload script; groundwork for mobile and airplane-mode offline. reserved 2026-11-12, claude/wp888-card-image-size-tiers-reserve)
+- WP-887 — bystander-lost-from-play-ko (a Bystander KO'd from play — captured by a Villain or the Mastermind, in the Escape Pile, or in the HQ — counts as bystanderLost; supply-stack and Victory-Pile KOs do not. reserved 2026-11-12, claude/bystander-lost-ko-reserve)
 
 ## EC
 
@@ -1014,6 +1015,7 @@ high-water: 457
 - EC-922 — hero-hunt-for-victims (WP-884. reserved 2026-11-11, claude/wp884-hunt-for-victims-reserve; LANDED 2026-11-11)
 - EC-924 — hero-conqueror-keyword (WP-886. reserved 2026-11-11, claude/wp886-conqueror-reserve; LANDED 2026-11-11)
 - EC-926 — card-image-size-tiers (WP-888. reserved 2026-11-12, claude/wp888-card-image-size-tiers-reserve)
+- EC-925 — bystander-lost-from-play-ko (WP-887. reserved 2026-11-12, claude/bystander-lost-ko-reserve)
 
 ## D
 
@@ -1631,3 +1633,4 @@ section below) and the allocation protocol in
 - D-24837 — hero-conqueror-keyword (WP-886; how "+N Attack while any Villain is in <space>" maps onto the attack pool. reserved 2026-11-11, claude/wp886-conqueror-reserve; LANDED 2026-11-11)
 - D-24838 — java-not-primary-platform (operator decision, no WP; Java isn't LA's primary platform, from the studio Java cross-platform audit. reserved 2026-11-12, claude/java-not-primary-platform)
 - D-24840 — card-image-size-tiers (WP-888; tier URL = path rule off the existing image URL, tier set, manifest location. reserved 2026-11-12, claude/wp888-card-image-size-tiers-reserve)
+- D-24839 — bystander-lost-from-play-ko (WP-887; amends D-24339: which Bystander KOs count as lost, how they are recorded, and the scoringConfigVersion posture. reserved 2026-11-12, claude/bystander-lost-ko-reserve)
