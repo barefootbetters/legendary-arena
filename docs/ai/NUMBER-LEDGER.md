@@ -522,6 +522,7 @@ high-water: 422
 - WP-881 — hero-patrol-keyword (the hero Patrol keyword: "[keyword:Patrol the <space>]: If it is empty, <effect>. [If it is not, <effect>.]" gates its effects on whether that City space holds a card; mdns + ssw2. reserved 2026-11-10, claude/wp881-hero-patrol-reserve; LANDED 2026-11-11)
 - WP-882 — zarathos-discard-down-choice-and-bot-answers (Corrupted Spirit of Vengeance's "discards down to 3" becomes the player's pick; playing-seat bot answers for the Zarathos seat-choice kinds. reserved 2026-11-11, claude/zarathos-followups-reserve; LANDED 2026-11-11)
 - WP-883 — optional-gain-wound-attack-reward ("You may gain a Wound. If you do, you get +N[icon:attack]": Morbius Scalded by Sunlight's Sunlight line + co2e Hulk Smash!. reserved 2026-11-11, claude/zarathos-followups-reserve; LANDED 2026-11-11)
+- WP-884 — hero-hunt-for-victims (Stalk the Night Stalkers: "You may have a Villain or Mastermind Hunt for Victims" + the Tech rescue line. reserved 2026-11-11, claude/wp884-hunt-for-victims-reserve)
 
 ## EC
 
@@ -1006,6 +1007,7 @@ high-water: 457
 - EC-919 — hero-patrol-keyword (WP-881. reserved 2026-11-10, claude/wp881-hero-patrol-reserve; LANDED 2026-11-11)
 - EC-920 — zarathos-discard-down-choice-and-bot-answers (WP-882. reserved 2026-11-11, claude/zarathos-followups-reserve; LANDED 2026-11-11)
 - EC-921 — optional-gain-wound-attack-reward (WP-883. reserved 2026-11-11, claude/zarathos-followups-reserve; LANDED 2026-11-11)
+- EC-922 — hero-hunt-for-victims (WP-884. reserved 2026-11-11, claude/wp884-hunt-for-victims-reserve)
 
 ## D
 
@@ -1618,3 +1620,4 @@ section below) and the allocation protocol in
 - D-24832 — hero-patrol-keyword (WP-881; hero Patrol lines gate on City-space emptiness, distinct from the D-2502 board-keyword Patrol. reserved 2026-11-10, claude/wp881-hero-patrol-reserve; LANDED 2026-11-11)
 - D-24833 — zarathos-discard-down-choice-and-bot-answers (WP-882; Corrupted Spirit discard-down as a player choice + Zarathos bot answers. reserved 2026-11-11, claude/zarathos-followups-reserve; LANDED 2026-11-11)
 - D-24834 — optional-gain-wound-attack-reward (WP-883; the optional gain-a-Wound to attack reward keyword. reserved 2026-11-11, claude/zarathos-followups-reserve; LANDED 2026-11-11)
+- D-24835 — hero-hunt-for-victims (WP-884; the hero Hunt for Victims seat-choice chain, the Tech rescue flag and the Escape Pile scoring consequence. reserved 2026-11-11, claude/wp884-hunt-for-victims-reserve)
