@@ -12,7 +12,7 @@
   - `heroAbility.types.ts` `rewardType` `:151`; `types.ts` `PendingOptionalKoReward` `:1140` (`koHeroesOnly` `:1174`), `GainWoundReward` `:1626`.
   - `gainWoundReward.logic.ts` `:45` / `:56` / `:92` / `:180`; `gainWoundRewardGrant.ts` `:34` / `:72`.
   - `heroEffects.execute.ts`: `heroEffectTransform` `:6869`, `resolveTransformCardName` `:6994` (callers `:2772`, `:2773`, `:3533`, `:4129`), `formatTransformEconomyClause` `:7012`, `heroEffectGainWoundReward` `:7601` (L1 `:7631`), trace `buildHeroEffectTraceParams` `:1885-1909`, `selectDefaultOptionalKoTarget` `:7990`.
-  - Labels `divingBlock.logic.ts:291-305`, `flyingShieldBlock.logic.ts:223-236` (`buildSeatPrompt` `:230`, caller `:296`); KO readers `optionalKoReward.resolve.ts:160`, `uiState.build.ts:1876`, `ai.legalMoves.ts:745`; bot `ai.seatChoice.ts:304` (test callers `:490-505`); client `PendingSeatChoicePrompt.vue:159-160` (test `:408`); `live-verify.json:2203`.
+  - Labels `divingBlock.logic.ts:291-305`, `flyingShieldBlock.logic.ts:223-236` (`buildSeatPrompt` `:230`, caller `:296`); KO readers `optionalKoReward.resolve.ts:160`, `uiState.build.ts:1876`, `ai.legalMoves.ts:745`; bot `ai.seatChoice.ts:304` (test callers `:490-505`); client `PendingSeatChoicePrompt.vue:159-160` (test `:408`).
   - Ledger `hero-mechanic-ledger.mjs`: `BY_HOOK_KEYWORDS` `:187`, by-hook return `:375-376`, `cardResolvedKeywords` `:585-593`. `heroKeywords.ts` comments `:74`, `:125`, `:182`, `:233`.
 - [ ] Re-probe the three lines (WP Assumes 1): Violent Conditioning two ungated Berserks; Hulk Gets Smashed `gate-only`; Mood Swings `transform` unresolved.
 - [ ] Scope lock: the file set is exactly §Files to Produce; anything else needs an inline amendment (01.5).
@@ -28,7 +28,7 @@
 **Reward mechanism**
 - `GainWoundReward.rewardType`: `'attack' | 'berserk' | 'optional-ko-hand-discard' | 'transform'`; no new field.
 - Phrases (non-attack): berserk `Berserk twice` (N=2, else `Berserk {N} times`); KO label `KO up to {N} other cards from your hand or discard pile`, log `… from their hand or discard pile`; transform `Transform into {second form}` (first `{target}#` copy's display name, else `its second form`).
-- Option 0 `Gain a Wound: {label phrase}`; decline suffixes recipient ` (then {label phrase})`, other seat ` (they keep its reward)`. Heading `'Gain a Wound?'` (+ the `co2e/hulk` live-verify note). Every attack label / log byte-identical.
+- Option 0 `Gain a Wound: {label phrase}`; decline suffixes recipient ` (then {label phrase})`, other seat ` (they keep its reward)`. Heading `'Gain a Wound?'` (the `co2e/hulk` live-verify `evidence` is history; not edited). Every attack label / log byte-identical.
 - Signatures: `buildGainWoundRewardChoice(playerID, reward, G?)` (trailing optional `G`, transform name only; no `G` → `its second form`); `buildSeatPrompt` gains `G`. N1 lives in `heroEffectGainWoundReward`.
 - `buildGainWoundReward(rewardType, rewardComposition, magnitude, sourceCardId)`: seeded-set membership + an explicit `switch` (keyword path), `GAIN_WOUND_REWARD_SEEDED_COMPOSITIONS.has` + `=== 'berserk'` (composition path); no `as` casts; `rewardType` wins if both are present.
 - Ledger: for each hook effect `gain-wound-reward` with a `rewardType`, add it to `cardResolvedKeywords` (Skaar `transform` → executable). Trace copies `rewardComposition`. `heroKeywords.ts`: comment-only edits; pins stay 99 / 78.
