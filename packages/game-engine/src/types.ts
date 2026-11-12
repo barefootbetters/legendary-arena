@@ -1485,8 +1485,9 @@ export interface SeatChoiceOption {
   // leave it absent, and the applies read its absence as that option. The many other discard
   // and KO kinds that also carry it say so at their builders. WP-884 / D-24835: every City
   // 'hunt-for-victims' option carries the City occupant here (the apply re-checks that the space
-  // still holds it), and a 'hunt-for-victims-ko-hero' option carries the Hero to KO. NOT
-  // projected to the client.
+  // still holds it), and a 'hunt-for-victims-ko-hero' option carries the Hero to KO. WP-889 /
+  // D-24841: every City 'villain-hunt-for-victims' option carries it too (the villain apply
+  // re-locates it by id first). NOT projected to the client.
   cardId?: CardExtId;
   // why: WP-821 / D-24754 — for a 'dominate-the-weak-gain' option, recipientSeat names
   // the player who gains the option's HQ Hero (cardId), so one option pairs the
@@ -1510,10 +1511,12 @@ export interface SeatChoiceOption {
   // why: WP-884 / D-24835 — on a 'hunt-for-victims' option, what the option does: KO the holder's
   // last Bystander, rescue it instead (the Tech line), or have the hunter capture one. The apply
   // reads the action from this field, never from the label or position; the decline omits it.
-  // Absent for every other kind. NOT projected to the client.
+  // WP-889 / D-24841: a 'villain-hunt-for-victims' option is always 'ko' (no decline, no rescue,
+  // no capture option). Absent for every other kind. NOT projected to the client.
   huntAction?: 'ko' | 'rescue' | 'capture';
   // why: WP-884 / D-24835 — on a 'hunt-for-victims' option, the Bystander holder (ko / rescue) or
   // the hunter (capture): a City Villain (cityIndex + cardId), the Mastermind, or the Escape Pile.
+  // WP-889 / D-24841: also on every 'villain-hunt-for-victims' option (the holder).
   // Absent for every other kind. NOT projected to the client.
   huntSource?: 'city' | 'mastermind' | 'escape-pile';
 }
@@ -1623,13 +1626,18 @@ export interface PendingSeatChoice {
   // gained (and kept) through this choice earns. Read by applyGainWoundRewardSeatChoice. NOT
   // projected to the client (the option labels carry the +N).
   gainWoundReward?: GainWoundReward;
-  // why: WP-884 / D-24835 — present only on the two Hunt for Victims kinds ('hunt-for-victims' /
-  // 'hunt-for-victims-ko-hero'): the card that hunted (for the logs and the chain), and on the hunt
-  // choice whether its Tech line added the rescue options. isRescueAllowed is written only as true
-  // (omit-when-false, exactOptionalPropertyTypes). Removed with the choice. NOT projected to the client.
+  // why: WP-884 / D-24835 — present only on the Hunt for Victims kinds ('hunt-for-victims' /
+  // 'hunt-for-victims-ko-hero', and WP-889 / D-24841's 'villain-hunt-for-victims'): the card that
+  // hunted (for the logs and the chain), and on the hero hunt choice whether its Tech line added the
+  // rescue options. isRescueAllowed is written only as true (omit-when-false,
+  // exactOptionalPropertyTypes). Removed with the choice. NOT projected to the client.
   huntForVictims?: {
     sourceCardId: CardExtId;
     isRescueAllowed?: boolean;
+    // why: WP-889 / D-24841 — villain kind only: the further hunts this Villain owes after this
+    // choice resolves (Blackout's Moonlight repeat, recorded while its first hunt waits), run by
+    // resolveSeatChoice's chain. Written only when >= 1 (omit-when-absent); never projected.
+    pendingRepeats?: number;
   };
 }
 

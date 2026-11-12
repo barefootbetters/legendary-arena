@@ -110,6 +110,12 @@ import { formatEligibleCostList } from '../moves/villainDefeatRequirement.logic.
 import { grantSizeChangingToHqHero } from '../hero/sizeChangingGrant.logic.js';
 // why: WP-868 / D-24811 — the "Heroes currently in the HQ cost N less / more this turn" overlay writer.
 import { addHqCostChange } from '../hero/hqCostChange.logic.js';
+// why: WP-889 / D-24841 — the Lilin Ambush Hunt for Victims. That module imports this executor
+// back (buildKoEligibleTargets): a runtime-safe cycle, because every binding on both sides is read
+// only inside a function body (the villainFightPick precedent), never at module evaluation.
+import { huntForVictimsForVillain } from '../moves/huntForVictims.logic.js';
+// why: WP-889 / D-24841 — Blackout's `moonlight` condition reads the shared day / night helper.
+import { computeDayNight } from '../rules/dayNight.logic.js';
 import {
   WOUND_EXT_ID,
   SHIELD_AGENT_EXT_ID,
@@ -744,6 +750,16 @@ function isConditionGateSatisfied(
         return true;
       }
       pushLog(G, `${label} effect: no other ${group.groupSlug} Villain is in the City; no effect.`, 'blocked');
+      return false;
+    }
+    case 'moonlight': {
+      // why: WP-889 / D-24841 — Blackout's "If it's Moonlight, Hunt for Victims again": the shared
+      // day / night helper (the hero `moonlightInEffect` reader). Read when this descriptor's gate is
+      // checked, after the first hunt resolved or parked; a hunt never changes the HQ.
+      if (computeDayNight(G) === 'moonlight') {
+        return true;
+      }
+      pushLog(G, `${label} effect: it is not Moonlight; no effect.`, 'blocked');
       return false;
     }
     default: {
@@ -5145,6 +5161,9 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'look-other-player-deck-top-claim-current': villainEffectLookOtherPlayerDeckTopClaimCurrent,
   'reveal-villain-deck-defeat-low-vp-current': villainEffectRevealVillainDeckDefeatLowVpCurrent,
   'give-card-to-right-player-current': villainEffectGiveCardToRightPlayerCurrent,
+  // why: WP-889 / D-24841 — position 52: the Lilin Ambush Hunt for Victims (Skinner, Meatmarket,
+  // Blackout). Keyword-less, self-narrating through the WP-884 module's helpers.
+  'villain-hunt-for-victims': villainEffectHuntForVictims,
 };
 
 /**
@@ -5443,6 +5462,29 @@ function villainEffectRevealVillainDeckDefeatLowVpCurrent(
     cardId,
   );
   return { targets: [], pending: true };
+}
+
+/**
+ * villain-hunt-for-victims primitive — the revealed Villain Hunts for Victims (WP-889 / D-24841:
+ * the Lilin Skinner, Meatmarket and Blackout Ambush). KO a Bystander captured by any Villain or the
+ * Mastermind or in the Escape Pile (the active player picks the holder when two or more hold one),
+ * else this Villain captures one.
+ *
+ * Resolves or parks through `huntForVictimsForVillain`, which self-narrates. A keyword-less
+ * descriptor never reaches the executor's `results`, so `ambushResolved.appliedEffects` and the
+ * hash shape are unchanged.
+ *
+ * @returns `{ targets: [] }` always.
+ */
+function villainEffectHuntForVictims(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+): VillainEffectApplication {
+  // why: WP-889 / D-24841 RS-1 — the hunt is mandatory (no "may"), so the module resolves it now
+  // or parks the active player's holder pick; nothing is reported as a target.
+  huntForVictimsForVillain(G, currentPlayer, cardId);
+  return { targets: [] };
 }
 
 /**

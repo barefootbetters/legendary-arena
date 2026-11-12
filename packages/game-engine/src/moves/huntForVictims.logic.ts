@@ -20,8 +20,14 @@
  * The hunt choice is parked by the `hunt-for-victims` hero handler at play. The Hero pick chains
  * from `resolveSeatChoice`'s live move context, reading its input BEFORE the apply (the Commune /
  * Crush precedent). Every apply re-checks its holder or card, so a stale option is a logged no-op
- * and no Hero is KO'd without a Bystander KO. The villain / mastermind Hunt for Victims (Lilin,
- * Lilith) is a follow-up that reuses this module's helpers.
+ * and no Hero is KO'd without a Bystander KO.
+ *
+ * WP-889 / D-24841 adds the villain side for the Lilin Ambush lines that print only the hunt
+ * (Skinner, Meatmarket, and Blackout with its Moonlight repeat): the mandatory
+ * `villain-hunt-for-victims` choice (KO mode only, no decline, default the Escape Pile), resolved
+ * without a prompt when at most one holder has a Bystander, and the Villain itself captures one
+ * when none does. Outcast's and Sister Nil's Ambush second sentences and Lilith's tactics and
+ * Master Strike remain follow-ups.
  *
  * No boardgame.io import, no registry, no .reduce(), never throws. Imported bindings are read only
  * inside function bodies (this module sits in import cycles with seatChoice.resolve and
@@ -41,6 +47,7 @@ import { buildKoEligibleTargets } from '../villain/villainEffects.execute.js';
 import { recordOwnedCardKoed } from '../hero/deferredConditionalGrants.js';
 import { pushLog } from '../log/logPush.js';
 import { describeKoSourceZone, formatCardRef, resolveCardName } from '../log/logDisplay.js';
+import { getVillainHooksForCard } from '../rules/villainAbility.types.js';
 
 // why: WP-884 / D-24835 — the seat-choice kind of the hunt choice (KO / rescue / capture / decline),
 // a string literal so the import cycle with seatChoice.resolve never reads it before it is defined.
@@ -50,6 +57,10 @@ export const HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND = 'hunt-for-victims';
 // Bystander KO or rescue.
 /** The seat-choice kind for the KO-a-Hero pick after a Hunt for Victims KO. */
 export const HUNT_FOR_VICTIMS_KO_HERO_SEAT_CHOICE_KIND = 'hunt-for-victims-ko-hero';
+// why: WP-889 / D-24841 — the seat-choice kind of the Lilin villain hunt's holder pick (KO mode
+// only, no decline), a string literal for the same import-cycle reason.
+/** The seat-choice kind for a Villain's Hunt for Victims holder pick. */
+export const VILLAIN_HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND = 'villain-hunt-for-victims';
 
 const DECLINE_HUNT_LABEL = "Don't Hunt for Victims";
 const DECLINE_KO_HERO_LABEL = "Don't KO a Hero";
@@ -132,7 +143,7 @@ function cityBystanders(G: LegendaryGameState, cardId: CardExtId): CardExtId[] {
  * @param isRescueAllowed - Whether the Tech line added the rescue twins.
  * @returns The options, or [] when no holder has a Bystander.
  */
-function buildKoModeOptions(G: LegendaryGameState, isRescueAllowed: boolean): SeatChoiceOption[] {
+export function buildKoModeOptions(G: LegendaryGameState, isRescueAllowed: boolean): SeatChoiceOption[] {
   const options: SeatChoiceOption[] = [];
   // why: WP-884 / D-24835 RS-2 — City options come from G.city occupants, never from the
   // G.attachedBystanders keys, so the Mastermind's mirror key is never offered as a City holder.
@@ -298,7 +309,7 @@ function readSubmittedOption(choice: PendingSeatChoice): { seat: string; option:
  * @param option - A hunt option.
  * @returns true when the holder (still the same City occupant) has a Bystander.
  */
-function huntHolderHasBystander(G: LegendaryGameState, option: SeatChoiceOption): boolean {
+export function huntHolderHasBystander(G: LegendaryGameState, option: SeatChoiceOption): boolean {
   if (option.huntSource === 'city') {
     // why: WP-884 / D-24835 RS-7 — the space must still hold the option's Villain.
     if (option.cityIndex === undefined || option.cardId === undefined || G.city[option.cityIndex] !== option.cardId) {
@@ -343,7 +354,7 @@ export function readHuntForVictimsWillKoBystander(G: LegendaryGameState, choice:
  * @param option - A hunt option.
  * @returns The phrase.
  */
-function describeHuntedBystander(G: LegendaryGameState, option: SeatChoiceOption): string {
+export function describeHuntedBystander(G: LegendaryGameState, option: SeatChoiceOption): string {
   if (option.huntSource === 'city' && option.cityIndex !== undefined && option.cardId !== undefined) {
     return `a Bystander held by ${describeCityVillain(G, option.cityIndex, option.cardId)}`;
   }
@@ -391,7 +402,7 @@ function removeMastermindMirrorCopy(G: LegendaryGameState, bystanderId: CardExtI
  * @param option - A ko / rescue hunt option.
  * @returns The Bystander taken, or undefined (nothing moved) when the option is stale.
  */
-function takeHuntedBystander(G: LegendaryGameState, option: SeatChoiceOption): CardExtId | undefined {
+export function takeHuntedBystander(G: LegendaryGameState, option: SeatChoiceOption): CardExtId | undefined {
   if (!huntHolderHasBystander(G, option)) {
     return undefined;
   }
@@ -584,4 +595,292 @@ export function applyHuntForVictimsKoHeroResolvedSeatChoice(G: LegendaryGameStat
   // waiting Absorb Energies / Possessed by Brother's Spirit grant reacts at the next onMove resolve.
   recordOwnedCardKoed(G, seat, cardId, sourceZone);
   pushLog(G, `Player ${seat} KO'd ${heroName} from ${describeKoSourceZone(sourceZone)} for ${cardRef}.`, 'applied');
+}
+
+// ---------------------------------------------------------------------------
+// Villain Hunt for Victims (WP-889 / D-24841): Skinner, Meatmarket, Blackout
+// ---------------------------------------------------------------------------
+
+/**
+ * The default target of a Villain's hunt: the Escape Pile option when present, else the first
+ * option.
+ *
+ * @param options - The KO-mode options (at least one).
+ * @returns The default option's index.
+ */
+function defaultVillainHuntOptionIndex(options: SeatChoiceOption[]): number {
+  // why: WP-889 / D-24841 — the default (timeout, autoplay, sim, PAR, bot ally, collision) is the
+  // Escape Pile: an escaped Bystander is already lost to the players, while a City or Mastermind
+  // Bystander can still be rescued by a fight. Else index 0 (City ascending, then the Mastermind).
+  for (let optionIndex = 0; optionIndex < options.length; optionIndex++) {
+    if (options[optionIndex]!.huntSource === 'escape-pile') {
+      return optionIndex;
+    }
+  }
+  return 0;
+}
+
+/**
+ * Takes the holder's last Bystander for a Villain's hunt and KOs it (the one villain-hunt KO site).
+ *
+ * @param G - The game state, mutated in place.
+ * @param cardId - The Hunting Villain (for the log).
+ * @param option - A KO-mode option whose holder still has a Bystander.
+ * @returns true when a Bystander was KO'd; false (nothing moved) when the option is stale.
+ */
+export function koVillainHuntedBystander(G: LegendaryGameState, cardId: CardExtId, option: SeatChoiceOption): boolean {
+  // why: the phrase is read before the take, while the holder still holds the Bystander.
+  const bystanderPhrase = describeHuntedBystander(G, option);
+  const bystanderId = takeHuntedBystander(G, option);
+  if (bystanderId === undefined) {
+    return false;
+  }
+  // why: WP-889 / D-24841 — the one villain-hunt KO site, routed exactly as the hero hunt's KO
+  // (applyHuntForVictimsResolvedSeatChoice). A from-play Bystander KO site for D-24839 (WP-887).
+  // KOing an escaped Bystander lowers PAR's derived bystanderLost and Midtown Bank Robbery's
+  // carried-away count, as the printed card allows; no scoring weight changes.
+  G.ko = koCard(G.ko, bystanderId);
+  pushLog(G, `${formatCardRef(G.cardDisplayData, cardId)} Hunted for Victims: ${bystanderPhrase} was KO'd.`, 'applied', cardId);
+  return true;
+}
+
+/**
+ * Resolves a Villain's hunt when no holder has a Bystander: "this captures a Bystander instead".
+ *
+ * @param G - The game state, mutated in place.
+ * @param cardId - The Hunting Villain, which captures the top supply Bystander.
+ */
+export function resolveVillainHuntWithoutChoice(G: LegendaryGameState, cardId: CardExtId): void {
+  const cardRef = formatCardRef(G.cardDisplayData, cardId);
+  if (G.piles.bystanders.length === 0) {
+    pushLog(G, `${cardRef} found no Bystander to Hunt for Victims, and the Bystander supply is empty.`, 'blocked', cardId);
+    return;
+  }
+  // why: WP-889 / D-24841 RS-1 — "this" is the Hunting Villain, so the capture needs no choice; it
+  // must still be in the City (G.city.indexOf, the Haunt handler precedent).
+  if (G.city.indexOf(cardId) === -1) {
+    pushLog(G, `${cardRef} could not capture a Bystander — it is not in the City.`, 'blocked', cardId);
+    return;
+  }
+  // why: top of the supply = index 0 (D-21501), the capture-bystander Ambush template.
+  const result = attachBystanderToVillain(G.piles.bystanders, cardId, G.attachedBystanders ?? {});
+  G.piles.bystanders = result.bystandersPile;
+  G.attachedBystanders = result.attachedBystanders;
+  pushLog(G, `${cardRef} Hunted for Victims: no Bystander to KO, so it captured a Bystander.`, 'applied', cardId);
+}
+
+/**
+ * KOs the default target of a Villain's hunt, or captures when no holder is left.
+ *
+ * @param G - The game state, mutated in place.
+ * @param cardId - The Hunting Villain.
+ */
+function resolveVillainHuntAtDefault(G: LegendaryGameState, cardId: CardExtId): void {
+  const options = buildKoModeOptions(G, false);
+  if (options.length === 0) {
+    resolveVillainHuntWithoutChoice(G, cardId);
+    return;
+  }
+  koVillainHuntedBystander(G, cardId, options[defaultVillainHuntOptionIndex(options)]!);
+}
+
+/**
+ * The open seat choice when it is this Villain's own unsubmitted hunt (Blackout's repeat while its
+ * first hunt waits).
+ *
+ * @param G - The game state to inspect (not mutated).
+ * @param cardId - The Hunting Villain.
+ * @returns The open choice, or undefined when it is absent, another kind, another card's, or answered.
+ */
+function readOpenOwnVillainHunt(G: LegendaryGameState, cardId: CardExtId): PendingSeatChoice | undefined {
+  const choice = G.pendingSeatChoice;
+  if (
+    choice === undefined ||
+    choice.kind !== VILLAIN_HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND ||
+    choice.huntForVictims?.sourceCardId !== cardId
+  ) {
+    return undefined;
+  }
+  const seat = choice.addressedSeats[0];
+  if (seat === undefined || choice.submissions[seat] !== undefined) {
+    return undefined;
+  }
+  return choice;
+}
+
+/**
+ * A Villain Hunts for Victims (rules v23 L1548-1553): KO a Bystander captured by any Villain or the
+ * Mastermind or in the Escape Pile; if it can't, it captures a Bystander instead. Mandatory.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The active player, who picks the holder when two or more hold one.
+ * @param cardId - The Hunting Villain.
+ */
+export function huntForVictimsForVillain(G: LegendaryGameState, currentPlayer: string, cardId: CardExtId): void {
+  const cardRef = formatCardRef(G.cardDisplayData, cardId);
+  // why: WP-889 / D-24841 RS-1 step 4 — Blackout's Moonlight repeat while its own first hunt waits:
+  // record it on that choice so it runs after the choice resolves (RS-3b), in printed order. Checked
+  // first, before any option is built.
+  const openOwnHunt = readOpenOwnVillainHunt(G, cardId);
+  if (openOwnHunt !== undefined && openOwnHunt.huntForVictims !== undefined) {
+    openOwnHunt.huntForVictims = {
+      ...openOwnHunt.huntForVictims,
+      pendingRepeats: (openOwnHunt.huntForVictims.pendingRepeats ?? 0) + 1,
+    };
+    pushLog(G, `${cardRef} will Hunt for Victims again after this choice.`, 'neutral', cardId);
+    return;
+  }
+  const options = buildKoModeOptions(G, false);
+  if (options.length === 0) {
+    resolveVillainHuntWithoutChoice(G, cardId);
+    return;
+  }
+  // why: one holder means no choice to make (the WP-875 / D-24822 lone-option precedent).
+  if (options.length === 1) {
+    koVillainHuntedBystander(G, cardId, options[0]!);
+    return;
+  }
+  const defaultOptionIndex = defaultVillainHuntOptionIndex(options);
+  // why: WP-889 / D-24841 RS-1 step 6 — parkSeatChoice overwrites unconditionally, so an unrelated
+  // open choice (a chained reveal) is never overwritten: the mandatory hunt takes its default target.
+  if (G.pendingSeatChoice !== undefined) {
+    pushLog(G, `${cardRef} Hunted for Victims at its default target — another choice is open.`, 'neutral', cardId);
+    koVillainHuntedBystander(G, cardId, options[defaultOptionIndex]!);
+    return;
+  }
+  // why: rules v23 ~L3316-3320 — the player whose turn it is makes the choice; the hunting seat is
+  // the active player, so no stage ride (events undefined, D-24648). No decline: no "may".
+  parkSeatChoice(G, undefined, {
+    kind: VILLAIN_HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND,
+    addressedSeats: [currentPlayer],
+    seatPrompts: { [currentPlayer]: { options } },
+    submissions: {},
+    // why: WP-889 / D-24841 — the default is the Escape Pile, else the first option.
+    defaultOptionIndex,
+    huntForVictims: { sourceCardId: cardId },
+  });
+  pushLog(G, `Player ${currentPlayer} must choose which Bystander ${cardRef} Hunts.`, 'neutral', cardId);
+}
+
+/**
+ * Re-locates a submitted City option by its Villain's id (a chained reveal later in the same move
+ * can shift it before the prompt is shown). A copy; the shared helpers are unchanged.
+ *
+ * @param G - The game state to inspect (not mutated).
+ * @param option - The submitted option.
+ * @returns The option with its current cityIndex, the option itself when not a City option, or
+ *   undefined when its Villain is no longer in the City.
+ */
+function relocateVillainHuntOption(G: LegendaryGameState, option: SeatChoiceOption): SeatChoiceOption | undefined {
+  if (option.huntSource !== 'city') {
+    return option;
+  }
+  if (option.cardId === undefined) {
+    return undefined;
+  }
+  const cityIndex = G.city.indexOf(option.cardId);
+  if (cityIndex === -1) {
+    return undefined;
+  }
+  return { ...option, cityIndex };
+}
+
+/**
+ * Applies a submitted villain hunt: KOs the chosen holder's last Bystander, or, when the pick went
+ * stale, re-resolves the mandatory hunt at its default (or captures).
+ *
+ * @param G - The game state, mutated in place.
+ * @param choice - The fully-submitted 'villain-hunt-for-victims' seat choice.
+ */
+export function applyVillainHuntForVictimsResolvedSeatChoice(G: LegendaryGameState, choice: PendingSeatChoice): void {
+  const submitted = readSubmittedOption(choice);
+  const sourceCardId = choice.huntForVictims?.sourceCardId;
+  if (submitted === undefined || sourceCardId === undefined) {
+    return;
+  }
+  // why: WP-889 / D-24841 RS-3 — the holder is read from the option's fields, never its label or
+  // index; a City option is re-located by id first.
+  const option = relocateVillainHuntOption(G, submitted.option);
+  if (option !== undefined && huntHolderHasBystander(G, option)) {
+    koVillainHuntedBystander(G, sourceCardId, option);
+    return;
+  }
+  // why: the hunt is mandatory (no "may"), so a stale pick re-resolves without parking rather than
+  // dropping; the hero hunt's stale no-op is unchanged (its line says "may").
+  pushLog(G, `${formatCardRef(G.cardDisplayData, sourceCardId)}'s chosen Bystander is no longer there, so it Hunts its default target.`, 'neutral', sourceCardId);
+  resolveVillainHuntAtDefault(G, sourceCardId);
+}
+
+/**
+ * Reads, BEFORE the apply, the further hunts a villain hunt choice owes.
+ *
+ * @param choice - The fully-submitted seat choice.
+ * @returns The seat, the Hunting Villain and the repeats owed, or undefined when none are owed.
+ */
+export function readVillainHuntRepeats(
+  choice: PendingSeatChoice,
+): { seat: string; sourceCardId: CardExtId; repeats: number } | undefined {
+  if (choice.kind !== VILLAIN_HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND) {
+    return undefined;
+  }
+  const seat = choice.addressedSeats[0];
+  const sourceCardId = choice.huntForVictims?.sourceCardId;
+  const repeats = choice.huntForVictims?.pendingRepeats ?? 0;
+  if (seat === undefined || sourceCardId === undefined || repeats < 1) {
+    return undefined;
+  }
+  return { seat, sourceCardId, repeats };
+}
+
+/**
+ * Runs the hunts a resolved villain hunt owed (Blackout's Moonlight repeat), in the live move
+ * context after the choice is cleared. A run that parks a new choice carries the rest on it.
+ *
+ * @param G - The game state, mutated in place.
+ * @param seat - The active player.
+ * @param sourceCardId - The Hunting Villain.
+ * @param repeats - The hunts still owed (at least 1).
+ */
+export function chainVillainHuntRepeats(G: LegendaryGameState, seat: string, sourceCardId: CardExtId, repeats: number): void {
+  for (let run = 0; run < repeats; run++) {
+    // why: a choice another chain already opened is never this run's park (the hunt then takes its
+    // default target, RS-1 step 6), so only a choice that appears during this run stops the loop.
+    const wasChoiceOpen = G.pendingSeatChoice !== undefined;
+    huntForVictimsForVillain(G, seat, sourceCardId);
+    const parked = G.pendingSeatChoice;
+    if (wasChoiceOpen || parked === undefined) {
+      continue;
+    }
+    // why: WP-889 / D-24841 RS-3b — this run parked a new holder pick, so the repeats still owed
+    // ride on it (omitted when 0) and run after it resolves, in printed order.
+    const owed = repeats - run - 1;
+    if (owed >= 1 && parked.huntForVictims !== undefined) {
+      parked.huntForVictims = { ...parked.huntForVictims, pendingRepeats: owed };
+    }
+    return;
+  }
+}
+
+/**
+ * Whether a Villain's Ambush carries an UNCONDITIONAL villain-hunt descriptor (no condition, no
+ * City-space gate), so the overlay names the hunt only when no gate could skip it.
+ *
+ * @param G - The game state to inspect (not mutated).
+ * @param cardId - The revealed Villain.
+ * @returns true when its onAmbush hook has an unconditional `villain-hunt-for-victims` descriptor.
+ */
+export function villainAmbushHuntsForVictims(G: LegendaryGameState, cardId: CardExtId): boolean {
+  // why: WP-889 / D-24841 RS-6 — narrow test states may omit the hook table; read it defensively.
+  for (const hook of getVillainHooksForCard(G.villainAbilityHooks ?? [], cardId, 'onAmbush')) {
+    for (const descriptor of hook.effects) {
+      if (
+        descriptor.primitive === 'villain-hunt-for-victims' &&
+        descriptor.requireCondition === undefined &&
+        descriptor.requireCitySpaces === undefined
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
 }

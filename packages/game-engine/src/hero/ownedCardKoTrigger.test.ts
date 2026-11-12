@@ -389,6 +389,9 @@ const LOCKED_TABLE: Record<string, KoSiteCounts> = {
   // x/0), and the KO-a-Hero pick that follows KOs from the hand or discard pile (owned, 1/1).
   'moves/huntForVictims.logic.ts#applyHuntForVictimsResolvedSeatChoice': { koSites: 1, ownedRecords: 0 },
   'moves/huntForVictims.logic.ts#applyHuntForVictimsKoHeroResolvedSeatChoice': { koSites: 1, ownedRecords: 1 },
+  // why: WP-889 / D-24841 — a Lilin Villain's Hunt for Victims KOs a captured or escaped Bystander
+  // (not an owned card, x/0) at one site shared by the no-choice, collision and apply paths.
+  'moves/huntForVictims.logic.ts#koVillainHuntedBystander': { koSites: 1, ownedRecords: 0 },
   'moves/optionalKoReward.resolve.ts#resolveOptionalKoReward': { koSites: 1, ownedRecords: 1 },
   'moves/revealThreeAssign.resolve.ts#applyRevealThreeDisposition': { koSites: 1, ownedRecords: 1 },
   'moves/revealTopDispose.resolve.ts#resolveRevealTopDispose': { koSites: 1, ownedRecords: 1 },

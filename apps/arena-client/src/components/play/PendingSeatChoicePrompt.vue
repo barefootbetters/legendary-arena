@@ -166,6 +166,10 @@ export default defineComponent({
         // name each Hero and its zone.
         case 'hunt-for-victims-ko-hero':
           return 'KO a Hero from your hand or discard pile?';
+        // why: WP-889 / D-24841 — a Lilin Villain's mandatory Hunt for Victims: the options name each
+        // Bystander holder; no decline (the rules text has no "may").
+        case 'villain-hunt-for-victims':
+          return "Hunt for Victims: choose which Bystander is KO'd";
         default:
           return 'Your choice';
       }
