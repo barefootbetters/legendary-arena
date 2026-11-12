@@ -844,7 +844,7 @@
           "attack": "1+",
           "recruit": null,
           "abilities": [
-            "Streets Conqueror 1",
+            "[keyword:Streets Conqueror 1]",
             "Draw a card. [keyword:draw:1]"
           ]
         },
@@ -859,7 +859,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "Bridge Conqueror 1",
+            "[keyword:Bridge Conqueror 1]",
             "[hc:ranged]: You get +2[icon:attack]."
           ]
         },

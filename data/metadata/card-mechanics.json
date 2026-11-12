@@ -201,19 +201,6 @@
       "hidden": true
     },
     {
-      "slug": "bridge",
-      "label": "Bridge",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 3,
-      "cardIds": [
-        "anni/super-skrull",
-        "asrd/valkyrie",
-        "asrd/warriors-three-the"
-      ],
-      "hidden": true
-    },
-    {
       "slug": "burn-shards",
       "label": "Burn Shards",
       "scope": "hero",
@@ -261,8 +248,9 @@
       "label": "Conqueror",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 5,
+      "cardCount": 6,
       "cardIds": [
+        "amwp/freedom-fighters",
         "amwp/jentorra",
         "anni/heralds-of-galactus",
         "anni/super-skrull",
@@ -2025,17 +2013,6 @@
       "hidden": true
     },
     {
-      "slug": "rooftops",
-      "label": "Rooftops",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 1,
-      "cardIds": [
-        "anni/super-skrull"
-      ],
-      "hidden": true
-    },
-    {
       "slug": "rooftops-abomination",
       "label": "Rooftops Abomination",
       "scope": "hero",
@@ -2249,18 +2226,6 @@
       "cardCount": 1,
       "cardIds": [
         "core/rogue"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "streets",
-      "label": "Streets",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 2,
-      "cardIds": [
-        "anni/super-skrull",
-        "asrd/valkyrie"
       ],
       "hidden": true
     },
@@ -2834,6 +2799,7 @@
     },
     "amwp/freedom-fighters": {
       "mechanics": [
+        "conqueror",
         "draw",
         "next-hand-extra-draw"
       ]
@@ -2893,11 +2859,8 @@
     },
     "anni/super-skrull": {
       "mechanics": [
-        "bridge",
         "conqueror",
-        "focus",
-        "rooftops",
-        "streets"
+        "focus"
       ]
     },
     "antm/ant-man": {
@@ -2964,15 +2927,12 @@
     },
     "asrd/valkyrie": {
       "mechanics": [
-        "bridge",
         "conqueror",
-        "streets",
         "thrown-artifact"
       ]
     },
     "asrd/warriors-three-the": {
       "mechanics": [
-        "bridge",
         "conqueror",
         "draw",
         "optional-ko-hand-discard"

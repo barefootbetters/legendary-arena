@@ -22,6 +22,7 @@ import type { MatchSetupConfig } from '../matchSetup.types.js';
 import {
   PATROL_SPACE_EMPTY_CONDITION_TYPE,
   PATROL_SPACE_OCCUPIED_CONDITION_TYPE,
+  CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE,
 } from '../hero/heroConditions.evaluate.js';
 
 // ---------------------------------------------------------------------------
@@ -2685,5 +2686,111 @@ describe('buildHeroAbilityHooks — hero Patrol lines (WP-881 / D-24832)', () =>
       }
     }
     assert.ok(patrolHookCount > 0, 'the data must carry Patrol hooks');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Hero Conqueror lines (WP-886 / D-24837)
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — hero Conqueror lines (WP-886 / D-24837)', () => {
+  it('base line: Transparent Motives is +1 attack under conquerorSpaceHasVillain(bank)', () => {
+    const hooks = patrolCardHooks('anni', 'super-skrull', 'transparent-motives');
+    assert.deepEqual(hooks[0]!.conditions, [{ type: 'conquerorSpaceHasVillain', value: 'bank' }]);
+    assert.deepEqual(hooks[0]!.effects, [{ type: 'attack', magnitude: 1 }]);
+    assert.deepEqual(hooks[0]!.keywords, ['attack', 'conditional']);
+    assert.equal(hooks[0]!.timing, 'onPlay');
+    assert.equal(hooks[0]!.unresolvedMarkers, undefined);
+  });
+
+  it('gated line: Rock Solid is +1 attack under [hc:strength] AND the Sewers', () => {
+    const hooks = patrolCardHooks('anni', 'super-skrull', 'rock-solid');
+    assert.deepEqual(hooks[0]!.conditions, [
+      { type: 'heroClassMatch', value: 'strength' },
+      { type: 'conquerorSpaceHasVillain', value: 'sewers' },
+    ]);
+    assert.deepEqual(hooks[0]!.effects, [{ type: 'attack', magnitude: 1 }]);
+    assert.equal(hooks[0]!.keywords.filter((keyword) => keyword === 'conditional').length, 1);
+  });
+
+  it('Instead pair: Volstagg is +1 on the Bridge, plus +2 (3 - 1) under [hc:instinct] AND the Bridge', () => {
+    const hooks = patrolCardHooks('asrd', 'warriors-three-the', 'volstagg-the-valiant');
+    assert.equal(hooks.length, 2);
+    assert.deepEqual(hooks[0]!.conditions, [{ type: 'conquerorSpaceHasVillain', value: 'bridge' }]);
+    assert.deepEqual(hooks[0]!.effects, [{ type: 'attack', magnitude: 1 }]);
+    assert.deepEqual(hooks[1]!.conditions, [
+      { type: 'heroClassMatch', value: 'instinct' },
+      { type: 'conquerorSpaceHasVillain', value: 'bridge' },
+    ]);
+    assert.deepEqual(hooks[1]!.effects, [{ type: 'attack', magnitude: 2 }]);
+  });
+
+  it('Flying Stallion is +1 on the Rooftops (the card prints Rooftops, not Streets)', () => {
+    const hooks = patrolCardHooks('asrd', 'valkyrie', 'flying-stallion');
+    assert.deepEqual(hooks[0]!.conditions, [{ type: 'conquerorSpaceHasVillain', value: 'rooftops' }]);
+    assert.deepEqual(hooks[0]!.effects, [{ type: 'attack', magnitude: 1 }]);
+  });
+
+  it('honest hollows grant nothing and record the Card Map slugs', () => {
+    const putToTheTorch = patrolCardHooks('anni', 'super-skrull', 'put-to-the-torch');
+    assert.equal(putToTheTorch.length, 3);
+    assert.equal(putToTheTorch[2]!.effects, undefined);
+    assert.equal(putToTheTorch[2]!.conditions, undefined);
+    assert.deepEqual(putToTheTorch[2]!.unresolvedMarkers, ['rooftops-conqueror']);
+
+    const stardust = patrolCardHooks('anni', 'heralds-of-galactus', 'stardust');
+    assert.equal(stardust[0]!.effects, undefined);
+    assert.deepEqual(stardust[0]!.unresolvedMarkers, ['focus']);
+
+    const dragonfang = patrolCardHooks('asrd', 'valkyrie', 'dragonfang');
+    assert.equal(dragonfang[0]!.effects, undefined);
+    assert.deepEqual(dragonfang[0]!.unresolvedMarkers, ['thrown-artifact', 'sewers-conqueror']);
+
+    for (const hook of [...putToTheTorch, ...stardust, ...dragonfang]) {
+      const hasConquerorCondition = (hook.conditions ?? []).some((condition) => condition.type === CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE);
+      if (hook.unresolvedMarkers !== undefined) {
+        assert.equal(hasConquerorCondition, false, `${hook.cardId}: a hollow carries no Conqueror condition`);
+      }
+    }
+  });
+
+  it('an Instead line with no same-space base line is an honest hollow (gated and ungated)', () => {
+    const gated = parseRestrictedCard('test', 'test-hero', 'test-card', [
+      '[keyword:Bank Conqueror 1]',
+      '[hc:instinct]: Instead, [keyword:Bridge Conqueror 3]',
+    ]);
+    assert.equal(gated.length, 2);
+    assert.deepEqual(gated[1]!.conditions, [{ type: 'heroClassMatch', value: 'instinct' }]);
+    assert.deepEqual(gated[1]!.keywords, ['conditional']);
+    assert.equal(gated[1]!.effects, undefined);
+    assert.deepEqual(gated[1]!.unresolvedMarkers, ['bridge-conqueror']);
+
+    const ungated = parseRestrictedCard('test', 'test-hero', 'test-card', ['Instead, [keyword:Streets Conqueror 2]']);
+    assert.equal(ungated.length, 1);
+    assert.equal(ungated[0]!.conditions, undefined);
+    assert.deepEqual(ungated[0]!.keywords, []);
+    assert.equal(ungated[0]!.effects, undefined);
+    assert.deepEqual(ungated[0]!.unresolvedMarkers, ['streets-conqueror']);
+  });
+
+  it('a line with any other text is not a Conqueror line (the ^…$ anchors)', () => {
+    const hooks = parseRestrictedCard('test', 'test-hero', 'test-card', [
+      'You may gain a Wound. If you do, you get [keyword:Bridge Conqueror 4].',
+    ]);
+    assert.equal(attackEffectsOf(hooks).length, 0);
+    for (const hook of hooks) {
+      assert.equal((hook.conditions ?? []).some((condition) => condition.type === CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE), false);
+    }
+  });
+
+  it('no hook shares an effects / conditions array with another hook or copy (D-13502)', () => {
+    const firstCopy = patrolCardHooks('asrd', 'warriors-three-the', 'volstagg-the-valiant', 0);
+    const secondCopy = patrolCardHooks('asrd', 'warriors-three-the', 'volstagg-the-valiant', 1);
+    assert.notStrictEqual(firstCopy[0]!.conditions, firstCopy[1]!.conditions);
+    assert.notStrictEqual(firstCopy[0]!.effects, firstCopy[1]!.effects);
+    for (let hookIndex = 0; hookIndex < firstCopy.length; hookIndex++) {
+      assert.notStrictEqual(firstCopy[hookIndex]!.conditions, secondCopy[hookIndex]!.conditions);
+      assert.notStrictEqual(firstCopy[hookIndex]!.effects, secondCopy[hookIndex]!.effects);
+    }
   });
 });

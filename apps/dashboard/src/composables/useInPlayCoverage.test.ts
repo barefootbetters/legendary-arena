@@ -734,10 +734,21 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // being gate-only; feed regenerated: 7510 -> 7496 raw observations). totalObs holds at 8715 (each
   // key's baseline peak keeps it), and hunt-for-victims' baseline peak of 13 MOVES into resolvedObs:
   // 1141 -> 1154, so percentResolved 13.1 -> 13.2 (1154 / 8715). A mechanic-status re-pin.
+  // 2026-11-11 (WP-886 / D-24837, re-pin): hero Conqueror lines grant their Attack and the 13
+  // damaged Conqueror card lines are restored, so the hero ledger's `conqueror` rows flip to
+  // `condition` for all six heroes and the phantom `bridge` / `streets` / `rooftops` rows go. The
+  // sweep's conqueror hollows leave the feed (conqueror 45, bridge-conqueror 14, bridge 13,
+  // streets 65, rooftops 9 -> 0) and Put to the Torch's Wound line now records rooftops-conqueror
+  // (0 -> 7); focus 926 -> 927, thrown-artifact 255 -> 256 (feed regenerated: 7496 -> 7357 raw
+  // observations). totalObs 8715 -> 8724 (+9: rooftops-conqueror 7, focus 1, thrown-artifact 1
+  // above their baseline peaks). The folded `conqueror` family now reads `condition`, so its
+  // baseline peaks (conqueror 45 + bridge-conqueror 14) and rooftops-conqueror's 7 MOVE into
+  // resolvedObs: 1154 -> 1220, so percentResolved 13.2 -> 14 (1220 / 8724). The bare bridge /
+  // streets / rooftops keys keep their baseline peaks unresolved. A mechanic-status re-pin.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8715);
-  assert.equal(view.resolvedObs.value, 1154);
-  assert.equal(view.percentResolved.value, 13.2);
+  assert.equal(view.totalObs.value, 8724);
+  assert.equal(view.resolvedObs.value, 1220);
+  assert.equal(view.percentResolved.value, 14);
   assert.ok(view.remaining.value.length > 0);
 });
 

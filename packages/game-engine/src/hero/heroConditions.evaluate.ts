@@ -71,6 +71,14 @@ export const NON_GREY_HERO_DECK_KO_CONDITION_TYPE = 'nonGreyHeroKoedFromDeckThis
 export const PATROL_SPACE_EMPTY_CONDITION_TYPE = 'patrolSpaceEmpty';
 export const PATROL_SPACE_OCCUPIED_CONDITION_TYPE = 'patrolSpaceOccupied';
 
+// why: WP-886 / D-24837 — the literal for a hero "[keyword:<Space> Conqueror N]" line ("You get
+// +N [Attack] if any Villain is on the <Space>", rules v23 L1157-1159). Its evaluation matches
+// patrolSpaceOccupied today, but it is a distinct type so the Firelord follow-up ("your Heroes'
+// Conqueror abilities also give you Attack if those city spaces have been destroyed") can pass
+// Conqueror on a destroyed space without touching Patrol, and so the hero mechanic ledger can
+// classify `conqueror` by its own condition. condition.value is the CitySpaceName.
+export const CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE = 'conquerorSpaceHasVillain';
+
 // ---------------------------------------------------------------------------
 // Patrol helpers (WP-881 / D-24832)
 // ---------------------------------------------------------------------------
@@ -113,6 +121,22 @@ function describeFailedPatrolCondition(G: LegendaryGameState, condition: HeroCon
     return `there's a card in the ${spaceLabel}`;
   }
   return `nothing is in the ${spaceLabel}`;
+}
+
+/**
+ * Describes why a Conqueror condition failed, for the "… did not activate[ one of its
+ * abilities] — …" log line (WP-886 / D-24837).
+ *
+ * @param G - Current game state (read-only).
+ * @param condition - The failed conquerorSpaceHasVillain condition.
+ * @returns The clause naming the space and why the Conqueror bonus did not apply.
+ */
+function describeFailedConquerorCondition(G: LegendaryGameState, condition: HeroCondition): string {
+  const spaceLabel = condition.value.charAt(0).toUpperCase() + condition.value.slice(1);
+  if (patrolSpaceIndex(G, condition.value) === -1) {
+    return `there is no ${spaceLabel} in the City`;
+  }
+  return `no Villain is in the ${spaceLabel}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -553,6 +577,20 @@ export function evaluateCondition(
     case PATROL_SPACE_OCCUPIED_CONDITION_TYPE: {
       // why: WP-881 / D-24832 — the "If it's not, …" mirror of the case above; a missing space
       // fails this one too.
+      const spaceIndex = patrolSpaceIndex(G, condition.value);
+      return spaceIndex !== -1 && G.city[spaceIndex] !== null;
+    }
+
+    case CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE: {
+      // why: WP-886 / D-24837 — hero Conqueror (rules v23 L1157-1159): "Bridge Conqueror 1" means
+      // "You get +1 [Attack] if any Villain is on the Bridge", the same "if" every hero ability
+      // resolves when it is used (L2603-2610), so G.city is read as the hook resolves, never
+      // cached. A destroyed / removed space no longer exists, so Conqueror does nothing there
+      // (L1481-1485, D-24764): patrolSpaceIndex returns -1 and this fails. Every G.city occupant
+      // is a Villain (each writer places a villain / henchman / Mandarin's Ring, swaps or moves
+      // an existing occupant, clears a space, or builds an empty City; Locations are not in
+      // G.city — WP-886 §Assumes 4), so "a card is in the space" means "a Villain is". NOT a
+      // wait-and-see type: a Villain entering the space later in the turn does not fire it.
       const spaceIndex = patrolSpaceIndex(G, condition.value);
       return spaceIndex !== -1 && G.city[spaceIndex] !== null;
     }
@@ -1120,6 +1158,11 @@ export function describeFailedCondition(
     case PATROL_SPACE_OCCUPIED_CONDITION_TYPE:
       // why: WP-881 / D-24832 — a boolean board-state gate on one named City space.
       return describeFailedPatrolCondition(G, condition);
+
+    case CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE:
+      // why: WP-886 / D-24837 — a boolean board-state gate on one named City space; it names a
+      // Villain rather than Patrol's "nothing".
+      return describeFailedConquerorCondition(G, condition);
 
     default:
       return `its play condition could not be evaluated (unrecognized condition type "${condition.type}")`;
