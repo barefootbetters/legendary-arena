@@ -66,7 +66,9 @@ last-reviewed: 2026-11-12
 Airplane mode would let a player download one solo match setup (its
 mastermind, scheme, villains, henchmen, heroes and the shared cards) and then
 play it start to finish with no connection. Today that isn't possible: every
-match runs on the server and the browser only renders. The work is mostly in
+match runs on the server and the browser only renders.
+
+The work is mostly in
 the arena-client: run the existing engine in the browser for a single-seat
 match, cache the app and the setup's card art, and save the game on the
 device. The engine's determinism (D-0002) is what makes offline play
@@ -181,7 +183,8 @@ Each of these would need an offline answer:
 - Give one storage page with delete.
 - Resume interrupted downloads.
 - Refresh quietly over Wi-Fi.
-- Make the expiry rule one plain line, if there's an expiry at all.
+- If there's an expiry at all, make it one plain line that applies to every
+  setup.
 
 **Avoid:**
 
@@ -191,7 +194,7 @@ Each of these would need an offline answer:
 - A login wall in front of solo play.
 - Silently losing a finished game's result.
 
-**Where we beat Hearthstone:**
+**Where we can beat Hearthstone:**
 
 - Solo works with no connection.
 - A result earned offline still counts once it's verified on reconnect.
