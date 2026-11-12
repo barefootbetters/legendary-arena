@@ -186,7 +186,7 @@ function readFlag(argv, name, fallback) {
  *
  * @param {string} repoRoot - The repository root.
  */
-function loadR2CredentialsFromDotEnv(repoRoot) {
+export function loadR2CredentialsFromDotEnv(repoRoot) {
   const wantedKeys = ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'];
   let hasAllKeys = true;
   for (const key of wantedKeys) {

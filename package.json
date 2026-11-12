@@ -91,6 +91,10 @@
 
     "metadata:upload":      "node scripts/upload-metadata-to-r2.mjs",
     "metadata:upload:test": "node --import tsx --test scripts/upload-metadata-to-r2.test.ts",
+    "images:sizes":         "node scripts/build-card-image-sizes.mjs",
+    "images:sizes:pull":    "node scripts/card-image-sizes-r2.mjs pull",
+    "images:sizes:push":    "node scripts/card-image-sizes-r2.mjs push",
+    "images:sizes:test":    "node --import tsx --test scripts/build-card-image-sizes.test.ts scripts/card-image-sizes-r2.test.ts",
     "themes:check-slugs":   "node scripts/check-theme-slug-resolution.mjs",
     "themes:check-slugs:check": "node scripts/check-theme-slug-resolution.mjs --check"
   },
@@ -102,6 +106,7 @@
     "@legendary-arena/game-engine": "workspace:*",
     "@legendary-arena/registry": "workspace:*",
     "pagefind": "1.5.2",
+    "sharp": "^0.33.5",
     "tsx": "^4.15.7",
     "typescript": "^5.4.5"
   },

@@ -20,6 +20,9 @@ importers:
       pagefind:
         specifier: 1.5.2
         version: 1.5.2
+      sharp:
+        specifier: ^0.33.5
+        version: 0.33.5
       tsx:
         specifier: ^4.15.7
         version: 4.21.0

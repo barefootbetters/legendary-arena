@@ -25,7 +25,9 @@ source:
   - ../docs/ai/DECISIONS.md
   - ../apps/arena-client/src/composables/useCardImagePrefetch.ts
   - ../docs/ops/RUNBOOK-r2-image-cache-control.md
-last-reviewed: 2026-09-01
+  - ../scripts/build-card-image-sizes.mjs
+  - ../scripts/card-image-sizes-r2.mjs
+last-reviewed: 2026-11-12
 ---
 
 # R2 Image Naming Convention
@@ -330,6 +332,51 @@ The lesson that generalises: **the stored `imageUrl` is the contract, not the
 object name.** Renaming an image means copy-to-new-key → repoint the stored
 URL → verify → only then delete the old key. Never rename first.
 
+### Size tiers
+
+Every card face also exists in three smaller WebP sizes (WP-888 /
+[D-24840](../docs/ai/DECISIONS.md)). Each one sits in a tier folder inside the
+set's directory and keeps the original's file name:
+
+```
+{R2_BASE_URL}/{setAbbr}/{file}.webp            original (unchanged)
+{R2_BASE_URL}/{setAbbr}/thumb/{file}.webp      long edge 280 px  (board, hand, City, HQ)
+{R2_BASE_URL}/{setAbbr}/phone/{file}.webp      long edge 840 px  (phone zoom; the airplane-mode download)
+{R2_BASE_URL}/{setAbbr}/large/{file}.webp      long edge 1680 px (desktop and 4K zoom)
+```
+
+- **A tier URL is a path rule, not a card-data field.** Insert `/{tier}` before
+  the final path segment of the card's `imageUrl`
+  (`tierUrlFor` in [`build-card-image-sizes.mjs`](../scripts/build-card-image-sizes.mjs)).
+  No card JSON, registry schema or `UIState` field carries a tier URL, so every
+  existing `imageUrl` consumer keeps working.
+- **Sizes are by long edge and never enlarged.** A source smaller than a tier is
+  re-encoded at its own size, and every tier is written for every card, so the
+  path rule never branches.
+- **A published tier never changes.** Tier objects are served `immutable` like
+  the originals. A different size or quality ships as a **new tier name** with a
+  new D-entry, never as new bytes under an existing tier key.
+
+**The per-set manifest** lists each card's file and the URL, bytes, width and
+height of the original and each tier, plus per-tier byte totals (schema version
+1). It lives at:
+
+```
+{R2_BASE_URL}/metadata/image-sizes/{setAbbr}.json
+```
+
+It sits under `metadata/`, not under the set prefix, because the set prefixes
+are stamped `immutable` and `image/webp` in bulk
+([runbook](../docs/ops/RUNBOOK-r2-image-cache-control.md)) and the manifest is
+rewritten in place. It carries the five-minute `metadata/` cache.
+
+**The rename corollary.** Tiers inherit the original's content-addressed name, so
+the copy → repoint → verify → delete recipe above covers them too. After any R2
+rename of a set's originals, re-run `images:sizes:pull`, `images:sizes` and
+`images:sizes:push` for that set; never reuse a key for new art. How to run the
+three commands is in [Card Image Acquisition › Running the size
+step](card-image-acquisition.md#running-the-size-step).
+
 ## Delivery & Caching
 
 The naming convention above makes every card image **content-addressed**: a given
@@ -469,6 +516,11 @@ uploads.
 - [`scripts/convert-cards/convert-cards-v15.mjs`](../scripts/convert-cards/convert-cards-v15.mjs)
   — assigns the `mm` / `me` / `mt` / `vi` / `hm` / `sc` / `by` / `wd` ribbons
   and writes `imageUrl` into the generated card JSON.
+- [`scripts/build-card-image-sizes.mjs`](../scripts/build-card-image-sizes.mjs)
+  — `TIER_CONFIG`, `tierUrlFor` and the per-set manifest (WP-888 / D-24840).
+- [`scripts/card-image-sizes-r2.mjs`](../scripts/card-image-sizes-r2.mjs)
+  — pulls the originals the card data references and pushes the tiers and
+  manifests (copy only).
 
 ## Data Files
 
@@ -502,6 +554,9 @@ uploads.
   the fix that mattered here is bucket E — `wtif`'s S.H.I.E.L.D. hero sides read
   their `sa`/`tr`/`so` URLs from `wtif.patch.json` in `apply-card-counts.mjs`
   rather than mis-synthesizing them as `wtif-hr-agent-agent` (see Edge Cases).
+- 2026-11-12 — WP-888 / D-24840 added the `thumb` / `phone` / `large` size
+  tiers under `{setAbbr}/{tier}/` and the per-set byte manifests under
+  `metadata/image-sizes/` (see "Size tiers").
 
 ## References
 
