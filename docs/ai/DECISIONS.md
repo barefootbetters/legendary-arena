@@ -51136,4 +51136,25 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24837 (#3293). Related: D-13502, D-24026, D-24295, D-24377, D-24443, D-24570, D-24598, D-24623, D-24764, D-24832, D-24834.
 
 ---
+
+### D-24838 — Java isn't Legendary Arena's primary platform; the game stays on its TypeScript stack, with store builds wrapping the web client (operator decision, no WP) (Active 2026-11-12)
+
+**Status:** Active (governance) 2026-11-12. Records a platform call; changes no code.
+
+**User-Visible Surface:** none.
+
+**Context.** The studio's Java cross-platform audit (bb-studio-dashboard `docs/research/java-cross-platform-audit.md`, 2026-11-12) tested Java, with libGDX as the strongest option, as a foundation for Legendary Arena, Herbs vs. Ailments, and the studio's ArcGIS work: where Java runs (desktop, Raspberry Pi, Android, iOS, smart TVs, browsers), how it's packaged and sold, and what could be shared.
+
+**Decision (Jeff, 2026-11-12, "Accept, log them").**
+1. **Java isn't adopted as Legendary Arena's primary platform,** for the rules, the server, or the client. The stack stays as `docs/02-ARCHITECTURE.md` lists it: TypeScript, boardgame.io (locked), Vue 3, Socket.IO, Node, and PostgreSQL.
+2. **Store builds wrap the web client** (Capacitor, Electron, or Tauri) rather than adding a native Java client.
+3. **A rendered or 3D arena, if one is ever wanted, is prototyped in a web renderer first,** so the client keeps the engine's language. Godot, not libGDX, is the comparison for a substantially 3D client.
+
+**Why.** The audit found that a Java client couldn't share the TypeScript rules and their determinism guarantees (D-0002) or speak boardgame.io's client protocol without reimplementing it, and that a card table needs no Java graphics. libGDX's iOS backend holds shared code to Java 8 syntax and Java 7 APIs, its browser backends are a community TeaVM port or GWT at Java 11, and Java doesn't run at all on Roku, Apple TV, or the Vega-based Fire TV sticks. For a 3D client, libGDX's 3D stack has no editor and relies on a one-maintainer PBR add-on.
+
+**Not changed.** Code, CI, deploys, and every existing decision.
+
+**Reserved by:** NUMBER-LEDGER D-24838 (claude/java-not-primary-platform). Related: D-0002 (determinism), WP-061 (client framework lock).
+
+---
 Protect this file.
