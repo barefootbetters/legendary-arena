@@ -528,7 +528,6 @@ high-water: 422
 - WP-888 — card-image-size-tiers (generate thumb/phone/large WebP tiers + per-set byte manifests from the staged card images, and an R2 upload script; groundwork for mobile and airplane-mode offline. reserved 2026-11-12, claude/wp888-card-image-size-tiers-reserve)
 - WP-887 — bystander-lost-from-play-ko (a Bystander KO'd from play — captured by a Villain or the Mastermind, in the Escape Pile, or in the HQ — counts as bystanderLost; supply-stack and Victory-Pile KOs do not. reserved 2026-11-12, claude/bystander-lost-ko-reserve)
 - WP-889 — villain-ambush-hunt-for-victims (Lilin Ambush "Hunt for Victims" on Skinner, Meatmarket and Blackout (Outcast and Sister Nil deferred): the Villain Hunts for Victims, reusing the WP-884 helpers. reserved 2026-11-12, claude/wp889-villain-hunt-reserve)
-- WP-889 — villain-ambush-hunt-for-victims (Lilin Ambush "Hunt for Victims" on Skinner, Meatmarket, Outcast, Sister Nil and Blackout: the Villain Hunts for Victims, reusing the WP-884 helpers. reserved 2026-11-12, claude/wp889-villain-hunt-reserve)
 
 ## EC
 
