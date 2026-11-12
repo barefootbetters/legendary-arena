@@ -18,6 +18,7 @@ related:
   - ip-licensing.md
   - lagn-v1.md
   - scoring.md
+  - seed-challenges.md
   - responsive-viewport-targets.md
 status: draft
 source:
@@ -73,8 +74,8 @@ checked by the server when the player is back online.
 
 ### Recommendation
 
-- **Candidate scope for a first version:** single-seat solo, no bot ally,
-  unranked, in the browser as an installable web app (a PWA). The player picks a
+- **Candidate scope for a first version:** single-seat solo, no bot ally, in
+  the browser as an installable web app (a PWA). The player picks a
   setup, taps **Download for airplane mode**, sees the size first, and gets a
   **Ready offline** badge when it's done.
 - **Candidate architecture:**
@@ -274,9 +275,10 @@ for the decision in gate 1, not this page.
 
 Finished offline games go into a results queue. On reconnect, each record goes
 to a new server endpoint. The server replays it with the real engine (the
-D-24119 replay pattern). If it replays legally to the claimed end, the game
-counts for personal stats and history as **Offline (unranked)**. Queued
-analytics events go out with it.
+D-24119 replay pattern). If it replays legally to the claimed end, the result
+is recorded like any other finished game. How verified offline results count
+toward leaderboards and seed challenges is open question 4. Queued analytics
+events go out with it.
 
 The endpoint is new, so its row in
 [`api-endpoints.md`](../docs/ai/REFERENCE/api-endpoints.md) would land with
@@ -299,7 +301,7 @@ it.
 |---|---|
 | Online multiplayer, guest seats, lobby | Online only. Hidden offline, with one line saying why |
 | Bot ally | Online only in version 1. The policies could run on the device later, but that needs its own decision against DESIGN-SOLO-BOT-ALLY |
-| Ranked / competitive scores, seed challenges, leaderboard | Online only. Offline results are unranked |
+| Score submission, seed challenges, leaderboard | Submitted from the results queue once the replay verifies; how they count is open question 4 |
 | Coach, battle plan | Wait for a connection |
 | Phone-to-phone offline play | Future. Leave room by keeping the match record transport-neutral (setup + seed + log), which a later peer transport could exchange. Not built |
 
@@ -315,7 +317,7 @@ it.
 | 2 | On-device save and resume | Kill the tab mid-turn, reopen offline, and the game resumes on the same turn with the same deck order |
 | 3 | Any setup: the download button, the size label (manifest or HEAD), and the badge | The label's bytes match what Cache Storage ends up holding. Every image in the setup renders offline |
 | 4 | The storage page and delete | Deleting one of two setups that share heroes keeps the shared images |
-| 5 | The results queue, the replay-verify endpoint, and the "Offline (unranked)" history entry | A finished offline game appears in history after reconnect. A tampered log is rejected |
+| 5 | The results queue, the replay-verify endpoint, and recording verified results | A finished offline game appears in history after reconnect. A tampered log is rejected |
 | 6 | Caching viewed cards online, image-size setting, optional audio | The size cap holds, and the setting changes what downloads |
 
 DevTools checks that apply to every slice:
@@ -351,10 +353,12 @@ The phone test matters because iOS behaves differently (see Edge Cases).
 
 ## Edge Cases
 
-- **The device knows its seed.** With a device-generated seed, a player can in
-  principle read future shuffles or reload to retry a turn. That's harmless
-  for solo practice. It's why offline results stay unranked, even though
-  replay verification proves the moves were legal.
+- **The device knows its seed.** A device-generated seed means the device
+  could in principle read future shuffles. Seed challenges publish their seed
+  by design ([Seed Challenges](seed-challenges.md)), so a known seed doesn't by
+  itself make a result unfair. Replay verification proves every move was
+  legal. Saving after every move means a reload returns the same game rather
+  than a retry.
 - **iOS storage eviction.** WebKit's 2020 policy deletes script-writable
   storage (IndexedDB and Cache Storage included) after 7 days without use in
   Safari. Web apps added to the Home Screen were treated differently
@@ -399,8 +403,8 @@ The phone test matters because iOS behaves differently (see Edge Cases).
 3. **Rights and expiry:** do the digital rights allow caching art on devices?
    Do they require an expiry or periodic check-in, and if so, what window?
    (Spotify uses 30 days, YouTube 29, Google Maps a year.)
-4. **Offline results:** unranked history only, or also seed-challenge PAR
-   comparisons marked "offline"?
+4. **Offline results:** do verified offline games count toward leaderboards
+   and seed challenges the same as online games, or differently?
 
 **Facts to settle by spike:**
 
