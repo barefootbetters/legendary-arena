@@ -10,6 +10,10 @@
 
 ## Current State
 
+### Java isn't the game's primary platform; it stays on its TypeScript stack (D-24838, operator decision, no WP) (2026-11-12)
+
+**No user-visible change.** Jeff accepted the studio Java audit's recommendation (bb-studio-dashboard `docs/research/java-cross-platform-audit.md`): no Java rules, server, or client; store builds wrap the web client; a 3D arena, if wanted, is prototyped in a web renderer first, with Godot as the comparison.
+
 ### Hero Conqueror lines give +N Attack when a Villain holds their City space; 13 damaged Conqueror card lines restored (WP-886 / EC-924, D-24837) (2026-11-11)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Sixteen hero Conqueror lines on fourteen cards (amwp Jentorra and Freedom Fighters, anni Heralds of Galactus and Super-Skrull, asrd Valkyrie and the Warriors Three) now give their Attack: "Bridge Conqueror 1" adds +1 Attack when you play the card with a Villain on the Bridge. Put to the Torch gives +1 for each of the Bridge and Streets holding a Villain; Firelord gives +2 with a Bridge Villain after another Ranged Hero; Volstagg the Valiant gives +1, or +3 after another Instinct Hero. With the space empty nothing is added and the log says why ("Player 0's Transparent Motives did not activate one of its abilities — no Villain is in the Bank."; a City without that space reads "there is no Bridge in the City"). The board is read once when the line resolves; the Attack stays if that Villain is defeated later in the turn, and a Villain arriving later does not add it. The in-game card text shows the restored lines ("Sewers Conqueror 1" where it read a bare "Conqueror"; Flying Stallion now reads Rooftops, as printed).

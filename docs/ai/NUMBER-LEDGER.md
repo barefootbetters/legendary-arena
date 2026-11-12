@@ -1627,3 +1627,4 @@ section below) and the allocation protocol in
 - D-24836 — gain-wound-nonattack-rewards (WP-885; berserk / ko-other / transform gain-wound-reward members. reserved 2026-11-11, claude/wp885-gain-wound-nonattack-reserve)
 - D-24835 — hero-hunt-for-victims (WP-884; the hero Hunt for Victims seat-choice chain, the Tech rescue flag and the Escape Pile scoring consequence. reserved 2026-11-11, claude/wp884-hunt-for-victims-reserve; LANDED 2026-11-11)
 - D-24837 — hero-conqueror-keyword (WP-886; how "+N Attack while any Villain is in <space>" maps onto the attack pool. reserved 2026-11-11, claude/wp886-conqueror-reserve; LANDED 2026-11-11)
+- D-24838 — java-not-primary-platform (operator decision, no WP; Java isn't LA's primary platform, from the studio Java cross-platform audit. reserved 2026-11-12, claude/java-not-primary-platform)
