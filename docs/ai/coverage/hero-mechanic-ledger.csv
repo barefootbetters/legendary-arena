@@ -417,7 +417,8 @@ mdns/blade-daywalker,"Blade, Daywalker",mdns,patrol,condition,WP-881,D-24832,,hu
 mdns/blade-daywalker,"Blade, Daywalker",mdns,reveal-top-may-ko,executable,WP-754,D-24581,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-may-ko,hunt-high-and-low
 mdns/blade-daywalker,"Blade, Daywalker",mdns,sunlight,condition,,,,creature-of-dawn-and-dusk
 mdns/elsa-bloodstone,Elsa Bloodstone,mdns,blood-frenzy,unsupported,,,,vengeance-of-the-bloodstone-gem
-mdns/elsa-bloodstone,Elsa Bloodstone,mdns,hunt-for-victims,unsupported,,,,stalk-the-night-stalkers
+mdns/elsa-bloodstone,Elsa Bloodstone,mdns,hunt-for-victims,executable,WP-884,D-24835,packages/game-engine/src/hero/heroEffects.execute.ts#hunt-for-victims,stalk-the-night-stalkers
+mdns/elsa-bloodstone,Elsa Bloodstone,mdns,hunt-for-victims-rescue,executable,WP-884,D-24835,packages/game-engine/src/hero/heroEffects.execute.ts#hunt-for-victims-rescue,stalk-the-night-stalkers
 mdns/elsa-bloodstone,Elsa Bloodstone,mdns,patrol,condition,WP-881,D-24832,,axe-of-the-slayer|silver-bullets|vengeance-of-the-bloodstone-gem
 mdns/morbius,Morbius,mdns,blood-frenzy,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#blood-frenzy,insatiable-craving|its-morbin-time|mesmerize
 mdns/morbius,Morbius,mdns,blood-frenzy-recruit,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#blood-frenzy-recruit,mesmerize

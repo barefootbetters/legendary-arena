@@ -32,6 +32,11 @@ import {
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { parkHeistShuffleChoice } from '../hero/heistPayloads.logic.js';
 import { buildGainWoundRewardChoice } from '../hero/gainWoundReward.logic.js';
+import {
+  buildHuntForVictimsOptions,
+  HUNT_FOR_VICTIMS_KO_HERO_SEAT_CHOICE_KIND,
+  HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND,
+} from '../moves/huntForVictims.logic.js';
 
 /**
  * Minimal G carrying only the fields the builders and the policy read.
@@ -562,5 +567,98 @@ describe('WP-883 choosePlayingSeatChoiceOption — gain-wound-reward (D-24834)',
     });
     withChoice(untagged, flyingShieldBlockChoice());
     assert.equal(choosePlayingSeatChoiceOption(untagged, '1'), 0);
+  });
+});
+
+describe('WP-884 choosePlayingSeatChoiceOption — Hunt for Victims (D-24835)', () => {
+  const VILLAIN = 'test/villain/hand-ninjas#0';
+  const BYSTANDER = 'pile-bystander';
+
+  /**
+   * A hunt choice built by the engine's own option builder over the given holders.
+   *
+   * @param holders - Which holders have a Bystander.
+   * @param isRescueAllowed - Whether the Tech line added the rescue twins.
+   * @returns The state with the choice open for seat 0.
+   */
+  function huntState(
+    holders: { city?: boolean; mastermind?: boolean; escapePile?: boolean },
+    isRescueAllowed: boolean,
+  ): LegendaryGameState {
+    const G = makeState({ '0': [] }, {
+      city: [null, VILLAIN, null, null, null],
+      attachedBystanders: holders.city === true ? { [VILLAIN]: [BYSTANDER] } : {},
+      mastermind: { tacticsDefeated: [], baseCardId: 'core-mastermind-loki', attachedBystanders: holders.mastermind === true ? [BYSTANDER] : [] },
+      escapedPile: holders.escapePile === true ? [BYSTANDER] : [],
+      piles: { bystanders: [BYSTANDER], wounds: [], officers: [], sidekicks: [] },
+    });
+    const options = buildHuntForVictimsOptions(G, isRescueAllowed);
+    return withChoice(G, {
+      kind: HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND,
+      addressedSeats: ['0'],
+      seatPrompts: { '0': { options } },
+      submissions: {},
+      defaultOptionIndex: options.length - 1,
+      huntForVictims: { sourceCardId: 'mdns/elsa-bloodstone/stalk-the-night-stalkers#0', isRescueAllowed: true },
+    });
+  }
+
+  /**
+   * The (huntAction, huntSource) of the option the playing bot picks.
+   *
+   * @param G - The state with the hunt choice open.
+   * @returns "action/source", or "decline".
+   */
+  function pick(G: LegendaryGameState): string {
+    const option = G.pendingSeatChoice!.seatPrompts['0']!.options[choosePlayingSeatChoiceOption(G, '0')!]!;
+    if (option.huntAction === undefined) {
+      return 'decline';
+    }
+    return `${option.huntAction}/${option.huntSource}`;
+  }
+
+  it('rescues from the Escape Pile, else KOs from it, else takes another rescue, else declines', () => {
+    assert.equal(pick(huntState({ city: true, mastermind: true, escapePile: true }, true)), 'rescue/escape-pile');
+    assert.equal(pick(huntState({ city: true, mastermind: true, escapePile: true }, false)), 'ko/escape-pile');
+    assert.equal(pick(huntState({ city: true, mastermind: true }, true)), 'rescue/city');
+    assert.equal(pick(huntState({ mastermind: true }, true)), 'rescue/mastermind');
+    assert.equal(pick(huntState({ city: true, mastermind: true }, false)), 'decline', 'never a Villain or Mastermind KO');
+    assert.equal(pick(huntState({}, false)), 'decline', 'never a capture');
+  });
+
+  it('getLegalMoves keeps the decline default', () => {
+    const G = huntState({ escapePile: true }, true);
+    const moves = getLegalMoves(G, { phase: 'play', turn: 1, currentPlayer: '0', numPlayers: 1 });
+    assert.deepEqual(moves, [{ name: 'resolveSeatChoice', args: { optionIndex: G.pendingSeatChoice!.defaultOptionIndex } }]);
+  });
+
+  it('the KO-a-Hero pick KOs a 0-cost Hero, else declines', () => {
+    const koHeroChoice = (): PendingSeatChoice => ({
+      kind: HUNT_FOR_VICTIMS_KO_HERO_SEAT_CHOICE_KIND,
+      addressedSeats: ['0'],
+      seatPrompts: {
+        '0': {
+          options: [
+            { label: 'KO Expensive (discard pile)', cardId: 'test/hero/expensive#0', sourceZone: 'discard' },
+            { label: 'KO S.H.I.E.L.D. Agent (hand)', cardId: 'starting-shield-agent', sourceZone: 'hand' },
+            { label: "Don't KO a Hero" },
+          ],
+        },
+      },
+      submissions: {},
+      defaultOptionIndex: 2,
+      huntForVictims: { sourceCardId: 'mdns/elsa-bloodstone/stalk-the-night-stalkers#0' },
+    });
+    const withAgent = withChoice(makeState({ '0': [] }, {
+      cardStats: { 'test/hero/expensive#0': makeCardStatEntry({ cost: 6 }), 'starting-shield-agent': makeCardStatEntry({ cost: 0 }) },
+    }), koHeroChoice());
+    assert.equal(choosePlayingSeatChoiceOption(withAgent, '0'), 1);
+    const noZeroCost = koHeroChoice();
+    noZeroCost.seatPrompts['0']!.options.splice(1, 1);
+    noZeroCost.defaultOptionIndex = 1;
+    const withoutAgent = withChoice(makeState({ '0': [] }, {
+      cardStats: { 'test/hero/expensive#0': makeCardStatEntry({ cost: 6 }) },
+    }), noZeroCost);
+    assert.equal(choosePlayingSeatChoiceOption(withoutAgent, '0'), 1, 'the decline');
   });
 });
