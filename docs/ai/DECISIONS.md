@@ -51157,4 +51157,25 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24838 (claude/java-not-primary-platform). Related: D-0002 (determinism), WP-061 (client framework lock).
 
 ---
+
+### D-24843 — VISION draws the AI line at the live match, names success proxies under the North Star, and makes accessibility a correctness concern (operator decision, no WP) (Active 2026-11-12)
+
+**Context.** An external review (Grok, 2026-11-12) of the ewiki Vision page proposed eight changes. §19 said "No in-game AI assistance or prompting — all AI interaction is external and player-initiated", but the Legendary Pass endgame coach (D-24403 / D-24404) is in-product AI that has shipped, so the vision and the product contradicted each other. Three of the eight changes were adopted.
+
+**Decision (Jeff, 2026-11-12, "Apply all three").**
+1. **§19: the AI line is the live match.** During a match, no AI hints, strategic advice, or auto-play acts for or advises a human player (Primary Goals 3 and 4). After the match, AI analysis is open commercial space: external LLM analysis of exports, in-product coaching such as the endgame coach, and AI-assisted authoring tools (non-merit-bearing per §19a), any of which may be paid. They change no game state, so they are not NG-1 power purchases. No AI output feeds a score, ranking, badge, or PAR value unless it is deterministic and replay-verifiable (§22, §24); that qualifier keeps the seeded PAR-simulation policy (§26) in bounds.
+2. **North Star: "How we know it's working."** One measurable proxy per existing success condition (completed-match rate and returning verified players; set-release-to-playable lag; verified submissions, verification failures, disputes, and organized-play events; contribution margin after royalties and runway). The vision names what is measured, never a target; figures live on the operator dashboard, and dated aspiration stays in `docs/05-ROADMAP.md` per D-24204.
+3. **§17:** accessibility of the core rules experience is a correctness concern, not polish, the same standard §16 sets for performance.
+
+**Declined.**
+- **A larger §10b.** It already covers player-authored content, exports, public data, and organized play; conduct and moderation strategy lives in the ewiki Tribe and Trust pages.
+- **A first-15-minutes player promise and a risk register.** Both date quickly, so they are the wrong altitude for the vision (D-24204's reasoning). A register would also list the licensor relationship as a risk in a contributor-facing document.
+- **"When two secondary goals conflict, prefer trust and portability."** A new rule, and the cases it covers are already governed: trust is Primary Goal 3, and data portability is the firm half of §12a.
+- **A formal annual review cadence.** The ewiki page's same-commit mirror rule plus a correct "Last updated" line covers it.
+
+**Not changed.** Code, CI, the coach, and every non-goal. The ewiki Vision page mirrors the change in the same commit and gathers the vision's existing tiebreak rules in one place (presentation only).
+
+**Reserved by:** NUMBER-LEDGER D-24843 (claude/vision-ai-posture-reserve). Related: D-24204, D-24403, D-24404.
+
+---
 Protect this file.

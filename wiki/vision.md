@@ -68,7 +68,12 @@ are served by the public game documentation, not this page.
   and expands the game for decades. Success is sustained high-quality
   play, content that keeps pace with the physical game, a
   self-sustaining competitive ecosystem, and revenue that funds
-  operations and royalties without compromising a primary goal.
+  operations and royalties without compromising a primary goal. Each
+  condition names a measurable proxy (completed-match rate and
+  returning verified players; set-release-to-playable lag; verified
+  submissions, verification failures, disputes, and organized-play
+  events; contribution margin after royalties and runway). The figures
+  live on the operator dashboard; the vision sets no targets (D-24843).
 - **The player promise** — exact rules, real cards, verifiable
   fairness, skill over grind, no pay-to-win; your results are yours and
   your data is portable. Close decisions break toward what a player who
@@ -221,10 +226,18 @@ primary goal.
   work; bugs treated as execution-contract violations; explicit
   decisions with no silent drift; a codebase approachable without
   tribal knowledge.
-- **Player experience (16–19b)** — performance as a correctness
-  concern; accessibility that never confers advantage; replay and
-  spectation as first-class; machine-readable exports for *external*,
-  player-initiated LLM analysis (no in-game AI assistance).
+- **Player experience (16–19b)** — performance and accessibility as
+  correctness concerns, not polish (accessibility never confers
+  advantage); replay and spectation as first-class; machine-readable
+  exports built for external analysis.
+- **§19 The AI line is the live match** — during a match, no AI hints,
+  strategic advice, or auto-play acts for or advises a human player.
+  After the match, AI analysis is open commercial space: external LLM
+  analysis of exports, in-product coaching such as the Legendary Pass
+  endgame coach (D-24403), and AI-assisted authoring tools — none of it
+  changes game state, so none of it is a power purchase under NG-1. No
+  AI output feeds a score, ranking, badge, or PAR value unless it is
+  deterministic and replay-verifiable (D-24843).
 - **§19a Profiles are reflective, not authoritative** — decorative
   fields (handle, bio, avatar, links) are editable; merit-bearing
   surfaces (badges, rank, replay history, competitive submissions) are
@@ -360,7 +373,9 @@ Work-Packet pre-flight, and contributor onboarding.
   (§25b), D-1004 (badge tiers), D-24092 (access model), D-24203
   (§12a data portability / infrastructure posture), D-24204 (North
   Star, §10b, and what was kept out of the vision), D-24235 (The
-  Fantasy — the game's articulated emotional identity).
+  Fantasy — the game's articulated emotional identity), D-24843 (§19
+  AI line at the live match, North Star success proxies, §17
+  accessibility as correctness).
 - **[05-ROADMAP.md](../docs/05-ROADMAP.md)** — carries the dated,
   explicitly non-binding 3–5 year success picture. The vision holds the
   durable statement of success; the roadmap holds the version that is
@@ -399,7 +414,7 @@ The common misreadings, in the order they cause damage:
 - [docs/ai/ARCHITECTURE.md](../docs/ai/ARCHITECTURE.md) — tier-2
   authority; layer boundaries and persistence rules
 - [docs/ai/DECISIONS.md](../docs/ai/DECISIONS.md) — D-0005, D-0006,
-  D-1004, D-24092, D-24203, D-24204, D-24235
+  D-1004, D-24092, D-24203, D-24204, D-24235, D-24843
 - [.claude/CLAUDE.md](../.claude/CLAUDE.md) — operating posture and the
   authority hierarchy
 - [Monetization Model](monetization-model.md),
