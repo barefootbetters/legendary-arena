@@ -19,7 +19,9 @@ source:
   - ../scripts/card-image-converters/README.md
   - ../scripts/card-image-renamers/rename-co2e-images.ps1
   - ../scripts/card-image-renamers/README.md
-last-reviewed: 2026-07-18
+  - ../apps/arena-client/src/composables/useCardImagePrefetch.ts
+  - ../docs/ops/RUNBOOK-r2-image-cache-control.md
+last-reviewed: 2026-11-12
 ---
 
 # Card Image Acquisition
@@ -37,11 +39,13 @@ on. The deployed, R2-hosted naming is defined separately by
 covers how the raw bytes get there.
 
 The three steps run as separate per-set PowerShell scripts, producing a
-three-directory staging chain:
+three-directory staging chain. A fourth step, **size** (planned, not yet
+built), derives the small and medium copies that phones and the offline
+"download for airplane mode" option need:
 
 ```
-original-jpeg\<set>\   --convert-->   original\<set>\   --rename-->   renamed\<set>\
-   (scraped JPEG)                        (WebP)                     (R2-named WebP)
+original-jpeg\<set>\   --convert-->   original\<set>\   --rename-->   renamed\<set>\   --size-->   sizes\<set>\<tier>\
+   (scraped JPEG)                        (WebP)                     (R2-named WebP)        (planned)   (thumb / phone / large WebP)
 ```
 
 > **Where the runnable scripts live.** The canonical, runnable copies
@@ -122,10 +126,12 @@ C:\pcloud\legendary-arena\barefootbetters-legendary-setup\
     │   ├── co2e/                                  (2nd-edition core WebP)
     │   ├── anni/  antm/  …                          (per-set WebP outputs)
     │   └── …
-    └── renamed\
-        ├── co2e/                                  (R2-named WebP, upload-ready)
-        ├── core/  …                                 (per-set R2-named WebP)
-        └── …
+    ├── renamed\
+    │   ├── co2e/                                  (R2-named WebP, upload-ready)
+    │   ├── core/  …                                 (per-set R2-named WebP)
+    │   └── …
+    └── sizes\                                       (planned — see "Size tiers")
+        └── <set>/thumb/  <set>/phone/  <set>/large/
 ```
 
 Each set's directory is keyed by a short set token that matches the
@@ -199,6 +205,119 @@ those 60 entries with **rarity placeholders** (`rare` / `common-1` /
 `common-2` / `uncommon`) that must be replaced with real card-title
 slugs before upload. See Edge Cases.
 
+### Size tiers for mobile and offline (planned)
+
+> **Status: planned, not built.** No script, R2 objects, or client code
+> exist for this step yet. The measurements below were taken on
+> 2026-11-12 against the staging `renamed\` tree; the projected sizes come
+> from a test encode of three sets (`core`, `co2e`, `cvwr`) with `sharp`
+> into a scratch folder. Nothing was uploaded.
+
+**Why it is needed.** The game serves one image per card, the
+full-resolution original, to every screen. That is fine for most sets
+and a problem for a few:
+
+| Measure (all 41 sets) | Value |
+|---|---|
+| Card images | 3,131 |
+| Total bytes | 1,137 MB |
+| Long edge under 840 px | 2,431 images (78%): most sets are about 490×690 at about 100 KB per card |
+| Long edge over 840 px | 700 images, mostly in six high-resolution sets: `amwp`, `bkpt`, `bkwd`, `mdns`, `msis` (about 1470×2060, about 1 MB per card) and `co2e` (2500×3524, 2.7 MB per card) |
+| Landscape (wider than tall) | 58 images: `cvwr` 39, `mgtg` 8, `xmen` 5, `bkwd` 3, `msis` 3 |
+
+`co2e` alone is 407 MB, 36% of the library's bytes in 5% of its cards.
+A phone rendering a 2.7 MB face into a 120 px hand slot wastes data and
+memory, and an airplane-mode download of a `co2e` setup would run to
+hundreds of megabytes.
+
+**The tiers.** Each image is resized by its **long edge** (`fit: inside`)
+so portrait and landscape cards both keep their shape, and it is **never
+enlarged** (`withoutEnlargement`): a source smaller than a tier is
+re-encoded at its own size.
+
+| Tier | Long edge | Use |
+|---|---|---|
+| `thumb` | 280 px | Board, hand, City and HQ slots |
+| `phone` | 840 px | Tap-to-zoom on a phone; the airplane-mode download |
+| `large` | 1680 px | Desktop and 4K zoom |
+| (original) | as scanned | Stays at the existing key; archival and print |
+
+Projected output at WebP quality 80 (measured):
+
+| Set | Original | `thumb` | `phone` | `large` |
+|---|---|---|---|---|
+| `core` (127 cards) | 19.5 MB (157 KB/card) | 2.1 MB (17 KB) | 11.7 MB (94 KB) | 15.6 MB (126 KB) |
+| `cvwr` (163 cards) | 24.2 MB (152 KB/card) | 2.7 MB (17 KB) | 14.9 MB (94 KB) | 19.5 MB (123 KB) |
+| `co2e` (151 cards) | 407.4 MB (2,763 KB/card) | 2.1 MB (14 KB) | 19.3 MB (131 KB) | 98.3 MB (666 KB) |
+
+The `phone` tier cuts `co2e` by 21×, and every set's `thumb` lands near
+15 KB per card. Extrapolated across the library, `phone` is roughly
+300 MB and `thumb` roughly 50 MB. Encoding speed is not a concern:
+`co2e`, the worst case, took about two minutes for all three tiers.
+
+**Where the output goes.** The local output sits in the staging tree
+beside `renamed\` as `sizes\<set>\<tier>\<same-filename>.webp`. On R2 the
+tier is a folder inside the set prefix, keeping the original's filename:
+
+```
+https://images.legendary-arena.com/{setAbbr}/{setAbbr}-{ribbon}-{slug}.webp          (original, unchanged)
+https://images.legendary-arena.com/{setAbbr}/{tier}/{setAbbr}-{ribbon}-{slug}.webp   (thumb | phone | large)
+```
+
+A tier URL is therefore a **pure function of the card's existing
+`imageUrl`**: insert `/{tier}` before the filename. That is the
+recommended way to expose the tiers, rather than adding three URL fields
+to every card in `data/cards/*.json`. Adding fields would change the
+registry schema and the canonical field list in
+`00.2-data-requirements.md` and touch all 41 sets. A path rule changes
+neither, leaves every existing `imageUrl` consumer working, and lets the
+engine's per-match image list (below) serve every tier without a new
+`UIState` field. Every tier is written for every card, even when it
+matches the source size, so the rule never has to branch. Storing the
+duplicates costs a few cents a month on R2.
+
+**The per-set size manifest.** The one thing a path rule cannot carry
+is **byte counts**, which the airplane-mode button needs to show the
+download size before it starts. The size step writes one manifest per
+set listing each card's filename and the bytes of each tier, and uploads
+it under `metadata/image-sizes/{setAbbr}.json`, **not** under the set
+prefix. The set prefixes get `Content-Type: image/webp` and `immutable`
+from the
+[cache-control runbook](../docs/ops/RUNBOOK-r2-image-cache-control.md)'s
+bucket-wide commands, which would mislabel the manifest and freeze it.
+`metadata/` is already the bucket's mutable prefix.
+
+**How it feeds the offline features.** WP-410 already gives the client
+the list it needs: `UIState.matchCardImageUrls` is the engine's deduped
+set of every card-face URL a match can show, and
+[`useCardImagePrefetch.ts`](../apps/arena-client/src/composables/useCardImagePrefetch.ts)
+warms it at the setup screen. Airplane mode is that list, mapped to the
+`phone` tier, priced from the per-set manifests, and stored durably. Two
+gaps stand between today and that feature, and neither belongs to this
+step:
+
+- **Durable storage.** The prefetch warms the browser's HTTP image
+  cache, which the browser may evict and which is not usable offline.
+  An airplane-mode download needs a service worker writing to Cache
+  Storage. The arena client has no service worker today.
+- **The list before the match exists.** `matchCardImageUrls` appears only
+  once a match is created. A download offered on the setup screen,
+  before creation, needs the card list for a loadout. The client cannot
+  build it, since it may not import the registry at runtime, so the
+  server would have to supply it.
+
+**Incremental re-runs.** The size step skips a tier output that exists
+and is newer than its source. Note that `rename-<set>-images.ps1` clears
+`renamed\<set>\` and restamps every file to "now", so any rename run marks
+that set's tiers stale and the next size run regenerates the whole set.
+That is correct, just not free for `co2e`.
+
+**Tooling choice.** Pre-generating the tiers was chosen over Cloudflare's
+on-the-fly resizing (`/cdn-cgi/image/width=…`). Pre-generation gives
+exact byte counts for the manifest, is deterministic, and has no
+per-transformation bill. The resize uses Node and `sharp`, which is
+already a dependency of `apps/server` (avatar uploads).
+
 ## Interactions
 
 - **[R2 Image Naming Convention](r2-image-naming-convention.md).** The
@@ -221,6 +340,11 @@ slugs before upload. See Edge Cases.
   source filenames carry a loose type hint (`2eHero…`, `2eVillain…`,
   `2eMastermind_…`) that maps, after processing, onto the engine's
   card-type taxonomy and its ribbon codes.
+- **Card-image prefetch (WP-410).**
+  [`useCardImagePrefetch.ts`](../apps/arena-client/src/composables/useCardImagePrefetch.ts)
+  warms the match's `matchCardImageUrls` at the setup screen. It is the
+  starting point for the planned airplane-mode download, which maps those
+  URLs to the `phone` tier (see "Size tiers for mobile and offline").
 - **Convert pipeline.** `scripts/convert-cards/` composes each card's
   `imageUrl` to the R2 convention; it consumes set *data*, not these raw
   JPEGs, but both halves must agree on the final object name for images
@@ -303,6 +427,21 @@ slugs before upload. See Edge Cases.
   no entry for `20220108_175929.webp`, so it is not copied into
   `renamed\co2e\` — 151 cards out of the 152 staged files. Its omission
   is deliberate (noted in a `# why:` comment), not a missed card.
+- **Size tiers must follow every R2 rename and sweep (once built).** The
+  in-place rename recipe (`rclone copyto` to the new key, repoint, delete
+  the old key) moves only the original. With tiers on R2, each rename is
+  four `copyto` calls (original plus `thumb/`, `phone/`, `large/`), and the
+  orphan audit must diff each tier folder against the card data too.
+  Otherwise the tier URLs derived from the new `imageUrl` 404.
+- **Never replace a card's bytes at the same key.** Card images and their
+  tiers are served `immutable` because a new scan always gets a new key. A
+  re-scan uploaded over an existing key would leave the old original and
+  old tiers cached at the edge and in players' offline downloads. Give
+  new art a new slug, as the naming convention already requires.
+- **A source smaller than a tier is not enlarged.** For about 78% of the
+  library, `phone` and often `large` come out at the source's own
+  dimensions. That is intended: enlarging adds bytes and no detail. Do not
+  read a `large` file that is only 690 px tall as a failed resize.
 
 ## Code Touchpoints
 
@@ -338,8 +477,22 @@ slugs before upload. See Edge Cases.
 - `barefootbetters-legendary-setup\card-images-staging\renamed\`
   (pCloud staging folder, under `C:\pcloud\legendary-arena\`) — the renamers' per-set directories of
   R2-named, upload-ready WebP. Not part of this repo.
+- `barefootbetters-legendary-setup\card-images-staging\sizes\<set>\<tier>\`
+  (pCloud staging folder; **planned**) — the size step's `thumb` / `phone`
+  / `large` WebP output and the per-set size manifest. Not part of this repo.
 
 ## Open Questions
+
+- **Size tiers: build decisions still open.** The section above
+  recommends a path rule over new card-JSON fields, manifests under
+  `metadata/image-sizes/`, and an in-repo Node + `sharp` script instead
+  of another per-set staging copy. None of this is built or decided. The
+  path rule versus new fields is the decision that matters, because it
+  sets whether the registry schema changes. Settle it in the work packet
+  that builds the step, record it in `DECISIONS.md`, and move the tier
+  key format into
+  [R2 Image Naming Convention](r2-image-naming-convention.md), which owns
+  key formats.
 
 - **The R2 upload tail — the commands, for the record.** The scrape,
   convert, and rename steps are backed up in-repo
