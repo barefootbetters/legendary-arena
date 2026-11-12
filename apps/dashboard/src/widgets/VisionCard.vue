@@ -67,12 +67,25 @@
 
     <section class="vision-proxies" aria-labelledby="vision-proxies-title">
       <h4 id="vision-proxies-title" class="column-heading">How We Know It's Working</h4>
-      <p class="quality-tagline">What we measure, never a target &mdash; the figures live on this dashboard.</p>
+      <p class="quality-tagline">
+        What we measure, never a target &mdash; the figures live on this dashboard.
+      </p>
       <ul class="vision-list">
-        <li><strong>High-quality play</strong> &mdash; completed-match rate; returning players with verified runs across distinct scenarios.</li>
-        <li><strong>Content keeping pace</strong> &mdash; lag from a physical set's release to its cards being playable.</li>
-        <li><strong>Competitive ecosystem</strong> &mdash; replay-verified submissions, verification failures and disputes, organized-play events.</li>
-        <li><strong>Revenue</strong> &mdash; contribution margin after royalties; operating runway.</li>
+        <li>
+          <strong>High-quality play</strong> &mdash; completed-match rate; returning players with
+          verified runs across distinct scenarios.
+        </li>
+        <li>
+          <strong>Content keeping pace</strong> &mdash; lag from a physical set's release to its
+          cards being playable.
+        </li>
+        <li>
+          <strong>Competitive ecosystem</strong> &mdash; replay-verified submissions, verification
+          failures and disputes, organized-play events.
+        </li>
+        <li>
+          <strong>Revenue</strong> &mdash; contribution margin after royalties; operating runway.
+        </li>
       </ul>
     </section>
 
