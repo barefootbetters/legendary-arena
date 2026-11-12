@@ -399,7 +399,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "[hc:strength]: You main gain a Wound. If you do, KO up to two other cards from your hand and/or discard pile."
+            "[hc:strength]: You main gain a Wound. If you do, KO up to two other cards from your hand and/or discard pile. [keyword:gain-wound-reward:optional-ko-hand-discard:2]"
           ]
         },
         {

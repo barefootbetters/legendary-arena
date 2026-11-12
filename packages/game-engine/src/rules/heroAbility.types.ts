@@ -149,6 +149,12 @@ export interface HeroEffectDescriptor {
   // executor: rescue / draw / attack / recruit). The existing magnitude field
   // carries the reward magnitude. Other keywords ignore it.
   rewardType?: HeroKeyword;
+  // why: WP-885 / D-24836 — for a 'gain-wound-reward' effect whose reward is a composition marker
+  // (Violent Conditioning's "If you do, Berserk, Berserk"), rewardComposition names the
+  // HERO_COMPOSITION_MARKERS row the kept Wound runs `magnitude` times. Berserk is a composition
+  // marker, not a HeroKeyword (D-24031), so it cannot travel in rewardType; the parser never sets
+  // both. Other keywords ignore it.
+  rewardComposition?: string;
   // why: D-24069 — for a 'draw-or-empowered' effect, empoweredClass is the normalized
   // hero class parsed from the "Empowered by [hc:X]" tail. It is carried from parse time
   // to the park site, which records it on the PendingDrawOrEmpowered entry so the resolve

@@ -2,12 +2,12 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 872,
+    "totalRows": 875,
     "byStatus": {
-      "executable": 500,
+      "executable": 504,
       "deferred": 16,
       "condition": 76,
-      "unsupported": 255,
+      "unsupported": 254,
       "unmarked": 22,
       "subsystem": 3
     },
@@ -8160,6 +8160,22 @@
       "extId": "msis/bruce-banner",
       "heroName": "Bruce Banner",
       "set": "msis",
+      "mechanic": "gain-wound-reward",
+      "status": "executable",
+      "wp": "WP-883",
+      "decision": "D-24834",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-reward",
+      "designs": [
+        {
+          "slug": "hulk-gets-smashed",
+          "name": "Hulk Gets Smashed"
+        }
+      ]
+    },
+    {
+      "extId": "msis/bruce-banner",
+      "heroName": "Bruce Banner",
+      "set": "msis",
       "mechanic": "ko-wound-reward",
       "status": "executable",
       "wp": "WP-382",
@@ -13300,6 +13316,22 @@
       "extId": "wpnx/weapon-x-wolverine",
       "heroName": "Weapon X (Wolverine)",
       "set": "wpnx",
+      "mechanic": "gain-wound-reward",
+      "status": "executable",
+      "wp": "WP-883",
+      "decision": "D-24834",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-reward",
+      "designs": [
+        {
+          "slug": "violent-conditioning",
+          "name": "Violent Conditioning"
+        }
+      ]
+    },
+    {
+      "extId": "wpnx/weapon-x-wolverine",
+      "heroName": "Weapon X (Wolverine)",
+      "set": "wpnx",
       "mechanic": "weapon-x-sequence",
       "status": "unsupported",
       "wp": "",
@@ -14840,6 +14872,22 @@
       "extId": "wwhk/skaar-son-of-hulk",
       "heroName": "Skaar, Son of Hulk",
       "set": "wwhk",
+      "mechanic": "gain-wound-reward",
+      "status": "executable",
+      "wp": "WP-883",
+      "decision": "D-24834",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-reward",
+      "designs": [
+        {
+          "slug": "mood-swings",
+          "name": "Mood Swings"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/skaar-son-of-hulk",
+      "heroName": "Skaar, Son of Hulk",
+      "set": "wwhk",
       "mechanic": "smash",
       "status": "executable",
       "wp": "WP-676",
@@ -14857,10 +14905,10 @@
       "heroName": "Skaar, Son of Hulk",
       "set": "wwhk",
       "mechanic": "transform",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#transform",
       "designs": [
         {
           "slug": "mood-swings",

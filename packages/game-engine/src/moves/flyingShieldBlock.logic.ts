@@ -33,7 +33,7 @@ import { parkSeatChoice } from './seatChoice.resolve.js';
 import { pushLog } from '../log/logPush.js';
 // why: WP-883 / D-24834 — a leaf module (it imports only the economy helper, the log helpers and
 // types), so this import adds no cycle edge.
-import { grantGainWoundReward, logGainWoundRewardForfeited } from '../hero/gainWoundRewardGrant.js';
+import { describeGainWoundRewardPhrases, grantGainWoundReward, logGainWoundRewardForfeited } from '../hero/gainWoundRewardGrant.js';
 
 /** The seat-choice kind discriminant for a Flying-Shield-Block reveal/decline wave. */
 export const FLYING_SHIELD_BLOCK_SEAT_CHOICE_KIND = 'flying-shield-block';
@@ -221,19 +221,28 @@ function dropUninterceptableWounds(G: LegendaryGameState): void {
  *
  * // why: WP-883 / D-24834 — on a Wound gained on purpose for a reward, the decline label names
  * the reward the recipient keeps ("Take the Wound (keep +N Attack)" / "Let Player {r} take the
- * Wound (they keep +N Attack)"); every other Wound keeps today's labels.
+ * Wound (they keep +N Attack)"); every other Wound keeps today's labels. WP-885 / D-24836: a
+ * non-Attack reward reads "Take the Wound (then {reward})" / "(they keep its reward)".
  *
+ * @param G - The game state (read only; names a Transform reward's second form).
  * @param seat - The addressed seat.
  * @param entry - The pending Wound the seat is asked about.
  * @returns The seat's prompt (reveal first, decline second).
  */
-function buildSeatPrompt(seat: string, entry: PendingFlyingShieldBlockWound): PendingSeatChoice['seatPrompts'][string] {
+function buildSeatPrompt(
+  G: LegendaryGameState,
+  seat: string,
+  entry: PendingFlyingShieldBlockWound,
+): PendingSeatChoice['seatPrompts'][string] {
   const recipientID = entry.recipientID;
   let keepSuffix = '';
   let otherSeatKeepSuffix = '';
-  if (entry.gainWoundReward !== undefined) {
+  if (entry.gainWoundReward !== undefined && entry.gainWoundReward.rewardType === 'attack') {
     keepSuffix = ` (keep +${entry.gainWoundReward.magnitude} Attack)`;
     otherSeatKeepSuffix = ` (they keep +${entry.gainWoundReward.magnitude} Attack)`;
+  } else if (entry.gainWoundReward !== undefined) {
+    keepSuffix = ` (then ${describeGainWoundRewardPhrases(entry.gainWoundReward, G).labelPhrase})`;
+    otherSeatKeepSuffix = ' (they keep its reward)';
   }
   if (seat === recipientID) {
     return {
@@ -293,7 +302,7 @@ export function openFlyingShieldBlockSeatChoiceIfNeeded(
     }
     entry.addressedSeat = seat;
     seats.push(seat);
-    seatPrompts[seat] = buildSeatPrompt(seat, entry);
+    seatPrompts[seat] = buildSeatPrompt(G, seat, entry);
   }
   if (seats.length === 0) {
     delete G.pendingFlyingShieldBlockWounds;
