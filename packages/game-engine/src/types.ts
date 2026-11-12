@@ -1172,6 +1172,14 @@ export interface PendingOptionalKoReward {
   // that can be in a hand or play area today — a future one must extend this check).
   /** Optional Heroes-only KO restriction (a Wound is ineligible); absent = any card (D-24600). */
   koHeroesOnly?: true;
+  // why: WP-885 / D-24836 — Hulk Gets Smashed's "KO up to two OTHER cards" never takes the Wound
+  // it just gained. Wounds are one fungible id, so the rule is a count: a Wound is eligible only
+  // while the chooser's hand ∪ discard hold at least two Wounds. Written `true` or omitted, never
+  // `false`; the resolve, the projection and the bot test `=== true` and recount from current G.
+  // The name keeps the entry's `ko*` field family (koZones / koTeamFilter / koHeroesOnly, D-24600)
+  // rather than an is/has/can prefix.
+  /** Optional spare-the-gained-Wound KO restriction; absent = any card (D-24836). */
+  koSparesGainedWound?: true;
 }
 
 /**
@@ -1652,8 +1660,11 @@ export interface PendingSeatChoice {
  * members and grant arms, never fields. Runtime-only; never projected.
  */
 export interface GainWoundReward {
-  /** The resource the kept Wound earns. */
-  rewardType: 'attack';
+  // why: WP-885 / D-24836 — the non-Attack rewards are members of this discriminant, never new
+  // fields (D-24834 §11): `berserk` (two runs of the Berserk composition), the optional KO of up to
+  // N other cards from hand / discard, and the existing Transform swap.
+  /** What the kept Wound earns. */
+  rewardType: 'attack' | 'berserk' | 'optional-ko-hand-discard' | 'transform';
   /** How much of it (N >= 1). */
   magnitude: number;
   /** The hero card whose ability offered the Wound (for the log). */

@@ -2247,6 +2247,39 @@
       "note": "Live check (NEW match created after the deploy, with the Warriors Three; operator setters stage a Bridge Villain): Volstagg adds +3 with a Bridge Villain after another Instinct Hero, +1 without one, and nothing with the Bridge empty. D-24837."
     },
     {
+      "key": "wpnx/weapon-x-wolverine|gain-wound-reward",
+      "kind": "hero",
+      "card": "Weapon X (Wolverine)",
+      "ability": "Violent Conditioning — You may gain a Wound. If you do, Berserk, Berserk.",
+      "wp": "WP-885",
+      "state": "pending",
+      "date": "2026-11-12",
+      "evidence": "",
+      "note": "Live check (NEW operator match after the deploy): playing Violent Conditioning opens \"Gain a Wound?\" (Gain a Wound: Berserk twice / Don't gain a Wound). Gain -> a Wound in the discard pile, then two Berserk discards with their Attack; decline -> neither (it no longer Berserks for free). D-24836."
+    },
+    {
+      "key": "msis/bruce-banner|gain-wound-reward",
+      "kind": "hero",
+      "card": "Bruce Banner",
+      "ability": "Hulk Gets Smashed — [Strength]: You may gain a Wound. If you do, KO up to two other cards from your hand and/or discard pile.",
+      "wp": "WP-885",
+      "state": "pending",
+      "date": "2026-11-12",
+      "evidence": "",
+      "note": "Live check (NEW operator match after the deploy): after another Strength Hero, \"Gain a Wound?\" (Gain a Wound: KO up to 2 other cards from your hand or discard pile). Gain -> a Wound, then up to two KO prompts that never offer the Wound just gained (an older Wound is offered while two are present). D-24836."
+    },
+    {
+      "key": "wwhk/skaar-son-of-hulk|gain-wound-reward",
+      "kind": "hero",
+      "card": "Skaar, Son of Hulk",
+      "ability": "Mood Swings — [Instinct]: You may gain a Wound. If you do, Transform this into Raging Savage.",
+      "wp": "WP-885",
+      "state": "pending",
+      "date": "2026-11-12",
+      "evidence": "",
+      "note": "Live check (NEW operator match after the deploy): after another Instinct Hero, \"Gain a Wound?\" (Gain a Wound: Transform into Raging Savage). Gain -> a Wound, Mood Swings becomes Raging Savage in play (+3 Attack) with the Transformed! animation; decline -> no Wound, no Transform. D-24836."
+    },
+    {
       "key": "mdns-villain-lilin-skinner|villain-hunt-for-victims",
       "kind": "villain",
       "card": "Skinner",

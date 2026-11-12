@@ -2047,7 +2047,7 @@
           "attack": null,
           "recruit": "3",
           "abilities": [
-            "[hc:instinct]: You may gain a Wound. If you do, [keyword:Transform] this into Raging Savage."
+            "[hc:instinct]: You may gain a Wound. If you do, [keyword:Transform] this into Raging Savage. [keyword:gain-wound-reward:transform:1]"
           ],
           "transform": "raging-savage"
         },
