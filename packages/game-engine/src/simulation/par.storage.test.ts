@@ -31,7 +31,8 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { posix, join } from 'node:path';
+import { posix, join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import type {
   ParBaseline,
@@ -259,6 +260,37 @@ describe('PAR artifact storage (WP-050)', () => {
       const fullPath = posix.join(workspace, expectedRelative);
       const fileContent = await readFile(fullPath, 'utf8');
       assert.ok(fileContent.length > 0, 'artifact file is empty');
+    } finally {
+      await removeWorkspace(workspace);
+    }
+  });
+
+  // why: drift pin. The seed generator and the simulation writer each stamp
+  // rawScoreSemanticsVersion, and the WP-599 / D-24409 3->4 bump updated only the
+  // generator. Reading the generator's constant at test time makes the next bump
+  // fail here unless both move together. The path resolves via import.meta.url,
+  // never process.cwd() (the effectRulings.test.ts precedent).
+  test('writeSimulationParArtifact stamps the same rawScoreSemanticsVersion as the seed generator', async () => {
+    const generatorPath = join(
+      dirname(fileURLToPath(import.meta.url)),
+      '../../../../scripts/generate-seed-par.mjs',
+    );
+    const generatorSource = await readFile(generatorPath, 'utf8');
+    const generatorMatch = /const RAW_SCORE_SEMANTICS_VERSION = (\d+);/.exec(generatorSource);
+    assert.ok(
+      generatorMatch !== null,
+      'scripts/generate-seed-par.mjs no longer declares RAW_SCORE_SEMANTICS_VERSION; update this drift pin to its new source.',
+    );
+    const generatorVersion = Number(generatorMatch[1]);
+
+    const workspace = await createTempWorkspace();
+    try {
+      const scenarioKey = 'midtown-bank-robbery::red-skull::hydra';
+      const result = createSimulationResult(scenarioKey);
+      await writeSimulationParArtifact(result, buildSimScoringConfig(result), workspace, PAR_VERSION);
+      const artifact = await readSimulationParArtifact(scenarioKey, workspace, PAR_VERSION);
+      assert.ok(artifact !== null, 'the simulation artifact just written could not be read back');
+      assert.equal(artifact.scoring.rawScoreSemanticsVersion, generatorVersion);
     } finally {
       await removeWorkspace(workspace);
     }
