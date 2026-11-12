@@ -6,9 +6,9 @@
 
 ## Before Starting
 - [ ] Baseline `origin/main` includes #3293 (the reserve) and the WP-886 draft SPEC.
-- [ ] `pnpm install` and `pnpm -r build` → 0. Engine suite green: `pnpm --filter @legendary-arena/game-engine test` → 6930 / 0 at draft. `pnpm --filter @legendary-arena/dashboard typecheck` → 0.
+- [ ] `pnpm install` and `pnpm -r build` → 0. Engine suite green: `pnpm --filter @legendary-arena/game-engine test` → 6960 / 0 at draft (`73120510`). `pnpm --filter @legendary-arena/dashboard typecheck` → 0.
 - [ ] Anchors unchanged (`heroAbility.setup.ts`): Patrol imports `:51-52`, `PATROL_LINE_PATTERN` `:909`, `collectUnmatchedKeywordSlugs` `:3283`, `buildPatrolBranchHook` `:4837`, `buildHeroAbilityHooks` `:4948`, Patrol consume block `:5106`.
-- [ ] Anchors unchanged elsewhere: `PATROL_SPACE_OCCUPIED_CONDITION_TYPE` `:72` / `patrolSpaceIndex` `:91` / `evaluateCondition` `:186` / `describeFailedCondition` `:978` / Patrol describe cases `:1119-1122` (`heroConditions.evaluate.ts`); `isCountableConditionalClause` `:1017-1020` / `countSynergyConditions` `:1513` / `allPatrolConditionsPass` `:1543` (`heroEffects.execute.ts`); ledger `KNOWN_CONDITIONS` `:192` / `patrolStatusForHooks` `:332` / per-hook check `:601`.
+- [ ] Anchors unchanged elsewhere: `PATROL_SPACE_OCCUPIED_CONDITION_TYPE` `:72` / `patrolSpaceIndex` `:91` / `evaluateCondition` `:186` / `describeFailedCondition` `:978` / Patrol describe cases `:1119-1122` (`heroConditions.evaluate.ts`); `isCountableConditionalClause` `:1031-1034` / `countSynergyConditions` `:1527` / `allPatrolConditionsPass` `:1557` (`heroEffects.execute.ts`); ledger `KNOWN_CONDITIONS` `:192` / `patrolStatusForHooks` `:332` / per-hook check `:601`.
 - [ ] Re-grep `Conqueror` in `scripts/convert-cards/inputs/patches/{anni,asrd}.patch.json` and `data/cards/amwp.json`: the Card Map lines still read as WP §Assumes 5.
 - [ ] Scope lock: the target file set is exactly §Files to Produce below; anything else needs an inline amendment (01.5).
 
@@ -17,9 +17,9 @@
 **Condition**
 - `{type:'conquerorSpaceHasVillain', value:<CitySpaceName>}`, written only via the exported `CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE` (`heroConditions.evaluate.ts`, beside the Patrol pair) in parser, evaluator, describer, Synergy code and ledger.
 - `index = patrolSpaceIndex(G, value)`; true ⇔ `index !== -1 && G.city[index] !== null`.
-- Describe: missing space `"there is no <Space> in the City"`; else `"no Villain is in the <Space>"`, in a new `describeFailedConquerorCondition` (`describeFailedPatrolCondition` unchanged). Logs use the multi-hook phrase "… did not activate one of its abilities — …" (`heroEffects.execute.ts:1163`); tests assert the reason substring.
+- Describe: missing space `"there is no <Space> in the City"`; else `"no Villain is in the <Space>"`, in a new `describeFailedConquerorCondition` (`describeFailedPatrolCondition` unchanged). Logs use the multi-hook phrase "… did not activate one of its abilities — …" (`heroEffects.execute.ts:1177`); tests assert the reason substring.
 - Not in `WAIT_AND_SEE_CONDITION_TYPES`, not in `SEQUENCE_GATE_CONDITION_TYPES`; excluded from `countSynergyConditions`.
-- `allPatrolConditionsPass` → `allCitySpaceConditionsPass` (one caller, `:1020`): also requires every Conqueror condition to pass `evaluateCondition` directly. Rock Solid after a Strength Hero: Sewers occupied → 1 assembled; empty → 0 / 0; occupied without a Strength Hero → 1 missed. Transparent Motives / Volstagg base with the space occupied → 0 played / 0 assembled. Extends D-24832's clause rule (say so in D-24837 and the `:1013-1016` comment).
+- `allPatrolConditionsPass` → `allCitySpaceConditionsPass` (one caller, `:1034`): also requires every Conqueror condition to pass `evaluateCondition` directly. Rock Solid after a Strength Hero: Sewers occupied → 1 assembled; empty → 0 / 0; occupied without a Strength Hero → 1 missed. Transparent Motives / Volstagg base with the space occupied → 0 played / 0 assembled. Extends D-24832's clause rule (say so in D-24837 and the `:1027-1030` comment).
 
 **Parser**
 - `CONQUEROR_LINE_PATTERN = /^\s*((?:\[(?:hc|team):[^\]]+\]\s*)*:?)\s*(Instead,\s*)?\[keyword:(Sewers|Bank|Rooftops|Streets|Bridge)\s+Conqueror\s+(\d+)\]\.?\s*$/i` (non-global). Checked after the Patrol blocks; consumed at its own line index; `previousLineHook = null` after.
