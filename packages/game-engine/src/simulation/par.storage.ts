@@ -76,7 +76,12 @@ export const PAR_ARTIFACT_SOURCES: readonly ParArtifactSource[] = [
 // round-cost term is a formula-SHAPE change).
 // why: WP-591 / D-24400 — bumped 2->3 (PAR now models twist + bystander-lost
 // penalties; RawScore gains a loss penalty — a formula-shape change).
-const CURRENT_RAW_SCORE_SEMANTICS_VERSION = 3;
+// why: WP-599 / D-24409 — bumped 3->4 (the bystander-reward term is removed and
+// the penalty weights are rescaled — a formula-shape change). The seed generator
+// (scripts/generate-seed-par.mjs RAW_SCORE_SEMANTICS_VERSION) and every seed
+// artifact moved to 4 then; this constant was missed and kept stamping 3 on
+// simulation artifacts. par.storage.test.ts pins the two values equal.
+const CURRENT_RAW_SCORE_SEMANTICS_VERSION = 4;
 
 // ---------------------------------------------------------------------------
 // Artifact shapes

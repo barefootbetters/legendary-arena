@@ -2197,10 +2197,10 @@
       "card": "Hulk",
       "ability": "Hulk Smash! — [Strength]: You may gain a Wound. If you do, you get +5 Attack",
       "wp": "WP-883",
-      "state": "partial",
+      "state": "verified",
       "date": "2026-11-12",
-      "evidence": "Operator match J9SuzrjSKPA (server and client a374e0a3, created 2026-11-12T00:55Z), Zarathos / Midtown Bank Robbery 2p, Hulk + four mdns Heroes, Claude in Chrome. Hulk Smash! played after Scalded by Sunlight (Strength): 1.2.14 +5 printed, 1.2.15 prompt \"Gain a Wound for extra Attack?\" (Gain a Wound: you get +5 Attack / Don't gain a Wound); real click Don't -> 1.2.16 \"chose not to gain a Wound\", Attack stayed 9, Wounds stayed 1.",
-      "note": "Seen: the prompt and the decline (no free +5). Not seen live: the gain path on Hulk (seen on Scalded by Sunlight, same kind), the Diving Block reveal forfeit, and no-prompt without another Strength Hero. D-24834."
+      "evidence": "Operator match J9SuzrjSKPA (server and client a374e0a3, created 2026-11-12T00:55Z), Zarathos / Midtown Bank Robbery 2p, Hulk + four mdns Heroes, Claude in Chrome. Hulk Smash! played after Scalded by Sunlight (Strength): 1.2.14 +5 printed, 1.2.15 prompt \"Gain a Wound for extra Attack?\" (Gain a Wound: you get +5 Attack / Don't gain a Wound); real click Don't -> 1.2.16 \"chose not to gain a Wound\", Attack stayed 9, Wounds stayed 1. No other Strength Hero: operator match DttVqQ-hmkz (server 18ead03c, client a34b66a), Hulk Smash! played first, no prompt, 1.2.10 +5 printed, 1.2.11 \"ability did not activate — it needs another Strength Hero played this turn\", Attack 0 -> 5. Diving Block forfeit: operator match QQBMzP3_qKU (same deploy, Hulk / Morbius / core Captain America / Elsa Bloodstone / Blade), Growing Rage then Hulk Smash! with Diving Block in hand: 2.2.14 prompt, real click Gain -> 2.2.15 \"would gain a Wound — +5 Attack if they keep it\", Diving Block prompt (Reveal Diving Block: prevent the Wound and draw a card / Take the Wound (keep +5 Attack)), real click Reveal -> 2.2.16 \"revealed Diving Block: prevented the Wound and drew a card\", 2.2.17 \"Wound was prevented, so no +5 Attack\"; Attack stayed 7, deck 6 -> 5, hand +1 (S.H.I.E.L.D. Agent), discard 1 -> 0, Wound supply 30.",
+      "note": "All cases seen live: the prompt, the decline, no prompt without another Strength Hero, and the Diving Block reveal forfeit (gain chosen, no +5). The gain-and-keep grant is seen on Scalded by Sunlight (same kind). D-24834."
     },
     {
       "key": "mdns/morbius|gain-wound-reward",
@@ -2208,10 +2208,10 @@
       "card": "Morbius",
       "ability": "Scalded by Sunlight — Sunlight: You may gain a Wound. If you do, you get +2 Attack",
       "wp": "WP-883",
-      "state": "partial",
+      "state": "verified",
       "date": "2026-11-12",
-      "evidence": "Operator match J9SuzrjSKPA (server and client a374e0a3, created 2026-11-12T00:55Z), Zarathos / Midtown Bank Robbery 2p, Hulk + four mdns Heroes, Claude in Chrome. HQ staged to Sunlight (4,3,3,2,2): Scalded by Sunlight 1.2.10 +2 printed, 1.2.11 prompt (Gain a Wound: you get +2 Attack / Don't gain a Wound); real click Gain -> 1.2.13 \"gained a Wound and got +2 Attack\", Attack 2 -> 4, Wound on the discard; no sunlight hollow in the log or the Hollow effects panel.",
-      "note": "Seen: the Sunlight prompt and the gain path. Not seen live: the decline on Scalded (seen on Hulk Smash!, same kind) and Moonlight prompting nothing for the Sunlight line. D-24834."
+      "evidence": "Operator match J9SuzrjSKPA (server and client a374e0a3, created 2026-11-12T00:55Z), Zarathos / Midtown Bank Robbery 2p, Hulk + four mdns Heroes, Claude in Chrome. HQ staged to Sunlight (4,3,3,2,2): Scalded by Sunlight 1.2.10 +2 printed, 1.2.11 prompt (Gain a Wound: you get +2 Attack / Don't gain a Wound); real click Gain -> 1.2.13 \"gained a Wound and got +2 Attack\", Attack 2 -> 4, Wound on the discard; no sunlight hollow in the log or the Hollow effects panel. Moonlight: operator match DttVqQ-hmkz (server 18ead03c, client a34b66a), HQ staged 3,5,3,3,4 (hq.dayNight moonlight): no prompt, 1.2.12 +2 printed, 1.2.13 \"did not activate one of its abilities — it isn't Sunlight\", 1.2.14 the Moonlight line found no Wound to KO; Attack 5 -> 7. Bot ally: operator match QQBMzP3_qKU (same deploy), seat 1 played it under Sunlight: 3.2.11 prompt, 3.2.13 \"Player 1 gained a Wound and got +2 Attack\".",
+      "note": "All cases seen live: the Sunlight prompt, the gain path, and Moonlight prompting nothing for the Sunlight line. The decline is seen on Hulk Smash! (same kind). D-24834."
     },
     {
       "key": "mdns/elsa-bloodstone|hunt-for-victims",
