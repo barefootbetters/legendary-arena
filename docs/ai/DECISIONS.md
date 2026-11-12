@@ -51209,6 +51209,69 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24836 (#3289). Related: D-24026, D-24031, D-24045, D-24442, D-24469, D-24480, D-24487, D-24570, D-24600, D-24623, D-24745, D-24834, D-24837.
 
 ---
+
+### D-24844 — Airplane mode: a single-seat solo match may run its rules on the device, saving only its match record (operator decision, no WP) (Active 2026-11-12)
+
+**Context.** The ewiki [Airplane Mode](../../wiki/airplane-mode.md) page (design research, 2026-11-12) named four decisions that block a WP. This is the first: whether the engine may host a match on the player's device. Today every match runs on the server (boardgame.io `Server()`), and the client only renders the `playerView` projection.
+
+**Decision (Jeff, 2026-11-12).**
+1. **Scope.** A single-seat solo match with a device-generated seed may run `LegendaryGame` on a boardgame.io `Local()` master in the client. Multiplayer, guest seats and the bot ally stay server-only; moving any of them to the device needs its own decision (the bot ally against DESIGN-SOLO-BOT-ALLY).
+2. **The engine still owns truth.** The local master runs the same engine; the UI still submits intent and still sees only `playerView`. D-10008 stands unchanged: moves stay `client: false`, so the UI never runs a move optimistically; the local master does.
+3. **What is saved.** Only the match record: setup config, seed and move log, written after every move, in IndexedDB. Resume replays the log through the engine. Application code never persists `G` or `ctx`, and the framework's own state object is not saved on the device, so D-24095's framework-store exemption is not extended to devices.
+4. **Card data.** arena-client still may not import `registry` at runtime. `Game.setup()` reads a server-built setup bundle (every record the setup builders read, recorded against the real registry) through a plain-data reader of the client's own.
+5. **Results.** A finished on-device game counts for nothing until the server has replayed its record with the real engine and found it legal (D-24119 replay pattern, D-5301). How a verified result counts is D-24847.
+6. **Feasibility.** The WP-890 spike (D-24842) tests whether `LegendaryGame` runs unchanged on a `Local()` master with a plain-data reader. If it shows otherwise, this decision is revisited before any airplane-mode WP is drafted.
+
+**Not changed.** Online matches, the server-held seed and its redaction, D-10008, D-24095, the import rules, and the persistence boundary.
+
+**Reserved by:** NUMBER-LEDGER D-24844 (claude/airplane-mode-decisions-reserve). Related: D-0002, D-5301, D-10008, D-24095, D-24119, D-24842, D-24845, D-24846, D-24847.
+
+---
+
+### D-24845 — Airplane mode: one featured setup downloads free; any other setup needs the Legendary Pass, with a 30-day offline check-in (operator decision, no WP) (Active 2026-11-12)
+
+**Context.** Second of the four airplane-mode decisions. An outside review recommended making the whole feature free for v1 and gating later. Every comparable product charges for offline (YouTube and Spotify need Premium; Netflix caps downloads on its ad plan), and taking a free feature away later is the hard direction.
+
+**Decision (Jeff, 2026-11-12).**
+1. **Free:** one featured setup downloads for offline play without the Pass. The guest-solo featured table (D-24636) is the natural candidate and is the setup the WP-890 spike plays; the WP that builds the download settles which setup it is.
+2. **Pass:** downloading any other setup for offline play is a Legendary Pass perk ([Monetization Model](../../wiki/monetization-model.md)).
+3. **Offline entitlement.** The device caches the Pass entitlement and refreshes it quietly whenever it is online. If 30 days pass without a successful check-in, Pass-downloaded setups do not start a new game until the device reconnects (Spotify's model). Nothing is deleted: downloads, saved games and the results queue stay. The featured setup is unaffected.
+4. **No game outcome changes.** Airplane mode is convenience; a Pass setup plays by the same rules as the same setup online, so this stays inside NG-1.
+
+**Not decided here.** Whether a signed-out guest may download the featured setup, and whether a game already in progress may finish after the 30-day window lapses. The WP settles both.
+
+**Reserved by:** NUMBER-LEDGER D-24845 (claude/airplane-mode-decisions-reserve). Related: D-24403, D-24636, D-24844, D-24846.
+
+---
+
+### D-24846 — Airplane mode: the explicit download is accepted under the existing digital-rights gap; no expiry now, and any license-required window is one uniform rule (operator decision, no WP) (Active 2026-11-12)
+
+**Context.** Third of the four airplane-mode decisions. [IP Licensing](../../wiki/ip-licensing.md) records that the digital character rights are not yet in hand. That gap is not new to airplane mode: the live game already sends every card image to players' browsers with `Cache-Control: public, max-age=31536000, immutable` (RUNBOOK-r2-image-cache-control), so the art already sits on their devices for up to a year. Airplane mode adds an explicit "download" and storage the browser is less likely to evict, which makes the same exposure more visible.
+
+**Decision (Jeff, 2026-11-12).**
+1. **Accepted.** The extra visibility of an explicit download is an acceptable risk under the existing gap. Airplane mode is not blocked on rights clearance.
+2. **No expiry now.** A downloaded setup stays until the player deletes it. The Pass check-in (D-24845) is an entitlement rule, not a rights rule.
+3. **If a license later requires a window,** it is one uniform check-in or expiry rule for every setup, refreshed quietly when online. Never per-setup or per-card expiry (the Netflix pattern the page rejects).
+
+**Not changed.** The image cache headers and the rights work itself.
+
+**Reserved by:** NUMBER-LEDGER D-24846 (claude/airplane-mode-decisions-reserve). Related: D-24844, D-24845.
+
+---
+
+### D-24847 — Airplane mode: a verified offline game counts toward leaderboards and seed challenges exactly as an online one (operator decision, no WP) (Active 2026-11-12)
+
+**Context.** Fourth of the four airplane-mode decisions. An offline game's seed is generated on the device, so the device knows it. [DESIGN-SEED-CHALLENGES.md](DESIGN-SEED-CHALLENGES.md) already treats a published seed as knowable in advance, rests the board's integrity on server-side replay verification, and ranks by FinalScore, never by volume of attempts.
+
+**Decision (Jeff, 2026-11-12).**
+1. **Full parity.** Once the server has replayed an offline record with the real engine and found it legal (D-24844 §5), the result is recorded the same way as any finished online match: same scoring, same leaderboards, same seed-challenge eligibility. No offline flag, no separate board.
+2. **Seed challenges.** An offline seed-challenge record must carry the challenge's published setup and seed; any other record is an ordinary game.
+3. **The upload is new input surface.** The verify endpoint takes a record the client uploads rather than a match the server captured. That is consistent with D-5301 (the server re-runs the moves and never trusts a client score), but the endpoint needs size and rate limits, and a row in `api-endpoints.md` when built.
+4. **Data version.** A record carries the engine build and card-data version it was played on; the WP decides whether the verifier replays on that version or rejects a mismatch.
+
+**Reserved by:** NUMBER-LEDGER D-24847 (claude/airplane-mode-decisions-reserve). Related: D-5301, D-24119, D-24844.
+
+---
 Protect this file.
 
 ### D-24841 — The Lilin Ambush "Hunt for Victims" (Skinner, Meatmarket, Blackout) is the villain primitive `villain-hunt-for-victims`: mandatory, the active player picks the holder when two or more hold a Bystander (default the Escape Pile), else this Villain captures one; Blackout's Moonlight repeat is a second descriptor gated on the new `moonlight` condition (Active 2026-11-12 — WP-889 / EC-927)
