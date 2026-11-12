@@ -31,6 +31,9 @@ import { moveCardFromZone } from './zoneOps.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { parkSeatChoice } from './seatChoice.resolve.js';
 import { pushLog } from '../log/logPush.js';
+// why: WP-883 / D-24834 — a leaf module (it imports only the economy helper, the log helpers and
+// types), so this import adds no cycle edge.
+import { grantGainWoundReward, logGainWoundRewardForfeited } from '../hero/gainWoundRewardGrant.js';
 
 /** The seat-choice kind discriminant for a Flying-Shield-Block reveal/decline wave. */
 export const FLYING_SHIELD_BLOCK_SEAT_CHOICE_KIND = 'flying-shield-block';
@@ -202,6 +205,10 @@ function dropUninterceptableWounds(G: LegendaryGameState): void {
   for (const entry of queue) {
     if (currentCandidateSeat(G, entry) === undefined) {
       pushLog(G, `Player ${entry.recipientID} took the Wound (no Flying Shield Block was left to reveal).`);
+      // why: WP-883 / D-24834 — the recipient keeps the Wound, so a held reward is granted.
+      if (entry.gainWoundReward !== undefined) {
+        grantGainWoundReward(G, entry.recipientID, entry.gainWoundReward, true);
+      }
     } else {
       remaining.push(entry);
     }
@@ -212,23 +219,34 @@ function dropUninterceptableWounds(G: LegendaryGameState): void {
 /**
  * Builds one seat's two-option prompt for the Wound it is asked about.
  *
+ * // why: WP-883 / D-24834 — on a Wound gained on purpose for a reward, the decline label names
+ * the reward the recipient keeps ("Take the Wound (keep +N Attack)" / "Let Player {r} take the
+ * Wound (they keep +N Attack)"); every other Wound keeps today's labels.
+ *
  * @param seat - The addressed seat.
- * @param recipientID - The player who would gain the Wound.
+ * @param entry - The pending Wound the seat is asked about.
  * @returns The seat's prompt (reveal first, decline second).
  */
-function buildSeatPrompt(seat: string, recipientID: string): PendingSeatChoice['seatPrompts'][string] {
+function buildSeatPrompt(seat: string, entry: PendingFlyingShieldBlockWound): PendingSeatChoice['seatPrompts'][string] {
+  const recipientID = entry.recipientID;
+  let keepSuffix = '';
+  let otherSeatKeepSuffix = '';
+  if (entry.gainWoundReward !== undefined) {
+    keepSuffix = ` (keep +${entry.gainWoundReward.magnitude} Attack)`;
+    otherSeatKeepSuffix = ` (they keep +${entry.gainWoundReward.magnitude} Attack)`;
+  }
   if (seat === recipientID) {
     return {
       options: [
         { label: 'Reveal Flying Shield Block: prevent your Wound and rescue a Bystander' },
-        { label: 'Take the Wound' },
+        { label: `Take the Wound${keepSuffix}` },
       ],
     };
   }
   return {
     options: [
       { label: `Reveal Flying Shield Block: prevent Player ${recipientID}'s Wound and rescue a Bystander` },
-      { label: `Let Player ${recipientID} take the Wound` },
+      { label: `Let Player ${recipientID} take the Wound${otherSeatKeepSuffix}` },
     ],
   };
 }
@@ -275,7 +293,7 @@ export function openFlyingShieldBlockSeatChoiceIfNeeded(
     }
     entry.addressedSeat = seat;
     seats.push(seat);
-    seatPrompts[seat] = buildSeatPrompt(seat, entry.recipientID);
+    seatPrompts[seat] = buildSeatPrompt(seat, entry);
   }
   if (seats.length === 0) {
     delete G.pendingFlyingShieldBlockWounds;
@@ -318,8 +336,18 @@ export function applyFlyingShieldBlockResolvedSeatChoice(
     const copy = findRevealableFlyingShieldBlockCopy(G, seat);
     if (submission.optionIndex === FLYING_SHIELD_BLOCK_REVEAL_OPTION_INDEX && copy !== undefined) {
       applyFlyingShieldBlockReveal(G, seat, copy, entry.recipientID);
+      // why: WP-883 / D-24834 — "rescue a Bystander instead": the Wound was never gained, so a
+      // reward held for it is forfeited.
+      if (entry.gainWoundReward !== undefined) {
+        logGainWoundRewardForfeited(G, entry.recipientID, entry.gainWoundReward);
+      }
       queue.splice(entryIndex, 1);
     } else if (applyFlyingShieldBlockDecline(G, seat, entry)) {
+      // why: WP-883 / D-24834 — no candidate is left, so the recipient keeps the Wound and a held
+      // reward is granted. A decline that leaves candidates keeps the reward on the entry.
+      if (entry.gainWoundReward !== undefined) {
+        grantGainWoundReward(G, entry.recipientID, entry.gainWoundReward, true);
+      }
       queue.splice(entryIndex, 1);
     }
   }

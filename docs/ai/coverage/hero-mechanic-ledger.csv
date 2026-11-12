@@ -203,6 +203,7 @@ co2e/gambit,Gambit,co2e,reveal-top-dispose,executable,WP-702,D-24521,packages/ga
 co2e/gambit,Gambit,co2e,reveal-top-dispose-ko,executable,,D-24558,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose-ko,hypnotic-charm
 co2e/gambit,Gambit,co2e,reveal-top-dispose-others,executable,WP-702,D-24521,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose-others,hypnotic-charm
 co2e/hawkeye,Hawkeye,co2e,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,quick-draw
+co2e/hulk,Hulk,co2e,gain-wound-reward,executable,WP-883,D-24834,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-reward,hulk-smash
 co2e/hulk,Hulk,co2e,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,dont-make-me-angry
 co2e/hulk,Hulk,co2e,reveal-or-gain-wound-each,executable,WP-843,D-24777,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-or-gain-wound-each,crazed-rampage
 co2e/iron-man,Iron Man,co2e,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,overloaded-unibeam
@@ -420,6 +421,7 @@ mdns/elsa-bloodstone,Elsa Bloodstone,mdns,hunt-for-victims,unsupported,,,,stalk-
 mdns/elsa-bloodstone,Elsa Bloodstone,mdns,patrol,condition,WP-881,D-24832,,axe-of-the-slayer|silver-bullets|vengeance-of-the-bloodstone-gem
 mdns/morbius,Morbius,mdns,blood-frenzy,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#blood-frenzy,insatiable-craving|its-morbin-time|mesmerize
 mdns/morbius,Morbius,mdns,blood-frenzy-recruit,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#blood-frenzy-recruit,mesmerize
+mdns/morbius,Morbius,mdns,gain-wound-reward,executable,WP-883,D-24834,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-reward,scalded-by-sunlight
 mdns/morbius,Morbius,mdns,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,scalded-by-sunlight
 mdns/morbius,Morbius,mdns,moonlight,condition,,,,mesmerize|scalded-by-sunlight
 mdns/morbius,Morbius,mdns,sunlight,condition,,,,scalded-by-sunlight

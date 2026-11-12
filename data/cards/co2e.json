@@ -727,7 +727,7 @@
           "attack": "5+",
           "recruit": null,
           "abilities": [
-            "[hc:strength]: You may gain a Wound. If you do, you get +5[icon:attack]."
+            "[hc:strength]: You may gain a Wound. If you do, you get +5[icon:attack]. [keyword:gain-wound-reward:attack:5]"
           ]
         }
       ],

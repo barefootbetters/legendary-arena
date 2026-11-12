@@ -191,6 +191,13 @@ import {
   applyHeistShuffleResolvedSeatChoice,
   HEIST_SHUFFLE_SEAT_CHOICE_KIND,
 } from '../hero/heistPayloads.logic.js';
+// why: WP-883 / D-24834 — the gain-wound-reward apply and kind. gainWoundReward.logic imports
+// wounds.logic, which reaches this module through divingBlock.logic: the same runtime-safe cycle
+// as the imports above (function-body references only).
+import {
+  applyGainWoundRewardSeatChoice,
+  GAIN_WOUND_REWARD_SEAT_CHOICE_KIND,
+} from '../hero/gainWoundReward.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -812,6 +819,13 @@ function applySeatChoiceByKind(
     applyHeistShuffleResolvedSeatChoice(G, choice, shuffleContext);
     return;
   }
+  // why: WP-883 / D-24834 — "You may gain a Wound. If you do, you get +N Attack": gain through the
+  // Wound chokepoint (Diving Block / Flying Shield Block then hold the reward) or decline (the
+  // default, so the timeout path declines with no Wound). Placed before the generic fall-through.
+  if (choice.kind === GAIN_WOUND_REWARD_SEAT_CHOICE_KIND) {
+    applyGainWoundRewardSeatChoice(G, choice);
+    return;
+  }
   // why: D-24678 — the shuffle context reaches Random Acts' Diving Block draw.
   if (applySeatChoiceCard(G, choice, shuffleContext)) {
     return;
@@ -1047,6 +1061,9 @@ export function applySeatChoiceTimeoutDefault(
     // Random Acts pass after a defaulted wound choice — it has no events to admit the seats;
     // per D-24501 a play-phase disconnect PAUSES the match (this default is the not-yet-wired
     // WP-116 governing-policy path), so the live pass-left is never reached via a timeout here.
+    // why: WP-883 / D-24834 — a defaulted 'gain-wound-reward' declines (no Wound, L3); a defaulted
+    // Diving Block / Flying Shield Block decline on a Wound holding a gain-wound reward keeps the
+    // Wound, so the reward is granted (L7) by the same dispatch.
     applySeatChoiceByKind(G, choice, undefined);
     delete G.pendingSeatChoice;
   }

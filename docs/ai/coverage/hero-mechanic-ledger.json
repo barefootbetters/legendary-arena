@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 874,
+    "totalRows": 876,
     "byStatus": {
-      "executable": 496,
+      "executable": 498,
       "deferred": 16,
       "condition": 70,
       "unsupported": 267,
       "unmarked": 22,
       "subsystem": 3
     },
-    "distinctMechanics": 183
+    "distinctMechanics": 184
   },
   "rows": [
     {
@@ -3800,6 +3800,22 @@
       "extId": "co2e/hulk",
       "heroName": "Hulk",
       "set": "co2e",
+      "mechanic": "gain-wound-reward",
+      "status": "executable",
+      "wp": "WP-883",
+      "decision": "D-24834",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-reward",
+      "designs": [
+        {
+          "slug": "hulk-smash",
+          "name": "Hulk Smash!"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/hulk",
+      "heroName": "Hulk",
+      "set": "co2e",
       "mechanic": "ko-wound-reward",
       "status": "executable",
       "wp": "WP-382",
@@ -7569,6 +7585,22 @@
         {
           "slug": "mesmerize",
           "name": "Mesmerize"
+        }
+      ]
+    },
+    {
+      "extId": "mdns/morbius",
+      "heroName": "Morbius",
+      "set": "mdns",
+      "mechanic": "gain-wound-reward",
+      "status": "executable",
+      "wp": "WP-883",
+      "decision": "D-24834",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-reward",
+      "designs": [
+        {
+          "slug": "scalded-by-sunlight",
+          "name": "Scalded by Sunlight"
         }
       ]
     },

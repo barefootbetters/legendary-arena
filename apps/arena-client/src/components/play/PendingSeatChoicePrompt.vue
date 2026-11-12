@@ -154,6 +154,10 @@ export default defineComponent({
         case 'zarathos-demonic-essence-first':
         case 'zarathos-demonic-essence-last':
           return 'Demonic Essence of Ghost Rider — KO one of your Heroes?';
+        // why: WP-883 / D-24834 — "You may gain a Wound. If you do, you get +N Attack" (Hulk
+        // Smash!, Scalded by Sunlight). The two options carry the +N.
+        case 'gain-wound-reward':
+          return 'Gain a Wound for extra Attack?';
         default:
           return 'Your choice';
       }

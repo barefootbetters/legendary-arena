@@ -1607,6 +1607,29 @@ export interface PendingSeatChoice {
   // above 3 must not, and nothing in G tells them apart after the apply. Omitted when empty. Read
   // by the chain in resolveSeatChoice. NOT projected to the client.
   zarathosDiscardDownSeats?: string[];
+  // why: WP-883 / D-24834 — present only on a 'gain-wound-reward' choice: the reward a Wound
+  // gained (and kept) through this choice earns. Read by applyGainWoundRewardSeatChoice. NOT
+  // projected to the client (the option labels carry the +N).
+  gainWoundReward?: GainWoundReward;
+}
+
+/**
+ * The reward a voluntarily gained Wound earns (WP-883 / D-24834): "You may gain a Wound. If you
+ * do, you get +N[icon:attack]."
+ *
+ * One carrier shape on three hosts, all under the field name `gainWoundReward`: the
+ * 'gain-wound-reward' seat choice, then the Diving Block or Flying Shield Block entry that may
+ * still prevent the Wound. The reward is granted only once the Wound is kept (a reveal forfeits
+ * it). Discriminated on `rewardType`; the follow-up for non-attack "If you do" rewards adds
+ * members and grant arms, never fields. Runtime-only; never projected.
+ */
+export interface GainWoundReward {
+  /** The resource the kept Wound earns. */
+  rewardType: 'attack';
+  /** How much of it (N >= 1). */
+  magnitude: number;
+  /** The hero card whose ability offered the Wound (for the log). */
+  sourceCardId: CardExtId;
 }
 
 /**
@@ -1796,6 +1819,10 @@ export interface PendingDivingBlockWound {
   playerID: string;
   /** The just-gained Wound card (now in the player's discard pile) a reveal will undo. */
   woundCardId: CardExtId;
+  // why: WP-883 / D-24834 — set only when this Wound was gained on purpose through a
+  // 'gain-wound-reward' choice: the reward is held here until the Wound is kept (a decline grants
+  // it, a reveal forfeits it). Absent on every other Wound. NOT projected.
+  gainWoundReward?: GainWoundReward;
 }
 
 /**
@@ -1817,6 +1844,11 @@ export interface PendingFlyingShieldBlockWound {
   candidateSeats: string[];
   /** The seat the open wave asked about this Wound; set by the wave-opener, cleared on apply. */
   addressedSeat?: string;
+  // why: WP-883 / D-24834 — set only when this Wound was gained on purpose through a
+  // 'gain-wound-reward' choice (or carried over from a declined Diving Block entry): the reward
+  // is held until the recipient keeps the Wound (no candidate left) and forfeited on a reveal.
+  // Absent on every other Wound. NOT projected.
+  gainWoundReward?: GainWoundReward;
 }
 
 /**

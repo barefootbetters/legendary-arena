@@ -21,6 +21,8 @@
  *     Weak keep-default precedent, D-24754; D-24833).
  *
  * here-hold-this and random-acts-pass-left answers were added by D-24745.
+ * gain-wound-reward, and the Diving Block / Flying Shield Block decline on a Wound gained on
+ * purpose for a reward, were added by WP-883 / D-24834.
  *
  * The absent-seat default and getLegalMoves are untouched, so autoplay, the
  * simulation runner and PAR keep their D-24590 / D-24573 behaviour (D-24745
@@ -68,6 +70,12 @@ import { hasSeatSubmitted, isSeatAddressed } from '../moves/seatChoice.resolve.j
 import { TIMESTREAM_PURGE_SEAT_CHOICE_KIND } from '../rules/timestreamPurge.logic.js';
 import { ENIGMA_PEEK_SEAT_CHOICE_KIND } from '../rules/enigmaCode.logic.js';
 import { HEIST_SHUFFLE_SEAT_CHOICE_KIND } from '../hero/heistPayloads.logic.js';
+import {
+  GAIN_WOUND_REWARD_DECLINE_OPTION_INDEX,
+  GAIN_WOUND_REWARD_GAIN_OPTION_INDEX,
+  GAIN_WOUND_REWARD_SEAT_CHOICE_KIND,
+} from '../hero/gainWoundReward.logic.js';
+import { addResources } from '../economy/economy.logic.js';
 
 // why: WP-876 / D-24823 — the shuffle prompt's "Leave the Villain Deck as it is" option.
 /** The option index of Revolutionary Anthem's leave option. */
@@ -124,14 +132,30 @@ function chooseByKind(
   options: readonly SeatChoiceOption[],
 ): number | null {
   if (choice.kind === DIVING_BLOCK_SEAT_CHOICE_KIND) {
+    // why: WP-883 / D-24834 — a Wound taken on purpose for a reward is declined (the reveal
+    // would forfeit the reward). The entry is the seat's FIRST one, as the apply looks it up.
+    const divingBlockEntry = (G.pendingDivingBlockWounds ?? []).find((entry) => entry.playerID === seat);
+    if (divingBlockEntry?.gainWoundReward !== undefined) {
+      return choice.defaultOptionIndex;
+    }
     // why: D-24499 — revealing prevents the Wound and draws a card; it never costs
     // anything (Diving Block stays in hand), so a present player always reveals.
     return DIVING_BLOCK_REVEAL_OPTION_INDEX;
   }
   if (choice.kind === FLYING_SHIELD_BLOCK_SEAT_CHOICE_KIND) {
+    // why: WP-883 / D-24834 — declined on a Wound taken on purpose for a reward, its own or a
+    // teammate's (the teammate keeps the +N; the bot gives up a Bystander rescue). The entry is
+    // the one stamped for this seat, as the apply looks it up.
+    const flyingShieldBlockEntry = (G.pendingFlyingShieldBlockWounds ?? []).find((entry) => entry.addressedSeat === seat);
+    if (flyingShieldBlockEntry?.gainWoundReward !== undefined) {
+      return choice.defaultOptionIndex;
+    }
     // why: WP-827 / D-24760 — revealing prevents a Wound (any player's) and rescues a
     // Bystander for the bot; the card stays put, so a present bot always reveals.
     return FLYING_SHIELD_BLOCK_REVEAL_OPTION_INDEX;
+  }
+  if (choice.kind === GAIN_WOUND_REWARD_SEAT_CHOICE_KIND) {
+    return chooseGainWoundRewardOption(G, choice, seat);
   }
   if (choice.kind === OUT_OF_TIME_GRANT_SEAT_CHOICE_KIND) {
     // why: WP-828 / D-24761 — the granted Hero is played again next turn, so the bot grants the
@@ -261,6 +285,64 @@ function indexOfHereHoldThisTarget(
     }
   }
   return indexOfCheapestCityTarget(G, seat, options, safeCityIndices);
+}
+
+/**
+ * The bot's answer to "You may gain a Wound. If you do, you get +N Attack": gain only when the
+ * +N newly enables a fight (a City Villain or the Mastermind) right now; otherwise decline.
+ *
+ * // why: WP-883 / D-24834 — a Wound is a dead card for the rest of the game, so it is worth
+ * taking only for a fight the bot could not make without the +N. getLegalMoves is the single
+ * mirror of the fight guards; it is asked about two shallow local copies (the open choice set
+ * aside, then also the +N added). G is never written.
+ *
+ * @param G - The game state (read only).
+ * @param choice - The open 'gain-wound-reward' choice.
+ * @param seat - The addressed seat (the active player).
+ * @returns The gain option when it opens a fight, else the decline option.
+ */
+function chooseGainWoundRewardOption(
+  G: LegendaryGameState,
+  choice: PendingSeatChoice,
+  seat: string,
+): number {
+  const reward = choice.gainWoundReward;
+  if (reward === undefined) {
+    return GAIN_WOUND_REWARD_DECLINE_OPTION_INDEX;
+  }
+  const stateWithoutSeatChoice = { ...G, pendingSeatChoice: undefined } as LegendaryGameState;
+  const stateWithReward = {
+    ...G,
+    pendingSeatChoice: undefined,
+    turnEconomy: addResources(G.turnEconomy, reward.magnitude, 0),
+  } as LegendaryGameState;
+  if (countLegalFights(stateWithReward, seat) > countLegalFights(stateWithoutSeatChoice, seat)) {
+    return GAIN_WOUND_REWARD_GAIN_OPTION_INDEX;
+  }
+  return GAIN_WOUND_REWARD_DECLINE_OPTION_INDEX;
+}
+
+/**
+ * Counts the seat's legal fightVillain + fightMastermind moves in the given state.
+ *
+ * @param state - The state to ask getLegalMoves about (read only).
+ * @param seat - The seat whose fights are counted.
+ * @returns The number of legal fight moves.
+ */
+function countLegalFights(state: LegendaryGameState, seat: string): number {
+  const legalMoves = getLegalMoves(state, {
+    phase: 'play',
+    turn: 0,
+    currentPlayer: seat,
+    numPlayers: Object.keys(state.playerZones).length,
+  });
+  let fights = 0;
+  for (const legalMove of legalMoves) {
+    if (legalMove.name === 'fightVillain' || legalMove.name === 'fightMastermind') {
+      fights++;
+    }
+  }
+  return fights;
 }
 
 /**

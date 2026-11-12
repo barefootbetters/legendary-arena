@@ -31,6 +31,7 @@ import {
 } from '../villainDeck/villainEscapeProcedure.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { parkHeistShuffleChoice } from '../hero/heistPayloads.logic.js';
+import { buildGainWoundRewardChoice } from '../hero/gainWoundReward.logic.js';
 
 /**
  * Minimal G carrying only the fields the builders and the policy read.
@@ -477,5 +478,89 @@ describe('WP-882 choosePlayingSeatChoiceOption — Zarathos kinds (D-24833)', ()
       { label: "Don't KO" },
     ], 2);
     assert.equal(choosePlayingSeatChoiceOption(imprison, '0'), 2);
+  });
+});
+
+describe('WP-883 choosePlayingSeatChoiceOption — gain-wound-reward (D-24834)', () => {
+  const HULK_SMASH = 'co2e/hulk/hulk-smash#0';
+  const REWARD = { rewardType: 'attack' as const, magnitude: 5, sourceCardId: HULK_SMASH };
+
+  it('gains when +5 reaches a City Villain it could not fight; declines when it opens nothing new', () => {
+    const reachable = makeCityState(1, ['villain-a#0', null, null, null, null], { 'villain-a#0': 5 });
+    withChoice(reachable, buildGainWoundRewardChoice('0', REWARD));
+    assert.equal(readAbsentSeatDefault(reachable), 1, 'the absent-seat default declines');
+    assert.equal(choosePlayingSeatChoiceOption(reachable, '0'), 0, '1 + 5 Attack reaches the 5-cost Villain');
+
+    const outOfReach = makeCityState(1, ['villain-a#0', null, null, null, null], { 'villain-a#0': 9 });
+    withChoice(outOfReach, buildGainWoundRewardChoice('0', REWARD));
+    assert.equal(choosePlayingSeatChoiceOption(outOfReach, '0'), 1, '1 + 5 Attack still cannot fight a 9-cost Villain');
+
+    const alreadyFightable = makeCityState(6, ['villain-a#0', null, null, null, null], { 'villain-a#0': 5 });
+    withChoice(alreadyFightable, buildGainWoundRewardChoice('0', REWARD));
+    assert.equal(choosePlayingSeatChoiceOption(alreadyFightable, '0'), 1, 'the fight is open without the Wound');
+  });
+
+  it('never writes G (purity)', () => {
+    const G = makeCityState(1, ['villain-a#0', null, null, null, null], { 'villain-a#0': 5 });
+    withChoice(G, buildGainWoundRewardChoice('0', REWARD));
+    const before = structuredClone(G);
+    choosePlayingSeatChoiceOption(G, '0');
+    assert.deepEqual(G, before);
+  });
+
+  it('declines Diving Block on a tagged Wound and still reveals on an untagged one', () => {
+    const tagged = makeState({ '0': ['core-hero-black-widow-diving-block#0'] }, {
+      pendingDivingBlockWounds: [{ playerID: '0', woundCardId: WOUND_EXT_ID, gainWoundReward: REWARD }],
+    });
+    openDivingBlockSeatChoiceIfNeeded(tagged, undefined);
+    assert.equal(choosePlayingSeatChoiceOption(tagged, '0'), tagged.pendingSeatChoice!.defaultOptionIndex);
+    assert.equal(choosePlayingSeatChoiceOption(tagged, '0'), 1);
+
+    const untagged = makeState({ '0': ['core-hero-black-widow-diving-block#0'] }, {
+      pendingDivingBlockWounds: [{ playerID: '0', woundCardId: WOUND_EXT_ID }],
+    });
+    openDivingBlockSeatChoiceIfNeeded(untagged, undefined);
+    assert.equal(choosePlayingSeatChoiceOption(untagged, '0'), 0);
+  });
+
+  it('one seat with Diving Block entries [untagged, tagged]: reveals in wave 1, declines in wave 2', () => {
+    const G = makeState({ '0': ['core-hero-black-widow-diving-block#0'] }, {
+      pendingDivingBlockWounds: [
+        { playerID: '0', woundCardId: WOUND_EXT_ID },
+        { playerID: '0', woundCardId: WOUND_EXT_ID, gainWoundReward: REWARD },
+      ],
+    });
+    openDivingBlockSeatChoiceIfNeeded(G, undefined);
+    assert.equal(choosePlayingSeatChoiceOption(G, '0'), 0, 'wave 1 resolves the untagged front entry');
+    // why: drain wave 1 the way the apply does (front entry for the seat), then reopen.
+    G.pendingDivingBlockWounds!.shift();
+    delete G.pendingSeatChoice;
+    openDivingBlockSeatChoiceIfNeeded(G, undefined);
+    assert.equal(choosePlayingSeatChoiceOption(G, '0'), 1, 'wave 2 resolves the tagged entry');
+  });
+
+  it('declines Flying Shield Block on a tagged Wound (a teammate\'s too) and still reveals on an untagged one', () => {
+    const flyingShieldBlockChoice = (): PendingSeatChoice => ({
+      kind: 'flying-shield-block',
+      addressedSeats: ['1'],
+      seatPrompts: { '1': { options: [{ label: 'Reveal' }, { label: 'Let Player 0 take the Wound' }] } },
+      submissions: {},
+      defaultOptionIndex: 1,
+    });
+    const tagged = makeState({ '0': [], '1': [] }, {
+      pendingFlyingShieldBlockWounds: [
+        { recipientID: '0', woundCardId: WOUND_EXT_ID, candidateSeats: ['1'], addressedSeat: '1', gainWoundReward: REWARD },
+      ],
+    });
+    withChoice(tagged, flyingShieldBlockChoice());
+    assert.equal(choosePlayingSeatChoiceOption(tagged, '1'), 1);
+
+    const untagged = makeState({ '0': [], '1': [] }, {
+      pendingFlyingShieldBlockWounds: [
+        { recipientID: '0', woundCardId: WOUND_EXT_ID, candidateSeats: ['1'], addressedSeat: '1' },
+      ],
+    });
+    withChoice(untagged, flyingShieldBlockChoice());
+    assert.equal(choosePlayingSeatChoiceOption(untagged, '1'), 0);
   });
 });
