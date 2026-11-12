@@ -2219,9 +2219,9 @@
       "card": "Elsa Bloodstone",
       "ability": "Stalk the Night Stalkers — You may have a Villain or Mastermind Hunt for Victims. If it KOs a Bystander this way, you may KO a Hero from your hand or discard pile. [Tech]: you may also rescue that Bystander instead",
       "wp": "WP-884",
-      "state": "pending",
-      "date": "2026-11-11",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-11-12",
+      "evidence": "Operator match SHEmIS75NN8 (server 18ead03c, client 18ead03, created 2026-11-12T14:01Z), Dr. Doom / Midtown Bank Robbery 2p. No Tech: options KO held by Dr. Doom / decline; KO logged (1.2.10), then KO a Hero listed discard + hand cards and the discard-pile S.H.I.E.L.D. Agent was KOd (1.2.11). Nothing held: Dr. Doom captures a Bystander / decline; capture logged (1.2.15), no KO-a-Hero. After Silver Bullets: Rescue + KO rows for Hand Ninjas (Rooftops) and Dr. Doom; rescue logged (3.2.16), Victory Pile +1, KO-a-Hero still followed, hand Trooper KOd (3.2.17). No hollowEffects.",
       "note": "Live check (NEW match after the deploy; operator setters stage a Villain holding a Bystander): playing Stalk opens \"Have a Villain or Mastermind Hunt for Victims?\" (uiStateSnapshot.pendingSeatChoice options); KO that Bystander, then \"KO a Hero from your hand or discard pile?\" KOs a S.H.I.E.L.D. Agent from the discard pile; after another Tech Hero each holder also offers a rescue; with no Bystander anywhere the capture options appear. No hunt-for-victims or gate-only hollow. D-24835."
     },
     {
