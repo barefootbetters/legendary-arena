@@ -961,16 +961,43 @@ async function handleSeatChoiceTick(driver, deps, state, limits) {
 }
 
 /**
+ * Reports whether a bot seat's `resolveSeatChoice` submission landed.
+ *
+ * // why: WP-882 / D-24833 — an engine chain (Corrupted Spirit's discard-down, one
+ * card per round) can apply the choice and re-park the NEXT round addressed to the
+ * same bot seat, so "the seat is still outstanding" no longer means "not landed".
+ * `resolveSeatChoice` rejects without touching G (moves never mutate on a failed
+ * validation), so a changed G is a landed submission; an unchanged G with the seat
+ * still owing is a submission that did not land. Reading a concurrent human change
+ * as "landed" is harmless: the next tick re-decides from fresh state.
+ *
+ * @param {string} gameStateBeforeJson - `JSON.stringify(G)` taken BEFORE the submission
+ *   (a snapshot, so a fetch that hands back a shared, mutated object still compares).
+ * @param {object} after - The state fetched after the submission.
+ * @param {string} botSeat - The bot seat that submitted.
+ * @returns {boolean} true when the submission landed.
+ */
+export function didSeatChoiceSubmissionLand(gameStateBeforeJson, after, botSeat) {
+  if (!outstandingSeatChoiceSeats(after).includes(botSeat)) {
+    return true;
+  }
+  return JSON.stringify(after.G) !== gameStateBeforeJson;
+}
+
+/**
  * Submits a bot seat's `resolveSeatChoice` AS that seat, re-submitting
  * with back-off when it does not land, and reports the outcome.
  *
  * // why: D-24593 — the submission is seat-bound (the bot seat's own
  * credentials and playerID), and boardgame.io admits it from a non-active seat
  * because `parkSeatChoice` placed every addressed seat in the
- * `resolvingSeatChoice` stage. Progress is the seat leaving the outstanding set
- * (or the choice clearing), not a bare `_stateID` bump. Fail loud, never spin:
- * a seat the engine offers no resolve move, or a submission that never lands
- * across the retry budget, faults the match (D-24590 policy).
+ * `resolvingSeatChoice` stage. Progress is the submission landing (see
+ * `didSeatChoiceSubmissionLand`), not a bare `_stateID` bump. Fail loud, never
+ * spin: a seat the engine offers no resolve move, or a submission that never
+ * lands across the retry budget, faults the match (D-24590 policy).
+ *
+ * // why: each attempt re-decides from the latest fetched state, so a retry can
+ * never resubmit an option index chosen for an earlier prompt.
  *
  * @param {object} driver - The driver object.
  * @param {object} deps - The injected capabilities.
@@ -979,14 +1006,16 @@ async function handleSeatChoiceTick(driver, deps, state, limits) {
  * @returns {Promise<{ kind: 'resolved' | 'vanished' | 'game-over' | 'faulted' }>}
  */
 async function submitBotSeatChoice(driver, deps, state, botSeat) {
-  const move = decideBotSeatChoiceMove(state, botSeat);
-  if (move === null) {
-    console.error(
-      `[bot-ally] match ${driver.matchId} seat ${botSeat} FAULTED (owes a seat choice but has no single resolveSeatChoice move): ${summarizeBotTurnState(state, botSeat)}`,
-    );
-    return { kind: 'faulted' };
-  }
+  let current = state;
   for (let submitAttempt = 1; submitAttempt <= BOT_MOVE_SUBMIT_ATTEMPTS; submitAttempt++) {
+    const move = decideBotSeatChoiceMove(current, botSeat);
+    if (move === null) {
+      console.error(
+        `[bot-ally] match ${driver.matchId} seat ${botSeat} FAULTED (owes a seat choice but has no single resolveSeatChoice move): ${summarizeBotTurnState(current, botSeat)}`,
+      );
+      return { kind: 'faulted' };
+    }
+    const gameStateBeforeJson = JSON.stringify(current.G);
     await deps.submitMove({ seat: botSeat, moveName: move.name, moveArgs: move.args });
     const after = await deps.fetchState(driver.matchId);
     if (after === null || after === undefined) {
@@ -995,18 +1024,16 @@ async function submitBotSeatChoice(driver, deps, state, botSeat) {
     if (after.ctx.gameover !== undefined) {
       return { kind: 'game-over' };
     }
-    if (!outstandingSeatChoiceSeats(after).includes(botSeat)) {
+    if (didSeatChoiceSubmissionLand(gameStateBeforeJson, after, botSeat) || driver.stopped) {
       return { kind: 'resolved' };
     }
-    if (driver.stopped) {
-      return { kind: 'resolved' };
-    }
+    current = after;
     if (submitAttempt < BOT_MOVE_SUBMIT_ATTEMPTS) {
       await delay(BOT_MOVE_RETRY_BASE_MS * submitAttempt);
     }
   }
   console.error(
-    `[bot-ally] match ${driver.matchId} seat ${botSeat} FAULTED (resolveSeatChoice did not land across ${BOT_MOVE_SUBMIT_ATTEMPTS} attempts): ${summarizeBotTurnState(state, botSeat)}`,
+    `[bot-ally] match ${driver.matchId} seat ${botSeat} FAULTED (resolveSeatChoice did not land across ${BOT_MOVE_SUBMIT_ATTEMPTS} attempts): ${summarizeBotTurnState(current, botSeat)}`,
   );
   return { kind: 'faulted' };
 }

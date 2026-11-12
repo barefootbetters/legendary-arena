@@ -27,6 +27,7 @@ import { buildInitialGameState, LegendaryGame, openDivingBlockSeatChoiceIfNeeded
 import {
   botAllyDrivers,
   createBotAllyDriver,
+  didSeatChoiceSubmissionLand,
   findBotOwedSeatChoiceSeat,
   hasOutstandingSeatChoice,
   BOT_ALLY_STATUS,
@@ -283,6 +284,59 @@ test('bot holding Diving Block reveals it on a Master Strike Wound instead of ta
     'the log says the bot revealed, not "took the Wound (declined Diving Block)"',
   );
   assert.equal(persistCalls.length, 0);
+});
+
+/**
+ * Builds a real 3p match state (seat 0 active, the human) where Corrupted Spirit of
+ * Vengeance forced bot seat 2 (seven cards, no Instinct / Covert Hero) to discard down
+ * to 3, and parks its first one-card round (WP-882 / D-24833). Later rounds are chained
+ * by the real engine `resolveSeatChoice`, re-addressed to the same bot seat.
+ *
+ * @returns The fetched-state shape ({ G, ctx, _stateID }) the driver consumes.
+ */
+function parkedCorruptedSpiritDiscardDownState(): MatchState {
+  const state = parkedVanishingIllusionsState(3, '0', ['2']);
+  const hand = [
+    'starting-shield-agent', 'starting-shield-agent', 'starting-shield-agent', 'starting-shield-agent',
+    'starting-shield-trooper', 'starting-shield-trooper', 'pile-wound',
+  ];
+  state.G.playerZones['2']!.hand = hand;
+  const distinctCards = [...new Set(hand)];
+  state.G.pendingSeatChoice = {
+    kind: 'zarathos-corrupted-spirit-discard-down',
+    addressedSeats: ['2'],
+    seatPrompts: { 2: { options: distinctCards.map((cardId) => ({ label: `Discard ${cardId}`, cardId })) } },
+    submissions: {},
+    defaultOptionIndex: 0,
+  };
+  return state;
+}
+
+test('a bot owing four chained discard-down rounds answers each one instead of faulting (WP-882 regression)', async () => {
+  const { deps, match, submitCalls, persistCalls } = makeRealDeps(parkedCorruptedSpiritDiscardDownState(), '1');
+  const driver = createBotAllyDriver({ matchId: 'm-corrupted-spirit', botSeats: ['1', '2'], deps });
+
+  for (let poll = 0; poll < 6; poll++) {
+    await driver.tick();
+  }
+
+  assert.equal(persistCalls.length, 0, 'before the fix the re-parked round read as "did not land" and the driver faulted');
+  assert.equal(driver.getStatus(), BOT_ALLY_STATUS.active);
+  assert.equal(match.value.G.pendingSeatChoice, undefined, 'every round resolved');
+  assert.equal(match.value.G.playerZones['2']!.hand.length, 3, 'the bot discarded down to 3');
+  assert.equal(submitCalls.length, 4, 'one submission per round, none resubmitted');
+  assert.ok(submitCalls.every((call) => call.seat === '2' && call.moveName === 'resolveSeatChoice'));
+  assert.ok(match.value.G.playerZones['2']!.discard.includes('pile-wound'), 'the bot dropped its Wound');
+});
+
+test('didSeatChoiceSubmissionLand: a changed G or a seat that left the outstanding set landed; an unchanged G did not', () => {
+  const pending = { addressedSeats: ['1'], submissions: {} };
+  const before = { G: { pendingSeatChoice: pending, playerZones: { 1: { hand: ['a', 'b'] } } } };
+  const beforeJson = JSON.stringify(before.G);
+  assert.equal(didSeatChoiceSubmissionLand(beforeJson, before, '1'), false, 'a rejected submission leaves G untouched');
+  const nextRound = { G: { pendingSeatChoice: pending, playerZones: { 1: { hand: ['b'] } } } };
+  assert.equal(didSeatChoiceSubmissionLand(beforeJson, nextRound, '1'), true, 'a re-parked round for the same seat landed');
+  assert.equal(didSeatChoiceSubmissionLand(beforeJson, { G: {} }, '1'), true, 'a cleared choice landed');
 });
 
 test('a bot seat the engine offers no resolve move faults loudly instead of spinning', async () => {
