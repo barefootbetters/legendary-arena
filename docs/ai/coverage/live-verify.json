@@ -2212,6 +2212,17 @@
       "date": "2026-11-12",
       "evidence": "Operator match J9SuzrjSKPA (server and client a374e0a3, created 2026-11-12T00:55Z), Zarathos / Midtown Bank Robbery 2p, Hulk + four mdns Heroes, Claude in Chrome. HQ staged to Sunlight (4,3,3,2,2): Scalded by Sunlight 1.2.10 +2 printed, 1.2.11 prompt (Gain a Wound: you get +2 Attack / Don't gain a Wound); real click Gain -> 1.2.13 \"gained a Wound and got +2 Attack\", Attack 2 -> 4, Wound on the discard; no sunlight hollow in the log or the Hollow effects panel.",
       "note": "Seen: the Sunlight prompt and the gain path. Not seen live: the decline on Scalded (seen on Hulk Smash!, same kind) and Moonlight prompting nothing for the Sunlight line. D-24834."
+    },
+    {
+      "key": "mdns/elsa-bloodstone|hunt-for-victims",
+      "kind": "hero",
+      "card": "Elsa Bloodstone",
+      "ability": "Stalk the Night Stalkers — You may have a Villain or Mastermind Hunt for Victims. If it KOs a Bystander this way, you may KO a Hero from your hand or discard pile. [Tech]: you may also rescue that Bystander instead",
+      "wp": "WP-884",
+      "state": "pending",
+      "date": "2026-11-11",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy; operator setters stage a Villain holding a Bystander): playing Stalk opens \"Have a Villain or Mastermind Hunt for Victims?\" (uiStateSnapshot.pendingSeatChoice options); KO that Bystander, then \"KO a Hero from your hand or discard pile?\" KOs a S.H.I.E.L.D. Agent from the discard pile; after another Tech Hero each holder also offers a rescue; with no Bystander anywhere the capture options appear. No hunt-for-victims or gate-only hollow. D-24835."
     }
   ]
 }

@@ -728,10 +728,16 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // folded `patrol` family stays unresolved because Corvus Glaive and Beast keep `unsupported`
   // ledger rows (least-done), so resolvedObs stays 1141 and percentResolved stays 13.1
   // (1141 / 8715). A trajectory re-pin.
+  // 2026-11-11 (WP-884 / D-24835, re-pin): Stalk the Night Stalkers' Hunt for Victims is
+  // implemented, so the hero ledger's `hunt-for-victims` row flips to executable and the sweep's
+  // `hunt-for-victims` hollow leaves the feed (9 -> 0; gate-only 357 -> 352 as its Tech line stops
+  // being gate-only; feed regenerated: 7510 -> 7496 raw observations). totalObs holds at 8715 (each
+  // key's baseline peak keeps it), and hunt-for-victims' baseline peak of 13 MOVES into resolvedObs:
+  // 1141 -> 1154, so percentResolved 13.1 -> 13.2 (1154 / 8715). A mechanic-status re-pin.
   const view = useInPlayCoverage();
   assert.equal(view.totalObs.value, 8715);
-  assert.equal(view.resolvedObs.value, 1141);
-  assert.equal(view.percentResolved.value, 13.1);
+  assert.equal(view.resolvedObs.value, 1154);
+  assert.equal(view.percentResolved.value, 13.2);
   assert.ok(view.remaining.value.length > 0);
 });
 

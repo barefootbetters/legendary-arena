@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 876,
+    "totalRows": 877,
     "byStatus": {
-      "executable": 498,
+      "executable": 500,
       "deferred": 16,
       "condition": 70,
-      "unsupported": 267,
+      "unsupported": 266,
       "unmarked": 22,
       "subsystem": 3
     },
-    "distinctMechanics": 184
+    "distinctMechanics": 185
   },
   "rows": [
     {
@@ -7513,10 +7513,26 @@
       "heroName": "Elsa Bloodstone",
       "set": "mdns",
       "mechanic": "hunt-for-victims",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
+      "status": "executable",
+      "wp": "WP-884",
+      "decision": "D-24835",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#hunt-for-victims",
+      "designs": [
+        {
+          "slug": "stalk-the-night-stalkers",
+          "name": "Stalk the Night Stalkers"
+        }
+      ]
+    },
+    {
+      "extId": "mdns/elsa-bloodstone",
+      "heroName": "Elsa Bloodstone",
+      "set": "mdns",
+      "mechanic": "hunt-for-victims-rescue",
+      "status": "executable",
+      "wp": "WP-884",
+      "decision": "D-24835",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#hunt-for-victims-rescue",
       "designs": [
         {
           "slug": "stalk-the-night-stalkers",

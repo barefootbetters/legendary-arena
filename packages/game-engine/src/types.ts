@@ -1483,7 +1483,10 @@ export interface SeatChoiceOption {
   // D-24588 sets it on the Zarathos kinds' discard / KO options (the hand card, the Victory-Pile
   // Villain or the Hero); their "Gain a Wound" / "Discard down to 3 cards" / "Don't KO" options
   // leave it absent, and the applies read its absence as that option. The many other discard
-  // and KO kinds that also carry it say so at their builders. NOT projected to the client.
+  // and KO kinds that also carry it say so at their builders. WP-884 / D-24835: every City
+  // 'hunt-for-victims' option carries the City occupant here (the apply re-checks that the space
+  // still holds it), and a 'hunt-for-victims-ko-hero' option carries the Hero to KO. NOT
+  // projected to the client.
   cardId?: CardExtId;
   // why: WP-821 / D-24754 — for a 'dominate-the-weak-gain' option, recipientSeat names
   // the player who gains the option's HQ Hero (cardId), so one option pairs the
@@ -1504,6 +1507,15 @@ export interface SeatChoiceOption {
   // Budget, a dual-class Hero), heroClass is the class slug the option's Hero (cardId) gains
   // Size-Changing for. Consumer-added. Absent for every other kind. NOT projected to the client.
   heroClass?: string;
+  // why: WP-884 / D-24835 — on a 'hunt-for-victims' option, what the option does: KO the holder's
+  // last Bystander, rescue it instead (the Tech line), or have the hunter capture one. The apply
+  // reads the action from this field, never from the label or position; the decline omits it.
+  // Absent for every other kind. NOT projected to the client.
+  huntAction?: 'ko' | 'rescue' | 'capture';
+  // why: WP-884 / D-24835 — on a 'hunt-for-victims' option, the Bystander holder (ko / rescue) or
+  // the hunter (capture): a City Villain (cityIndex + cardId), the Mastermind, or the Escape Pile.
+  // Absent for every other kind. NOT projected to the client.
+  huntSource?: 'city' | 'mastermind' | 'escape-pile';
 }
 
 /**
@@ -1611,6 +1623,14 @@ export interface PendingSeatChoice {
   // gained (and kept) through this choice earns. Read by applyGainWoundRewardSeatChoice. NOT
   // projected to the client (the option labels carry the +N).
   gainWoundReward?: GainWoundReward;
+  // why: WP-884 / D-24835 — present only on the two Hunt for Victims kinds ('hunt-for-victims' /
+  // 'hunt-for-victims-ko-hero'): the card that hunted (for the logs and the chain), and on the hunt
+  // choice whether its Tech line added the rescue options. isRescueAllowed is written only as true
+  // (omit-when-false, exactOptionalPropertyTypes). Removed with the choice. NOT projected to the client.
+  huntForVictims?: {
+    sourceCardId: CardExtId;
+    isRescueAllowed?: boolean;
+  };
 }
 
 /**

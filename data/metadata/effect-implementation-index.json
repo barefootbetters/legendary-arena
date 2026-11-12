@@ -3,18 +3,18 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2870,
+    "totalEntries": 2871,
     "byScope": {
-      "hero": 876,
+      "hero": 877,
       "villain": 763,
       "mastermind": 567,
       "scheme": 664
     },
     "byStatus": {
-      "executable": 840,
+      "executable": 842,
       "deferred": 19,
       "condition": 70,
-      "unsupported": 268,
+      "unsupported": 267,
       "unmarked": 1666,
       "subsystem": 7
     }
@@ -18884,10 +18884,27 @@
       "set": "mdns",
       "scope": "hero",
       "mechanic": "hunt-for-victims",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#hunt-for-victims",
+      "wp": "WP-884",
+      "decision": "D-24835",
+      "designs": [
+        {
+          "slug": "stalk-the-night-stalkers",
+          "name": "Stalk the Night Stalkers"
+        }
+      ]
+    },
+    {
+      "extId": "mdns/elsa-bloodstone",
+      "name": "Elsa Bloodstone",
+      "set": "mdns",
+      "scope": "hero",
+      "mechanic": "hunt-for-victims-rescue",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#hunt-for-victims-rescue",
+      "wp": "WP-884",
+      "decision": "D-24835",
       "designs": [
         {
           "slug": "stalk-the-night-stalkers",
@@ -44540,6 +44557,7 @@
       "mechanics": [
         "blood-frenzy",
         "hunt-for-victims",
+        "hunt-for-victims-rescue",
         "patrol"
       ]
     },

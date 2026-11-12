@@ -44,6 +44,16 @@ import {
   COMMUNE_DISCARD_SEAT_CHOICE_KIND,
   COMMUNE_KO_SEAT_CHOICE_KIND,
 } from './communeSpiritWorld.logic.js';
+// why: WP-884 / D-24835 — Hunt for Victims' two kinds: applies, the pre-apply reader and the
+// KO-a-Hero chain (same runtime-safe cycle; bindings are read only inside function bodies).
+import {
+  applyHuntForVictimsKoHeroResolvedSeatChoice,
+  applyHuntForVictimsResolvedSeatChoice,
+  chainHuntForVictimsKoHero,
+  readHuntForVictimsWillKoBystander,
+  HUNT_FOR_VICTIMS_KO_HERO_SEAT_CHOICE_KIND,
+  HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND,
+} from './huntForVictims.logic.js';
 // why: WP-827 / D-24760 — Flying Shield Block's kind-specific apply (same runtime-safe cycle).
 import {
   applyFlyingShieldBlockResolvedSeatChoice,
@@ -525,6 +535,14 @@ export function resolveSeatChoice(
     const communeSourceCardId = choice.communeSpiritWorld?.sourceCardId;
     const communeCostBranch = isCommuneCost ? readCommuneCostBranch(G, choice) : undefined;
     const communeDiscardsLeft = isCommuneDiscard ? readCommuneDiscardsLeft(G, choice) : undefined;
+    // why: WP-884 / D-24835 — capture the Hunt for Victims seat and source card, and whether the
+    // chosen option will KO (or rescue) a Bystander, BEFORE the apply moves it and the delete clears
+    // the choice (the Commune capture above). The reader re-checks the holder, so a capture, a
+    // decline or a stale option chains no Hero pick.
+    const isHuntForVictims = appliedKind === HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND;
+    const huntSeat = isHuntForVictims ? choice.addressedSeats[0] : undefined;
+    const huntSourceCardId = choice.huntForVictims?.sourceCardId;
+    const huntWillKoBystander = isHuntForVictims && readHuntForVictimsWillKoBystander(G, choice);
     // why: WP-862 / D-24804 — capture a Shrinking Research Budget class pick's seat BEFORE the
     // apply clears the choice, so the next dual-class Hero's pick chains below (the Commune shape).
     const sizeChangingClassPickSeat = readSizeChangingClassPickSeat(choice);
@@ -583,6 +601,12 @@ export function resolveSeatChoice(
       } else if (communeDiscardsLeft !== undefined) {
         chainCommuneAfterDiscard(G, communeSeat, communeDiscardsLeft, communeSourceCardId, events);
       }
+    }
+    // why: WP-884 / D-24835 — "If it KOs a Bystander this way, you may KO a Hero": the optional Hero
+    // pick chains here in the live move context, exactly where Commune chains its next step, and
+    // only after a KO or rescue. The timeout path does not chain (its default is decline anyway).
+    if (huntWillKoBystander && huntSeat !== undefined && huntSourceCardId !== undefined) {
+      chainHuntForVictimsKoHero(G, huntSeat, huntSourceCardId);
     }
     // why: WP-862 / D-24804 — Shrinking Research Budget chains its next dual-class Hero's class
     // pick here in the live move context, exactly where Commune chains its next step.
@@ -824,6 +848,17 @@ function applySeatChoiceByKind(
   // default, so the timeout path declines with no Wound). Placed before the generic fall-through.
   if (choice.kind === GAIN_WOUND_REWARD_SEAT_CHOICE_KIND) {
     applyGainWoundRewardSeatChoice(G, choice);
+    return;
+  }
+  // why: WP-884 / D-24835 — Hunt for Victims: KO / rescue / capture a Bystander or decline, then the
+  // optional KO-a-Hero pick. Neither draws, so neither needs the shuffle context; placed before the
+  // generic fall-through so the "Seat N resolved <kind> choice" line does not also print.
+  if (choice.kind === HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND) {
+    applyHuntForVictimsResolvedSeatChoice(G, choice);
+    return;
+  }
+  if (choice.kind === HUNT_FOR_VICTIMS_KO_HERO_SEAT_CHOICE_KIND) {
+    applyHuntForVictimsKoHeroResolvedSeatChoice(G, choice);
     return;
   }
   // why: D-24678 — the shuffle context reaches Random Acts' Diving Block draw.
