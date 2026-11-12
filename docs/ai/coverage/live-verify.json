@@ -2197,10 +2197,10 @@
       "card": "Hulk",
       "ability": "Hulk Smash! — [Strength]: You may gain a Wound. If you do, you get +5 Attack",
       "wp": "WP-883",
-      "state": "pending",
-      "date": "2026-11-11",
-      "evidence": "",
-      "note": "Live check (NEW match created after the deploy, deployed gitSha checked; an operator match): Hulk Smash! after another Strength Hero prompts 'Gain a Wound for extra Attack?'. Gain -> +5 Attack and a Wound in the discard pile; decline -> neither. With Diving Block in hand, gain then reveal -> a card drawn, no Attack. Without another Strength Hero, no prompt and no Attack. D-24834."
+      "state": "partial",
+      "date": "2026-11-12",
+      "evidence": "Operator match J9SuzrjSKPA (server and client a374e0a3, created 2026-11-12T00:55Z), Zarathos / Midtown Bank Robbery 2p, Hulk + four mdns Heroes, Claude in Chrome. Hulk Smash! played after Scalded by Sunlight (Strength): 1.2.14 +5 printed, 1.2.15 prompt \"Gain a Wound for extra Attack?\" (Gain a Wound: you get +5 Attack / Don't gain a Wound); real click Don't -> 1.2.16 \"chose not to gain a Wound\", Attack stayed 9, Wounds stayed 1.",
+      "note": "Seen: the prompt and the decline (no free +5). Not seen live: the gain path on Hulk (seen on Scalded by Sunlight, same kind), the Diving Block reveal forfeit, and no-prompt without another Strength Hero. D-24834."
     },
     {
       "key": "mdns/morbius|gain-wound-reward",
@@ -2208,10 +2208,10 @@
       "card": "Morbius",
       "ability": "Scalded by Sunlight — Sunlight: You may gain a Wound. If you do, you get +2 Attack",
       "wp": "WP-883",
-      "state": "pending",
-      "date": "2026-11-11",
-      "evidence": "",
-      "note": "Live check (NEW match created after the deploy, deployed gitSha checked; an operator match with the HQ staged for Sunlight): Scalded by Sunlight prompts for +2 under Sunlight (gain -> +2 Attack and a Wound; decline -> neither) and logs no sunlight hollow; under Moonlight its Sunlight line prompts nothing. D-24834."
+      "state": "partial",
+      "date": "2026-11-12",
+      "evidence": "Operator match J9SuzrjSKPA (server and client a374e0a3, created 2026-11-12T00:55Z), Zarathos / Midtown Bank Robbery 2p, Hulk + four mdns Heroes, Claude in Chrome. HQ staged to Sunlight (4,3,3,2,2): Scalded by Sunlight 1.2.10 +2 printed, 1.2.11 prompt (Gain a Wound: you get +2 Attack / Don't gain a Wound); real click Gain -> 1.2.13 \"gained a Wound and got +2 Attack\", Attack 2 -> 4, Wound on the discard; no sunlight hollow in the log or the Hollow effects panel.",
+      "note": "Seen: the Sunlight prompt and the gain path. Not seen live: the decline on Scalded (seen on Hulk Smash!, same kind) and Moonlight prompting nothing for the Sunlight line. D-24834."
     }
   ]
 }
