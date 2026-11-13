@@ -27,7 +27,7 @@ source:
   - ../docs/ops/domains.json
   - C:\pcloud\legendary-arena\ops\accounting\expenses2026 (Render bills, Aug and Sep 2026)
   - C:\dev\legendary-arena-lab (infra/scripts, infra/systemd — the executable versions)
-last-reviewed: 2026-11-12
+last-reviewed: 2026-11-13
 ---
 
 # Ubuntu Lab Provisioning
@@ -431,12 +431,57 @@ from R2 (`RESTORE_FROM_R2=latest`). A pCloud dump restores through
   need code changes for little gain on a one-user box.
 - **Never on a rehearsal box.** See Edge Cases.
 
+### Reaching the droplet
+
+The droplet's public IPv4 isn't written in any repo, because this one is
+public and the address is the one thing the origin lock hides. The engine's
+deploy workflow holds it as the `DEPLOY_HOST` secret, which can't be read back.
+Look it up when you need it:
+
+- **Cloudflare (works from the workstation today):** the proxied `api` A record
+  points at the droplet, so its content is the IP. In the dashboard, open
+  `legendary-arena.com` → DNS → Records → `api` → Content. Or, with the DNS
+  token:
+
+  ```powershell
+  $headers = @{ Authorization = "Bearer $([Environment]::GetEnvironmentVariable('CLOUDFLARE_DNS_API_TOKEN', 'User'))" }
+  $zone = (Invoke-RestMethod -Headers $headers -Uri 'https://api.cloudflare.com/client/v4/zones?name=legendary-arena.com').result[0].id
+  (Invoke-RestMethod -Headers $headers -Uri "https://api.cloudflare.com/client/v4/zones/$zone/dns_records?name=api.legendary-arena.com").result.content
+  ```
+
+- **DigitalOcean control panel:** Droplets → `la-rehearsal-01`. The ipv4
+  address is at the top of the page.
+- **`doctl compute droplet list --format Name,PublicIPv4`** needs a valid
+  `doctl` token. The desktop one has expired (Open Questions, Operating item 6).
+
+Two checks confirm it's the right box. `ssh-keygen -F <ip>` finds it in
+`~/.ssh/known_hosts` if this workstation has logged in before. On a first
+login, the host key fingerprint ssh shows must match the `ssh-ed25519` line
+held in the engine's `DEPLOY_KNOWN_HOSTS` secret.
+
+Log in as `operator` with the workstation key:
+
+```powershell
+$ip = '<droplet ip>'
+ssh -i $HOME\.ssh\id_ed25519 "operator@$ip"
+```
+
+To skip the lookup next time, give it an alias in the workstation's
+`~/.ssh/config` (not the repo), then `ssh la-droplet`:
+
+```text
+Host la-droplet
+  HostName <droplet ip>
+  User operator
+  IdentityFile ~/.ssh/id_ed25519
+```
+
 ### Verifying the droplet
 
 Two checks cover the box, one from each side:
 
 - **From outside:** `pwsh scripts/Test-ApiDeployment.ps1 -OriginIp <droplet IP>`
-  (IP from `doctl compute droplet list`). It probes the public API surface and
+  (IP from [Reaching the droplet](#reaching-the-droplet)). It probes the public API surface and
   its auth gates through `api.`. It then checks that Cloudflare refuses a
   request bringing its own `cf-connecting-ip` (403), and that the droplet IP's
   443 and 3000 don't answer while port 80 only 301s. The guest rate limiters key
@@ -466,7 +511,9 @@ systemctl list-timers la-cf-ufw-refresh.timer   # next weekly refresh
 ```
 
 **What nothing watches.** The checks above answer "is it up, and did the
-backup land?" They don't cover:
+backup land?" They don't cover the three items below. Lab #45 adds alerts for
+the first two, which go live once its scripts are installed on the droplet
+(Open Questions, Operating):
 
 - **Memory, swap and load.** Nothing alerts on them or sends them anywhere. The
   resize trigger is checked by hand. Adding a memory and swap check to
