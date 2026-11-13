@@ -346,7 +346,7 @@ billing record.
 | Recovery | DigitalOcean Droplet backups enabled 2026-10-20 (daily, 7-day retention), as the fast path for a lost droplet. DR-02 full rebuild drilled on a new droplet 2026-10-22: **13 m 31 s** of hands-on steps. Restores from the R2 dumps are drilled separately ([Disaster Recovery](disaster-recovery.md) §7). No restore was needed. RPO by design is ≈ 24 h (nightly dump, no PITR). From 2026-10-29 to 2026-11-13, with no nightly dump, the newest R2/pCloud copy was the 2026-10-28 dump. The DigitalOcean Droplet backups are a separate DigitalOcean job and were enabled throughout. Whether they actually ran in that window wasn't checked. |
 | Cost | October (12–31): $17.65 usage, $12.65 charged after a one-time $5 credit. A full month is capped at $24.00 plus backups. Month-by-month figures: [DigitalOcean actuals](render-migration-analysis.md#digitalocean-actuals-from-october-2026). |
 | Capacity | Measured 2026-11-13 02:56 UTC, at a quiet hour: **850 MB used of 3.9 GB (22%), 3.0 GB available**, load average 0.00, **swap 2.8 MB** of 2 GB, disk **8.2 GB of 77 GB (11%)**. Steady-state memory matches the pre-cutover rehearsal (about 800 MB; the deploy build peaked at 1.37 GB). The swap figure is idle pages pushed out at `swappiness` 10, not memory pressure. Nothing is near the resize trigger: memory above ~70%, CPU above ~50% under real traffic, or real swap use outside deploys ([Target configuration](#target-configuration)). This was one reading at an idle hour, not a peak. Since 2026-11-13, `la-health` alerts on memory held high and on swap-out outside a deploy, and every ping body carries the reading (after the reboot: 19% memory, 0 MB swap). CPU load is still checked by hand: `uptime`. |
-| OOM kills | Not established. `journalctl -k` run without `sudo` can't read kernel messages on this box, so its count of 0 proves nothing. Re-check with `sudo journalctl -k --since 2026-10-12 \| grep -ciE 'oom-kill\|out of memory'`. |
+| OOM kills | **None.** `sudo journalctl -k --since 2026-10-12 \| grep -ciE 'oom-kill\|out of memory'` returned **0** on 2026-11-13, covering cutover through that night's reboot (the journal persists across boots). It needs `sudo`: run without it, `journalctl -k` can't read kernel messages on this box and prints 0 whatever happened. |
 | Kernel patches | A reboot was pending from before cutover until 2026-11-13: the box had been up 32 days on kernel 6.8.0-142, with 6.8.0-146 and -147 installed on disk. Rebooted 2026-11-13 at 05:14 UTC onto **6.8.0-147**. `la-health` now warns while a reboot is pending and fails once it has waited 7 days. |
 | PostgreSQL | 18.6 until 2026-11-13. Then upgraded to **18.7**, and PGDG minor releases now install unattended. `pg_stat_statements` has been preloaded and collecting since the same night. |
 
@@ -545,9 +545,9 @@ cover:
 - **A timer that can't start at all.** If `la-health` or `la-backup` can't
   launch, as from 2026-10-29 to 2026-11-13, nothing on the box can report it.
   Only healthchecks.io's missing-ping alerts can. They did fire on 2026-10-29,
-  but their one channel was an email address on a mailbox that was down, so
-  they need a second channel that doesn't share that dependency (Open
-  Questions, Operating item 7).
+  but their one channel was an email address on a mailbox that was down. Since
+  2026-11-13 every check also alerts through Pushover to the operator's phone,
+  at high priority for DOWN (Open Questions, Operating item 7).
 
 Kernel reboots stay manual: `07` doesn't turn on `Automatic-Reboot`. A
 reboot costs about 15 s of boot time with no Nginx standby across it, so do it
@@ -894,16 +894,15 @@ operator can, unaided —
 ## Open Questions
 
 **Status as of 2026-11-13:** every migration step below is done. Items 1–5
-under Operating were done and installed on the droplet on 2026-11-13. Items 6
-and 7 are open. Item 7's cause is found, but the second alert channel isn't
-in place yet.
+under Operating were done and installed on the droplet on 2026-11-13, and item
+7 was closed the same night. Items 6 and 8 are open.
 
 **Operating** (most are a provisioner change in the lab repo):
 
 1. ~~**Reboot the droplet at a quiet hour.**~~ Done 2026-11-13 at 05:14 UTC,
    onto kernel 6.8.0-147. `la-server`, PostgreSQL, `/health/db` and the timers
    came back, and `la-health` passed with no reboot warning. The `sudo` OOM
-   re-check is still to do.
+   re-check found no OOM kills since cutover.
 2. ~~**Alert on memory and swap** in `60-monitor`, against the resize
    trigger.~~ Done (lab #45, installed 2026-11-13). It fails on memory held at or
    above 70% for 3 runs, or more than 8 MB swapped out between runs with no
@@ -918,19 +917,23 @@ in place yet.
    longer appends duplicate config lines on every run.
 6. **Re-mint the desktop `doctl` token** (expired) and confirm the DigitalOcean
    spend alert.
-7. **Give healthchecks.io a second alert channel.** Why 15 days of missed
-   pings went unnoticed is now known. The alert fired: `la-droplet-backup`'s
+7. ~~**Give healthchecks.io a second alert channel.**~~ Done 2026-11-13. A
+   Pushover integration (high priority for DOWN, low for UP) is assigned to
+   every check, alongside the existing email. Its test notification reached the
+   operator's Android phone. Why 15 days of missed pings went unnoticed: the
+   alert fired: `la-droplet-backup`'s
    log shows `up ➔ down` on 2026-10-29 at 11:17 UTC, which is the missed 09:17
    run plus its 2-hour grace, and `down ➔ up` at the 2026-11-13 04:58 UTC
    catch-up. The ping's user agent moved from PowerShell 7.6.6 to 7.6.9 across
    the gap, which is the snap refresh. But every check's only notification method
    was email to the operator's Microsoft-hosted mailbox, and that mailbox was
-   down. Still to do:
-   - Add a non-email integration (Pushover, Telegram, Discord or Slack), or
-     at least an address on another provider. Turn it on for
-     `la-droplet-monitor`, `la-droplet-backup` and `la-droplet-pcloud`.
-   - Prove it: use the integration's test button, then let one check go late
-     and confirm the alert arrives.
+   down. healthchecks.io's "Delivered" on an email only means the mail server
+   accepted it, not that it reached an inbox.
+8. **Buy the Pushover Android license before about 2026-12-13.** The device
+   is on Pushover's 30-day trial, which started 2026-11-13. After it ends,
+   Pushover stops delivering to that phone, and item 7's second channel goes
+   quiet without any error. The license is a one-time $4.99 per platform, bought
+   in the app or at pushover.net under Upgrade Now.
 
 **Migration** (done; kept for the record). Governance is
 [D-24707](../docs/ai/DECISIONS.md), with the ewiki half as D-24690.
