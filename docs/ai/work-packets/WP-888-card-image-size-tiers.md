@@ -1,6 +1,6 @@
 # WP-888 — Card image size tiers: thumb / phone / large WebP and per-set byte manifests, published to R2 (Cross-cutting tooling)
 
-**Status:** Draft 2026-11-12
+**Status:** Done 2026-11-12 (EC-926 `EC-926:` + `INFRA:` CI step; **D-24840 Active**; all 41 sets generated and published to R2 on the operator's go; inline amendments in §Execution Amendments; post-mortem `docs/ai/post-mortems/01.6-WP-888-card-image-size-tiers.md`)
 **Primary Layer:** Cross-cutting tooling (root `scripts/`, the `scripts/upload-metadata-to-r2.mjs` precedent). No package, app, engine, registry or card-data change.
 **Dependencies (all ✅):**
 - WP-410 / D-24222 (the per-match card-image list `UIState.matchCardImageUrls` and the setup-screen prefetch, which this packet's tiers will feed)
@@ -201,6 +201,14 @@ Four new script/test files, one one-word export, wiring, six docs. The `apps/wik
 7. **The work root is local, outside pCloud.** The tiers and originals are a regenerable cache of R2. pCloud would sync about 2 GB for nothing, and its mtime handling could defeat the freshness check.
 
 ---
+
+## Execution Amendments (2026-11-12)
+
+Inline amendments found during execution. None adds a file outside §Files Expected to Change.
+
+1. **`wiki/airplane-mode.md` target drift.** #3306 (aligned the page with this packet's plan) and #3310 (a content review) rewrote the page after drafting, so the four strings Scope E pinned no longer existed. The "Image sizes" row read "**Planned, not built.**", not "No size tiers exist", so AC6's check on that string passed before any edit. The row still got the built-and-published rewrite. The "Data saver" bullet and the "parallel prefix or a suffix" sentence had become the "Which image sizes" section, which already named `thumb` and the `/{tier}` rule; its "If the tiers aren't ready first" fallback paragraph was replaced with a "The tiers are ready" note. The open question was already gone; the Interactions and References bullets now point at WP-888 / D-24840. Dropping "(planned)" from the acquisition page's tiers heading moved its anchor, so the five `#size-tiers-for-mobile-and-offline-planned` links on this page were updated with it.
+2. **Exports beyond Scope A's list.** Both CLIs share `parseArguments`, `listCardDataSets` and `readSetImageList`, so they are exported from the generator. Also exported: `serializeManifest` (the byte-identical re-build test), `formatMebibytes`, `MANIFEST_SCHEMA_VERSION`, `MANIFEST_FILE_NAME`, `CARD_DATA_FOLDER`, and from the wrapper `R2_BUCKET` and `TIER_CACHE_CONTROL`. `parseArguments(argv, knownSetAbbrs)` returns `{ workRoot, setAbbrs, isDryRun, errorMessage }`. `isTierOutputFresh(sourceMtimeMs, outputMtimeMs)` takes the two times, with `null` for a missing output.
+3. **`sharp.cache(false)`.** On Windows, libvips' operation cache kept source files open, so the encode test's temp-folder cleanup failed with EPERM; it would also block overwriting a regenerated tier. The generator turns the cache off at load (a `// why:` comment records it).
 
 ## Lint Gate Self-Review (00.3)
 

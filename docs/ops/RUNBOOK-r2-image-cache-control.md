@@ -92,6 +92,8 @@ The `legendary-images` bucket holds several prefixes with **different mutability
 | Prefix | Mutability | `immutable`? |
 |---|---|---|
 | `{setAbbr}/{setAbbr}-{ribbon}-{slug}.webp` | **Immutable** — filename is content-addressing; new art = new slug/set = new URL | **YES** — this runbook's target |
+| `{setAbbr}/{tier}/{setAbbr}-{ribbon}-{slug}.webp` (`thumb`, `phone`, `large`) | **Immutable** — a size tier of an original keeps its content-addressed name, and a published tier's settings never change (new sizes = new tier name; WP-888 / D-24840) | **YES** — `images:sizes:push` stamps it at upload, and the bulk commands below cover it |
+| `metadata/image-sizes/{setAbbr}.json` | **Mutable** — the per-set tier byte manifest, rewritten in place when a set is re-sized | **NO** — `images:sizes:push` sets `public, max-age=300, must-revalidate`; covered by the `metadata/*` exclude |
 | `avatars/{accountId}.webp` | **Mutable** — a user re-uploading their avatar overwrites the **same key** with new bytes | **NO** — `immutable` would serve the old avatar forever |
 | `metadata/{abbr}.json`, `metadata/sets.json`, … | **Mutable** — re-synced by hand when card data changes | **NO** — the Registry Viewer would read stale data |
 | `audio/sound-effects/…`, `audio/music/…` | **Mutable** — fixed filenames (`play-card.mp3`, `menace-calm.mp3`) replaced in place when a clip is re-cut | **NO** — see §4; they need a *short revalidatable* TTL, not `immutable` |

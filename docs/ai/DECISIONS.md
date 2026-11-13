@@ -51271,5 +51271,29 @@ Protect this file.
 
 **Reserved by:** NUMBER-LEDGER D-24847 (claude/airplane-mode-decisions-reserve). Related: D-5301, D-24119, D-24844.
 
+### D-24840 — Card image size tiers: `{set}/{tier}/` WebP copies by long edge plus per-set byte manifests, generated from the R2 originals (WP-888 / EC-926) (Active 2026-11-12)
+
+**Status:** Active 2026-11-12. Landed by WP-888 / EC-926.
+
+**User-Visible Surface:** none — infrastructure. No client reads the tiers yet; the curl checks are the verification (D-24026).
+
+**Context.** Every card face was served as one full-resolution WebP. The 3,104 images the card data references total 1,133 MB, and `co2e` alone is 407 MB (2500×3524, 2.7 MB per card). Phones, the board and the planned airplane-mode download (`wiki/airplane-mode.md`) need smaller copies, and the download button needs byte counts before it starts.
+
+**Decision.**
+
+1. **Tier URL = a path rule off the existing image URL.** `https://images.legendary-arena.com/{set}/{tier}/{file}.webp`: `/{tier}` is inserted before the final path segment of the card's `imageUrl` (`tierUrlFor`). Rejected: three URL fields per card in `data/cards/*.json` (changes the registry schema, `00.2-data-requirements.md` and all 41 card files); a `UIState` field (the engine's `matchCardImageUrls` already lists the originals, and the rule maps them); Cloudflare on-the-fly resizing (no exact byte counts for a manifest, not deterministic, a per-transformation bill).
+2. **`TIER_CONFIG`** (`scripts/build-card-image-sizes.mjs`) is the single place sizes live: `thumb` 280, `phone` 840, `large` 1680 px long edge, WebP quality 80. Resize is `fit: 'inside'` by the long edge with `withoutEnlargement` (78% of the library is under 840 px; 58 cards are landscape), and every tier is written for every card even when it comes out at the source's size, so the path rule never branches.
+3. **A published tier never changes.** Tier objects are served `public, max-age=31536000, immutable`. A different size or quality ships as a **new tier name** with a new D-entry, never as new bytes over keys already served `immutable`. Before a tier's first push only, a `TIER_CONFIG` edit means deleting its local `sizes/<set>/<tier>/` folders (freshness is by mtime and does not see config edits).
+4. **The source is R2, not the staging tree.** The generator reads only `<work-root>/r2-originals/`, pulled by `pnpm images:sizes:pull` for exactly the files the card data references. The pCloud `card-images-staging\renamed\` tree is stale: 883 of the 3,104 referenced names are missing there (WP-151 split-hero renames and the `co2e` title renames were done on R2).
+5. **Manifest schema v1** at `metadata/image-sizes/{set}.json`, Cache-Control `public, max-age=300, must-revalidate`: `{ schemaVersion, setAbbr, baseUrl, tiers, totals: { thumb, phone, large }, cards: [ { file, original, thumb, phone, large } ] }`, each image entry `{ url, bytes, width, height }`, no timestamps (an unchanged set produces identical bytes). It lives under `metadata/`, not beside the tiers, because the runbook's bulk commands stamp set prefixes `immutable` / `image/webp` and exclude `metadata/*`.
+6. **Immutability corollary.** Tiers inherit the original's content-addressed key. A key is never reused for new art. After an R2 rename of a set's originals, re-run pull, size and push for that set.
+7. **Copy only.** The R2 wrapper runs only `rclone copy` / `copyto` into `<set>/<tier>/` and `metadata/image-sizes/`, never `sync`, `move`, `delete`, `deletefile` or `purge`, and never writes an original's key. A set's manifest is pushed only after all three of its tier pushes succeed.
+
+**Measured (2026-11-12, all 41 sets).** `images 3104, failed 0`; tier outputs 9,312; `thumb` 49.4 MB, `phone` 296.0 MB, `large` 578.6 MB against 1,133.1 MB of referenced originals. `co2e`: `thumb` 2.11 MB, `phone` 19.35 MB, `large` 98.3 MB.
+
+**Follow-ups (not drafted).** Client tier use (CardTile renders `thumb`, zoom renders `phone`); airplane mode per `wiki/airplane-mode.md` (service worker, Cache Storage, the setup bundle and the size label from these manifests).
+
+**Reserved by:** NUMBER-LEDGER D-24840 (#3304). Related: D-15101 (hero image URLs), D-24222 (WP-410 prefetch), D-24674 (metadata upload cache), D-24026.
+
 ---
 Protect this file.

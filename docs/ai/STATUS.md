@@ -10,6 +10,18 @@
 
 ## Current State
 
+### Every card face now has thumb / phone / large WebP size tiers and a per-set byte manifest on R2 (WP-888 / EC-926, D-24840) (2026-11-12)
+
+**No user-observable change — infrastructure only.** No client reads the tiers yet. Each card image now also exists at `images.legendary-arena.com/{set}/{tier}/{file}.webp` (`thumb` 280, `phone` 840, `large` 1680 px long edge, never enlarged; `immutable`), and each set has a byte manifest at `metadata/image-sizes/{set}.json` (five-minute cache). A tier URL is a path rule off the existing `imageUrl`: no card JSON, registry or `UIState` change.
+
+- **Tooling.** `pnpm images:sizes:pull` pulls the originals the card data references from R2 into a local work root; `pnpm images:sizes` generates the tiers and manifests incrementally; `pnpm images:sizes:push` publishes them with `rclone copy` only, tiers before the manifest. Source is R2, not the stale pCloud staging tree (883 of 3,104 names missing there).
+- **Totals (all 41 sets).** `images 3104, failed 0`; tier outputs 9,312; `thumb` 49.4 MB, `phone` 296.0 MB, `large` 578.6 MB, against 1,133.1 MB of referenced originals. `co2e`: 407.4 MB of originals → `phone` 19.35 MB, `thumb` 2.11 MB. `3dtc` ran first (27 cards, 81 tiers, manifest SHA-256 identical on a re-run) and was reported before the all-sets run.
+- **Push and curl (AC5): PASS.** Operator go after the dry-run (164 rclone calls, 9,353 objects, no delete). Real push 164 calls, 0 errors, 41 manifests on R2. `3dtc` and `co2e` first-card `thumb` / `phone` / `large`: 200, `image/webp`, `public, max-age=31536000, immutable`. `metadata/image-sizes/co2e.json`: 200, `public, max-age=300, must-revalidate`, parses to schema 1 with 151 cards.
+- **Tests.** `pnpm images:sizes:test` 17 / 0 (new CI step, own `INFRA:` commit); `pnpm metadata:upload:test` 3 / 0.
+- **Docs.** Card Image Acquisition (built status, "Running the size step", rename recipe), R2 Image Naming Convention ("Size tiers"), Airplane Mode, the cache-control runbook's prefix table, `03-DATA-PIPELINE.md` §3, and `DISASTER_RECOVERY.md`: R2 is the source of truth for card images, and **no off-Cloudflare copy of the current originals exists** unless the operator keeps a work-root pull.
+- **01.6 post-mortem:** triggered (new contract: tier keys and manifest v1); verdict WP COMPLETE.
+- **Follow-ups (named in D-24840).** Client tier use (CardTile `thumb`, zoom `phone`); airplane mode per `wiki/airplane-mode.md`.
+
 ### Violent Conditioning, Hulk Gets Smashed and Mood Swings gain their reward only for a Wound kept (WP-885 / EC-923, D-24836) (2026-11-12)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Three hero lines that print "You may gain a Wound. If you do, <reward>" now ask "Gain a Wound?" and pay off only for a Wound gained and kept. wpnx Violent Conditioning Berserks twice for a kept Wound; it used to Berserk twice on every play for free. msis Hulk Gets Smashed, after another Strength Hero, offers up to two "KO a card from your hand or discard pile" prompts that never offer the Wound just gained; it used to do nothing. wwhk Mood Swings, after another Instinct Hero, Transforms into Raging Savage (+3 Attack, the Transform animation); it used to do nothing. The prompt heading is now "Gain a Wound?" for every gain-a-Wound card, Hulk Smash! and Scalded by Sunlight included (it read "Gain a Wound for extra Attack?"); their options and logs are unchanged.

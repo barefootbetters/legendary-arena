@@ -242,7 +242,17 @@ pnpm metadata:upload            # add --dry-run to preview; --backfill to re-sta
 
 # Upload images (if new or changed)
 rclone copy <image-source> r2:legendary-images/{abbr}/
+
+# Then regenerate and publish that set's size tiers + byte manifest (WP-888 / D-24840):
+# pull the originals the card data references, size them, push {abbr}/{tier}/ and
+# metadata/image-sizes/{abbr}.json. Copy only; add --dry-run to preview.
+$W = Join-Path $env:LOCALAPPDATA 'legendary-arena\card-image-sizes'
+pnpm images:sizes:pull --work-root $W --set {abbr}
+pnpm images:sizes      --work-root $W --set {abbr}
+pnpm images:sizes:push --work-root $W --set {abbr}
 ```
+
+See [Card Image Acquisition › Running the size step](../wiki/card-image-acquisition.md#running-the-size-step).
 
 R2 credentials are configured via `rclone config` (stored at
 `%APPDATA%\rclone\rclone.conf` on Windows).
