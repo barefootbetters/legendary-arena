@@ -10,6 +10,17 @@
 
 ## Current State
 
+### Registry viewer card faces load the thumb / phone / large size tiers instead of the full originals (WP-892 / EC-930, D-24849) (2026-11-13)
+
+**User-visible on `cards.legendary-arena.com` after deploy.** Cards look the same and the grid fills much faster on the high-resolution sets: a default `co2e` grid loads about 14 KB per tile at 1x instead of 2.7 MB. Grid tiles at slider 130 px or less render `thumb 1x, phone 2x`; larger tiles, split-card faces and the detail panel render `phone 1x, large 2x`. A failed tier retries the original once before the grid's dimmed tile. The lightbox ("view full size") still shows the original.
+
+- **Viewer.** New `lib/cardImageTiers.ts` (the D-24840 path rule off `imageUrl` / `physicalCardImageUrl`, the `small` / `large` ladders, `gridImageLadder`, `resolveCardFaceSources`; the third copy of the rule, D-24849) and `components/CardFaceImage.vue` (typed `error` emit, so the grid only sees the final failure). `CardGrid.vue` tile and `CardDetail.vue` panel swapped. No engine / registry package / server / arena-client / card-data / R2 / dependency change.
+- **Tests.** registry-viewer 341 -> 354 / 0; `typecheck` 0; `lint` 0 errors / 533 warnings; `build` 0; `pnpm -r build` 0. No existing test changed.
+- **Docs.** R2 Image Naming Convention and Card Image Acquisition ewiki pages; `docs/03.1-DATA-SOURCES.md` §Card Images; viewer `CLAUDE.md` Key Files.
+- **Finding (D-24849).** The lobby featured-table art follow-up from D-24848 is moot while it is `core-mm-magneto` (original = `phone` = `large`, 83 KB).
+- **01.6 post-mortem:** WP COMPLETE.
+- **Live-verify (D-24026, AC5): pending deploy.** Not exercisable live in a 1x pane: the 2x candidates and the tier → original fallback (covered by the pure-function tests).
+
 ### Arena client card faces load the thumb / phone size tiers instead of the full originals (WP-891 / EC-929, D-24848) (2026-11-12)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Cards look the same and load faster. Every play-surface card face (board, hand, City, HQ, prompts, the Battle Brief, the notable-event overlay, the card reader and the villain-slash VFX art) now renders through one `CardImage.vue`: `src` = the WP-888 `thumb` tier (about 15 KB) and `srcset` = `thumb 1x, phone 2x`, so a 2x or denser screen takes `phone` (about 94 KB `core`, 131 KB `co2e`) instead of the original (up to 2.7 MB `co2e`). A failed tier retries the original once before the surface's own fallback (CardTile's name tile). The WP-410 setup prefetch warms the same `src` / `srcset`, so a `co2e` setup drops from hundreds of MB to about 2 MB (1x) or 19 MB (2x).

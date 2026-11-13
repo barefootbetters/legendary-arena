@@ -51356,4 +51356,34 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24848 (#3326). Related: D-24840 (tier path rule), D-24222 (WP-410 prefetch), D-24502 (fit-scale), D-24026.
 
 ---
+
+### D-24849 — Registry viewer card faces render the WP-888 size tiers on a two-rung density ladder (`thumb 1x, phone 2x` for small grid tiles; `phone 1x, large 2x` for larger tiles, split faces and the detail panel) through one `CardFaceImage` component, original as a one-time fallback and in the lightbox (WP-892 / EC-930) (Active 2026-11-13)
+
+**Status:** Active 2026-11-13. Landed by WP-892 / EC-930.
+
+**User-Visible Surface:** `cards.legendary-arena.com` — the card grid's image tiles and the card detail panel image. Same art, a fraction of the bytes (`co2e` 2,763 KB original → 14 KB `thumb` / 131 KB `phone` per card).
+
+**Context.** WP-888 (D-24840) published `thumb` (280 px), `phone` (840 px) and `large` (1680 px) WebP copies of every card face; WP-891 (D-24848) moved the arena client onto them and named the registry viewer as a follow-up. The viewer still downloaded every original. Its grid slider runs 80–260 px (D-12101) and tiles stretch up to twice the slider value; the detail panel runs 240–720 px.
+
+**Decision.**
+
+1. **Tier URLs come only from `imageUrl` / `physicalCardImageUrl`.** `apps/registry-viewer/src/lib/cardImageTiers.ts` applies the D-24840 path rule (`^https://images\.legendary-arena\.com/[a-z0-9]+/[^/]+\.webp$` → `/<tier>` inserted before the final segment, `cardImageTierUrl`). No manifest read, no set list.
+2. **Two-rung density ladder.** `small` = `src` `thumb`, `srcset` `"<thumb> 1x, <phone> 2x"`, used by grid tiles at a slider value ≤ `SMALL_LADDER_MAX_CARD_WIDTH_PX` (130, the default) — such tiles stay under about 260 px, where a 200 px `thumb` is at most a 30% upscale at 1x. `large` = `src` `phone`, `srcset` `"<phone> 1x, <large> 2x"`, used above 130, by every split-card face, and by the detail panel (`gridImageLadder`, `cardImageSources`). **Density over width descriptors:** tier widths vary by orientation and shrink when the original is small, so a `w` descriptor per tier would be wrong for many cards, and a grid tile's real width depends on the column count, which `sizes` cannot express from the slider; the ladder needs only the slider value and the split flag.
+3. **Split faces always take the `large` rung** (the visible half is drawn from about 1.9× the tile width). Accepted cost: at 2x the 39 split images (cvwr 20, mgtg 8, xmen 5, bkwd 3, msis 3) fetch `large` where a landscape `phone` would usually suffice; a per-orientation rung is not worth the extra rule.
+4. **A non-matching URL renders unchanged** (`src` = the URL, no `srcset`): a root file, an already-tiered path, another host, a non-`.webp` file and `''`.
+5. **Fallback order: tier → the original once → the grid's existing dimmed tile.** `resolveCardFaceSources` returns the original with no `srcset` once a tier has failed; a change of `imageUrl` resets the flag. A slider change keeps a tile on its original after a failure (expected).
+6. **The lightbox keeps the original.** `openLightbox` still receives `physicalCardImageUrl ?? imageUrl`; "view full size" is the deliberate one-card best-image action.
+7. **`CardFaceImage.vue` is the single viewer card-face `<img>` outside the lightbox.** Props `imageUrl`, `ladder`, `alt` (all required; `alt` keeps the CI `vuejs-accessibility` lint clean); a typed `error` emit (`defineEmits<{ error: [event: Event] }>()`, `emit('error', event)`), so the grid's inline handler never sees the first (tier) failure and still reads `$event.target`; `class` / `loading` fall through and the parent's scoped CSS reaches the root `<img>`. `CardGrid.vue` (tile) and `CardDetail.vue` (panel) render through it. **Contract:** a new viewer card-face `<img>` that binds an image URL directly is a regression; WP-892 AC2's grep (three expected matches: the lightbox and the two theme comic covers) polices it.
+8. **Third-copy exception.** This is the third copy of the path rule (the root `scripts/build-card-image-sizes.mjs` `tierUrlFor`, the arena client's `cardImageTiers.ts`, and this one). The code-style rule abstracts at the third copy, but no runtime module is importable by both apps (the viewer may not import `game-engine` or any `apps/*`; the arena client may not import the registry at runtime), and a shared package for one ten-line function needs an `ARCHITECTURE.md` layer-table change. Each copy is pinned by the same example table. **Trigger:** a fourth consumer extracts a shared package.
+9. **Lobby featured-table art (the other D-24848 follow-up) is moot today:** the featured table is hard-coded to `core-mm-magneto`, whose original is 489 × 685 / 83 KB and whose `phone` and `large` tiers are the same size. Re-open only if the featured table moves to a high-resolution set.
+
+**Out of scope.** The lightbox, theme comic covers, data-view tiles; width descriptors / `sizes`; manifest reads; prefetching; component-test infrastructure for the viewer (its logic lives in tested pure functions; the binding is covered by `typecheck`, `build` and AC5).
+
+**Execution (2026-11-13).** New `lib/cardImageTiers.ts` (+ test, 13 cases) and `components/CardFaceImage.vue`; `CardGrid.vue` and `CardDetail.vue` swapped. registry-viewer 341 → 354 / 0; typecheck 0; lint 0 errors / 533 warnings (unchanged); build 0; AC2 exactly 3. Docs: `wiki/r2-image-naming-convention.md`, `wiki/card-image-acquisition.md`, `docs/03.1-DATA-SOURCES.md` §Card Images, `apps/registry-viewer/CLAUDE.md`.
+
+**Live-verify (D-24026): pending deploy.** Not exercisable live in a 1x pane by design: the 2x candidates (`phone` on the `small` rung, `large` on the `large` rung) and the tier → original fallback (every published tier exists); both are covered by the pure-function tests.
+
+**Reserved by:** NUMBER-LEDGER D-24849 (#3332). Related: D-24840 (tier path rule), D-24848 (arena client tiers), D-12101 (slider range), D-24026.
+
+---
 Protect this file.
