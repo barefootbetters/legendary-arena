@@ -228,8 +228,15 @@ slugs before upload. See Edge Cases.
 > screen (`src` = `thumb`, `srcset` = `thumb 1x, phone 2x`), with a one-time
 > fallback to the original when a tier fails. It derives the tier URLs from
 > the projected `imageUrl` by the same path rule, and the WP-410 setup
-> prefetch warms the same pair. `large`, the registry viewer and the lobby
-> featured-table art are follow-ups.
+> prefetch warms the same pair.
+>
+> **Registry viewer (WP-892 / D-24849).** `cards.legendary-arena.com` uses a
+> two-rung density ladder: grid tiles at a slider value of 130 px or less
+> render `thumb 1x, phone 2x`; larger tiles, split-card faces and the detail
+> panel render `phone 1x, large 2x`. A failed tier falls back once to the
+> original, and the lightbox keeps the original. The lobby featured-table art
+> needs no change today: it is `core-mm-magneto`, whose original is 489 × 685
+> (83 KB) and whose `phone` and `large` tiers are the same size.
 
 **Why it is needed.** The game serves one image per card, the
 full-resolution original, to every screen. That is fine for most sets
@@ -538,6 +545,15 @@ pnpm images:sizes:push --work-root $W --set co2e   # co2e/<tier>/ (immutable), t
 - [`apps/arena-client/src/components/play/CardImage.vue`](../apps/arena-client/src/components/play/CardImage.vue)
   — the single play-surface card-face image: renders the tier sources and
   falls back once to the original before the parent's own fallback runs.
+- [`apps/registry-viewer/src/lib/cardImageTiers.ts`](../apps/registry-viewer/src/lib/cardImageTiers.ts)
+  — the registry viewer's copy of the tier path rule (the third copy,
+  D-24849): `cardImageTierUrl`, `cardImageSources` per ladder,
+  `gridImageLadder` (slider ≤ 130 px and not split → `small`) and
+  `resolveCardFaceSources`, WP-892.
+- [`apps/registry-viewer/src/components/CardFaceImage.vue`](../apps/registry-viewer/src/components/CardFaceImage.vue)
+  — the single viewer card-face image for the grid and the detail panel:
+  renders the ladder's sources and falls back once to the original before
+  the grid's dimmed-tile handler runs.
 
 ## Data Files
 
