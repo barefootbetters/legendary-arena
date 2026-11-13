@@ -2,6 +2,7 @@
 import { defineComponent, ref, watch, type PropType } from "vue";
 import type { UIPendingRevealThreeAssign } from "@legendary-arena/game-engine";
 import type { SubmitMove } from "./uiMoveName.types";
+import CardImage from "./CardImage.vue";
 
 /** The three dispositions a revealed card can be assigned (WP-753 / D-24580). */
 type RevealThreeAssignDisposition = "draw" | "discard" | "ko";
@@ -28,6 +29,7 @@ type RevealThreeAssignDisposition = "draw" | "discard" | "ko";
  */
 export default defineComponent({
   name: "PendingRevealThreeAssignPrompt",
+  components: { CardImage },
   props: {
     pendingRevealThreeAssign: {
       type: Object as PropType<UIPendingRevealThreeAssign | undefined>,
@@ -128,9 +130,9 @@ export default defineComponent({
         <span class="pending-reveal-three-assign-prompt__card-name">{{
           entry.display.name
         }}</span>
-        <img
+        <CardImage
           v-if="entry.display.imageUrl"
-          :src="entry.display.imageUrl"
+          :image-url="entry.display.imageUrl"
           :alt="entry.display.name"
           class="pending-reveal-three-assign-prompt__card-image"
         />

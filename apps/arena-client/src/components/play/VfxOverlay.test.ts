@@ -731,6 +731,27 @@ describe('VfxOverlay — villain slash beat (WP-755)', () => {
     wrapper.unmount();
   });
 
+  test('a set-path art URL renders the size tiers and falls back once to the original (WP-891)', async () => {
+    const originalUrl = 'https://images.legendary-arena.com/core/core-vi-hand-ninjas.webp';
+    const thumbUrl = 'https://images.legendary-arena.com/core/thumb/core-vi-hand-ninjas.webp';
+    const phoneUrl = 'https://images.legendary-arena.com/core/phone/core-vi-hand-ninjas.webp';
+    const wrapper = mount(VfxOverlay);
+    seq += 1;
+    useVillainSlashVfxSignal().value = { seq, citySpace: 2, playerId: '0', imageUrl: originalUrl };
+    await nextTick();
+    const art = wrapper.find('[data-testid="play-vfx-slice-half"]').element.querySelector('img');
+    assert.ok(art !== null, 'the half shows the card art');
+    assert.equal(art.getAttribute('src'), thumbUrl);
+    assert.equal(art.getAttribute('srcset'), `${thumbUrl} 1x, ${phoneUrl} 2x`);
+
+    // why: jsdom fires no image events; dispatch the tier failure by hand.
+    art.dispatchEvent(new window.Event('error'));
+    assert.equal(art.getAttribute('src'), originalUrl);
+    assert.equal(art.hasAttribute('srcset'), false);
+    assert.equal(art.onerror, null, 'the handler cleared itself, so a failing original cannot loop');
+    wrapper.unmount();
+  });
+
   test('at low: halves and a streak, but no stains and no impact', async () => {
     useEffectIntensity().setIntensity('low');
     const wrapper = mount(VfxOverlay);

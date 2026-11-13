@@ -423,9 +423,10 @@ describe('HQRow — Haunt (WP-759 / D-24587)', () => {
     assert.equal(strip.attributes('data-haunter-kind'), 'villain');
     assert.equal(strip.attributes('data-haunter-ext-id'), 'mdns-fallen-metarchus');
     assert.match(strip.text(), /Haunted by Metarchus/);
+    // why: WP-891 / D-24848 — a set-path card face renders its thumb size tier.
     assert.equal(
       strip.find('img').attributes('src'),
-      'https://images.legendary-arena.com/mdns/mdns-vi-fallen-metarchus.webp',
+      'https://images.legendary-arena.com/mdns/thumb/mdns-vi-fallen-metarchus.webp',
     );
   });
 

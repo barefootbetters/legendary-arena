@@ -23,28 +23,32 @@ import type { UIState } from '@legendary-arena/game-engine';
 
 interface PendingWarm {
   readonly src: string;
+  readonly srcset: string;
   readonly succeed: () => void;
   readonly fail: () => void;
 }
 
 interface ImageStub {
   readonly srcs: string[];
+  readonly srcsets: string[];
   readonly pending: PendingWarm[];
   restore: () => void;
 }
 
 /**
- * Replaces `globalThis.Image` with a fake that records each `src` and defers its
- * load/error so the test controls completion and can inspect how many warms are
- * in flight.
+ * Replaces `globalThis.Image` with a fake that records each `src` (and the
+ * `srcset` in place when it was set) and defers its load/error so the test
+ * controls completion and can inspect how many warms are in flight.
  */
 function installImageStub(): ImageStub {
   const originalImage = globalThis.Image;
   const srcs: string[] = [];
+  const srcsets: string[] = [];
   const pending: PendingWarm[] = [];
   class FakeImage {
     onload: (() => void) | null = null;
     onerror: (() => void) | null = null;
+    srcset = '';
     #src = '';
     get src(): string {
       return this.#src;
@@ -52,8 +56,10 @@ function installImageStub(): ImageStub {
     set src(value: string) {
       this.#src = value;
       srcs.push(value);
+      srcsets.push(this.srcset);
       pending.push({
         src: value,
+        srcset: this.srcset,
         succeed: () => this.onload?.(),
         fail: () => this.onerror?.(),
       });
@@ -62,6 +68,7 @@ function installImageStub(): ImageStub {
   globalThis.Image = FakeImage as unknown as typeof globalThis.Image;
   return {
     srcs,
+    srcsets,
     pending,
     restore: () => {
       globalThis.Image = originalImage;
@@ -95,6 +102,19 @@ const MANIFEST_10 = Array.from(
   (_unused, index) => `https://images.legendary-arena.com/set/card-${index}.webp`,
 );
 
+// why: WP-891 / D-24848 — the warm requests the thumb tier with the same
+// `thumb 1x, phone 2x` srcset the board's card image renders.
+const MANIFEST_10_THUMBS = Array.from(
+  { length: 10 },
+  (_unused, index) => `https://images.legendary-arena.com/set/thumb/card-${index}.webp`,
+);
+const MANIFEST_10_SRCSETS = Array.from(
+  { length: 10 },
+  (_unused, index) =>
+    `https://images.legendary-arena.com/set/thumb/card-${index}.webp 1x, `
+    + `https://images.legendary-arena.com/set/phone/card-${index}.webp 2x`,
+);
+
 test('warms each distinct URL once, at most PREFETCH_CONCURRENCY in flight', async () => {
   setActivePinia(createPinia());
   const stub = installImageStub();
@@ -111,14 +131,15 @@ test('warms each distinct URL once, at most PREFETCH_CONCURRENCY in flight', asy
 
     await drainAll(stub);
 
-    assert.deepStrictEqual([...stub.srcs].sort(), [...MANIFEST_10].sort());
+    assert.deepStrictEqual([...stub.srcs].sort(), [...MANIFEST_10_THUMBS].sort());
+    assert.deepStrictEqual([...stub.srcsets].sort(), [...MANIFEST_10_SRCSETS].sort());
     assert.equal(new Set(stub.srcs).size, 10, 'each URL warmed exactly once');
   } finally {
     stub.restore();
   }
 });
 
-test('a failed warm does not throw and does not abort the rest', async () => {
+test('a failed tier warm warms the original once on a fresh image and does not abort the rest', async () => {
   setActivePinia(createPinia());
   const stub = installImageStub();
   try {
@@ -128,12 +149,13 @@ test('a failed warm does not throw and does not abort the rest', async () => {
     useCardImagePrefetch();
     await flush();
 
-    // Fail the first in-flight warm; succeed everything else.
-    let failedOne = false;
+    // Fail the first in-flight (tier) warm; succeed everything else, including
+    // the fallback warm of its original.
+    let failedWarm: PendingWarm | null = null;
     while (stub.pending.length > 0) {
       const next = stub.pending.shift()!;
-      if (!failedOne) {
-        failedOne = true;
+      if (failedWarm === null) {
+        failedWarm = next;
         next.fail();
       } else {
         next.succeed();
@@ -141,8 +163,53 @@ test('a failed warm does not throw and does not abort the rest', async () => {
       await flush();
     }
 
-    assert.ok(failedOne, 'one warm was failed');
-    assert.equal(new Set(stub.srcs).size, 10, 'all URLs still warmed despite a failure');
+    assert.ok(failedWarm !== null, 'one warm was failed');
+    const failedOriginal = failedWarm.src.replace('/set/thumb/', '/set/');
+    assert.equal(
+      stub.srcs.filter((src) => src === failedOriginal).length,
+      1,
+      'the failed tier\'s original is warmed exactly once',
+    );
+    const fallbackIndex = stub.srcs.indexOf(failedOriginal);
+    assert.equal(stub.srcsets[fallbackIndex], '', 'the original warm is a fresh image with no srcset');
+    assert.equal(new Set(stub.srcs).size, 11, 'all 10 tier URLs plus one original fallback');
+    for (const thumbUrl of MANIFEST_10_THUMBS) {
+      assert.ok(stub.srcs.includes(thumbUrl), `tier ${thumbUrl} still warmed despite a failure`);
+    }
+  } finally {
+    stub.restore();
+  }
+});
+
+test('a failed warm of a URL with no tiers resolves with no second warm', async () => {
+  setActivePinia(createPinia());
+  const stub = installImageStub();
+  try {
+    // why: seven untiered URLs at concurrency 6 — the seventh starts only once
+    // a warm resolves, so it proves the failed warm resolved.
+    const untieredManifest = Array.from(
+      { length: 7 },
+      (_unused, index) => `https://images.example/card-${index}.webp`,
+    );
+    const uiStateStore = useUiStateStore();
+    uiStateStore.setSnapshot(snapshotWithManifest(untieredManifest));
+
+    useCardImagePrefetch();
+    await flush();
+    assert.equal(stub.pending.length, 6);
+
+    const firstWarm = stub.pending.shift()!;
+    firstWarm.fail();
+    await flush();
+    await drainAll(stub);
+
+    assert.deepStrictEqual([...stub.srcs].sort(), [...untieredManifest].sort());
+    assert.equal(
+      stub.srcs.filter((src) => src === firstWarm.src).length,
+      1,
+      'the failed untiered URL is not warmed a second time',
+    );
+    assert.ok(stub.srcsets.every((srcset) => srcset === ''), 'an untiered warm sets no srcset');
   } finally {
     stub.restore();
   }

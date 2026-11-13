@@ -2,6 +2,7 @@
 import { computed, defineComponent, ref, type PropType } from 'vue';
 import type { UICardDisplay } from '@legendary-arena/game-engine';
 import { useEffectIntensity } from '../../vfx/effectIntensity';
+import CardImage from './CardImage.vue';
 
 /**
  * Reusable card tile — renders either a card image (when imageUrl is truthy)
@@ -10,6 +11,7 @@ import { useEffectIntensity } from '../../vfx/effectIntensity';
  */
 export default defineComponent({
   name: 'CardTile',
+  components: { CardImage },
   props: {
     display: {
       type: Object as PropType<UICardDisplay>,
@@ -110,9 +112,9 @@ export default defineComponent({
   >
     <!-- why: loading="lazy" reserves bandwidth for visible cards; off-screen
          card images load only when scrolled into view -->
-    <img
+    <CardImage
       v-if="hasImage()"
-      :src="display.imageUrl"
+      :image-url="display.imageUrl"
       :alt="display.name"
       loading="lazy"
       class="card-tile__image"

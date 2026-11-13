@@ -2,6 +2,7 @@
 import { defineComponent, ref, watch, type PropType } from "vue";
 import type { UIPendingDiscardToPlay } from "@legendary-arena/game-engine";
 import type { SubmitMove } from "./uiMoveName.types";
+import CardImage from "./CardImage.vue";
 
 /**
  * Inline prompt for resolving a pending discard-to-play cost
@@ -27,6 +28,7 @@ import type { SubmitMove } from "./uiMoveName.types";
  */
 export default defineComponent({
   name: "DiscardToPlayPrompt",
+  components: { CardImage },
   props: {
     pendingDiscardToPlay: {
       type: Object as PropType<UIPendingDiscardToPlay | undefined>,
@@ -109,9 +111,9 @@ export default defineComponent({
         @click="onPick(card.cardId)"
       >
         <span class="discard-to-play-prompt__card-name">{{ card.display.name }}</span>
-        <img
+        <CardImage
           v-if="card.display.imageUrl"
-          :src="card.display.imageUrl"
+          :image-url="card.display.imageUrl"
           :alt="card.display.name"
           class="discard-to-play-prompt__card-image"
         />

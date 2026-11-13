@@ -6,6 +6,7 @@ import {
   eventCardId,
   type NotableGameEvent,
 } from '../../composables/useNotableEventStream';
+import CardImage from './CardImage.vue';
 
 /**
  * Lookup contract for resolving an event's card ext_id to its display
@@ -125,7 +126,7 @@ function effectLabel(keyword: string): string {
 
 export default defineComponent({
   name: 'NotableEventOverlay',
-  components: { CrossedSwordsIcon },
+  components: { CardImage, CrossedSwordsIcon },
   props: {
     event: {
       type: Object as PropType<NotableGameEvent | null>,
@@ -245,11 +246,11 @@ export default defineComponent({
         />
         {{ chipText }}
       </span>
-      <img
+      <CardImage
         v-if="event.type === 'heroEffectResolved' && cardImageUrl !== null"
         class="notable-event-overlay__card-image"
         data-testid="play-notable-event-overlay-card-image"
-        :src="cardImageUrl"
+        :image-url="cardImageUrl"
         :alt="cardName ?? ''"
       />
       <p class="notable-event-overlay__card-name">{{ cardName }}</p>

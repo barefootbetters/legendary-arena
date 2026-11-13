@@ -51325,4 +51325,35 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24841 (#3312). Related: D-21501, D-24023, D-24026, D-24266, D-24339, D-24372, D-24501, D-24598, D-24648, D-24656, D-24703, D-24745, D-24749, D-24770, D-24814, D-24822, D-24835, D-24839.
 
 ---
+
+### D-24848 — Arena client play-surface card faces render the WP-888 size tiers: `thumb` at 1x, `phone` at 2x through one `CardImage` component, original as a one-time fallback, and the prefetch warms the same image (WP-891 / EC-929) (Active 2026-11-12)
+
+**Status:** Active 2026-11-12. Landed by WP-891 / EC-929.
+
+**User-Visible Surface:** `play.legendary-arena.com` — every card face in a match (board, hand, City, HQ, prompts, the Battle Brief, the notable-event overlay, the card reader and the villain-slash VFX art). Same art, a fraction of the bytes.
+
+**Context.** WP-888 (D-24840) published `thumb` (280 px), `phone` (840 px) and `large` (1680 px) WebP copies of every card face at `{set}/{tier}/{file}.webp`, but the arena client still downloaded every original (`co2e` 2.7 MB per card, `core` 157 KB). No play-surface card face renders wider than about 150 CSS px (the CardTile clamps, `styles/base.css:69-71`; prompt thumbnails ≤ 60 px; the notable-event image ≤ `12rem` tall).
+
+**Decision.**
+
+1. **Tier URLs come only from the projected `imageUrl`.** `apps/arena-client/src/lib/cardImageTiers.ts` applies the D-24840 path rule: a URL matching `^https://images\.legendary-arena\.com/[a-z0-9]+/[^/]+\.webp$` gets `/<tier>` inserted before its final path segment (`cardImageTierUrl`). No manifest read, no set list, no registry import, no new `UIState` field. The rule is a client copy of `tierUrlFor` (a root script an app cannot import), pinned by the same examples in `cardImageTiers.test.ts`.
+2. **`src` = `thumb`, `srcset` = `"<thumb> 1x, <phone> 2x"`** (`cardImageSources`). `large` is not referenced by the arena client. **Density over width descriptors:** every card surface is at most about 150 CSS px, so `thumb` covers 1x and `phone` covers 2x and denser; width descriptors would need a `sizes` value per surface and still ignore the desktop fit-scale `transform` (WP-688 / D-24502). Accepted trade-off: a 1x desktop scaled to about 2× shows a ~216 px card from a 200 px `thumb`, an ~8% upscale.
+3. **A non-matching URL renders unchanged** (`src` = the URL, no `srcset`): root-level files, an already-tiered path, another host, a non-`.webp` file and `''`. Avatars also match the shape, which is harmless because only card-face sites call the helper.
+4. **Fallback order: tier → the original once → the surface's existing fallback.** A set published before its size step still shows its art (one extra request) instead of every card turning into a name tile. A change of `imageUrl` resets the fallback.
+5. **`CardImage.vue` is the single play-surface card-face `<img>`.** Prop `imageUrl` (required string); `emits: ['error']`, so a parent `@error` never sees the first (tier) failure, only the final one; `class` / `alt` / `loading` / `data-testid` / `title` fall through. The 30 card-face bindings in 27 play SFCs render through it; CardTile's name tile now appears only after the original also fails. The villain-slash VFX art (`VfxOverlay.vue`, an imperatively created element) uses `cardImageSources` with an `onerror` attached only while a tier is in use and cleared as its first statement, so a failing original cannot reload in a loop. **Contract:** a new play-surface card-face `<img>` that binds an image URL directly is a regression; WP-891 AC2's grep polices bindings whose expression names an image URL.
+6. **The WP-410 prefetch warms the same sources** (`useCardImagePrefetch.ts`): it sets the same `srcset` then `src` on its `new Image()`, so the browser picks the candidate the board will request. A tier error warms the original once on a fresh image; an untiered URL that fails resolves with no second warm. Idempotency stays keyed by the **original** manifest URL, so a re-sent manifest is a no-op whichever candidate the browser chose. `PREFETCH_CONCURRENCY` stays 6.
+
+**Out of scope / named follow-ups (not drafted).**
+- Registry viewer (`cards.legendary-arena.com`) tier use.
+- A zoom view that uses `large` (no arena-client surface needs it today).
+- The lobby featured-table art (`lobby/ArenaEntrance.vue`, up to 420 CSS px, a hard-coded URL in `lobby/featuredTable.ts` rather than a projected `imageUrl`); it needs `phone` or `large`.
+- **Airplane mode:** a 1x board requests `thumb` while the offline download is `phone`, so the service worker must answer a `thumb` request from the downloaded `phone` copy, or download both (`wiki/airplane-mode.md`).
+
+**Execution (2026-11-12).** New `lib/cardImageTiers.ts` (+ test, 8 cases) and `components/play/CardImage.vue` (+ test, 7 cases); 27 play SFCs swapped; `VfxOverlay.vue` and `useCardImagePrefetch.ts` moved to `cardImageSources`. Intentional expected-URL changes: `HQRow.test.ts`, `SharedDecks.test.ts`, `useCardImagePrefetch.test.ts` (its failed-warm case rewritten for the original fallback; one untiered-failure case added); `CardTile.test.ts` and `VfxOverlay.test.ts` gain one tier case each. arena-client 2620 → 2638 / 0; typecheck 0; build 0. Docs: `wiki/card-image-acquisition.md`, `wiki/r2-image-naming-convention.md`, `wiki/airplane-mode.md`, `docs/03.1-DATA-SOURCES.md` §Card Images.
+
+**Live-verify (D-24026): pending** until `play.legendary-arena.com` deploys the merge (WP-891 AC5: the network log shows `/<set>/thumb/` or `/<set>/phone/` card faces, no top-level original for a tiered card, no name tile).
+
+**Reserved by:** NUMBER-LEDGER D-24848 (#3326). Related: D-24840 (tier path rule), D-24222 (WP-410 prefetch), D-24502 (fit-scale), D-24026.
+
+---
 Protect this file.

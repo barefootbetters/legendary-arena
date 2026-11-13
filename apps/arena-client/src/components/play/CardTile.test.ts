@@ -2,6 +2,7 @@ import '../../testing/jsdom-setup';
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { nextTick } from 'vue';
 import { mount } from '@vue/test-utils';
 import CardTile from './CardTile.vue';
 
@@ -77,6 +78,32 @@ describe('CardTile — Image Mode (WP-178)', () => {
     });
     const fallback = wrapper.find('[data-testid="card-tile-fallback"]');
     assert.equal(fallback.exists(), false);
+  });
+
+  test('a set-path imageUrl renders the size tiers; the name tile appears only after two errors (WP-891)', async () => {
+    const thumbUrl = 'https://images.legendary-arena.com/core/thumb/core-hr-spider-man-web-shooters.webp';
+    const phoneUrl = 'https://images.legendary-arena.com/core/phone/core-hr-spider-man-web-shooters.webp';
+    const wrapper = mount(CardTile, {
+      props: {
+        display: makeDisplay({
+          imageUrl: 'https://images.legendary-arena.com/core/core-hr-spider-man-web-shooters.webp',
+        }),
+      },
+    });
+    const image = wrapper.find('[data-testid="card-tile-image"]');
+    assert.equal(image.attributes('src'), thumbUrl);
+    assert.equal(image.attributes('srcset'), `${thumbUrl} 1x, ${phoneUrl} 2x`);
+
+    // why: jsdom fires no image events; each failure is dispatched by hand.
+    await image.trigger('error');
+    await nextTick();
+    assert.equal(wrapper.find('[data-testid="card-tile-image"]').exists(), true, 'the tier failure retries the original');
+    assert.equal(wrapper.find('[data-testid="card-tile-fallback"]').exists(), false);
+
+    await wrapper.find('[data-testid="card-tile-image"]').trigger('error');
+    await nextTick();
+    assert.equal(wrapper.find('[data-testid="card-tile-image"]').exists(), false);
+    assert.equal(wrapper.find('[data-testid="card-tile-fallback"]').exists(), true, 'the name tile shows after the original fails');
   });
 });
 

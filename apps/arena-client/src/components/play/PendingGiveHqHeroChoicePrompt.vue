@@ -2,6 +2,7 @@
 import { defineComponent, ref, watch, type PropType } from "vue";
 import type { UIState } from "@legendary-arena/game-engine";
 import type { SubmitMove } from "./uiMoveName.types";
+import CardImage from "./CardImage.vue";
 
 // why: the engine barrel (@legendary-arena/game-engine index) re-exports every
 // sibling pending-choice interface EXCEPT UIPendingGiveHqHeroChoice (an oversight
@@ -37,6 +38,7 @@ type UIPendingGiveHqHeroChoice = NonNullable<
  */
 export default defineComponent({
   name: "PendingGiveHqHeroChoicePrompt",
+  components: { CardImage },
   props: {
     pendingGiveHqHeroChoice: {
       type: Object as PropType<UIPendingGiveHqHeroChoice | undefined>,
@@ -142,9 +144,9 @@ export default defineComponent({
         >
           Cost {{ entry.display.cost }}
         </span>
-        <img
+        <CardImage
           v-if="entry.display.imageUrl"
-          :src="entry.display.imageUrl"
+          :image-url="entry.display.imageUrl"
           :alt="entry.display.name"
           class="pending-give-hq-hero-choice-prompt__card-image"
         />

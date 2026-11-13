@@ -10,6 +10,17 @@
 
 ## Current State
 
+### Arena client card faces load the thumb / phone size tiers instead of the full originals (WP-891 / EC-929, D-24848) (2026-11-12)
+
+**User-visible on `play.legendary-arena.com` after deploy.** Cards look the same and load faster. Every play-surface card face (board, hand, City, HQ, prompts, the Battle Brief, the notable-event overlay, the card reader and the villain-slash VFX art) now renders through one `CardImage.vue`: `src` = the WP-888 `thumb` tier (about 15 KB) and `srcset` = `thumb 1x, phone 2x`, so a 2x or denser screen takes `phone` (about 94 KB `core`, 131 KB `co2e`) instead of the original (up to 2.7 MB `co2e`). A failed tier retries the original once before the surface's own fallback (CardTile's name tile). The WP-410 setup prefetch warms the same `src` / `srcset`, so a `co2e` setup drops from hundreds of MB to about 2 MB (1x) or 19 MB (2x).
+
+- **Client.** New `lib/cardImageTiers.ts` (the D-24840 path rule off the projected `imageUrl`; a non-matching URL passes through) and `components/play/CardImage.vue` (`emits: ['error']`, so a parent only sees the final failure). 30 card-face bindings in 27 play SFCs swapped; `VfxOverlay.vue` art uses the same sources with a self-clearing `onerror`; `useCardImagePrefetch.ts` warms the same pair, falls back to the original on a fresh image, and keeps its idempotency keyed by the original URL. `large` is unused. No engine / registry / server / `UIState` / card-data / R2 change.
+- **Tests.** arena-client 2620 -> 2638 / 0; `typecheck` 0; `build` 0; `pnpm -r build` 0. Expected-URL changes only in `HQRow.test.ts`, `SharedDecks.test.ts`, `useCardImagePrefetch.test.ts` (intentional, WP-891 Assumes 8).
+- **Docs.** Card Image Acquisition, R2 Image Naming Convention and Airplane Mode ewiki pages; `docs/03.1-DATA-SOURCES.md` §Card Images gains the `{abbr}/{tier}/{file}.webp` path and the arena client as a consumer.
+- **Out of scope / follow-ups (D-24848).** Registry viewer tiers; a zoom view using `large`; the lobby featured-table art; airplane mode answering a 1x board's `thumb` request from the `phone` download.
+- **01.6 post-mortem:** WP COMPLETE.
+- **Live-verify (D-24026, AC5): pending** until the merge deploys. On a new match, the network log filtered by `images.legendary-arena.com` should show `/<set>/thumb/` (1x) or `/<set>/phone/` (2x) card faces, no top-level original for a tiered card, and no name tile; three URLs plus `window.devicePixelRatio` go here in a follow-up `SPEC:`.
+
 ### Lilin Skinner, Meatmarket and Blackout Hunt for Victims when they enter the City (WP-889 / EC-927, D-24841) (2026-11-12)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Revealing Skinner, Meatmarket or Blackout no longer logs an `unmarked-ability` hollow (seen live on operator match `DttVqQ-hmkz`). With one Bystander holder (a City Villain, the Mastermind or the Escape Pile) that holder's last Bystander is KO'd with no prompt; with two or more, a prompt headed "Hunt for Victims: choose which Bystander is KO'd" lists one button per holder (no decline; the Escape Pile is the default); with none, the Villain captures the top supply Bystander. Blackout hunts again under Moonlight, after the first hunt (and any choice it asked for) resolves. The Ambush overlay reads `"Skinner" ambushed: it Hunts for Victims.`

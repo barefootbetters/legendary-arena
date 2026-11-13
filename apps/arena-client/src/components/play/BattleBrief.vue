@@ -8,6 +8,7 @@ import { useAuthStore } from '../../stores/auth';
 import { useConnectionStore } from '../../stores/connection';
 import { fetchMatchLagn } from '../../lib/api/matchLagnApi';
 import { summarizeLoadout, type LoadoutSummary } from '../../lib/loadoutSummary';
+import CardImage from './CardImage.vue';
 
 /**
  * Returns the first game-text line that starts with the given prefix.
@@ -77,7 +78,7 @@ function formatSeatsLine(count: number): string {
  */
 export default defineComponent({
   name: 'BattleBrief',
-  components: { AbilityText },
+  components: { CardImage, AbilityText },
   props: {
     submitMove: {
       type: Function as PropType<SubmitMove>,
@@ -228,12 +229,12 @@ export default defineComponent({
 
     <div class="battle-brief__foes">
       <div class="battle-brief__foe" data-testid="battle-brief-mastermind">
-        <img
+        <CardImage
           v-if="mastermindImageUrl !== ''"
           class="battle-brief__card"
-          :src="mastermindImageUrl"
+          :image-url="mastermindImageUrl"
           :alt="mastermindName"
-        >
+        />
         <div>
           <p class="battle-brief__label">Mastermind</p>
           <p class="battle-brief__name">{{ mastermindName }}</p>
@@ -243,12 +244,12 @@ export default defineComponent({
         </div>
       </div>
       <div class="battle-brief__foe" data-testid="battle-brief-scheme">
-        <img
+        <CardImage
           v-if="schemeDisplay !== null && schemeDisplay.imageUrl !== ''"
           class="battle-brief__card"
-          :src="schemeDisplay.imageUrl"
+          :image-url="schemeDisplay.imageUrl"
           :alt="schemeDisplay.name"
-        >
+        />
         <div>
           <p class="battle-brief__label">Scheme</p>
           <p v-if="schemeDisplay !== null" class="battle-brief__name">{{ schemeDisplay.name }}</p>

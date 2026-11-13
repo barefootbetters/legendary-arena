@@ -398,8 +398,16 @@ through `filterUIStateForAudience` public for every audience (the design set is 
 from the composition — information-safe; no face-down order). The client composable
 [`useCardImagePrefetch`](../apps/arena-client/src/composables/useCardImagePrefetch.ts)
 warms the list with bounded concurrency, fail-soft (a rejected warm falls back to
-`CardTile.vue`'s lazy `<img>`), and idempotent (a `Set`, so the per-frame re-send and
-reconnect never refetch). Projection-only — never a `G` field, no state-hash surface.
+the card's lazy `CardImage.vue` element), and idempotent (a `Set`, so the per-frame
+re-send and reconnect never refetch). Projection-only — never a `G` field, no
+state-hash surface.
+
+Since WP-891 / D-24848 the prefetch **warms the size tier the board renders**, not
+the original: each warm uses the same `src` (`thumb`) and `srcset`
+(`thumb 1x, phone 2x`) as the board's `CardImage.vue`, so the browser picks the same
+candidate it will later request. If a tier fails, the original is warmed once on a
+fresh image, matching the board's fallback. The idempotency `Set` stays keyed by the
+original `imageUrl`.
 
 The **LAGN document is unchanged** by this — image bytes are not embedded and there is
 no zip side-cart. The embed-vs-zip-vs-prefetch analysis that chose this path lives on

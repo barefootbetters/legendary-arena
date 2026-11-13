@@ -159,9 +159,10 @@ describe('SharedDecks (WP-648 — recruitable S.H.I.E.L.D. Officer supply)', () 
     const button = wrapper.find('[data-testid="play-recruit-officer"]');
     const image = button.find('[data-testid="card-tile-image"]');
     assert.equal(image.exists(), true, 'the Officer card face image must render');
+    // why: WP-891 / D-24848 — a set-path card face renders its thumb size tier.
     assert.equal(
       image.attributes('src'),
-      'https://images.legendary-arena.com/core/core-so-officer.webp',
+      'https://images.legendary-arena.com/core/thumb/core-so-officer.webp',
     );
     // the count + buy cost still read alongside the card face
     assert.match(button.text(), /\[30\]/);
