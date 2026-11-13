@@ -339,14 +339,16 @@ billing record.
 
 | Area | Record |
 |---|---|
-| Downtime | **10 m 10 s** at cutover (UptimeRobot, 5-minute granularity). No outage recorded since. |
+| Downtime | **10 m 10 s** at cutover (UptimeRobot, 5-minute granularity). No unplanned outage of the public API since. The planned kernel reboot on 2026-11-13 at 05:14 UTC took about **15 s**: one 502 from Cloudflare, then `/health/db` OK. |
 | Alerts | One, a **false** DOWN: on 2026-10-21 at 05:55 UTC a `la-health` run landed in the ~4 s restart gap of a deploy. The public site stayed up (Nginx served the `:3001` standby, no 5xx), and the next run passed. Fixed in lab #43: `60-monitor` now waits for the deploy lock. |
+| **Silent failure** | **From 2026-10-29 to 2026-11-13 (15 days) the on-box timers didn't run: no `la-health` check, no nightly backup, and no Cloudflare-range refresh.** The API itself stayed up throughout; UptimeRobot on `/health/db` stayed green. Found while installing lab #45 and fixed the same night (see [Offsite backups](#offsite-backups-r2--pcloud)). |
 | Deploy restarts | Before 2026-10-15, every restart dropped requests: 6 s idle, 36 s with a player's websocket open. Fixed by closing websockets on SIGTERM (#2819), the `:3001` standby (lab #39), and per-commit release directories with a no-rebuild rollback (lab #40). |
-| Recovery | DigitalOcean Droplet backups enabled 2026-10-20 (daily, 7-day retention), as the fast path for a lost droplet. DR-02 full rebuild drilled on a new droplet 2026-10-22: **13 m 31 s** of hands-on steps. Restores from the R2 dumps are drilled separately ([Disaster Recovery](disaster-recovery.md) §7). Observed RPO in production: none needed, since no restore was required. RPO by design is ≈ 24 h (nightly dump, no PITR). |
+| Recovery | DigitalOcean Droplet backups enabled 2026-10-20 (daily, 7-day retention), as the fast path for a lost droplet. DR-02 full rebuild drilled on a new droplet 2026-10-22: **13 m 31 s** of hands-on steps. Restores from the R2 dumps are drilled separately ([Disaster Recovery](disaster-recovery.md) §7). No restore was needed. RPO by design is ≈ 24 h (nightly dump, no PITR). From 2026-10-29 to 2026-11-13, with no nightly dump, the newest R2/pCloud copy was the 2026-10-28 dump. The DigitalOcean Droplet backups are a separate DigitalOcean job and were enabled throughout. Whether they actually ran in that window wasn't checked. |
 | Cost | October (12–31): $17.65 usage, $12.65 charged after a one-time $5 credit. A full month is capped at $24.00 plus backups. Month-by-month figures: [DigitalOcean actuals](render-migration-analysis.md#digitalocean-actuals-from-october-2026). |
-| Capacity | Measured 2026-11-13 02:56 UTC, at a quiet hour: **850 MB used of 3.9 GB (22%), 3.0 GB available**, load average 0.00, **swap 2.8 MB** of 2 GB, disk **8.2 GB of 77 GB (11%)**. Steady-state memory matches the pre-cutover rehearsal (about 800 MB; the deploy build peaked at 1.37 GB). The swap figure is idle pages pushed out at `swappiness` 10, not memory pressure. Nothing is near the resize trigger: memory above ~70%, CPU above ~50% under real traffic, or real swap use outside deploys ([Target configuration](#target-configuration)). This was one reading at an idle hour, not a peak. No alert watches memory, swap or load, so they're checked by hand: `free -m`, `uptime`, `swapon --show`. |
+| Capacity | Measured 2026-11-13 02:56 UTC, at a quiet hour: **850 MB used of 3.9 GB (22%), 3.0 GB available**, load average 0.00, **swap 2.8 MB** of 2 GB, disk **8.2 GB of 77 GB (11%)**. Steady-state memory matches the pre-cutover rehearsal (about 800 MB; the deploy build peaked at 1.37 GB). The swap figure is idle pages pushed out at `swappiness` 10, not memory pressure. Nothing is near the resize trigger: memory above ~70%, CPU above ~50% under real traffic, or real swap use outside deploys ([Target configuration](#target-configuration)). This was one reading at an idle hour, not a peak. Since 2026-11-13, `la-health` alerts on memory held high and on swap-out outside a deploy, and every ping body carries the reading (after the reboot: 19% memory, 0 MB swap). CPU load is still checked by hand: `uptime`. |
 | OOM kills | Not established. `journalctl -k` run without `sudo` can't read kernel messages on this box, so its count of 0 proves nothing. Re-check with `sudo journalctl -k --since 2026-10-12 \| grep -ciE 'oom-kill\|out of memory'`. |
-| Kernel patches | **A reboot is pending.** `/var/run/reboot-required` was present on 2026-11-13, and the box had been up 32 days, since before cutover. Patches installed since then have reached disk, but the running kernel is still the one booted on 2026-10-11. See "What nothing watches". |
+| Kernel patches | A reboot was pending from before cutover until 2026-11-13: the box had been up 32 days on kernel 6.8.0-142, with 6.8.0-146 and -147 installed on disk. Rebooted 2026-11-13 at 05:14 UTC onto **6.8.0-147**. `la-health` now warns while a reboot is pending and fails once it has waited 7 days. |
+| PostgreSQL | 18.6 until 2026-11-13. Then upgraded to **18.7**, and PGDG minor releases now install unattended. `pg_stat_statements` has been preloaded and collecting since the same night. |
 
 ### Offsite backups (R2 + pCloud)
 
@@ -400,9 +402,26 @@ would have dropped test dumps into the production folders. The shared GFS
 pruning would then have counted them as real backups and pruned real ones to
 make room.
 
+**The 2026-10-29 to 2026-11-13 gap.** On the droplet, PowerShell is a snap.
+`50-backup`, `60-monitor` and `22-cloudflare-ufw-refresh` had installed their
+units with the snap's versioned path, `/snap/powershell/414/…/pwsh`. A routine
+snap refresh between the 2026-10-28 and 2026-10-29 runs deleted that revision.
+Every run after that failed before the script started (`status=203/EXEC`):
+- no dumps reached R2 or pCloud
+- `la-health` couldn't run to notice the stale backup
+- no pings went to `la-droplet-backup` or `la-droplet-monitor`
+
+The repair, on 2026-11-13:
+- On the box, the three units were pointed at `/snap/powershell/current/…/pwsh`, which snapd keeps on the live revision.
+- The missed backup ran at 04:58 UTC: dumped, checked readable (320 TOC entries), uploaded to R2 and mirrored to pCloud. The firewall refresh found no range changes.
+- Lab #46 makes every future `-Install` write the `current` path. `provision-smoke` now installs the PowerShell snap, as cloud-init does, to prove it. A missed path change would also have moved the scripts' output out of `journalctl -u <unit>`, which the checks below rely on, and the smoke test checks for that too.
+
+Deploys were never affected: `la-deploy` looks up `pwsh` each time it runs.
+
 **Check it by hand:**
 
 ```text
+sudo ls -l /var/backups/la                    # newest dump is from the last 09:17 UTC run
 journalctl -u la-backup -n 15 --no-pager      # dump, "Uploading to r2:…", "Mirroring to pcloud:…", "Backup complete."
 systemctl list-timers la-backup.timer         # next run
 ```
@@ -491,8 +510,12 @@ Two checks cover the box, one from each side:
   §6) and after any UFW or Nginx change.
 - **On the box:** the lab's `60-monitor.ps1`, run every 5 minutes by
   `la-health.timer`. It checks that `la-server` is active, `/health` and
-  `/health/db` return 200, `:3000` listens on loopback only, and that disk use
-  and backup age are within limits, then pings `la-droplet-monitor`. A failed
+  `/health/db` return 200, `:3000` listens on loopback only, that disk use
+  and backup age are within limits, that memory hasn't held above 70% and
+  nothing swapped out outside a deploy, and that no reboot has been pending a
+  week (since 2026-11-13, lab #45). Then it pings `la-droplet-monitor`, and the
+  ping body carries the memory and swap reading and any pending-reboot warning.
+  A failed
   weekly Cloudflare-range refresh (`22-cloudflare-ufw-refresh.ps1`) also fails it.
 
 The origin lock has three parts, each set by a provisioner:
@@ -510,23 +533,23 @@ ss -Htln 'sport = :3000'                        # 127.0.0.1:3000 only
 systemctl list-timers la-cf-ufw-refresh.timer   # next weekly refresh
 ```
 
-**What nothing watches.** The checks above answer "is it up, and did the
-backup land?" They don't cover the three items below. Lab #45 adds alerts for
-the first two, which go live once its scripts are installed on the droplet
-(Open Questions, Operating):
+**What nothing watches.** The checks above answer "is it up, did the backup
+land, and is the box under memory pressure or waiting on a reboot?" They don't
+cover:
 
-- **Memory, swap and load.** Nothing alerts on them or sends them anywhere. The
-  resize trigger is checked by hand. Adding a memory and swap check to
-  `60-monitor` would turn the trigger into an alert.
-- **A kernel patch waiting for a reboot.** `07` turns on unattended-upgrades
-  but not `Automatic-Reboot`, so security updates install but a new kernel
-  doesn't load until someone reboots. Ubuntu flags this with
-  `/var/run/reboot-required`, and nothing checks that file. A planned reboot
-  costs about the deploy restart gap plus boot time. Nginx has no standby
-  across a reboot, so do it at a quiet hour.
+- **CPU load.** The resize trigger's CPU half (above ~50% under real traffic)
+  is still checked by hand with `uptime`.
 - **Logs.** journald runs at Ubuntu's default cap (10% of the filesystem, at
   most 4 GB), which is fine on 80 GB. `60-monitor`'s disk check would catch
   runaway growth.
+- **A timer that can't start at all.** If `la-health` or `la-backup` can't
+  launch, as from 2026-10-29 to 2026-11-13, nothing on the box can report it.
+  Only healthchecks.io's missing-ping alerts can. That is what they're for, so
+  they have to reach the operator (Open Questions, Operating item 7).
+
+Kernel reboots stay manual: `07` doesn't turn on `Automatic-Reboot`. A
+reboot costs about 15 s of boot time with no Nginx standby across it, so do it
+at a quiet hour when `la-health` warns.
 
 ### Prerequisites & effort
 
@@ -857,35 +880,48 @@ operator can, unaided —
   pruned; unattended-upgrades never reboots). A live reading on 2026-11-13
   showed 22% memory, 11% disk, and a kernel reboot pending since before
   cutover.
+- **2026-11-13** — Lab #45 installed on the droplet: memory, swap and
+  pending-reboot alerts in `la-health`, PGDG minor releases through
+  unattended-upgrades, and `pg_stat_statements` preloaded. The install found
+  that a PowerShell snap refresh had stopped `la-health`, `la-backup` and
+  `la-cf-ufw-refresh` since 2026-10-29: 15 days without an offsite backup or an
+  on-box check. Repaired on the box, made permanent in the provisioners (lab
+  #46), and the missed backup run. PostgreSQL went from 18.6 to 18.7, and a
+  quiet-hour reboot at 05:14 UTC loaded kernel 6.8.0-147 (about 15 s down).
 
 ## Open Questions
 
-**Status as of 2026-11-12:** every migration step below is done, and only the
-operating items are open.
+**Status as of 2026-11-13:** every migration step below is done. Items 1–5
+under Operating were done and installed on the droplet on 2026-11-13. Items 6
+and 7 are open.
 
-**Operating** (open, none urgent; most are a provisioner change in the lab repo):
+**Operating** (most are a provisioner change in the lab repo):
 
-1. **Reboot the droplet at a quiet hour.** A kernel reboot has been pending
-   since before cutover (32 days up on 2026-11-13). Afterwards, confirm
-   `la-server`, `/health/db`, and the timers came back, and re-run the OOM
-   check with `sudo`.
-Items 2–5 are **fixed in the lab repo** (lab #45, merged 2026-11-13) and
-**not yet installed on the droplet**. Until the install, the box behaves as
-described on this page. Install `60` and `07` any time; install `30` with a
-PostgreSQL restart and the item 1 reboot, in a quiet hour. Steps are in lab
-#45.
-
-2. **Alert on memory and swap** in `60-monitor`, against the resize trigger.
-   Lab #45 alerts on memory held high and on pages swapped out outside a
-   deploy. The idle 2.8 MB already in swap doesn't count.
-3. **Alert on `/var/run/reboot-required`.** Lab #45 adds it to the ping body
-   as a warning and fails the check once the reboot has been pending 7 days.
-4. **Apply PGDG PostgreSQL minor releases.** Lab #45 adds the PGDG origin to
-   unattended-upgrades in `07`.
-5. **Preload `pg_stat_statements`** in `30`. Done in lab #45, which also fixes
-   `30` appending duplicate config lines on every re-run.
+1. ~~**Reboot the droplet at a quiet hour.**~~ Done 2026-11-13 at 05:14 UTC,
+   onto kernel 6.8.0-147. `la-server`, PostgreSQL, `/health/db` and the timers
+   came back, and `la-health` passed with no reboot warning. The `sudo` OOM
+   re-check is still to do.
+2. ~~**Alert on memory and swap** in `60-monitor`, against the resize
+   trigger.~~ Done (lab #45, installed 2026-11-13). It fails on memory held at or
+   above 70% for 3 runs, or more than 8 MB swapped out between runs with no
+   deploy in between.
+3. ~~**Alert on `/var/run/reboot-required`.**~~ Done (lab #45). A pending
+   reboot is a warning in the ping body, and a failure once it has waited 7
+   days.
+4. ~~**Apply PGDG PostgreSQL minor releases.**~~ Done (lab #45). `07` allows
+   `apt.postgresql.org:noble-pgdg` in unattended-upgrades. 18.7 was applied by
+   hand the same night.
+5. ~~**Preload `pg_stat_statements`** in `30`.~~ Done (lab #45). `30` also no
+   longer appends duplicate config lines on every run.
 6. **Re-mint the desktop `doctl` token** (expired) and confirm the DigitalOcean
    spend alert.
+7. **Find out why 15 days of missed pings went unnoticed.** From 2026-10-29 to
+   2026-11-13, `la-droplet-monitor` and `la-droplet-backup` got no pings, so
+   healthchecks.io should have marked both DOWN and emailed within a day.
+   Check its dashboard and event log for those dates, and where the alerts
+   went (the channel, the address, the spam folder). If they never went DOWN,
+   check each check's period and grace. Either way, prove the path by stopping
+   a check's pings and confirming the email arrives.
 
 **Migration** (done; kept for the record). Governance is
 [D-24707](../docs/ai/DECISIONS.md), with the ewiki half as D-24690.
