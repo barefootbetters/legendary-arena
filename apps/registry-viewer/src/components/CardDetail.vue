@@ -9,6 +9,7 @@ import { useLightbox } from "../composables/useLightbox";
 import { TYPE_COLOR, HC_COLOR, RARITY_LABEL } from "../lib/theme";
 import { resolveLoadoutSlot } from "../lib/loadoutCardActions";
 import CardDataDisplay from "./CardDataDisplay.vue";
+import CardFaceImage from "./CardFaceImage.vue";
 
 import type { SchemeTwistPattern, CardPattern } from "@legendary-arena/registry/schema";
 
@@ -216,7 +217,9 @@ const matchedMechanicalPattern = computed(() => {
         title="Click to view full size"
         :aria-label="`View ${card.name} full size`"
       >
-        <img :src="card.physicalCardImageUrl ?? card.imageUrl" :alt="card.name" />
+        <!-- why: the panel renders the phone / large tiers; the lightbox above
+             still opens the original (WP-892 / D-24849). -->
+        <CardFaceImage :image-url="card.physicalCardImageUrl ?? card.imageUrl" ladder="large" :alt="card.name" />
       </button>
 
       <template v-if="viewMode === 'image'">

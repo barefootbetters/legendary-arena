@@ -458,9 +458,14 @@ uploads.
   reads the npm-derived set sources under `scripts/convert-cards/inputs/`,
   assigns the ribbon per family, and writes the resulting `imageUrl` into each
   card object in `data/cards/{setAbbr}.json`.
-- **Registry Viewer.** `apps/registry-viewer` consumes each card's `imageUrl`
-  field verbatim to render tiles and the detail panel; it does not recompute the
-  URL. A mis-named R2 object surfaces as a broken image in the viewer.
+- **Registry Viewer.** `apps/registry-viewer` takes each card's `imageUrl`
+  (or `physicalCardImageUrl`) as published and never builds a URL from the
+  naming rule. Since WP-892 / D-24849 it derives the size-tier URLs from that
+  field by the "Size tiers" path rule: grid tiles at slider 130 px or less
+  render `thumb 1x, phone 2x`, larger tiles, split faces and the detail panel
+  render `phone 1x, large 2x`, and a failed tier falls back once to the
+  original. The lightbox ("view full size") still opens the original. A
+  mis-named R2 object surfaces as a broken image in the viewer.
 
 ## Edge Cases
 
