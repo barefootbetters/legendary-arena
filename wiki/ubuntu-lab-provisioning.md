@@ -470,8 +470,9 @@ Look it up when you need it:
 
 - **DigitalOcean control panel:** Droplets → `la-rehearsal-01`. The ipv4
   address is at the top of the page.
-- **`doctl compute droplet list --format Name,PublicIPv4`** needs a valid
-  `doctl` token. The desktop one has expired (Open Questions, Operating item 6).
+- **`doctl compute droplet list --format Name,PublicIPv4`** from the
+  workstation. Its token is good until 2027-11-13 (see
+  [Prerequisites & effort](#prerequisites--effort) for how to renew it).
 
 Two checks confirm it's the right box. `ssh-keygen -F <ip>` finds it in
 `~/.ssh/known_hosts` if this workstation has logged in before. On a first
@@ -562,14 +563,36 @@ at a quiet hour when `la-health` warns.
   is uploaded to the account. One droplet exists, `la-rehearsal-01` ($24/mo),
   kept as the cutover box (see [Rehearsal results](#rehearsal-results-2026-10-11)).
   A spend alert a little above the droplet price (for example $30 a month,
-  raised on a resize) is recommended; it was not confirmed set as of this
-  revision. The $5 "Inference Cloud Trial" credit expires 2026-10-21 and is
+  raised on a resize) is recommended. It was set on 2026-11-13; see below. The $5 "Inference Cloud Trial" credit expires 2026-10-21 and is
   named for the inference products, so do not count on it covering droplet
   usage. (It was applied to the October invoice anyway.)
 
-  **2026-11-12:** the desktop's 30-day `doctl` token has expired (`401 Unable
-  to authenticate`). Mint a new one before the next rebuild, resize, or drill,
-  since DR-02 starts with `doctl`. The spend alert is still unconfirmed.
+  **2026-11-13:** the 30-day `doctl` token that had expired on 2026-11-12 was
+  replaced with a **1-year, Full Access** token that expires **2027-11-13**.
+  Renew it a week before then: DR-02 starts with `doctl`, so a dead token
+  bites during an incident. The **spend alert is set at $30/month** and goes to
+  an address outside the operator's Microsoft-hosted mailbox, so a mail
+  outage there doesn't hide it.
+
+  **Renewing the token on the Windows workstation.** Panel → API → Tokens →
+  Generate New Token (Full Access, 1 year), then delete the old one. Use the
+  copy icon next to the token, not a drag-select: on 2026-11-13 a drag-select
+  picked up extra text, which made an 83-character string instead of the
+  71-character `dop_v1_…` token. Then, one line at a time:
+
+  ```powershell
+  $secure = Read-Host 'Paste the new DigitalOcean token' -AsSecureString
+  $token = [Regex]::Match([Net.NetworkCredential]::new('', $secure).Password, 'dop_v1_[0-9a-f]{64}').Value; "length $($token.Length)"   # must be 71
+  doctl auth init --access-token $token
+  Remove-Variable token, secure
+  doctl compute droplet list --format Name,PublicIPv4,Status
+  ```
+
+  `doctl auth init` on its own reuses the expired token saved in its config,
+  and its interactive prompt aborts in this terminal. `--context <name>`
+  ignores `--access-token` and prompts too. Passing `--access-token` on the
+  default profile skips both. The variable keeps the token out of the
+  PowerShell history.
 - A throwaway lab hostname (e.g. `lab.<your-domain>`) ready to point at the
   droplet IP.
 - Familiarity with the production topology in the
@@ -895,7 +918,7 @@ operator can, unaided —
 
 **Status as of 2026-11-13:** every migration step below is done. Items 1–5
 under Operating were done and installed on the droplet on 2026-11-13, and item
-7 was closed the same night. Items 6 and 8 are open.
+7 was closed the same night, and item 6 with it. Item 8 is open.
 
 **Operating** (most are a provisioner change in the lab repo):
 
@@ -915,8 +938,12 @@ under Operating were done and installed on the droplet on 2026-11-13, and item
    hand the same night.
 5. ~~**Preload `pg_stat_statements`** in `30`.~~ Done (lab #45). `30` also no
    longer appends duplicate config lines on every run.
-6. **Re-mint the desktop `doctl` token** (expired) and confirm the DigitalOcean
-   spend alert.
+6. ~~**Re-mint the desktop `doctl` token** (expired) and confirm the
+   DigitalOcean spend alert.~~ Done 2026-11-13. A 1-year Full Access token
+   (expires 2027-11-13) is installed, and `doctl compute droplet list` works
+   again. The spend alert is set at $30/month to an address outside the
+   Microsoft-hosted mailbox. The renewal steps are under
+   [Prerequisites & effort](#prerequisites--effort).
 7. ~~**Give healthchecks.io a second alert channel.**~~ Done 2026-11-13. A
    Pushover integration (high priority for DOWN, low for UP) is assigned to
    every check, alongside the existing email. Its test notification reached the
