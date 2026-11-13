@@ -428,6 +428,27 @@ journalctl -u la-backup -n 15 --no-pager      # dump, "Uploading to r2:…", "Mi
 systemctl list-timers la-backup.timer         # next run
 ```
 
+**Reading the backups from the workstation.** The workstation's `r2:` rclone
+remote reads the bucket with its own **read-only** R2 token (Object Read only,
+scoped to `legendary-arena-db-backups`, no expiry, created 2026-11-13). Until
+then the remote had no credentials. It was set to `env_auth = true` with no
+keys in the environment, so every call timed out looking for cloud-server
+credentials. Being read-only, a leaked desktop key can list and download dumps
+but can't change or delete them. The `pcloud:` remote reads the mirror the same
+way.
+
+```powershell
+rclone lsl r2:legendary-arena-db-backups/db-backups/2026/11/13   # one day's dumps
+rclone lsf r2:legendary-arena-db-backups/db-backups/2026/10/ --dirs-only   # which days have a dump
+```
+
+To re-key it, create the R2 token, then read the Access Key ID and the Secret
+Access Key with `Read-Host`. Strip the paste markers with
+`[regex]::Match($value, '[0-9a-f]{32}')` for the ID and `{64}` for the secret,
+then run `rclone config update r2 env_auth=false access_key_id=$id
+secret_access_key=$secret | Out-Null`. `Out-Null` hides rclone's echo of the
+secret.
+
 Restoring from either copy, and the provider-loss scenarios, are on
 [Disaster Recovery](disaster-recovery.md). `51-restore.ps1` restores straight
 from R2 (`RESTORE_FROM_R2=latest`). A pCloud dump restores through
@@ -578,10 +599,12 @@ at a quiet hour when `la-health` warns.
   outage there doesn't hide it.
 
   **Renewing the token on the Windows workstation.** Panel → API → Tokens →
-  Generate New Token (Full Access, 1 year), then delete the old one. Use the
-  copy icon next to the token, not a drag-select: on 2026-11-13 a drag-select
-  picked up extra text, which made an 83-character string instead of the
-  71-character `dop_v1_…` token. Then, one line at a time:
+  Generate New Token (Full Access, 1 year), then delete the old one. This
+  terminal wraps every paste in invisible bracketed-paste markers (`ESC[200~`
+  before and `ESC[201~` after, 12 characters in all). `Read-Host` keeps them,
+  so a pasted 71-character `dop_v1_…` token reads as 83 characters, and the
+  escape character aborts `doctl`'s own prompt. The regex below keeps only the
+  token. Then, one line at a time:
 
   ```powershell
   $secure = Read-Host 'Paste the new DigitalOcean token' -AsSecureString
@@ -592,7 +615,7 @@ at a quiet hour when `la-health` warns.
   ```
 
   `doctl auth init` on its own reuses the expired token saved in its config,
-  and its interactive prompt aborts in this terminal. `--context <name>`
+  and its interactive prompt aborts on the paste markers. `--context <name>`
   ignores `--access-token` and prompts too. Passing `--access-token` on the
   default profile skips both. The variable keeps the token out of the
   PowerShell history.
