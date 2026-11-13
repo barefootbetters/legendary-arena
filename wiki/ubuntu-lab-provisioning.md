@@ -340,8 +340,8 @@ billing record.
 | Area | Record |
 |---|---|
 | Downtime | **10 m 10 s** at cutover (UptimeRobot, 5-minute granularity). No unplanned outage of the public API since. The planned kernel reboot on 2026-11-13 at 05:14 UTC took about **15 s**: one 502 from Cloudflare, then `/health/db` OK. |
-| Alerts | One, a **false** DOWN: on 2026-10-21 at 05:55 UTC a `la-health` run landed in the ~4 s restart gap of a deploy. The public site stayed up (Nginx served the `:3001` standby, no 5xx), and the next run passed. Fixed in lab #43: `60-monitor` now waits for the deploy lock. Plus one **real** DOWN that reached nobody: `la-droplet-backup` went down on 2026-10-29 at 11:17 UTC and stayed down until 2026-11-13 04:58 UTC. Its only channel was email to a Microsoft-hosted mailbox that was down (Open Questions, Operating item 7). |
-| **Silent failure** | **From 2026-10-29 to 2026-11-13 (15 days) the on-box timers didn't run: no `la-health` check, no nightly backup, and no Cloudflare-range refresh.** The API itself stayed up throughout; UptimeRobot on `/health/db` stayed green. Found while installing lab #45 and fixed the same night (see [Offsite backups](#offsite-backups-r2--pcloud)). |
+| Alerts | One, a **false** DOWN: on 2026-10-21 at 05:55 UTC a `la-health` run landed in the ~4 s restart gap of a deploy. The public site stayed up (Nginx served the `:3001` standby, no 5xx), and the next run passed. Fixed in lab #43: `60-monitor` now waits for the deploy lock. Plus one **real** DOWN that was delivered but missed: `la-droplet-monitor` went down on 2026-10-28 at 14:14 UTC, and its email reached the operator's inbox one minute later. `la-droplet-backup` followed on 2026-10-29 at 11:17 UTC. Both stayed down until 2026-11-13 04:58 UTC. Email at normal priority was the only channel (Open Questions, Operating item 7). |
+| **Unnoticed failure** | **From 2026-10-28 ~14:00 UTC to 2026-11-13 (about 15½ days) the on-box timers didn't run: no `la-health` check, no nightly backup (the first missed one was 2026-10-29), and no Cloudflare-range refresh.** The API itself stayed up throughout; UptimeRobot on `/health/db` stayed green. Found while installing lab #45 and fixed the same night (see [Offsite backups](#offsite-backups-r2--pcloud)). |
 | Deploy restarts | Before 2026-10-15, every restart dropped requests: 6 s idle, 36 s with a player's websocket open. Fixed by closing websockets on SIGTERM (#2819), the `:3001` standby (lab #39), and per-commit release directories with a no-rebuild rollback (lab #40). |
 | Recovery | DigitalOcean Droplet backups enabled 2026-10-20 (daily, 7-day retention), as the fast path for a lost droplet. DR-02 full rebuild drilled on a new droplet 2026-10-22: **13 m 31 s** of hands-on steps. Restores from the R2 dumps are drilled separately ([Disaster Recovery](disaster-recovery.md) §7). No restore was needed. RPO by design is ≈ 24 h (nightly dump, no PITR). From 2026-10-29 to 2026-11-13, with no nightly dump, the newest R2/pCloud copy was the 2026-10-28 dump. The DigitalOcean Droplet backups are disk images taken by DigitalOcean, not by anything on the droplet, so the snap failure couldn't stop them. On 2026-11-13 the droplet's Activity log showed a **Backup** event every day for the five days it lists, the newest 8 hours old. Images from earlier in the gap had already aged out of the 7-day retention. So through the gap a lost droplet could still be restored to within about a day; what was missing was the offsite copy that survives losing the DigitalOcean account. |
 | Cost | October (12–31): $17.65 usage, $12.65 charged after a one-time $5 credit. A full month is capped at $24.00 plus backups. Month-by-month figures: [DigitalOcean actuals](render-migration-analysis.md#digitalocean-actuals-from-october-2026). |
@@ -402,10 +402,12 @@ would have dropped test dumps into the production folders. The shared GFS
 pruning would then have counted them as real backups and pruned real ones to
 make room.
 
-**The 2026-10-29 to 2026-11-13 gap.** On the droplet, PowerShell is a snap.
+**The 2026-10-28 to 2026-11-13 gap.** On the droplet, PowerShell is a snap.
 `50-backup`, `60-monitor` and `22-cloudflare-ufw-refresh` had installed their
 units with the snap's versioned path, `/snap/powershell/414/…/pwsh`. A routine
-snap refresh between the 2026-10-28 and 2026-10-29 runs deleted that revision.
+snap refresh around 2026-10-28 14:00 UTC deleted that revision. That's when
+`la-health`'s 5-minute pings stopped. The 2026-10-28 09:17 backup had already
+run, so the first missed backup was 2026-10-29.
 Every run after that failed before the script started (`status=203/EXEC`):
 - no dumps reached R2 or pCloud
 - `la-health` couldn't run to notice the stale backup
@@ -544,11 +546,12 @@ cover:
   most 4 GB), which is fine on 80 GB. `60-monitor`'s disk check would catch
   runaway growth.
 - **A timer that can't start at all.** If `la-health` or `la-backup` can't
-  launch, as from 2026-10-29 to 2026-11-13, nothing on the box can report it.
-  Only healthchecks.io's missing-ping alerts can. They did fire on 2026-10-29,
-  but their one channel was an email address on a mailbox that was down. Since
-  2026-11-13 every check also alerts through Pushover to the operator's phone,
-  at high priority for DOWN (Open Questions, Operating item 7).
+  launch, as from 2026-10-28 to 2026-11-13, nothing on the box can report it.
+  Only healthchecks.io's missing-ping alerts can. They did fire, on 2026-10-28,
+  and the email was delivered within a minute. But a normal-priority email is
+  easy to miss among other mail, and it was. Since 2026-11-13 every check also
+  alerts through Pushover to the operator's phone, at high priority for DOWN
+  (Open Questions, Operating item 7).
 
 Kernel reboots stay manual: `07` doesn't turn on `Automatic-Reboot`. A
 reboot costs about 15 s of boot time with no Nginx standby across it, so do it
@@ -909,8 +912,9 @@ operator can, unaided —
   pending-reboot alerts in `la-health`, PGDG minor releases through
   unattended-upgrades, and `pg_stat_statements` preloaded. The install found
   that a PowerShell snap refresh had stopped `la-health`, `la-backup` and
-  `la-cf-ufw-refresh` since 2026-10-29: 15 days without an offsite backup or an
-  on-box check. Repaired on the box, made permanent in the provisioners (lab
+  `la-cf-ufw-refresh` since about 2026-10-28 14:00 UTC: about 15 days without
+  an offsite backup or an on-box check. The DOWN email had reached the inbox on
+  2026-10-28 and gone unnoticed. Repaired on the box, made permanent in the provisioners (lab
   #46), and the missed backup run. PostgreSQL went from 18.6 to 18.7, and a
   quiet-hour reboot at 05:14 UTC loaded kernel 6.8.0-147 (about 15 s down).
 
@@ -947,15 +951,19 @@ under Operating were done and installed on the droplet on 2026-11-13, and item
 7. ~~**Give healthchecks.io a second alert channel.**~~ Done 2026-11-13. A
    Pushover integration (high priority for DOWN, low for UP) is assigned to
    every check, alongside the existing email. Its test notification reached the
-   operator's Android phone. Why 15 days of missed pings went unnoticed: the
-   alert fired: `la-droplet-backup`'s
-   log shows `up ➔ down` on 2026-10-29 at 11:17 UTC, which is the missed 09:17
-   run plus its 2-hour grace, and `down ➔ up` at the 2026-11-13 04:58 UTC
-   catch-up. The ping's user agent moved from PowerShell 7.6.6 to 7.6.9 across
-   the gap, which is the snap refresh. But every check's only notification method
-   was email to the operator's Microsoft-hosted mailbox, and that mailbox was
-   down. healthchecks.io's "Delivered" on an email only means the mail server
-   accepted it, not that it reached an inbox.
+   operator's Android phone.
+
+   Why 15 days of missed pings went unnoticed: the alerts fired on time and were
+   delivered. `la-droplet-monitor` went `up ➔ down` on 2026-10-28 at 14:14:52 UTC,
+   its 5-minute period plus 10-minute grace after the last ping. Its DOWN email
+   reached the operator's inbox one minute later. `la-droplet-backup` followed on
+   2026-10-29 at 11:17 UTC, the missed 09:17 run plus its 2-hour grace. Both went
+   `down ➔ up` at the 2026-11-13 04:58 UTC catch-up. The ping's user agent moved
+   from PowerShell 7.6.6 to 7.6.9 across the gap, which is the snap refresh. The
+   only channel was a normal-priority email, which was missed among other mail.
+   (An unrelated Microsoft mailbox outage on 2026-11-13 made it look at first as
+   if the alerts had never arrived; the received timestamps showed otherwise.) A
+   high-priority phone push is the fix for an alert that has to be seen.
 8. **Buy the Pushover Android license before about 2026-12-13.** The device
    is on Pushover's 30-day trial, which started 2026-11-13. After it ends,
    Pushover stops delivering to that phone, and item 7's second channel goes
