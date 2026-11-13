@@ -25,6 +25,11 @@ status: draft
 source:
   - C:\dev\legendary-arena\wiki\airplane-mode.md (this page — https://ewiki.legendary-arena.com/airplane-mode/)
   - ../apps/arena-client/src/client/bgioClient.ts
+  - ../apps/arena-client/src/client/localSpikeClient.ts
+  - ../apps/arena-client/src/client/setupBundleReader.ts
+  - ../apps/arena-client/src/pages/LocalSpikePage.vue
+  - ../apps/arena-client/src/fixtures/localSpike/featuredSetupBundle.json
+  - ../scripts/build-local-spike-bundle.mjs
   - ../apps/arena-client/src/composables/useCardImagePrefetch.ts
   - ../apps/arena-client/src/composables/useDeployVersionCheck.ts
   - ../apps/arena-client/src/composables/useCompetitiveSubmitOnGameover.ts
@@ -49,15 +54,16 @@ source:
   - ../docs/ai/DECISIONS.md
   - ../docs/ai/NUMBER-LEDGER.md
   - ../.claude/rules/architecture.md
-last-reviewed: 2026-11-12
+last-reviewed: 2026-11-13
 ---
 
 # Airplane Mode
 
-> **Status: design research, decisions made, nothing built.** The four
+> **Status: design research, decisions made, slice 0 built.** The four
 > decisions this page raised are recorded as D-24844 to D-24847 (2026-11-12).
-> Slice 0, the spike, is drafted as WP-890 (D-24842). Everything else here is
-> a *candidate* for a future WP, not a commitment. Code facts come
+> Slice 0, the spike, shipped as WP-890 (D-24842, 2026-11-13) behind a
+> development-only build flag; its results are in the slice 0 row below.
+> Everything else here is a *candidate* for a future WP, not a commitment. Code facts come
 > from `main` at `38238583` (2026-11-12). Facts about other products come from
 > their help pages and reviews, read 2026-11-12 and linked under References;
 > anything marked *unverified* wasn't confirmed from a primary source.
@@ -227,8 +233,10 @@ offline play"*.
   manifests of the sets the setup uses.
 - **Rough figures** at the `phone` tier, from the published manifests (about
   94 KB per card for `core`, 131 KB for `co2e`):
-  - A typical solo setup is roughly 40–60 unique images, about 4–8 MB
-    *(estimate; the count depends on the heroes and villain groups)*.
+  - The featured solo table (WP-890's spike setup) has **31 unique images**
+    (measured: the initial state's `matchCardImageUrls`), about 3 MB at
+    `phone` at the Core average. Other setups vary with their heroes and
+    villain groups.
   - The whole library is 296 MB at `phone`, against 1,133 MB for the
     originals the card data references. That's every card in every set, not
     what any one player downloads.
@@ -393,7 +401,7 @@ it.
 
 | # | Slice | How it's checked |
 |---|---|---|
-| 0 | **Spike** (drafted as WP-890, D-24842): one hard-coded Core setup, the engine on a `Local()` master in the browser, images fetched online | The match plays to an end in the browser with no socket. It replays identically from its saved setup, seed and log |
+| 0 | **Spike** (WP-890, D-24842): one hard-coded Core setup, the engine on a `Local()` master in the browser, images fetched online | The match plays to an end in the browser with no socket. It replays identically from its saved setup, seed and log. **Result (2026-11-13):** pass. `LegendaryGame` runs unchanged on `Local()`; the local master equals boardgame.io's own reducer after every move (2 lobby + 175 policy moves to gameover in the test); a hand-played browser match reached gameover on turn 20 and replayed 191 of 191 moves. Setup bundle: 2,882 cards and 41 sets, 2.97 MB raw / 462 KB gzip. Spike chunk: 2,820 kB raw / 462 kB gzip. 31 unique images |
 | 1 | **Smallest offline version:** a web app manifest, a service worker caching the app shell, plus the spike setup's images and card data | In Chrome DevTools, Network → **Offline**, then reload and play to the end. On a real phone: install to the home screen, turn on airplane mode, cold-start, and play |
 | 2 | On-device save and resume | Kill the tab mid-turn, reopen offline, and the game resumes on the same turn with the same deck order |
 | 3 | Any setup: the setup-bundle endpoint, the download button, the size label from the WP-888 manifests, and the badge | The label's bytes match what Cache Storage ends up holding. Every image in the setup renders offline |
@@ -409,6 +417,11 @@ DevTools checks that apply to every slice:
 - **Network → Offline:** throttling set to offline.
 
 The phone test matters because iOS behaves differently (see Edge Cases).
+
+**Slice 1 also settles:** what current iOS and Android browsers actually do
+about storage eviction for an installed web app. WebKit's published policy is
+under Edge Cases; a device check is still owed, and slice 1 is the first slice
+with an installed app to check.
 
 ## Interactions
 
@@ -447,11 +460,25 @@ The phone test matters because iOS behaves differently (see Edge Cases).
   legal. Saving after every move means a reload returns the same game rather
   than a retry.
 - **iOS storage eviction.** WebKit's 2020 policy deletes script-writable
-  storage (IndexedDB and Cache Storage included) after 7 days without use in
-  Safari. Web apps added to the Home Screen were treated differently
-  *(unverified against current iOS; check on a device)*. Expect the design to
-  ask iPhone players to install the app, and to call
-  `navigator.storage.persist()`.
+  storage (IndexedDB and Cache Storage included) after 7 days of Safari use
+  without interaction with the site. WebKit's primary sources:
+  - [Full Third-Party Cookie Blocking and More](https://webkit.org/blog/10218/full-third-party-cookie-blocking-and-more/)
+    (2020): Home Screen web apps "have their own counter of days of use", and
+    WebKit doesn't expect their first-party data to be deleted.
+  - [Updates to Storage Policy](https://webkit.org/blog/14403/updates-to-storage-policy/)
+    (2023): a Home Screen web app gets the same quota as Safari (an origin up
+    to 60% of disk, 80% overall), and `persist()` is granted on heuristics
+    that include running as a Home Screen web app.
+  - [WebKit Features in Safari 18.4](https://webkit.org/blog/16574/webkit-features-in-safari-18-4/)
+    (2025; also the [Safari 18.4 release notes](https://developer.apple.com/documentation/safari-release-notes/safari-18_4-release-notes)):
+    the Screen Wake Lock API now also works in Home Screen web apps on iOS 18.4.
+
+  Expect the design to ask iPhone players to install the app, and to call
+  `navigator.storage.persist()`. A device check under slice 1 still applies.
+- **A device-hosted match holds its seed and full initial state.**
+  boardgame.io's `sync` sends the initial state unfiltered, so a match the
+  device hosts necessarily has its seed and whole initial `G` in memory
+  (WP-890). D-24715's seed redaction governs server matches only.
 - **Quota.** Browsers cap storage per origin and can evict under pressure.
   `navigator.storage.estimate()` drives the space-left display, and a failed
   write has to surface as "not enough space," not a half-cached setup that
@@ -474,6 +501,8 @@ The phone test matters because iOS behaves differently (see Edge Cases).
 ## Code Touchpoints
 
 - [`apps/arena-client/src/client/bgioClient.ts`](../apps/arena-client/src/client/bgioClient.ts): the Socket.IO client a local transport would sit beside.
+- [`apps/arena-client/src/client/localSpikeClient.ts`](../apps/arena-client/src/client/localSpikeClient.ts) / [`setupBundleReader.ts`](../apps/arena-client/src/client/setupBundleReader.ts): the WP-890 spike's local client, game copy, replay, and plain-data reader.
+- [`scripts/build-local-spike-bundle.mjs`](../scripts/build-local-spike-bundle.mjs): records the setup bundle against the real registry (`pnpm spike:local-bundle`).
 - [`packages/game-engine/src/ui/uiState.build.ts`](../packages/game-engine/src/ui/uiState.build.ts): `buildMatchCardImageManifest`, the per-setup image list.
 - [`apps/arena-client/src/composables/useCardImagePrefetch.ts`](../apps/arena-client/src/composables/useCardImagePrefetch.ts): today's HTTP-cache warmer.
 - [`packages/registry/src/impl/httpRegistry.ts`](../packages/registry/src/impl/httpRegistry.ts): the browser-capable registry reader.
@@ -494,15 +523,26 @@ the WP that builds the feature:
 - **Data version:** does the verifier replay an old record on the engine and
   card data it was played on, or reject a mismatch? (D-24847)
 
-**Facts to settle by spike:**
+**Facts settled by the spike (WP-890 / D-24842, 2026-11-13):**
 
-- Does `LegendaryGame` run unchanged on a `Local()` master in the browser,
-  including `Game.setup()` reading a server-built setup bundle through a
-  plain-data reader? How much does the client bundle grow?
-- How many unique images does a real setup have? This replaces the 40–60
-  estimate.
-- What do current iOS and Android browsers actually do about storage eviction
-  for an installed PWA?
+- **Does `LegendaryGame` run unchanged on a `Local()` master?** Yes, with no
+  engine change. `Game.setup()` reads a recorded setup bundle through a
+  plain-data reader. Two framework facts shape the host: boardgame.io 0.50.2
+  never passes `setupData` to a local match (it fails silently, leaving a
+  null state), and `Local()` keeps one master per game object. So the client
+  runs a fresh copy of the game per match, with the seed pinned, `setup`
+  closed over the configuration, and `validateSetupData` bypassed only after
+  an explicit `validateMatchSetup`. The `client: false` moves run on the
+  local master, and its projection equals the server reducer's at every move.
+- **How much does the client grow?** The setup bundle is what setup actually
+  reads: every card (2,882) and every set (41), 2.97 MB as compact JSON and
+  462 KB gzipped. The spike chunk is 2,820 kB raw / 462 kB gzip, nearly all
+  of it that bundle; the engine is already in the main chunk (WP-090). The
+  main chunk grows 6.9 kB raw (1.8 kB gzip) in a flagged build and 0.2 kB in
+  a default one. Trimming the bundle to the setup's own cards is slice 3's
+  work.
+- **How many unique images?** 31 for the featured table, not 40–60.
+- The storage-eviction question moves to slice 1 (see Candidate build steps).
 
 ## References
 
@@ -516,7 +556,7 @@ Repo:
   - D-24095, the `bgio` framework store
   - D-24119, server-side replay from `initialState` plus `log`
   - D-24838, store builds wrap the web client
-  - D-24842, the WP-890 local-match spike (reserved)
+  - D-24842, the WP-890 local-match spike: what it measured and the build flag that keeps it out of production
   - D-24844, a single-seat solo match may run its rules on the device
   - D-24845, one featured setup free, the rest on the Legendary Pass
   - D-24846, downloads accepted under the existing rights gap
