@@ -950,6 +950,10 @@ operator can, unaided —
   - The PowerShell snap moved to 7.7.0, which dumps core when systemd starts it
     with no `HOME`. All three timer units now set `Environment=HOME=/root` (lab
     #50), applied on the box after the droplet had already picked up 7.7.0.
+    `la-health` crashed from about 18:05 UTC, and `la-droplet-monitor` went
+    DOWN at 18:22 UTC and back UP at 19:17 UTC when the fix went in (55 min
+    25 s). The DOWN reached the operator's phone through Pushover. No backup
+    was missed: the 09:17 run had finished before the snap refresh.
 
 ## Open Questions
 
@@ -984,7 +988,9 @@ under Operating were done and installed on the droplet on 2026-11-13, and item
 7. ~~**Give healthchecks.io a second alert channel.**~~ Done 2026-11-13. A
    Pushover integration (high priority for DOWN, low for UP) is assigned to
    every check, alongside the existing email. Its test notification reached the
-   operator's Android phone.
+   operator's Android phone, and the same day it carried a real alert: the
+   18:22 UTC `la-droplet-monitor` DOWN during the PowerShell 7.7.0 crash buzzed
+   the phone on time (see History, 2026-11-13).
 
    Why 15 days of missed pings went unnoticed: the alerts fired on time and were
    delivered. `la-droplet-monitor` went `up ➔ down` on 2026-10-28 at 14:14:52 UTC,
