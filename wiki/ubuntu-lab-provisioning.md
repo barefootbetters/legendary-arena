@@ -574,9 +574,13 @@ cover:
   alerts through Pushover to the operator's phone, at high priority for DOWN
   (Open Questions, Operating item 7).
 
-Kernel reboots stay manual: `07` doesn't turn on `Automatic-Reboot`. A
-reboot costs about 15 s of boot time with no Nginx standby across it, so do it
-at a quiet hour when `la-health` warns.
+Kernel and libc reboots are automatic since 2026-11-13 (lab #49). When an
+update leaves `/var/run/reboot-required`, unattended-upgrades reboots the
+droplet at **10:30 UTC** that day: 2:30 AM Pacific in winter, after the
+06:00–07:00 UTC upgrade run and the 09:17 UTC backup. A reboot costs about
+15 s with no Nginx standby across it. `la-health`'s pending-reboot warning
+(and its failure after 7 days) is the backstop if a reboot ever doesn't
+happen.
 
 ### Prerequisites & effort
 
@@ -940,6 +944,12 @@ operator can, unaided —
   2026-10-28 and gone unnoticed. Repaired on the box, made permanent in the provisioners (lab
   #46), and the missed backup run. PostgreSQL went from 18.6 to 18.7, and a
   quiet-hour reboot at 05:14 UTC loaded kernel 6.8.0-147 (about 15 s down).
+  Later that day:
+  - libc6 and kernel 6.8.0-149 needed a second reboot, which made reboots
+    automatic at 10:30 UTC (lab #49).
+  - The PowerShell snap moved to 7.7.0, which dumps core when systemd starts it
+    with no `HOME`. All three timer units now set `Environment=HOME=/root` (lab
+    #50), applied on the box after the droplet had already picked up 7.7.0.
 
 ## Open Questions
 
