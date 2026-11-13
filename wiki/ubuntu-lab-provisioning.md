@@ -545,9 +545,9 @@ cover:
 - **A timer that can't start at all.** If `la-health` or `la-backup` can't
   launch, as from 2026-10-29 to 2026-11-13, nothing on the box can report it.
   Only healthchecks.io's missing-ping alerts can. They did fire on 2026-10-29,
-  but their one channel was an email address on a mailbox that was down, so
-  they need a second channel that doesn't share that dependency (Open
-  Questions, Operating item 7).
+  but their one channel was an email address on a mailbox that was down. Since
+  2026-11-13 every check also alerts through Pushover to the operator's phone,
+  at high priority for DOWN (Open Questions, Operating item 7).
 
 Kernel reboots stay manual: `07` doesn't turn on `Automatic-Reboot`. A
 reboot costs about 15 s of boot time with no Nginx standby across it, so do it
@@ -894,9 +894,8 @@ operator can, unaided —
 ## Open Questions
 
 **Status as of 2026-11-13:** every migration step below is done. Items 1–5
-under Operating were done and installed on the droplet on 2026-11-13. Items 6
-and 7 are open. Item 7's cause is found, but the second alert channel isn't
-in place yet.
+under Operating were done and installed on the droplet on 2026-11-13, and item
+7 was closed the same night. Items 6 and 8 are open.
 
 **Operating** (most are a provisioner change in the lab repo):
 
@@ -918,19 +917,23 @@ in place yet.
    longer appends duplicate config lines on every run.
 6. **Re-mint the desktop `doctl` token** (expired) and confirm the DigitalOcean
    spend alert.
-7. **Give healthchecks.io a second alert channel.** Why 15 days of missed
-   pings went unnoticed is now known. The alert fired: `la-droplet-backup`'s
+7. ~~**Give healthchecks.io a second alert channel.**~~ Done 2026-11-13. A
+   Pushover integration (high priority for DOWN, low for UP) is assigned to
+   every check, alongside the existing email. Its test notification reached the
+   operator's Android phone. Why 15 days of missed pings went unnoticed: the
+   alert fired: `la-droplet-backup`'s
    log shows `up ➔ down` on 2026-10-29 at 11:17 UTC, which is the missed 09:17
    run plus its 2-hour grace, and `down ➔ up` at the 2026-11-13 04:58 UTC
    catch-up. The ping's user agent moved from PowerShell 7.6.6 to 7.6.9 across
    the gap, which is the snap refresh. But every check's only notification method
    was email to the operator's Microsoft-hosted mailbox, and that mailbox was
-   down. Still to do:
-   - Add a non-email integration (Pushover, Telegram, Discord or Slack), or
-     at least an address on another provider. Turn it on for
-     `la-droplet-monitor`, `la-droplet-backup` and `la-droplet-pcloud`.
-   - Prove it: use the integration's test button, then let one check go late
-     and confirm the alert arrives.
+   down. healthchecks.io's "Delivered" on an email only means the mail server
+   accepted it, not that it reached an inbox.
+8. **Buy the Pushover Android license before about 2026-12-13.** The device
+   is on Pushover's 30-day trial, which started 2026-11-13. After it ends,
+   Pushover stops delivering to that phone, and item 7's second channel goes
+   quiet without any error. The license is a one-time $4.99 per platform, bought
+   in the app or at pushover.net under Upgrade Now.
 
 **Migration** (done; kept for the record). Governance is
 [D-24707](../docs/ai/DECISIONS.md), with the ewiki half as D-24690.
