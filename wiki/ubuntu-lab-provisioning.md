@@ -344,7 +344,9 @@ billing record.
 | Deploy restarts | Before 2026-10-15, every restart dropped requests: 6 s idle, 36 s with a player's websocket open. Fixed by closing websockets on SIGTERM (#2819), the `:3001` standby (lab #39), and per-commit release directories with a no-rebuild rollback (lab #40). |
 | Recovery | DigitalOcean Droplet backups enabled 2026-10-20 (daily, 7-day retention), as the fast path for a lost droplet. DR-02 full rebuild drilled on a new droplet 2026-10-22: **13 m 31 s** of hands-on steps. Restores from the R2 dumps are drilled separately ([Disaster Recovery](disaster-recovery.md) §7). Observed RPO in production: none needed, since no restore was required. RPO by design is ≈ 24 h (nightly dump, no PITR). |
 | Cost | October (12–31): $17.65 usage, $12.65 charged after a one-time $5 credit. A full month is capped at $24.00 plus backups. Month-by-month figures: [DigitalOcean actuals](render-migration-analysis.md#digitalocean-actuals-from-october-2026). |
-| Capacity | **Not re-measured since cutover.** The last numbers are the pre-cutover rehearsal: 1.37 GB peak during a deploy build with no swap, about 800 MB used in steady state. The resize trigger is memory above ~70%, CPU above ~50% under real traffic, or swap in use outside deploys ([Target configuration](#target-configuration)). No alert watches memory, swap or load, so this is checked by hand: `free -m`, `uptime`, `swapon --show`. |
+| Capacity | Measured 2026-11-13 02:56 UTC, at a quiet hour: **850 MB used of 3.9 GB (22%), 3.0 GB available**, load average 0.00, **swap 2.8 MB** of 2 GB, disk **8.2 GB of 77 GB (11%)**. Steady-state memory matches the pre-cutover rehearsal (about 800 MB; the deploy build peaked at 1.37 GB). The swap figure is idle pages pushed out at `swappiness` 10, not memory pressure. Nothing is near the resize trigger: memory above ~70%, CPU above ~50% under real traffic, or real swap use outside deploys ([Target configuration](#target-configuration)). This was one reading at an idle hour, not a peak. No alert watches memory, swap or load, so they're checked by hand: `free -m`, `uptime`, `swapon --show`. |
+| OOM kills | Not established. `journalctl -k` run without `sudo` can't read kernel messages on this box, so its count of 0 proves nothing. Re-check with `sudo journalctl -k --since 2026-10-12 \| grep -ciE 'oom-kill\|out of memory'`. |
+| Kernel patches | **A reboot is pending.** `/var/run/reboot-required` was present on 2026-11-13, and the box had been up 32 days, since before cutover. Patches installed since then have reached disk, but the running kernel is still the one booted on 2026-10-11. See "What nothing watches". |
 
 ### Offsite backups (R2 + pCloud)
 
@@ -805,7 +807,9 @@ operator can, unaided —
   [Development parity](#development-parity-with-production),
   [Secrets and configuration](#secrets-and-configuration), and the single-box
   revisit triggers added. Two stale Edge Cases corrected (the match store *is*
-  pruned; unattended-upgrades never reboots).
+  pruned; unattended-upgrades never reboots). A live reading on 2026-11-13
+  showed 22% memory, 11% disk, and a kernel reboot pending since before
+  cutover.
 
 ## Open Questions
 
@@ -814,10 +818,10 @@ operating items are open.
 
 **Operating** (open, none urgent; most are a provisioner change in the lab repo):
 
-1. **Re-measure capacity** on the live box (`free -m`, `uptime`,
-   `swapon --show`, `df -h /`) and record it in
-   [First month in production](#first-month-in-production-2026-10-12-to-2026-11-12).
-   The page's numbers are still from before cutover.
+1. **Reboot the droplet at a quiet hour.** A kernel reboot has been pending
+   since before cutover (32 days up on 2026-11-13). Afterwards, confirm
+   `la-server`, `/health/db`, and the timers came back, and re-run the OOM
+   check with `sudo`.
 2. **Alert on memory and swap** in `60-monitor`, against the resize trigger.
 3. **Alert on `/var/run/reboot-required`**, or schedule a monthly quiet-hour
    reboot, so kernel patches take effect.
