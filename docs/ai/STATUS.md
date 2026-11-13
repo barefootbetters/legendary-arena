@@ -57,7 +57,7 @@
 - **Replay.** Setup-level change: matches created before the deploy keep their stored hooks; only new matches see the new behavior.
 - **01.6 post-mortem:** evaluated, not triggered (reuses D-24834 / D-24031 / D-24469 / D-24480 / D-24600; the spare-a-Wound count rule follows the `koHeroesOnly` three-reader pattern).
 - **Put to the Torch.** Its gain-a-Wound line (Rooftops Conqueror 4) was drafted as blocked on Conqueror; WP-886 shipped hero Conqueror since, so it now waits only on its own follow-up WP.
-- **Live-verify (D-24026): operator-pending.** On a NEW operator match after the deploy: Violent Conditioning gain / decline, Hulk Gets Smashed's KO prompts skipping the gained Wound, Mood Swings' Transform. Three `pending` rows in `live-verify.json`.
+- **Live-verify (D-24026): PASS 2026-11-13.** Claude in Chrome, operator match `ejbNK-adMxU` (server `748600ea`, client `5b44f67`, created after the deploy), Magneto / Midtown Bank Robbery, 2p with a bot ally. Violent Conditioning: decline -> no Wound, no Berserk (2.2.22); gain -> a Wound and two Berserks, +1 each from staged Troopers (2.2.32-2.2.34). Hulk Gets Smashed after Growing Anger: both KO prompts left the gained Wound out of the discard list (2.2.27-2.2.29). Mood Swings after Violent Conditioning: gain -> Raging Savage in play with the TRANSFORMED! overlay, +3 Attack (2.2.37-2.2.38). Every prompt read "Gain a Wound?". All three `live-verify.json` rows `verified`.
 
 ### Java isn't the game's primary platform; it stays on its TypeScript stack (D-24838, operator decision, no WP) (2026-11-12)
 

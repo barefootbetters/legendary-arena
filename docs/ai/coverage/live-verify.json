@@ -2252,10 +2252,10 @@
       "card": "Weapon X (Wolverine)",
       "ability": "Violent Conditioning — You may gain a Wound. If you do, Berserk, Berserk.",
       "wp": "WP-885",
-      "state": "pending",
-      "date": "2026-11-12",
-      "evidence": "",
-      "note": "Live check (NEW operator match after the deploy): playing Violent Conditioning opens \"Gain a Wound?\" (Gain a Wound: Berserk twice / Don't gain a Wound). Gain -> a Wound in the discard pile, then two Berserk discards with their Attack; decline -> neither (it no longer Berserks for free). D-24836."
+      "state": "verified",
+      "date": "2026-11-13",
+      "evidence": "Operator match ejbNK-adMxU (server 748600ea, client 5b44f67, both containing the #3321 merge d61196da4; created 2026-11-13 after the deploy), Magneto / Midtown Bank Robbery 2p with a bot ally, Weapon X (Wolverine) + Bruce Banner + Skaar + core Hulk + core Wolverine, Claude in Chrome, every play and answer a real click. Decline: 2.2.20 Violent Conditioning played (+2 printed), 2.2.21 \"may gain a Wound to Berserk twice\", prompt \"Gain a Wound?\" (Gain a Wound: Berserk twice / Don't gain a Wound); Don't -> 2.2.22 \"chose not to gain a Wound\", Attack stayed 2, no Wound, deck unchanged (8, Trooper Trooper on top). Gain (second copy, deck top staged Trooper Trooper): 2.2.32 \"gained a Wound\", 2.2.33 and 2.2.34 \"gained +1 attack\" (the two Troopers Berserked from the deck top to the discard pile, deck 8 -> 6), Attack 8 -> 10.",
+      "note": "Gain (Wound, then two Berserks) and decline (neither) seen live; it no longer Berserks for free. Diving Block / Flying Shield Block keep-or-forfeit is test-covered (same code path as Hulk Smash!, seen live for WP-883). D-24836."
     },
     {
       "key": "msis/bruce-banner|gain-wound-reward",
@@ -2263,10 +2263,10 @@
       "card": "Bruce Banner",
       "ability": "Hulk Gets Smashed — [Strength]: You may gain a Wound. If you do, KO up to two other cards from your hand and/or discard pile.",
       "wp": "WP-885",
-      "state": "pending",
-      "date": "2026-11-12",
-      "evidence": "",
-      "note": "Live check (NEW operator match after the deploy): after another Strength Hero, \"Gain a Wound?\" (Gain a Wound: KO up to 2 other cards from your hand or discard pile). Gain -> a Wound, then up to two KO prompts that never offer the Wound just gained (an older Wound is offered while two are present). D-24836."
+      "state": "verified",
+      "date": "2026-11-13",
+      "evidence": "Operator match ejbNK-adMxU (server 748600ea, client 5b44f67, both containing the #3321 merge d61196da4; created 2026-11-13 after the deploy), Magneto / Midtown Bank Robbery 2p with a bot ally, Weapon X (Wolverine) + Bruce Banner + Skaar + core Hulk + core Wolverine, Claude in Chrome, every play and answer a real click. Growing Anger (Strength) first, then Hulk Gets Smashed: 2.2.26 \"may gain a Wound to KO up to 2 other cards from their hand or discard pile\", prompt \"Gain a Wound?\" (Gain a Wound: KO up to 2 other cards from your hand or discard pile); Gain -> 2.2.27 \"gained a Wound\"; discard pile Trooper, Agent, Wound, and the first KO prompt listed discard Trooper and Agent only (no Wound). KO Agent (2.2.28); the second prompt listed discard Trooper only (no Wound); KO Trooper (2.2.29). The gained Wound stayed in the discard pile.",
+      "note": "The gained Wound was never offered by either KO prompt, seen live. Not seen live (test-covered): an older Wound offered while two are present. D-24836."
     },
     {
       "key": "wwhk/skaar-son-of-hulk|gain-wound-reward",
@@ -2274,10 +2274,10 @@
       "card": "Skaar, Son of Hulk",
       "ability": "Mood Swings — [Instinct]: You may gain a Wound. If you do, Transform this into Raging Savage.",
       "wp": "WP-885",
-      "state": "pending",
-      "date": "2026-11-12",
-      "evidence": "",
-      "note": "Live check (NEW operator match after the deploy): after another Instinct Hero, \"Gain a Wound?\" (Gain a Wound: Transform into Raging Savage). Gain -> a Wound, Mood Swings becomes Raging Savage in play (+3 Attack) with the Transformed! animation; decline -> no Wound, no Transform. D-24836."
+      "state": "verified",
+      "date": "2026-11-13",
+      "evidence": "Operator match ejbNK-adMxU (server 748600ea, client 5b44f67, both containing the #3321 merge d61196da4; created 2026-11-13 after the deploy), Magneto / Midtown Bank Robbery 2p with a bot ally, Weapon X (Wolverine) + Bruce Banner + Skaar + core Hulk + core Wolverine, Claude in Chrome, every play and answer a real click. With two Violent Conditionings (Instinct) in play, Mood Swings: 2.2.36 \"may gain a Wound to Transform into Raging Savage\", prompt \"Gain a Wound?\" (Gain a Wound: Transform into Raging Savage); Gain -> 2.2.37 \"gained a Wound\", 2.2.38 \"Transformed Mood Swings ... into Raging Savage ... (+3 attack)\", the TRANSFORMED! overlay (\"Mood Swings\" transformed into \"Raging Savage\"), Raging Savage in play, Mood Swings in the transform deck, Attack 10 -> 13.",
+      "note": "Gain -> Transform with the animation, seen live. Not seen live (test-covered): no Raging Savage left (the existing refusal log). D-24836."
     },
     {
       "key": "mdns-villain-lilin-skinner|villain-hunt-for-victims",
