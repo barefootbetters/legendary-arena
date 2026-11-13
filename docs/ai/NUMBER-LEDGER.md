@@ -529,6 +529,7 @@ high-water: 422
 - WP-887 — bystander-lost-from-play-ko (a Bystander KO'd from play — captured by a Villain or the Mastermind, in the Escape Pile, or in the HQ — counts as bystanderLost; supply-stack and Victory-Pile KOs do not. reserved 2026-11-12, claude/bystander-lost-ko-reserve)
 - WP-889 — villain-ambush-hunt-for-victims (Lilin Ambush "Hunt for Victims" on Skinner, Meatmarket and Blackout only; Outcast and Sister Nil deferred: the Villain Hunts for Victims, reusing the WP-884 helpers. reserved 2026-11-12, claude/wp889-villain-hunt-reserve; LANDED 2026-11-12)
 - WP-890 — local-match-spike (airplane-mode slice 0: LegendaryGame on an in-browser Local() master behind a build-time flag, fed by a recorded setup bundle, with record-and-replay; no production surface. reserved 2026-11-12, claude/wp890-local-match-spike-reserve)
+- WP-891 — client-card-image-tiers (arena-client card-face images use the WP-888 size tiers: thumb at 1x, phone at 2x, original as fallback; the WP-410 prefetch warms the same image. reserved 2026-11-12, claude/wp891-client-card-image-tiers-reserve)
 
 ## EC
 
@@ -1020,6 +1021,7 @@ high-water: 457
 - EC-925 — bystander-lost-from-play-ko (WP-887. reserved 2026-11-12, claude/bystander-lost-ko-reserve)
 - EC-927 — villain-ambush-hunt-for-victims (WP-889. reserved 2026-11-12, claude/wp889-villain-hunt-reserve; LANDED 2026-11-12)
 - EC-928 — local-match-spike (WP-890. reserved 2026-11-12, claude/wp890-local-match-spike-reserve)
+- EC-929 — client-card-image-tiers (WP-891. reserved 2026-11-12, claude/wp891-client-card-image-tiers-reserve)
 
 ## D
 
@@ -1645,3 +1647,4 @@ section below) and the allocation protocol in
 - D-24845 — airplane-mode-access-featured-free-pass (operator decision, no WP; one featured setup downloads free, any other setup needs the Legendary Pass, 30-day offline entitlement check-in. reserved 2026-11-12, claude/airplane-mode-decisions-reserve)
 - D-24846 — airplane-mode-card-art-rights-posture (operator decision, no WP; the explicit download is accepted under the existing digital-rights gap, no expiry now, any future license window is one uniform rule. reserved 2026-11-12, claude/airplane-mode-decisions-reserve)
 - D-24847 — airplane-mode-results-parity (operator decision, no WP; a verified offline game counts toward leaderboards and seed challenges exactly as an online one. reserved 2026-11-12, claude/airplane-mode-decisions-reserve)
+- D-24848 — client-card-image-tiers (WP-891; arena-client card faces render the WP-888 thumb / phone tiers through one component, with a one-time fallback to the original and a prefetch that warms the same image. reserved 2026-11-12, claude/wp891-client-card-image-tiers-reserve)
