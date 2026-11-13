@@ -2,6 +2,7 @@
 import { defineComponent, ref, watch, type PropType } from "vue";
 import type { UIPendingRuthlessDictatorChoice } from "@legendary-arena/game-engine";
 import type { SubmitMove } from "./uiMoveName.types";
+import CardImage from "./CardImage.vue";
 
 /**
  * Inline prompt for resolving a pending Red Skull "Ruthless Dictator" scry-3 choice
@@ -22,6 +23,7 @@ import type { SubmitMove } from "./uiMoveName.types";
  */
 export default defineComponent({
   name: "PendingRuthlessDictatorChoicePrompt",
+  components: { CardImage },
   props: {
     pendingRuthlessDictatorChoice: {
       type: Object as PropType<UIPendingRuthlessDictatorChoice | undefined>,
@@ -99,9 +101,9 @@ export default defineComponent({
         <span class="pending-ruthless-dictator-choice-prompt__card-name">{{
           entry.display.name
         }}</span>
-        <img
+        <CardImage
           v-if="entry.display.imageUrl"
-          :src="entry.display.imageUrl"
+          :image-url="entry.display.imageUrl"
           :alt="entry.display.name"
           class="pending-ruthless-dictator-choice-prompt__card-image"
         />

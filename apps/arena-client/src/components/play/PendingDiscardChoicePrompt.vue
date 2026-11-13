@@ -2,6 +2,7 @@
 import { defineComponent, ref, watch, computed, type PropType } from "vue";
 import type { UIPendingDiscardChoice } from "@legendary-arena/game-engine";
 import type { SubmitMove } from "./uiMoveName.types";
+import CardImage from "./CardImage.vue";
 
 /**
  * Inline prompt for resolving a pending discard-to-limit choice (WP-476 / D-24284).
@@ -26,6 +27,7 @@ import type { SubmitMove } from "./uiMoveName.types";
  */
 export default defineComponent({
   name: "PendingDiscardChoicePrompt",
+  components: { CardImage },
   props: {
     pendingDiscardChoice: {
       type: Object as PropType<UIPendingDiscardChoice | undefined>,
@@ -147,9 +149,9 @@ export default defineComponent({
         @click="toggleCard(handIndex)"
       >
         <span class="pending-discard-choice-prompt__card-name">{{ entry.display.name }}</span>
-        <img
+        <CardImage
           v-if="entry.display.imageUrl"
-          :src="entry.display.imageUrl"
+          :image-url="entry.display.imageUrl"
           :alt="entry.display.name"
           class="pending-discard-choice-prompt__card-image"
         />

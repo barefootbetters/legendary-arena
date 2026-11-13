@@ -2,6 +2,7 @@
 import { defineComponent, ref, watch, computed, type PropType } from "vue";
 import type { UIPendingKoDiscardChoice } from "@legendary-arena/game-engine";
 import type { SubmitMove } from "./uiMoveName.types";
+import CardImage from "./CardImage.vue";
 
 /**
  * Inline prompt for resolving a pending KO-from-discard choice (WP-693 / D-24510 —
@@ -33,6 +34,7 @@ import type { SubmitMove } from "./uiMoveName.types";
  */
 export default defineComponent({
   name: "PendingKoDiscardChoicePrompt",
+  components: { CardImage },
   props: {
     pendingKoDiscardChoice: {
       type: Object as PropType<UIPendingKoDiscardChoice | undefined>,
@@ -207,9 +209,9 @@ export default defineComponent({
         @click="toggleCard(discardIndex)"
       >
         <span class="pending-ko-discard-choice-prompt__card-name">{{ entry.display.name }}</span>
-        <img
+        <CardImage
           v-if="entry.display.imageUrl"
-          :src="entry.display.imageUrl"
+          :image-url="entry.display.imageUrl"
           :alt="entry.display.name"
           class="pending-ko-discard-choice-prompt__card-image"
         />

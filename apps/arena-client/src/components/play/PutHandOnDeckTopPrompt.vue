@@ -2,6 +2,7 @@
 import { defineComponent, ref, watch, type PropType } from "vue";
 import type { UIPendingPutHandOnDeckTop } from "@legendary-arena/game-engine";
 import type { SubmitMove } from "./uiMoveName.types";
+import CardImage from "./CardImage.vue";
 
 /**
  * Inline prompt for resolving a pending "put a card from your hand on top of your
@@ -27,6 +28,7 @@ import type { SubmitMove } from "./uiMoveName.types";
  */
 export default defineComponent({
   name: "PutHandOnDeckTopPrompt",
+  components: { CardImage },
   props: {
     pendingPutHandOnDeckTop: {
       type: Object as PropType<UIPendingPutHandOnDeckTop | undefined>,
@@ -105,9 +107,9 @@ export default defineComponent({
         @click="onPick(card.cardId)"
       >
         <span class="put-hand-on-deck-top-prompt__card-name">{{ card.display.name }}</span>
-        <img
+        <CardImage
           v-if="card.display.imageUrl"
-          :src="card.display.imageUrl"
+          :image-url="card.display.imageUrl"
           :alt="card.display.name"
           class="put-hand-on-deck-top-prompt__card-image"
         />

@@ -2,6 +2,7 @@
 import { defineComponent, ref, watch, computed, type PropType } from "vue";
 import type { UIPendingReorderChoice } from "@legendary-arena/game-engine";
 import type { SubmitMove } from "./uiMoveName.types";
+import CardImage from "./CardImage.vue";
 
 /**
  * Inline prompt for resolving a pending reveal-remainder reorder choice
@@ -28,6 +29,7 @@ import type { SubmitMove } from "./uiMoveName.types";
  */
 export default defineComponent({
   name: "PendingReorderChoicePrompt",
+  components: { CardImage },
   props: {
     pendingReorderChoice: {
       type: Object as PropType<UIPendingReorderChoice | undefined>,
@@ -161,9 +163,9 @@ export default defineComponent({
           :data-testid="`pending-reorder-choice-order-${cardIndex}`"
         >{{ orderPosition(cardIndex) }}</span>
         <span class="pending-reorder-choice-prompt__card-name">{{ entry.display.name }}</span>
-        <img
+        <CardImage
           v-if="entry.display.imageUrl"
-          :src="entry.display.imageUrl"
+          :image-url="entry.display.imageUrl"
           :alt="entry.display.name"
           class="pending-reorder-choice-prompt__card-image"
         />

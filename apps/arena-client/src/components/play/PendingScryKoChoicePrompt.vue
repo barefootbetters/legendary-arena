@@ -2,6 +2,7 @@
 import { defineComponent, ref, watch, type PropType } from "vue";
 import type { UIPendingScryKoChoice } from "@legendary-arena/game-engine";
 import type { SubmitMove } from "./uiMoveName.types";
+import CardImage from "./CardImage.vue";
 
 /**
  * Inline prompt for resolving a pending Doombot scry-KO choice (WP-470).
@@ -24,6 +25,7 @@ import type { SubmitMove } from "./uiMoveName.types";
  */
 export default defineComponent({
   name: "PendingScryKoChoicePrompt",
+  components: { CardImage },
   props: {
     pendingScryKoChoice: {
       type: Object as PropType<UIPendingScryKoChoice | undefined>,
@@ -109,9 +111,9 @@ export default defineComponent({
         <span class="pending-scry-ko-choice-prompt__card-name">{{
           entry.display.name
         }}</span>
-        <img
+        <CardImage
           v-if="entry.display.imageUrl"
-          :src="entry.display.imageUrl"
+          :image-url="entry.display.imageUrl"
           :alt="entry.display.name"
           class="pending-scry-ko-choice-prompt__card-image"
         />

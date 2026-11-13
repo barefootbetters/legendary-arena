@@ -2,6 +2,7 @@
 import { defineComponent, ref, watch, type PropType } from "vue";
 import type { UIPendingOptionalPutBottomHQ } from "@legendary-arena/game-engine";
 import type { SubmitMove } from "./uiMoveName.types";
+import CardImage from "./CardImage.vue";
 
 /**
  * Inline prompt for resolving a pending optional-put-bottom-hq choice
@@ -26,6 +27,7 @@ import type { SubmitMove } from "./uiMoveName.types";
  */
 export default defineComponent({
   name: "OptionalPutBottomHQPrompt",
+  components: { CardImage },
   props: {
     pendingOptionalPutBottomHQ: {
       type: Object as PropType<UIPendingOptionalPutBottomHQ | undefined>,
@@ -111,9 +113,9 @@ export default defineComponent({
         @click="onPick(card.cardId)"
       >
         <span class="put-bottom-hq-prompt__card-name">{{ card.display.name }}</span>
-        <img
+        <CardImage
           v-if="card.display.imageUrl"
-          :src="card.display.imageUrl"
+          :image-url="card.display.imageUrl"
           :alt="card.display.name"
           class="put-bottom-hq-prompt__card-image"
         />

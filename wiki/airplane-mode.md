@@ -133,7 +133,7 @@ checked by the server when the player is back online.
 | Bot ally | Server-side ([`botAllyDriver.mjs`](../apps/server/src/bot-ally/botAllyDriver.mjs)). [DESIGN-SOLO-BOT-ALLY](../docs/ai/DESIGN-SOLO-BOT-ALLY.md) rejects a client-side bot for online play. The policies are in the runtime-safe engine export | Left out of version 1 |
 | Saved state | Postgres `bgio` schema ([`bgioPgStore.js`](../apps/server/src/db/bgioPgStore.js), D-24095). The client has no IndexedDB and no game save; localStorage holds prefs only | An on-device save (see [Saving the game](#saving-the-game)) |
 | Card images | One WebP per card at `images.legendary-arena.com/{set}/{set}-{ribbon}-{slug}.webp` ([R2 Image Naming Convention](r2-image-naming-convention.md)). A match's image list is `UIState.matchCardImageUrls` (`buildMatchCardImageManifest` in [`uiState.build.ts`](../packages/game-engine/src/ui/uiState.build.ts)). [`useCardImagePrefetch.ts`](../apps/arena-client/src/composables/useCardImagePrefetch.ts) warms them into the browser's HTTP cache, 6 at a time | Durable caching, plus a size estimate before download |
-| Image sizes | **Built and published** (WP-888 / [D-24840](../docs/ai/DECISIONS.md), 2026-11-12). Every card has `thumb` (280 px), `phone` (840 px) and `large` (1680 px) WebP tiers at `{set}/{tier}/{file}.webp`, plus a per-set byte manifest at `metadata/image-sizes/{set}.json` ([Card Image Acquisition](card-image-acquisition.md#size-tiers-for-mobile-and-offline)). No screen uses them yet: every screen still gets the original (most sets about 100 KB per card, six high-resolution sets about 1 MB, `co2e` 2.7 MB) | Nothing more from the image side: the `phone` tier is the download, and its manifests give the size label |
+| Image sizes | **Built and published** (WP-888 / [D-24840](../docs/ai/DECISIONS.md), 2026-11-12). Every card has `thumb` (280 px), `phone` (840 px) and `large` (1680 px) WebP tiers at `{set}/{tier}/{file}.webp`, plus a per-set byte manifest at `metadata/image-sizes/{set}.json` ([Card Image Acquisition](card-image-acquisition.md#size-tiers-for-mobile-and-offline)). Since WP-891 / [D-24848](../docs/ai/DECISIONS.md) the play surface renders `thumb` on a 1x screen and `phone` on a 2x or denser screen (`srcset` = `thumb 1x, phone 2x`), falling back to the original (most sets about 100 KB per card, six high-resolution sets about 1 MB, `co2e` 2.7 MB) only when a tier fails | The `phone` tier is the download, and its manifests give the size label. A 1x board requests `thumb`, so the service worker must answer a `thumb` request from the downloaded `phone` copy, or download both (D-24848 follow-up) |
 | Image headers | `public, max-age=31536000, immutable` ([RUNBOOK](../docs/ops/RUNBOOK-r2-image-cache-control.md)) and `Access-Control-Allow-Origin: *` (checked 2026-11-12) | Already enough for a service worker to cache non-opaque responses |
 | PWA | None: no service worker, no web app manifest, no icons. The client is Vite 5, Vue 3 and Pinia on Cloudflare Pages; [`_headers`](../apps/arena-client/public/_headers) already marks `/assets/*` immutable | A manifest, icons, and a service worker that caches the app shell |
 
@@ -247,7 +247,9 @@ In short:
   enough for tap-to-zoom on a phone.
 - **`thumb` (280 px)** is the board, hand, City and HQ size. It's about 15 KB
   per card, so a data-saver setting could download `thumb` only, at the cost
-  of a blurrier zoom.
+  of a blurrier zoom. Online, the board renders `thumb` at 1x and `phone` at
+  2x (`srcset` = `thumb 1x, phone 2x`, WP-891 / D-24848), so on a 1x screen
+  the offline layer has to serve `thumb` requests from the `phone` download.
 - **`large` (1680 px)** is for desktop and 4K zoom. A desktop player could
   choose it, at a much bigger download for the high-resolution sets.
 

@@ -2,6 +2,7 @@
 import { defineComponent, ref, watch, type PropType } from "vue";
 import type { UIPendingKoHeroChoice } from "@legendary-arena/game-engine";
 import type { SubmitMove } from "./uiMoveName.types";
+import CardImage from "./CardImage.vue";
 
 /**
  * Inline prompt for resolving a pending KO-a-Hero choice (WP-243).
@@ -21,6 +22,7 @@ import type { SubmitMove } from "./uiMoveName.types";
  */
 export default defineComponent({
   name: "PendingKoHeroChoicePrompt",
+  components: { CardImage },
   props: {
     pendingKoHeroChoice: {
       type: Object as PropType<UIPendingKoHeroChoice | undefined>,
@@ -137,9 +139,9 @@ export default defineComponent({
             <span class="pending-ko-hero-choice-prompt__card-name">{{
               entry.display.name
             }}</span>
-            <img
+            <CardImage
               v-if="entry.display.imageUrl"
-              :src="entry.display.imageUrl"
+              :image-url="entry.display.imageUrl"
               :alt="entry.display.name"
               class="pending-ko-hero-choice-prompt__card-image"
             />

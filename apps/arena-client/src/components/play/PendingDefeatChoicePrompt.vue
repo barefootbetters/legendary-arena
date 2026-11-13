@@ -2,6 +2,7 @@
 import { defineComponent, ref, watch, type PropType } from "vue";
 import type { UIPendingDefeatChoice } from "@legendary-arena/game-engine";
 import type { SubmitMove } from "./uiMoveName.types";
+import CardImage from "./CardImage.vue";
 
 /**
  * Inline prompt for resolving a pending Silent Sniper defeat-with-a-Bystander
@@ -26,6 +27,7 @@ import type { SubmitMove } from "./uiMoveName.types";
  */
 export default defineComponent({
   name: "PendingDefeatChoicePrompt",
+  components: { CardImage },
   props: {
     pendingDefeatChoice: {
       type: Object as PropType<UIPendingDefeatChoice | undefined>,
@@ -140,9 +142,9 @@ export default defineComponent({
         @click="onChoose(targetIndex)"
       >
         <span class="pending-defeat-choice-prompt__target-name">{{ targetLabel(target.kind, target.display.name) }}</span>
-        <img
+        <CardImage
           v-if="target.display.imageUrl"
-          :src="target.display.imageUrl"
+          :image-url="target.display.imageUrl"
           :alt="target.display.name"
           class="pending-defeat-choice-prompt__target-image"
         />

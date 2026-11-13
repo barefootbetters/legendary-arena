@@ -23,6 +23,8 @@ source:
   - ../docs/ops/RUNBOOK-r2-image-cache-control.md
   - ../scripts/build-card-image-sizes.mjs
   - ../scripts/card-image-sizes-r2.mjs
+  - ../apps/arena-client/src/lib/cardImageTiers.ts
+  - ../apps/arena-client/src/components/play/CardImage.vue
 last-reviewed: 2026-11-12
 ---
 
@@ -219,8 +221,15 @@ slugs before upload. See Edge Cases.
 > sets' tiers and byte manifests are on R2, generated from the R2 originals
 > the card data references: 3,104 images, 0 failed; `thumb` 49.4 MB,
 > `phone` 296.0 MB, `large` 578.6 MB, against 1,133.1 MB of referenced
-> originals. No client reads the tiers yet; that is a follow-up. The library
-> profile below was measured the same day against R2.
+> originals. The library profile below was measured the same day against R2.
+>
+> **Client use (WP-891 / D-24848).** The arena client's play surface renders
+> every card face at `thumb` on a 1x screen and `phone` on a 2x or denser
+> screen (`src` = `thumb`, `srcset` = `thumb 1x, phone 2x`), with a one-time
+> fallback to the original when a tier fails. It derives the tier URLs from
+> the projected `imageUrl` by the same path rule, and the WP-410 setup
+> prefetch warms the same pair. `large`, the registry viewer and the lobby
+> featured-table art are follow-ups.
 
 **Why it is needed.** The game serves one image per card, the
 full-resolution original, to every screen. That is fine for most sets
@@ -522,6 +531,13 @@ pnpm images:sizes:push --work-root $W --set co2e   # co2e/<tier>/ (immutable), t
 - [`scripts/card-image-sizes-r2.mjs`](../scripts/card-image-sizes-r2.mjs)
   — the pull of referenced originals and the push of tiers and manifests,
   copy only (`pnpm images:sizes:pull` / `images:sizes:push`).
+- [`apps/arena-client/src/lib/cardImageTiers.ts`](../apps/arena-client/src/lib/cardImageTiers.ts)
+  — the client copy of the tier path rule: `cardImageTierUrl` and
+  `cardImageSources` (the `thumb` `src` and the `thumb 1x, phone 2x`
+  `srcset`; an unmatched URL passes through), WP-891 / D-24848.
+- [`apps/arena-client/src/components/play/CardImage.vue`](../apps/arena-client/src/components/play/CardImage.vue)
+  — the single play-surface card-face image: renders the tier sources and
+  falls back once to the original before the parent's own fallback runs.
 
 ## Data Files
 

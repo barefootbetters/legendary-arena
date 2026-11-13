@@ -14,6 +14,7 @@ import { useRowFit } from '../../composables/useRowFit';
 import CardTile from './CardTile.vue';
 import HauntedExorciseChooser, { type ExorciseChoice } from './HauntedExorciseChooser.vue';
 import type { SubmitMove } from './uiMoveName.types';
+import CardImage from './CardImage.vue';
 
 // why: WP-759 / D-24587 — the engine's recruitHero refuses a Haunted slot at any budget,
 // so the Recruit button says why instead of reading as a dead click.
@@ -55,7 +56,7 @@ const EXORCISE_HEAL_LOCK_REASON = "You healed this turn — you can't exorcise";
  */
 export default defineComponent({
   name: 'HQRow',
-  components: { CardTile, HauntedExorciseChooser },
+  components: { CardImage, CardTile, HauntedExorciseChooser },
   props: {
     hq: {
       type: Object as PropType<UIHQState>,
@@ -505,10 +506,10 @@ export default defineComponent({
             :data-haunter-ext-id="cell.haunter.kind === 'villain' ? cell.haunter.extId : undefined"
             :title="`Haunted by ${haunterNameForCell(cell)}`"
           >
-            <img
+            <CardImage
               v-if="haunterImageForCell(cell) !== ''"
               class="hq-slot__haunter-art"
-              :src="haunterImageForCell(cell)"
+              :image-url="haunterImageForCell(cell)"
               alt=""
             />
             <span class="hq-slot__haunter-name">Haunted by {{ haunterNameForCell(cell) }}</span>
