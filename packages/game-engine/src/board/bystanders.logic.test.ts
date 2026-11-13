@@ -17,10 +17,12 @@ import {
   SAVIOR_BYSTANDER_THRESHOLD,
   countVictoryPileBystanders,
   findFirstVictoryPileBystander,
+  recordBystanderKoedFromPlay,
 } from './bystanders.logic.js';
 import { evaluateCondition } from '../hero/heroConditions.evaluate.js';
 import { isVictoryPileBystander } from '../scoring/scoring.logic.js';
 import type { LegendaryGameState } from '../types.js';
+import { BYSTANDERS_KOED_FROM_PLAY } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 
 describe('attachBystanderToVillain', () => {
@@ -307,5 +309,36 @@ describe('WP-816 Savior helpers (D-24749)', () => {
       'three defeated Killbots pass the hero Savior gate',
     );
     assert.equal(findFirstVictoryPileBystander(victory), killbots[0]);
+  });
+});
+
+describe('recordBystanderKoedFromPlay (WP-887 / D-24839)', () => {
+  it('pins the counter key literal (drift check)', () => {
+    assert.equal(BYSTANDERS_KOED_FROM_PLAY, 'bystandersKoedFromPlay');
+  });
+
+  it('initialises the absent counter to 1, then increments it to 2', () => {
+    const gameState = { counters: {} } as unknown as LegendaryGameState;
+    assert.equal(Object.hasOwn(gameState.counters, BYSTANDERS_KOED_FROM_PLAY), false, 'never seeded');
+    recordBystanderKoedFromPlay(gameState);
+    assert.strictEqual(gameState.counters[BYSTANDERS_KOED_FROM_PLAY], 1);
+    recordBystanderKoedFromPlay(gameState);
+    assert.strictEqual(gameState.counters[BYSTANDERS_KOED_FROM_PLAY], 2);
+  });
+
+  it('touches no other counter key and nothing else on G', () => {
+    const gameState = {
+      counters: { escapedVillains: 3, schemeTwistCount: 2 },
+      escapedPile: ['bystander-1'],
+      ko: [],
+    } as unknown as LegendaryGameState;
+    recordBystanderKoedFromPlay(gameState);
+    assert.deepEqual(gameState.counters, {
+      escapedVillains: 3,
+      schemeTwistCount: 2,
+      [BYSTANDERS_KOED_FROM_PLAY]: 1,
+    });
+    assert.deepEqual(gameState.escapedPile, ['bystander-1']);
+    assert.deepEqual(gameState.ko, []);
   });
 });

@@ -30,6 +30,7 @@
  */
 
 import type { LegendaryGameState } from '../types.js';
+import { BYSTANDERS_KOED_FROM_PLAY } from '../types.js';
 import { pushLog } from '../log/logPush.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
@@ -998,8 +999,9 @@ function simulateOneGame(
  * pipeline). Three penalty-event types have engine producers derived here —
  * villainEscaped (ESCAPED_VILLAINS counter) and schemeTwistNegative
  * (schemeTwistCount counter, WP-529 / D-24340) by counter reads, and
- * bystanderLost (WP-528 / D-24339) by counting 'bystander'-typed entries of
- * G.escapedPile; the remaining two (mastermindTacticUntaken,
+ * bystanderLost (WP-528 / D-24339, WP-887 / D-24839) by summing the Bystander
+ * entries of G.escapedPile and the G.counters[BYSTANDERS_KOED_FROM_PLAY] count of
+ * Bystanders KO'd from play; the remaining two (mastermindTacticUntaken,
  * scenarioSpecificPenalty) follow the WP-048 safe-skip (D-4801) for categories
  * with no engine producer today. Kept symmetric with deriveScoringInputs so
  * calibrated PAR is not systematically easier than the live score.
@@ -1053,19 +1055,23 @@ export function deriveScoringInputsFromFinalState(
   // score on twist-heavy scenarios). Derives from existing terminal state — no G field.
   const schemeTwistNegativeCount = finalState.counters.schemeTwistCount ?? 0;
 
-  // why: WP-528 / D-24339 — count the 'bystander'-typed entries of G.escapedPile
-  // (civilians an escaping Villain carried away, carryEscapedBystandersToPile / D-24314,
-  // from both the reveal and scheme-twist escape paths), the mirror of the
-  // bystandersRescued victory-zone loop above and of the live deriveScoringInputs (kept
-  // symmetric — else calibrated PAR would be easier than the live score on bystander-loss
-  // scenarios). Escaped Villains (typed 'villain') are the separate villainEscaped count,
-  // so they are not double-counted. Derives from existing terminal state — no G field.
+  // why: WP-528 / D-24339 + WP-887 / D-24839 — a civilian is "lost" in two buckets,
+  // summed. (1) Carried away: the Bystander entries of G.escapedPile (isBystanderCard,
+  // both sources, D-24395; carryEscapedBystandersToPile / D-24314, from both the reveal
+  // and scheme-twist escape paths), the mirror of the bystandersRescued victory-zone loop
+  // above. Escaped Villains (typed 'villain') are the separate villainEscaped count, so
+  // they are not double-counted. (2) KO'd from play: the lazily written
+  // G.counters[BYSTANDERS_KOED_FROM_PLAY] (absent → 0). An Escape-Pile KO moves one
+  // Bystander between the buckets, so it nets to zero. Kept textually parallel with the
+  // live deriveScoringInputs — else calibrated PAR would be easier than the live score on
+  // bystander-loss scenarios.
   let bystanderLostCount = 0;
   for (const cardExtId of finalState.escapedPile) {
     if (isBystanderCard(finalState, cardExtId)) {
       bystanderLostCount = bystanderLostCount + 1;
     }
   }
+  bystanderLostCount = bystanderLostCount + (finalState.counters[BYSTANDERS_KOED_FROM_PLAY] ?? 0);
 
   // why: D-4801 safe-skip — the two penalty types still without an engine producer
   // (mastermindTacticUntaken, scenarioSpecificPenalty) are zeroed here. The PAR pipeline

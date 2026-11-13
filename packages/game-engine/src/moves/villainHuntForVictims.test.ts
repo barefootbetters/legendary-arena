@@ -25,6 +25,7 @@ import { choosePlayingSeatChoiceOption } from '../simulation/ai.seatChoice.js';
 import { huntForVictimsForVillain, VILLAIN_HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND } from './huntForVictims.logic.js';
 import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 import type { LegendaryGameState, MatchConfiguration } from '../types.js';
+import { BYSTANDERS_KOED_FROM_PLAY } from '../types.js';
 import type { VillainAbilityHook } from '../rules/villainAbility.types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import {
@@ -551,6 +552,131 @@ describe('Blackout\'s Moonlight repeat (RS-2 / RS-3b / AC-6)', () => {
     choose(G, indexOf(G, 'KO a Bystander held by Hand Ninjas (Bank)'));
     assert.deepEqual(G.ko, [BYSTANDER_EXT_ID, BYSTANDER_D]);
     assert.equal(G.pendingSeatChoice, undefined);
+  });
+});
+
+/**
+ * Whether the KO'd-from-play counter has been written at all (it is lazily written, never seeded).
+ *
+ * @param G - The game state.
+ * @returns true when G.counters holds the key.
+ */
+function hasKoedFromPlayCounter(G: LegendaryGameState): boolean {
+  return Object.hasOwn(G.counters, BYSTANDERS_KOED_FROM_PLAY);
+}
+
+describe('Villain Hunt for Victims KO records a Bystander lost from play (WP-887 / D-24839)', () => {
+  it('the chosen City holder\'s KO records 1', () => {
+    const G = makeState();
+    G.city[0] = NINJAS;
+    G.attachedBystanders = { [NINJAS]: [BYSTANDER_C, BYSTANDER_D] };
+    G.escapedPile = [BYSTANDER_EXT_ID];
+    reveal(G, SKINNER);
+    assert.equal(hasKoedFromPlayCounter(G), false, 'nothing recorded before the pick');
+    choose(G, indexOf(G, 'KO a Bystander held by Hand Ninjas (Bank)'));
+    assert.deepEqual(G.ko, [BYSTANDER_D]);
+    assert.strictEqual(G.counters[BYSTANDERS_KOED_FROM_PLAY], 1);
+  });
+
+  it('a lone Mastermind holder\'s KO (no prompt) records 1', () => {
+    const G = makeState();
+    G.mastermind = { ...G.mastermind, attachedBystanders: [BYSTANDER_C, BYSTANDER_D] };
+    G.attachedBystanders = { [MASTERMIND]: [BYSTANDER_D] };
+    reveal(G, SKINNER);
+    assert.deepEqual(G.ko, [BYSTANDER_D]);
+    assert.strictEqual(G.counters[BYSTANDERS_KOED_FROM_PLAY], 1);
+  });
+
+  it('a lone Escape Pile KO records 1, so the lost total is unchanged', () => {
+    const G = makeState();
+    G.escapedPile = [ESCAPED_VILLAIN, BYSTANDER_EXT_ID];
+    reveal(G, SKINNER);
+    assert.deepEqual(G.escapedPile, [ESCAPED_VILLAIN]);
+    assert.strictEqual(G.counters[BYSTANDERS_KOED_FROM_PLAY], 1);
+  });
+
+  it('the timeout default\'s KO records 1', () => {
+    const G = makeState();
+    G.city[0] = NINJAS;
+    G.attachedBystanders = { [NINJAS]: [BYSTANDER_C] };
+    G.mastermind = { ...G.mastermind, attachedBystanders: [BYSTANDER_D] };
+    reveal(G, SKINNER);
+    applySeatChoiceTimeoutDefault(G, ['0']);
+    assert.deepEqual(G.ko, [BYSTANDER_C]);
+    assert.strictEqual(G.counters[BYSTANDERS_KOED_FROM_PLAY], 1);
+  });
+
+  it('a stale pick whose default re-resolution KOs records 1 (once)', () => {
+    const G = makeState();
+    G.city = [FILLER_A, FILLER_B, FILLER_C, NINJAS, null] as LegendaryGameState['city'];
+    G.attachedBystanders = { [NINJAS]: [BYSTANDER_C] };
+    G.mastermind = { ...G.mastermind, attachedBystanders: [BYSTANDER_D] };
+    reveal(G, SKINNER);
+    const ninjasOption = indexOf(G, 'KO a Bystander held by Hand Ninjas (Bridge)');
+    chainedReveal(G, THUG);
+    choose(G, ninjasOption);
+    assert.deepEqual(G.ko, [BYSTANDER_C]);
+    assert.strictEqual(G.counters[BYSTANDERS_KOED_FROM_PLAY], 1);
+  });
+
+  it('the open-choice collision\'s default KO records 1', () => {
+    const G = makeState();
+    G.currentStage = 'main';
+    G.city[0] = NINJAS;
+    G.attachedBystanders = { [NINJAS]: [BYSTANDER_C] };
+    G.escapedPile = [BYSTANDER_EXT_ID];
+    G.pendingSeatChoice = {
+      kind: 'generic',
+      addressedSeats: ['1'],
+      seatPrompts: { '1': { options: [{ label: 'A' }, { label: 'B' }] } },
+      submissions: {},
+      defaultOptionIndex: 0,
+    } as unknown as LegendaryGameState['pendingSeatChoice'];
+    chainedReveal(G, SKINNER);
+    assert.deepEqual(G.ko, [BYSTANDER_EXT_ID]);
+    assert.strictEqual(G.counters[BYSTANDERS_KOED_FROM_PLAY], 1);
+  });
+
+  it('Moonlight with no holder: the capture records nothing, the KO of that Bystander records 1', () => {
+    const G = makeState();
+    stageLight(G, 'moonlight');
+    reveal(G, BLACKOUT);
+    assert.deepEqual(G.ko, [BYSTANDER_A]);
+    assert.strictEqual(G.counters[BYSTANDERS_KOED_FROM_PLAY], 1);
+  });
+
+  it('Moonlight with two holders: the pick and the repeat each KO, recording 2', () => {
+    const G = makeState();
+    stageLight(G, 'moonlight');
+    G.city[0] = NINJAS;
+    G.attachedBystanders = { [NINJAS]: [BYSTANDER_C] };
+    G.escapedPile = [BYSTANDER_EXT_ID];
+    reveal(G, BLACKOUT);
+    assert.equal(hasKoedFromPlayCounter(G), false, 'nothing recorded while the first pick is open');
+    choose(G, indexOf(G, 'KO a Bystander held by Hand Ninjas (Bank)'));
+    assert.deepEqual(G.ko, [BYSTANDER_C, BYSTANDER_EXT_ID]);
+    assert.strictEqual(G.counters[BYSTANDERS_KOED_FROM_PLAY], 2);
+  });
+
+  it('a no-holder capture records nothing', () => {
+    const G = makeState();
+    reveal(G, SKINNER);
+    assert.deepEqual(G.attachedBystanders[SKINNER], [BYSTANDER_A]);
+    assert.equal(hasKoedFromPlayCounter(G), false);
+  });
+
+  it('a stale pick that re-resolves to a capture records nothing', () => {
+    const G = makeState();
+    G.city[0] = NINJAS;
+    G.attachedBystanders = { [NINJAS]: [BYSTANDER_C] };
+    G.mastermind = { ...G.mastermind, attachedBystanders: [BYSTANDER_D] };
+    reveal(G, SKINNER);
+    G.attachedBystanders = {};
+    G.mastermind = { ...G.mastermind, attachedBystanders: [] };
+    choose(G, 0);
+    assert.deepEqual(G.attachedBystanders[SKINNER], [BYSTANDER_A]);
+    assert.deepEqual(G.ko, []);
+    assert.equal(hasKoedFromPlayCounter(G), false);
   });
 });
 

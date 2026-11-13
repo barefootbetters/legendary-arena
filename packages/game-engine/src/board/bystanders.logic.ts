@@ -11,13 +11,21 @@
  * - countVictoryPileBystanders: count the Bystanders in a Victory Pile
  * - findFirstVictoryPileBystander: the first Bystander in Victory Pile order
  *
- * All functions return new objects (or plain values) and never mutate inputs.
- * Imports only the CardExtId type and the BYSTANDER_EXT_ID constant.
- * No boardgame.io import. No side effects.
+ * Plus the from-play KO recorder (WP-887 / D-24839):
+ * - recordBystanderKoedFromPlay: count one Bystander KO'd from play in G.counters
+ *
+ * Every function except recordBystanderKoedFromPlay returns new objects (or plain
+ * values) and never mutates inputs; the recorder is the module's one function that
+ * mutates G (one G.counters key, nothing else).
+ * Imports the CardExtId and LegendaryGameState types, the BYSTANDER_EXT_ID constant
+ * and the BYSTANDERS_KOED_FROM_PLAY counter key.
+ * No boardgame.io import.
  */
 
 import type { CardExtId } from '../state/zones.types.js';
+import type { LegendaryGameState } from '../types.js';
 import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
+import { BYSTANDERS_KOED_FROM_PLAY } from '../types.js';
 
 // why: rules v23 L1844-1853 — Savior "means 'Use this ability if you have at least 3
 // Bystanders in your Victory Pile.'" The same threshold the hero gate builds from
@@ -222,4 +230,29 @@ export function carryEscapedBystandersToPile(
     attachedBystanders: updatedMapping,
     escapedPile: [...escapedPile, ...bystanders],
   };
+}
+
+/**
+ * Records one Bystander KO'd from play: a Bystander moved to the KO pile from a City Villain's
+ * captives, the Mastermind's captives, the Escape Pile, or an HQ slot (D-24839).
+ *
+ * Obligation (D-24839): every from-play Bystander KO site MUST call this once per Bystander,
+ * immediately after its `koCard`. Today that is the two Hunt for Victims KO sites in
+ * `moves/huntForVictims.logic.ts`; Lilith's and Ritual Sacrifice to Summon Chthon's Hunt for
+ * Victims, HQ KOs and "KO all Bystanders held by Villains" twists must call it too. Never call
+ * it for a KO from the Bystander supply or a Victory Pile, for a rescue, a capture or a decline,
+ * or from an operator setter.
+ *
+ * Writes `G.counters[BYSTANDERS_KOED_FROM_PLAY]` lazily (the module's one function that mutates
+ * `G`); no other effect. Never throws.
+ *
+ * @param gameState - The game state, mutated in place.
+ */
+// why: WP-887 / D-24839 — a civilian KO'd from play counts as lost in PAR's bystanderLost.
+// A counter, not an end-state derivation: every KO'd card lands in G.ko, so end state cannot
+// tell a from-play KO from a supply or Victory-Pile KO (and a captured Bystander may be a
+// supply or a Villain-Deck one). Written only here, never seeded, so a match without such a
+// KO keeps its hash.
+export function recordBystanderKoedFromPlay(gameState: LegendaryGameState): void {
+  gameState.counters[BYSTANDERS_KOED_FROM_PLAY] = (gameState.counters[BYSTANDERS_KOED_FROM_PLAY] ?? 0) + 1;
 }

@@ -19,6 +19,7 @@
  */
 
 import type { LegendaryGameState } from '../types.js';
+import { BYSTANDERS_KOED_FROM_PLAY } from '../types.js';
 import type { ReplayResult } from '../replay/replay.types.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
@@ -146,19 +147,24 @@ export function deriveScoringInputs(
   // zero. Same `?? 0` pattern used by EC-068 buildProgressCounters.
   const escapes = gameState.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS] ?? 0;
 
-  // why: WP-528 / D-24339 — a civilian is "lost" when an escaping Villain carries a
-  // Bystander into G.escapedPile (carryEscapedBystandersToPile, D-24314, from BOTH the
-  // reveal and scheme-twist escape paths). Count the 'bystander'-typed entries of that
-  // pile — the exact mirror of the bystandersRescued victory-zone loop above. The escaped
+  // why: WP-528 / D-24339 + WP-887 / D-24839 — a civilian is "lost" in two buckets,
+  // summed. (1) Carried away: an escaping Villain carries a Bystander into G.escapedPile
+  // (carryEscapedBystandersToPile, D-24314, from BOTH the reveal and scheme-twist escape
+  // paths); count the Bystander entries of that pile (isBystanderCard, both sources,
+  // D-24395) — the mirror of the bystandersRescued victory-zone loop above. The escaped
   // Villain cards themselves (typed 'villain') are the separate villainEscaped count, so
-  // they are not double-counted here. Derives from existing terminal state, adding no G
-  // field (finalStateHash / PRE_WP080_HASH byte-identical; no BYSTANDERS_LOST counter).
+  // they are not double-counted here. (2) KO'd from play: the lazily written
+  // G.counters[BYSTANDERS_KOED_FROM_PLAY] (absent → 0), recorded at each from-play
+  // Bystander KO, because end state cannot tell a from-play KO from a supply or
+  // Victory-Pile KO. An Escape-Pile KO moves one Bystander between the buckets, so it
+  // nets to zero. Kept textually parallel with deriveScoringInputsFromFinalState.
   let bystanderLostCount = 0;
   for (const cardExtId of gameState.escapedPile) {
     if (isBystanderCard(gameState, cardExtId)) {
       bystanderLostCount = bystanderLostCount + 1;
     }
   }
+  bystanderLostCount = bystanderLostCount + (gameState.counters[BYSTANDERS_KOED_FROM_PLAY] ?? 0);
 
   // why: WP-529 / D-24340 — every Legendary scheme twist advances the villain's
   // scheme against the players (there is no beneficial twist; the community/rulebook

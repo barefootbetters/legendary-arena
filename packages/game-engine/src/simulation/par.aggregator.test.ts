@@ -44,6 +44,9 @@ import {
   PAR_MIN_SAMPLE_SIZE,
 } from './par.aggregator.js';
 import type { LegendaryGameState } from '../types.js';
+import { BYSTANDERS_KOED_FROM_PLAY } from '../types.js';
+import type { ReplayResult } from '../replay/replay.types.js';
+import { deriveScoringInputs } from '../scoring/parScoring.logic.js';
 import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 import {
   AI_POLICY_TIERS,
@@ -626,6 +629,42 @@ describe('deriveScoringInputsFromFinalState bystanderLost producer (WP-528 / D-2
     } as unknown as LegendaryGameState;
     const inputs = deriveScoringInputsFromFinalState(state, 10);
     assert.equal(inputs.penaltyEventCounts.bystanderLost, 0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-887 / D-24839 — bystanderLost adds the KO'd-from-play counter, symmetric with the live path
+// ---------------------------------------------------------------------------
+
+describe('deriveScoringInputsFromFinalState bystanderLost adds KO\'d-from-play Bystanders (WP-887 / D-24839)', () => {
+  test('2 escaped Bystanders + a counter of 3 sum to 5, equal to the live deriveScoringInputs', () => {
+    const state = {
+      playerZones: {},
+      mastermind: { baseCardId: 'test-mastermind', tacticsDefeated: [] },
+      villainDeckCardTypes: { 'vil-1': 'villain', 'bys-1': 'bystander', 'bys-2': 'bystander' },
+      cardVictoryPoints: {},
+      escapedPile: ['vil-1', 'bys-1', 'bys-2'],
+      counters: { [BYSTANDERS_KOED_FROM_PLAY]: 3 },
+    } as unknown as LegendaryGameState;
+    const parInputs = deriveScoringInputsFromFinalState(state, 10);
+    // why: the absolute sum, so dropping the counter term in this copy (2) fails here,
+    // and the escaped term (3 alone) fails too.
+    assert.equal(parInputs.penaltyEventCounts.bystanderLost, 5);
+    const liveInputs = deriveScoringInputs({ turnCount: 10 } as unknown as ReplayResult, state);
+    assert.equal(parInputs.penaltyEventCounts.bystanderLost, liveInputs.penaltyEventCounts.bystanderLost);
+  });
+
+  test('an absent counter adds 0', () => {
+    const state = {
+      playerZones: {},
+      mastermind: { baseCardId: 'test-mastermind', tacticsDefeated: [] },
+      villainDeckCardTypes: { 'bys-1': 'bystander' },
+      cardVictoryPoints: {},
+      escapedPile: ['bys-1'],
+      counters: {},
+    } as unknown as LegendaryGameState;
+    const inputs = deriveScoringInputsFromFinalState(state, 10);
+    assert.equal(inputs.penaltyEventCounts.bystanderLost, 1);
   });
 });
 

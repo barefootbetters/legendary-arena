@@ -259,10 +259,12 @@ function chooseByKind(
  * Picks the Hunt for Victims option a playing bot takes: rescue from the Escape Pile, else KO from
  * it, else the first other rescue, else null (the decline default).
  *
- * // why: WP-884 / D-24835 — an escaped Bystander is otherwise lost (it counts in bystanderLost), so
- * taking it back out of the Escape Pile is pure gain, and a rescue adds its VP. The bot never takes
- * a capture or a KO from a Villain or the Mastermind: those remove the VP it would rescue by
- * fighting.
+ * // why: WP-884 / D-24835, WP-887 / D-24839 — a rescue from the Escape Pile removes that Bystander
+ * from bystanderLost and adds its VP. A KO from the Escape Pile is now neutral to bystanderLost (it
+ * moves the Bystander from the escaped count to the KO'd-from-play count, D-24839); the answer
+ * order is kept unchanged here, and whether another rescue should now outrank it is a follow-up. A
+ * KO from a Villain or the Mastermind would add a loss (and removes the VP it would rescue by
+ * fighting), so the bot never takes one, nor a capture.
  *
  * @param options - The seat's options; each carries huntAction / huntSource, the decline neither.
  * @returns The chosen option index, or null to keep the decline.
