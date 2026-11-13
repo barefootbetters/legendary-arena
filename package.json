@@ -62,6 +62,7 @@
     "workindex:executed:test":  "node --import tsx --test scripts/check-workindex-executed-open.test.ts",
     "guard:test":           "node --import tsx --test scripts/commit-reward-integrity-guard.test.ts scripts/commit-msg-merge-exemption.test.ts scripts/ensure-worktree-hooks-path.test.ts",
 
+    "spike:local-bundle":   "node scripts/build-local-spike-bundle.mjs",
     "sim:coverage":         "node scripts/hero-effect-coverage.mjs",
     "sim:coop-winrate":     "node scripts/coop-winrate.mjs",
     "sim:runtime-observed": "node scripts/runtime-observed-hollows.mjs",

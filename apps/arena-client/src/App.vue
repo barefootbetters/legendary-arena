@@ -33,6 +33,7 @@ import { isGuardedRoute, shouldHydrateSession } from './auth/routeAuthPolicy';
 import { useAuthStore } from './stores/auth';
 import { useAnalyticsCapture } from './composables/useAnalyticsCapture';
 import { useMoveSounds } from './composables/useMoveSounds';
+import { isLocalSpikeRoute } from './lib/localSpikeRoute';
 
 // why: PlayerProfilePage is lazy-loaded via defineAsyncComponent so the
 // public-profile branch (?profile=<handle>) does not increase the
@@ -75,6 +76,24 @@ const SharedLoadoutPage = defineAsyncComponent(
   () => import('./pages/SharedLoadoutPage.vue'),
 );
 
+// why: WP-890 / D-24842 — the local match spike's build-time flag. The
+// `typeof` form is required: bare `import.meta.env.VITE_LOCAL_SPIKE` throws
+// under tsx (where `import.meta.env` is undefined), and the house
+// `import.meta.env?.VITE_LOCAL_SPIKE` form survives Vite's dead-code
+// elimination, so the spike chunk and its setup bundle would ship in a
+// default build (WP-890 §Assumes 13). This form is `false` under tsx, and a
+// constant `false` in a build with the flag unset, so Rollup drops the
+// dynamic import below.
+const isLocalSpikeFlagOn =
+  typeof import.meta.env === 'object' && import.meta.env.VITE_LOCAL_SPIKE === '1';
+
+// why: WP-890 — the spike page is lazy and exists only when the flag is on;
+// with it off, the import() sits in a constant-false branch and no chunk is
+// emitted.
+const LocalSpikePage = isLocalSpikeFlagOn
+  ? defineAsyncComponent(() => import('./pages/LocalSpikePage.vue'))
+  : null;
+
 type AppRoute =
   | 'fixture'
   | 'play-fixture'
@@ -84,7 +103,8 @@ type AppRoute =
   | 'shared-loadout'
   | 'me'
   | 'admin-billing'
-  | 'login';
+  | 'login'
+  | 'local-spike';
 
 interface LiveRouteParams {
   matchID: string;
@@ -101,6 +121,7 @@ interface ParsedQuery {
   meRoute: boolean;
   adminBillingRoute: boolean;
   loginRoute: boolean;
+  localSpikeRoute: boolean;
   workshopRoute: boolean;
   hasMatchParam: boolean;
   returnTo: string | null;
@@ -157,6 +178,9 @@ function parseQuery(search: string): ParsedQuery {
   const meRoute = routeParam === 'me';
   const adminBillingRoute = routeParam === 'admin-billing';
   const loginRoute = routeParam === 'login';
+  // why: WP-890 — `?route=local-spike` opens the spike only with the flag on;
+  // otherwise it falls through like any other unknown `?route=` value.
+  const localSpikeRoute = isLocalSpikeRoute(routeParam, isLocalSpikeFlagOn);
   // why: WP-785 — `?route=workshop` opens today's lobby as the Arena Workshop.
   // `?route=lobby` is accepted too because WP-369 invite links use
   // `?route=lobby&match=<id>`. Named like its `meRoute` / `loginRoute` siblings.
@@ -178,6 +202,7 @@ function parseQuery(search: string): ParsedQuery {
     meRoute,
     adminBillingRoute,
     loginRoute,
+    localSpikeRoute,
     workshopRoute,
     hasMatchParam,
     returnTo,
@@ -204,6 +229,10 @@ function selectRoute(parsed: ParsedQuery): AppRoute {
   }
   if (parsed.loginRoute === true) {
     return 'login';
+  }
+  // why: WP-890 — the flag-gated local match spike, after `login`, before `profile`.
+  if (parsed.localSpikeRoute === true) {
+    return 'local-spike';
   }
   if (parsed.profileHandle !== null) {
     return 'profile';
@@ -251,6 +280,9 @@ export default defineComponent({
     AdminBillingPage,
     LoginPage,
     SharedLoadoutPage,
+    // why: a nullable const can't sit in `components` under strict typing
+    // (TS2769), so the flag-gated spike page is registered by conditional spread.
+    ...(LocalSpikePage !== null ? { LocalSpikePage } : {}),
   },
   props: {
     // why: `searchOverride` is a testing seam. Production callers never pass
@@ -515,6 +547,9 @@ export default defineComponent({
       <template v-else-if="route === 'shared-loadout'">
         <SharedLoadoutPage :share-slug="shareSlug" />
       </template>
+      <template v-else-if="route === 'local-spike'">
+        <LocalSpikePage />
+      </template>
       <template v-else-if="route === 'play-fixture'">
         <PlayViewport :submit-move="submitMove" />
       </template>
@@ -560,7 +595,8 @@ export default defineComponent({
    stays a plain block, and to ≥768px so the D-12909 mobile surface is untouched. */
 @media (min-width: 768px) {
   main[data-route='play-fixture'],
-  main[data-route='live'] {
+  main[data-route='live'],
+  main[data-route='local-spike'] {
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;

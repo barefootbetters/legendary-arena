@@ -72,6 +72,12 @@ describe('App.vue route + auth-bootstrap gating', () => {
     assert.equal(await mountApp('?route=login'), 'login');
   });
 
+  test('?route=local-spike with the spike flag off does not open the local match spike (WP-890)', async () => {
+    // why: WP-890 / D-24842 — under node:test `import.meta.env` is undefined, so the flag is off;
+    // the value must fall through like any unknown `?route=` value.
+    assert.notEqual(await mountApp('?route=local-spike'), 'local-spike');
+  });
+
   test('the lobby does not show the auth-bootstrapping placeholder (renders immediately)', async () => {
     setActivePinia(createPinia());
     const wrapper = mount(App, {
