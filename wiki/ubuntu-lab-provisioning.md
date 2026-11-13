@@ -822,13 +822,21 @@ operating items are open.
    since before cutover (32 days up on 2026-11-13). Afterwards, confirm
    `la-server`, `/health/db`, and the timers came back, and re-run the OOM
    check with `sudo`.
+Items 2–5 are **fixed in the lab repo** (lab #45, merged 2026-11-13) and
+**not yet installed on the droplet**. Until the install, the box behaves as
+described on this page. Install `60` and `07` any time; install `30` with a
+PostgreSQL restart and the item 1 reboot, in a quiet hour. Steps are in lab
+#45.
+
 2. **Alert on memory and swap** in `60-monitor`, against the resize trigger.
-3. **Alert on `/var/run/reboot-required`**, or schedule a monthly quiet-hour
-   reboot, so kernel patches take effect.
-4. **Apply PGDG PostgreSQL minor releases**: add the PGDG origin to
-   unattended-upgrades in `07`, or make `apt upgrade` part of a monthly pass.
-5. **Preload `pg_stat_statements`** in `30`, or drop the extension, so it
-   isn't left half-installed.
+   Lab #45 alerts on memory held high and on pages swapped out outside a
+   deploy. The idle 2.8 MB already in swap doesn't count.
+3. **Alert on `/var/run/reboot-required`.** Lab #45 adds it to the ping body
+   as a warning and fails the check once the reboot has been pending 7 days.
+4. **Apply PGDG PostgreSQL minor releases.** Lab #45 adds the PGDG origin to
+   unattended-upgrades in `07`.
+5. **Preload `pg_stat_statements`** in `30`. Done in lab #45, which also fixes
+   `30` appending duplicate config lines on every re-run.
 6. **Re-mint the desktop `doctl` token** (expired) and confirm the DigitalOcean
    spend alert.
 
