@@ -346,7 +346,7 @@ billing record.
 | Recovery | DigitalOcean Droplet backups enabled 2026-10-20 (daily, 7-day retention), as the fast path for a lost droplet. DR-02 full rebuild drilled on a new droplet 2026-10-22: **13 m 31 s** of hands-on steps. Restores from the R2 dumps are drilled separately ([Disaster Recovery](disaster-recovery.md) §7). No restore was needed. RPO by design is ≈ 24 h (nightly dump, no PITR). From 2026-10-29 to 2026-11-13, with no nightly dump, the newest R2/pCloud copy was the 2026-10-28 dump. The DigitalOcean Droplet backups are a separate DigitalOcean job and were enabled throughout. Whether they actually ran in that window wasn't checked. |
 | Cost | October (12–31): $17.65 usage, $12.65 charged after a one-time $5 credit. A full month is capped at $24.00 plus backups. Month-by-month figures: [DigitalOcean actuals](render-migration-analysis.md#digitalocean-actuals-from-october-2026). |
 | Capacity | Measured 2026-11-13 02:56 UTC, at a quiet hour: **850 MB used of 3.9 GB (22%), 3.0 GB available**, load average 0.00, **swap 2.8 MB** of 2 GB, disk **8.2 GB of 77 GB (11%)**. Steady-state memory matches the pre-cutover rehearsal (about 800 MB; the deploy build peaked at 1.37 GB). The swap figure is idle pages pushed out at `swappiness` 10, not memory pressure. Nothing is near the resize trigger: memory above ~70%, CPU above ~50% under real traffic, or real swap use outside deploys ([Target configuration](#target-configuration)). This was one reading at an idle hour, not a peak. Since 2026-11-13, `la-health` alerts on memory held high and on swap-out outside a deploy, and every ping body carries the reading (after the reboot: 19% memory, 0 MB swap). CPU load is still checked by hand: `uptime`. |
-| OOM kills | Not established. `journalctl -k` run without `sudo` can't read kernel messages on this box, so its count of 0 proves nothing. Re-check with `sudo journalctl -k --since 2026-10-12 \| grep -ciE 'oom-kill\|out of memory'`. |
+| OOM kills | **None.** `sudo journalctl -k --since 2026-10-12 \| grep -ciE 'oom-kill\|out of memory'` returned **0** on 2026-11-13, covering cutover through that night's reboot (the journal persists across boots). It needs `sudo`: run without it, `journalctl -k` can't read kernel messages on this box and prints 0 whatever happened. |
 | Kernel patches | A reboot was pending from before cutover until 2026-11-13: the box had been up 32 days on kernel 6.8.0-142, with 6.8.0-146 and -147 installed on disk. Rebooted 2026-11-13 at 05:14 UTC onto **6.8.0-147**. `la-health` now warns while a reboot is pending and fails once it has waited 7 days. |
 | PostgreSQL | 18.6 until 2026-11-13. Then upgraded to **18.7**, and PGDG minor releases now install unattended. `pg_stat_statements` has been preloaded and collecting since the same night. |
 
@@ -902,7 +902,7 @@ under Operating were done and installed on the droplet on 2026-11-13, and item
 1. ~~**Reboot the droplet at a quiet hour.**~~ Done 2026-11-13 at 05:14 UTC,
    onto kernel 6.8.0-147. `la-server`, PostgreSQL, `/health/db` and the timers
    came back, and `la-health` passed with no reboot warning. The `sudo` OOM
-   re-check is still to do.
+   re-check found no OOM kills since cutover.
 2. ~~**Alert on memory and swap** in `60-monitor`, against the resize
    trigger.~~ Done (lab #45, installed 2026-11-13). It fails on memory held at or
    above 70% for 3 runs, or more than 8 MB swapped out between runs with no
