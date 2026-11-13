@@ -531,6 +531,7 @@ high-water: 422
 - WP-890 — local-match-spike (airplane-mode slice 0: LegendaryGame on an in-browser Local() master behind a build-time flag, fed by a recorded setup bundle, with record-and-replay; no production surface. reserved 2026-11-12, claude/wp890-local-match-spike-reserve)
 - WP-891 — client-card-image-tiers (arena-client card-face images use the WP-888 size tiers: thumb at 1x, phone at 2x, original as fallback; the WP-410 prefetch warms the same image. reserved 2026-11-12, claude/wp891-client-card-image-tiers-reserve; LANDED 2026-11-12)
 - WP-892 — registry-viewer-card-image-tiers (registry viewer card-face images use the WP-888 size tiers: thumb or phone by tile size, phone and large in the detail panel, original as fallback and in the lightbox. reserved 2026-11-13, claude/wp892-registry-viewer-card-image-tiers-reserve; LANDED 2026-11-13)
+- WP-893 — put-to-the-torch-conqueror-reward (anni Put to the Torch line 2: gaining a Wound grants Rooftops Conqueror 4. reserved 2026-11-13, claude/put-to-the-torch-conqueror-reward-draft)
 
 ## EC
 
@@ -1024,6 +1025,7 @@ high-water: 457
 - EC-928 — local-match-spike (WP-890. reserved 2026-11-12, claude/wp890-local-match-spike-reserve)
 - EC-929 — client-card-image-tiers (WP-891. reserved 2026-11-12, claude/wp891-client-card-image-tiers-reserve; LANDED 2026-11-12)
 - EC-930 — registry-viewer-card-image-tiers (WP-892. reserved 2026-11-13, claude/wp892-registry-viewer-card-image-tiers-reserve; LANDED 2026-11-13)
+- EC-931 — put-to-the-torch-conqueror-reward (WP-893. reserved 2026-11-13, claude/put-to-the-torch-conqueror-reward-draft)
 
 ## D
 
@@ -1651,3 +1653,4 @@ section below) and the allocation protocol in
 - D-24847 — airplane-mode-results-parity (operator decision, no WP; a verified offline game counts toward leaderboards and seed challenges exactly as an online one. reserved 2026-11-12, claude/airplane-mode-decisions-reserve)
 - D-24848 — client-card-image-tiers (WP-891; arena-client card faces render the WP-888 thumb / phone tiers through one component, with a one-time fallback to the original and a prefetch that warms the same image. reserved 2026-11-12, claude/wp891-client-card-image-tiers-reserve; LANDED 2026-11-12)
 - D-24849 — registry-viewer-card-image-tiers (WP-892; cards.legendary-arena.com card faces render the WP-888 size tiers by a tile-size ladder through one component, with a one-time fallback to the original; the lightbox keeps the original. reserved 2026-11-13, claude/wp892-registry-viewer-card-image-tiers-reserve; LANDED 2026-11-13)
+- D-24850 — put-to-the-torch-conqueror-reward (WP-893; "You may gain a Wound. If you do, you get Rooftops Conqueror 4": a Conqueror reward on the WP-883 gain-wound-reward choice. reserved 2026-11-13, claude/put-to-the-torch-conqueror-reward-draft)
