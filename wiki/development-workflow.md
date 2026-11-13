@@ -300,7 +300,7 @@ workflows triggered by short phrases.
 | Card data pipeline | `scripts/convert-cards/` | Convert raw card data to engine-ready JSON |
 | Architecture inventory | `pnpm wiki-viewer:inventory` | Generate architecture snapshot for ewiki |
 | Wiki build | `pnpm wiki-viewer:build` | Project wiki source → Hugo static site |
-| R2 asset sync | `rclone sync` | Push card images + metadata to CDN |
+| R2 asset upload | `pnpm metadata:upload`, `pnpm images:sizes:push`, `rclone copy` | Push card images, size tiers and metadata to the CDN, copy only (never `rclone sync`: R2 holds objects no local folder mirrors) |
 | Claude Code skills | `/legendary-game-engine`, `/legendary-registry`, etc. | Layer-specific rules and context on demand |
 | Code review | `/code-review` | Automated diff review at configurable depth |
 | Agent workflows | Agent tool + Workflow tool | Multi-agent orchestration for complex tasks |
@@ -827,7 +827,7 @@ copy or a deployment target.
 | **DigitalOcean droplet** | Production server + PostgreSQL 18 (since 2026-10-12; Render before) | Auto-deploy after CI passes on `main` (`deploy-server.yml`); hand deploys via the lab's `40-app-deploy.ps1` |
 | **Cloudflare Pages** | Public front-end builds (www, play, cards, legends) | Auto-deploy on merge to `main` |
 | **Cloudflare Workers** | ewiki + dashboard (assets-only, Access-gated) | `wrangler deploy` from `wiki-viewer.yml` / `dashboard-deploy.yml` on merge to `main` |
-| **Cloudflare R2** | Card images + metadata; private nightly DB backups | `rclone sync` from operator machine; backups from the droplet's `50-backup.ps1` (the `db-backup.yml` workflow until 2026-10-12) |
+| **Cloudflare R2** | Card images + metadata; private nightly DB backups | `pnpm metadata:upload`, `pnpm images:sizes:push` and `rclone copy` from the operator machine (copy only, never `rclone sync`); backups from the droplet's `50-backup.ps1` (the `db-backup.yml` workflow until 2026-10-12) |
 | **GitHub Actions** | CI runners + nightly triage agent | Triggered by push / PR / cron |
 
 ### Filesystem layout
@@ -1101,7 +1101,7 @@ Each deploy surface has a deterministic rollback path.
 | **Cloudflare Worker** (ewiki) | Build failure, missing page, stale content | Revert the PR → merge to `main` → `wiki-viewer` workflow rebuilds and redeploys the Worker | Page content updated on `ewiki.legendary-arena.com` (after the Access login) |
 | **Cloudflare Worker** (dashboard) | Build failure, blank page, wrong data source | Revert the PR → merge to `main` → `dashboard-deploy` workflow rebuilds and redeploys the Worker | Dashboard loads at `dashboard.legendary-arena.com` (after the Access login) |
 | **Cloudflare Pages** (public front-ends) | Build failure, missing assets, blank page | Revert the PR → merge to `main` → Pages auto-rebuilds | Site loads at `play.legendary-arena.com` |
-| **Cloudflare R2** (images/metadata) | Missing or corrupted assets | Re-run last known good `rclone sync` from operator machine | `pnpm check` R2 probe passes |
+| **Cloudflare R2** (images/metadata) | Missing or corrupted assets | Re-upload from the operator machine with copy only, never `rclone sync`: `pnpm metadata:upload` restores metadata from the repo; `pnpm images:sizes:pull`, `images:sizes` and `images:sizes:push` rebuild a set's size tiers from its originals. R2 is the only home of the card originals ([Disaster Recovery](../docs/ops/DISASTER_RECOVERY.md)) | `pnpm check` R2 probe passes |
 | **GitHub Actions** (CI/triage) | Workflow fails or produces bad output | Fix the workflow file or inputs → push to `main` | Workflow re-runs green |
 
 **Rollback rule:** Always revert via a new PR to `main` (which triggers
