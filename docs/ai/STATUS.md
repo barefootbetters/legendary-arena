@@ -10,6 +10,16 @@
 
 ## Current State
 
+### Local match spike: the engine plays a solo match in the browser on a `Local()` master, behind a development-only flag (WP-890 / EC-928, D-24842) (2026-11-13)
+
+**No user-observable change — infrastructure only (development-only spike behind `VITE_LOCAL_SPIKE`).** Airplane-mode slice 0. With the flag set, `?route=local-spike` plays the featured table on an in-browser boardgame.io `Local()` master with no game server; `Game.setup()` reads a setup bundle recorded from the real registry through a plain-data reader. A default build has no route, chunk or fixture.
+
+- **Answers.** `LegendaryGame` runs unchanged on `Local()` (a game copy pins the seed and closes `setup` over the config, because boardgame.io 0.50.2 passes no `setupData` to a local match). The local master equals `CreateGameReducer` after every move (2 lobby + 175 policy moves to gameover), and a record replays identically. Setup bundle: 2,882 cards, 41 sets, 2.97 MB raw / 462 KB gzip. Spike chunk 2,820 kB raw / 462 kB gzip; main chunk +6.9 kB flagged, +0.2 kB default. **31 unique card images** for the featured table (the estimate was 40–60).
+- **Browser run.** Played by hand to gameover on turn 20 (191 moves), no Socket.IO request, `Replay matches: 191 of 191 moves`, the downloaded record parses as record v1.
+- **Tests.** arena-client 2638 -> 2661 / 0; `typecheck` 0; default and flagged `vite build` 0; `pnpm spike:local-bundle --check` 0.
+- **Docs.** `wiki/airplane-mode.md`: slice 0 result, the spike facts answered, WebKit primary sources for iOS storage, storage eviction moved to slice 1.
+- **01.6 post-mortem:** WP COMPLETE.
+
 ### Registry viewer card faces load the thumb / phone / large size tiers instead of the full originals (WP-892 / EC-930, D-24849) (2026-11-13)
 
 **User-visible on `cards.legendary-arena.com` after deploy.** Cards look the same and the grid fills much faster on the high-resolution sets: a default `co2e` grid loads about 14 KB per tile at 1x instead of 2.7 MB. Grid tiles at slider 130 px or less render `thumb 1x, phone 2x`; larger tiles, split-card faces and the detail panel render `phone 1x, large 2x`. A failed tier retries the original once before the grid's dimmed tile. The lightbox ("view full size") still shows the original.
