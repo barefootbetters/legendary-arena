@@ -3,19 +3,19 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2869,
+    "totalEntries": 2871,
     "byScope": {
       "hero": 875,
-      "villain": 763,
+      "villain": 765,
       "mastermind": 567,
       "scheme": 664
     },
     "byStatus": {
-      "executable": 846,
+      "executable": 849,
       "deferred": 19,
       "condition": 76,
       "unsupported": 255,
-      "unmarked": 1666,
+      "unmarked": 1665,
       "subsystem": 7
     }
   },
@@ -18599,11 +18599,11 @@
       "name": "Blackout",
       "set": "mdns",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "villain-hunt-for-victims",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#villain-hunt-for-victims",
+      "wp": "WP-889",
+      "decision": "D-24841"
     },
     {
       "extId": "mdns-villain-lilin-meatmarket",
@@ -18615,6 +18615,17 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current",
       "wp": "WP-760",
       "decision": "D-24589"
+    },
+    {
+      "extId": "mdns-villain-lilin-meatmarket",
+      "name": "Meatmarket",
+      "set": "mdns",
+      "scope": "villain",
+      "mechanic": "villain-hunt-for-victims",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#villain-hunt-for-victims",
+      "wp": "WP-889",
+      "decision": "D-24841"
     },
     {
       "extId": "mdns-villain-lilin-outcast",
@@ -18648,6 +18659,17 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
       "decision": "D-18503"
+    },
+    {
+      "extId": "mdns-villain-lilin-skinner",
+      "name": "Skinner",
+      "set": "mdns",
+      "scope": "villain",
+      "mechanic": "villain-hunt-for-victims",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#villain-hunt-for-victims",
+      "wp": "WP-889",
+      "decision": "D-24841"
     },
     {
       "extId": "mdns/blade-daywalker",
@@ -44474,13 +44496,14 @@
     "mdns-villain-lilin-blackout": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "villain-hunt-for-victims"
       ]
     },
     "mdns-villain-lilin-meatmarket": {
       "scope": "villain",
       "mechanics": [
-        "ko-up-to-from-discard-current"
+        "ko-up-to-from-discard-current",
+        "villain-hunt-for-victims"
       ]
     },
     "mdns-villain-lilin-outcast": {
@@ -44498,7 +44521,8 @@
     "mdns-villain-lilin-skinner": {
       "scope": "villain",
       "mechanics": [
-        "koHeroCurrentPlayer"
+        "koHeroCurrentPlayer",
+        "villain-hunt-for-victims"
       ]
     },
     "mdns/blade-daywalker": {

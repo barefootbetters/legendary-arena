@@ -100,6 +100,7 @@
     "look-other-player-deck-top-claim-current": { "wp": "WP-872", "decision": "D-24817" },
     "reveal-villain-deck-defeat-low-vp-current": { "wp": "WP-872", "decision": "D-24817" },
     "give-card-to-right-player-current": { "wp": "WP-872", "decision": "D-24817" },
+    "villain-hunt-for-victims": { "wp": "WP-889", "decision": "D-24841" },
     "draw": { "wp": "WP-022", "decision": "D-2201" },
     "rescue": { "wp": "WP-215", "decision": "D-21501" },
     "undercover": { "wp": "WP-282", "decision": "D-24060" },

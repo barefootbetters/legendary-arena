@@ -418,6 +418,30 @@ describe('PendingSeatChoicePrompt — WP-884 Hunt for Victims (D-24835)', () => 
   }
 });
 
+describe('PendingSeatChoicePrompt — WP-889 villain Hunt for Victims (D-24841)', () => {
+  test('the villain-hunt-for-victims kind shows its heading and its projected holder options', async () => {
+    const { calls, submitMove } = recorder();
+    const choice: UIPendingSeatChoice = {
+      kind: 'villain-hunt-for-victims',
+      addressedSeats: ['player-0'],
+      outstandingSeats: ['player-0'],
+      seatPrompts: {
+        'player-0': {
+          options: [{ label: 'KO a Bystander held by Hand Ninjas (Bank)' }, { label: 'KO a Bystander from the Escape Pile' }],
+        },
+      },
+    };
+    const wrapper = mount(PendingSeatChoicePrompt, {
+      props: { pendingSeatChoice: choice, viewerPlayerId: 'player-0', submitMove },
+    });
+    assert.equal(wrapper.find('.pending-seat-choice-prompt__heading').text(), "Hunt for Victims: choose which Bystander is KO'd");
+    assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-0"]').text(), 'KO a Bystander held by Hand Ninjas (Bank)');
+    assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-1"]').text(), 'KO a Bystander from the Escape Pile');
+    await wrapper.find('[data-testid="pending-seat-choice-option-0"]').trigger('click');
+    assert.deepEqual(calls, [{ name: 'resolveSeatChoice', args: { optionIndex: 0 } }]);
+  });
+});
+
 describe('PendingSeatChoicePrompt — WP-883 gain-wound-reward (D-24834)', () => {
   test('the gain-wound-reward kind shows its heading and the two projected options', async () => {
     const { calls, submitMove } = recorder();

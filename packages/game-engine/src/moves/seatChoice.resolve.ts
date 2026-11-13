@@ -53,6 +53,12 @@ import {
   readHuntForVictimsWillKoBystander,
   HUNT_FOR_VICTIMS_KO_HERO_SEAT_CHOICE_KIND,
   HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND,
+  // why: WP-889 / D-24841 — the Lilin villain hunt's apply, its repeat reader and chain (same
+  // runtime-safe cycle).
+  applyVillainHuntForVictimsResolvedSeatChoice,
+  chainVillainHuntRepeats,
+  readVillainHuntRepeats,
+  VILLAIN_HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND,
 } from './huntForVictims.logic.js';
 // why: WP-827 / D-24760 — Flying Shield Block's kind-specific apply (same runtime-safe cycle).
 import {
@@ -543,6 +549,9 @@ export function resolveSeatChoice(
     const huntSeat = isHuntForVictims ? choice.addressedSeats[0] : undefined;
     const huntSourceCardId = choice.huntForVictims?.sourceCardId;
     const huntWillKoBystander = isHuntForVictims && readHuntForVictimsWillKoBystander(G, choice);
+    // why: WP-889 / D-24841 RS-3b — capture the hunts a villain hunt choice still owes (Blackout's
+    // Moonlight repeat) BEFORE the apply and the delete clear the choice, beside the hero reader.
+    const villainHuntRepeats = readVillainHuntRepeats(choice);
     // why: WP-862 / D-24804 — capture a Shrinking Research Budget class pick's seat BEFORE the
     // apply clears the choice, so the next dual-class Hero's pick chains below (the Commune shape).
     const sizeChangingClassPickSeat = readSizeChangingClassPickSeat(choice);
@@ -607,6 +616,12 @@ export function resolveSeatChoice(
     // only after a KO or rescue. The timeout path does not chain (its default is decline anyway).
     if (huntWillKoBystander && huntSeat !== undefined && huntSourceCardId !== undefined) {
       chainHuntForVictimsKoHero(G, huntSeat, huntSourceCardId);
+    }
+    // why: WP-889 / D-24841 RS-3b — Blackout hunts again here, after its first hunt resolved, in the
+    // live move context beside the hero hunt's chain, so the second hunt sees the post-choice board
+    // and may park again. The timeout path does not chain (the D-24501 residual).
+    if (villainHuntRepeats !== undefined) {
+      chainVillainHuntRepeats(G, villainHuntRepeats.seat, villainHuntRepeats.sourceCardId, villainHuntRepeats.repeats);
     }
     // why: WP-862 / D-24804 — Shrinking Research Budget chains its next dual-class Hero's class
     // pick here in the live move context, exactly where Commune chains its next step.
@@ -859,6 +874,13 @@ function applySeatChoiceByKind(
   }
   if (choice.kind === HUNT_FOR_VICTIMS_KO_HERO_SEAT_CHOICE_KIND) {
     applyHuntForVictimsKoHeroResolvedSeatChoice(G, choice);
+    return;
+  }
+  // why: WP-889 / D-24841 — the Lilin villain hunt: KO the chosen holder's last Bystander (a stale
+  // pick re-resolves at the default). No draw, so no shuffle context; placed before the generic
+  // fall-through so the "Seat N resolved <kind> choice" line does not also print.
+  if (choice.kind === VILLAIN_HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND) {
+    applyVillainHuntForVictimsResolvedSeatChoice(G, choice);
     return;
   }
   // why: D-24678 — the shuffle context reaches Random Acts' Diving Block draw.

@@ -339,8 +339,9 @@ gotg-villain-kree-starforce-supremor,Supremor,gotg,villain,(unmarked),unmarked,,
 gotg-villain-infinity-gems-time-gem,Time Gem,gotg,villain,(unmarked),unmarked,,,
 mdns-villain-fallen-atrocity,Atrocity,mdns,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
 mdns-villain-fallen-atrocity,Atrocity,mdns,villain,haunt-hq-hero,executable,WP-757,D-24587,packages/game-engine/src/villain/villainEffects.execute.ts#haunt-hq-hero
-mdns-villain-lilin-blackout,Blackout,mdns,villain,(unmarked),unmarked,,,
+mdns-villain-lilin-blackout,Blackout,mdns,villain,villain-hunt-for-victims,executable,WP-889,D-24841,packages/game-engine/src/villain/villainEffects.execute.ts#villain-hunt-for-victims
 mdns-villain-lilin-meatmarket,Meatmarket,mdns,villain,ko-up-to-from-discard-current,executable,WP-760,D-24589,packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current
+mdns-villain-lilin-meatmarket,Meatmarket,mdns,villain,villain-hunt-for-victims,executable,WP-889,D-24841,packages/game-engine/src/villain/villainEffects.execute.ts#villain-hunt-for-victims
 mdns-villain-fallen-metarchus,Metarchus,mdns,villain,haunt-hq-hero,executable,WP-757,D-24587,packages/game-engine/src/villain/villainEffects.execute.ts#haunt-hq-hero
 mdns-villain-fallen-metarchus,Metarchus,mdns,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 mdns-villain-lilin-outcast,Outcast,mdns,villain,(unmarked),unmarked,,,
@@ -349,6 +350,7 @@ mdns-villain-fallen-patriarch,Patriarch,mdns,villain,reveal-top-draw-if-cost-lte
 mdns-villain-fallen-salom-sorceress-supreme,"Salomé, Sorceress Supreme",mdns,villain,ko-up-to-from-discard-current,executable,WP-760,D-24589,packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current
 mdns-villain-lilin-sister-nil,Sister Nil,mdns,villain,(unmarked),unmarked,,,
 mdns-villain-lilin-skinner,Skinner,mdns,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+mdns-villain-lilin-skinner,Skinner,mdns,villain,villain-hunt-for-victims,executable,WP-889,D-24841,packages/game-engine/src/villain/villainEffects.execute.ts#villain-hunt-for-victims
 mgtg-villain-followers-of-ronan-exolon-attendants,Exolon Attendants,mgtg,villain,(unmarked),unmarked,,,
 mgtg-villain-followers-of-ronan-exolon-monks,Exolon Monks,mgtg,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 mgtg-villain-ravagers-gef,Gef,mgtg,villain,(unmarked),unmarked,,,

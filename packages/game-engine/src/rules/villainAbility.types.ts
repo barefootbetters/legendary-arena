@@ -398,7 +398,11 @@ export type VillainEffectPrimitive =
   // player on your right.
   | 'look-other-player-deck-top-claim-current'
   | 'reveal-villain-deck-defeat-low-vp-current'
-  | 'give-card-to-right-player-current';
+  | 'give-card-to-right-player-current'
+  // why: WP-889 / D-24841 — the Lilin Ambush "Hunt for Victims" (Skinner, Meatmarket, Blackout),
+  // appended last. Named apart from the hero keyword `hunt-for-victims`, whose key in the flat shared
+  // mechanic-provenance map is WP-884's.
+  | 'villain-hunt-for-victims';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -609,6 +613,15 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'look-other-player-deck-top-claim-current',
   'reveal-villain-deck-defeat-low-vp-current',
   'give-card-to-right-player-current',
+  // why: WP-889 / D-24841 — appended at position 52. Skinner's, Meatmarket's and Blackout's Ambush
+  // ("[keyword:Hunt for Victims]"): KO a Bystander captured by any Villain or the Mastermind or in
+  // the Escape Pile (the active player picks when two or more hold one; default the Escape Pile),
+  // else this Villain captures one. No params; the handler reuses the WP-884 module's helpers
+  // (`moves/huntForVictims.logic.ts`) and self-narrates. Named apart from the hero keyword
+  // `hunt-for-victims` because mechanic-provenance.json is one flat map shared by the hero and
+  // villain ledgers. The marker script's hand-synced copy
+  // (`scripts/convert-cards/apply-effect-markers.mjs`) appends it at the same position.
+  'villain-hunt-for-victims',
 ] as const;
 
 /**
@@ -630,7 +643,10 @@ export type GreyHeroFilter = 'grey' | 'non-grey';
 // "If there is another Spider-Foes Villain in the city"). True when the City holds another
 // Villain of the triggering Villain's OWN group, found as the longest selected-group prefix
 // of its id (D-24299 own-set precedent); no resolvable group fails closed.
-export type VillainEffectCondition = 'savior' | 'another-group-villain-in-city';
+// why: WP-889 / D-24841 — `'moonlight'` appended (Blackout's Ambush: "If it's Moonlight, Hunt for
+// Victims again"). True when `computeDayNight(G) === 'moonlight'` (rules/dayNight.logic.ts, the
+// hero `moonlightInEffect` reader); otherwise the executor gate logs a blocked line.
+export type VillainEffectCondition = 'savior' | 'another-group-villain-in-city' | 'moonlight';
 
 // why: drift-detection array — must match VillainEffectCondition exactly
 // (villainAbility.types.test.ts asserts it at runtime, D-24372). Append-only per
@@ -642,6 +658,9 @@ export type VillainEffectCondition = 'savior' | 'another-group-villain-in-city';
 export const VILLAIN_EFFECT_CONDITIONS: readonly VillainEffectCondition[] = [
   'savior',
   'another-group-villain-in-city',
+  // why: WP-889 / D-24841 — appended at position 3 (Blackout's Moonlight repeat). The marker
+  // script's hand-synced copy appends it at the same position.
+  'moonlight',
 ] as const;
 
 /**
