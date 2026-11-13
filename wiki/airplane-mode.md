@@ -89,9 +89,9 @@ checked by the server when the player is back online.
     same `LegendaryGame` the server runs.
   - The setup's card data and image list supplied by the server at download
     time, because arena-client may not import the registry at runtime.
-  - Card art cached **per setup** at the planned `phone` tier, in Cache
+  - Card art cached **per setup** at the `phone` tier (WP-888, published), in Cache
     Storage, through a service worker
-    ([Card Image Acquisition › Size tiers](card-image-acquisition.md#size-tiers-for-mobile-and-offline-planned)).
+    ([Card Image Acquisition › Size tiers](card-image-acquisition.md#size-tiers-for-mobile-and-offline)).
   - Saved games and the offline results queue kept in IndexedDB.
 - **Decisions (Jeff, 2026-11-12):**
   1. **The rules may run on the device (D-24844)** for a single-seat solo
@@ -133,7 +133,7 @@ checked by the server when the player is back online.
 | Bot ally | Server-side ([`botAllyDriver.mjs`](../apps/server/src/bot-ally/botAllyDriver.mjs)). [DESIGN-SOLO-BOT-ALLY](../docs/ai/DESIGN-SOLO-BOT-ALLY.md) rejects a client-side bot for online play. The policies are in the runtime-safe engine export | Left out of version 1 |
 | Saved state | Postgres `bgio` schema ([`bgioPgStore.js`](../apps/server/src/db/bgioPgStore.js), D-24095). The client has no IndexedDB and no game save; localStorage holds prefs only | An on-device save (see [Saving the game](#saving-the-game)) |
 | Card images | One WebP per card at `images.legendary-arena.com/{set}/{set}-{ribbon}-{slug}.webp` ([R2 Image Naming Convention](r2-image-naming-convention.md)). A match's image list is `UIState.matchCardImageUrls` (`buildMatchCardImageManifest` in [`uiState.build.ts`](../packages/game-engine/src/ui/uiState.build.ts)). [`useCardImagePrefetch.ts`](../apps/arena-client/src/composables/useCardImagePrefetch.ts) warms them into the browser's HTTP cache, 6 at a time | Durable caching, plus a size estimate before download |
-| Image sizes | **Planned, not built.** Every screen gets the original. Most sets are about 490×690 at about 100 KB per card, but six high-resolution sets run about 1 MB per card, and `co2e` 2.7 MB. `thumb` / `phone` / `large` tiers and per-set byte manifests are planned under WP-888 (reserved; [Card Image Acquisition](card-image-acquisition.md#size-tiers-for-mobile-and-offline-planned)) | The `phone` tier and its byte manifests |
+| Image sizes | **Built and published** (WP-888 / [D-24840](../docs/ai/DECISIONS.md), 2026-11-12). Every card has `thumb` (280 px), `phone` (840 px) and `large` (1680 px) WebP tiers at `{set}/{tier}/{file}.webp`, plus a per-set byte manifest at `metadata/image-sizes/{set}.json` ([Card Image Acquisition](card-image-acquisition.md#size-tiers-for-mobile-and-offline)). No screen uses them yet: every screen still gets the original (most sets about 100 KB per card, six high-resolution sets about 1 MB, `co2e` 2.7 MB) | Nothing more from the image side: the `phone` tier is the download, and its manifests give the size label |
 | Image headers | `public, max-age=31536000, immutable` ([RUNBOOK](../docs/ops/RUNBOOK-r2-image-cache-control.md)) and `Access-Control-Allow-Origin: *` (checked 2026-11-12) | Already enough for a service worker to cache non-opaque responses |
 | PWA | None: no service worker, no web app manifest, no icons. The client is Vite 5, Vue 3 and Pinia on Cloudflare Pages; [`_headers`](../apps/arena-client/public/_headers) already marks `/assets/*` immutable | A manifest, icons, and a service worker that caches the app shell |
 
@@ -220,27 +220,27 @@ offline play"*.
   a match exists. On the setup screen there's no match yet, so the server
   supplies the list as part of the setup bundle (see
   [Card data for the setup](#card-data-for-the-setup)).
-- **Byte sizes.** The planned size step writes a per-set manifest of each
-  card's bytes per tier, at `metadata/image-sizes/{setAbbr}.json` on R2
-  ([Card Image Acquisition › Size tiers](card-image-acquisition.md#size-tiers-for-mobile-and-offline-planned)).
+- **Byte sizes.** The size step (WP-888) publishes a per-set manifest of
+  each card's bytes per tier, at `metadata/image-sizes/{setAbbr}.json` on R2
+  ([Card Image Acquisition › Size tiers](card-image-acquisition.md#size-tiers-for-mobile-and-offline)).
   The label is the sum of the setup's cards at the chosen tier, read from the
   manifests of the sets the setup uses.
-- **Rough figures** at the `phone` tier, from that page's test encode (about
-  94 KB per card for `core` and `cvwr`, 131 KB for `co2e`):
+- **Rough figures** at the `phone` tier, from the published manifests (about
+  94 KB per card for `core`, 131 KB for `co2e`):
   - A typical solo setup is roughly 40–60 unique images, about 4–8 MB
     *(estimate; the count depends on the heroes and villain groups)*.
-  - The whole library is roughly 300 MB at `phone`, against 1,137 MB for the
-    originals. That's every card in every set, not what any one player
-    downloads.
-  - Without tiers, a `co2e` setup would run to hundreds of megabytes, which is
-    why airplane mode waits on the tier work.
+  - The whole library is 296 MB at `phone`, against 1,133 MB for the
+    originals the card data references. That's every card in every set, not
+    what any one player downloads.
+  - Without tiers, a `co2e` setup would run to hundreds of megabytes; at
+    `phone` all 151 `co2e` cards are 19 MB.
 
 When every file is cached, the setup shows **Ready offline**.
 
 #### Which image sizes
 
 The tiers and their URLs are owned by
-[Card Image Acquisition › Size tiers](card-image-acquisition.md#size-tiers-for-mobile-and-offline-planned).
+[Card Image Acquisition › Size tiers](card-image-acquisition.md#size-tiers-for-mobile-and-offline).
 In short:
 
 - **`phone` (840 px long edge) is the airplane-mode download.** It's large
@@ -254,12 +254,10 @@ In short:
 A tier URL is the card's existing `imageUrl` with `/{tier}` inserted before
 the file name, so no card data changes.
 
-**If the tiers aren't ready first.** 78% of card images already have a long
-edge under 840 px, so for those sets the original is effectively the `phone`
-image. A first version could download originals for setups drawn only from
-those sets, with the six high-resolution sets (`amwp`, `bkpt`, `bkwd`,
-`mdns`, `msis`, `co2e`) waiting for the tiers. The size label would then need
-byte counts some other way, such as HEAD requests.
+**The tiers are ready.** WP-888 published all three tiers and the manifests
+for all 41 sets on 2026-11-12, so no originals-only first version is needed.
+For the 78% of cards with a long edge under 840 px, `phone` is a re-encode
+of the original at its own size.
 
 #### Caching
 
@@ -419,10 +417,10 @@ The phone test matters because iOS behaves differently (see Edge Cases).
 - **[Windows Engine Exe](windows-engine-exe.md):** the other "engine runs
   locally" study, headless and for verification. Both rely on the engine's
   runtime-safe export being free of Node-only code.
-- **[Card Image Acquisition](card-image-acquisition.md):** owns the planned
-  size tiers (WP-888), their URLs, and the per-set byte manifests. Airplane
-  mode downloads the `phone` tier and sizes the download from those
-  manifests. Slice 3 below waits on that work.
+- **[Card Image Acquisition](card-image-acquisition.md):** owns the size
+  tiers (WP-888 / D-24840, published 2026-11-12), their URLs, and the
+  per-set byte manifests. Airplane mode downloads the `phone` tier and
+  sizes the download from those manifests. Slice 3 no longer waits on them.
 - **[R2 Image Naming Convention](r2-image-naming-convention.md):** the URLs
   the cache is keyed by. The tier URLs add a `/{tier}` folder to them.
 - **[Guest Accounts](guest-accounts.md):** guest solo runs a fixed featured
@@ -527,7 +525,7 @@ Repo:
 - Measured 2026-11-12:
   - 15 random Core images by `HEAD`
   - one image's headers (`ACAO: *`, immutable) and its dimensions (489×687)
-- [Card Image Acquisition › Size tiers](card-image-acquisition.md#size-tiers-for-mobile-and-offline-planned): the planned tiers, tier URLs, per-set byte manifests, and the library and per-set sizes this page quotes (WP-888, reserved in [NUMBER-LEDGER.md](../docs/ai/NUMBER-LEDGER.md))
+- [Card Image Acquisition › Size tiers](card-image-acquisition.md#size-tiers-for-mobile-and-offline): the published tiers, tier URLs, per-set byte manifests, and the library and per-set sizes this page quotes (WP-888 / D-24840)
 
 Other products, read 2026-11-12:
 
