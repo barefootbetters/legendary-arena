@@ -340,7 +340,7 @@ billing record.
 | Area | Record |
 |---|---|
 | Downtime | **10 m 10 s** at cutover (UptimeRobot, 5-minute granularity). No unplanned outage of the public API since. The planned kernel reboot on 2026-11-13 at 05:14 UTC took about **15 s**: one 502 from Cloudflare, then `/health/db` OK. |
-| Alerts | One, a **false** DOWN: on 2026-10-21 at 05:55 UTC a `la-health` run landed in the ~4 s restart gap of a deploy. The public site stayed up (Nginx served the `:3001` standby, no 5xx), and the next run passed. Fixed in lab #43: `60-monitor` now waits for the deploy lock. |
+| Alerts | One, a **false** DOWN: on 2026-10-21 at 05:55 UTC a `la-health` run landed in the ~4 s restart gap of a deploy. The public site stayed up (Nginx served the `:3001` standby, no 5xx), and the next run passed. Fixed in lab #43: `60-monitor` now waits for the deploy lock. Plus one **real** DOWN that reached nobody: `la-droplet-backup` went down on 2026-10-29 at 11:17 UTC and stayed down until 2026-11-13 04:58 UTC. Its only channel was email to a Microsoft-hosted mailbox that was down (Open Questions, Operating item 7). |
 | **Silent failure** | **From 2026-10-29 to 2026-11-13 (15 days) the on-box timers didn't run: no `la-health` check, no nightly backup, and no Cloudflare-range refresh.** The API itself stayed up throughout; UptimeRobot on `/health/db` stayed green. Found while installing lab #45 and fixed the same night (see [Offsite backups](#offsite-backups-r2--pcloud)). |
 | Deploy restarts | Before 2026-10-15, every restart dropped requests: 6 s idle, 36 s with a player's websocket open. Fixed by closing websockets on SIGTERM (#2819), the `:3001` standby (lab #39), and per-commit release directories with a no-rebuild rollback (lab #40). |
 | Recovery | DigitalOcean Droplet backups enabled 2026-10-20 (daily, 7-day retention), as the fast path for a lost droplet. DR-02 full rebuild drilled on a new droplet 2026-10-22: **13 m 31 s** of hands-on steps. Restores from the R2 dumps are drilled separately ([Disaster Recovery](disaster-recovery.md) §7). No restore was needed. RPO by design is ≈ 24 h (nightly dump, no PITR). From 2026-10-29 to 2026-11-13, with no nightly dump, the newest R2/pCloud copy was the 2026-10-28 dump. The DigitalOcean Droplet backups are a separate DigitalOcean job and were enabled throughout. Whether they actually ran in that window wasn't checked. |
@@ -544,8 +544,10 @@ cover:
   runaway growth.
 - **A timer that can't start at all.** If `la-health` or `la-backup` can't
   launch, as from 2026-10-29 to 2026-11-13, nothing on the box can report it.
-  Only healthchecks.io's missing-ping alerts can. That is what they're for, so
-  they have to reach the operator (Open Questions, Operating item 7).
+  Only healthchecks.io's missing-ping alerts can. They did fire on 2026-10-29,
+  but their one channel was an email address on a mailbox that was down, so
+  they need a second channel that doesn't share that dependency (Open
+  Questions, Operating item 7).
 
 Kernel reboots stay manual: `07` doesn't turn on `Automatic-Reboot`. A
 reboot costs about 15 s of boot time with no Nginx standby across it, so do it
@@ -893,7 +895,8 @@ operator can, unaided —
 
 **Status as of 2026-11-13:** every migration step below is done. Items 1–5
 under Operating were done and installed on the droplet on 2026-11-13. Items 6
-and 7 are open.
+and 7 are open. Item 7's cause is found, but the second alert channel isn't
+in place yet.
 
 **Operating** (most are a provisioner change in the lab repo):
 
@@ -915,13 +918,19 @@ and 7 are open.
    longer appends duplicate config lines on every run.
 6. **Re-mint the desktop `doctl` token** (expired) and confirm the DigitalOcean
    spend alert.
-7. **Find out why 15 days of missed pings went unnoticed.** From 2026-10-29 to
-   2026-11-13, `la-droplet-monitor` and `la-droplet-backup` got no pings, so
-   healthchecks.io should have marked both DOWN and emailed within a day.
-   Check its dashboard and event log for those dates, and where the alerts
-   went (the channel, the address, the spam folder). If they never went DOWN,
-   check each check's period and grace. Either way, prove the path by stopping
-   a check's pings and confirming the email arrives.
+7. **Give healthchecks.io a second alert channel.** Why 15 days of missed
+   pings went unnoticed is now known. The alert fired: `la-droplet-backup`'s
+   log shows `up ➔ down` on 2026-10-29 at 11:17 UTC, which is the missed 09:17
+   run plus its 2-hour grace, and `down ➔ up` at the 2026-11-13 04:58 UTC
+   catch-up. The ping's user agent moved from PowerShell 7.6.6 to 7.6.9 across
+   the gap, which is the snap refresh. But every check's only notification method
+   was email to the operator's Microsoft-hosted mailbox, and that mailbox was
+   down. Still to do:
+   - Add a non-email integration (Pushover, Telegram, Discord or Slack), or
+     at least an address on another provider. Turn it on for
+     `la-droplet-monitor`, `la-droplet-backup` and `la-droplet-pcloud`.
+   - Prove it: use the integration's test button, then let one check go late
+     and confirm the alert arrives.
 
 **Migration** (done; kept for the record). Governance is
 [D-24707](../docs/ai/DECISIONS.md), with the ewiki half as D-24690.
