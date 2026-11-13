@@ -10,6 +10,19 @@
 
 ## Current State
 
+### Lilin Skinner, Meatmarket and Blackout Hunt for Victims when they enter the City (WP-889 / EC-927, D-24841) (2026-11-12)
+
+**User-visible on `play.legendary-arena.com` after deploy.** Revealing Skinner, Meatmarket or Blackout no longer logs an `unmarked-ability` hollow (seen live on operator match `DttVqQ-hmkz`). With one Bystander holder (a City Villain, the Mastermind or the Escape Pile) that holder's last Bystander is KO'd with no prompt; with two or more, a prompt headed "Hunt for Victims: choose which Bystander is KO'd" lists one button per holder (no decline; the Escape Pile is the default); with none, the Villain captures the top supply Bystander. Blackout hunts again under Moonlight, after the first hunt (and any choice it asked for) resolves. The Ambush overlay reads `"Skinner" ambushed: it Hunts for Victims.`
+
+- **Engine.** New villain primitive `villain-hunt-for-victims` (52nd) and condition `moonlight` (3rd) on the D-24749 lockstep. `moves/huntForVictims.logic.ts` exports the four WP-884 helpers unchanged and adds the villain hunt: `huntForVictimsForVillain`, the `villain-hunt-for-victims` seat choice with its apply (a City pick is re-located by id; a stale pick re-resolves at the default), Blackout's `pendingRepeats` reader and chain in `resolveSeatChoice`, one KO site `koVillainHuntedBystander`, and `villainAmbushHuntsForVictims` for the overlay clause (`composeAmbushNarrative` trailing argument, D-24703 precedent).
+- **Card data.** Four markers on three mdns Lilin Ambush lines through `apply-effect-markers.mjs` (`cards:check` 0). Outcast and Sister Nil stay unmarked and keep their hollows (their second sentences are follow-ups), as do Lilith's tactics / Master Strike and Blackout's Escape.
+- **Tests.** game-engine 6988 -> 7010 / 0 (new `villainHuntForVictims.test.ts`, 21 cases; compose +1 case; primitive / condition pins and the KO-site table moved by +1 inside existing cases); arena-client 2619 -> 2620 / 0 (+1 heading); `pnpm -r --no-bail test` 0 fail; arena-client and dashboard `typecheck` 0. The hero hunt's tests pass unedited.
+- **Feeds and pins.** Villain ledger: Skinner, Meatmarket and Blackout `villain-hunt-for-victims` executable under WP-889 / D-24841; hero ledger unchanged. `effect-implementation-index` regenerated. `runtime-observed-hollows.json`, `hero-effect-coverage.baseline.json` and every `finalStateHash` sentinel / PAR value unchanged.
+- **Replay.** Setup-level: matches created before the deploy keep their stored hooks and replay identically; only new matches hunt.
+- **WP-887 coordination.** `koVillainHuntedBystander` is a from-play Bystander KO site for D-24839 (recorded in D-24841 §7; noted on #3302, comment 6836875410).
+- **01.6 post-mortem:** evaluated, not triggered.
+- **Live-verify (D-24026): operator-pending.** On an operator match created after the deploy with `mdns/lilin`, put Skinner on top of the Villain Deck (Villain deck → "Move villain card to top") and reveal: (a) one holder (a Bystander on the Mastermind or in the Escape Pile) → KO'd with no prompt; (b) two holders → the heading and buttons, a real click KOs that holder's Bystander; (c) no holder → Skinner captures one. Blackout under Moonlight (HQ staged to odd costs) hunts twice. Three `pending` rows in `live-verify.json`.
+
 ### Every card face now has thumb / phone / large WebP size tiers and a per-set byte manifest on R2 (WP-888 / EC-926, D-24840) (2026-11-12)
 
 **No user-observable change — infrastructure only.** No client reads the tiers yet. Each card image now also exists at `images.legendary-arena.com/{set}/{tier}/{file}.webp` (`thumb` 280, `phone` 840, `large` 1680 px long edge, never enlarged; `immutable`), and each set has a byte manifest at `metadata/image-sizes/{set}.json` (five-minute cache). A tier URL is a path rule off the existing `imageUrl`: no card JSON, registry or `UIState` change.

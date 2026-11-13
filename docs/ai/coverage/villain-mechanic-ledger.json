@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "cardType": "villain",
   "summary": {
-    "totalRows": 763,
+    "totalRows": 765,
     "byStatus": {
-      "executable": 256,
+      "executable": 259,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 502,
+      "unmarked": 501,
       "subsystem": 4
     },
-    "distinctMechanics": 60
+    "distinctMechanics": 61
   },
   "rows": [
     {
@@ -3758,11 +3758,11 @@
       "cardName": "Blackout",
       "set": "mdns",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "villain-hunt-for-victims",
+      "status": "executable",
+      "wp": "WP-889",
+      "decision": "D-24841",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#villain-hunt-for-victims"
     },
     {
       "extId": "mdns-villain-lilin-meatmarket",
@@ -3774,6 +3774,17 @@
       "wp": "WP-760",
       "decision": "D-24589",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current"
+    },
+    {
+      "extId": "mdns-villain-lilin-meatmarket",
+      "cardName": "Meatmarket",
+      "set": "mdns",
+      "cardType": "villain",
+      "mechanic": "villain-hunt-for-victims",
+      "status": "executable",
+      "wp": "WP-889",
+      "decision": "D-24841",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#villain-hunt-for-victims"
     },
     {
       "extId": "mdns-villain-fallen-metarchus",
@@ -3862,6 +3873,17 @@
       "wp": "WP-185",
       "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "mdns-villain-lilin-skinner",
+      "cardName": "Skinner",
+      "set": "mdns",
+      "cardType": "villain",
+      "mechanic": "villain-hunt-for-victims",
+      "status": "executable",
+      "wp": "WP-889",
+      "decision": "D-24841",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#villain-hunt-for-victims"
     },
     {
       "extId": "mgtg-villain-followers-of-ronan-exolon-attendants",

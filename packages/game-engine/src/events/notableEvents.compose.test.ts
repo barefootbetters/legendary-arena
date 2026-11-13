@@ -710,3 +710,16 @@ describe('composeStackVillainEntryClause and the stack-villain narrative clause 
     );
   });
 });
+
+describe('composeAmbushNarrative — WP-889 Hunt for Victims clause (D-24841)', () => {
+  it('names the hunt as the clause, and is byte-identical without it', () => {
+    assert.equal(
+      composeAmbushNarrative('Skinner', [], 0, undefined, 'it Hunts for Victims'),
+      '"Skinner" ambushed: it Hunts for Victims.',
+    );
+    assert.equal(
+      composeAmbushNarrative('Magneto', [], 0, undefined, undefined),
+      composeAmbushNarrative('Magneto', []),
+    );
+  });
+});

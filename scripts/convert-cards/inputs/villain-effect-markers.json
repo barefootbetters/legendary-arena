@@ -260,8 +260,9 @@
         "salom-sorceress-supreme": { "fight": ["ko-up-to-from-discard-current:2"] }
       },
       "lilin": {
-        "meatmarket": { "fight": ["ko-up-to-from-discard-current:1"] },
-        "skinner": { "fight": ["koHeroCurrentPlayer"] }
+        "blackout": { "ambush": ["villain-hunt-for-victims", "villain-hunt-for-victims!moonlight"] },
+        "meatmarket": { "ambush": ["villain-hunt-for-victims"], "fight": ["ko-up-to-from-discard-current:1"] },
+        "skinner": { "ambush": ["villain-hunt-for-victims"], "fight": ["koHeroCurrentPlayer"] }
       }
     },
     "mgtg": {

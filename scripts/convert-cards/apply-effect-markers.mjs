@@ -213,6 +213,9 @@ function isLockedEffectKeyword(keyword) {
 // worth 2VP or less. (Do its Fight effect.) Put the rest back in any order." and Remaker "You may
 // choose a card from your hand or discard pile. The player on your right puts it in their hand.";
 // all three validate via the terminal `parts.length === 1` branch).
+// `villain-hunt-for-victims` (no-param) appended at position 52 by WP-889 (D-24841 — mdns Lilin
+// Skinner, Meatmarket and Blackout "Ambush: [keyword:Hunt for Victims]"; validates via the terminal
+// `parts.length === 1` branch, with or without the `!moonlight` suffix).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -265,6 +268,7 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'look-other-player-deck-top-claim-current',
   'reveal-villain-deck-defeat-low-vp-current',
   'give-card-to-right-player-current',
+  'villain-hunt-for-victims',
 ];
 
 // why: WP-836 / D-24769 — hand-synced local copy of the engine's HERO_CLASSES
@@ -279,8 +283,9 @@ const HERO_CLASSES = ['tech', 'covert', 'strength', 'ranged', 'instinct'];
 // marker suffix validates against this list (case-sensitive), so a mistyped condition in
 // the marker map is rejected, and a new engine condition breaks this script until it is
 // appended here too. `another-group-villain-in-city` appended by WP-837 (D-24770 — co2e
-// Scorpion's Ambush "If there is another Spider-Foes Villain in the city").
-const VILLAIN_EFFECT_CONDITIONS = ['savior', 'another-group-villain-in-city'];
+// Scorpion's Ambush "If there is another Spider-Foes Villain in the city"). `moonlight` appended by
+// WP-889 (D-24841 — mdns Blackout's Ambush "If it's Moonlight, Hunt for Victims again").
+const VILLAIN_EFFECT_CONDITIONS = ['savior', 'another-group-villain-in-city', 'moonlight'];
 
 // why: WP-489 / D-24295 — hand-synced local copy of the engine's CITY_SPACE_NAMES
 // (packages/game-engine/src/board/citySpaceNames.ts). Same no-import-from-packages

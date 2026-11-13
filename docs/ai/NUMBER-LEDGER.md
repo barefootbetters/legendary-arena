@@ -527,7 +527,7 @@ high-water: 422
 - WP-886 — hero-conqueror-keyword (the hero Conqueror keyword: "<City space> Conqueror N" gives +N Attack while any Villain is in that City space; amwp, anni, asrd. reserved 2026-11-11, claude/wp886-conqueror-reserve; LANDED 2026-11-11)
 - WP-888 — card-image-size-tiers (generate thumb/phone/large WebP tiers + per-set byte manifests from the R2 originals, and an R2 upload script; groundwork for mobile and airplane-mode offline. reserved 2026-11-12, claude/wp888-card-image-size-tiers-reserve; LANDED 2026-11-12)
 - WP-887 — bystander-lost-from-play-ko (a Bystander KO'd from play — captured by a Villain or the Mastermind, in the Escape Pile, or in the HQ — counts as bystanderLost; supply-stack and Victory-Pile KOs do not. reserved 2026-11-12, claude/bystander-lost-ko-reserve)
-- WP-889 — villain-ambush-hunt-for-victims (Lilin Ambush "Hunt for Victims" on Skinner, Meatmarket and Blackout (Outcast and Sister Nil deferred): the Villain Hunts for Victims, reusing the WP-884 helpers. reserved 2026-11-12, claude/wp889-villain-hunt-reserve)
+- WP-889 — villain-ambush-hunt-for-victims (Lilin Ambush "Hunt for Victims" on Skinner, Meatmarket and Blackout only; Outcast and Sister Nil deferred: the Villain Hunts for Victims, reusing the WP-884 helpers. reserved 2026-11-12, claude/wp889-villain-hunt-reserve; LANDED 2026-11-12)
 - WP-890 — local-match-spike (airplane-mode slice 0: LegendaryGame on an in-browser Local() master behind a build-time flag, fed by a recorded setup bundle, with record-and-replay; no production surface. reserved 2026-11-12, claude/wp890-local-match-spike-reserve)
 
 ## EC
@@ -1018,7 +1018,7 @@ high-water: 457
 - EC-924 — hero-conqueror-keyword (WP-886. reserved 2026-11-11, claude/wp886-conqueror-reserve; LANDED 2026-11-11)
 - EC-926 — card-image-size-tiers (WP-888. reserved 2026-11-12, claude/wp888-card-image-size-tiers-reserve; LANDED 2026-11-12)
 - EC-925 — bystander-lost-from-play-ko (WP-887. reserved 2026-11-12, claude/bystander-lost-ko-reserve)
-- EC-927 — villain-ambush-hunt-for-victims (WP-889. reserved 2026-11-12, claude/wp889-villain-hunt-reserve)
+- EC-927 — villain-ambush-hunt-for-victims (WP-889. reserved 2026-11-12, claude/wp889-villain-hunt-reserve; LANDED 2026-11-12)
 - EC-928 — local-match-spike (WP-890. reserved 2026-11-12, claude/wp890-local-match-spike-reserve)
 
 ## D
@@ -1638,7 +1638,7 @@ section below) and the allocation protocol in
 - D-24838 — java-not-primary-platform (operator decision, no WP; Java isn't LA's primary platform, from the studio Java cross-platform audit. reserved 2026-11-12, claude/java-not-primary-platform)
 - D-24840 — card-image-size-tiers (WP-888; tier URL = path rule off the existing image URL, tier set, manifest location. reserved 2026-11-12, claude/wp888-card-image-size-tiers-reserve; LANDED 2026-11-12)
 - D-24839 — bystander-lost-from-play-ko (WP-887; amends D-24339: which Bystander KOs count as lost, how they are recorded, and the scoringConfigVersion posture. reserved 2026-11-12, claude/bystander-lost-ko-reserve)
-- D-24841 — villain-ambush-hunt-for-victims (WP-889; a Villain's Ambush Hunt for Victims: who picks the Bystander, capture-by-this fallback, no decline. reserved 2026-11-12, claude/wp889-villain-hunt-reserve)
+- D-24841 — villain-ambush-hunt-for-victims (WP-889; a Villain's Ambush Hunt for Victims on Skinner, Meatmarket and Blackout: who picks the Bystander, capture-by-this fallback, no decline. reserved 2026-11-12, claude/wp889-villain-hunt-reserve; LANDED 2026-11-12)
 - D-24843 — vision-ai-posture-and-success-proxies (operator decision, no WP; VISION §19 draws the AI line at the live match, North Star gains success proxies, §17 accessibility is correctness. reserved 2026-11-12, claude/vision-ai-posture-reserve)
 - D-24842 — local-match-spike (WP-890; what the spike establishes about a single-seat match on a Local() master and a plain-data setup reader, and the build-time flag that keeps it out of production. reserved 2026-11-12, claude/wp890-local-match-spike-reserve)
 - D-24844 — airplane-mode-on-device-rules (operator decision, no WP; a single-seat solo match may run its rules on a Local() master on the device, saving only setup + seed + move log; overrides D-10008 for that case only. reserved 2026-11-12, claude/airplane-mode-decisions-reserve)

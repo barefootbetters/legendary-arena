@@ -739,7 +739,7 @@
           "imageUrl": "https://images.legendary-arena.com/mdns/mdns-vi-lilin-meatmarket.webp",
           "abilities": [
             "Meatmarket gets +1[icon:attack] for each Bystander in the KO pile.",
-            "Ambush: [keyword:Hunt for Victims]",
+            "Ambush: [keyword:Hunt for Victims] [effect:villain-hunt-for-victims]",
             "Fight: You may KO a card from your discard pile. [effect:ko-up-to-from-discard-current:1]"
           ],
           "copies": 2
@@ -776,7 +776,7 @@
           "imageUrl": "https://images.legendary-arena.com/mdns/mdns-vi-lilin-skinner.webp",
           "abilities": [
             "Skinner gets +2[icon:attack] if there are at least four Bystanders in the KO pile.",
-            "Ambush: [keyword:Hunt for Victims]",
+            "Ambush: [keyword:Hunt for Victims] [effect:villain-hunt-for-victims]",
             "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ],
           "copies": 2
@@ -789,7 +789,7 @@
           "imageUrl": "https://images.legendary-arena.com/mdns/mdns-vi-lilin-blackout.webp",
           "abilities": [
             "[keyword:Moonlight]: Blackout gets +1[icon:attack] for each Bystander in the KO pile.",
-            "Ambush: [keyword:Hunt for Victims]. If it's Moonlight, [keyword:Hunt for Victims] again.",
+            "Ambush: [keyword:Hunt for Victims]. If it's Moonlight, [keyword:Hunt for Victims] again. [effect:villain-hunt-for-victims] [effect:villain-hunt-for-victims!moonlight]",
             "Escape: (After the normal Escape KO) If it's Moonlight, each player gains a Wound."
           ],
           "copies": 1

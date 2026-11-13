@@ -2278,6 +2278,39 @@
       "date": "2026-11-12",
       "evidence": "",
       "note": "Live check (NEW operator match after the deploy): after another Instinct Hero, \"Gain a Wound?\" (Gain a Wound: Transform into Raging Savage). Gain -> a Wound, Mood Swings becomes Raging Savage in play (+3 Attack) with the Transformed! animation; decline -> no Wound, no Transform. D-24836."
+    },
+    {
+      "key": "mdns-villain-lilin-skinner|villain-hunt-for-victims",
+      "kind": "villain",
+      "card": "Skinner",
+      "ability": "Ambush: Hunt for Victims",
+      "wp": "WP-889",
+      "state": "pending",
+      "date": "2026-11-12",
+      "evidence": "",
+      "note": "Live check (NEW match created after the deploy with mdns/lilin; Villain deck -> \"Move villain card to top\", then reveal): (a) one holder (a Bystander on the Mastermind or in the Escape Pile) is KO'd with no prompt; (b) two holders open \"Hunt for Victims: choose which Bystander is KO'd\" with no decline, and a click KOs that holder's Bystander; (c) no holder: the Villain captures one. Blackout under Moonlight (HQ staged to odd costs) hunts twice. D-24841."
+    },
+    {
+      "key": "mdns-villain-lilin-meatmarket|villain-hunt-for-victims",
+      "kind": "villain",
+      "card": "Meatmarket",
+      "ability": "Ambush: Hunt for Victims",
+      "wp": "WP-889",
+      "state": "pending",
+      "date": "2026-11-12",
+      "evidence": "",
+      "note": "Live check (NEW match created after the deploy with mdns/lilin; Villain deck -> \"Move villain card to top\", then reveal): (a) one holder (a Bystander on the Mastermind or in the Escape Pile) is KO'd with no prompt; (b) two holders open \"Hunt for Victims: choose which Bystander is KO'd\" with no decline, and a click KOs that holder's Bystander; (c) no holder: the Villain captures one. Blackout under Moonlight (HQ staged to odd costs) hunts twice. D-24841."
+    },
+    {
+      "key": "mdns-villain-lilin-blackout|villain-hunt-for-victims",
+      "kind": "villain",
+      "card": "Blackout",
+      "ability": "Ambush: Hunt for Victims. If it's Moonlight, Hunt for Victims again.",
+      "wp": "WP-889",
+      "state": "pending",
+      "date": "2026-11-12",
+      "evidence": "",
+      "note": "Live check (NEW match created after the deploy with mdns/lilin; Villain deck -> \"Move villain card to top\", then reveal): (a) one holder (a Bystander on the Mastermind or in the Escape Pile) is KO'd with no prompt; (b) two holders open \"Hunt for Victims: choose which Bystander is KO'd\" with no decline, and a click KOs that holder's Bystander; (c) no holder: the Villain captures one. Blackout under Moonlight (HQ staged to odd costs) hunts twice. D-24841."
     }
   ]
 }
