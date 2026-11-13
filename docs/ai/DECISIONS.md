@@ -51381,7 +51381,7 @@ Protect this file.
 
 **Execution (2026-11-13).** New `lib/cardImageTiers.ts` (+ test, 13 cases) and `components/CardFaceImage.vue`; `CardGrid.vue` and `CardDetail.vue` swapped. registry-viewer 341 → 354 / 0; typecheck 0; lint 0 errors / 533 warnings (unchanged); build 0; AC2 exactly 3. Docs: `wiki/r2-image-naming-convention.md`, `wiki/card-image-acquisition.md`, `docs/03.1-DATA-SOURCES.md` §Card Images, `apps/registry-viewer/CLAUDE.md`.
 
-**Live-verify (D-24026): pending deploy.** Not exercisable live in a 1x pane by design: the 2x candidates (`phone` on the `small` rung, `large` on the `large` rung) and the tier → original fallback (every published tier exists); both are covered by the pure-function tests.
+**Live-verify (D-24026): PASS 2026-11-13** at deploy `075538f`, `devicePixelRatio` 1, `co2e` filter, slider reset to 130, log read before the lightbox: 42 grid faces all `/co2e/thumb/`, no `phone` / `large` / top-level original; slider 200 → 30 new requests all `/co2e/phone/`; the panel from `/co2e/phone/`; the lightbox the original (2500 px); no tile dimmed (URLs in STATUS.md, WP-892 entry). Not exercised live: the 2x candidates (`phone` on the `small` rung, `large` on the `large` rung; the pane is 1x) and the tier → original fallback (every published tier loaded); both are covered by the pure-function tests.
 
 **Reserved by:** NUMBER-LEDGER D-24849 (#3332). Related: D-24840 (tier path rule), D-24848 (arena client tiers), D-12101 (slider range), D-24026.
 
