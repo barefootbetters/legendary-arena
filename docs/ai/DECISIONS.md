@@ -51351,7 +51351,7 @@ Protect this file.
 
 **Execution (2026-11-12).** New `lib/cardImageTiers.ts` (+ test, 8 cases) and `components/play/CardImage.vue` (+ test, 7 cases); 27 play SFCs swapped; `VfxOverlay.vue` and `useCardImagePrefetch.ts` moved to `cardImageSources`. Intentional expected-URL changes: `HQRow.test.ts`, `SharedDecks.test.ts`, `useCardImagePrefetch.test.ts` (its failed-warm case rewritten for the original fallback; one untiered-failure case added); `CardTile.test.ts` and `VfxOverlay.test.ts` gain one tier case each. arena-client 2620 → 2638 / 0; typecheck 0; build 0. Docs: `wiki/card-image-acquisition.md`, `wiki/r2-image-naming-convention.md`, `wiki/airplane-mode.md`, `docs/03.1-DATA-SOURCES.md` §Card Images.
 
-**Live-verify (D-24026): pending** until `play.legendary-arena.com` deploys the merge (WP-891 AC5: the network log shows `/<set>/thumb/` or `/<set>/phone/` card faces, no top-level original for a tiered card, no name tile).
+**Live-verify (D-24026): PASS 2026-11-13** at deploy `05e5ef9`, `devicePixelRatio` 1: 31 card-face requests, all `/<set>/thumb/`, no top-level original, no name tile; the Battle Brief renders from the tiers (evidence in STATUS.md, WP-891 entry). The 2x `phone` candidate and a prompt thumbnail were not observed live.
 
 **Reserved by:** NUMBER-LEDGER D-24848 (#3326). Related: D-24840 (tier path rule), D-24222 (WP-410 prefetch), D-24502 (fit-scale), D-24026.
 
