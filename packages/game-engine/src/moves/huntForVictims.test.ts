@@ -31,6 +31,7 @@ import {
 import { BYSTANDER_EXT_ID, SHIELD_AGENT_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { OWNED_CARD_KOED_CONDITION_TYPE } from '../hero/heroConditions.evaluate.js';
 import type { LegendaryGameState, MatchConfiguration } from '../types.js';
+import { BYSTANDERS_KOED_FROM_PLAY } from '../types.js';
 import type { HeroAbilityHook } from '../rules/heroAbility.types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import {
@@ -618,5 +619,97 @@ describe('Hunt for Victims bots, timeout and serialization (D-24745 / D-24501)',
     const choice = G.pendingSeatChoice;
     assert.equal(choice?.huntForVictims?.isRescueAllowed, true);
     assert.deepEqual(JSON.parse(JSON.stringify(choice)), choice);
+  });
+});
+
+/**
+ * Whether the KO'd-from-play counter has been written at all (it is lazily written, never seeded).
+ *
+ * @param G - The game state.
+ * @returns true when G.counters holds the key.
+ */
+function hasKoedFromPlayCounter(G: LegendaryGameState): boolean {
+  return Object.hasOwn(G.counters, BYSTANDERS_KOED_FROM_PLAY);
+}
+
+describe('Hunt for Victims KO records a Bystander lost from play (WP-887 / D-24839)', () => {
+  it('a KO from a City Villain\'s captives records 1', () => {
+    const G = makeState();
+    G.city[1] = NINJAS_A;
+    G.attachedBystanders = { [NINJAS_A]: [BYSTANDER_A] };
+    playCard(G, STALK);
+    choose(G, indexOf(G, 'KO a Bystander held by Hand Ninjas (Bank)'));
+    assert.deepEqual(G.ko, [BYSTANDER_A]);
+    assert.strictEqual(G.counters[BYSTANDERS_KOED_FROM_PLAY], 1);
+  });
+
+  it('a KO from the Mastermind\'s captives records 1', () => {
+    const G = makeState();
+    G.mastermind.attachedBystanders = [BYSTANDER_C];
+    playCard(G, STALK);
+    choose(G, indexOf(G, 'KO a Bystander held by Zarathos'));
+    assert.deepEqual(G.ko, [BYSTANDER_C]);
+    assert.strictEqual(G.counters[BYSTANDERS_KOED_FROM_PLAY], 1);
+  });
+
+  it('a KO from the Escape Pile records 1 while the escaped count drops by 1 (nets to zero)', () => {
+    const G = makeState();
+    G.escapedPile = [BYSTANDER_EXT_ID, ESCAPED_VILLAIN, BYSTANDER_EXT_ID];
+    playCard(G, STALK);
+    choose(G, indexOf(G, 'KO a Bystander from the Escape Pile'));
+    assert.equal(escapedBystanders(G), 1);
+    assert.strictEqual(G.counters[BYSTANDERS_KOED_FROM_PLAY], 1);
+    assert.equal(escapedBystanders(G) + G.counters[BYSTANDERS_KOED_FROM_PLAY]!, 2, 'two lost before, two lost after');
+  });
+
+  it('two hunt KOs record 2', () => {
+    const G = makeState();
+    G.city[1] = NINJAS_A;
+    G.attachedBystanders = { [NINJAS_A]: [BYSTANDER_A] };
+    G.escapedPile = [BYSTANDER_EXT_ID];
+    playCard(G, STALK);
+    choose(G, indexOf(G, 'KO a Bystander held by Hand Ninjas (Bank)'));
+    assert.equal(G.pendingSeatChoice, undefined, 'an empty hand and discard open no Hero pick');
+    playCard(G, STALK);
+    choose(G, indexOf(G, 'KO a Bystander from the Escape Pile'));
+    assert.strictEqual(G.counters[BYSTANDERS_KOED_FROM_PLAY], 2);
+  });
+
+  it('a Tech rescue records nothing: a rescue is not a KO', () => {
+    const G = makeState();
+    G.escapedPile = [BYSTANDER_EXT_ID];
+    playCard(G, TECH_HERO);
+    playCard(G, STALK);
+    choose(G, indexOf(G, 'Rescue a Bystander from the Escape Pile'));
+    assert.deepEqual(G.playerZones['0']!.victory, [BYSTANDER_EXT_ID]);
+    assert.equal(hasKoedFromPlayCounter(G), false);
+  });
+
+  it('a capture records nothing', () => {
+    const G = makeState();
+    G.city[0] = NINJAS_A;
+    playCard(G, STALK);
+    choose(G, indexOf(G, 'Hand Ninjas (Sewers) captures a Bystander'));
+    assert.deepEqual(G.attachedBystanders[NINJAS_A], [BYSTANDER_A]);
+    assert.equal(hasKoedFromPlayCounter(G), false);
+  });
+
+  it('a decline records nothing', () => {
+    const G = makeState();
+    G.escapedPile = [BYSTANDER_EXT_ID];
+    playCard(G, STALK);
+    choose(G, indexOf(G, DECLINE_HUNT));
+    assert.equal(hasKoedFromPlayCounter(G), false);
+  });
+
+  it('a stale option (the holder lost its Bystander) records nothing', () => {
+    const G = makeState();
+    G.city[1] = NINJAS_A;
+    G.attachedBystanders = { [NINJAS_A]: [BYSTANDER_A] };
+    playCard(G, STALK);
+    G.attachedBystanders = {};
+    choose(G, 0);
+    assert.deepEqual(G.ko, []);
+    assert.equal(hasKoedFromPlayCounter(G), false);
   });
 });

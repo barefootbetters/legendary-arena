@@ -149,6 +149,15 @@ export const TRAITOR_BATTALION_TWISTS = 'traitorBattalionTwists';
 /** G.counters key for Portals' Dark Portal count (drives the Dark-Portal attack buffs). */
 export const DARK_PORTAL_COUNT = 'darkPortalCount';
 
+// why: WP-887 / D-24839 — a lazily written plain counter of Bystanders KO'd from play (a
+// City Villain's or the Mastermind's captives, the Escape Pile, the HQ). Never seeded: it
+// exists only once recordBystanderKoedFromPlay first writes it, and absent means zero, so a
+// match with no such KO hashes byte-identically. PAR's bystanderLost adds it to the
+// Bystanders in G.escapedPile; end state alone cannot tell a from-play KO from a supply or
+// Victory-Pile KO.
+/** G.counters key for the Bystanders KO'd from play (added to PAR's bystanderLost). */
+export const BYSTANDERS_KOED_FROM_PLAY = 'bystandersKoedFromPlay';
+
 // why: City and HQ zone types are defined canonically in
 // src/board/city.types.ts (WP-015). Re-exported here so that consumers
 // importing from './types.js' have access.

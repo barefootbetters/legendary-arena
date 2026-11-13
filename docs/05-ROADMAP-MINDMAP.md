@@ -123,7 +123,7 @@ mindmap
         ["WP-368 ✅ Final-turn warning banner (arena client; the client follow-on to WP-367 — surfaces the declared final turn in the match UI so a player is told the shared deck ran out and this is the last turn, rather than discovering it at the tie. Reads the UIState projection WP-367 added; no engine change. New pure prop-driven FinalTurnBanner.vue mounted in ArenaHud.vue, role=alert aria-live=assertive, v-if on the projected field; EC-687 / D-24162; done 2026-09-06)"]
         ["WP-654 ✅ Final-turn banner live play-surface mount (arena client; corrects the WP-368 surface miss — the banner was mounted only in ArenaHud.vue which the app renders only on the dev ?fixture= route, so a real match rendering PlayViewport→PlayDesktop/PlayMobile never showed it. Mounts FinalTurnBanner once at the PlayViewport shared root reading the store snapshot covering both surfaces, positioned by a scoped class on the child root so the pure component is unchanged; adds a committed final-turn UIState fixture so ?fixture=final-turn&play=1 renders it through the live path. EC-691 / D-24465; done 2026-09-06)"]
         ["WP-655 ✅ Final-turn projection audience-filter pass-through (game engine; the root-cause fix behind WP-368/WP-654 — the banner never showed in a real match because UIState.finalTurn was populated in buildUIState WP-367 but never passed through filterUIStateForAudience, the field-by-field whitelist, so it was silently dropped at the audience boundary and never reached any client the D-12803 Board-Visible Field Rule failure mode. Adds the finalTurn pass-through as a public top-level field plus audience-filter tests; projection-only no finalStateHash re-pin, no client change. EC-692 / D-24466; done 2026-09-06)"]
-        ["WP-887 📝 A Bystander KOd from play counts as lost, PAR bystanderLost adds Bystanders KOd from a Villain or Mastermind, the Escape Pile or the HQ through a bystandersKoedFromPlay counter so an Escape Pile KO no longer improves the score, supply and Victory Pile KOs do not count, no version bump game engine plus one legend line D-24839"]
+        ["WP-887 ✅ A Bystander KOd from play counts as lost, PAR bystanderLost adds Bystanders KOd from a Villain or Mastermind, the Escape Pile or the HQ through a bystandersKoedFromPlay counter so an Escape Pile KO no longer improves the score, supply and Victory Pile KOs do not count, no version bump game engine plus one legend line DONE 2026-11-13 EC-925 D-24839 Active, live check operator-pending"]
 
       Beta-Launch Pillar
         ["WP-052 ✅ Player identity and replay ownership"]
@@ -1045,7 +1045,7 @@ mindmap
 | Pre-Planning System | 5/5 | — |
 | Post-Phase-6 Hygiene | 5/5 | — |
 | Phase 7 — Beta, Launch & PAR | 6/6 | — |
-| Scoring & PAR Pipeline | 9/10 | 1 open |
+| Scoring & PAR Pipeline | 10/10 | — |
 | Beta-Launch Pillar | 5/5 | — |
 | Engine Hardening | 2/2 | — |
 | Client Integration Cluster | 21/21 | — |
@@ -1083,9 +1083,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 4/4 | — |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **865/890 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 24 open |
+| **Total** | **866/890 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 23 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 25):** WP-893 open; WP-887 open; WP-874 open; WP-849 open; WP-840 open; WP-839 open; WP-838 open; WP-822 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-745 open; WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 24):** WP-893 open; WP-874 open; WP-849 open; WP-840 open; WP-839 open; WP-838 open; WP-822 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-745 open; WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

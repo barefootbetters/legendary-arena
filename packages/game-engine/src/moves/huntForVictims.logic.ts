@@ -39,7 +39,7 @@ import type { CardExtId } from '../state/zones.types.js';
 import { moveCardFromZone } from './zoneOps.js';
 import { parkSeatChoice } from './seatChoice.resolve.js';
 import { buildHereHoldThisTargets } from './seatChoiceCards.js';
-import { attachBystanderToVillain } from '../board/bystanders.logic.js';
+import { attachBystanderToVillain, recordBystanderKoedFromPlay } from '../board/bystanders.logic.js';
 import { citySpaceNameForIndex } from '../board/citySpaceNames.js';
 import { koCard } from '../board/ko.logic.js';
 import { isBystanderCard } from '../scoring/scoring.logic.js';
@@ -509,10 +509,13 @@ export function applyHuntForVictimsResolvedSeatChoice(G: LegendaryGameState, cho
     pushLog(G, `Player ${seat}'s ${cardRef} Hunted for Victims: ${bystanderPhrase} was rescued instead of KO'd.`, 'applied');
     return;
   }
-  // why: one Bystander KO site per apply. KOing an escaped Bystander removes it from G.escapedPile,
-  // which lowers PAR's derived bystanderLost and Midtown Bank Robbery's carried-away count, as the
-  // printed card allows (the Fortify Escape-Pile removal precedent); no scoring weight changes.
+  // why: one Bystander KO site per apply, a from-play KO (City or Mastermind captive, or the
+  // Escape Pile), so it is recorded as a lost civilian (WP-887 / D-24839). KOing an escaped
+  // Bystander moves it from G.escapedPile to the KO-from-play count, so PAR's bystanderLost nets
+  // to zero; Midtown Bank Robbery's carried-away count still drops by one, as the printed card
+  // allows (the Fortify Escape-Pile removal precedent). No scoring weight changes.
   G.ko = koCard(G.ko, bystanderId);
+  recordBystanderKoedFromPlay(G);
   pushLog(G, `Player ${seat}'s ${cardRef} Hunted for Victims: ${bystanderPhrase} was KO'd.`, 'applied');
 }
 
@@ -636,10 +639,12 @@ export function koVillainHuntedBystander(G: LegendaryGameState, cardId: CardExtI
     return false;
   }
   // why: WP-889 / D-24841 — the one villain-hunt KO site, routed exactly as the hero hunt's KO
-  // (applyHuntForVictimsResolvedSeatChoice). A from-play Bystander KO site for D-24839 (WP-887).
-  // KOing an escaped Bystander lowers PAR's derived bystanderLost and Midtown Bank Robbery's
-  // carried-away count, as the printed card allows; no scoring weight changes.
+  // (applyHuntForVictimsResolvedSeatChoice). A from-play Bystander KO, so it is recorded as a
+  // lost civilian (WP-887 / D-24839). KOing an escaped Bystander moves it from G.escapedPile to the
+  // KO-from-play count, so PAR's bystanderLost nets to zero; Midtown Bank Robbery's carried-away
+  // count still drops by one, as the printed card allows. No scoring weight changes.
   G.ko = koCard(G.ko, bystanderId);
+  recordBystanderKoedFromPlay(G);
   pushLog(G, `${formatCardRef(G.cardDisplayData, cardId)} Hunted for Victims: ${bystanderPhrase} was KO'd.`, 'applied', cardId);
   return true;
 }

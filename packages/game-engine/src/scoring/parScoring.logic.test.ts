@@ -33,6 +33,7 @@ import {
   type ScoringInputs,
 } from './parScoring.types.js';
 import type { LegendaryGameState } from '../types.js';
+import { BYSTANDERS_KOED_FROM_PLAY } from '../types.js';
 import type { ReplayResult } from '../replay/replay.types.js';
 import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 
@@ -656,6 +657,76 @@ describe('deriveScoringInputs bystanderLost producer (WP-528 / D-24339)', () => 
     const breakdown = buildScoreBreakdown(inputs, config);
     assert.equal(breakdown.penaltyBreakdown.bystanderLost, 2 * 500);
     assert.equal(breakdown.weightedPenaltyTotal, 1000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-887 / D-24839 — bystanderLost adds the Bystanders KO'd from play
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a terminal state with `escapedBystanderCount` supply Bystanders in the escaped pile
+ * (plus one escaped Villain, never counted) and, when given, the KO'd-from-play counter.
+ *
+ * @param escapedBystanderCount - Bystanders carried away into G.escapedPile.
+ * @param koedFromPlay - The counter value, or undefined to leave the key absent.
+ * @returns A minimal terminal LegendaryGameState.
+ */
+function makeTerminalStateWithLostBystanders(
+  escapedBystanderCount: number,
+  koedFromPlay: number | undefined,
+): LegendaryGameState {
+  const escapedPile: string[] = ['vil-1'];
+  for (let index = 0; index < escapedBystanderCount; index++) {
+    escapedPile.push(BYSTANDER_EXT_ID);
+  }
+  const counters: Record<string, number> = {};
+  if (koedFromPlay !== undefined) {
+    counters[BYSTANDERS_KOED_FROM_PLAY] = koedFromPlay;
+  }
+  return {
+    playerZones: {},
+    mastermind: { baseCardId: 'test-mastermind', tacticsDefeated: [] },
+    villainDeckCardTypes: { 'vil-1': 'villain' },
+    cardVictoryPoints: {},
+    escapedPile,
+    counters,
+  } as unknown as LegendaryGameState;
+}
+
+describe('deriveScoringInputs bystanderLost adds KO\'d-from-play Bystanders (WP-887 / D-24839)', () => {
+  it('escaped only: the escaped-pile count, unchanged by an absent counter', () => {
+    const inputs = deriveScoringInputs(makeReplayResult(10), makeTerminalStateWithLostBystanders(2, undefined));
+    assert.equal(inputs.penaltyEventCounts.bystanderLost, 2);
+  });
+
+  it('counter only: the KO\'d-from-play count', () => {
+    const inputs = deriveScoringInputs(makeReplayResult(10), makeTerminalStateWithLostBystanders(0, 3));
+    assert.equal(inputs.penaltyEventCounts.bystanderLost, 3);
+  });
+
+  it('both buckets are summed', () => {
+    const inputs = deriveScoringInputs(makeReplayResult(10), makeTerminalStateWithLostBystanders(2, 3));
+    assert.equal(inputs.penaltyEventCounts.bystanderLost, 5);
+    // why: control-revert — dropping the counter term in deriveScoringInputs gives 2 here.
+    assert.notEqual(inputs.penaltyEventCounts.bystanderLost, 2);
+  });
+
+  it('the sum flows through buildScoreBreakdown into penaltyBreakdown.bystanderLost', () => {
+    // why: REFERENCE_PENALTY_WEIGHTS.bystanderLost === 500 and the state carries no other
+    // penalty, reward, round or VP: 1 escaped + 2 KO'd from play = 3 x 500.
+    const config = makeReferenceConfig();
+    const inputs = deriveScoringInputs(makeReplayResult(10), makeTerminalStateWithLostBystanders(1, 2));
+    const breakdown = buildScoreBreakdown(inputs, config);
+    assert.equal(breakdown.penaltyBreakdown.bystanderLost, 3 * 500);
+  });
+
+  it('an Escape-Pile KO (escaped pile -1, counter +1) scores the same as no KO', () => {
+    const config = makeReferenceConfig();
+    const beforeKo = deriveScoringInputs(makeReplayResult(10), makeTerminalStateWithLostBystanders(2, undefined));
+    const afterKo = deriveScoringInputs(makeReplayResult(10), makeTerminalStateWithLostBystanders(1, 1));
+    assert.equal(afterKo.penaltyEventCounts.bystanderLost, beforeKo.penaltyEventCounts.bystanderLost);
+    assert.equal(computeRawScore(afterKo, config), computeRawScore(beforeKo, config));
   });
 });
 
