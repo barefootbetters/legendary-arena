@@ -1285,8 +1285,7 @@ exports.MarvelStudios = {
                             { bold: "Special Rules" },
                             ": Heroes in the Villain Deck count as “Enslaved“ Villains with ",
                             { icon: 1 },
-                            " equal to the Hero's ",
-                            { icon: 3 },
+                            " equal to the Hero's cost ",
                             { bold: "+2" },
                             ". If you defeat that Hero, you gain it."
                         ],
