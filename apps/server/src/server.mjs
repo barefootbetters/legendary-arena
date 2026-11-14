@@ -30,6 +30,7 @@ import { resolveEffectiveHeroCount } from '@legendary-arena/registry/playerCount
 import { buildScenarioKey } from '@legendary-arena/game-engine';
 import { loadRules, getRules } from './rules/loader.mjs';
 import { createParGate } from './par/parGate.mjs';
+import { resolveParVersion } from './par/parVersion.mjs';
 import { createPool } from './db/database.js';
 import { registerDatabaseHealthRoute } from './db/databaseHealth.routes.js';
 import { createBgioPgStore } from './db/bgioPgStore.js';
@@ -568,12 +569,13 @@ export async function startServer() {
   // Non-blocking: createParGate handles all failure modes internally
   // (warn-log + continue with partial or empty coverage per D-5101 graceful
   // degradation; server never crashes on PAR-load failure). PAR_VERSION env
-  // var is read per D-5102; the ?? 'v1' fallback matches the PORT ?? '8000'
-  // pattern below.
+  // var is read per D-5102 through resolveParVersion, which treats a blank
+  // value as unset: `?? 'v1'` kept the empty string from a blank
+  // `PAR_VERSION=` env line and left the gate empty in production.
   const [registry, , parGate] = await Promise.all([
     loadRegistry(),
     loadRules(),
-    createParGate('data/par', process.env.PAR_VERSION ?? 'v1'),
+    createParGate('data/par', resolveParVersion(process.env.PAR_VERSION)),
   ]);
 
   // why: D-10014 — engine's setRegistryForSetup() must be called
