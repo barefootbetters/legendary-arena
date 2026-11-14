@@ -60,7 +60,15 @@ type LocalClientCtor = (args: {
   matchID: string;
   playerID: string;
 }) => LocalBgioClient;
-type LocalTransportCtor = () => unknown;
+/** The options a boardgame.io client hands its `multiplayer` factory. */
+export interface LocalTransportOptions {
+  gameKey: unknown;
+  [option: string]: unknown;
+}
+/** A boardgame.io `multiplayer` factory: transport options in, a transport out. */
+export type LocalTransportFactory = (transportOptions: LocalTransportOptions) => unknown;
+/** boardgame.io's `Local(options)`, which returns a `multiplayer` factory. */
+export type LocalTransportCtor = (options?: { storageKey?: string }) => LocalTransportFactory;
 
 const bgioClientNs = boardgameioClient as unknown as {
   Client?: LocalClientCtor;
@@ -87,6 +95,41 @@ function resolveBoardgameio(): { Client: LocalClientCtor; Local: LocalTransportC
     );
   }
   return { Client: client, Local: local };
+}
+
+/**
+ * The one key every local client on the page hands boardgame.io's `Local()`
+ * master map. An object, because the map compares keys by identity.
+ */
+const SHARED_LOCAL_MASTER_KEY: object = Object.freeze({});
+
+/** Counts local clients, so each gets its own `storageKey`. */
+let localMasterGeneration = 0;
+
+/**
+ * Builds the `multiplayer` factory for one local client.
+ *
+ * boardgame.io 0.50 keeps every `Local()` master in a module-level map keyed by
+ * the client's game object, and never prunes it. Each match needs a fresh game
+ * object (the seed lives on it), so each New game used to add a master that kept
+ * the old match's state, log and client alive for the page's lifetime
+ * (D-24851 follow-up (b)). Here every client uses one shared key and its own
+ * `storageKey`: `Local()` reuses a master only when the key AND the storageKey
+ * match, so each client still gets a fresh master, and the map entry for the
+ * shared key is overwritten, leaving the previous master unreachable once its
+ * client has stopped. `storageKey` only names a store when `persist` is on, which
+ * it never is here.
+ *
+ * @param Local - boardgame.io's `Local`.
+ * @returns The factory to pass as the client's `multiplayer`.
+ */
+export function createLocalMultiplayer(Local: LocalTransportCtor): LocalTransportFactory {
+  localMasterGeneration += 1;
+  const transportFactory = Local({ storageKey: 'la-local-master-' + String(localMasterGeneration) });
+  // why: boardgame.io's `multiplayer` option is itself a factory it calls with
+  // the transport options, so a wrapper function is the framework's shape.
+  return (transportOptions: LocalTransportOptions): unknown =>
+    transportFactory({ ...transportOptions, gameKey: SHARED_LOCAL_MASTER_KEY });
 }
 
 /** One recorded move: the rest array passed to `submitMove(name, ...args)`. */
@@ -148,8 +191,9 @@ export function createLocalSpikeGame(options: {
   // closes over the configuration, and `validateSetupData` is replaced. It is
   // replaced only because createLocalSpikeClient has already run
   // validateMatchSetup on this configuration and thrown on failure.
-  // why: a fresh object per client, because Local() keys its master by the
-  // game object; a reused object would reuse a finished match (WP §Assumes 7).
+  // why: a fresh object per client, because the seed and configuration live on
+  // it. A fresh master per client comes from createLocalMultiplayer's unique
+  // storageKey; reusing a master would reuse a finished match (WP §Assumes 7).
   return {
     ...LegendaryGame,
     seed: options.seed,
@@ -207,7 +251,7 @@ export function createLocalSpikeClient(options: CreateLocalSpikeClientOptions): 
   const client = Client({
     game: createLocalSpikeGame({ matchConfiguration: options.matchConfiguration, seed: options.seed }),
     numPlayers: 1,
-    multiplayer: Local(),
+    multiplayer: createLocalMultiplayer(Local),
     matchID: LOCAL_SPIKE_MATCH_ID,
     playerID: LOCAL_SPIKE_PLAYER_ID,
   });
