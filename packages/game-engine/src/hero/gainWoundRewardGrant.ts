@@ -7,9 +7,10 @@
  * Diving Block, a Flying Shield Block entry no candidate revealed for, and a Flying Shield Block
  * entry dropped because no copy is left to reveal.
  *
- * Four rewards: +N Attack (co2e Hulk Smash!, mdns Scalded by Sunlight), Berserk N times (wpnx
- * Violent Conditioning), KO up to N other cards from hand / discard (msis Hulk Gets Smashed) and
- * Transform (wwhk Mood Swings). The phrasing helper here names a non-Attack reward for the prompt
+ * Five rewards: +N Attack (co2e Hulk Smash!, mdns Scalded by Sunlight), Berserk N times (wpnx
+ * Violent Conditioning), KO up to N other cards from hand / discard (msis Hulk Gets Smashed),
+ * Transform (wwhk Mood Swings) and Rooftops Conqueror N (anni Super-Skrull's Put to the Torch,
+ * WP-893 / D-24850). The phrasing helper here names a non-Attack reward for the prompt
  * labels and the log, so Diving Block and Flying Shield Block keep their single import of this
  * module.
  *
@@ -36,6 +37,15 @@ import { HERO_COMPOSITION_MARKERS } from '../rules/heroCompositions.js';
 import { applyHeroTransform, resolveTransformCardName } from './heroTransform.logic.js';
 // why: WP-885 / D-24836 — setup/pilesInit imports only setup/shuffle, so the Wound id adds no cycle.
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+// why: WP-893 / D-24850 — the hero condition evaluator's runtime imports (heroAbility.types,
+// sizeChanging / effectiveTeams logic, setup/pilesInit, dayNight, the log display helpers, the
+// City space names) reach none of heroEffects.execute.ts, divingBlock.logic.ts,
+// flyingShieldBlock.logic.ts or seatChoice.resolve.ts, so this leaf stays a leaf (no cycle edge).
+import {
+  CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE,
+  describeFailedCondition,
+  evaluateCondition,
+} from './heroConditions.evaluate.js';
 
 /** A non-Attack reward named for a prompt option (second person) and a log line (third person). */
 export interface GainWoundRewardPhrases {
@@ -81,6 +91,14 @@ export function describeGainWoundRewardPhrases(
     case 'transform': {
       const transformPhrase = `Transform into ${describeTransformSecondForm(reward.sourceCardId, G)}`;
       return { labelPhrase: transformPhrase, logPhrase: transformPhrase };
+    }
+    case 'rooftops-conqueror': {
+      // why: WP-893 / D-24850 — the printed keyword, read from no G; the grant's C1 / C2 lines
+      // spell out the +N and why.
+      return {
+        labelPhrase: `you get Rooftops Conqueror ${reward.magnitude}`,
+        logPhrase: `get Rooftops Conqueror ${reward.magnitude}`,
+      };
     }
   }
 }
@@ -171,7 +189,57 @@ export function grantGainWoundReward(
       applyHeroTransform(G, recipientID, reward.sourceCardId);
       return;
     }
+    case 'rooftops-conqueror': {
+      grantRooftopsConquerorReward(G, recipientID, reward, cardRef);
+      return;
+    }
+    default: {
+      // why: WP-893 / D-24850 — exhaustiveness guard: a new rewardType member without a grant arm
+      // fails to compile here instead of logging N4 / N7 and silently granting nothing.
+      const unhandledReward: never = reward.rewardType;
+      return;
+    }
   }
+}
+
+/**
+ * Grants Rooftops Conqueror N: +N Attack if a Villain is in the Rooftops, else nothing, and logs
+ * which (C1 / C2). The Wound is kept either way: "If you do" is satisfied by the Wound, and the
+ * Conqueror bonus is a separate check.
+ *
+ * // why: WP-893 / D-24850 — the condition is read here, at grant time. From the prompt through
+ * every Diving Block / Flying Shield Block wave the board is frozen (a pending seat choice blocks
+ * every other move, and the interception waves never write G.city), so this equals a play-time
+ * read. Reading through evaluateCondition means the Firelord destroyed-space follow-up, when it
+ * extends the Conqueror case, applies here unchanged.
+ *
+ * @param G - Game state (mutated: G.turnEconomy and the log).
+ * @param recipientID - The player who kept the Wound (the active player).
+ * @param reward - The 'rooftops-conqueror' reward.
+ * @param cardRef - The source card's log reference.
+ */
+function grantRooftopsConquerorReward(
+  G: LegendaryGameState,
+  recipientID: string,
+  reward: GainWoundReward,
+  cardRef: string,
+): void {
+  // why: a fresh condition literal each call, never shared or stored on G.
+  const condition = { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'rooftops' };
+  if (evaluateCondition(G, recipientID, condition)) {
+    G.turnEconomy = addResources(G.turnEconomy, reward.magnitude, 0);
+    pushLog(G,
+      `Player ${recipientID} got +${reward.magnitude} Attack — a Villain is in the Rooftops (${cardRef}).`,
+      'applied',
+      reward.sourceCardId,
+    );
+    return;
+  }
+  pushLog(G,
+    `Player ${recipientID} got no Attack — ${describeFailedCondition(G, recipientID, condition)} (${cardRef}).`,
+    'blocked',
+    reward.sourceCardId,
+  );
 }
 
 /**

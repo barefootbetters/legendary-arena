@@ -1883,6 +1883,12 @@
   ],
   "anni": [
     {
+      "heroSlug": "super-skrull",
+      "cardSlug": "put-to-the-torch",
+      "abilityIndex": 2,
+      "markupToken": "[keyword:gain-wound-reward:rooftops-conqueror:4]"
+    },
+    {
       "heroSlug": "brainstorm",
       "cardSlug": "time-loop-experiments",
       "abilityIndex": 0,
