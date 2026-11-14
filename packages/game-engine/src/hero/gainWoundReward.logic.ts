@@ -55,6 +55,12 @@ export const GAIN_WOUND_REWARD_SEEDED_COMPOSITIONS: ReadonlySet<string> = new Se
   'berserk',
 ]);
 
+// why: WP-893 / D-24850 — the seeded Conqueror-bonus rewards (descriptor rewardComposition): Put
+// to the Torch's "you get Rooftops Conqueror 4". Not a HeroKeyword; the City space lives in the
+// member. Mirrors the same constant in setup/heroAbility.setup.ts (two copies, per
+// duplicate-first).
+export const GAIN_WOUND_REWARD_SEEDED_CONQUEROR_REWARDS: ReadonlySet<string> = new Set<string>(['rooftops-conqueror']);
+
 /**
  * Builds the active-player gain / don't prompt.
  *
@@ -241,7 +247,8 @@ function holdRewardOnPendingInterception(
  *
  * // why: WP-885 / D-24836 — the narrowing is checked, never cast: the keyword path needs
  * seeded-set membership AND a switch case; the composition path needs seeded-set membership AND
- * `=== 'berserk'`. rewardType wins when both are present (the parser never emits both).
+ * `=== 'berserk'` (or, WP-893 / D-24850, the Conqueror set AND `=== 'rooftops-conqueror'`).
+ * rewardType wins when both are present (the parser never emits both).
  *
  * @param rewardType - The descriptor's rewardType.
  * @param rewardComposition - The descriptor's rewardComposition.
@@ -268,11 +275,16 @@ export function buildGainWoundReward(
         return undefined;
     }
   }
-  if (rewardComposition === undefined || !GAIN_WOUND_REWARD_SEEDED_COMPOSITIONS.has(rewardComposition)) {
+  if (rewardComposition === undefined) {
     return undefined;
   }
-  if (rewardComposition === 'berserk') {
+  if (GAIN_WOUND_REWARD_SEEDED_COMPOSITIONS.has(rewardComposition) && rewardComposition === 'berserk') {
     return { rewardType: 'berserk', magnitude, sourceCardId };
+  }
+  // why: WP-893 / D-24850 — the Conqueror bonus travels in rewardComposition too (it is not a
+  // HeroKeyword); the grant reads its City space at grant time.
+  if (GAIN_WOUND_REWARD_SEEDED_CONQUEROR_REWARDS.has(rewardComposition) && rewardComposition === 'rooftops-conqueror') {
+    return { rewardType: 'rooftops-conqueror', magnitude, sourceCardId };
   }
   return undefined;
 }

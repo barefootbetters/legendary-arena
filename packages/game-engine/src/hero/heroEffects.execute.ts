@@ -7478,8 +7478,9 @@ function heroEffectHeistMoveVillainKoHero(
  *
  * // why: parking does not halt this card's hook loop — later hooks of the same play still run
  * before the prompt resolves. Harmless for both cards (Hulk Smash! has one line; Scalded by
- * Sunlight's Sunlight and Moonlight lines are mutually exclusive); the follow-up that adds
- * multi-line cards must revisit it.
+ * Sunlight's Sunlight and Moonlight lines are mutually exclusive). Revisited by WP-893 / D-24850:
+ * moot for Put to the Torch, whose Wound line is its last line (lines 0 / 1 resolve first), so
+ * no later hook of the card runs before the prompt resolves; the rule itself stands.
  *
  * @param G - Game state (mutated under Immer draft).
  * @param _ctx - Unused (the gain happens at resolve time).
