@@ -21,10 +21,13 @@ import type { HankoLike } from './auth/hankoClient';
  * public lobby stays put. That makes `data-route` deterministic without mocking
  * the broker SDK.
  */
-async function mountApp(searchOverride: string): Promise<string> {
+async function mountApp(
+  searchOverride: string,
+  pathnameOverride: string | null = null,
+): Promise<string> {
   setActivePinia(createPinia());
   const wrapper = mount(App, {
-    props: { searchOverride },
+    props: { searchOverride, pathnameOverride },
     global: {
       plugins: [createPinia()],
       stubs: {
@@ -39,6 +42,7 @@ async function mountApp(searchOverride: string): Promise<string> {
         AdminBillingPage: true,
         PlayerProfilePage: true,
         SharedLoadoutPage: true,
+        OfflinePlayPage: true,
       },
     },
   });
@@ -76,6 +80,10 @@ describe('App.vue route + auth-bootstrap gating', () => {
     // why: WP-890 / D-24842 — under node:test `import.meta.env` is undefined, so the flag is off;
     // the value must fall through like any unknown `?route=` value.
     assert.notEqual(await mountApp('?route=local-spike'), 'local-spike');
+  });
+
+  test('the /offline/ path renders the offline page (WP-894)', async () => {
+    assert.equal(await mountApp('', '/offline/'), 'offline');
   });
 
   test('the lobby does not show the auth-bootstrapping placeholder (renders immediately)', async () => {

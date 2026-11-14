@@ -14,3 +14,12 @@
 # that default. Only the hashed /assets/* chunks are marked immutable.
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# why: WP-894 / D-24851 — the offline page's service worker. `no-cache` makes the
+# browser revalidate the script on every update check; precache.json names this
+# build's hashed files and must never be served stale to an installing worker.
+/offline/sw.js
+  Cache-Control: no-cache
+
+/offline/precache.json
+  Cache-Control: no-store

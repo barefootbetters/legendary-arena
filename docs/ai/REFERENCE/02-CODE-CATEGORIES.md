@@ -328,9 +328,25 @@ gameplay render path: it reads only the projected combo signal
 determinism hash (replays / sims render no VFX). Mirrors the `functions/`
 edge-subsurface exemption above.
 
+**Device-hosted engine / offline subsurface (D-24851):** `apps/arena-client/src/offline/`,
+`src/pages/OfflinePlayPage.vue`, the second HTML entry `offline/index.html`, and
+the classic service worker `public/offline/sw.js` make up the WP-894 offline page
+at `/offline/`. The page runs the **unchanged** engine on a boardgame.io `Local()`
+master for a single-seat solo match (WP-890's `client/localSpikeClient.ts`, on
+the Runtime-Safe `.` surface), which D-24844 / D-24851 classify as the engine,
+not client-side rule execution: the UI still submits intents and reads only
+`playerView`. The subsurface performs Cache Storage and network I/O (registering
+the worker, warming card images; the worker precaches the app shell and serves
+it, card images and ability icons from Cache Storage) but caches **static files
+and images only**, never `G`, `ctx`, `UIState`, a seed or a move log. It inherits
+every other `client-app` prohibition. The worker is the one non-module file in
+the app (a classic script with no imports), tested by loading the shipped file
+into `node:vm`.
+
 **Directories:** `apps/arena-client/` (D-6511); `apps/arena-client/functions/`
 edge subsurface (D-24085); `apps/arena-client/src/vfx/` VFX presentation
-subsurface (D-24365)
+subsurface (D-24365); `apps/arena-client/src/offline/` + `offline/index.html` +
+`public/offline/` device-hosted engine / offline subsurface (D-24851)
 
 ---
 
