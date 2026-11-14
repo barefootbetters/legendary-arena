@@ -2241,10 +2241,10 @@
       "card": "Super-Skrull",
       "ability": "Put to the Torch — You may gain a Wound. If you do, you get Rooftops Conqueror 4",
       "wp": "WP-893",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-13",
-      "evidence": "",
-      "note": "Live check (NEW match created after the deploy, with Super-Skrull; operator setters stage a Villain in the Rooftops): Put to the Torch prompts \"Gain a Wound?\" with \"Gain a Wound: you get Rooftops Conqueror 4\"; gain -> a Wound and \"Player N got +4 Attack — a Villain is in the Rooftops (…)\"; decline -> neither; with the Rooftops empty, gain -> the Wound and \"Player N got no Attack — no Villain is in the Rooftops (…)\". D-24850."
+      "evidence": "Operator match sP9vDUVputl (server ca2407e7, client ca2407e, both the #3356 merge ca2407e71; created 2026-11-13 after the deploy), Loki / Unleash the Power of the Cosmic Cube 2p with a bot ally, Super-Skrull + core Captain America, Hulk, Spider-Man, Wolverine, Claude in Chrome, every play and answer a real click. Each play opened the prompt \"Gain a Wound?\" (Gain a Wound: you get Rooftops Conqueror 4 / Don't gain a Wound). Rooftops empty (turn 2, City Hand Ninjas, Enchantress): Gain -> 2.2.8 \"gained a Wound\" [applied], 2.2.9 \"got no Attack — no Villain is in the Rooftops\" [blocked], woundCount 0 -> 1, Attack stayed 4. Enchantress in the Rooftops (turn 4): Gain -> 4.2.6 \"gained a Wound\", 4.2.7 \"got +4 Attack — a Villain is in the Rooftops\" [applied], woundCount 1 -> 2, Attack 4 -> 8. Hand Ninjas in the Rooftops, Enchantress in the Streets (turn 6): Don't gain -> 6.2.5 \"chose not to gain a Wound\", woundCount stayed 2, Attack 5 (base 4 + Streets Conqueror 1, 6.2.3), no +4.",
+      "note": "All three branches seen live: gain with a Villain in the Rooftops, gain with the Rooftops empty, decline. Not seen live (test-covered): the Diving Block / Flying Shield Block forfeit, and the bot's answer. D-24850."
     },
     {
       "key": "asrd/warriors-three-the|conqueror",
