@@ -36525,6 +36525,8 @@ Protect this file.
 
 **Fences.** Adding a new resolver key does not change existing narratives → no re-pin. Defeat-to-gain is fenced to the `'skrull'` origin (Silent Sniper and every other defeat unchanged; control-revert non-vacuous — neutralizing the guard fails the defeat-to-gain test). No `buildCardVictoryPoints` / `G.cardVictoryPoints` change (the proxy reads existing `cardStats.cost`). Reserved by WP-514; landed at WP-514 execution.
 
+**Correction 2026-11-14 (not a proxy).** The printed card (`core-sc-secret-invasion-of-the-skrull-shapeshifters.webp`) shows the large gold **cost** coin after "the Hero's", the same icon as a Hero card's cost, not the small VP circle on a Villain card: the rule is **attack = the Hero's cost + 2**, so decision (1) is faithful as built. The "VP + 2" reading came from the upstream source tagging that icon `icon: 3`, which `convert-cards-v15.mjs` maps to VP (the same artifact as Deadpool's Oddball, WP-680); `inputs/cards/coreset.js` now reads "the Hero's cost +2". The PROXY comment and swap seam in `resolveBaseFightCost` are removed, the "Skrulls skew a touch harder than printed" note no longer holds, and the scheme's `special-rules` coverage row moves from `deferred` to `executable`. No engine behaviour changes.
+
 Protect this file.
 
 ### D-24328 — Super Hero Civil War builds a 4-hero-group Hero Deck at exactly 2 players (Active — WP-515 / EC-550; landed 2026-08-10)

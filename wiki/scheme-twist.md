@@ -238,8 +238,7 @@ counter-only):
   Killbots — its 18 villain-deck Bystanders convert, attack = a per-scheme
   "twists next to this Scheme" counter (WP-513). Secret Invasion — setup
   shuffles 12 Heroes from the Hero Deck into the Villain Deck as Skrull
-  Villains (attack = the Hero's cost + 2, a documented proxy for the
-  printed VP + 2, which no card data carries); defeating a Skrull **gains**
+  Villains (attack = the Hero's cost + 2, as printed); defeating a Skrull **gains**
   the Hero into your discard; the `secret-invasion` twist drags the
   highest-cost HQ Hero into the Sewers as a Skrull; Evil Wins at 6 escaped
   Skrulls (WP-514). See [Villain Deck](villain-deck.md) for the
