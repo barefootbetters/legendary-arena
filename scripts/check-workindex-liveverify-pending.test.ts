@@ -14,9 +14,18 @@
  *     that names a "pending-choice" prompt.
  *   - POSITIVE: a "live-verify (D-24026) partial: …" row whose entries are
  *     all verified is flagged (the D-24852 follow-up that added `partial`).
+ *   - POSITIVE (blind spot 2 closed): a dotted domain inside the clause, a `;`
+ *     inside a `( … )` aside, "pending" 60–120 characters past the anchor, and
+ *     an `operator-pending` past a `;` on a row with a live-verify anchor are
+ *     all flagged. NEGATIVE: a sentence `.` and a top-level `;` still end the
+ *     clause, and an `operator-pending` on a row with no anchor is not read.
  *   - The real pending and partial phrasings found on `main` are each recognised.
  *   - `wp` field parsing: free-text fields ("WP-674; #3150") name their WP;
  *     WP-67 is not WP-674; D-number-only and empty fields name no WP.
+ *   - Unattributed entries (blind spot 3 closed): an empty, PR-only, bare
+ *     `none`, or non-direct-fix D-number `wp` is reported; a WP, a direct-fix
+ *     D-number, or `none (<reason>)` is not. Direct-fix headings are read from
+ *     DECISIONS.md text.
  *   - Malformed JSON and an unknown schemaVersion fail loudly.
  *
  * Cheat-proof: fixtures are never mutated; each negative keeps a real pending
@@ -30,7 +39,9 @@ import assert from 'node:assert/strict';
 import {
   findPendingLiveVerifyText,
   findStaleLiveVerifyPendingRows,
+  findUnattributedLiveVerifyEntries,
   groupLiveVerifyEntriesByWorkPacket,
+  listDirectFixDecisions,
 } from './check-workindex-liveverify-pending.mjs';
 
 /**
@@ -81,6 +92,44 @@ test('POSITIVE: a partial row, with every entry verified, is flagged', () => {
   assert.deepEqual(findStaleLiveVerifyPendingRows(partialRow, stillPending), [], 'a partial entry keeps it honest');
 });
 
+test('POSITIVE: pending phrases past a dot, an aside, 60 characters or a criterion are flagged', () => {
+  const allVerified = groupLiveVerifyEntriesByWorkPacket(buildLiveVerifyText([['WP-901', 'verified']]));
+  const rowsAndPendingText: Array<[string, string]> = [
+    [
+      '- [x] WP-901 — x — **Done 2026-11-01**; live-verify (D-24026) on `play.legendary-arena.com/?route=me` pending deploy.',
+      'live-verify (D-24026) on `play.legendary-arena.com/?route=me` pending',
+    ],
+    [
+      '- [x] WP-901 — x — **Done 2026-11-01**; live-verify browser + Android PASS 2026-11-14 (headless #3361; phone test #3365), iOS Safari pending (Jeff).',
+      'live-verify browser + Android PASS 2026-11-14 (headless #3361; phone test #3365), iOS Safari pending',
+    ],
+    [
+      '- [x] WP-901 — x — **Done 2026-11-01**; D-24026 server-side proof (authenticated `GET /api/me/matches/<id>/coach` → 200 on a casual match) pending deploy.',
+      'D-24026 server-side proof (authenticated `GET /api/me/matches/<id>/coach` → 200 on a casual match) pending',
+    ],
+    [
+      '- [x] WP-901 — x — **Done 2026-11-01** (D-24026 = Copy → clipboard, Expand → full-screen log; **operator-pending on deploy**).',
+      'operator-pending',
+    ],
+  ];
+  for (const [row, pendingText] of rowsAndPendingText) {
+    const violations = findStaleLiveVerifyPendingRows(row, allVerified);
+    assert.equal(violations.length, 1, `flagged: ${row.slice(40, 110)}`);
+    assert.equal(violations[0].pendingText, pendingText);
+  }
+});
+
+test('NEGATIVE: a sentence end, a top-level semicolon, and an unanchored operator-pending are not read', () => {
+  const rows = [
+    '- [x] WP-901 — x — **Done 2026-11-01** (D-24026 live-verify PASS 2026-11-02. The WP-902 deploy is pending).',
+    '- [x] WP-901 — x — **Done 2026-11-01** (D-24026 live-verify PASS 2026-11-02 (match `abc`); the prod backfill is pending).',
+    '- [x] WP-901 — x — **Done 2026-11-01** (migration 026 PROD apply operator-pending; green, pending commit).',
+  ];
+  for (const row of rows) {
+    assert.equal(findPendingLiveVerifyText(row), null, row);
+  }
+});
+
 test('NEGATIVE: a pending row with no live-verify.json entry stays legitimately pending', () => {
   const entries = groupLiveVerifyEntriesByWorkPacket(buildLiveVerifyText([['WP-777', 'verified']]));
   assert.deepEqual(findStaleLiveVerifyPendingRows(STALE_ROW, entries), []);
@@ -123,6 +172,10 @@ test('the real pending phrasings on main are each recognised', () => {
     'live-on-surface operator-pending',
     'live-verify (D-24026) partial: Sporr and Pym Particles PASS 2026-11-06',
     'live-verify (D-24026) PARTIAL',
+    'live-verify (D-24026) on `play.legendary-arena.com/?route=me` pending deploy',
+    '(D-24026 = Copy → clipboard, Save → `game-log.txt`, Expand → full-screen scrollable chronological log that closes back to compact; **operator-pending on deploy**)',
+    'D-24026 server-side proof (authenticated `GET /api/me/matches/<id>/coach` → 200 on a casual match) pending deploy',
+    'live-verify browser + Android PASS 2026-11-14 (headless browser #3361; Android phone test: the installed /offline/ app plays with Wi-Fi off and airplane mode on, #3365; Battle Brief offline lineup fixed #3362), iOS Safari and a days-later cold start pending (Jeff)',
   ];
   for (const phrasing of phrasings) {
     assert.notEqual(findPendingLiveVerifyText(`- [x] WP-901 — x — ${phrasing}.`), null, phrasing);
@@ -153,6 +206,36 @@ test('NEGATIVE: a PASS row that names a pending-choice prompt is not pending', (
     assert.equal(findPendingLiveVerifyText(row), null, row);
     assert.deepEqual(findStaleLiveVerifyPendingRows(row, entries), []);
   }
+});
+
+test('direct-fix decisions are read from DECISIONS.md headings', () => {
+  const decisionsText = [
+    '### D-24801 — Size-Changing is a recruit discount (Active 2026-11-05 — direct fix, no WP)',
+    '### D-24743 — A mixed seat-choice ride admits the active seat (bot-ally fault, direct fix, amends D-24648) (Active 2026-10-17)',
+    '### D-24852 — CI fails a stale live-verify row (Active 2026-11-14)',
+    'Body text that mentions a direct fix but is not a heading.',
+  ].join('\r\n');
+  assert.deepEqual([...listDirectFixDecisions(decisionsText)].sort(), ['D-24743', 'D-24801']);
+});
+
+test('an entry whose wp names nothing it verifies is reported', () => {
+  const directFixDecisions = new Set(['D-24801']);
+  const liveVerifyText = buildLiveVerifyText([
+    ['WP-674; #3150', 'verified'],
+    ['D-24801 (#3155)', 'verified'],
+    ['none (Core record)', 'verified'],
+    ['', 'verified'],
+    ['#3151', 'partial'],
+    ['none', 'verified'],
+    ['D-24852', 'pending'],
+  ]);
+  const unattributed = findUnattributedLiveVerifyEntries(liveVerifyText, directFixDecisions);
+  assert.deepEqual(
+    unattributed.map((entry) => entry.wp),
+    ['', '#3151', 'none', 'D-24852'],
+    'empty, PR-only, bare none and a WP-owned D-number are unattributed',
+  );
+  assert.equal(unattributed[0].key, 'core/card-3|mechanic');
 });
 
 test('malformed or unknown-schema live-verify.json fails with a full-sentence error', () => {
