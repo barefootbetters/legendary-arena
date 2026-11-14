@@ -11,6 +11,7 @@ import ViewLoadoutButton from '../components/ViewLoadoutButton.vue';
 import WaitingForPlayersPanel from '../components/WaitingForPlayersPanel.vue';
 import BattlePlanPanel from '../components/BattlePlanPanel.vue';
 import BattleBrief from '../components/play/BattleBrief.vue';
+import type { LoadoutSummary } from '../lib/loadoutSummary';
 import HollowEffectsPanel from '../components/play/HollowEffectsPanel.vue';
 import DeckProbabilityPanel from '../components/play/DeckProbabilityPanel.vue';
 import AudioControls from '../components/play/AudioControls.vue';
@@ -176,6 +177,13 @@ export default defineComponent({
     playerId: {
       type: String,
       default: '',
+    },
+    // why: WP-894 follow-up — forwarded to <BattleBrief> only. The offline page
+    // passes the lineup built from its setup bundle (no server to read the match
+    // LAGN from); every other mount leaves it null and the brief fetches as before.
+    providedLineup: {
+      type: Object as PropType<LoadoutSummary | null>,
+      default: null,
     },
     villainGroupIds: {
       type: Array as PropType<string[]>,
@@ -673,7 +681,7 @@ export default defineComponent({
       // matchId, D-16501). It renders only in the engine's lobby phase and sends
       // only setPlayerReady, then startMatchIfReady after the next server frame.
     -->
-    <BattleBrief :submit-move="submitMove" :match-id="matchId" />
+    <BattleBrief :submit-move="submitMove" :match-id="matchId" :provided-lineup="providedLineup" />
     <!--
       // why: WP-258 — mounted ONCE here at the shared viewport root (the
       // Mounting Rule's shared-child case), alongside <DiagnosticExportButton>,

@@ -10,6 +10,7 @@ import BattleBrief from './BattleBrief.vue';
 import type { SubmitMove } from './uiMoveName.types';
 import { useUiStateStore } from '../../stores/uiState';
 import { useConnectionStore } from '../../stores/connection';
+import { summarizeLoadout } from '../../lib/loadoutSummary';
 
 /**
  * WP-786 / EC-823 — the battle brief. `globalThis.fetch` is stubbed (and
@@ -201,6 +202,28 @@ describe('BattleBrief (WP-786)', () => {
     await flushPromises();
     const finalBlow = wrapper.find('[data-testid="battle-brief-final-blow"]').text();
     assert.match(finalBlow, /On — win only after a 5th, final fight against the Mastermind/);
+  });
+
+  test('a provided lineup (the offline page) is shown with no fetch, even with no match id', async () => {
+    stubLagn(500);
+    setActivePinia(createPinia());
+    useUiStateStore().setSnapshot(buildSnapshot());
+    const providedLineup = summarizeLoadout({
+      setup: {
+        villain_groups: [{ id: 'core/brotherhood', name: 'Brotherhood' }],
+        henchmen_groups: [{ id: 'core/sentinel', name: 'Sentinel' }],
+        heroes: [{ id: 'core/hulk', name: 'Hulk' }],
+      },
+    });
+    const submitMove: SubmitMove = () => {};
+    const wrapper = mount(BattleBrief, { props: { submitMove, matchId: '', providedLineup } });
+    await flushPromises();
+    const lineup = wrapper.find('[data-testid="battle-brief-lineup"]').text();
+    assert.match(lineup, /Brotherhood/);
+    assert.match(lineup, /Sentinel/);
+    assert.match(lineup, /Hulk/);
+    assert.equal(wrapper.find('[data-testid="battle-brief-lineup-unavailable"]').exists(), false);
+    assert.equal(fetchCount, 0);
   });
 
   test('a failed loadout read shows the unavailable line and leaves Begin the Battle enabled', async () => {

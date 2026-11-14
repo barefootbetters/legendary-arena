@@ -88,6 +88,13 @@ export default defineComponent({
       type: String,
       default: '',
     },
+    // why: WP-894 follow-up — an offline match has no server to read the match
+    // LAGN from, so its page hands the lineup in, built from the setup bundle.
+    // When set, the brief uses it and makes no fetch.
+    providedLineup: {
+      type: Object as PropType<LoadoutSummary | null>,
+      default: null,
+    },
   },
   setup(props) {
     const uiStateStore = useUiStateStore();
@@ -129,6 +136,10 @@ export default defineComponent({
      */
     async function loadLineup(): Promise<void> {
       hasRequestedLineup.value = true;
+      if (props.providedLineup !== null) {
+        lineup.value = props.providedLineup;
+        return;
+      }
       if (props.matchId === '') {
         isLineupUnavailable.value = true;
         return;
