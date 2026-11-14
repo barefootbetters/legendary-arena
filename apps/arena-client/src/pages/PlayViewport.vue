@@ -185,6 +185,15 @@ export default defineComponent({
       type: Object as PropType<LoadoutSummary | null>,
       default: null,
     },
+    // why: WP-894 follow-up (D-24851) — a host whose lobby is not `/` passes its
+    // own return. The offline page's service worker is scoped to `/offline/`, so
+    // `/` is outside it and an offline "Back to Lobby" landed on the browser's
+    // error page. Every other mount leaves it null and navigates to `/` as before.
+    // `[Function, null]` per the WP-807 OperatorBoardPanel note (a bare cast is TS2352).
+    onReturnToLobby: {
+      type: [Function, null] as PropType<(() => void) | null>,
+      default: null,
+    },
     villainGroupIds: {
       type: Array as PropType<string[]>,
       default: () => [],
@@ -403,8 +412,13 @@ export default defineComponent({
     // why: the stall escape is a NON-DESTRUCTIVE, client-only navigation — it
     // returns to the lobby (the default route, reached by clearing the live
     // `?match=` params) and calls NO server endpoint; the server-side match is
-    // never abandoned from here.
+    // never abandoned from here. A host-supplied return (the offline page) runs
+    // instead, so the player stays inside that host's own surface.
     function returnToLobby(): void {
+      if (props.onReturnToLobby !== null) {
+        props.onReturnToLobby();
+        return;
+      }
       window.location.assign('/');
     }
 
