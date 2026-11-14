@@ -77,6 +77,7 @@ All randomness uses `ctx.random.*` exclusively — never `Math.random()`.
 - Clients submit **intents**, not outcomes
 - UI consumes **read‑only projections** of engine state, never `G` or `ctx` directly
 - Invalid or out-of-order actions are rejected deterministically engine-side
+- A single-seat solo match may run the unchanged engine on a boardgame.io `Local()` master on the player's device (D-24844, D-24851). The engine still owns truth there: the UI submits intents and reads only `playerView`; no UI code runs rules.
 
 ### 3. Data Outlives Code
 

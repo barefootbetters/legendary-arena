@@ -45,6 +45,7 @@ Source: ARCHITECTURE.md, Architectural Principles #1
 ### Engine Owns Truth
 - Clients submit **intent**, never outcomes; the engine is the sole authority
 - UI consumes read-only projections only; no client-side rule execution or reconciliation
+- A device-hosted `Local()` master running the unchanged engine for single-seat solo is the engine, not client-side rule execution (D-24844, D-24851)
 
 Source: ARCHITECTURE.md, Architectural Principles #2
 

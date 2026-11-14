@@ -28,6 +28,14 @@ source:
   - ../apps/arena-client/src/client/localSpikeClient.ts
   - ../apps/arena-client/src/client/setupBundleReader.ts
   - ../apps/arena-client/src/pages/LocalSpikePage.vue
+  - ../apps/arena-client/src/pages/OfflinePlayPage.vue
+  - ../apps/arena-client/src/offline/offlineRoute.ts
+  - ../apps/arena-client/src/offline/registerOfflineServiceWorker.ts
+  - ../apps/arena-client/src/offline/offlineImageCache.ts
+  - ../apps/arena-client/src/offline/offlineStatus.ts
+  - ../apps/arena-client/offline/index.html
+  - ../apps/arena-client/public/offline/sw.js
+  - ../apps/arena-client/public/offline/manifest.webmanifest
   - ../apps/arena-client/src/fixtures/localSpike/featuredSetupBundle.json
   - ../scripts/build-local-spike-bundle.mjs
   - ../apps/arena-client/src/composables/useCardImagePrefetch.ts
@@ -141,7 +149,7 @@ checked by the server when the player is back online.
 | Card images | One WebP per card at `images.legendary-arena.com/{set}/{set}-{ribbon}-{slug}.webp` ([R2 Image Naming Convention](r2-image-naming-convention.md)). A match's image list is `UIState.matchCardImageUrls` (`buildMatchCardImageManifest` in [`uiState.build.ts`](../packages/game-engine/src/ui/uiState.build.ts)). [`useCardImagePrefetch.ts`](../apps/arena-client/src/composables/useCardImagePrefetch.ts) warms them into the browser's HTTP cache, 6 at a time | Durable caching, plus a size estimate before download |
 | Image sizes | **Built and published** (WP-888 / [D-24840](../docs/ai/DECISIONS.md), 2026-11-12). Every card has `thumb` (280 px), `phone` (840 px) and `large` (1680 px) WebP tiers at `{set}/{tier}/{file}.webp`, plus a per-set byte manifest at `metadata/image-sizes/{set}.json` ([Card Image Acquisition](card-image-acquisition.md#size-tiers-for-mobile-and-offline)). Since WP-891 / [D-24848](../docs/ai/DECISIONS.md) the play surface renders `thumb` on a 1x screen and `phone` on a 2x or denser screen (`srcset` = `thumb 1x, phone 2x`), falling back to the original (most sets about 100 KB per card, six high-resolution sets about 1 MB, `co2e` 2.7 MB) only when a tier fails | The `phone` tier is the download, and its manifests give the size label. A 1x board requests `thumb`, so the service worker must answer a `thumb` request from the downloaded `phone` copy, or download both (D-24848 follow-up) |
 | Image headers | `public, max-age=31536000, immutable` ([RUNBOOK](../docs/ops/RUNBOOK-r2-image-cache-control.md)) and `Access-Control-Allow-Origin: *` (checked 2026-11-12) | Already enough for a service worker to cache non-opaque responses |
-| PWA | None: no service worker, no web app manifest, no icons. The client is Vite 5, Vue 3 and Pinia on Cloudflare Pages; [`_headers`](../apps/arena-client/public/_headers) already marks `/assets/*` immutable | A manifest, icons, and a service worker that caches the app shell |
+| PWA | Only at `/offline/` (WP-894 / D-24851): a second HTML entry with a web app manifest and icons, and a hand-written service worker scoped to `/offline/` that precaches the app shell and caches card images. The live game at `/` has no manifest and is never controlled. The client is Vite 5, Vue 3 and Pinia on Cloudflare Pages; [`_headers`](../apps/arena-client/public/_headers) marks `/assets/*` immutable | The same for any setup (slice 3), and a link from the lobby |
 
 ### What assumes a connection during play
 
@@ -165,7 +173,10 @@ Each of these would need an offline answer:
   and the coach (entitlement plus the coach endpoints). The score goes into the
   sync queue. The coach waits for a connection.
 - **First-party analytics** ([`analyticsEmitter.ts`](../apps/arena-client/src/lib/api/analyticsEmitter.ts))
-  posts to `/api/analytics/events`. Events are queued, not dropped.
+  posts to `/api/analytics/events`. The design queues events. **Not yet true
+  in slice 1:** on `/offline/` an offline emit is dropped, and a one-time
+  first-match flag is set even when its POST fails (D-24851). The results-queue
+  slice adds queuing.
 - **Assets fetched from R2:**
   - sound effects and music (Howler)
   - play-mat skins and ability-marker icons
@@ -273,7 +284,7 @@ of the original at its own size.
 
 | What | Where | Why |
 |---|---|---|
-| App shell (built JS/CSS, fonts, icons, skins, ability icons) | Service worker precache | Vite's hashed `/assets/*` are already immutable; a Workbox-style precache (for example `vite-plugin-pwa`) is the usual fit *(candidate; not tried)* |
+| App shell (built JS/CSS, fonts, icons, skins, ability icons) | Service worker precache | Built in slice 1 (WP-894 / D-24851) as a hand-written classic worker at `/offline/sw.js`, not `vite-plugin-pwa`: a build plugin emits `offline/precache.json` (the page, every hashed `/assets/*` file, the static shell files), the worker precaches it into `la-offline-shell-<build>` and deletes older builds' shell caches at activation. Ability icons are cached at runtime once seen; skins are not cached |
 | Card art for a downloaded setup | Cache Storage, keyed by the tier URL | Offline, the service worker answers a request for any size of a card from the copy it holds, so a component asking for the original or another tier still gets an image. `ACAO: *` means the responses are non-opaque, so quota is counted at real size |
 | The setup bundle (card data and image list) | IndexedDB | Small, and it's what `Game.setup()` reads offline |
 | Saved games, results queue, downloads index | IndexedDB | Structured, queryable, survives reloads |
@@ -402,7 +413,7 @@ it.
 | # | Slice | How it's checked |
 |---|---|---|
 | 0 | **Spike** (WP-890, D-24842): one hard-coded Core setup, the engine on a `Local()` master in the browser, images fetched online | The match plays to an end in the browser with no socket. It replays identically from its saved setup, seed and log. **Result (2026-11-13):** pass. `LegendaryGame` runs unchanged on `Local()`; the local master equals boardgame.io's own reducer after every move (2 lobby + 175 policy moves to gameover in the test); a hand-played browser match reached gameover on turn 20 and replayed 191 of 191 moves. Setup bundle: 2,882 cards and 41 sets, 2.97 MB raw / 462 KB gzip. Spike chunk: 2,820 kB raw / 462 kB gzip. 31 unique images |
-| 1 | **Smallest offline version:** a web app manifest, a service worker caching the app shell, plus the spike setup's images and card data | In Chrome DevTools, Network → **Offline**, then reload and play to the end. On a real phone: install to the home screen, turn on airplane mode, cold-start, and play |
+| 1 | **Smallest offline version:** a web app manifest, a service worker caching the app shell, plus the spike setup's images and card data | In Chrome DevTools, Network → **Offline**, then reload and play to the end. On a real phone: install to the home screen, turn on airplane mode, cold-start, and play. **Result (2026-11-13, WP-894 / [D-24851](../docs/ai/DECISIONS.md)):** built at `play.legendary-arena.com/offline/`, reachable by URL only. A local `vite preview` in headless Chromium (Playwright; the desktop app's browser pane refuses every service-worker registration) reached **Ready offline** with 62 of 62 card images cached (31 cards × `thumb` + `phone`) and a 28-file shell cache. With the preview server stopped and the image host refused, a cold start loaded from the worker and played to gameover (scheme wins, turn 18) with every card face rendered; **New game** started a fresh seed offline; `/` stayed uncontrolled. **Check still owed:** the same on production after deploy, and the phone test |
 | 2 | On-device save and resume | Kill the tab mid-turn, reopen offline, and the game resumes on the same turn with the same deck order |
 | 3 | Any setup: the setup-bundle endpoint, the download button, the size label from the WP-888 manifests, and the badge | The label's bytes match what Cache Storage ends up holding. Every image in the setup renders offline |
 | 4 | The storage page and delete | Deleting one of two setups that share heroes keeps the shared images |
@@ -508,7 +519,9 @@ with an installed app to check.
 - [`packages/registry/src/impl/httpRegistry.ts`](../packages/registry/src/impl/httpRegistry.ts): the browser-capable registry reader.
 - [`apps/server/src/game/matchSeed.mjs`](../apps/server/src/game/matchSeed.mjs) / [`syncRedaction.mjs`](../apps/server/src/game/syncRedaction.mjs): server seed and its redaction.
 - [`apps/server/src/match/guestSoloRoutes.mjs`](../apps/server/src/match/guestSoloRoutes.mjs): today's server-side guest solo.
-- [`apps/arena-client/vite.config.ts`](../apps/arena-client/vite.config.ts): the build a PWA plugin would join.
+- [`apps/arena-client/vite.config.ts`](../apps/arena-client/vite.config.ts): the second `offline` HTML entry and `emitOfflinePrecacheManifestPlugin` (WP-894).
+- [`apps/arena-client/public/offline/sw.js`](../apps/arena-client/public/offline/sw.js): the offline page's service worker (shell precache, card-image cache, network-first navigation).
+- [`apps/arena-client/src/pages/OfflinePlayPage.vue`](../apps/arena-client/src/pages/OfflinePlayPage.vue) and [`src/offline/`](../apps/arena-client/src/offline/offlineStatus.ts): the `/offline/` page, worker registration, image warm and status line.
 
 ## Open Questions
 

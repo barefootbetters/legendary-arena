@@ -34,6 +34,7 @@ import { useAuthStore } from './stores/auth';
 import { useAnalyticsCapture } from './composables/useAnalyticsCapture';
 import { useMoveSounds } from './composables/useMoveSounds';
 import { isLocalSpikeRoute } from './lib/localSpikeRoute';
+import { isOfflinePath } from './offline/offlineRoute';
 
 // why: PlayerProfilePage is lazy-loaded via defineAsyncComponent so the
 // public-profile branch (?profile=<handle>) does not increase the
@@ -94,7 +95,15 @@ const LocalSpikePage = isLocalSpikeFlagOn
   ? defineAsyncComponent(() => import('./pages/LocalSpikePage.vue'))
   : null;
 
+// why: WP-894 / D-24851 — the offline page at `/offline/` plays the featured
+// solo table on the device. Lazy for the same bundle-size reason as the other
+// routed pages: the page and the setup bundle it imports load only on that path.
+const OfflinePlayPage = defineAsyncComponent(
+  () => import('./pages/OfflinePlayPage.vue'),
+);
+
 type AppRoute =
+  | 'offline'
   | 'fixture'
   | 'play-fixture'
   | 'live'
@@ -209,7 +218,13 @@ function parseQuery(search: string): ParsedQuery {
   };
 }
 
-function selectRoute(parsed: ParsedQuery): AppRoute {
+function selectRoute(parsed: ParsedQuery, pathname: string): AppRoute {
+  // why: WP-894 — the `/offline/` path is its own surface and is checked
+  // first, before every query-param route, so a leftover query param (a stale
+  // `?route=` or `?match=`) can never shadow the offline page.
+  if (isOfflinePath(pathname)) {
+    return 'offline';
+  }
   // why: route discriminator precedence is
   // `admin-billing > me > login > profile > shared-loadout > fixture >
   // live > lobby`. Explicit `?route=` values take priority over every
@@ -280,6 +295,7 @@ export default defineComponent({
     AdminBillingPage,
     LoginPage,
     SharedLoadoutPage,
+    OfflinePlayPage,
     // why: a nullable const can't sit in `components` under strict typing
     // (TS2769), so the flag-gated spike page is registered by conditional spread.
     ...(LocalSpikePage !== null ? { LocalSpikePage } : {}),
@@ -290,6 +306,13 @@ export default defineComponent({
     // Tests inject the query string directly because jsdom's window.location
     // is non-configurable, which rules out redefining it per-test.
     searchOverride: {
+      type: String as () => string | null,
+      default: null,
+    },
+    // why: WP-894 testing seam, like `searchOverride`. `null` means "read
+    // window.location.pathname at setup time"; tests pass the path directly
+    // because jsdom's window.location is non-configurable.
+    pathnameOverride: {
       type: String as () => string | null,
       default: null,
     },
@@ -323,8 +346,11 @@ export default defineComponent({
     const rawSearch =
       props.searchOverride ??
       (typeof window !== 'undefined' ? window.location.search : '');
+    const rawPathname =
+      props.pathnameOverride ??
+      (typeof window !== 'undefined' ? window.location.pathname : '');
     const parsed = parseQuery(rawSearch);
-    const initialRoute = selectRoute(parsed);
+    const initialRoute = selectRoute(parsed, rawPathname);
     const route = ref<AppRoute>(initialRoute);
     const returnTo = ref<string | null>(parsed.returnTo);
     const liveParams = parsed.live;
@@ -532,6 +558,9 @@ export default defineComponent({
           Preparing sign-in…
         </p>
       </template>
+      <template v-else-if="route === 'offline'">
+        <OfflinePlayPage />
+      </template>
       <template v-else-if="route === 'admin-billing'">
         <AdminBillingPage />
       </template>
@@ -596,7 +625,8 @@ export default defineComponent({
 @media (min-width: 768px) {
   main[data-route='play-fixture'],
   main[data-route='live'],
-  main[data-route='local-spike'] {
+  main[data-route='local-spike'],
+  main[data-route='offline'] {
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;
