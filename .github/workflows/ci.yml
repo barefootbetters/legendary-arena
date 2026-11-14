@@ -355,6 +355,21 @@ jobs:
       - name: WORK_INDEX govern-close consistency check
         run: pnpm workindex:executed:check
 
+      # why (WP-895 / D-24852): the live-verify stale-row guard — the sibling of
+      # the govern-close check above. It fails when a done (`- [x]`) WORK_INDEX
+      # row still says its D-24026 live-verify is pending while every
+      # docs/ai/coverage/live-verify.json entry naming that WP is `verified`.
+      # Live-verify results land in live-verify.json or a SPEC PR without touching
+      # the row, so 91 rows drifted until the 2026-11-14 reconciliation (#3371 /
+      # #3373 / #3374). A pending row with no entry, or any non-verified entry,
+      # passes. Detect-only; reads markdown + JSON only — no build dependency.
+      # The guard's own unit test runs first so a broken matcher cannot pass
+      # vacuously on a clean index.
+      - name: WORK_INDEX live-verify consistency check
+        run: |
+          pnpm workindex:liveverify:test
+          pnpm workindex:liveverify:check
+
   # ── 3c. Dashboard gates ──────────────────────────────────────────────────────
   # why: wires the apps/dashboard checks from
   # apps/dashboard/docs/code-checks-and-balances.md §11 into CI. The dashboard is
