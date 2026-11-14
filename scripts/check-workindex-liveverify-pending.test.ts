@@ -12,7 +12,9 @@
  *     "live-verify PASS" row, the template placeholder, and a row whose
  *     "pending" belongs to a different clause all PASS, as does a PASS row
  *     that names a "pending-choice" prompt.
- *   - The real pending phrasings found on `main` are each recognised.
+ *   - POSITIVE: a "live-verify (D-24026) partial: …" row whose entries are
+ *     all verified is flagged (the D-24852 follow-up that added `partial`).
+ *   - The real pending and partial phrasings found on `main` are each recognised.
  *   - `wp` field parsing: free-text fields ("WP-674; #3150") name their WP;
  *     WP-67 is not WP-674; D-number-only and empty fields name no WP.
  *   - Malformed JSON and an unknown schemaVersion fail loudly.
@@ -64,6 +66,21 @@ test('POSITIVE: a done row saying pending, with every entry verified, is flagged
   assert.equal(violations[0].entries.length, 2, 'both verified entries are cited');
 });
 
+test('POSITIVE: a partial row, with every entry verified, is flagged', () => {
+  const partialRow =
+    '- [x] WP-901 — **A shipped card ability** — **Done 2026-11-01** (live-verify (D-24026) partial: X PASS 2026-11-02 (match `abc`), Y and Z operator-pending; D-24801 ✅).';
+  const allVerified = groupLiveVerifyEntriesByWorkPacket(
+    buildLiveVerifyText([['WP-901', 'verified'], ['WP-901', 'verified']]),
+  );
+  const violations = findStaleLiveVerifyPendingRows(partialRow, allVerified);
+  assert.equal(violations.length, 1, 'the stale partial row is reported');
+  assert.equal(violations[0].pendingText, 'live-verify (D-24026) partial');
+  const stillPending = groupLiveVerifyEntriesByWorkPacket(
+    buildLiveVerifyText([['WP-901', 'verified'], ['WP-901', 'partial']]),
+  );
+  assert.deepEqual(findStaleLiveVerifyPendingRows(partialRow, stillPending), [], 'a partial entry keeps it honest');
+});
+
 test('NEGATIVE: a pending row with no live-verify.json entry stays legitimately pending', () => {
   const entries = groupLiveVerifyEntriesByWorkPacket(buildLiveVerifyText([['WP-777', 'verified']]));
   assert.deepEqual(findStaleLiveVerifyPendingRows(STALE_ROW, entries), []);
@@ -104,6 +121,8 @@ test('the real pending phrasings on main are each recognised', () => {
     '**D-24026 live-verify ⏳ PENDING post-deploy**',
     'Live-verify (D-24026) pending',
     'live-on-surface operator-pending',
+    'live-verify (D-24026) partial: Sporr and Pym Particles PASS 2026-11-06',
+    'live-verify (D-24026) PARTIAL',
   ];
   for (const phrasing of phrasings) {
     assert.notEqual(findPendingLiveVerifyText(`- [x] WP-901 — x — ${phrasing}.`), null, phrasing);

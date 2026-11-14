@@ -2,7 +2,7 @@
  * Legendary Arena — Live-Verify Stale-Row Guard (WP-895 / EC-933 / D-24852)
  *
  * Fails when a done (`- [x]`) `WORK_INDEX.md` WP row still says its D-24026
- * live-verify is pending ("live-verify operator-pending", "D-24026
+ * live-verify is pending or partial ("live-verify operator-pending", "D-24026
  * operator-pending", …) even though `docs/ai/coverage/live-verify.json`
  * records that WP as live-verified: at least one entry's `wp` field names the
  * WP, and every entry that names it has `state: "verified"`.
@@ -19,11 +19,12 @@
  *
  * A row that says pending and has NO live-verify.json entry, or any entry that
  * is not `verified` (`partial`, `pending`), is legitimately pending and passes:
- * live-verify.json is the only oracle this guard trusts. (181 done rows match
- * the pattern on `main` @ 02a0bf623; two have entries, both pending.)
- * Known blind spots, all false negatives (D-24852): the `partial:` row format
- * (WP-864 / WP-865), a dot inside a domain ending the clause, and "pending"
- * more than 60 characters past the anchor.
+ * live-verify.json is the only oracle this guard trusts. "Partial" counts as
+ * pending too: a row saying "live-verify (D-24026) partial: …" goes stale the
+ * same way once every entry for its WP is verified (187 done rows match the
+ * pattern on `main` @ e3afc4402; four have entries, none all verified).
+ * Known blind spots, all false negatives (D-24852): a dot inside a domain
+ * ending the clause, and "pending" more than 60 characters past the anchor.
  *
  * DETECT-ONLY: this guard never edits WORK_INDEX or live-verify.json. If it
  * fires, rewrite the row's pending phrase to the recorded result (e.g.
@@ -56,16 +57,20 @@ const DONE_WORK_PACKET_ROW_PATTERN = /^- \[x\] (WP-\d+(?:\.\d+)?) /;
 // operator-pending", "**D-24026 operator-pending**", "(D-24026)
 // operator-pending", "live-verify: operator-pending", "D-24026 live-verify ⏳
 // PENDING post-deploy", "Post-deploy **D-24026 live-verify** pending",
-// "live-on-surface operator-pending"). Every form has a live-verify anchor
-// (`D-24026`, `live-verify`/`live verify`, `live-on-surface`) followed, inside
-// the same clause, by the word `pending`. The clause bound — no `.` or `;` and
+// "live-on-surface operator-pending", "live-verify (D-24026) partial: X PASS
+// …, Y operator-pending"). Every form has a live-verify anchor (`D-24026`,
+// `live-verify`/`live verify`, `live-on-surface`) followed, inside the same
+// clause, by the word `pending` or `partial`. `partial` joined on 2026-11-14
+// (D-24852 follow-up) once WP-862's last partial mechanic named WP-862 in
+// live-verify.json; before that, an honest WP-862 "partial" row had only
+// verified entries and would have false-failed. The clause bound — no `.` or `;` and
 // at most 60 characters in between — keeps a later, unrelated "pending" (a
 // pending deploy of another WP, a pending backfill) from pairing with an
 // earlier live-verify mention. The `(?![- ]choice)` lookahead keeps an honest
 // PASS row that names a "pending-choice" prompt (a large WP family) from
 // reading as pending. Case-insensitive so `PENDING` matches.
 const PENDING_LIVE_VERIFY_PATTERN =
-  /(?:D-24026|live[- ]verif\w*|live-on-surface)[^.;]{0,60}?\bpending\b(?![- ]choice)/i;
+  /(?:D-24026|live[- ]verif\w*|live-on-surface)[^.;]{0,60}?\b(?:pending|partial)\b(?![- ]choice)/i;
 
 // why: the guard reads `entries[].wp` and `entries[].state`; a schema bump
 // that renames either would group nothing and pass forever, so an unknown
@@ -166,7 +171,7 @@ export function groupLiveVerifyEntriesByWorkPacket(liveVerifyText) {
  * The row's pending live-verify phrase, if it has one.
  *
  * @param {string} row a WORK_INDEX row.
- * @returns {string | null} the matched text (anchor through "pending"), or null.
+ * @returns {string | null} the matched text (anchor through "pending" or "partial"), or null.
  */
 export function findPendingLiveVerifyText(row) {
   const pendingMatch = row.match(PENDING_LIVE_VERIFY_PATTERN);
@@ -239,13 +244,13 @@ function runCheck() {
 
   if (violations.length === 0) {
     process.stdout.write(
-      'WORK_INDEX live-verify consistency check passed: no done (`- [x]`) WP row says its live-verify is pending while live-verify.json records it verified.\n',
+      'WORK_INDEX live-verify consistency check passed: no done (`- [x]`) WP row says its live-verify is pending or partial while live-verify.json records it verified.\n',
     );
     return 0;
   }
 
   process.stderr.write(
-    `WORK_INDEX live-verify consistency check FAILED: ${violations.length} done WP row(s) still say their D-24026 live-verify is pending, but docs/ai/coverage/live-verify.json records every entry for that WP as verified. Rewrite each row's pending phrase to the recorded result (e.g. "D-24026 live-verify PASS <date> per live-verify.json (match \`…\`)"). If a row is honest because a mechanic it names as pending has no live-verify.json entry yet, add a \`pending\` entry for that mechanic instead of rewording the row. This guard is detect-only and never edits the index. Stale row(s):\n`,
+    `WORK_INDEX live-verify consistency check FAILED: ${violations.length} done WP row(s) still say their D-24026 live-verify is pending or partial, but docs/ai/coverage/live-verify.json records every entry for that WP as verified. Rewrite each row's pending phrase to the recorded result (e.g. "D-24026 live-verify PASS <date> per live-verify.json (match \`…\`)"). If a row is honest because a mechanic it names as pending has no live-verify.json entry yet, add a \`pending\` entry for that mechanic instead of rewording the row. This guard is detect-only and never edits the index. Stale row(s):\n`,
   );
   for (const violation of violations) {
     process.stderr.write(describeViolation(violation));

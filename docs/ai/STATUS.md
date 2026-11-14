@@ -18,7 +18,7 @@
 - **Tests.** `scripts/check-workindex-liveverify-pending.test.ts` 8 / 0 (`pnpm workindex:liveverify:test`), run in CI before the check. Revert proofs: removing the all-verified decision fails the positive case; removing the clause bound fails the cross-clause negative.
 - **Observed.** Exit 0 on `main`; exit 1 with 58 rows on the docs before #3371 (`62ac480e7^`). `workindex:rows:check`, `workindex:executed:check`, `ledger:numbers:check`, `roadmap:counts:check` all 0 after the close.
 - **Lane.** Lightweight (D-24028): one layer, 4 code/test files, additive, no determinism or hash surface. The CI step landed in its own `INFRA:` commit (D-24444 Guard A).
-- **Follow-up (D-24852 blind spot).** Add a `partial` / `pending` live-verify.json entry for WP-862's Look Out for the Little Guy, then add `partial` to the D-24852 pattern. Until then the WP-864 / WP-865 rows must be hand-updated when their pending entries flip to verified.
+- **Follow-up (D-24852 blind spot): done 2026-11-14.** The existing live-verify.json entry for Look Out for the Little Guy (`amwp/ant-man|reveal`, `partial`) now names WP-862 (`wp: "WP-862; D-24806"`; it had none because it shipped as the D-24806 direct fix), and `partial` joined the D-24852 pattern. The `partial:` rows WP-864 / WP-865 are now guarded; 187 done rows match on `main`, none stale; test 9 / 0.
 - **Live-verify (D-24026):** N/A, infrastructure only. The step runs on this PR's own CI.
 
 ### Airplane mode slice 1: an installable `/offline/` page plays the free featured solo table with no network (WP-894 / EC-932, D-24851) (2026-11-13)

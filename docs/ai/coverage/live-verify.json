@@ -1668,7 +1668,7 @@
       "kind": "hero",
       "card": "Ant-Man",
       "ability": "Look Out for the Little Guy (line 2): Reveal the top card of your deck. If it's Strength or has Size-Changing, draw it",
-      "wp": "",
+      "wp": "WP-862; D-24806",
       "state": "partial",
       "date": "2026-11-06",
       "evidence": "2p Operator match l8uwhB8OMmN (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Cross Technologies; Iron Man, Hulk, amwp Ant-Man, antm Ant-Man, Hawkeye; server build 260af872, created 2026-11-06T03:27:50Z after boot): Look Out for the Little Guy revealed Shrink Away (Covert, Size-Changing) and drew it (17.2.4); it revealed Unstoppable Hulk (Instinct, no Size-Changing) and left it on top (5.2.6, 9.2.21). Not observed live: a revealed Strength card. Second operator match nbN7_IAWLAp (same loadout; created 2026-11-06T04:02:21Z on server 260af872, which carries WP-862 and D-24806): drew Size-Changing cards (6.2.11 Risky Science, 16.2.11 Ride the Ants, 24.2.2 Risky Science) and left S.H.I.E.L.D. cards on top (10.2.24, 20.2.17). A revealed Strength card is still not observed.",
