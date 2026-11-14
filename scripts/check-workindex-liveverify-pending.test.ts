@@ -26,6 +26,12 @@
  *     `none`, or non-direct-fix D-number `wp` is reported; a WP, a direct-fix
  *     D-number, or `none (<reason>)` is not. Direct-fix headings are read from
  *     DECISIONS.md text.
+ *   - Follow-up 3: a verified entry whose date its done row does not cite is
+ *     reported (and a dateless one), whatever the row says; a cited date, a
+ *     partial entry, and an open row are not. A pending row that cites a
+ *     direct-fix D-number is stale once that D-number's entries are all
+ *     verified, even with no entry of its own. "not yet seen live" reads as
+ *     pending with no anchor.
  *   - Malformed JSON and an unknown schemaVersion fail loudly.
  *
  * Cheat-proof: fixtures are never mutated; each negative keeps a real pending
@@ -40,6 +46,8 @@ import {
   findPendingLiveVerifyText,
   findStaleLiveVerifyPendingRows,
   findUnattributedLiveVerifyEntries,
+  findUncitedVerificationDates,
+  groupDirectFixEntriesByDecision,
   groupLiveVerifyEntriesByWorkPacket,
   listDirectFixDecisions,
 } from './check-workindex-liveverify-pending.mjs';
@@ -236,6 +244,70 @@ test('an entry whose wp names nothing it verifies is reported', () => {
     'empty, PR-only, bare none and a WP-owned D-number are unattributed',
   );
   assert.equal(unattributed[0].key, 'core/card-3|mechanic');
+});
+
+test('a verified entry whose date the done row does not cite is reported, whatever the row says', () => {
+  const entries = groupLiveVerifyEntriesByWorkPacket(
+    JSON.stringify({
+      schemaVersion: 1,
+      entries: [
+        { key: 'core/a|m', wp: 'WP-901', state: 'verified', date: '2026-11-03' },
+        { key: 'core/b|m', wp: 'WP-901', state: 'verified', date: '2026-11-02' },
+        { key: 'core/c|m', wp: 'WP-901', state: 'partial', date: '2026-11-09' },
+        { key: 'core/d|m', wp: 'WP-902', state: 'verified', date: '' },
+        { key: 'core/e|m', wp: 'WP-903', state: 'verified', date: '2026-11-04' },
+      ],
+    }),
+  );
+  // why: the WP-901 row's "required" wording reads as nothing to the pending
+  // pattern; the uncited 2026-11-03 date is what catches it.
+  const workIndexText = [
+    '- [x] WP-901 — x — **Done 2026-11-01** (D-24026 live-verify required; PASS 2026-11-02).',
+    '- [x] WP-902 — x — **Done 2026-11-01**.',
+    '- [ ] WP-903 — x — open row.',
+  ].join('\r\n');
+  const uncited = findUncitedVerificationDates(workIndexText, entries);
+  assert.deepEqual(
+    uncited.map((row) => [row.workPacket, row.entries.map((entry) => entry.key)]),
+    [
+      ['WP-901', ['core/a|m']],
+      ['WP-902', ['core/d|m']],
+    ],
+    'the uncited verified date and the dateless entry are reported; the cited date, the partial entry and the open row are not',
+  );
+  const fixedRow = '- [x] WP-901 — x — **Done 2026-11-01** (D-24026 live-verify PASS 2026-11-02, 2026-11-03).';
+  assert.deepEqual(findUncitedVerificationDates(fixedRow, entries), []);
+});
+
+test('a pending row is judged against the entries of the direct-fix D-numbers it cites', () => {
+  const liveVerifyText = buildLiveVerifyText([
+    ['D-24806', 'verified'],
+    ['D-24806', 'verified'],
+    ['WP-777; D-24807', 'pending'],
+    ['D-24852', 'pending'],
+  ]);
+  const entriesByDecision = groupDirectFixEntriesByDecision(liveVerifyText, new Set(['D-24806', 'D-24807']));
+  assert.deepEqual([...entriesByDecision.keys()], ['D-24806'], 'only WP-less entries of direct-fix D-numbers are grouped');
+  const ownEntries = groupLiveVerifyEntriesByWorkPacket(liveVerifyText);
+  const citingRow =
+    '- [x] WP-901 — x — **Done 2026-11-01** (live-verify (D-24026) operator-pending; D-24806 ✅).';
+  const violations = findStaleLiveVerifyPendingRows(citingRow, ownEntries, entriesByDecision);
+  assert.equal(violations.length, 1, 'stale once the cited direct fix is verified, with no entry of its own');
+  assert.equal(violations[0].entries.length, 2);
+  const notCiting = citingRow.replace('; D-24806 ✅', '');
+  assert.deepEqual(findStaleLiveVerifyPendingRows(notCiting, ownEntries, entriesByDecision), []);
+  const stillPartial = groupDirectFixEntriesByDecision(
+    buildLiveVerifyText([['D-24806', 'verified'], ['D-24806', 'partial']]),
+    new Set(['D-24806']),
+  );
+  assert.deepEqual(findStaleLiveVerifyPendingRows(citingRow, ownEntries, stillPartial), []);
+});
+
+test('"not yet seen live" reads as pending without an anchor', () => {
+  const row =
+    '- [x] WP-865 — x — **Done 2026-11-08** (Sporr PASS 2026-11-06, the Wasp and Ant-Man Heist cards not yet seen live; WP-736 ✅).';
+  assert.equal(findPendingLiveVerifyText(row), 'not yet seen live');
+  assert.equal(findPendingLiveVerifyText('- [x] WP-901 — x — the card is seen live now.'), null);
 });
 
 test('malformed or unknown-schema live-verify.json fails with a full-sentence error', () => {

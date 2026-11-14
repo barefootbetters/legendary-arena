@@ -29,11 +29,21 @@
  * fix" or "no WP"), or say `none (<reason>)`. An empty or PR-only `wp` would
  * hide that entry from its WP's row, so a stale row would pass unseen.
  *
- * What it still cannot see (false negatives only): a pending phrase with no
- * live-verify anchor in the row, one worded without "pending" or "partial"
- * ("deferred", "not yet seen live"), and an entry attributed to a direct-fix
- * D-number when a WP row also owns that mechanic (WP-862's Little Guy line was
- * that case; which owner is right is a judgment call, not a pattern).
+ * Two more rules close the wording gaps (D-24852 follow-up 3):
+ *
+ *   - Every verified entry's `date` must appear in its WP's done row. Recording
+ *     a verification therefore forces an edit of the row, whatever words the
+ *     row used for "not checked yet" — the edit is where stale prose dies. This
+ *     is wording-independent; the pending pattern is the second line of defence.
+ *   - A pending row is also judged against the entries of every direct-fix
+ *     D-number it cites (entries that name no WP). A follow-up direct fix
+ *     (D-24806 after WP-862) can carry the very mechanic a WP row calls pending;
+ *     once those entries are all verified the row is stale. If the row is
+ *     honest because its own mechanic has no entry, add a `pending` entry for it.
+ *
+ * What it still cannot see: a second entry verified on a date the row already
+ * cites, on a row whose pending wording the pattern does not read. Free text
+ * cannot be policed further without a structured row field.
  *
  * DETECT-ONLY: this guard never edits WORK_INDEX or live-verify.json. If it
  * fires, rewrite the row's pending phrase to the recorded result (e.g.
@@ -94,6 +104,11 @@ const PENDING_LIVE_VERIFY_PATTERN =
 // anchor (a pending migration apply) is not about live-verify and is skipped.
 const LIVE_VERIFY_ANCHOR_PATTERN = /D-24026|live[- ]verif\w*|live-on-surface/i;
 const OPERATOR_PENDING_PATTERN = /\boperator[- ]pending\b/i;
+
+// why: "the Wasp and Ant-Man Heist cards not yet seen live" (WP-865) is a
+// pending check with no "pending" in it; the phrase names live checking itself,
+// so it needs no anchor.
+const NOT_YET_LIVE_PATTERN = /\bnot yet (?:seen|verified|checked|confirmed) live\b/i;
 
 // why: an entry whose `wp` names no WP must still say what it verifies, so a
 // WP-owned entry is never left unattributed (D-24852 blind spot 3). `none` needs
@@ -210,6 +225,39 @@ export function groupLiveVerifyEntriesByWorkPacket(liveVerifyText) {
 }
 
 /**
+ * Group the entries that name no WP by every direct-fix D-id their `wp` field
+ * names. A pending row that cites one of those D-ids is judged against them too.
+ *
+ * @param {string} liveVerifyText the live-verify.json text.
+ * @param {Set<string>} directFixDecisions from listDirectFixDecisions.
+ * @returns {Map<string, { key: string, state: string, date: string }[]>} D-id → its entries.
+ */
+export function groupDirectFixEntriesByDecision(liveVerifyText, directFixDecisions) {
+  const entriesByDecision = new Map();
+  for (const entry of parseLiveVerifyEntries(liveVerifyText)) {
+    const workPacketField = typeof entry.wp === 'string' ? entry.wp : '';
+    if (/WP-\d+/.test(workPacketField)) {
+      continue;
+    }
+    const namedDecisions = new Set(workPacketField.match(DECISION_TOKEN_PATTERN) ?? []);
+    for (const decision of namedDecisions) {
+      if (!directFixDecisions.has(decision)) {
+        continue;
+      }
+      if (!entriesByDecision.has(decision)) {
+        entriesByDecision.set(decision, []);
+      }
+      entriesByDecision.get(decision).push({
+        key: String(entry.key ?? ''),
+        state: String(entry.state ?? ''),
+        date: String(entry.date ?? ''),
+      });
+    }
+  }
+  return entriesByDecision;
+}
+
+/**
  * The D-ids whose DECISIONS.md heading marks them a direct fix shipped without
  * a WP ("direct fix", "no WP").
  *
@@ -252,8 +300,8 @@ export function findUnattributedLiveVerifyEntries(liveVerifyText, directFixDecis
 
 /**
  * The row's pending live-verify phrase, if it has one: a clause-bounded
- * anchor-to-pending/partial match, else an `operator-pending` on a row that
- * mentions live-verify anywhere.
+ * anchor-to-pending/partial match, else "not yet seen live" anywhere, else an
+ * `operator-pending` on a row that mentions live-verify anywhere.
  *
  * @param {string} row a WORK_INDEX row.
  * @returns {string | null} the matched text, or null.
@@ -262,6 +310,10 @@ export function findPendingLiveVerifyText(row) {
   const clauseMatch = row.match(PENDING_LIVE_VERIFY_PATTERN);
   if (clauseMatch !== null) {
     return clauseMatch[0];
+  }
+  const notYetLiveMatch = row.match(NOT_YET_LIVE_PATTERN);
+  if (notYetLiveMatch !== null) {
+    return notYetLiveMatch[0];
   }
   if (LIVE_VERIFY_ANCHOR_PATTERN.test(row)) {
     const operatorPendingMatch = row.match(OPERATOR_PENDING_PATTERN);
@@ -274,13 +326,16 @@ export function findPendingLiveVerifyText(row) {
 
 /**
  * Find every done WORK_INDEX row that still says its live-verify is pending
- * while live-verify.json records every entry for that WP as verified.
+ * while live-verify.json records every relevant entry as verified. The relevant
+ * entries are those naming the WP plus those of every direct-fix D-id the row
+ * cites.
  *
  * @param {string} workIndexText the WORK_INDEX.md text.
  * @param {Map<string, { key: string, state: string, date: string }[]>} entriesByWorkPacket from groupLiveVerifyEntriesByWorkPacket.
+ * @param {Map<string, { key: string, state: string, date: string }[]>} [entriesByDirectFixDecision] from groupDirectFixEntriesByDecision.
  * @returns {{ workPacket: string, pendingText: string, entries: { key: string, state: string, date: string }[] }[]} one per stale row.
  */
-export function findStaleLiveVerifyPendingRows(workIndexText, entriesByWorkPacket) {
+export function findStaleLiveVerifyPendingRows(workIndexText, entriesByWorkPacket, entriesByDirectFixDecision = new Map()) {
   const lines = stripLeadingBom(workIndexText).split(/\r?\n/);
   const violations = [];
   for (const line of lines) {
@@ -293,7 +348,10 @@ export function findStaleLiveVerifyPendingRows(workIndexText, entriesByWorkPacke
       continue;
     }
     const workPacket = rowMatch[1];
-    const entries = entriesByWorkPacket.get(workPacket) ?? [];
+    const entries = [...(entriesByWorkPacket.get(workPacket) ?? [])];
+    for (const citedDecision of new Set(line.match(DECISION_TOKEN_PATTERN) ?? [])) {
+      entries.push(...(entriesByDirectFixDecision.get(citedDecision) ?? []));
+    }
     // why: no entry, or any entry still `partial` / `pending`, means the WP is
     // not fully live-verified on record — the row's "pending" is true.
     if (entries.length === 0) {
@@ -305,6 +363,34 @@ export function findStaleLiveVerifyPendingRows(workIndexText, entriesByWorkPacke
     }
   }
   return violations;
+}
+
+/**
+ * Find every verified entry whose date its WP's done row does not cite. An
+ * entry naming an open (`- [ ]`) or absent WP is skipped.
+ *
+ * @param {string} workIndexText the WORK_INDEX.md text.
+ * @param {Map<string, { key: string, state: string, date: string }[]>} entriesByWorkPacket from groupLiveVerifyEntriesByWorkPacket.
+ * @returns {{ workPacket: string, entries: { key: string, state: string, date: string }[] }[]} one per row with uncited dates.
+ */
+export function findUncitedVerificationDates(workIndexText, entriesByWorkPacket) {
+  const uncited = [];
+  for (const line of stripLeadingBom(workIndexText).split(/\r?\n/)) {
+    const rowMatch = line.match(DONE_WORK_PACKET_ROW_PATTERN);
+    if (rowMatch === null) {
+      continue;
+    }
+    const workPacket = rowMatch[1];
+    const uncitedEntries = (entriesByWorkPacket.get(workPacket) ?? []).filter(
+      // why: an empty date cannot be cited, and `includes('')` is always true,
+      // so a dateless verified entry is reported rather than silently passing.
+      (entry) => entry.state === VERIFIED_STATE && (entry.date === '' || !line.includes(entry.date)),
+    );
+    if (uncitedEntries.length > 0) {
+      uncited.push({ workPacket, entries: uncitedEntries });
+    }
+  }
+  return uncited;
 }
 
 /**
@@ -332,25 +418,45 @@ function describeViolation(violation) {
  */
 function runCheck() {
   const liveVerifyText = readTextFile(LIVE_VERIFY_PATH, 'live-verify.json');
-  const entriesByWorkPacket = groupLiveVerifyEntriesByWorkPacket(liveVerifyText);
   const workIndexText = readTextFile(WORK_INDEX_PATH, 'WORK_INDEX.md');
-  const violations = findStaleLiveVerifyPendingRows(workIndexText, entriesByWorkPacket);
   const directFixDecisions = listDirectFixDecisions(readTextFile(DECISIONS_PATH, 'DECISIONS.md'));
+  const entriesByWorkPacket = groupLiveVerifyEntriesByWorkPacket(liveVerifyText);
+  const entriesByDirectFixDecision = groupDirectFixEntriesByDecision(liveVerifyText, directFixDecisions);
+  const violations = findStaleLiveVerifyPendingRows(workIndexText, entriesByWorkPacket, entriesByDirectFixDecision);
   const unattributed = findUnattributedLiveVerifyEntries(liveVerifyText, directFixDecisions);
+  const uncited = findUncitedVerificationDates(workIndexText, entriesByWorkPacket);
 
-  if (violations.length === 0 && unattributed.length === 0) {
+  if (violations.length === 0 && unattributed.length === 0 && uncited.length === 0) {
     process.stdout.write(
-      'WORK_INDEX live-verify consistency check passed: no done (`- [x]`) WP row says its live-verify is pending or partial while live-verify.json records it verified, and every live-verify.json entry names what it verifies.\n',
+      'WORK_INDEX live-verify consistency check passed: no done (`- [x]`) WP row says its live-verify is pending or partial while live-verify.json records it verified, every verified entry\'s date is cited in its WP row, and every live-verify.json entry names what it verifies.\n',
     );
     return 0;
   }
   if (violations.length > 0) {
     reportStaleRows(violations);
   }
+  if (uncited.length > 0) {
+    reportUncitedDates(uncited);
+  }
   if (unattributed.length > 0) {
     reportUnattributedEntries(unattributed);
   }
   return 1;
+}
+
+/**
+ * Print the uncited-date failure report.
+ *
+ * @param {{ workPacket: string, entries: { key: string, state: string, date: string }[] }[]} uncited from findUncitedVerificationDates.
+ */
+function reportUncitedDates(uncited) {
+  process.stderr.write(
+    `WORK_INDEX live-verify consistency check FAILED: ${uncited.length} done WP row(s) do not cite the date of a live-verify.json entry that records the WP verified (D-24852). Add the result to each row (e.g. "D-24026 live-verify PASS <date> per live-verify.json (match \`…\`)"), and while you are in the row, rewrite any wording that still says that check is owed. Row(s) and uncited entr(ies):\n`,
+  );
+  for (const row of uncited) {
+    const entryList = row.entries.map((entry) => `${entry.key} (${entry.date || 'no date'})`).join(', ');
+    process.stderr.write(`  ${row.workPacket} — ${entryList}.\n`);
+  }
 }
 
 /**
