@@ -201,7 +201,7 @@ describe('resolveFightCost — converted Killbot villain', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Converted Skrull villains (WP-514 / D-24327) — attack = Hero cost + 2 (PROXY)
+// Converted Skrull villains (WP-514 / D-24327) — attack = Hero cost + 2 (as printed)
 // ---------------------------------------------------------------------------
 
 describe('resolveFightCost — converted Skrull villain', () => {
@@ -209,7 +209,7 @@ describe('resolveFightCost — converted Skrull villain', () => {
   function makeSkrullG(skrullId: string, cost: number): LegendaryGameState {
     return {
       // a converted Hero DOES have a cardStats row (heroes carry cost); the skrull
-      // attack reads that cost + 2 (a documented proxy for the printed VP + 2).
+      // attack reads that cost + 2, as the scheme card prints it.
       cardStats: {
         [skrullId]: { fightCost: 0, fightCostMode: 'static', fightCostBase: 0, cost },
       },

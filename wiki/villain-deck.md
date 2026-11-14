@@ -288,8 +288,8 @@ The full step contract is also documented inline in
   reservoir are taken *before* the HQ is filled, typed `'villain'` + origin
   `'skrull'`, and the villain deck is re-shuffled by a single scheme-gated RNG draw
   that is the *last* setup draw, so non-Secret-Invasion games stay byte-identical).
-  A Skrull's attack is the Hero's **cost + 2** (a documented proxy for the printed
-  "VP + 2" — no card data carries hero VP); **defeating a Skrull gains the Hero into
+  A Skrull's attack is the Hero's **cost + 2**, as the scheme card prints it;
+  **defeating a Skrull gains the Hero into
   the defeating player's discard** (a guarded branch in the shared city-villain
   defeat core) rather than the victory pile; and the `secret-invasion` twist drags
   the highest-cost HQ Hero into the Sewers as a fresh Skrull.

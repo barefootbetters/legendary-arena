@@ -11,8 +11,8 @@
       "scheme": 664
     },
     "byStatus": {
-      "executable": 850,
-      "deferred": 19,
+      "executable": 851,
+      "deferred": 18,
       "condition": 76,
       "unsupported": 255,
       "unmarked": 1665,
@@ -9566,7 +9566,7 @@
       "set": "core",
       "scope": "scheme",
       "mechanic": "special-rules",
-      "status": "deferred",
+      "status": "executable",
       "handler": "packages/game-engine/src/economy/economy.resolve.ts#resolveBaseFightCost",
       "wp": "WP-514",
       "decision": "D-24327"
