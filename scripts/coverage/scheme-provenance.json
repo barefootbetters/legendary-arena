@@ -136,7 +136,7 @@
         "decision": "D-24326"
       },
       "special-rules": {
-        "status": "deferred",
+        "status": "executable",
         "handler": "packages/game-engine/src/economy/economy.resolve.ts#resolveBaseFightCost",
         "wp": "WP-514",
         "decision": "D-24327"
