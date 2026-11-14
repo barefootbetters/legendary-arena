@@ -1018,6 +1018,13 @@ export function executeHeroEffects(
   // for both hero sub-paths below rather than re-read per effect.
   const turn = readTurnNumber(ctx);
 
+  // why: WP-886 live-verify follow-up — two hooks of one card can fail on the same
+  // condition (Volstagg's base and Instead lines both need a Villain in the Bridge), and
+  // each logged an identical "did not activate one of its abilities — no Villain is in the
+  // Bridge." line, so the empty Bridge read twice. Each blocked line is logged once per
+  // play. Local to this call; never stored in G.
+  const loggedBlockedLines: string[] = [];
+
   for (const hook of hooks) {
     // why: WP-708 / D-24531 — a hook is a countable "conditional clause" for the
     // per-match Synergy Rate iff it carries >=1 condition AND an executable effect
@@ -1184,8 +1191,13 @@ export function executeHeroEffects(
         continue;
       }
       const abilityPhrase = hooks.length > 1 ? 'did not activate one of its abilities' : 'ability did not activate';
+      const blockedLine = `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} ${abilityPhrase} — ${reason}.${hollowBodyNote}`;
+      if (loggedBlockedLines.includes(blockedLine)) {
+        continue;
+      }
+      loggedBlockedLines.push(blockedLine);
       pushLog(G,
-        `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} ${abilityPhrase} — ${reason}.${hollowBodyNote}`,
+        blockedLine,
         'blocked',
         cardId, // why: WP-438 — the played card whose ability was gated (drives the diagnostic's conditionNotMet association).
       );
