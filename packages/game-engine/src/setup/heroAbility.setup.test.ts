@@ -2770,12 +2770,20 @@ describe('buildHeroAbilityHooks — hero Conqueror lines (WP-886 / D-24837)', ()
     assert.deepEqual(hooks[0]!.effects, [{ type: 'attack', magnitude: 1 }]);
   });
 
-  it('honest hollows grant nothing and record the Card Map slugs', () => {
+  // why: WP-893 / D-24850 — Put to the Torch's Wound line (line 2) left this case's hollow set: it
+  // now parses to a gain-wound-reward whose rewardComposition is `rooftops-conqueror` (migrated
+  // intentionally). Lines 0 / 1 stay the WP-886 Bridge / Streets Conqueror hooks.
+  it('Stardust and Dragonfang stay honest hollows; Put to the Torch line 2 is a rooftops-conqueror gain-wound-reward', () => {
     const putToTheTorch = patrolCardHooks('anni', 'super-skrull', 'put-to-the-torch');
     assert.equal(putToTheTorch.length, 3);
-    assert.equal(putToTheTorch[2]!.effects, undefined);
+    assert.deepEqual(putToTheTorch[0]!.conditions, [{ type: 'conquerorSpaceHasVillain', value: 'bridge' }]);
+    assert.deepEqual(putToTheTorch[1]!.conditions, [{ type: 'conquerorSpaceHasVillain', value: 'streets' }]);
+    assert.deepEqual(putToTheTorch[2]!.keywords, ['gain-wound-reward']);
+    assert.deepStrictEqual(putToTheTorch[2]!.effects, [
+      { type: 'gain-wound-reward', magnitude: 4, rewardComposition: 'rooftops-conqueror' },
+    ]);
     assert.equal(putToTheTorch[2]!.conditions, undefined);
-    assert.deepEqual(putToTheTorch[2]!.unresolvedMarkers, ['rooftops-conqueror']);
+    assert.equal(putToTheTorch[2]!.unresolvedMarkers, undefined);
 
     const stardust = patrolCardHooks('anni', 'heralds-of-galactus', 'stardust');
     assert.equal(stardust[0]!.effects, undefined);
@@ -2790,6 +2798,16 @@ describe('buildHeroAbilityHooks — hero Conqueror lines (WP-886 / D-24837)', ()
       if (hook.unresolvedMarkers !== undefined) {
         assert.equal(hasConquerorCondition, false, `${hook.cardId}: a hollow carries no Conqueror condition`);
       }
+    }
+  });
+
+  it('gain-wound-reward with an unseeded Conqueror member emits no descriptor (WP-893 / D-24850)', () => {
+    const hooks = parseRestrictedCard('test', 'test-hero', 'test-card', [
+      'You may gain a Wound. If you do, you get [keyword:Bridge Conqueror 1]. [keyword:gain-wound-reward:bridge-conqueror:1]',
+    ]);
+    for (const hook of hooks) {
+      assert.ok(!(hook.effects ?? []).some((effect) => effect.type === 'gain-wound-reward'), 'no gain-wound-reward descriptor for an unseeded Conqueror member');
+      assert.ok(!hook.keywords.includes('gain-wound-reward'), 'no gain-wound-reward keyword for an unseeded Conqueror member');
     }
   });
 

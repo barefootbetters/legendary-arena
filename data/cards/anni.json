@@ -520,7 +520,7 @@
           "abilities": [
             "[keyword:Bridge Conqueror 1]",
             "[keyword:Streets Conqueror 1]",
-            "You may gain a Wound. If you do, you get [keyword:Rooftops Conqueror 4]."
+            "You may gain a Wound. If you do, you get [keyword:Rooftops Conqueror 4]. [keyword:gain-wound-reward:rooftops-conqueror:4]"
           ]
         }
       ],

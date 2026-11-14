@@ -932,8 +932,9 @@
       "label": "Gain Wound Reward",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 5,
+      "cardCount": 6,
       "cardIds": [
+        "anni/super-skrull",
         "co2e/hulk",
         "mdns/morbius",
         "msis/bruce-banner",
@@ -2863,7 +2864,8 @@
     "anni/super-skrull": {
       "mechanics": [
         "conqueror",
-        "focus"
+        "focus",
+        "gain-wound-reward"
       ]
     },
     "antm/ant-man": {

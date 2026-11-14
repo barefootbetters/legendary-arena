@@ -1672,8 +1672,11 @@ export interface GainWoundReward {
   // why: WP-885 / D-24836 — the non-Attack rewards are members of this discriminant, never new
   // fields (D-24834 §11): `berserk` (two runs of the Berserk composition), the optional KO of up to
   // N other cards from hand / discard, and the existing Transform swap.
+  // why: WP-893 / D-24850 — `rooftops-conqueror` (Put to the Torch's "you get Rooftops Conqueror
+  // 4") is +N Attack only while a Villain is in the Rooftops, read at grant time. The City space
+  // lives in the member, never a field (D-24834 §11).
   /** What the kept Wound earns. */
-  rewardType: 'attack' | 'berserk' | 'optional-ko-hand-discard' | 'transform';
+  rewardType: 'attack' | 'berserk' | 'optional-ko-hand-discard' | 'transform' | 'rooftops-conqueror';
   /** How much of it (N >= 1). */
   magnitude: number;
   /** The hero card whose ability offered the Wound (for the log). */

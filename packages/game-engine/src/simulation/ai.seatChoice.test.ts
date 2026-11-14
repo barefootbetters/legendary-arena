@@ -636,6 +636,39 @@ describe('WP-885 choosePlayingSeatChoiceOption — non-Attack gain-wound-reward 
   });
 });
 
+describe('WP-893 choosePlayingSeatChoiceOption — Rooftops Conqueror gain-wound-reward (D-24850)', () => {
+  const PUT_TO_THE_TORCH = 'anni/super-skrull/put-to-the-torch#0';
+  const REWARD = { rewardType: 'rooftops-conqueror' as const, magnitude: 4, sourceCardId: PUT_TO_THE_TORCH };
+
+  it('gains when a Villain is in the Rooftops and +4 opens a fight it could not make', () => {
+    const G = makeCityState(1, [null, null, 'villain-a#0', null, null], { 'villain-a#0': 5 });
+    withChoice(G, buildGainWoundRewardChoice('0', REWARD));
+    assert.equal(choosePlayingSeatChoiceOption(G, '0'), 0, '1 + 4 Attack reaches the 5-cost Rooftops Villain');
+  });
+
+  it('declines with the Rooftops empty, even though +4 would open a fight', () => {
+    const G = makeCityState(1, ['villain-a#0', null, null, null, null], { 'villain-a#0': 5 });
+    withChoice(G, buildGainWoundRewardChoice('0', REWARD));
+    assert.equal(choosePlayingSeatChoiceOption(G, '0'), 1, 'no Villain in the Rooftops: the Wound buys nothing');
+  });
+
+  it('declines with the Rooftops occupied when +4 opens no fight', () => {
+    const G = makeCityState(1, [null, null, 'villain-a#0', null, null], { 'villain-a#0': 9 });
+    withChoice(G, buildGainWoundRewardChoice('0', REWARD));
+    assert.equal(choosePlayingSeatChoiceOption(G, '0'), 1, '1 + 4 Attack still cannot fight a 9-cost Villain');
+  });
+
+  it('never writes G (purity)', () => {
+    for (const city of [[null, null, 'villain-a#0', null, null], ['villain-a#0', null, null, null, null]]) {
+      const G = makeCityState(1, city, { 'villain-a#0': 5 });
+      withChoice(G, buildGainWoundRewardChoice('0', REWARD));
+      const before = structuredClone(G);
+      choosePlayingSeatChoiceOption(G, '0');
+      assert.deepEqual(G, before);
+    }
+  });
+});
+
 describe('WP-884 choosePlayingSeatChoiceOption — Hunt for Victims (D-24835)', () => {
   const VILLAIN = 'test/villain/hand-ninjas#0';
   const BYSTANDER = 'pile-bystander';
