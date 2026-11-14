@@ -2322,6 +2322,39 @@
       "date": "2026-11-12",
       "evidence": "",
       "note": "Live check (NEW match created after the deploy with mdns/lilin; Villain deck -> \"Move villain card to top\", then reveal): (a) one holder (a Bystander on the Mastermind or in the Escape Pile) is KO'd with no prompt; (b) two holders open \"Hunt for Victims: choose which Bystander is KO'd\" with no decline, and a click KOs that holder's Bystander; (c) no holder: the Villain captures one. Blackout under Moonlight (HQ staged to odd costs) hunts twice. D-24841."
+    },
+    {
+      "key": "chmp-villain-monsters-unleashed-orrgo|setup:fight-restriction",
+      "kind": "villain",
+      "card": "Orrgo",
+      "ability": "You can't fight Orrgo unless you have already defeated another Villain this turn.",
+      "wp": "WP-871",
+      "state": "verified",
+      "date": "2026-11-14",
+      "evidence": "2p Operator match 0oZ12g0zNrZ (Red Skull / Midtown Bank Robbery; Monsters Unleashed + Deadpool's Secret Secret Wars; Hand Ninjas; Captain America, Hulk, Thor, Iron Man, Spider-Man; server 62103d8b (contains the #3202 merge 5cbac16a), all matches created 2026-11-14 after boot): Orrgo staged to the Villain Deck top and revealed by the bot ally (3.1.1); the projection read \"Defeat another Villain first this turn\" and the bot did not fight him. Turn 4, after Operator +20 Attack (4.2.1), his Fight button was disabled with that reason as its title and the red \"Can't fight yet\" cue on the tile; Player 0 fought Hand Ninjas (4.2.2), the reason cleared and the button enabled, then Player 0 fought Orrgo (4.2.4). 3p autoplay match BhcELKcYA_G (Red Skull / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers + Deadpool's Secret Secret Wars; Hand Ninjas; Captain America, Hulk, Thor, Iron Man, Spider-Man; server 62103d8b (contains the #3202 merge 5cbac16a), all matches created 2026-11-14 after boot): in the City 30.1.1-37.1.2, blocked at every turn start for all three seats with the same cue and tooltip; Mastermind tactic fights (32.2.11, 33.2.11) did not unblock him; no seat fought him and he escaped (37.1.2). Solo autoplay 8-7WdK3L6YJ (Monsters Unleashed): blocked turns 18-20 until the bot won.",
+      "note": "Blocked until a City Villain (Henchman included) is defeated that turn; a Mastermind fight does not count. D-24816."
+    },
+    {
+      "key": "cvwr-villain-great-lakes-avengers-squirrel-girl|setup:fight-restriction",
+      "kind": "villain",
+      "card": "Squirrel Girl",
+      "ability": "You can't fight Squirrel Girl if you played more than one card this turn.",
+      "wp": "WP-871",
+      "state": "verified",
+      "date": "2026-11-14",
+      "evidence": "Solo autoplay YGr-jSIDEWu (Red Skull / Midtown Bank Robbery; Great Lakes Avengers; Hand Ninjas; Captain America, Hulk, Thor; server 62103d8b (contains the #3202 merge 5cbac16a), all matches created 2026-11-14 after boot): on every turn 9-15 the projection read no reason at turn start and \"You played more than one card this turn\" as soon as the second card was played (e.g. 9.2.1-9.2.2 two S.H.I.E.L.D. Troopers), then cleared at the next turn start. 3p autoplay match BhcELKcYA_G (Red Skull / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers + Deadpool's Secret Secret Wars; Hand Ninjas; Captain America, Hulk, Thor, Iron Man, Spider-Man; server 62103d8b (contains the #3202 merge 5cbac16a), all matches created 2026-11-14 after boot): both copies (32.1.1, 33.1.1) blocked in each seat's Main stage with the cue, the Fight button disabled with that reason as its title once the seat had enough Attack; no seat fought her.",
+      "note": "No ledger row of its own: her ledger mechanic is fortify (WP-873); this row records the printed fight restriction. D-24816."
+    },
+    {
+      "key": "ssw2-villain-deadpools-secret-secret-wars-doop|setup:fight-restriction",
+      "kind": "villain",
+      "card": "Doop",
+      "ability": "You can't fight Doop if there is a Villain in an adjacent city space.",
+      "wp": "WP-871",
+      "state": "verified",
+      "date": "2026-11-14",
+      "evidence": "2p Operator match 0oZ12g0zNrZ (Red Skull / Midtown Bank Robbery; Monsters Unleashed + Deadpool's Secret Secret Wars; Hand Ninjas; Captain America, Hulk, Thor, Iron Man, Spider-Man; server 62103d8b (contains the #3202 merge 5cbac16a), all matches created 2026-11-14 after boot): Doop staged and revealed beside Orrgo (4.1.1); with +20 Attack his Fight button was disabled with \"A Villain is in an adjacent city space\" and the \"Can't fight yet\" cue showed; after Hand Ninjas was fought he stayed blocked (Orrgo beside him); after Orrgo was fought (4.2.4) the reason cleared and Player 0 fought Doop (4.2.5). 3p autoplay match BhcELKcYA_G (Red Skull / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers + Deadpool's Secret Secret Wars; Hand Ninjas; Captain America, Hulk, Thor, Iron Man, Spider-Man; server 62103d8b (contains the #3202 merge 5cbac16a), all matches created 2026-11-14 after boot): Doop -01 in the City 17.1.1-36.1.2, blocked at every turn start with a Villain beside him in the Sewers, Rooftops or Bridge; the cue rendered on seat 0's board and the Fight button's title read the reason once the seat had enough Attack; he escaped (36.1.2). Solo autoplay 35UugWXZ8SU (Deadpool's Secret Secret Wars): Doop -00 blocked turns 5-14 with Deadpool beside him.",
+      "note": "Adjacent means the City space on either side; the end spaces have one neighbour. D-24816."
     }
   ]
 }
