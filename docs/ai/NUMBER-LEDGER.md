@@ -533,7 +533,7 @@ high-water: 422
 - WP-892 — registry-viewer-card-image-tiers (registry viewer card-face images use the WP-888 size tiers: thumb or phone by tile size, phone and large in the detail panel, original as fallback and in the lightbox. reserved 2026-11-13, claude/wp892-registry-viewer-card-image-tiers-reserve; LANDED 2026-11-13)
 - WP-893 — put-to-the-torch-conqueror-reward (anni Put to the Torch line 2: gaining a Wound grants Rooftops Conqueror 4. reserved 2026-11-13, claude/put-to-the-torch-conqueror-reward-draft; LANDED 2026-11-13)
 - WP-894 — airplane-mode-offline-shell (airplane-mode slice 1: web app manifest + service worker so the featured solo setup installs and plays to the end with no network; the phone airplane-mode test. reserved 2026-11-13, claude/wp894-airplane-offline-shell-reserve; LANDED 2026-11-13)
-- WP-895 — workindex-liveverify-stale-row-check (CI guard: fail on a done WORK_INDEX row that still says its D-24026 live-verify is pending while every live-verify.json entry for that WP is verified. reserved 2026-11-14, claude/wp895-liveverify-stale-row-reserve)
+- WP-895 — workindex-liveverify-stale-row-check (CI guard: fail on a done WORK_INDEX row that still says its D-24026 live-verify is pending while every live-verify.json entry for that WP is verified. reserved 2026-11-14, claude/wp895-liveverify-stale-row-reserve; LANDED 2026-11-14)
 
 ## EC
 
@@ -1029,7 +1029,7 @@ high-water: 457
 - EC-930 — registry-viewer-card-image-tiers (WP-892. reserved 2026-11-13, claude/wp892-registry-viewer-card-image-tiers-reserve; LANDED 2026-11-13)
 - EC-931 — put-to-the-torch-conqueror-reward (WP-893. reserved 2026-11-13, claude/put-to-the-torch-conqueror-reward-draft; LANDED 2026-11-13)
 - EC-932 — airplane-mode-offline-shell (WP-894. reserved 2026-11-13, claude/wp894-airplane-offline-shell-reserve; LANDED 2026-11-13)
-- EC-933 — workindex-liveverify-stale-row-check (WP-895. reserved 2026-11-14, claude/wp895-liveverify-stale-row-reserve)
+- EC-933 — workindex-liveverify-stale-row-check (WP-895. reserved 2026-11-14, claude/wp895-liveverify-stale-row-reserve; LANDED 2026-11-14)
 
 ## D
 
@@ -1659,4 +1659,4 @@ section below) and the allocation protocol in
 - D-24849 — registry-viewer-card-image-tiers (WP-892; cards.legendary-arena.com card faces render the WP-888 size tiers by a tile-size ladder through one component, with a one-time fallback to the original; the lightbox keeps the original. reserved 2026-11-13, claude/wp892-registry-viewer-card-image-tiers-reserve; LANDED 2026-11-13)
 - D-24850 — put-to-the-torch-conqueror-reward (WP-893; "You may gain a Wound. If you do, you get Rooftops Conqueror 4": a Conqueror reward on the WP-883 gain-wound-reward choice. reserved 2026-11-13, claude/put-to-the-torch-conqueror-reward-draft; LANDED 2026-11-13)
 - D-24851 — airplane-mode-offline-shell (WP-894; the service worker's scope, cache and update policy, and where the offline featured match is served. reserved 2026-11-13, claude/wp894-airplane-offline-shell-reserve; LANDED 2026-11-13)
-- D-24852 — workindex-liveverify-stale-row-check (WP-895; what counts as a stale live-verify-pending WORK_INDEX row: the pending-text pattern, and that a WP with no live-verify.json entry, or any non-verified entry, stays legitimately pending. reserved 2026-11-14, claude/wp895-liveverify-stale-row-reserve)
+- D-24852 — workindex-liveverify-stale-row-check (WP-895; what counts as a stale live-verify-pending WORK_INDEX row: the pending-text pattern, and that a WP with no live-verify.json entry, or any non-verified entry, stays legitimately pending. reserved 2026-11-14, claude/wp895-liveverify-stale-row-reserve; LANDED 2026-11-14)

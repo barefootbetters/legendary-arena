@@ -1,6 +1,6 @@
 # WP-895 — Live-Verify Stale-Row Guard: fail CI on a done WORK_INDEX row that still says its live-verify is pending after live-verify.json records it verified (Shared Tooling / CI)
 
-**Status:** Draft — pending execution (Lightweight Lane, D-24028)
+**Status:** Done 2026-11-14 (Lightweight Lane, D-24028; D-24852 Active)
 **Primary Layer:** Shared Tooling (governance scripts + CI)
 **User-Visible Surface:** none — infrastructure
 **Risk Tier:** LOW — a detect-only doc linter in CI; no runtime, engine, server, persistence or player surface. Lightweight Lane (D-24028).

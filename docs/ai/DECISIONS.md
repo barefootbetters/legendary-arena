@@ -51511,3 +51511,30 @@ Protect this file.
 
 ---
 Protect this file.
+
+### D-24852 — A checked WORK_INDEX row that still says its live-verify is pending, while live-verify.json records every entry for that WP verified, is stale; CI fails it (Active 2026-11-14 — WP-895 / EC-933)
+
+**Context.** A D-24026 live-verify result is recorded in `docs/ai/coverage/live-verify.json` or a `SPEC:` live-verify PR, and neither has to touch the WP's WORK_INDEX row, so rows kept saying "live-verify operator-pending" after the check passed. The 2026-11-14 reconciliation fixed 91 such rows by hand (#3371 WP-870/872/875, #3373 13 rows WP-862..893, #3374 75 older rows). About 180 checked rows still say pending, legitimately, because no live record exists for them.
+
+**Decision.** A CI guard (`scripts/check-workindex-liveverify-pending.mjs`, `pnpm workindex:liveverify:check`, in Coverage & Ledger Gates after the D-24485 guard; its unit test runs in the same step first) fails the build on a `- [x] WP-<digits>` row that:
+
+1. matches the pending pattern `(?:D-24026|live[- ]verif\w*|live-on-surface)[^.;]{0,60}?\bpending\b(?![- ]choice)` (case-insensitive), and
+2. is named by at least one live-verify.json entry (its `wp` field, read as whole `WP-NNN` tokens, so `WP-674; #3150` names WP-674 and WP-67 never matches WP-674), and
+3. every entry naming it has `state: "verified"`.
+
+**The pattern.** Built from the phrasings on `main`: `**D-24026 live-verify operator-pending**`, `**D-24026 operator-pending**`, `(D-24026) operator-pending`, `live-verify: operator-pending`, `Post-deploy **D-24026 live-verify** pending`, `D-24026 live-verify ⏳ PENDING post-deploy`, `D-24026 live-verify on the CF Pages deploy operator-pending`, `live-on-surface operator-pending`. Each is a live-verify anchor followed, in the same clause, by `pending`. The clause bound (no `.` or `;`, at most 60 characters) keeps an unrelated later "pending" (a backfill, another WP's deploy) from pairing with an earlier PASS. The `(?![- ]choice)` lookahead keeps an honest PASS row that names a "pending-choice" prompt from reading as pending (same counts on real data). A reverse-order form (`pending … live-verify`) matched one more row at execution (WP-330, no entry) and no stale row, so it is not included. live-verify.json must carry `schemaVersion: 1` and an `entries` array or the guard fails loudly, so a schema change cannot silently group nothing.
+
+**The oracle is live-verify.json only.** No entry, or any `partial` / `pending` entry, means the WP is not fully verified on record, so the row's "pending" is true and passes. Rows reconciled from PR records are outside the guard's reach and need no entry. Only checked rows are tested; an open row is expected to be pending. No git history or network, so the job keeps its shallow checkout.
+
+**The oracle trusts entries, not mechanics.** A mechanic with no entry is invisible, so a row worded "X PASS, Y operator-pending" where only X has an entry is flagged although it is honest; the fix is a `pending` entry for Y in live-verify.json, not a reworded row (the failure message says so).
+
+**Known blind spots (false negatives).** (1) The `partial:` row format that #3373 introduced: WP-864 and WP-865 read `live-verify (D-24026) partial: … PASS …, … operator-pending` / `… not yet seen live`, with "pending" past the clause bound or absent, so when their pending entries flip to verified the rows go stale unseen. Adding `partial` to the pattern was scaffolded and rejected because it false-trips WP-862 (row says partial, both entries verified, the third mechanic has no entry); widening it needs entries for unrecorded mechanics first. (2) "pending" outside the anchor's clause: a `.` (e.g. inside a domain, WP-303) or `;` in between, more than 60 characters past the anchor, or an operator-pending with no live-verify anchor in its clause (e.g. WP-308, WP-342, WP-746); about 20 done rows, none with an entry today. (3) Entries whose `wp` names no WP (`D-24732`, `D-24733`, `D-24801 (#3155)`, `D-24802 (#3159)`, `#3151`, empty) are never grouped.
+
+**Detect-only.** The guard never edits WORK_INDEX or live-verify.json. When it fires, rewrite the row's pending phrase to the recorded result (for example `D-24026 live-verify PASS <date> per live-verify.json (match …)`), as the reconciliation PRs did. Never weaken the pattern or the oracle to pass.
+
+**Observed at execution.** `main` @ `02a0bf623`: exit 0 (181 checked rows carry the phrase; two have entries, WP-863 and WP-889, both `pending`). The docs as they stood before #3371 (`62ac480e7^`): exit 1, 58 rows; of the other 33 reconciled rows, 31 had no entry and 2 (WP-864, WP-865) had pending entries. Unit test 8/8; revert proofs: removing the all-verified decision fails the positive case, removing the clause bound fails the cross-clause negative, removing the `pending-choice` lookahead fails the pending-choice negative. Drafting gates (01.4 READY, 01.7 RISK with seven fixes applied, 00.3 with three fixes applied) ran as independent subagents.
+
+**Packet:** WP-895 / EC-933 (Lightweight Lane, D-24028). **Reserved by:** NUMBER-LEDGER D-24852 (#3376). Related: D-24026, D-24485, D-24444.
+
+---
+Protect this file.
