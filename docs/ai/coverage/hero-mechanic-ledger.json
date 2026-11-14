@@ -2,9 +2,9 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 875,
+    "totalRows": 876,
     "byStatus": {
-      "executable": 504,
+      "executable": 505,
       "deferred": 16,
       "condition": 76,
       "unsupported": 254,
@@ -1233,6 +1233,22 @@
         {
           "slug": "transparent-motives",
           "name": "Transparent Motives"
+        }
+      ]
+    },
+    {
+      "extId": "anni/super-skrull",
+      "heroName": "Super-Skrull",
+      "set": "anni",
+      "mechanic": "gain-wound-reward",
+      "status": "executable",
+      "wp": "WP-883",
+      "decision": "D-24834",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-reward",
+      "designs": [
+        {
+          "slug": "put-to-the-torch",
+          "name": "Put to the Torch"
         }
       ]
     },

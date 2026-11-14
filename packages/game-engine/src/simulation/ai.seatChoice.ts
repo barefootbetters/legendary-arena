@@ -92,6 +92,13 @@ import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { resolveFightPrice } from '../economy/economy.resolve.js';
 import { getPatrolModifier } from '../board/boardKeywords.logic.js';
 import { getLegalMoves } from './ai.legalMoves.js';
+// why: WP-893 / D-24850 — the hero condition evaluator imports no simulation module and none of
+// heroEffects.execute.ts, divingBlock.logic.ts, flyingShieldBlock.logic.ts or
+// seatChoice.resolve.ts, so reading the Rooftops Conqueror condition here adds no cycle.
+import {
+  CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE,
+  evaluateCondition,
+} from '../hero/heroConditions.evaluate.js';
 
 /**
  * Returns the option index a PLAYING seat submits for the open seat choice, or
@@ -371,6 +378,16 @@ function chooseGainWoundRewardOption(
     }
     case 'transform': {
       return chooseGainWoundForTransformOption(G, seat, reward.sourceCardId);
+    }
+    case 'rooftops-conqueror': {
+      // why: WP-893 / D-24850 — Rooftops Conqueror N pays only while a Villain is in the
+      // Rooftops, so with the Rooftops empty (or missing) the Wound buys nothing: decline. With a
+      // Villain there it is +N Attack, so fall through to the Attack fight-count rule.
+      const condition = { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'rooftops' };
+      if (!evaluateCondition(G, seat, condition)) {
+        return GAIN_WOUND_REWARD_DECLINE_OPTION_INDEX;
+      }
+      break;
     }
     case 'attack': {
       break;

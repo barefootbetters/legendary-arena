@@ -510,6 +510,13 @@ const GAIN_WOUND_REWARD_SEEDED_COMPOSITIONS: ReadonlySet<string> = new Set<strin
   'berserk',
 ]);
 
+// why: WP-893 / D-24850 — the seeded Conqueror-bonus rewards for gain-wound-reward (anni
+// Super-Skrull's Put to the Torch: "If you do, you get Rooftops Conqueror 4"). The City space
+// lives in the member, never a field (D-24834 §11). Not a HeroKeyword, so it travels in the
+// descriptor's rewardComposition like Berserk. Mirrors the same constant in
+// hero/gainWoundReward.logic.ts (two copies, per duplicate-first).
+const GAIN_WOUND_REWARD_SEEDED_CONQUEROR_REWARDS: ReadonlySet<string> = new Set<string>(['rooftops-conqueror']);
+
 // why: D-24148 — the shuffle-discard-empty-reward token has three segments
 // ([keyword:shuffle-discard-empty-reward:<reward>:<n>]); KEYWORD_PATTERN cannot
 // match it (it stops at the second colon), so it needs a dedicated pattern like
@@ -932,10 +939,11 @@ const PATROL_NAMED_SPACE_PATTERN = /^the\s+(sewers|bank|rooftops|streets|bridge)
 // why: WP-886 / D-24837 — identifies a pure hero Conqueror line: an optional [hc:X] / [team:X]
 // gate prefix (group 1), an optional "Instead," (group 2), then one
 // "[keyword:<Space> Conqueror N]" token (group 3 = the space, group 4 = N) and nothing else. A
-// line with any other text (Put to the Torch's Wound line, Stardust's Focus line, Dragonfang's
-// Thrown Artifact line) is not a Conqueror line and keeps its generic-parse honest hollow. The
-// ^…$ anchors are load-bearing: without them Put to the Torch's line 2 would grant +4 on every
-// play. Non-global, so `.exec` is stateless.
+// line with any other text (Stardust's Focus line, Dragonfang's Thrown Artifact line) is not a
+// Conqueror line and keeps its generic-parse honest hollow; Put to the Torch's Wound line is not
+// one either and parses as a gain-wound-reward with the `rooftops-conqueror` reward (WP-893 /
+// D-24850). The ^…$ anchors are load-bearing: without them Put to the Torch's line 2 would grant
+// +4 on every play. Non-global, so `.exec` is stateless.
 const CONQUEROR_LINE_PATTERN =
   /^\s*((?:\[(?:hc|team):[^\]]+\]\s*)*:?)\s*(Instead,\s*)?\[keyword:(Sewers|Bank|Rooftops|Streets|Bridge)\s+Conqueror\s+(\d+)\]\.?\s*$/i;
 
@@ -2321,8 +2329,10 @@ function parseAbilityText(
   // why: mirrors Step 2f — the gain-wound-reward token has three segments; the reward is granted
   // only for a Wound gained and kept, and the magnitude is the reward magnitude. A descriptor is
   // emitted ONLY when the reward is seeded AND n >= 1 (an unseeded reward emits nothing).
-  // why: WP-885 / D-24836 — a seeded composition reward (Berserk) is recorded as the line's
-  // composition reward instead of a rewardType; the descriptor arm emits rewardComposition.
+  // why: WP-885 / D-24836, WP-893 / D-24850 — a seeded reward that is not a HeroKeyword (the
+  // composition marker Berserk, D-24031; the Conqueror bonus `rooftops-conqueror`) is recorded as
+  // the line's non-keyword reward instead of a rewardType; the descriptor arm emits it as
+  // rewardComposition.
   let gainWoundRewardComposition: string | undefined;
   const gainWoundRewardRegex = new RegExp(GAIN_WOUND_REWARD_PATTERN.source, 'g');
   let gainWoundRewardMatch: RegExpExecArray | null = gainWoundRewardRegex.exec(abilityText);
@@ -2337,6 +2347,13 @@ function parseAbilityText(
       rewardTypes.set('gain-wound-reward', gainRewardCandidate);
     } else if (GAIN_WOUND_REWARD_SEEDED_COMPOSITIONS.has(gainRewardCandidate)
       && gainRewardMagnitude >= 1) {
+      keywords.push('gain-wound-reward');
+      magnitudes.set('gain-wound-reward', gainRewardMagnitude);
+      gainWoundRewardComposition = gainRewardCandidate;
+    } else if (GAIN_WOUND_REWARD_SEEDED_CONQUEROR_REWARDS.has(gainRewardCandidate)
+      && gainRewardMagnitude >= 1) {
+      // why: WP-893 / D-24850 — a Conqueror-bonus reward travels in rewardComposition (it is not
+      // a HeroKeyword); the grant reads its City space at grant time.
       keywords.push('gain-wound-reward');
       magnitudes.set('gain-wound-reward', gainRewardMagnitude);
       gainWoundRewardComposition = gainRewardCandidate;

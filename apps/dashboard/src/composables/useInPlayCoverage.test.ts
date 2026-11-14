@@ -745,10 +745,14 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // baseline peaks (conqueror 45 + bridge-conqueror 14) and rooftops-conqueror's 7 MOVE into
   // resolvedObs: 1154 -> 1220, so percentResolved 13.2 -> 14 (1220 / 8724). The bare bridge /
   // streets / rooftops keys keep their baseline peaks unresolved. A mechanic-status re-pin.
+  // why: WP-893 / D-24850 (2026-11-13) — Put to the Torch's Wound line now resolves to the
+  // gain-wound-reward prompt, so rooftops-conqueror (7) leaves the regenerated feed (7352 -> 7345
+  // raw observations): totalObs 8724 -> 8717 and resolvedObs 1220 -> 1213, so percentResolved
+  // 14 -> 13.9 (1213 / 8717). A feed re-pin, not a behavior change.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8724);
-  assert.equal(view.resolvedObs.value, 1220);
-  assert.equal(view.percentResolved.value, 14);
+  assert.equal(view.totalObs.value, 8717);
+  assert.equal(view.resolvedObs.value, 1213);
+  assert.equal(view.percentResolved.value, 13.9);
   assert.ok(view.remaining.value.length > 0);
 });
 

@@ -3,15 +3,15 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2871,
+    "totalEntries": 2872,
     "byScope": {
-      "hero": 875,
+      "hero": 876,
       "villain": 765,
       "mastermind": 567,
       "scheme": 664
     },
     "byStatus": {
-      "executable": 849,
+      "executable": 850,
       "deferred": 19,
       "condition": 76,
       "unsupported": 255,
@@ -2775,6 +2775,23 @@
         {
           "slug": "transparent-motives",
           "name": "Transparent Motives"
+        }
+      ]
+    },
+    {
+      "extId": "anni/super-skrull",
+      "name": "Super-Skrull",
+      "set": "anni",
+      "scope": "hero",
+      "mechanic": "gain-wound-reward",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-reward",
+      "wp": "WP-883",
+      "decision": "D-24834",
+      "designs": [
+        {
+          "slug": "put-to-the-torch",
+          "name": "Put to the Torch"
         }
       ]
     },
@@ -39527,7 +39544,8 @@
       "scope": "hero",
       "mechanics": [
         "conqueror",
-        "focus"
+        "focus",
+        "gain-wound-reward"
       ]
     },
     "antm-mastermind-morgan-le-fay-master-strike": {
