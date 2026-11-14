@@ -34,8 +34,8 @@
  *
  * Loud-fail (non-zero exit, full-sentence message) on:
  *   - a keyword in the map outside the five locked strings
- *   - a named set / villain-group / villain-card / henchman-group that
- *     does not exist in the card data
+ *   - a named set / villain-group / villain-card / henchman-group /
+ *     henchman variant card (D-24803) that does not exist in the card data
  *   - a timing key whose card matches zero or more-than-one ability line
  *     (multi-line same-timing cards cannot be disambiguated — defer them
  *     to the map's `_unassigned` block with reason "multi-line")
@@ -183,6 +183,39 @@ function isLockedEffectKeyword(keyword) {
 // (D-24770 — co2e Mystique, Frost Giant Warrior and Juggernaut Ambushes; the first two
 // validate via the shared trait-predicate branch, the last two via the terminal no-param
 // branch).
+// `hq-hero-gains-size-changing` (`:<if-none|add|replace>:<c>[+<c>…]`) appended at position 39
+// by WP-862 (D-24804 — antm Ultron-Pym, amwp Shrinksperiments and chmp Sporr Fights; validates via
+// its own mode + Hero Class list branch below).
+// `hq-heroes-cost-change` (`:<less|more>:<N>[:<c>[+<c>…]]`), `ko-from-discard-current` (`:<N>`) and
+// `reenter-sewers-if-villain-deck-top` (`:<villain|bystander|villain+bystander>`) appended at
+// positions 40, 41 and 42 by WP-868 (D-24811 — Tim Boo Ba / Jormungand / Dr. Carlton Drake / The
+// Mind Stone, Flatman and six siblings, and Mr. Immortal; each validates via its own branch below).
+// `fortify` (`:<place>:<lock>`) appended at position 43 by WP-873 (D-24818 — cvwr Squirrel Girl
+// and Colleen Wing's Escape; validates via its own place + allowed-lock branch below).
+// `demolish-each-player` (no-param) appended at position 44 by WP-864 (D-24807 — chmp Trull the
+// Unhuman's Ambush, Zzutak's and Piledriver's Escape "[Demolish] each player"; validates via the
+// terminal no-param `parts.length === 1` branch).
+// `stack-cards-enter-city-as-villains` (`:<bystander|officer>:<N>[:<name>]`) appended at position
+// 45 by WP-869 (D-24814 — chmp Groot from Planet X's Fight, cvwr Agent Gabe Jones's Fight and Agent
+// Eric Marshall's Ambush; validates via its own branch below).
+// `reveal-top-may-ko-current` (no-param), `reveal-top-discard-zero-cost-current` (`:<N>`) and
+// `next-hand-from-play-zero-cost-current` (no-param) appended at positions 46, 47 and 48 by WP-870
+// (D-24815 — rvlt Mandarin's Rings Lightning (and antm Daystar) "Reveal the top card of your deck.
+// You may KO it.", Spin "Reveal the top six cards … Discard all of them that cost 0, then put the
+// rest back in any order." and Zero "Choose a card you played this turn that costs 0 … add that card
+// to your hand as an extra card."; the two no-param ones validate via the terminal
+// `parts.length === 1` branch, the `:<N>` one via its own branch below).
+// `look-other-player-deck-top-claim-current`, `reveal-villain-deck-defeat-low-vp-current` and
+// `give-card-to-right-player-current` (all no-param) appended at positions 49, 50 and 51 by WP-872
+// (D-24817 — rvlt Mandarin's Rings Liar "Look at the top card of another player's deck. Say it is
+// "Good" or "Bad." That player chooses to put it in your discard pile or their discard pile.",
+// Nightbringer "Reveal the top three cards of the Villain Deck. You may defeat a Villain you revealed
+// worth 2VP or less. (Do its Fight effect.) Put the rest back in any order." and Remaker "You may
+// choose a card from your hand or discard pile. The player on your right puts it in their hand.";
+// all three validate via the terminal `parts.length === 1` branch).
+// `villain-hunt-for-victims` (no-param) appended at position 52 by WP-889 (D-24841 — mdns Lilin
+// Skinner, Meatmarket and Blackout "Ambush: [keyword:Hunt for Victims]"; validates via the terminal
+// `parts.length === 1` branch, with or without the `!moonlight` suffix).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -222,6 +255,20 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'discard-hero-or-wound-each-player-by-trait',
   'discard-hand-matching-hq-card-names-each-player',
   'hq-heroes-to-hero-deck-bottom',
+  'hq-hero-gains-size-changing',
+  'hq-heroes-cost-change',
+  'ko-from-discard-current',
+  'reenter-sewers-if-villain-deck-top',
+  'fortify',
+  'demolish-each-player',
+  'stack-cards-enter-city-as-villains',
+  'reveal-top-may-ko-current',
+  'reveal-top-discard-zero-cost-current',
+  'next-hand-from-play-zero-cost-current',
+  'look-other-player-deck-top-claim-current',
+  'reveal-villain-deck-defeat-low-vp-current',
+  'give-card-to-right-player-current',
+  'villain-hunt-for-victims',
 ];
 
 // why: WP-836 / D-24769 — hand-synced local copy of the engine's HERO_CLASSES
@@ -236,8 +283,9 @@ const HERO_CLASSES = ['tech', 'covert', 'strength', 'ranged', 'instinct'];
 // marker suffix validates against this list (case-sensitive), so a mistyped condition in
 // the marker map is rejected, and a new engine condition breaks this script until it is
 // appended here too. `another-group-villain-in-city` appended by WP-837 (D-24770 — co2e
-// Scorpion's Ambush "If there is another Spider-Foes Villain in the city").
-const VILLAIN_EFFECT_CONDITIONS = ['savior', 'another-group-villain-in-city'];
+// Scorpion's Ambush "If there is another Spider-Foes Villain in the city"). `moonlight` appended by
+// WP-889 (D-24841 — mdns Blackout's Ambush "If it's Moonlight, Hunt for Victims again").
+const VILLAIN_EFFECT_CONDITIONS = ['savior', 'another-group-villain-in-city', 'moonlight'];
 
 // why: WP-489 / D-24295 — hand-synced local copy of the engine's CITY_SPACE_NAMES
 // (packages/game-engine/src/board/citySpaceNames.ts). Same no-import-from-packages
@@ -246,6 +294,21 @@ const VILLAIN_EFFECT_CONDITIONS = ['savior', 'another-group-villain-in-city'];
 // this list, so a mistyped space in the marker map is rejected (never a silent
 // accept) and any engine-side rename breaks this script until it is updated here.
 const CITY_SPACE_NAMES = ['sewers', 'bank', 'rooftops', 'streets', 'bridge'];
+
+// why: WP-873 / D-24818 — hand-synced local copy of the engine's FORTIFY_ALLOWED_LOCKS
+// (packages/game-engine/src/board/fortify.types.ts); its keys are FORTIFY_PLACES. Same
+// no-import-from-packages discipline: a fortify marker whose place or lock is not listed here
+// is rejected, and a place the engine appends breaks nothing until it is appended here too.
+const FORTIFY_ALLOWED_LOCKS = {
+  'sidekick-stack': ['no-recruit-or-gain'],
+  mastermind: ['no-fight'],
+};
+
+// why: WP-869 / D-24814 — hand-synced local copy of the engine's STACK_VILLAIN_NAME_PATTERN
+// (packages/game-engine/src/rules/stackVillain.logic.ts): the optional name token of a
+// stack-cards-enter-city-as-villains marker. The engine's stackVillain.test.ts asserts this file
+// contains the engine pattern's source, so the two copies cannot drift.
+const STACK_VILLAIN_NAME_PATTERN = /^[a-z0-9]+([_-][a-z0-9]+)*$/;
 
 /**
  * Returns true when a `@<space>[+<space>…]` gate suffix (the text after the `@`)
@@ -432,6 +495,54 @@ function isValidParameterizedEffectToken(token) {
     // tokens; co2e Savage Land Mutates: :strength+instinct). Mirrors the engine parser's
     // parseHeroClassList so producer + consumer accept the same tokens.
     return parts.length === 2 && isValidHeroClassList(parts[1]);
+  }
+  if (primitive === 'hq-hero-gains-size-changing') {
+    // why: D-24804 — grammar hq-hero-gains-size-changing:<if-none|add|replace>:<c>[+<c>…] (exactly
+    // 3 tokens; Sporr: :add:tech+ranged). Mirrors the engine parser so producer + consumer agree.
+    const modes = ['if-none', 'add', 'replace'];
+    return parts.length === 3 && modes.includes(parts[1]) && isValidHeroClassList(parts[2]);
+  }
+  if (primitive === 'hq-heroes-cost-change') {
+    // why: D-24811 — grammar hq-heroes-cost-change:<less|more>:<N>[:<c>[+<c>…]] (3 or 4 tokens; Dr.
+    // Carlton Drake: :less:1:instinct+tech). Mirrors the engine parser so producer + consumer agree.
+    if (parts.length !== 3 && parts.length !== 4) return false;
+    if (parts[1] !== 'less' && parts[1] !== 'more') return false;
+    if (!/^[1-9][0-9]*$/.test(parts[2])) return false;
+    return parts.length === 3 || isValidHeroClassList(parts[3]);
+  }
+  if (primitive === 'ko-from-discard-current') {
+    // why: D-24811 — grammar ko-from-discard-current:<N> (exactly 2 tokens; Flatman: :1), the
+    // mandatory KO. Same strict positive-integer grammar as the "up to" sibling.
+    return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
+  }
+  if (primitive === 'reveal-top-discard-zero-cost-current') {
+    // why: D-24815 — grammar reveal-top-discard-zero-cost-current:<N> (exactly 2 tokens; Spin: :6),
+    // N the count of deck-top cards revealed. Mirrors the engine parser: the bare token is invalid
+    // (no default count), so it must not reach the terminal no-param branch.
+    return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
+  }
+  if (primitive === 'reenter-sewers-if-villain-deck-top') {
+    // why: D-24811 — grammar reenter-sewers-if-villain-deck-top:<kinds> (exactly 2 tokens; Mr.
+    // Immortal: :villain+bystander). Mirrors the engine parser's three accepted kind tokens.
+    const kinds = ['villain', 'bystander', 'villain+bystander'];
+    return parts.length === 2 && kinds.includes(parts[1]);
+  }
+  if (primitive === 'fortify') {
+    // why: D-24818 — grammar fortify:<place>:<lock> (exactly 3 tokens; Squirrel Girl:
+    // :sidekick-stack:no-recruit-or-gain, Colleen Wing: :mastermind:no-fight). The lock must be
+    // one FORTIFY_ALLOWED_LOCKS lists for the place. Mirrors the engine parser's fortify branch.
+    if (parts.length !== 3) return false;
+    if (!Object.hasOwn(FORTIFY_ALLOWED_LOCKS, parts[1])) return false;
+    return FORTIFY_ALLOWED_LOCKS[parts[1]].includes(parts[2]);
+  }
+  if (primitive === 'stack-cards-enter-city-as-villains') {
+    // why: D-24814 — grammar stack-cards-enter-city-as-villains:<bystander|officer>:<N>[:<name>]
+    // (3 or 4 tokens; Groot from Planet X: :bystander:2:splintered_half-groot, Agent Gabe Jones and
+    // Agent Eric Marshall: :officer:1). Mirrors the engine parser's stack-villain branch.
+    if (parts.length !== 3 && parts.length !== 4) return false;
+    if (parts[1] !== 'bystander' && parts[1] !== 'officer') return false;
+    if (!/^[1-9][0-9]*$/.test(parts[2])) return false;
+    return parts.length === 3 || STACK_VILLAIN_NAME_PATTERN.test(parts[3]);
   }
   if (primitive === 'play-villain-deck-cards') {
     // why: D-24351 — grammar play-villain-deck-cards:<N> (exactly 2 tokens); N is the
@@ -739,11 +850,61 @@ function collectHenchmanEdits(setData, setAbbr, henchmanEntries) {
           `map, or update the source data.`,
       );
     }
+    // why: D-24803 — a group printed as variant cards (Tardigrade, Ultron Sentries,
+    // Mandarin's Rings) carries its text on cards[], not on the group, so its entry
+    // names each variant under `cards`; the remaining keys are group-level timings.
+    const { cards: variantEntries, ...groupTimings } = henchmanEntries[groupSlug];
     const abilities = Array.isArray(henchmanGroup.abilities) ? henchmanGroup.abilities : [];
     const entityLabel = `henchman group "${setAbbr}/${groupSlug}"`;
-    // why: cardSlug is null for henchmen — their ability text is group-level,
-    // so the anchored text replacement scopes by the henchman group slug only.
-    for (const edit of collectTimingEdits(abilities, henchmanEntries[groupSlug], entityLabel, 'henchmen', groupSlug, null)) {
+    // why: cardSlug is null for group-level henchman text, so the anchored text
+    // replacement scopes by the henchman group slug only.
+    for (const edit of collectTimingEdits(abilities, groupTimings, entityLabel, 'henchmen', groupSlug, null)) {
+      edits.push(edit);
+    }
+    if (variantEntries !== undefined) {
+      for (const edit of collectHenchmanVariantEdits(henchmanGroup, setAbbr, groupSlug, variantEntries)) {
+        edits.push(edit);
+      }
+    }
+  }
+  return edits;
+}
+
+/**
+ * Collects the marker edits for the variant cards of one henchman group
+ * (D-24803). Each variant's text lives on the group's `cards[]` entry, so the
+ * edit anchors on the variant slug after the group slug, exactly as a villain
+ * card does. Loud-fails on a variant slug the group does not print. Iterates
+ * variants in lexicographic order. Returns edit descriptors (does not mutate).
+ *
+ * @param {object} henchmanGroup - The parsed henchman group (read-only).
+ * @param {string} setAbbr - The set abbreviation being processed.
+ * @param {string} groupSlug - The henchman group slug.
+ * @param {object} variantEntries - The curated `cards` map: variant slug → timing entry.
+ * @returns {object[]} Edit descriptors { section, groupSlug, cardSlug, oldLine, newLine }.
+ * @throws On a variant slug missing from the group's cards[].
+ */
+function collectHenchmanVariantEdits(henchmanGroup, setAbbr, groupSlug, variantEntries) {
+  const variantBySlug = new Map();
+  for (const variantCard of Array.isArray(henchmanGroup.cards) ? henchmanGroup.cards : []) {
+    if (typeof variantCard === 'object' && variantCard !== null) {
+      variantBySlug.set(variantCard.slug, variantCard);
+    }
+  }
+  const edits = [];
+  for (const variantSlug of Object.keys(variantEntries).sort()) {
+    const variantCard = variantBySlug.get(variantSlug);
+    if (!variantCard) {
+      throw new Error(
+        `villain-effect-markers.json names variant card "${variantSlug}" of henchman group ` +
+          `"${setAbbr}/${groupSlug}", but that group's cards[] is ` +
+          `[${[...variantBySlug.keys()].map((slug) => `"${slug}"`).join(', ')}]. Fix the variant ` +
+          `slug in the marker map, or update the source data.`,
+      );
+    }
+    const abilities = Array.isArray(variantCard.abilities) ? variantCard.abilities : [];
+    const entityLabel = `henchman variant card "${setAbbr}/${groupSlug}/${variantSlug}"`;
+    for (const edit of collectTimingEdits(abilities, variantEntries[variantSlug], entityLabel, 'henchmen', groupSlug, variantSlug)) {
       edits.push(edit);
     }
   }
@@ -763,7 +924,7 @@ function collectHenchmanEdits(setData, setAbbr, henchmanEntries) {
  * @param {string} entityLabel - A human label for failure messages.
  * @param {string} section - "villains" | "henchmen" (anchor section).
  * @param {string} groupSlug - The group slug (anchor).
- * @param {string|null} cardSlug - The villain card slug, or null for henchmen.
+ * @param {string|null} cardSlug - The villain or henchman variant card slug, or null for group-level henchman text.
  * @returns {object[]} Edit descriptors for lines that still need a marker.
  * @throws On unsupported timing keys, unknown keywords, or bad timing match.
  */
@@ -827,7 +988,7 @@ function applyEditToText(text, edit) {
     searchPosition = text.indexOf(`"slug": "${edit.cardSlug}"`, searchPosition);
     if (searchPosition < 0) {
       throw new Error(
-        `Could not anchor villain card "${edit.cardSlug}" after group "${edit.groupSlug}" in the ` +
+        `Could not anchor card "${edit.cardSlug}" after group "${edit.groupSlug}" in the ` +
           `set-file text. The card-data file shape is not what the overlay expects.`,
       );
     }
@@ -992,6 +1153,11 @@ function collectProposeRowsForSet(setAbbr, setData, rows) {
   for (const henchmanGroup of setData.henchmen ?? []) {
     if (typeof henchmanGroup !== 'object' || henchmanGroup === null) continue;
     collectProposeRowsForAbilities(setAbbr, henchmanGroup.slug, '', henchmanGroup.abilities ?? [], rows);
+    // why: D-24803 — a variant henchman card's text lives on cards[].
+    for (const variantCard of Array.isArray(henchmanGroup.cards) ? henchmanGroup.cards : []) {
+      if (typeof variantCard !== 'object' || variantCard === null) continue;
+      collectProposeRowsForAbilities(setAbbr, henchmanGroup.slug, variantCard.slug, variantCard.abilities ?? [], rows);
+    }
   }
 }
 

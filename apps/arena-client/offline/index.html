@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Legendary Arena — the digital deck-building arena. The arena awaits." />
+    <title>Legendary Arena — Offline</title>
+    <!-- why: WP-894 / D-24851 — this second HTML entry exists so the manifest
+         link appears only on the offline page; with it in index.html the live
+         game at / would install as the offline app. It loads the same
+         /src/main.ts, so the build adds no chunk (the input key `index` in
+         vite.config.ts keeps the live entry chunk's name). -->
+    <link rel="manifest" href="/offline/manifest.webmanifest" />
+    <meta name="theme-color" content="#fdfcf8" />
+    <link rel="apple-touch-icon" href="/offline/apple-touch-icon.png" />
+    <!-- why: day/night theme init — set data-theme on <html> BEFORE the
+         stylesheets paint, so a saved "night" preference (or the OS
+         prefers-color-scheme when the user hasn't chosen) does not flash light
+         first. The brand tokens (below) switch under html[data-theme="dark"].
+         Mirrors the arena-client `useTheme` composable's storage key. -->
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('arenaClientTheme');
+          var useDark =
+            saved === 'dark' ||
+            (saved === null &&
+              typeof window.matchMedia === 'function' &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (useDark) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+          }
+        } catch (error) {
+          /* localStorage unavailable (private mode / disabled) — default light. */
+        }
+      })();
+    </script>
+    <!-- WP-007a brand-token consumption.
+         Cascade contract: both stylesheets set the same CSS custom
+         properties on :root at equal specificity. Per CSS spec, equal-
+         specificity declarations resolve by source order — the later
+         declaration wins. The cross-origin <link> is listed AFTER the
+         local fallback BY DESIGN:
+           (1) cross-origin fetch succeeds → live v1 declarations apply
+               (live contract is authoritative);
+           (2) cross-origin fetch fails (network failure, CORS
+               regression, www outage) → fallback's v1 declarations
+               apply (bundled snapshot is the safety net).
+         Both files MUST share byte-identical contents; SHA-256 parity
+         is verified at WP lock and at every WP that touches either
+         side of the contract (see WP-007a Step 4 "Snapshot integrity
+         check" + DoD).
+         The crossorigin attribute is intentionally OMITTED: the live
+         URL responds with Access-Control-Allow-Origin: *, so the link
+         works without an explicit CORS mode declaration; omitting it
+         also lets the browser fall back to a non-CORS fetch if a
+         middlebox blocks strict CORS, which slightly widens the
+         reachability window without weakening the fallback path. -->
+    <link rel="stylesheet" href="/brand-tokens.local.css" />
+    <link rel="stylesheet" href="https://www.legendary-arena.com/brand-tokens.css" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
+<!-- deploy sync: WP-628 add-guest button (2d7325a8); CF Pages missed the push, this retriggers a fresh main-HEAD build -->

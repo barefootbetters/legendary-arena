@@ -237,7 +237,7 @@ describe('LegendaryGame', () => {
     );
   });
 
-  it('defines moves: advanceStage, dodgeCard, drawCards, endMatchEarly, endTurn, exorciseHauntedHero, fightMastermind, fightVillain, healWounds, operatorAddEconomy, operatorEscapeVillain, operatorMoveCard, operatorMoveToDeckTop, operatorRevealNow, operatorSetSupplyCount, phaseCard, playCard, recruitHero, recruitOfficer, recruitSidekick, resolveCopyPowersChoice, resolveCountScaledChoice, resolveCoveringFireChoice, resolveDefeatChoice, resolveDiscardChoice, resolveDiscardToPlay, resolveDoOver, resolveDrawOrEmpowered, resolveElectromagneticBubbleChoice, resolveGiveHqHeroChoice, resolveHeroChoice, resolveKoDiscardChoice, resolveKoHeroChoice, resolveMelterKoChoice, resolveMoveVillainChoice, resolveOptionalKoReward, resolveOptionalPutBottomHQ, resolvePlayVillainTopChoice, resolvePutAnyNumberBottomHQ, resolvePutCardsOnDeckChoice, resolvePutHandOnDeckTop, resolveReorderChoice, resolveReturnOnDiscard, resolveReturnZeroCostDiscard, resolveRevealThreeAssign, resolveRevealTopDispose, resolveRuthlessDictatorChoice, resolveScryKoChoice, resolveSeatChoice, resolveSmashDiscard, resolveSplitFaceChoice, resolveUndercoverChoice, resolveVictoryPileCardPick, and revealVillainCard', () => {
+  it('defines moves: advanceStage, attemptHeist, dodgeCard, drawCards, endMatchEarly, endTurn, exorciseHauntedHero, fightMastermind, fightVillain, healWounds, operatorAddEconomy, operatorEscapeVillain, operatorMoveCard, operatorMoveToDeckTop, operatorRevealNow, operatorSetSupplyCount, phaseCard, playCard, recruitHero, recruitOfficer, recruitSidekick, resolveCopyPowersChoice, resolveCountScaledChoice, resolveCoveringFireChoice, resolveDefeatChoice, resolveDiscardChoice, resolveDiscardToPlay, resolveDoOver, resolveDrawOrEmpowered, resolveElectromagneticBubbleChoice, resolveGiveHqHeroChoice, resolveHeroChoice, resolveKoDiscardChoice, resolveKoHeroChoice, resolveMelterKoChoice, resolveMoveVillainChoice, resolveOptionalKoReward, resolveOptionalPutBottomHQ, resolvePlayVillainTopChoice, resolvePutAnyNumberBottomHQ, resolvePutCardsOnDeckChoice, resolvePutHandOnDeckTop, resolveReorderChoice, resolveReturnOnDiscard, resolveReturnZeroCostDiscard, resolveRevealThreeAssign, resolveRevealTopDispose, resolveRuthlessDictatorChoice, resolveScryKoChoice, resolveSeatChoice, resolveSmashDiscard, resolveSplitFaceChoice, resolveUndercoverChoice, resolveVictoryPileCardPick, revealVillainCard, and useRitualArtifact', () => {
     const moveNames = Object.keys(LegendaryGame.moves ?? {});
     assert.deepStrictEqual(
       moveNames.sort(),
@@ -274,8 +274,10 @@ describe('LegendaryGame', () => {
       // WP-795 / D-24664 added resolveMoveVillainChoice (46 → 47) — the interactive Spinning Cyclone move-a-Villain pick (core Storm); sorts between resolveMelterKoChoice and resolveOptionalKoReward; NOT a CORE_MOVE_NAME (mirrors resolveCoveringFireChoice). The test title also gains the stale-missing resolveCoveringFireChoice, resolveRevealTopDispose and resolveSplitFaceChoice.
       // WP-806 / D-24713 added the six operator setters (47 → 53) — operatorAddEconomy, operatorEscapeVillain, operatorMoveCard, operatorMoveToDeckTop, operatorRevealNow and operatorSetSupplyCount, operator-match-only; they sort between healWounds and phaseCard; NOT CORE_MOVE_NAMEs and absent from bot / simulation / fixture dispatch (mirrors phaseCard / endMatchEarly).
       // WP-842 / D-24776 added recruitSidekick (53 → 54) — the player-initiated once-per-turn buy of a Sidekick from the Sidekick Stack for 2 recruit; sorts between recruitOfficer and resolveCopyPowersChoice; NOT a CORE_MOVE_NAME and absent from SIMULATION_MOVE_NAMES (mirrors recruitOfficer, internally stage-gated).
-      ['advanceStage', 'dodgeCard', 'drawCards', 'endMatchEarly', 'endTurn', 'exorciseHauntedHero', 'fightMastermind', 'fightVillain', 'healWounds', 'operatorAddEconomy', 'operatorEscapeVillain', 'operatorMoveCard', 'operatorMoveToDeckTop', 'operatorRevealNow', 'operatorSetSupplyCount', 'phaseCard', 'playCard', 'recruitHero', 'recruitOfficer', 'recruitSidekick', 'resolveCopyPowersChoice', 'resolveCountScaledChoice', 'resolveCoveringFireChoice', 'resolveDefeatChoice', 'resolveDiscardChoice', 'resolveDiscardToPlay', 'resolveDoOver', 'resolveDrawOrEmpowered', 'resolveElectromagneticBubbleChoice', 'resolveGiveHqHeroChoice', 'resolveHeroChoice', 'resolveKoDiscardChoice', 'resolveKoHeroChoice', 'resolveMelterKoChoice', 'resolveMoveVillainChoice', 'resolveOptionalKoReward', 'resolveOptionalPutBottomHQ', 'resolvePlayVillainTopChoice', 'resolvePutAnyNumberBottomHQ', 'resolvePutCardsOnDeckChoice', 'resolvePutHandOnDeckTop', 'resolveReorderChoice', 'resolveReturnOnDiscard', 'resolveReturnZeroCostDiscard', 'resolveRevealThreeAssign', 'resolveRevealTopDispose', 'resolveRuthlessDictatorChoice', 'resolveScryKoChoice', 'resolveSeatChoice', 'resolveSmashDiscard', 'resolveSplitFaceChoice', 'resolveUndercoverChoice', 'resolveVictoryPileCardPick', 'revealVillainCard'],
-      'LegendaryGame must define exactly 54 moves',
+      // WP-858 / D-24794 added useRitualArtifact (54 → 55) — the player-initiated use of a Ritual Artifact (discard a played or controlled Staff of Legba / Medallion of Many Loas for its reward); sorts last; NOT a CORE_MOVE_NAME and absent from bot / simulation / fixture dispatch (mirrors phaseCard, internally stage-gated).
+      // WP-865 / D-24808 added attemptHeist (55 → 56) — the player-initiated once-per-turn Heist attempt (Ant-Man and the Wasp); sorts after advanceStage; NOT a CORE_MOVE_NAME (mirrors useRitualArtifact, internally stage-gated). WP-878 / D-24826: getLegalMoves now emits it for a bot when the card-count odds favor a Heist, and both simulation MOVE_MAPs dispatch it; fixture dispatch still omits it.
+      ['advanceStage', 'attemptHeist', 'dodgeCard', 'drawCards', 'endMatchEarly', 'endTurn', 'exorciseHauntedHero', 'fightMastermind', 'fightVillain', 'healWounds', 'operatorAddEconomy', 'operatorEscapeVillain', 'operatorMoveCard', 'operatorMoveToDeckTop', 'operatorRevealNow', 'operatorSetSupplyCount', 'phaseCard', 'playCard', 'recruitHero', 'recruitOfficer', 'recruitSidekick', 'resolveCopyPowersChoice', 'resolveCountScaledChoice', 'resolveCoveringFireChoice', 'resolveDefeatChoice', 'resolveDiscardChoice', 'resolveDiscardToPlay', 'resolveDoOver', 'resolveDrawOrEmpowered', 'resolveElectromagneticBubbleChoice', 'resolveGiveHqHeroChoice', 'resolveHeroChoice', 'resolveKoDiscardChoice', 'resolveKoHeroChoice', 'resolveMelterKoChoice', 'resolveMoveVillainChoice', 'resolveOptionalKoReward', 'resolveOptionalPutBottomHQ', 'resolvePlayVillainTopChoice', 'resolvePutAnyNumberBottomHQ', 'resolvePutCardsOnDeckChoice', 'resolvePutHandOnDeckTop', 'resolveReorderChoice', 'resolveReturnOnDiscard', 'resolveReturnZeroCostDiscard', 'resolveRevealThreeAssign', 'resolveRevealTopDispose', 'resolveRuthlessDictatorChoice', 'resolveScryKoChoice', 'resolveSeatChoice', 'resolveSmashDiscard', 'resolveSplitFaceChoice', 'resolveUndercoverChoice', 'resolveVictoryPileCardPick', 'revealVillainCard', 'useRitualArtifact'],
+      'LegendaryGame must define exactly 56 moves',
     );
   });
 
@@ -674,6 +676,365 @@ describe('LegendaryGame', () => {
       undefined,
       'onBegin must clear deferred grants at the turn boundary',
     );
+  });
+
+  it('play-phase onMove fires a waiting owned-KO grant once per counted KO and consumes the count (WP-853 / D-24789)', () => {
+    // why: pins the WIRE. Absorb Energies only works if game.ts turn.onMove runs the
+    // resolve that fires per counted KO, re-arms the grant and deletes the count; a mocked
+    // resolve would leave every helper test green with the trigger dead in a real match.
+    const onMove = (
+      LegendaryGame.phases as Record<string, { turn?: { onMove?: (context: unknown) => void } }>
+    ).play?.turn?.onMove;
+    assert.notEqual(onMove, undefined, 'play phase must define a turn.onMove hook');
+
+    const gameState = {
+      messages: [],
+      turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+      playerZones: { '0': { deck: [], hand: [], discard: [], inPlay: ['hero-absorb'], victory: [] } },
+      cardTraits: {},
+      cardDisplayData: {},
+      villainDeck: { deck: ['v-1'], discard: [] },
+      heroDeck: ['h-1'],
+      counters: {},
+      selection: {
+        schemeId: 'core/portals-to-the-dark-dimension',
+        mastermindId: 'test-mastermind',
+        villainGroupIds: [],
+        henchmanGroupIds: [],
+        heroDeckIds: [],
+      },
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-absorb',
+          timing: 'onPlay',
+          keywords: ['recruit'],
+          conditions: [{ type: 'ownedCardKoedThisTurn', value: '1' }],
+          effects: [{ type: 'recruit', magnitude: 2 }],
+        },
+      ],
+      deferredConditionalGrants: [{ playerId: '0', cardId: 'hero-absorb', hookIndex: 0 }],
+      // why: two of player 0's cards were KO'd this move, one of player 1's.
+      ownedCardsKoedSinceResolve: { '0': 2, '1': 1 },
+    } as unknown as LegendaryGameState;
+    const context = { G: gameState, ctx: { turn: 1, currentPlayer: '0' }, random: { Shuffle: (items: unknown[]) => items } };
+
+    onMove!(context);
+
+    assert.equal(gameState.turnEconomy.recruit, 4, 'two counted KOs must grant +2 twice');
+    assert.equal('ownedCardsKoedSinceResolve' in gameState, false, 'the count is consumed by the resolve');
+    assert.deepEqual(
+      gameState.deferredConditionalGrants,
+      [{ playerId: '0', cardId: 'hero-absorb', hookIndex: 0 }],
+      'the fired grant re-arms for the next KO',
+    );
+
+    onMove!(context);
+    assert.equal(gameState.turnEconomy.recruit, 4, 'a move with no KO grants nothing');
+  });
+
+  it('play-phase onBegin deletes the owned-KO count, and never creates it (WP-853 / D-24789)', () => {
+    const onBegin = (
+      LegendaryGame.phases as Record<string, { turn?: { onBegin?: (context: unknown) => void } }>
+    ).play?.turn?.onBegin;
+    assert.notEqual(onBegin, undefined, 'play phase must define a turn.onBegin hook');
+
+    /** A minimal play-phase G, with or without an owned-KO count. */
+    function makeTurnStartState(withCount: boolean): LegendaryGameState {
+      const state = {
+        messages: [],
+        turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+        playerZones: { '0': { deck: ['a', 'b', 'c', 'd', 'e', 'f'], hand: [], discard: [], inPlay: [], victory: [] } },
+        villainDeck: { deck: ['v-1'], discard: [] },
+        heroDeck: ['h-1'],
+        counters: {},
+        hq: [null, null, null, null, null],
+        city: [null, null, null, null, null],
+        scheme: { twistPile: [] },
+        mastermind: { id: 'm', baseCardId: 'm-base', tacticsDeck: [], tacticsDefeated: [], strikePile: [], attachedBystanders: [] },
+        hookRegistry: [],
+        heroAbilityHooks: [],
+        villainDeckCardTypes: {},
+        attachedBystanders: {},
+        escapedPile: [],
+        cardStats: {},
+      } as unknown as LegendaryGameState;
+      if (withCount) {
+        state.ownedCardsKoedSinceResolve = { '0': 1 };
+      }
+      return state;
+    }
+    const context = (G: LegendaryGameState) => ({
+      G,
+      ctx: { turn: 2, currentPlayer: '0', numPlayers: 1 },
+      random: { Shuffle: (items: unknown[]) => items },
+      events: { setPhase: () => {}, endTurn: () => {} },
+    });
+
+    const counted = makeTurnStartState(true);
+    onBegin!(context(counted));
+    assert.equal('ownedCardsKoedSinceResolve' in counted, false, 'the count is deleted at the turn boundary');
+
+    const neverCounted = makeTurnStartState(false);
+    onBegin!(context(neverCounted));
+    assert.equal('ownedCardsKoedSinceResolve' in neverCounted, false, 'no key is created on a G that never had one');
+  });
+
+  it('play-phase onMove fires a waiting Hero-KO grant ONCE, does not re-arm it, and consumes the count (WP-856 / D-24792)', () => {
+    // why: pins the WIRE for Possessed by Brother's Spirit: the real turn.onMove resolve must
+    // park exactly one choose-one however many Heroes were KO'd, drop the grant (the first
+    // time only) and delete the count.
+    const onMove = (
+      LegendaryGame.phases as Record<string, { turn?: { onMove?: (context: unknown) => void } }>
+    ).play?.turn?.onMove;
+    assert.notEqual(onMove, undefined, 'play phase must define a turn.onMove hook');
+
+    const gameState = {
+      messages: [],
+      turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+      playerZones: { '0': { deck: [], hand: [], discard: [], inPlay: ['hero-possessed'], victory: [] } },
+      cardTraits: {},
+      cardDisplayData: {},
+      villainDeck: { deck: ['v-1'], discard: [] },
+      heroDeck: ['h-1'],
+      counters: {},
+      selection: {
+        schemeId: 'core/portals-to-the-dark-dimension',
+        mastermindId: 'test-mastermind',
+        villainGroupIds: [],
+        henchmanGroupIds: [],
+        heroDeckIds: [],
+      },
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-possessed',
+          timing: 'onPlay',
+          keywords: ['count-scaled-choose', 'conditional'],
+          conditions: [{ type: 'ownedHeroKoedThisTurn', value: '1' }],
+          effects: [{
+            type: 'count-scaled-choose',
+            countScaledChoiceOptions: [{ kind: 'flat-recruit', magnitude: 4 }, { kind: 'flat-attack', magnitude: 4 }],
+          }],
+        },
+      ],
+      deferredConditionalGrants: [{ playerId: '0', cardId: 'hero-possessed', hookIndex: 0 }],
+      // why: three of player 0's Heroes were KO'd this move.
+      ownedHeroesKoedSinceResolve: { '0': 3 },
+    } as unknown as LegendaryGameState;
+    const context = { G: gameState, ctx: { turn: 1, currentPlayer: '0' }, random: { Shuffle: (items: unknown[]) => items } };
+
+    onMove!(context);
+
+    assert.equal(gameState.pendingCountScaledChoice?.length, 1, 'three Hero KOs park ONE choice');
+    assert.deepEqual(gameState.pendingCountScaledChoice![0]!.options, [
+      { kind: 'flat-recruit', magnitude: 4 },
+      { kind: 'flat-attack', magnitude: 4 },
+    ]);
+    assert.equal('ownedHeroesKoedSinceResolve' in gameState, false, 'the count is consumed by the resolve');
+    assert.equal((gameState.deferredConditionalGrants ?? []).length, 0, 'the grant is not re-armed (first time only)');
+
+    gameState.ownedHeroesKoedSinceResolve = { '0': 1 };
+    onMove!(context);
+    assert.equal(gameState.pendingCountScaledChoice?.length, 1, 'a later Hero KO parks nothing more');
+  });
+
+  it('play-phase onBegin deletes the Hero-KO count, and never creates it (WP-856 / D-24792)', () => {
+    const onBegin = (
+      LegendaryGame.phases as Record<string, { turn?: { onBegin?: (context: unknown) => void } }>
+    ).play?.turn?.onBegin;
+    assert.notEqual(onBegin, undefined, 'play phase must define a turn.onBegin hook');
+
+    /** A minimal play-phase G, with or without a Hero-KO count. */
+    function makeTurnStartState(withCount: boolean): LegendaryGameState {
+      const state = {
+        messages: [],
+        turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+        playerZones: { '0': { deck: ['a', 'b', 'c', 'd', 'e', 'f'], hand: [], discard: [], inPlay: [], victory: [] } },
+        villainDeck: { deck: ['v-1'], discard: [] },
+        heroDeck: ['h-1'],
+        counters: {},
+        hq: [null, null, null, null, null],
+        city: [null, null, null, null, null],
+        scheme: { twistPile: [] },
+        mastermind: { id: 'm', baseCardId: 'm-base', tacticsDeck: [], tacticsDefeated: [], strikePile: [], attachedBystanders: [] },
+        hookRegistry: [],
+        heroAbilityHooks: [],
+        villainDeckCardTypes: {},
+        attachedBystanders: {},
+        escapedPile: [],
+        cardStats: {},
+      } as unknown as LegendaryGameState;
+      if (withCount) {
+        state.ownedHeroesKoedSinceResolve = { '0': 1 };
+      }
+      return state;
+    }
+    const context = (G: LegendaryGameState) => ({
+      G,
+      ctx: { turn: 2, currentPlayer: '0', numPlayers: 1 },
+      random: { Shuffle: (items: unknown[]) => items },
+      events: { setPhase: () => {}, endTurn: () => {} },
+    });
+
+    const counted = makeTurnStartState(true);
+    onBegin!(context(counted));
+    assert.equal('ownedHeroesKoedSinceResolve' in counted, false, 'the count is deleted at the turn boundary');
+
+    const neverCounted = makeTurnStartState(false);
+    onBegin!(context(neverCounted));
+    assert.equal('ownedHeroesKoedSinceResolve' in neverCounted, false, 'no key is created on a G that never had one');
+  });
+
+  it('play-phase onMove draws once per counted deck KO and consumes the count (WP-855 / D-24791)', () => {
+    // why: pins the WIRE. Endless Appetite only works if game.ts turn.onMove runs the resolve
+    // that fires per counted deck KO, re-arms the grant and deletes the count; a mocked resolve
+    // would leave every helper test green with the trigger dead in a real match.
+    const onMove = (
+      LegendaryGame.phases as Record<string, { turn?: { onMove?: (context: unknown) => void } }>
+    ).play?.turn?.onMove;
+    assert.notEqual(onMove, undefined, 'play phase must define a turn.onMove hook');
+
+    const gameState = {
+      messages: [],
+      turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0, cardsDrawn: 0 },
+      playerZones: { '0': { deck: ['d-1', 'd-2', 'd-3'], hand: [], discard: [], inPlay: ['hero-appetite'], victory: [] } },
+      cardTraits: {},
+      cardDisplayData: {},
+      villainDeck: { deck: ['v-1'], discard: [] },
+      heroDeck: ['h-1'],
+      counters: {},
+      selection: {
+        schemeId: 'core/portals-to-the-dark-dimension',
+        mastermindId: 'test-mastermind',
+        villainGroupIds: [],
+        henchmanGroupIds: [],
+        heroDeckIds: [],
+      },
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-appetite',
+          timing: 'onPlay',
+          keywords: ['draw', 'conditional'],
+          conditions: [{ type: 'deckCardKoedThisTurn', value: '1' }],
+          effects: [{ type: 'draw', magnitude: 1 }],
+        },
+      ],
+      deferredConditionalGrants: [{ playerId: '0', cardId: 'hero-appetite', hookIndex: 0 }],
+      // why: two cards were KO'd from player 0's deck this move, one from player 1's.
+      deckCardsKoedSinceResolve: { '0': 2, '1': 1 },
+    } as unknown as LegendaryGameState;
+    const context = { G: gameState, ctx: { turn: 1, currentPlayer: '0' }, random: { Shuffle: (items: unknown[]) => items } };
+
+    onMove!(context);
+
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['d-1', 'd-2'], 'two counted deck KOs must draw twice');
+    assert.equal('deckCardsKoedSinceResolve' in gameState, false, 'the count is consumed by the resolve');
+    assert.deepEqual(
+      gameState.deferredConditionalGrants,
+      [{ playerId: '0', cardId: 'hero-appetite', hookIndex: 0 }],
+      'the fired grant re-arms for the next deck KO',
+    );
+
+    onMove!(context);
+    assert.equal(gameState.playerZones['0']!.hand.length, 2, 'a move with no deck KO draws nothing');
+  });
+
+  it('play-phase onBegin deletes the deck-KO count, and never creates it (WP-855 / D-24791)', () => {
+    const onBegin = (
+      LegendaryGame.phases as Record<string, { turn?: { onBegin?: (context: unknown) => void } }>
+    ).play?.turn?.onBegin;
+    assert.notEqual(onBegin, undefined, 'play phase must define a turn.onBegin hook');
+
+    /** A minimal play-phase G, with or without a deck-KO count. */
+    function makeTurnStartState(withCount: boolean): LegendaryGameState {
+      const state = {
+        messages: [],
+        turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+        playerZones: { '0': { deck: ['a', 'b', 'c', 'd', 'e', 'f'], hand: [], discard: [], inPlay: [], victory: [] } },
+        villainDeck: { deck: ['v-1'], discard: [] },
+        heroDeck: ['h-1'],
+        counters: {},
+        hq: [null, null, null, null, null],
+        city: [null, null, null, null, null],
+        scheme: { twistPile: [] },
+        mastermind: { id: 'm', baseCardId: 'm-base', tacticsDeck: [], tacticsDefeated: [], strikePile: [], attachedBystanders: [] },
+        hookRegistry: [],
+        heroAbilityHooks: [],
+        villainDeckCardTypes: {},
+        attachedBystanders: {},
+        escapedPile: [],
+        cardStats: {},
+      } as unknown as LegendaryGameState;
+      if (withCount) {
+        // why: a count held to the end of the turn by a parked choice.
+        state.deckCardsKoedSinceResolve = { '0': 1 };
+      }
+      return state;
+    }
+    const context = (G: LegendaryGameState) => ({
+      G,
+      ctx: { turn: 2, currentPlayer: '0', numPlayers: 1 },
+      random: { Shuffle: (items: unknown[]) => items },
+      events: { setPhase: () => {}, endTurn: () => {} },
+    });
+
+    const counted = makeTurnStartState(true);
+    onBegin!(context(counted));
+    assert.equal('deckCardsKoedSinceResolve' in counted, false, 'the count is deleted at the turn boundary');
+
+    const neverCounted = makeTurnStartState(false);
+    onBegin!(context(neverCounted));
+    assert.equal('deckCardsKoedSinceResolve' in neverCounted, false, 'no key is created on a G that never had one');
+  });
+
+  it('play-phase onBegin deletes the deck-KO turn record, and never creates it (WP-859 / D-24795)', () => {
+    // why: pins the real turn.onBegin wire plus oracle safety. A record surviving into the next
+    // turn would let Metamorphosis / Bursting with Life Transform at play with no KO that turn, and
+    // a key created on a G that never had one would move the sentinel hash oracles.
+    const onBegin = (
+      LegendaryGame.phases as Record<string, { turn?: { onBegin?: (context: unknown) => void } }>
+    ).play?.turn?.onBegin;
+    assert.notEqual(onBegin, undefined, 'play phase must define a turn.onBegin hook');
+
+    /** A minimal play-phase G, with or without a deck-KO turn record. */
+    function makeTurnStartState(withRecord: boolean): LegendaryGameState {
+      const state = {
+        messages: [],
+        turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+        playerZones: { '0': { deck: ['a', 'b', 'c', 'd', 'e', 'f'], hand: [], discard: [], inPlay: [], victory: [] } },
+        villainDeck: { deck: ['v-1'], discard: [] },
+        heroDeck: ['h-1'],
+        counters: {},
+        hq: [null, null, null, null, null],
+        city: [null, null, null, null, null],
+        scheme: { twistPile: [] },
+        mastermind: { id: 'm', baseCardId: 'm-base', tacticsDeck: [], tacticsDefeated: [], strikePile: [], attachedBystanders: [] },
+        hookRegistry: [],
+        heroAbilityHooks: [],
+        villainDeckCardTypes: {},
+        attachedBystanders: {},
+        escapedPile: [],
+        cardStats: {},
+      } as unknown as LegendaryGameState;
+      if (withRecord) {
+        // why: a card KO'd from Player 0's deck earlier in the ending turn.
+        state.cardsKoedFromDeckThisTurn = { '0': ['koed-card'] };
+      }
+      return state;
+    }
+    const context = (G: LegendaryGameState) => ({
+      G,
+      ctx: { turn: 2, currentPlayer: '0', numPlayers: 1 },
+      random: { Shuffle: (items: unknown[]) => items },
+      events: { setPhase: () => {}, endTurn: () => {} },
+    });
+
+    const recorded = makeTurnStartState(true);
+    onBegin!(context(recorded));
+    assert.equal('cardsKoedFromDeckThisTurn' in recorded, false, 'the record is deleted at the turn boundary');
+
+    const neverRecorded = makeTurnStartState(false);
+    onBegin!(context(neverRecorded));
+    assert.equal('cardsKoedFromDeckThisTurn' in neverRecorded, false, 'no key is created on a G that never had one');
   });
 
   it('play-phase onBegin deletes the per-turn discard count, and never creates it (WP-777 / D-24616)', () => {
@@ -1480,5 +1841,16 @@ describe('play-phase turn.onMove reveal-or-wound wiring (WP-845 / D-24779)', () 
     );
     assert.equal(finalG.pendingSeatChoice?.kind, 'diving-block', 'the wave opened in the resolve move onMove');
     assert.deepEqual(finalG.pendingSeatChoice?.addressedSeats, [otherSeat]);
+  });
+});
+
+describe('attemptHeist registration (WP-865 / D-24808)', () => {
+  it('is registered server-only (client: false) with the attemptHeist move', () => {
+    const entry = (LegendaryGame.moves as Record<string, unknown>)['attemptHeist'] as
+      | { move?: unknown; client?: boolean }
+      | undefined;
+    assert.ok(entry !== undefined, 'attemptHeist is registered on LegendaryGame.moves');
+    assert.equal(typeof entry.move, 'function', 'the registration carries the move function');
+    assert.equal(entry.client, false, 'attemptHeist is server-only (client: false)');
   });
 });

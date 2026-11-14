@@ -361,7 +361,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:\"When Recruited\" Abilities]: You get +1[icon:attack].",
-            "[hc:covert]: When you draw a new hand of cards at the end of this turn, draw an extra card."
+            "[hc:covert]: When you draw a new hand of cards at the end of this turn, draw an extra card. [keyword:next-hand-extra-draw:1]"
           ]
         },
         {

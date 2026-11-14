@@ -14,8 +14,10 @@
  * (4) mutate through helpers and write an "Operator:" log line. Any failure at 1–3
  * returns void with G untouched. Moves never throw.
  *
- * Not in getLegalMoves, the simulation or PAR dispatch, the determinism-only replay
- * or the fixture runner (D-24713 §7), so bots never make them.
+ * Not in getLegalMoves, the simulation or PAR dispatch, or the fixture runner
+ * (D-24713 §7), so bots never make them. The determinism-only replay dispatches them
+ * like every registered move (D-24830 amends §7); the operator gate keeps a replayed
+ * setter a no-op outside an operator match.
  *
  * No registry imports. No .reduce().
  */
@@ -25,6 +27,7 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { CityZone, HqZone } from '../board/city.types.js';
 import { moveCardFromZone } from './zoneOps.js';
+import { recordOwnedCardKoed } from '../hero/deferredConditionalGrants.js';
 import { discardFromHand } from './discardFromHand.js';
 import { gainOfficerToDiscard } from './recruitOfficer.js';
 import { gainWoundForPlayer } from '../board/wounds.logic.js';
@@ -270,6 +273,14 @@ function koFromPlayerZone(G: LegendaryGameState, from: OperatorPlayerZoneRef, ca
   if (!moveResult.found) return false;
   zones[from.zone] = moveResult.from;
   G.ko = moveResult.to;
+  // why: WP-853 / D-24789 — a KO from the seat's hand, deck, discard or play is a card
+  // they own; a Victory Pile KO is not (RS-1).
+  // why: WP-855 / D-24791 — inside this branch `from.zone` is narrowed past 'victory' to the
+  // seat's hand, deck, discard or play, the zone the card left; a deck KO counts for Endless
+  // Appetite like any other.
+  if (from.zone !== 'victory') {
+    recordOwnedCardKoed(G, from.playerId, cardId, from.zone);
+  }
   return true;
 }
 

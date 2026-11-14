@@ -14,13 +14,13 @@
  * addResources, koCard.
  */
 
-import type { LegendaryGameState, PendingHeroChoice, PendingUndercoverChoice, DefeatWithBystanderTarget, RevealedTopEntry, PendingRevealTopDispose, PendingRevealThreeAssign } from '../types.js';
+import type { LegendaryGameState, PendingKoDiscardChoice, PendingHeroChoice, PendingUndercoverChoice, DefeatWithBystanderTarget, RevealedTopEntry, PendingRevealTopDispose, PendingRevealThreeAssign } from '../types.js';
 import { cardHasTeamWhenPlayed, cardCountsAsShieldHero } from './effectiveTeams.logic.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type { CardStatEntry } from '../economy/economy.types.js';
 import type { HeroKeyword } from '../rules/heroKeywords.js';
 import { HERO_KEYWORDS } from '../rules/heroKeywords.js';
-import type { HeroAbilityHook, HeroEffectDescriptor, InvestigateCriterion, InvestigateCandidate } from '../rules/heroAbility.types.js';
+import type { HeroAbilityHook, HeroCondition, HeroEffectDescriptor, InvestigateCriterion, InvestigateCandidate } from '../rules/heroAbility.types.js';
 import { getHooksForCard, investigateCandidateMatches } from '../rules/heroAbility.types.js';
 import type { EffectExecutionReason, EffectTrace, EffectTraceStatus, EffectTraceResolution } from '../diagnostics/hollowEffect.types.js';
 import { isHollowReason, DEFERRED_BY_DESIGN_MECHANICS } from '../diagnostics/hollowEffect.types.js';
@@ -32,22 +32,30 @@ import type { EffectNode } from '../rules/effectPrimitive.types.js';
 import type { RevealRule, RevealAction, RevealPredicate, RevealActionKind } from '../rules/revealRule.js';
 import {
   evaluateAllConditions,
+  evaluateCondition,
   findFailedCondition,
   describeFailedCondition,
+  PATROL_SPACE_EMPTY_CONDITION_TYPE,
+  PATROL_SPACE_OCCUPIED_CONDITION_TYPE,
+  CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE,
+  OWNED_CARD_KOED_CONDITION_TYPE,
+  OWNED_HERO_KOED_CONDITION_TYPE,
+  DECK_CARD_KOED_CONDITION_TYPE,
 } from './heroConditions.evaluate.js';
 import {
   isWaitAndSeeCondition,
   recordDeferredConditionalGrant,
   resolveDeferredConditionalGrants,
   REPEATABLE_DEFEAT_CONDITION_TYPE,
+  recordOwnedCardKoed,
 } from './deferredConditionalGrants.js';
 import type { HeroEffectResult } from './heroEffects.types.js';
 import type { HeroEffectResolvedEvent } from '../events/notableEvents.types.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { shuffleDeck } from '../setup/shuffle.js';
 import { moveCardFromZone, moveAllCards } from '../moves/zoneOps.js';
-import { reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
-import { addResources, enableRecruitSpendableAsAttack, enableDrawLock, enrollExcessiveViolenceCard, enablePlayBothSides, addRestrictedAttack, formatAttackTargets, addFightCostReduction, recordOutOfTimePlayed } from '../economy/economy.logic.js';
+import { HAND_SIZE, reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
+import { addResources, enableRecruitSpendableAsAttack, enableDrawLock, enrollExcessiveViolenceCard, enrollHeistCard, enablePlayBothSides, addRestrictedAttack, formatAttackTargets, addFightCostReduction, recordOutOfTimePlayed } from '../economy/economy.logic.js';
 import type { AttackTargetName } from '../economy/economy.types.js';
 import { countDistinctVictoryPointValues } from '../economy/bloodFrenzy.logic.js';
 // why: D-24741 — Pure Fury reads a target's current Attack from the single fight-cost authorities.
@@ -61,8 +69,9 @@ import { resolveCountSource, explainCountSourceInputs } from './heroCountSource.
 import type { HeroCountSource } from '../rules/heroCountSource.js';
 import { interpretHeroPrimitiveEffect } from './effectPrimitive.interpret.js';
 import { offPlayCardStats, offPlayCardTraits, playedCardIdsStillInPlay } from './splitCard.logic.js';
-import { cardHasClassWhenPlayed } from './sizeChanging.logic.js';
+import { cardHasClassWhenPlayed, hasSizeChanging } from './sizeChanging.logic.js';
 import { getEligibleVictoryVillains } from '../moves/resolveVictoryPileCardPick.js';
+import { getEligibleKoDiscardCards } from '../moves/koDiscardChoice.resolve.js';
 import { getEligibleZeroCostDiscardCards } from '../moves/resolveReturnZeroCostDiscard.js';
 import { getEligibleDiscardToPlayCards } from '../moves/resolveDiscardToPlay.js';
 import {
@@ -72,6 +81,23 @@ import {
 } from '../moves/defeatChoice.resolve.js';
 import type { TacticSeatChoiceEvents } from '../moves/defeatChoice.resolve.js';
 import { parkSeatChoice } from '../moves/seatChoice.resolve.js';
+// why: WP-876 / D-24823 — the Heist payloads (The Big Score, Revolutionary Anthem, X-Con Security
+// Van). That module never imports this one; it imports parkSeatChoice from seatChoice.resolve.
+import {
+  applyHeistMasterStrikeKo,
+  applyHeistMoveVillain,
+  isHeistRevealedSchemeTwist,
+  parkHeistShuffleChoice,
+} from './heistPayloads.logic.js';
+// why: WP-883 / D-24834 — the gain-wound-reward builder. That module never imports this one; it
+// reaches seatChoice.resolve only through wounds.logic (a runtime-safe cycle, function bodies only).
+import {
+  buildGainWoundReward,
+  buildGainWoundRewardChoice,
+} from './gainWoundReward.logic.js';
+// why: WP-885 / D-24836 — the reward phrasing for N1 lives in the grant leaf, which imports nothing
+// from this module (no cycle edge).
+import { describeGainWoundRewardPhrases } from './gainWoundRewardGrant.js';
 import { countRevealableDivingBlockCopies } from '../moves/divingBlock.logic.js';
 // why: WP-828 / D-24761 — the grant handler only queues; the module references this one back only
 // inside function bodies (a runtime-safe cycle).
@@ -79,6 +105,7 @@ import { queueOutOfTimeGrant } from '../moves/outOfTimeGrant.logic.js';
 // why: WP-844 / D-24778 — a type-import-only module, so the executor stays off recruitSidekick.ts's
 // pending-choice guard graph and no cycle is added.
 import { gainSidekickToDiscard } from '../moves/gainSidekick.logic.js';
+import { buildFortifyBlockReason, isSidekickStackFortified } from '../board/fortify.logic.js';
 import {
   revealTopThreeForAssign,
   buildAllRevealThreeAssignDispositions,
@@ -91,7 +118,10 @@ import {
   buildRandomActsWoundChoice,
   buildPassLeftChoice,
 } from '../moves/seatChoiceCards.js';
-import { formatCardRef, resolveCardName } from '../log/logDisplay.js';
+import { formatCardRef, heroClassDisplayName, resolveCardName, teamDisplayName } from '../log/logDisplay.js';
+// why: WP-885 / D-24836 — the Transform swap and its name helper moved to a leaf so the
+// gain-wound-reward grant can run it too; that leaf imports nothing from this module (no cycle).
+import { applyHeroTransform, resolveTransformCardName } from './heroTransform.logic.js';
 import {
   describeRevealPredicate,
   describeRevealActions,
@@ -100,9 +130,18 @@ import {
 } from './revealLog.js';
 import { formatCountScaledRate } from './countSourceLabel.js';
 import { pushLog } from '../log/logPush.js';
+import { parkCommuneCostChoice } from '../moves/communeSpiritWorld.logic.js';
+// why: WP-884 / D-24835 — Hunt for Victims' park and Tech rescue allow (the same runtime-safe cycle
+// as Commune: the bindings are read only inside the two handlers).
+import { allowHuntForVictimsRescue, parkHuntForVictimsChoice } from '../moves/huntForVictims.logic.js';
+// why: WP-862 / D-24804 — Pym Particles' HQ Size-Changing grant (read inside the handler only).
+import { grantSizeChangingToHqHero } from './sizeChangingGrant.logic.js';
+// why: WP-855 / D-24791 — the deck-KO draw hold reads every parked choice queue. This file
+// already reaches phaseCard.js through outOfTimeGrant.logic.js and revealOrWoundChoice.logic.js,
+// so the direct import adds no new load-order edge.
+import { hasAnyPendingChoice } from '../moves/phaseCard.js';
 import type { LogOutcome } from '../log/logOutcome.types.js';
 import {
-  composeTransformNarrative,
   composeHeroRevealAttackNarrative,
   composeHeroRevealTopNarrative,
   composeNoOtherDeckNarrative,
@@ -284,6 +323,12 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // so it belongs here (the bidirectional handler-completeness authority). Carries NO top-level
   // magnitude → also in NO_MAGNITUDE_KEYWORDS.
   'excessive-violence',
+  // why: WP-865 / D-24808 — the Ant-Man and the Wasp "Heist" keyword; has a HERO_EFFECT_HANDLERS
+  // entry (heroEffectHeist) that READIES the played card into the turn's Heist crew (the inner
+  // effects fire later from the attemptHeist move's fireHeistPlays), so it belongs here (the
+  // bidirectional handler-completeness authority). Carries NO top-level magnitude → also in
+  // NO_MAGNITUDE_KEYWORDS.
+  'heist',
   // why: WP-753 / D-24580 — "Reveal the top three cards of your deck. Draw one of them, discard
   // one, and KO one." (Crystal of Kadavus, Interplanetary Visitor); has a HERO_EFFECT_HANDLERS
   // entry (heroEffectRevealThreeAssign) that snapshots the top three and parks a
@@ -349,6 +394,45 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // HERO_EFFECT_HANDLERS entry (heroEffectGainSidekick), so it belongs here. Carries a magnitude
   // (the Sidekicks gained) → NOT in NO_MAGNITUDE_KEYWORDS.
   'gain-sidekick',
+  // why: WP-850 / D-24786 — Bishop's Firepower from the Future. 'discard-top-printed-attack' has a
+  // HERO_EFFECT_HANDLERS entry (heroEffectDiscardTopPrintedAttack) and carries a magnitude (the cards
+  // discarded) → NOT in NO_MAGNITUDE_KEYWORDS; 'ko-discarded-this-way' has one
+  // (heroEffectKoDiscardedThisWay) and carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
+  'discard-top-printed-attack',
+  'ko-discarded-this-way',
+  // why: WP-860 / D-24796 — Commune with the Spirit World; has a HERO_EFFECT_HANDLERS entry
+  // (heroEffectDiscardArtifactOrThreeThenKo) that parks the cost seat choice, so it belongs here.
+  // Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
+  'discard-artifact-or-three-then-ko',
+  // why: WP-862 / D-24804 — Pym Particles' grant; has a HERO_EFFECT_HANDLERS entry
+  // (heroEffectHqHeroGainsSizeChangingTech), so it belongs here. NO magnitude → also in
+  // NO_MAGNITUDE_KEYWORDS.
+  'hq-hero-gains-size-changing-tech',
+  // why: WP-857 / D-24793 — hero Feast; its HERO_EFFECT_HANDLERS entry is the shipped
+  // heroEffectRevealTopMayKo (parks a KO-or-keep reveal of the deck top), so it belongs here.
+  // Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
+  'feast',
+  // why: WP-866 / D-24809 — "When you draw a new hand … this turn, draw an extra card"; has a
+  // HERO_EFFECT_HANDLERS entry (heroEffectNextHandExtraDraw), so it belongs here (MVP_KEYWORDS
+  // derives from this set). Carries a magnitude (the extra cards) → NOT in NO_MAGNITUDE_KEYWORDS.
+  'next-hand-extra-draw',
+  // why: WP-876 / D-24823 — the three Heist payload keywords (The Big Score, Revolutionary Anthem,
+  // X-Con Security Van). Each has a HERO_EFFECT_HANDLERS entry (thin handlers over
+  // hero/heistPayloads.logic.ts) and fires only from fireHeistPlays, so each belongs here.
+  // heist-master-strike-ko and heist-move-villain-ko-hero carry NO magnitude → also in
+  // NO_MAGNITUDE_KEYWORDS; heist-scheme-twist-bonus carries the extra Attack → NOT in it.
+  'heist-master-strike-ko',
+  'heist-scheme-twist-bonus',
+  'heist-move-villain-ko-hero',
+  // why: WP-883 / D-24834 — "You may gain a Wound. If you do, you get +N Attack"; has a
+  // HERO_EFFECT_HANDLERS entry (heroEffectGainWoundReward), so it belongs here (MVP_KEYWORDS
+  // derives from this set). Carries the reward magnitude → NOT in NO_MAGNITUDE_KEYWORDS.
+  'gain-wound-reward',
+  // why: WP-884 / D-24835 — Stalk the Night Stalkers' two lines; each has a HERO_EFFECT_HANDLERS
+  // entry (heroEffectHuntForVictims parks the hunt choice, heroEffectHuntForVictimsRescue adds its
+  // rescue options), so each belongs here. Both carry NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
+  'hunt-for-victims',
+  'hunt-for-victims-rescue',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -399,12 +483,14 @@ export const HAND_ACTION_EXECUTED_KEYWORDS: readonly HeroKeyword[] = [
 // undercover-officer-stack) are in HANDLED_KEYWORDS; the bare 'undercover' token is now an
 // honest hollow (no source zone → no handler), so it is intentionally NOT in MVP_KEYWORDS.
 
-// why: D-24074 — size-changing's effect is a class-grant realized at class-read time (no onPlay handler); membership keeps the play-time hook visit not-hollow (the wall-crawl pattern)
-// Size-Changing ("when you play this card, it has the [Class] class") has NO
-// HERO_EFFECT_HANDLERS entry and is NOT in HANDLED_KEYWORDS — like wall-crawl / dodge /
-// undercover. Its effect is realized by the class-condition reads (heroClassMatch /
-// distinctHeroClassesAtLeast) consulting cardSizeChangingClasses, not by an onPlay action.
-// It still joins MVP_KEYWORDS via this class-grant category for two load-bearing reasons:
+// why: D-24801 (supersedes D-24074's class grant) — the two Size-Changing keywords are recruit discounts applied at recruit time (no onPlay handler); membership keeps the play-time hook visit not-hollow (the wall-crawl pattern)
+// Size-Changing ("you can recruit this card for 2 less if you played any [Class] cards this
+// turn", rules v23 p.33) and Microscopic Size-Changing (2 less per matching card played, one
+// per icon, rules v23 p.30) have NO HERO_EFFECT_HANDLERS entry and are NOT in
+// HANDLED_KEYWORDS — like wall-crawl / dodge / undercover. Their effect is realized by the
+// recruit-cost reader (resolveRecruitCost in sizeChanging.logic.ts, read by recruitHero, the
+// legal-move list and the HQ cost projection), not by an onPlay action.
+// They still join MVP_KEYWORDS via this recruit-discount category for two load-bearing reasons:
 // (a) the hero mechanic ledger classifies an MVP_KEYWORDS member `executable`; (b)
 // classifyHeroEffectReason returns `applied` for it, so the onPlay hook that
 // executeHeroEffects visits at PLAY time classifies not-hollow instead of firing a
@@ -413,7 +499,7 @@ export const HAND_ACTION_EXECUTED_KEYWORDS: readonly HeroKeyword[] = [
 // set from the recruit-/hand-/face-down-action categories (duplicate-first per §16.1 — they
 // execute at different sites); NOT added to HANDLED_KEYWORDS (that demands a handler and
 // would break the HERO_EFFECT_HANDLERS-keys ↔ HANDLED_KEYWORDS bidirectional test).
-export const CLASS_GRANT_KEYWORDS: readonly HeroKeyword[] = ['size-changing'];
+export const SIZE_CHANGING_RECRUIT_KEYWORDS: readonly HeroKeyword[] = ['size-changing', 'microscopic-size-changing'];
 
 // why: WP-498 / D-24301 — return-on-discard executes REACTIVELY at the discardFromHand
 // chokepoint (checkReturnOnDiscard parks a pending choice when a card effect discards the
@@ -425,7 +511,7 @@ export const CLASS_GRANT_KEYWORDS: readonly HeroKeyword[] = ['size-changing'];
 // not filter by timing) classifies not-hollow instead of firing a `no-handler` hollow —
 // without this membership the now-recognized keyword would trade the old parse-unrecognized
 // hollow for a fresh no-handler one (a regression). Kept a SEPARATE set from the
-// recruit-/hand-/face-down-/class-grant categories (duplicate-first per §16.1 — they execute
+// recruit-/hand-/face-down-/size-changing categories (duplicate-first per §16.1 — they execute
 // at different sites); NOT added to HANDLED_KEYWORDS (that demands a handler and would break
 // the HERO_EFFECT_HANDLERS-keys ↔ HANDLED_KEYWORDS bidirectional test).
 // why: WP-705 / D-24526 — teleport-on-discard (Guerrilla Warfare) is a SECOND reactive
@@ -455,6 +541,20 @@ export const DISCARD_TIME_EXECUTED_KEYWORDS: readonly HeroKeyword[] = [
 // (checkFlyingShieldBlock), so it joins this set for the same two reasons.
 export const WOUND_TIME_EXECUTED_KEYWORDS: readonly HeroKeyword[] = ['diving-block', 'flying-shield-block'];
 
+// why: WP-858 / D-24794 — the Ritual Artifact keywords execute from the useRitualArtifact MOVE
+// (moves/ritualArtifact.ts: the player discards a controlled or just-played Ritual Artifact for its
+// reward once its condition held this turn), so — like phasing / dodge — they have NO
+// HERO_EFFECT_HANDLERS entry and are NOT in HANDLED_KEYWORDS. They join MVP_KEYWORDS via this
+// category for the same two load-bearing reasons: (a) the hero mechanic ledger classifies an
+// MVP_KEYWORDS member `executable`; (b) classifyHeroEffectReason returns `applied` for the onPlay
+// hook that executeHeroEffects visits at PLAY time, so playing the card grants nothing and records
+// no hollow. Kept a SEPARATE set from HAND_ACTION_EXECUTED_KEYWORDS (duplicate-first per §16.1 —
+// they execute from different moves on different zones).
+export const RITUAL_ARTIFACT_EXECUTED_KEYWORDS: readonly HeroKeyword[] = [
+  'ritual-recruited-hero',
+  'ritual-hero-classes',
+];
+
 // why (WP-251 / D-24024; D-24049; D-24051; D-24060): MVP_KEYWORDS = HANDLED_KEYWORDS ∪ the
 // frozen-translated reveal keywords ∪ the recruit-time-executed keywords ∪ the
 // hand-action-executed keywords ∪ the face-down-action-executed keywords — the set of
@@ -469,10 +569,12 @@ export const MVP_KEYWORDS = new Set<string>([
   ...FROZEN_REVEAL_TRANSLATED,
   ...RECRUIT_TIME_EXECUTED_KEYWORDS,
   ...HAND_ACTION_EXECUTED_KEYWORDS,
-  ...CLASS_GRANT_KEYWORDS,
+  ...SIZE_CHANGING_RECRUIT_KEYWORDS,
   ...DISCARD_TIME_EXECUTED_KEYWORDS,
   // why: WP-682 / D-24499 — the reactive wound-time keyword (diving-block); see the set above.
   ...WOUND_TIME_EXECUTED_KEYWORDS,
+  // why: WP-858 / D-24794 — the move-executed Ritual Artifact keywords; see the set above.
+  ...RITUAL_ARTIFACT_EXECUTED_KEYWORDS,
 ]);
 
 // why: D-24019 — the reward of an optional-ko-reward effect is dispatched to an
@@ -617,6 +719,17 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // cannot reveal gains exactly one Wound), so the magnitude pre-gate must not drop it, or
   // heroEffectRevealOrGainWoundEach never runs and no Wound lands.
   'reveal-or-gain-wound-each',
+  // why: WP-850 / D-24786 — ko-discarded-this-way carries NO magnitude ("any number of those
+  // cards" is read from the record the line before it wrote), so the magnitude pre-gate must not
+  // drop it, or heroEffectKoDiscardedThisWay never parks the KO choice.
+  'ko-discarded-this-way',
+  // why: WP-860 / D-24796 — discard-artifact-or-three-then-ko carries NO magnitude (the cost and
+  // the KO are chosen through seat choices), so the magnitude pre-gate must not drop it, or
+  // heroEffectDiscardArtifactOrThreeThenKo never parks the Commune cost choice.
+  'discard-artifact-or-three-then-ko',
+  // why: WP-862 / D-24804 — hq-hero-gains-size-changing-tech carries NO magnitude (the class is
+  // fixed and the Hero is chosen), so the magnitude pre-gate must not drop it.
+  'hq-hero-gains-size-changing-tech',
   // why: WP-735 / D-24555 — digest-indigestion carries NO top-level magnitude (the branch
   // magnitudes ride the nested inline effects: +attack / +recruit / draw:N / rescue:N). The
   // magnitude pre-gate must not drop it, or heroEffectDigestIndigestion never fires and the
@@ -627,6 +740,10 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // markers inside excessiveViolenceEffects). The magnitude pre-gate must not drop it, or
   // heroEffectExcessiveViolence never fires and the card is never enrolled.
   'excessive-violence',
+  // why: WP-865 / D-24808 — heist carries NO top-level magnitude (the wrapper only readies the
+  // card; the inner +recruit / +attack / rescue:N / draw:N ride heistEffects). The magnitude
+  // pre-gate must not drop it, or heroEffectHeist never fires and the card is never readied.
+  'heist',
   // why: WP-753 / D-24580 — both reveal-three-assign keywords carry NO magnitude: the outcome is
   // a per-card draw / discard / KO assignment (and a repeat counter), not a count. The revealed
   // set is snapshotted from the deck top at play time, so the magnitude pre-gate must not drop
@@ -638,6 +755,10 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // (or Excessive Violence fire) time, so the magnitude pre-gate must not drop it, or the reveal
   // never parks its choice. (optional-discard-draw is NOT here — it carries the draw count.)
   'reveal-top-may-ko',
+  // why: WP-857 / D-24793 — feast shares reveal-top-may-ko's handler and likewise carries NO
+  // magnitude (one KO-or-keep disposition of the deck top). The magnitude pre-gate must not drop
+  // it, or the handler is registered but never reached and the Feast never parks its prompt.
+  'feast',
   // why: WP-765 / D-24598 — blood-frenzy / blood-frenzy-recruit carry NO magnitude (the grant is
   // the distinct-VP count, read at resolve time) and day-night-both carries NO top-level magnitude
   // (the branch magnitudes ride the nested sunlightEffects / moonlightEffects). The magnitude
@@ -653,6 +774,18 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // isPlayBothSidesActive flag, moves no card); the magnitude pre-gate must not drop it, or the
   // handler never fires, the flag never arms, and the choose-a-side picker still appears.
   'play-both-sides',
+  // why: WP-876 / D-24823 — heist-master-strike-ko (one KO of the recorded revealed card) and
+  // heist-move-villain-ko-hero (one optional move, then one KO) carry NO magnitude. The magnitude
+  // pre-gate must not drop them, or fireHeistPlays reaches no handler and The Big Score's
+  // Master Strike clause and X-Con Security Van fire nothing.
+  'heist-master-strike-ko',
+  'heist-move-villain-ko-hero',
+  // why: WP-884 / D-24835 — hunt-for-victims (one pick of a Bystander holder or a hunter) and
+  // hunt-for-victims-rescue (adds rescue options to that pick) carry NO magnitude. The magnitude
+  // pre-gate must not drop them, or the hunt choice never parks and the Tech line never adds its
+  // rescue options.
+  'hunt-for-victims',
+  'hunt-for-victims-rescue',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -885,6 +1018,13 @@ export function executeHeroEffects(
   // for both hero sub-paths below rather than re-read per effect.
   const turn = readTurnNumber(ctx);
 
+  // why: WP-886 live-verify follow-up — two hooks of one card can fail on the same
+  // condition (Volstagg's base and Instead lines both need a Villain in the Bridge), and
+  // each logged an identical "did not activate one of its abilities — no Villain is in the
+  // Bridge." line, so the empty Bridge read twice. Each blocked line is logged once per
+  // play. Local to this call; never stored in G.
+  const loggedBlockedLines: string[] = [];
+
   for (const hook of hooks) {
     // why: WP-708 / D-24531 — a hook is a countable "conditional clause" for the
     // per-match Synergy Rate iff it carries >=1 condition AND an executable effect
@@ -897,8 +1037,54 @@ export function executeHeroEffects(
     // only effects are magnitude-less icons ("use this bonus [icon:attack] against the
     // Mastermind") or a keyword with no play-time handler (Goblin Glider's gated Dodge)
     // does nothing when its condition holds, so counting it would log a fake "assembled".
+    // why: WP-881 / D-24832 — a hook whose Patrol condition fails on this play is not a clause
+    // either: the City decided it, not the player. Without this, Elsa Bloodstone's Axe of the
+    // Slayer off-branch cross hook ([hc:instinct] AND the other Patrol state) would log a
+    // guaranteed miss on every play.
+    // why: WP-886 / D-24837 — extends D-24832's failed-Patrol clause rule to the Conqueror type:
+    // a hook whose Conqueror space holds no Villain on this play is not a clause either (Rock
+    // Solid with the Sewers empty logs 0 played / 0 assembled, not a miss).
     const isCountableConditionalClause =
-      countSynergyConditions(hook) > 0 && hookHasDispatchableEffect(hook);
+      countSynergyConditions(hook) > 0 &&
+      hookHasDispatchableEffect(hook) &&
+      allCitySpaceConditionsPass(G, playerID, hook, cardId);
+
+    // why: WP-853 / D-24789 — an owned-KO trigger ("Whenever a card you own is KO'd this
+    // turn") starts when the card is played, so it ALWAYS waits once its other conditions
+    // hold — even if the owned-KO count is already above 0 from an earlier KO in this
+    // same move. Without this, that count would pass the gate now, fire once, record
+    // nothing and miss every later KO this turn. Only the owned-KO type: the defeat family
+    // keeps today's path (its flag is never set at play, and Snarling Fangs under Sunlight
+    // must keep its "did not activate" line, D-24598).
+    // why: WP-856 / D-24792 — the Hero-KO trigger ("The first time that one of your Heroes
+    // is KO'd this turn") starts at play the same way, so it takes this branch too (RS-1:
+    // a Hero KO earlier in the same move does not fire it at play).
+    // why: WP-855 / D-24791 — the deck-KO trigger ("Whenever a card is KO'd from your deck
+    // this turn") is the other per-KO trigger, so it always waits at play too: a deck KO
+    // earlier in the same move must not fire it now and leave later KOs uncredited.
+    const ownedKoCondition =
+      findConditionOfType(hook, OWNED_CARD_KOED_CONDITION_TYPE) ??
+      findConditionOfType(hook, OWNED_HERO_KOED_CONDITION_TYPE) ??
+      findConditionOfType(hook, DECK_CARD_KOED_CONDITION_TYPE);
+    if (
+      ownedKoCondition !== undefined &&
+      evaluateAllConditions(G, playerID, conditionsWithout(hook, ownedKoCondition), cardId)
+    ) {
+      recordDeferredConditionalGrant(G, playerID, cardId, G.heroAbilityHooks.indexOf(hook));
+      const ownedKoReason = describeFailedCondition(G, playerID, ownedKoCondition);
+      const ownedKoHollowNote = hookHasHollowBody(hook) ? ' Its effect is not supported yet.' : '';
+      const ownedKoWaitingOutcome = ownedKoHollowNote !== ''
+        ? ownedKoHollowNote
+        : ' It will apply if you reach it this turn.';
+      pushLog(G,
+        `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} ability is waiting — ${ownedKoReason}.${ownedKoWaitingOutcome}`,
+        'neutral',
+        cardId,
+      );
+      // why: same tally posture as the wait-and-see branch below — a waiting trigger is
+      // neither assembled nor a miss (WP-708).
+      continue;
+    }
 
     // why: cardId is threaded through to condition evaluation so heroClassMatch
     // and requiresTeam can exclude the triggering card from their inPlay scan
@@ -985,9 +1171,33 @@ export function executeHeroEffects(
       // where the own-deck reveal clearly resolved yet this line sat between its two entries. Name it
       // as ONE of the card's abilities when the card carries multiple hooks; keep the singular wording
       // for a single-ability card (where the whole card's ability really was the gated one).
+      // why: WP-716 / D-24539 — a count-scaled line whose class/team gate IS its count source
+      // ("[hc:ranged]: +1 for each other [hc:ranged] Hero") did not fail: it scaled by 0. "Did not
+      // activate" read as broken in live play (Absorb Energies played first), so say +0 and name
+      // what to play first. Scoped to that family: a flat-gated line, a gate that differs from the
+      // count source, or a count that would grant more than 0 keeps the "did not activate" wording.
+      // Text only — outcome stays `blocked` and the line still carries the card, so the Play
+      // Diagnostics conditionNotMet read (WP-438) is unchanged.
+      const zeroScaledClause = hollowBodyNote === ''
+        ? describeZeroScaledCountClause(G, playerID, cardId, hook, failedCondition)
+        : undefined;
+      if (zeroScaledClause !== undefined) {
+        const zeroScaledVerb = hooks.length > 1 ? 'scaled one of its abilities to' : 'scaled to';
+        pushLog(G,
+          `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} ${zeroScaledVerb} ${zeroScaledClause}.`,
+          'blocked',
+          cardId,
+        );
+        continue;
+      }
       const abilityPhrase = hooks.length > 1 ? 'did not activate one of its abilities' : 'ability did not activate';
+      const blockedLine = `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} ${abilityPhrase} — ${reason}.${hollowBodyNote}`;
+      if (loggedBlockedLines.includes(blockedLine)) {
+        continue;
+      }
+      loggedBlockedLines.push(blockedLine);
       pushLog(G,
-        `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} ${abilityPhrase} — ${reason}.${hollowBodyNote}`,
+        blockedLine,
         'blocked',
         cardId, // why: WP-438 — the played card whose ability was gated (drives the diagnostic's conditionNotMet association).
       );
@@ -1140,6 +1350,108 @@ function hookHasCountScaledValueEffect(hook: HeroAbilityHook): boolean {
 }
 
 /**
+ * Returns the played-this-turn count source that counts exactly the cards a class or
+ * team gate checks for, or undefined when no count source does (WP-716 / D-24539).
+ *
+ * why: the zero-scale log line may say "+0 — no other Ranged Hero played yet" only when
+ * the gate and the count are the same thing. A gate on a different axis (Instinct gate,
+ * extra-draws count) genuinely blocked the line, so it keeps "did not activate".
+ *
+ * @param condition - The class or team gate that failed.
+ * @returns The matching count source, or undefined.
+ */
+function countSourceMatchingGate(condition: HeroCondition): HeroCountSource | undefined {
+  if (condition.type === 'heroClassMatch') {
+    switch (condition.value) {
+      case 'strength':
+        return 'strength-heroes-played-this-turn';
+      case 'ranged':
+        return 'ranged-heroes-played-this-turn';
+      case 'tech':
+        return 'tech-heroes-played-this-turn';
+      case 'covert':
+        return 'covert-heroes-played-this-turn';
+      default:
+        return undefined;
+    }
+  }
+  if (condition.type === 'requiresTeam') {
+    switch (condition.value) {
+      case 'avengers':
+        return 'avengers-played-this-turn';
+      case 'shield':
+        return 'shield-heroes-played-this-turn';
+      case 'x-men':
+        return 'x-men-played-this-turn';
+      default:
+        return undefined;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Returns the "+0" resource phrase for a count-scaled effect type, or undefined for any
+ * other effect type (WP-716 / D-24539).
+ *
+ * @param effectType - The effect descriptor's type.
+ * @returns e.g. `"+0 Attack"`, or undefined when the effect is not count-scaled.
+ */
+function zeroScaledResourcePhrase(effectType: string): string | undefined {
+  if (effectType === 'attack-per-count') {
+    return '+0 Attack';
+  }
+  if (effectType === 'recruit-per-count') {
+    return '+0 Recruit';
+  }
+  if (effectType === 'kidnap-per-count') {
+    return '0 Bystander captures';
+  }
+  return undefined;
+}
+
+/**
+ * Describes a gated count-scaled line that scaled to 0, or returns undefined when the
+ * failed gate is not that case (WP-716 / D-24539).
+ *
+ * The line qualifies only when the hook's sole effect is count-scaled (attack / recruit /
+ * kidnap-per-count), the failed gate is the class or team its count source counts, and
+ * the count would grant 0 now. Read-only: re-resolves the count from G, never mutates.
+ *
+ * @param G - Game state (read only).
+ * @param playerID - The acting player.
+ * @param cardId - The played card (self-excluded from the count).
+ * @param hook - The gated hook.
+ * @param failedCondition - The condition that stopped the hook, if known.
+ * @returns e.g. `"+0 Recruit — no other Ranged Hero played yet this turn"`, or undefined.
+ */
+function describeZeroScaledCountClause(
+  G: LegendaryGameState,
+  playerID: string,
+  cardId: CardExtId,
+  hook: HeroAbilityHook,
+  failedCondition: HeroCondition | undefined,
+): string | undefined {
+  if (failedCondition === undefined) { return undefined; }
+  if ((hook.primitiveEffects?.length ?? 0) > 0) { return undefined; }
+  const effects = hook.effects ?? [];
+  if (effects.length !== 1) { return undefined; }
+  const effect = effects[0]!;
+  const resourcePhrase = zeroScaledResourcePhrase(effect.type);
+  if (resourcePhrase === undefined || effect.countSource === undefined) { return undefined; }
+  if (effect.countSource !== countSourceMatchingGate(failedCondition)) { return undefined; }
+  // why: same grant arithmetic as the per-count handlers; "+0" is said only when it is true.
+  const count = resolveCountSource(G, playerID, effect.countSource, cardId);
+  const perEach = effect.perEach && effect.perEach > 0 ? effect.perEach : 1;
+  const magnitude = typeof effect.magnitude === 'number' ? effect.magnitude : 0;
+  if (magnitude * Math.floor(count / perEach) !== 0) { return undefined; }
+  const gateName = failedCondition.type === 'requiresTeam'
+    ? teamDisplayName(failedCondition.value)
+    : heroClassDisplayName(failedCondition.value);
+  return `${resourcePhrase} — no other ${gateName} Hero played yet this turn`;
+}
+
+/**
  * Returns whether a hero hook carries at least one executable (non-hollow) effect
  * body (WP-708 / D-24531).
  *
@@ -1236,11 +1548,55 @@ function hookHasHollowBody(hook: HeroAbilityHook): boolean {
 function countSynergyConditions(hook: HeroAbilityHook): number {
   let count = 0;
   for (const condition of hook.conditions ?? []) {
-    if (condition.type !== 'sunlightInEffect' && condition.type !== 'moonlightInEffect') {
+    // why: WP-881 / D-24832 — the two Patrol gates are board state too (the City decides them,
+    // not the player), so they are excluded exactly like day/night (D-24598 sibling).
+    if (
+      condition.type !== 'sunlightInEffect' &&
+      condition.type !== 'moonlightInEffect' &&
+      condition.type !== PATROL_SPACE_EMPTY_CONDITION_TYPE &&
+      condition.type !== PATROL_SPACE_OCCUPIED_CONDITION_TYPE &&
+      // why: WP-886 / D-24837 — the Conqueror gate is board state as well (a Villain in the City
+      // space, not a synergy the player built), excluded like the Patrol pair (D-24832 sibling).
+      condition.type !== CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE
+    ) {
       count += 1;
     }
   }
   return count;
+}
+
+/**
+ * Whether every City-space condition (Patrol or Conqueror) on a hook passes on this play
+ * (WP-881 / D-24832; Conqueror added by WP-886 / D-24837).
+ *
+ * // why: each City-space condition is evaluated directly, never through findFailedCondition,
+ * which stops at the first failed condition and would report Axe of the Slayer's [hc:instinct]
+ * gate first on its off-branch cross hook (or Rock Solid's [hc:strength] gate before its Sewers
+ * condition). The City decides these, not the player, so a hook whose City-space condition fails
+ * is not a Synergy clause. A hook with no City-space condition passes trivially.
+ *
+ * @param G - Current game state (read-only).
+ * @param playerID - The acting player.
+ * @param hook - The hero ability hook.
+ * @param cardId - The played hero card's CardExtId.
+ * @returns false when some City-space condition on the hook fails, else true.
+ */
+function allCitySpaceConditionsPass(
+  G: LegendaryGameState,
+  playerID: string,
+  hook: HeroAbilityHook,
+  cardId: CardExtId,
+): boolean {
+  for (const condition of hook.conditions ?? []) {
+    const isCitySpaceCondition =
+      condition.type === PATROL_SPACE_EMPTY_CONDITION_TYPE ||
+      condition.type === PATROL_SPACE_OCCUPIED_CONDITION_TYPE ||
+      condition.type === CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE;
+    if (isCitySpaceCondition && !evaluateCondition(G, playerID, condition, cardId)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /**
@@ -1581,6 +1937,11 @@ function buildHeroEffectTraceParams(
   if (effect.rewardType !== undefined) {
     params.rewardType = effect.rewardType;
   }
+  // why: WP-885 / D-24836 — a gain-wound-reward composition reward (Berserk) names its reward here
+  // instead of in rewardType, so the trace shows what the Wound was offered for.
+  if (effect.rewardComposition !== undefined) {
+    params.rewardComposition = effect.rewardComposition;
+  }
   if (effect.empoweredClass !== undefined) {
     params.empoweredClass = effect.empoweredClass;
   }
@@ -1764,6 +2125,7 @@ function heroEffectKo(
     if (moveResult.found) {
       playerZones.inPlay = moveResult.from;
       G.ko = koCard(G.ko, cardId);
+      recordOwnedCardKoed(G, playerID, cardId, 'inPlay');
       // why: WP-417 / D-24237 — a self-KO removes the card the player just played
       // from the board; a silent removal reads as the card vanishing. Name it.
       // why: WP-434 — a self-KO ability that removed the played card is `applied`.
@@ -1899,6 +2261,56 @@ function heroEffectGainWound(
 }
 
 /**
+ * Hero handler for the `discard-artifact-or-three-then-ko` keyword (WP-860 / D-24796).
+ *
+ * Commune with the Spirit World: "You may discard an [keyword:Artifact] you control or three cards
+ * from your hand. If you do, KO a card from your hand or discard pile." Parks the 'commune-cost'
+ * seat choice for the playing player (or logs why nothing opens); the rest chains from
+ * resolveSeatChoice. Never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param _ctx - Unused move context.
+ * @param playerID - The player who played the card.
+ * @param cardId - The Commune card played.
+ * @param _effect - The `{ type: 'discard-artifact-or-three-then-ko' }` descriptor (no magnitude).
+ */
+function heroEffectDiscardArtifactOrThreeThenKo(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  // why: WP-860 / D-24796 — a hero handler parks a seat choice at play (the Here, Hold This / Random
+  // Acts precedent); the cost / discard / KO logic lives in moves/communeSpiritWorld.logic.ts.
+  parkCommuneCostChoice(G, playerID, cardId);
+}
+
+/**
+ * Hero handler for the `hq-hero-gains-size-changing-tech` keyword (WP-862 / D-24804).
+ *
+ * Pym Particles (antm Ant-Man), second line: "A Hero in the HQ with no Size-Changing abilities
+ * gains Size-Changing [Tech] this turn." Grants through the shared HQ grant module: no eligible
+ * Hero → a logged no-op, one → granted at once, two or more → a seat-choice pick. Never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param _ctx - Unused move context.
+ * @param playerID - The player who played the card.
+ * @param cardId - The Pym Particles card played (the grant's source, for the log).
+ * @param _effect - The `{ type: 'hq-hero-gains-size-changing-tech' }` descriptor (no magnitude).
+ */
+function heroEffectHqHeroGainsSizeChangingTech(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  // why: D-24804 — the printed "with no Size-Changing abilities" is the 'if-none' mode.
+  grantSizeChangingToHqHero(G, playerID, ['tech'], 'if-none', cardId);
+}
+
+/**
  * Hero handler for the `gain-sidekick` keyword (WP-844 / D-24778).
  *
  * "Gain a [rule:Sidekick]" / "Gain three [rule:Sidekicks]": moves up to `magnitude`
@@ -1918,6 +2330,19 @@ function heroEffectGainSidekick(
   // pattern never emits one; a request below 1 is a defensive silent no-op.
   const requestedCount = effect.magnitude ?? 0;
   if (requestedCount < 1) {
+    return;
+  }
+
+  // why: WP-873 / D-24818 — "Sidekicks can't be recruited or gained" while a Villain fortifies
+  // the Sidekick Stack. gainSidekickToDiscard refuses too, but the line here names the
+  // fortifier (D-24017: a silent skip reads as "the card did nothing").
+  if (isSidekickStackFortified(G)) {
+    pushLog(
+      G,
+      `Player ${playerID} could not gain a Sidekick — ${buildFortifyBlockReason(G, 'sidekick-stack')} (${formatCardRef(G.cardDisplayData, cardId)})`,
+      'blocked',
+      cardId,
+    );
     return;
   }
 
@@ -1945,6 +2370,203 @@ function heroEffectGainSidekick(
   } else {
     pushLog(G, `Player ${playerID} could not gain a Sidekick — the Sidekick Stack is empty (${card}).`, 'blocked', cardId);
   }
+}
+
+/**
+ * Hero handler for the `next-hand-extra-draw` keyword (WP-866 / D-24809).
+ *
+ * "When you draw a new hand (of cards at the end of) this turn, draw an extra card" (Wasp's
+ * Infiltrate; "two" / "three extra cards" on Adam Warlock, Warpath and Captain Britain): raises
+ * the playing player's next-hand fill target by `magnitude`. The shipped end-of-turn cleanup
+ * draws to that target and deletes it. One `applied` log line; no randomness, never throws.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Unused move context.
+ * @param playerID - The player who played the card.
+ * @param cardId - The played card instance.
+ * @param effect - The `{ type: 'next-hand-extra-draw', magnitude: N }` descriptor.
+ */
+function heroEffectNextHandExtraDraw(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  // why: D-24809 — the magnitude pre-gate admits 0, but the marker pattern never emits one; a
+  // request below 1 is a defensive silent no-op.
+  const extraCards = effect.magnitude ?? 0;
+  if (extraCards < 1) {
+    return;
+  }
+
+  // why: D-24352 — lazy-init the WP-497 container (never seeded in setup), then the ADDITIVE
+  // write: the current target (or HAND_SIZE) plus the extra cards, so a second copy or a
+  // defeated Savage Land Mutates in the same turn stacks. The end-of-turn cleanup (D-24520)
+  // reads and deletes the entry once, so no end-of-turn trigger is needed (D-22501's "no timing
+  // dispatch" deferral did not apply). The key is the resolving playerID: every current dispatch
+  // path (including Copy Powers and the Steal Abilities re-fire) is active-seat only, so it equals
+  // currentPlayer. A future non-active resolver would carry the bonus to that seat's next cleanup
+  // and must re-check this.
+  if (G.handSizeOverrides === undefined) {
+    G.handSizeOverrides = {};
+  }
+  const nextHandSize = (G.handSizeOverrides[playerID] ?? HAND_SIZE) + extraCards;
+  G.handSizeOverrides[playerID] = nextHandSize;
+
+  const card = formatCardRef(G.cardDisplayData, cardId);
+  pushLog(G, `Player ${playerID} will draw ${String(nextHandSize)} cards on their next hand (+${String(extraCards)} extra, ${card}).`, 'applied', cardId);
+}
+
+/**
+ * Hero handler for the `discard-top-printed-attack` keyword (WP-850 / D-24786).
+ *
+ * Bishop's Firepower from the Future: "Discard the top four cards of your deck. You get
+ * +[icon:attack] equal to those cards' printed [icon:attack]." Discards `magnitude` cards one
+ * at a time from the playing player's deck top to their discard pile, sums each card's
+ * printed Attack (`offPlayCardStats`: the trailing `+` dropped, Divided halves added — a Wound
+ * or Bystander adds 0), grants the total, and writes `G.lastDeckTopDiscard` so the same
+ * card's `ko-discarded-this-way` line knows which cards "those cards" are.
+ *
+ * // why (ctx): executeHeroEffects passes the move-context wrapper, so the empty-deck
+ * reshuffle reads ctx.random through it exactly as heroEffectStealAbilities does.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param ctx - Move context (threaded into the reshuffle).
+ * @param playerID - The player who played the card.
+ * @param cardId - The played card instance.
+ * @param effect - The `{ type: 'discard-top-printed-attack', magnitude: N }` descriptor.
+ */
+function heroEffectDiscardTopPrintedAttack(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  // why: D-24786 — the marker pattern never emits a count below 1; a request below 1 is a
+  // defensive silent no-op.
+  const requestedCount = effect.magnitude ?? 0;
+  if (requestedCount < 1) {
+    return;
+  }
+  const zones = G.playerZones[playerID];
+  if (!zones) {
+    return;
+  }
+
+  const discardedCardIds: CardExtId[] = [];
+  let totalAttack = 0;
+  for (let i = 0; i < requestedCount; i++) {
+    if (zones.deck.length === 0) {
+      // why: D-24285 — rules v23: when a card effect needs the top of an empty deck, shuffle
+      // the discard pile into a new deck first, mid-effect. That pile includes cards this play
+      // already discarded, so one of them can come back and be discarded (and counted) again.
+      reshuffleDiscardIntoDeck(zones, ctx as ShuffleProvider);
+    }
+    const topCardId = zones.deck[0];
+    if (topCardId === undefined) {
+      // why: D-24786 — deck and discard are both empty. `break`, never `return`: the grant,
+      // the log line and the record below must run on every path, so line 2 never reads a
+      // record an earlier play of this same card instance left behind.
+      break;
+    }
+    const moveResult = moveCardFromZone(zones.deck, zones.discard, topCardId);
+    zones.deck = moveResult.from;
+    zones.discard = moveResult.to;
+    discardedCardIds.push(topCardId);
+    totalAttack += offPlayCardStats(G, topCardId)?.attack ?? 0;
+  }
+
+  if (G.turnEconomy && totalAttack > 0) {
+    G.turnEconomy = addResources(G.turnEconomy, totalAttack, 0);
+  }
+
+  // why: D-24017 — a short or empty deck is a legitimate partial / no-op, but a silent
+  // shortfall reads as "the card did nothing"; each outcome gets its own line.
+  const card = formatCardRef(G.cardDisplayData, cardId);
+  const discardedRefs: string[] = [];
+  for (const discardedCardId of discardedCardIds) {
+    discardedRefs.push(formatCardRef(G.cardDisplayData, discardedCardId));
+  }
+  if (discardedCardIds.length === requestedCount) {
+    pushLog(G, `Player ${playerID} discarded ${discardedRefs.join(', ')} from the top of their deck and gained +${String(totalAttack)} attack (${card}).`, 'applied', cardId);
+  } else if (discardedCardIds.length > 0) {
+    pushLog(G, `Player ${playerID} discarded only ${String(discardedCardIds.length)} of ${String(requestedCount)} cards (${discardedRefs.join(', ')}) — their deck and discard pile ran out — and gained +${String(totalAttack)} attack (${card}).`, 'partial', cardId);
+  } else {
+    pushLog(G, `Player ${playerID} had no cards in their deck or discard pile to discard (${card}).`, 'blocked', cardId);
+  }
+
+  // why: D-24786 — the second printed line is a separate hook with no return channel from this
+  // one, so this record hands it "those cards". Written on every path (an empty list when
+  // nothing was discarded) so it always describes THIS play.
+  G.lastDeckTopDiscard = { playerID, sourceCardId: cardId, cardIds: discardedCardIds };
+}
+
+/**
+ * Hero handler for the `ko-discarded-this-way` keyword (WP-850 / D-24786).
+ *
+ * Firepower from the Future's "[team:x-men]: KO any number of those cards." The card's first
+ * line has already discarded "those cards" and recorded them in `G.lastDeckTopDiscard`
+ * (executeHeroEffects runs a card's abilities in order, D-24521 §6). This handler parks the
+ * WP-693 KO-from-discard choice limited by `eligibleCardIds` to the recorded cards still in
+ * the discard pile; the player picks any number of them, zero included. The X-Men gate rides
+ * this line's own `requiresTeam` condition, so an unmet gate never reaches here.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Move context (unused; nothing is shuffled here).
+ * @param playerID - The player who played the card.
+ * @param cardId - The played card instance.
+ * @param _effect - The `{ type: 'ko-discarded-this-way' }` descriptor (no magnitude).
+ */
+function heroEffectKoDiscardedThisWay(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  // why: D-24786 — the record is consumed here on every branch, so it never outlives the play
+  // that wrote it once this line has run. `delete`, not `= undefined`: the engine compiles with
+  // exactOptionalPropertyTypes.
+  const record = G.lastDeckTopDiscard;
+  delete G.lastDeckTopDiscard;
+  const card = formatCardRef(G.cardDisplayData, cardId);
+  if (record === undefined || record.playerID !== playerID || record.sourceCardId !== cardId) {
+    pushLog(G, `Player ${playerID} had no discarded cards to KO (${card}).`, 'blocked', cardId);
+    return;
+  }
+
+  // why: D-24786 — line 1 could discard nothing (deck and discard both empty) and has already
+  // logged that; saying none of "the discarded cards" are left would imply some were discarded.
+  if (record.cardIds.length === 0) {
+    pushLog(G, `Player ${playerID} discarded no cards, so there is nothing to KO (${card}).`, 'neutral', cardId);
+    return;
+  }
+
+  // why: D-24786 — "those cards" are recomputed against the live discard: a mid-effect
+  // reshuffle may have put some of them back into the deck, and only cards still in the
+  // discard pile can be KO'd from it.
+  const eligibleCardIds = getEligibleKoDiscardCards(G, playerID, undefined, record.cardIds);
+  if (eligibleCardIds.length === 0) {
+    pushLog(G, `Player ${playerID} has none of the discarded cards left in their discard pile to KO (${card}).`, 'neutral', cardId);
+    return;
+  }
+
+  // why: the queue is created lazily at the park site, so a match that never parks one leaves
+  // the field undefined and the hash oracles stay byte-stable.
+  if (!G.pendingKoDiscardChoices) {
+    G.pendingKoDiscardChoices = [];
+  }
+  const entry: PendingKoDiscardChoice = {
+    choiceType: 'ko-from-discard',
+    playerID,
+    maxCount: eligibleCardIds.length,
+    sourceCardId: cardId,
+    eligibleCardIds,
+  };
+  G.pendingKoDiscardChoices.push(entry);
+  pushLog(G, `Player ${playerID} may KO any number of the ${String(eligibleCardIds.length)} discarded cards (${card}).`, 'neutral', cardId);
 }
 
 // ---------------------------------------------------------------------------
@@ -2267,6 +2889,19 @@ function revealPredicateMatches(
     const traits = offPlayCardTraits(G, topCardId);
     return traits?.heroClass === predicate.traitValue || traits?.heroClass2 === predicate.traitValue;
   }
+  if (predicate.kind === 'hero-class-or-size-changing') {
+    if (predicate.traitValue === undefined) {
+      pushLog(G, 'A reveal rule used a hero-class-or-size-changing predicate with no class value and was skipped. Check the reveal rule markup.');
+      return false;
+    }
+    // why: D-24806 — "If it's [hc:X] or has [keyword:Size-Changing]": the class half is the
+    // hero-class rule above (either printed class, either split half); the Size-Changing half is
+    // the card's PRINTED Size-Changing, Microscopic included (rules v23 p.30). A deck card is
+    // never in the HQ, so no runtime grant (D-24804) can apply to it.
+    const traits = offPlayCardTraits(G, topCardId);
+    const isClassMatch = traits?.heroClass === predicate.traitValue || traits?.heroClass2 === predicate.traitValue;
+    return isClassMatch || hasSizeChanging(G, topCardId);
+  }
   if (predicate.kind === 'cost-lte') {
     // why: a threshold of 0 is legitimate (reveal M=0 → cost-lte 0), so test for
     // undefined explicitly rather than a falsy `?? default`.
@@ -2387,7 +3022,7 @@ function applyRevealAction(
     return isDrawn;
   }
   if (action.kind === 'ko') {
-    return applyRevealKo(G, playerZones, topCardId);
+    return applyRevealKo(G, playerZones, topCardId, playerID);
   }
   if (action.kind === 'discard') {
     return applyRevealDiscard(playerZones, topCardId);
@@ -2468,15 +3103,24 @@ function applyRevealDraw(playerZones: PlayerZones, topCardId: CardExtId): boolea
  * @param G - Game state (mutated under Immer draft).
  * @param playerZones - The active player's zones.
  * @param topCardId - The peeked deck-top card's CardExtId.
+ * @param ownerPlayerID - The player whose deck it is.
  * @returns Whether the card was found and KO'd (false leaves zones unchanged).
  */
-function applyRevealKo(G: LegendaryGameState, playerZones: PlayerZones, topCardId: CardExtId): boolean {
+function applyRevealKo(
+  G: LegendaryGameState,
+  playerZones: PlayerZones,
+  topCardId: CardExtId,
+  // why: WP-853 / D-24789 — PlayerZones carries no owner id, so the caller threads it
+  // in for the owned-KO count (Absorb Energies).
+  ownerPlayerID: string,
+): boolean {
   const moveResult = moveCardFromZone(playerZones.deck, [], topCardId);
   if (!moveResult.found) {
     return false;
   }
   playerZones.deck = moveResult.from;
   G.ko = koCard(G.ko, topCardId);
+  recordOwnedCardKoed(G, ownerPlayerID, topCardId, 'deck');
   return true;
 }
 
@@ -2674,7 +3318,7 @@ function heroEffectKidnapPerCount(
   if (effect.countSource === undefined) { return; }
   // why: WP-714 / D-24537 — thread the triggering card so tech-heroes-played-this-turn
   // counts each OTHER Tech card played this turn (self-EXCLUSIVE, honouring hc2 +
-  // Size-Changing granted classes via the shipped resolver — no fresh class loop).
+  // Copy Powers copied classes via the shipped resolver — no fresh class loop).
   const count = resolveCountSource(G, playerID, effect.countSource, cardId);
   // why: perEach is the "for each N" divisor (absent ≡ 1); see heroEffectAttackPerCount.
   const perEach = effect.perEach && effect.perEach > 0 ? effect.perEach : 1;
@@ -3340,20 +3984,28 @@ function revealDeckTopForDispose(
  * shipped reveal-top-dispose entries keep their no-drift snapshot. Terminates: every pass either
  * stops or shifts one queue entry.
  *
+ * A front that just moved up (`isFrontNew`, or any front after a shift here) was parked behind
+ * another choice, so its park logged only that it was queued; a still-current entry there logs
+ * its reveal now, so every KO-or-keep choice names the card it shows.
+ *
  * @param G - Game state (mutated: entry cardIds, the queue, and a possible reshuffle).
  * @param shuffleProvider - ShuffleProvider (ctx.random) for a reshuffle-on-empty.
+ * @param isFrontNew - True when the caller just shifted the queue, so the front moved up.
  */
 export function refreshStaleKoOrKeepFront(
   G: LegendaryGameState,
   shuffleProvider: ShuffleProvider,
+  isFrontNew = false,
 ): void {
   const queue = G.pendingRevealTopDispose;
   if (queue === undefined) { return; }
+  let isCurrentFrontNew = isFrontNew;
   while (queue.length > 0) {
     const front = queue[0]!;
-    refreshStaleKoOrKeepEntries(G, front, shuffleProvider);
+    refreshStaleKoOrKeepEntries(G, front, shuffleProvider, isCurrentFrontNew);
     if (front.revealedTops.length > 0) { return; }
     queue.shift();
+    isCurrentFrontNew = true;
   }
 }
 
@@ -3364,18 +4016,31 @@ export function refreshStaleKoOrKeepFront(
  * @param G - Game state (mutated).
  * @param choice - The pending reveal-top choice whose entries are checked.
  * @param shuffleProvider - ShuffleProvider for a reshuffle-on-empty.
+ * @param isFrontNew - True when this choice just moved up to the front of the queue.
  */
 function refreshStaleKoOrKeepEntries(
   G: LegendaryGameState,
   choice: PendingRevealTopDispose,
   shuffleProvider: ShuffleProvider,
+  isFrontNew: boolean,
 ): void {
   // why: iterate from the end so splicing a dropped entry never skips the next one.
   for (let index = choice.revealedTops.length - 1; index >= 0; index--) {
     const entry = choice.revealedTops[index]!;
     if (entry.isDiscardAllowed !== false) { continue; }
     const ownerDeck = G.playerZones[entry.ownerPlayerID]?.deck ?? [];
-    if (ownerDeck.length > 0 && ownerDeck[0] === entry.cardId) { continue; }
+    if (ownerDeck.length > 0 && ownerDeck[0] === entry.cardId) {
+      // why: a queued entry whose snapshot still matches the top (two copies share one ext id,
+      // e.g. S.H.I.E.L.D. Agents) logged no reveal at park; name the card now it is shown.
+      if (isFrontNew) {
+        pushLog(G,
+          `Player ${entry.ownerPlayerID} reveals the top card of their deck — ${formatCardRef(G.cardDisplayData, entry.cardId)} — KO it or keep it (reveal-top).`,
+          'neutral',
+          entry.cardId,
+        );
+      }
+      continue;
+    }
     const revealed = revealDeckTopForDispose(G, entry.ownerPlayerID, shuffleProvider);
     if (revealed === null) {
       choice.revealedTops.splice(index, 1);
@@ -3586,14 +4251,15 @@ function heroEffectRevealTopDisposeKo(
  * @param ctx - Move context, narrowed to ShuffleProvider for the reshuffle-on-empty.
  * @param playerID - The active player who played the card.
  * @param _cardId - The played card (unused; the choice carries only the revealed top).
- * @param _effect - The `{ type: 'reveal-top-may-ko' }` descriptor (no magnitude).
+ * @param effect - The `{ type: 'reveal-top-may-ko' }` / `{ type: 'feast' }` descriptor (no magnitude;
+ *   World-Spanning Hunger's Feasts carry `nonGreyHeroKoAttack`, WP-859).
  */
 function heroEffectRevealTopMayKo(
   G: LegendaryGameState,
   ctx: unknown,
   playerID: string,
   _cardId: CardExtId,
-  _effect: HeroEffectDescriptor,
+  effect: HeroEffectDescriptor,
 ): void {
   const revealed = revealDeckTopForDispose(G, playerID, ctx as ShuffleProvider);
   if (revealed === null) {
@@ -3602,17 +4268,37 @@ function heroEffectRevealTopMayKo(
     pushLog(G, `Player ${playerID} had no card to reveal on top of their deck (reveal-top).`, 'blocked');
     return;
   }
+  const revealedEntry: RevealedTopEntry = {
+    ownerPlayerID: revealed.ownerPlayerID,
+    cardId: revealed.cardId,
+    isKoAllowed: true,
+    isDiscardAllowed: false,
+  };
+  // why: WP-859 / D-24795 — World-Spanning Hunger's "+2 for each non-grey Hero that was KO'd
+  // from your deck this turn" counts its own Feasts' KOs, which land in later moves, so each
+  // Feast entry carries the reward resolveRevealTopDispose pays on a non-grey Hero KO (RS-2,
+  // counted at resolution). Copied only when the descriptor has it, so every other KO-or-keep
+  // entry keeps today's shape.
+  if (effect.nonGreyHeroKoAttack !== undefined) {
+    revealedEntry.nonGreyHeroKoAttack = effect.nonGreyHeroKoAttack;
+  }
   if (!G.pendingRevealTopDispose) { G.pendingRevealTopDispose = []; }
+  const isQueuedBehindAnotherChoice = G.pendingRevealTopDispose.length > 0;
   G.pendingRevealTopDispose.push({
     choiceType: 'reveal-top-dispose',
     playerID,
-    revealedTops: [{
-      ownerPlayerID: revealed.ownerPlayerID,
-      cardId: revealed.cardId,
-      isKoAllowed: true,
-      isDiscardAllowed: false,
-    }],
+    revealedTops: [revealedEntry],
   } satisfies PendingRevealTopDispose);
+  if (isQueuedBehindAnotherChoice) {
+    // why: the snapshot is provisional while a choice ahead can still change the top (World-
+    // Spanning Hunger's three Feasts all snapshot one card); naming it here logged the same card
+    // three times. refreshStaleKoOrKeepFront logs the real reveal when this choice moves up.
+    pushLog(G,
+      `Player ${playerID} queues another reveal of the top card of their deck — it is shown once the choice before it resolves (reveal-top).`,
+      'neutral',
+    );
+    return;
+  }
   pushLog(G,
     `Player ${playerID} revealed ${formatCardRef(G.cardDisplayData, revealed.cardId)} from the top of their deck — KO it or keep it (reveal-top).`,
     'neutral',
@@ -4351,6 +5037,7 @@ function heroEffectKoWoundReward(
   if (!moveResult.found) { return; }
   playerZones[targetZone] = moveResult.from;
   G.ko = koCard(G.ko, WOUND_EXT_ID);
+  recordOwnedCardKoed(G, playerID, WOUND_EXT_ID, targetZone);
   pushLog(G,
     `Player ${playerID} KO'd a Wound from their ${targetZone} via a hero ability.`,
   );
@@ -4420,6 +5107,7 @@ function heroEffectKoWound(
   if (!moveResult.found) { return; }
   playerZones[targetZone] = moveResult.from;
   G.ko = koCard(G.ko, WOUND_EXT_ID);
+  recordOwnedCardKoed(G, playerID, WOUND_EXT_ID, targetZone);
   pushLog(G,
     `Player ${playerID} KO'd a Wound from their ${targetZone} via a hero ability.`,
   );
@@ -5898,7 +6586,7 @@ function playerCanRevealMatch(
 
 /**
  * Returns whether a played card matches a reveal criterion, reading its effective
- * when-played team and class so a Copy Powers copy or a Size-Changing grant counts.
+ * when-played team and class so a Copy Powers copy counts.
  *
  * @param G - Game state (read-only).
  * @param playedCardId - A card the playing player has in play.
@@ -6196,7 +6884,9 @@ function describeInvestigateCriterion(criterion: InvestigateCriterion): string {
  * the played base card for its stronger second-form, pulled out of the G.transformDeck
  * side deck (D-24468). The condition gate ("made ≥6 Recruit this turn") is the shipped
  * recruit-threshold condition (D-24354), evaluated by evaluateAllConditions BEFORE this
- * handler runs — so this handler only executes when the gate passed.
+ * handler runs — so this handler only executes when the gate passed. The swap itself lives in
+ * the leaf hero/heroTransform.logic.ts (applyHeroTransform), which the WP-885 / D-24836
+ * gain-wound-reward transform reward (wwhk Mood Swings, for a Wound kept) also calls.
  *
  * Placement (Jeff-confirmed permanent-upgrade rule): the second-form leaves the side
  * deck and enters play in the base card's slot; the base card goes BACK to the side
@@ -6232,141 +6922,7 @@ function heroEffectTransform(
   cardId: CardExtId,
   _effect: HeroEffectDescriptor,
 ): void {
-  const playerZones = G.playerZones[playerID];
-  if (!playerZones) {
-    return;
-  }
-
-  // why: guard against G states that predate WP-658 (older test mocks with no
-  // transformTargets / transformDeck). A real match always seeds both at setup;
-  // an absent map/side deck is a silent no-op, never a throw (mirrors the
-  // executeHeroEffects heroAbilityHooks guard).
-  if (!G.transformTargets || !G.transformDeck) {
-    return;
-  }
-
-  // why: strip the `#copy` suffix so the played base instance ext_id
-  // (`wwhk/she-hulk/hurl-legal-objections#3`) resolves to the copy-agnostic card
-  // key (`wwhk/she-hulk/hurl-legal-objections`) buildTransformTargets stored.
-  const hashIndex = cardId.indexOf('#');
-  const baseKey = (hashIndex === -1 ? cardId : cardId.slice(0, hashIndex)) as CardExtId;
-  const targetKey = G.transformTargets[baseKey];
-  if (targetKey === undefined) {
-    // why: defensive — the setup parser only emits an executable transform for a
-    // SUPPORTED_TRANSFORM_BASES card, every one of which is in transformTargets, so a
-    // missing key is unreachable in practice. A silent no-op, never a throw.
-    return;
-  }
-
-  // why: find the FIRST matching second-form copy still in the side deck. Instance
-  // ids are `{targetKey}#{copy}`; the appended `#` stops a target key prefix-matching
-  // a longer sibling slug. Front-of-zone, deterministic — no ctx.random.
-  const targetPrefix = `${targetKey}#`;
-  let targetInstanceId: CardExtId | undefined;
-  for (const sideDeckId of G.transformDeck) {
-    if (sideDeckId.startsWith(targetPrefix)) {
-      targetInstanceId = sideDeckId;
-      break;
-    }
-  }
-  if (targetInstanceId === undefined) {
-    // why: AC-5 — the side deck ran out of this second-form copy (multi-player
-    // contention). The transform simply does not happen: log and continue. WP-434 —
-    // nothing happened, so the outcome is `blocked`.
-    pushLog(G,
-      `Player ${playerID} could not Transform ${formatCardRef(G.cardDisplayData, cardId)} — no matching second-form copy remained in the transform side deck.`,
-      'blocked',
-      cardId, // why: WP-438 — the played base card whose transform could not resolve.
-    );
-    return;
-  }
-
-  // Route the base card back to the side deck (set aside): a permanent deck upgrade —
-  // the player's deck loses the base as it gains the second-form, no net card change.
-  const baseMove = moveCardFromZone(playerZones.inPlay, G.transformDeck, cardId);
-  playerZones.inPlay = baseMove.from;
-  G.transformDeck = baseMove.to;
-
-  // Bring the second-form into play in the base card's slot.
-  const targetMove = moveCardFromZone(G.transformDeck, playerZones.inPlay, targetInstanceId);
-  G.transformDeck = targetMove.from;
-  playerZones.inPlay = targetMove.to;
-
-  // why: apply the second-form's printed attack/recruit — the transform makes it the
-  // card now in play, and printed icons are applied imperatively at play time
-  // (applyCardPlay). The base's already-applied recruit is intentionally NOT refunded.
-  const targetStats = G.cardStats[targetInstanceId];
-  const targetAttack = targetStats ? targetStats.attack : 0;
-  const targetRecruit = targetStats ? targetStats.recruit : 0;
-  G.turnEconomy = addResources(G.turnEconomy, targetAttack, targetRecruit);
-
-  // why: WP-434 — a completed transform that applied the second-form is `applied` (green).
-  pushLog(G,
-    `Player ${playerID} Transformed ${formatCardRef(G.cardDisplayData, cardId)} into ${formatCardRef(G.cardDisplayData, targetInstanceId)}${formatTransformEconomyClause(targetAttack, targetRecruit)}.`,
-    'applied',
-    targetInstanceId, // why: WP-438 — the second-form now in play is the play identity the log associates.
-  );
-
-  // why: WP-672 / D-24487 — emit the transformResolved notable event LAST (after the
-  // swap settled and the applied log pushed), observing final state — the healWounds /
-  // bystanderRevealed emission precedent. G.messages is not projected to clients, so this
-  // event is what drives the arena-client "Transformed!" overlay + the transform VFX beat.
-  // Names resolve HERE via G.cardDisplayData (the composer stays pure), with a defensive
-  // raw-ext_id fallback when display data is absent (legacy test states may omit it).
-  // Guarded push: the minimal heroEffects test builder omits G.notableEvents; a real match
-  // always seeds it at setup ([] in buildInitialGameState). Handlers never throw, so an
-  // absent array is a silent skip, mirroring the transformTargets / transformDeck guards.
-  if (Array.isArray(G.notableEvents)) {
-    const baseName = resolveTransformCardName(G, cardId);
-    const secondFormName = resolveTransformCardName(G, targetInstanceId);
-    G.notableEvents.push({
-      type: 'transformResolved',
-      playerId: playerID,
-      narrative: composeTransformNarrative(baseName, secondFormName),
-    });
-  }
-}
-
-/**
- * Resolves a card's display name from `G.cardDisplayData` for the transform
- * narrative, falling back to the raw ext_id when no display entry exists (WP-672).
- * Mirrors the `villainDeck.reveal.ts` bystanderRevealed name-resolution so the
- * `composeTransformNarrative` composer keeps its no-`G` purity.
- *
- * @param G - Game state (read-only here).
- * @param cardId - The card ext_id to resolve to a display name.
- * @returns The card's display name, or the raw ext_id when display data is absent.
- */
-function resolveTransformCardName(G: LegendaryGameState, cardId: CardExtId): string {
-  const display = G.cardDisplayData?.[cardId];
-  if (display && typeof display.name === 'string' && display.name.length > 0) {
-    return display.name;
-  }
-  return cardId;
-}
-
-/**
- * Builds the trailing " (+N attack, +M recruit)" clause for a transform log line,
- * omitting either half that is zero and the whole clause when the second-form has no
- * printed economy (WP-658 / D-24469). Mirrors the intent of formatBaseEconomyClause but
- * is local to keep heroEffects.execute.ts free of a moves-layer import (avoids a cycle).
- *
- * @param attack - The second-form's printed attack (>= 0).
- * @param recruit - The second-form's printed recruit (>= 0).
- * @returns The clause including a leading space, or an empty string when both are zero.
- */
-function formatTransformEconomyClause(attack: number, recruit: number): string {
-  const parts: string[] = [];
-  if (attack > 0) {
-    parts.push(`+${attack} attack`);
-  }
-  if (recruit > 0) {
-    parts.push(`+${recruit} recruit`);
-  }
-  if (parts.length === 0) {
-    return '';
-  }
-  return ` (${parts.join(', ')})`;
+  applyHeroTransform(G, playerID, cardId);
 }
 
 /**
@@ -6734,6 +7290,311 @@ export function fireExcessiveViolencePlays(
   refreshStaleKoOrKeepFront(G, ctx as ShuffleProvider);
 }
 
+/**
+ * Hero handler for the `heist` keyword (WP-865 / D-24808).
+ *
+ * Ant-Man and the Wasp's "Heist" (rules v23 p.26-27). `executeHeroEffects` fires this at PLAY
+ * time (it does not filter by hook timing), and its ONLY job at play is to READY the played card
+ * into the turn's Heist crew (`G.turnEconomy.heistCrewCards`). It applies NONE of the inner
+ * effects; those fire later, and only if the player's Heist succeeds, from the attemptHeist
+ * move's `fireHeistPlays`.
+ *
+ * A Heist card played after this turn's attempt is too late (rules v23 p.27): it is not readied,
+ * and a `blocked` line says so. Safe-skips (no readying, no throw) when the wrapper has no inner
+ * effects.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Context (unused — readying reads/writes only G.turnEconomy).
+ * @param playerID - Active player ID (the crew is the active player's).
+ * @param cardId - The played Heist card's CardExtId.
+ * @param effect - The 'heist' wrapper descriptor { heistEffects }.
+ */
+function heroEffectHeist(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  // why: WP-865 / D-24808 — safe-skip a wrapper with no inner effects (a malformed descriptor);
+  // readying it would offer a Heist that fires nothing.
+  if (effect.heistEffects === undefined) {
+    return;
+  }
+  // why: WP-865 / D-24808 — rules v23 p.27: once this turn's Heist was attempted, a Heist card
+  // played afterwards is too late. It is not readied, so it can never fire.
+  if (G.turnEconomy.hasAttemptedHeistThisTurn === true) {
+    pushLog(G,
+      `Player ${playerID} played ${formatCardRef(G.cardDisplayData, cardId)} after this turn's Heist, so it is too late for its Heist ability.`,
+      'blocked',
+      cardId,
+    );
+    return;
+  }
+  // why: WP-865 / D-24808 — READY only. The inner effects fire from attemptHeist's
+  // fireHeistPlays on a successful Heist, never here. enrollHeistCard appends the card to the
+  // turn's crew (materializing it on the first Heist play), carried by carryConversionFlag.
+  G.turnEconomy = enrollHeistCard(G.turnEconomy, cardId);
+  // why: WP-434 — readying is `applied` (green): it changed turn state (the card is now armed
+  // to fire on a successful Heist) even though no resource total moved.
+  pushLog(G,
+    `Player ${playerID} readied ${formatCardRef(G.cardDisplayData, cardId)} for a Heist — its Heist ability fires if a Heist you attempt this turn succeeds.`,
+    'applied',
+    cardId,
+  );
+}
+
+/**
+ * Fires every readied Heist ability, in readying (play) order (WP-865 / D-24808).
+ *
+ * Called only from the attemptHeist move, after a successful Heist. For each card in the turn's
+ * Heist crew it finds that card's `heist` hook in `G.heroAbilityHooks` and dispatches each
+ * descriptor in its `heistEffects` through the reentrant `executeSingleEffect`.
+ *
+ * Deterministic: fixed readying order, `for...of` loops (no `.reduce()`), no `ctx.random` beyond
+ * what an inner draw already uses through the forwarded context. Never throws; a missing hook or
+ * an empty crew is a silent no-op.
+ *
+ * @param G - Game state (mutated by each fired inner effect).
+ * @param ctx - Move context, forwarded to each inner effect's handler (draws reshuffle through it).
+ * @param playerID - The player whose Heist succeeded.
+ * @returns The number of readied cards that fired at least one inner effect.
+ */
+export function fireHeistPlays(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+): number {
+  const crewCards = G.turnEconomy.heistCrewCards ?? [];
+  // why: WP-865 / D-24808 — a G that predates the hooks (narrow test fixtures) has no
+  // heroAbilityHooks; `?? []` keeps this a silent no-op rather than iterating undefined.
+  const allHooks = G.heroAbilityHooks ?? [];
+  let firedCardCount = 0;
+  // why: WP-865 / D-24808 — the rule lets the player use the Heist abilities "in any order";
+  // readying (play) order is the deterministic stand-in, so a replay fires them identically.
+  for (const cardId of crewCards) {
+    let cardFiredAny = false;
+    for (const hook of getHooksForCard(allHooks, cardId)) {
+      for (const effect of hook.effects ?? []) {
+        if (effect.type !== 'heist') {
+          continue;
+        }
+        for (const innerEffect of effect.heistEffects ?? []) {
+          executeSingleEffect(G, ctx, playerID, cardId, innerEffect);
+          cardFiredAny = true;
+        }
+      }
+    }
+    if (cardFiredAny) {
+      firedCardCount += 1;
+    }
+  }
+  return firedCardCount;
+}
+
+/**
+ * Hero handler for the `heist-master-strike-ko` keyword (WP-876 / D-24823).
+ *
+ * The Big Score's Heist clause: "If the card revealed from the Villain Deck is a Master Strike, KO
+ * it and put a card from the Bystander Deck on top of the Villain Deck." It rides heistEffects, so
+ * it fires only from fireHeistPlays on a successful Heist. The work is in applyHeistMasterStrikeKo.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Unused (no randomness, no events).
+ * @param playerID - The player whose Heist succeeded.
+ * @param cardId - The Big Score card.
+ * @param _effect - The `{ type: 'heist-master-strike-ko' }` descriptor (no magnitude).
+ */
+function heroEffectHeistMasterStrikeKo(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  applyHeistMasterStrikeKo(G, playerID, cardId);
+}
+
+/**
+ * Hero handler for the `heist-scheme-twist-bonus` keyword (WP-876 / D-24823).
+ *
+ * Revolutionary Anthem's Heist clause: "If the card revealed from the Villain Deck is a Scheme
+ * Twist, you get another +N Attack, and you may shuffle that deck." Reads the RECORDED revealed
+ * card. On a Scheme Twist it grants +N through the shipped attack path (executeSingleEffect, so
+ * the payload module never imports this file), then offers one shuffle seat choice.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param ctx - The forwarded move context (its `events` admit the seat choice; undefined in a unit context).
+ * @param playerID - The player whose Heist succeeded.
+ * @param cardId - The Revolutionary Anthem card.
+ * @param effect - The `{ type: 'heist-scheme-twist-bonus', magnitude: N }` descriptor.
+ */
+function heroEffectHeistSchemeTwistBonus(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  if (!isHeistRevealedSchemeTwist(G)) {
+    pushLog(G,
+      `The card Player ${playerID}'s Heist revealed is not a Scheme Twist, so ${formatCardRef(G.cardDisplayData, cardId)} adds no extra Attack.`,
+      'neutral',
+      cardId,
+    );
+    return;
+  }
+  executeSingleEffect(G, ctx, playerID, cardId, { type: 'attack', magnitude: effect.magnitude ?? 0 });
+  // why: WP-876 / D-24823 — the forwarded move context carries events (the heroEffectRandomActs
+  // precedent); undefined in a unit context, where parkSeatChoice simply skips the stage ride.
+  const events = (ctx as { events?: unknown } | undefined)?.events as Parameters<typeof parkSeatChoice>[1];
+  parkHeistShuffleChoice(G, events, playerID, cardId);
+}
+
+/**
+ * Hero handler for the `heist-move-villain-ko-hero` keyword (WP-876 / D-24823).
+ *
+ * X-Con Security Van's Heist ability: "You may move a Villain to an empty city space. If you do,
+ * KO one of your Heroes." Parks the 'x-con-security-van' move-a-Villain choice when there is a
+ * Villain and an empty space (applyHeistMoveVillain); resolveMoveVillainChoice does the rest.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Unused (the move happens at resolve time).
+ * @param playerID - The player whose Heist succeeded.
+ * @param cardId - The X-Con Security Van card.
+ * @param _effect - The `{ type: 'heist-move-villain-ko-hero' }` descriptor (no magnitude).
+ */
+function heroEffectHeistMoveVillainKoHero(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  applyHeistMoveVillain(G, playerID, cardId);
+}
+
+/**
+ * Hero handler for the `gain-wound-reward` keyword (WP-883 / D-24834).
+ *
+ * "You may gain a Wound. If you do, you get +N[icon:attack]" (co2e Hulk Smash!, mdns Scalded by
+ * Sunlight's Sunlight line). Parks an active-player gain / don't seat choice; the apply
+ * (hero/gainWoundReward.logic.ts) gains through the Wound chokepoint and grants +N only for a
+ * Wound kept.
+ *
+ * // why: a prompt, not an auto-resolve — unlike ko-wound-reward (D-24183), where KOing a Wound
+ * is always good, gaining one adds a dead card for the rest of the game: a real trade the player
+ * must be able to decline. The seat choice (D-24500's Random Acts precedent) brings the resolve
+ * move, the projection, the generic client prompt, the block-all guard, the disconnect default and
+ * the bot hook, so no new move or UIState field is needed.
+ *
+ * // why: parking does not halt this card's hook loop — later hooks of the same play still run
+ * before the prompt resolves. Harmless for both cards (Hulk Smash! has one line; Scalded by
+ * Sunlight's Sunlight and Moonlight lines are mutually exclusive). Revisited by WP-893 / D-24850:
+ * moot for Put to the Torch, whose Wound line is its last line (lines 0 / 1 resolve first), so
+ * no later hook of the card runs before the prompt resolves; the rule itself stands.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Unused (the gain happens at resolve time).
+ * @param playerID - The player who played the card (the active player).
+ * @param cardId - The played card.
+ * @param effect - The descriptor carrying `rewardType` + `magnitude` (>= 1; failsMagnitudePreGate
+ *   drops the rest).
+ */
+function heroEffectGainWoundReward(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  const reward = buildGainWoundReward(effect.rewardType, effect.rewardComposition, effect.magnitude ?? 0, cardId);
+  if (reward === undefined) {
+    pushLog(G,
+      `Player ${playerID} played a hero ability whose gain-a-Wound reward is not yet supported, so it was skipped.`,
+      'blocked',
+      cardId,
+    );
+    return;
+  }
+  const cardRef = formatCardRef(G.cardDisplayData, cardId);
+  // why: rules v23 L3199-3201 / D-24779 — "you can't choose an option that you can't do": with
+  // an empty Wound supply there is nothing to gain, so no prompt opens.
+  if (G.piles.wounds.length === 0) {
+    pushLog(G, `Player ${playerID}'s ${cardRef} did nothing — the Wound supply is empty.`, 'blocked', cardId);
+    return;
+  }
+  // why: defensive — only one seat choice is open at a time; neither card can reach this.
+  if (G.pendingSeatChoice !== undefined) {
+    pushLog(G, `Player ${playerID}'s ${cardRef} could not offer its Wound choice — another choice is open.`, 'blocked', cardId);
+    return;
+  }
+  // why: active-scoped (the playing seat already accepts moves), so no stage ride: events undefined.
+  parkSeatChoice(G, undefined, buildGainWoundRewardChoice(playerID, reward, G));
+  if (reward.rewardType === 'attack') {
+    pushLog(G, `Player ${playerID} may gain a Wound for +${reward.magnitude} Attack (${cardRef}).`, 'neutral', cardId);
+    return;
+  }
+  // why: WP-885 / D-24836 — N1, the non-Attack offer, names the reward in the third person.
+  pushLog(G, `Player ${playerID} may gain a Wound to ${describeGainWoundRewardPhrases(reward, G).logPhrase} (${cardRef}).`, 'neutral', cardId);
+}
+
+/**
+ * Hero handler for the `hunt-for-victims` keyword (WP-884 / D-24835).
+ *
+ * Stalk the Night Stalkers' first line: "You may have a Villain or Mastermind Hunt for Victims. If it
+ * KOs a Bystander this way, you may KO a Hero from your hand or discard pile." Parks the
+ * 'hunt-for-victims' seat choice for the playing player (or logs why nothing opens); the KO-a-Hero
+ * pick chains from resolveSeatChoice. Never throws.
+ *
+ * // why: parking does not halt this card's hook loop, and here that is load-bearing: the card's
+ * Tech line runs next in the same executeHeroEffects call and edits the choice this line parked.
+ *
+ * @param G - The game state, mutated in place.
+ * @param _ctx - Unused move context.
+ * @param playerID - The player who played the card (the active player).
+ * @param cardId - The card played.
+ * @param _effect - The `{ type: 'hunt-for-victims' }` descriptor (no magnitude).
+ */
+function heroEffectHuntForVictims(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  // why: WP-884 / D-24835 — a hero handler parks a seat choice at play (the Here, Hold This /
+  // Commune precedent); the options, applies and chain live in moves/huntForVictims.logic.ts.
+  parkHuntForVictimsChoice(G, playerID, cardId);
+}
+
+/**
+ * Hero handler for the `hunt-for-victims-rescue` keyword (WP-884 / D-24835).
+ *
+ * Stalk the Night Stalkers' Tech line: "If a Bystander is KO'd this way, you may also rescue that
+ * Bystander instead of putting it in the KO pile." The existing pipeline gates the line on another
+ * Tech Hero (its blocked log and Synergy clause behave like any [hc:X] line); this handler marks the
+ * still-unsubmitted hunt choice its own card parked and rebuilds its options with the rescue twins.
+ * Silent when no such choice is open. Never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param _ctx - Unused move context.
+ * @param playerID - The player who played the card.
+ * @param cardId - The card played.
+ * @param _effect - The `{ type: 'hunt-for-victims-rescue' }` descriptor (no magnitude).
+ */
+function heroEffectHuntForVictimsRescue(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  // why: WP-884 / D-24835 — Tech is evaluated by the line's own gate, not inside the hunt line's
+  // handler, so this line is never a hollow and keeps its Synergy clause.
+  allowHuntForVictimsRescue(G, playerID, cardId);
+}
+
 export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler>> = {
   draw: heroEffectDraw,
   attack: heroEffectAttack,
@@ -6882,6 +7743,11 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // (draw / +recruit / rescue / optional-ko) at fight resolution when the player spends the extra
   // [attack]. Carries NO top-level magnitude → in NO_MAGNITUDE_KEYWORDS.
   'excessive-violence': heroEffectExcessiveViolence,
+  // why: WP-865 / D-24808 — the Ant-Man and the Wasp "Heist" keyword: heroEffectHeist READIES the
+  // played card into the turn's Heist crew at play time; a successful attemptHeist fires each
+  // readied card's heistEffects through fireHeistPlays. Carries NO top-level magnitude → in
+  // NO_MAGNITUDE_KEYWORDS.
+  heist: heroEffectHeist,
   // why: WP-753 / D-24580 — "Reveal the top three cards of your deck. Draw one of them, discard
   // one, and KO one.": tops up (D-24285), snapshots the top three and parks a block-all
   // PendingRevealThreeAssign resolved by resolveRevealThreeAssign. NO magnitude.
@@ -6939,6 +7805,40 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // Sidekick Stack into the playing player's discard, outside the once-per-turn recruit. Carries
   // a magnitude → NOT in NO_MAGNITUDE_KEYWORDS.
   'gain-sidekick': heroEffectGainSidekick,
+  // why: WP-850 / D-24786 — Bishop's Firepower from the Future: discard the top N, gain their printed
+  // Attack, record them; then (X-Men gate) KO any number of those cards via the KO-from-discard choice.
+  'discard-top-printed-attack': heroEffectDiscardTopPrintedAttack,
+  'ko-discarded-this-way': heroEffectKoDiscardedThisWay,
+  // why: WP-860 / D-24796 — Commune with the Spirit World: parks the cost seat choice; the discard
+  // picks and the KO pick chain from resolveSeatChoice.
+  'discard-artifact-or-three-then-ko': heroEffectDiscardArtifactOrThreeThenKo,
+  // why: WP-862 / D-24804 — Pym Particles: a chosen HQ Hero with no Size-Changing gains
+  // Size-Changing [Tech] this turn (sizeChangingGrant.logic.ts).
+  'hq-hero-gains-size-changing-tech': heroEffectHqHeroGainsSizeChangingTech,
+  // why: WP-857 / D-24793 — hero Feast = "KO the top card of your deck". It reuses the shipped
+  // KO-or-keep reveal unchanged: the deck top is shown in the owner-only prompt, then the player
+  // KOs or keeps it (RS-1 reveal-before-choose), resolved by resolveRevealTopDispose.
+  feast: heroEffectRevealTopMayKo,
+  // why: WP-866 / D-24809 — "When you draw a new hand … this turn, draw N extra card(s)": the
+  // D-24352 additive write into G.handSizeOverrides, consumed by that turn's end-of-turn cleanup.
+  // Carries a magnitude → NOT in NO_MAGNITUDE_KEYWORDS.
+  'next-hand-extra-draw': heroEffectNextHandExtraDraw,
+  // why: WP-876 / D-24823 — the three Heist payloads; each rides a readied card's heistEffects
+  // and fires only from fireHeistPlays on a successful Heist. heist-master-strike-ko and
+  // heist-move-villain-ko-hero carry NO magnitude → in NO_MAGNITUDE_KEYWORDS;
+  // heist-scheme-twist-bonus carries the extra Attack → NOT in it.
+  'heist-master-strike-ko': heroEffectHeistMasterStrikeKo,
+  'heist-scheme-twist-bonus': heroEffectHeistSchemeTwistBonus,
+  'heist-move-villain-ko-hero': heroEffectHeistMoveVillainKoHero,
+  // why: WP-883 / D-24834 — the optional gain-a-Wound reward: parks an active-player gain / don't
+  // seat choice; +N only for a Wound kept. Carries the reward magnitude → NOT in
+  // NO_MAGNITUDE_KEYWORDS.
+  'gain-wound-reward': heroEffectGainWoundReward,
+  // why: WP-884 / D-24835 — Stalk the Night Stalkers: the hunt line parks the 'hunt-for-victims'
+  // seat choice (the KO-a-Hero pick chains from resolveSeatChoice); the Tech line adds the rescue
+  // options to that still-unsubmitted choice. Both carry NO magnitude → in NO_MAGNITUDE_KEYWORDS.
+  'hunt-for-victims': heroEffectHuntForVictims,
+  'hunt-for-victims-rescue': heroEffectHuntForVictimsRescue,
 };
 
 // ---------------------------------------------------------------------------
@@ -7240,11 +8140,26 @@ export function resolveDeferredHeroGrants(
     return;
   }
 
+  // why: WP-855 / D-24791 — the deck-KO draw HOLD. This resolve runs after every move,
+  // including one that leaves a reveal choice open, and several deck-KO sites resolve one card
+  // of a multi-card deck-top snapshot (Ruthless Dictator's top three, Crystal of Kadavus, a
+  // queued second scry). A draw now would take a card the open choice still holds; Ruthless
+  // Dictator and scry-KO keep their queue on a missing card, so the turn would freeze. So a
+  // deck-KO grant does not fire while any choice is parked, and its count is KEPT (not
+  // deleted below) so the draws land after the move that closes the last choice.
+  // `pendingHeroChoice` is added by hand: hasAnyPendingChoice does not cover the singular
+  // hero choice, and Gambit's Kinetic Card parks it on deck[0] without blocking play.
+  // Computed once, before any grant fires.
+  const isDeckKoDrawHeld = hasAnyPendingChoice(G) || G.pendingHeroChoice !== undefined;
+
   resolveDeferredConditionalGrants(
     G,
     (entry) => {
       const hook = G.heroAbilityHooks[entry.hookIndex];
       if (hook === undefined) {
+        return false;
+      }
+      if (isDeckKoDrawHeld && hookHasConditionType(hook, DECK_CARD_KOED_CONDITION_TYPE)) {
         return false;
       }
       // why: re-evaluate ALL of the hook's conditions, not just the deferred one —
@@ -7263,7 +8178,21 @@ export function resolveDeferredHeroGrants(
       // per grant; a multi-copy Diamond Form turn logged a wall of them). The grant line is
       // self-sufficient — the on-play "… is waiting …" line already told the player the
       // ability was deferred — so the confirmation is dropped.
-      runHookEffects(G, ctx, entry.playerId, entry.cardId, hook, turn);
+      // why: WP-853 / D-24789 — an owned-KO grant fires once PER counted KO: one move can
+      // KO several of the player's cards (heal three Wounds, a Villain KOing every Hero
+      // with a trait), and each is its own "whenever". Every other hook fires once.
+      // Explicit for loop, no .reduce() (.claude/rules/code-style.md).
+      // why: WP-855 / D-24791 — a deck-KO grant fires once per card KO'd from the owner's deck
+      // the same way (a Villain or a reveal can KO several deck cards in one move).
+      let repeatCount = 1;
+      if (hookHasConditionType(hook, OWNED_CARD_KOED_CONDITION_TYPE)) {
+        repeatCount = Math.max(1, G.ownedCardsKoedSinceResolve?.[entry.playerId] ?? 0);
+      } else if (hookHasConditionType(hook, DECK_CARD_KOED_CONDITION_TYPE)) {
+        repeatCount = Math.max(1, G.deckCardsKoedSinceResolve?.[entry.playerId] ?? 0);
+      }
+      for (let i = 0; i < repeatCount; i++) {
+        runHookEffects(G, ctx, entry.playerId, entry.cardId, hook, turn);
+      }
       // why: WP-656 / D-24467 — a defeat-gated grant (Diamond Form) is EDGE-TRIGGERED
       // per defeat, not one-shot. resolveDeferredConditionalGrants removed this entry
       // as it fired (the numeric-threshold one-shot contract, unchanged); RE-ARM it by
@@ -7272,7 +8201,18 @@ export function resolveDeferredHeroGrants(
       // to the surviving list" support. Over-fire on non-defeat moves is prevented not
       // by removal but by the edge flag being consumed below — a re-armed grant reads a
       // cleared flag and stays put. The turn boundary drops it (clearDeferredConditionalGrants).
-      if (hookHasRepeatableDefeatCondition(hook)) {
+      // why: WP-853 / D-24789 — an owned-KO grant re-arms the same way, so it survives to
+      // credit the next KO; its count is consumed below like the defeat flag.
+      // why: WP-856 / D-24792 — a Hero-KO grant (OWNED_HERO_KOED_CONDITION_TYPE) is left
+      // out on purpose: "the first time … this turn" fires once (repeatCount 1 above), so
+      // it is not re-recorded and the first counted Hero KO is the only one it credits.
+      // why: WP-855 / D-24791 — a deck-KO grant re-arms like the owned-KO grant ("whenever"),
+      // so it survives to credit the next deck KO this turn.
+      if (
+        hookHasConditionType(hook, REPEATABLE_DEFEAT_CONDITION_TYPE) ||
+        hookHasConditionType(hook, OWNED_CARD_KOED_CONDITION_TYPE) ||
+        hookHasConditionType(hook, DECK_CARD_KOED_CONDITION_TYPE)
+      ) {
         recordDeferredConditionalGrant(G, entry.playerId, entry.cardId, entry.hookIndex);
       }
     },
@@ -7288,6 +8228,30 @@ export function resolveDeferredHeroGrants(
     delete G.villainOrMastermindDefeatedSinceResolve;
   }
 
+  // why: WP-853 / D-24789 — consume the per-owner owned-KO count the same way (the
+  // D-24467 edge, now a count). The grants above already fired once per counted KO, so
+  // deleting it makes each KO credit exactly once and a later non-KO move see nothing.
+  // Guarded, so a game that never counted a KO is byte-unchanged.
+  if (G.ownedCardsKoedSinceResolve !== undefined) {
+    delete G.ownedCardsKoedSinceResolve;
+  }
+
+  // why: WP-856 / D-24792 — consume the per-owner Hero-KO count too. A Hero-KO grant is not
+  // re-armed above, so it fired once (the first time) and is gone; deleting the count keeps
+  // a later move from reading a stale KO. Guarded, so a game that never counted one is
+  // byte-unchanged.
+  if (G.ownedHeroesKoedSinceResolve !== undefined) {
+    delete G.ownedHeroesKoedSinceResolve;
+  }
+
+  // why: WP-855 / D-24791 — consume the per-owner deck-KO count like the owned count, but
+  // only when the draw was not held: a held grant did not fire, so its KOs are still owed and
+  // the count waits for the move that closes the last parked choice. Guarded, so a game that
+  // never counted a deck KO is byte-unchanged.
+  if (G.deckCardsKoedSinceResolve !== undefined && !isDeckKoDrawHeld) {
+    delete G.deckCardsKoedSinceResolve;
+  }
+
   // why: WP-754 / D-24581 — a wait-and-see grant fired above (e.g. crossed by an Excessive
   // Violence recruit or draw) can draw the card a pending KO-or-keep reveal snapshotted. Re-reveal
   // a stale KO-or-keep front. A no-op when no stale KO-or-keep entry is queued, so a game that
@@ -7296,20 +8260,51 @@ export function resolveDeferredHeroGrants(
 }
 
 /**
- * Reports whether a hook carries the edge-triggered defeat condition (Diamond Form),
- * so its fired grant is re-armed rather than left one-shot (WP-656 / D-24467).
+ * Reports whether a hook carries a condition of the given type — used to re-arm the
+ * repeatable per-event grants (Diamond Form's defeat, WP-656 / D-24467; Absorb Energies'
+ * owned KO, WP-853 / D-24789) and to repeat the owned-KO grant per counted KO.
  *
  * @param hook - The deferred grant's hook.
- * @returns True when a condition of type REPEATABLE_DEFEAT_CONDITION_TYPE is present.
+ * @param conditionType - The condition type to look for.
+ * @returns True when a condition of that type is present.
  */
-function hookHasRepeatableDefeatCondition(hook: HeroAbilityHook): boolean {
+function hookHasConditionType(hook: HeroAbilityHook, conditionType: string): boolean {
+  return findConditionOfType(hook, conditionType) !== undefined;
+}
+
+/**
+ * Returns the hook's first condition of the given type, or undefined when it has none.
+ *
+ * @param hook - The hero ability hook.
+ * @param conditionType - The condition type to look for.
+ * @returns The matching condition, or undefined.
+ */
+function findConditionOfType(hook: HeroAbilityHook, conditionType: string): HeroCondition | undefined {
   if (hook.conditions === undefined) {
-    return false;
+    return undefined;
   }
   for (const condition of hook.conditions) {
-    if (condition.type === REPEATABLE_DEFEAT_CONDITION_TYPE) {
-      return true;
+    if (condition.type === conditionType) {
+      return condition;
     }
   }
-  return false;
+  return undefined;
+}
+
+/**
+ * Returns the hook's conditions minus one, so the owned-KO always-defer branch can
+ * check the hook's OTHER gates (WP-853 / D-24789).
+ *
+ * @param hook - The hero ability hook.
+ * @param excluded - The condition to leave out.
+ * @returns A new array of the remaining conditions.
+ */
+function conditionsWithout(hook: HeroAbilityHook, excluded: HeroCondition): HeroCondition[] {
+  const remaining: HeroCondition[] = [];
+  for (const condition of hook.conditions ?? []) {
+    if (condition !== excluded) {
+      remaining.push(condition);
+    }
+  }
+  return remaining;
 }

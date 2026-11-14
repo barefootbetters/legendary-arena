@@ -170,7 +170,6 @@ const AUDIT_COMPOUND_PILES: ReadonlyArray<[readonly string[], readonly string[]]
   [
     ['villainDeck'],
     [
-      'antm/trap-heroes-in-the-microverse',
       'bkwd/train-black-widows-in-the-red-room',
       'co2e/negative-zone-prison-outbreak',
       'dstr/war-for-the-dream-dimension',
@@ -260,7 +259,9 @@ describe('WP-763 §Audit configuration (D-24595)', () => {
     assert.equal(entryCount, 15);
   });
 
-  it('D-compound: 25 schemes declare their piles AND keep the twist fallback', () => {
+  // why: WP-863 / D-24805 — Trap Heroes in the Microverse left this bucket: both its Evil-Wins halves
+  // are modelled now (asserted in its own test below), so 25 → 24.
+  it('D-compound: 24 schemes declare their piles AND keep the twist fallback', () => {
     let entryCount = 0;
     for (const [piles, schemeIds] of AUDIT_COMPOUND_PILES) {
       for (const schemeId of schemeIds) {
@@ -272,11 +273,36 @@ describe('WP-763 §Audit configuration (D-24595)', () => {
         entryCount = entryCount + 1;
       }
     }
-    assert.equal(entryCount, 25);
+    assert.equal(entryCount, 24);
   });
 
-  it('the registry holds exactly the 8 core entries, the 67 audit entries, Clash (D-24736), Brainwash the Military (D-24756) and Change the Outcome of WWII (D-24765)', () => {
-    assert.equal(SCHEME_TWIST_CONFIGS.size, 8 + 67 + 3);
+  it('Trap Heroes in the Microverse models both Evil-Wins halves and plays two cards per Twist (WP-863 / D-24805)', () => {
+    const config = SCHEME_TWIST_CONFIGS.get('antm/trap-heroes-in-the-microverse');
+    assert.equal(config?.resolverId, 'chained-reveals');
+    assert.deepEqual(config?.params, { revealCount: 2 });
+    assert.deepEqual(configPiles('antm/trap-heroes-in-the-microverse'), ['villainDeck']);
+    assert.deepEqual(config?.additionalEscapeLossCondition, {
+      kind: 'escaped-pile-count',
+      cardTypes: ['villain', 'henchman'],
+      threshold: 3,
+      isThresholdPerPlayer: true,
+    });
+    assert.equal(config?.twistFallbackWithResourceLoss, undefined);
+    assert.equal(config?.lossThreshold, undefined);
+  });
+
+  it('an additionalEscapeLossCondition sits only beside a pile-depleted primary (WP-863 / D-24805)', () => {
+    // why: the loss and the meter read the additional condition only beside a pile-depleted
+    // primary; any other pairing would be a condition that silently never fires.
+    for (const [schemeId, config] of SCHEME_TWIST_CONFIGS) {
+      if (config.additionalEscapeLossCondition !== undefined) {
+        assert.equal(config.resourceLossCondition?.kind, 'pile-depleted', schemeId);
+      }
+    }
+  });
+
+  it('the registry holds exactly the 8 core entries, the 66 audit entries, Trap Heroes in the Microverse (D-24805), Clash (D-24736), Brainwash the Military (D-24756) and Change the Outcome of WWII (D-24765)', () => {
+    assert.equal(SCHEME_TWIST_CONFIGS.size, 8 + 66 + 1 + 3);
     let coreCount = 0;
     for (const schemeId of SCHEME_TWIST_CONFIGS.keys()) {
       if (schemeId.startsWith('core/')) {

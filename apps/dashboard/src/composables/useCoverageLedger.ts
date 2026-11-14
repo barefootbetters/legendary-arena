@@ -2,6 +2,7 @@ import { computed, type ComputedRef } from 'vue';
 import ledgerData from '../data/coverage-ledger.json';
 import runtimeObservedData from '../data/runtime-observed-hollows.json';
 import setNamesData from '../data/coverage-set-names.json';
+import mechanicKeyFoldData from '../data/mechanic-key-fold.json';
 import type {
   CoverageLedger,
   CoverageSetName,
@@ -10,6 +11,7 @@ import type {
   LedgerStatus,
   LedgerSummary,
   MechanicEntry,
+  MechanicKeyFold,
   RuntimeObservedEntry,
   RuntimeObservedHollows,
   RuntimeObservedSummary,
@@ -44,6 +46,31 @@ export function statusLabel(status: LedgerStatus): string {
   }
 }
 
+/**
+ * Text for the By-mechanic "Observed in play" cell when the sim sweep recorded no
+ * hollow hit for the mechanic. The exhaustive switch anchors the `LedgerStatus` union.
+ *
+ * why: the column counts HOLLOW hits only, so an implemented mechanic (Executable,
+ * Condition, Subsystem) never appears in it by design. Its empty cell read "not
+ * observed in play", which looked like a coverage gap on rows that are built and
+ * live-verified (core attack-per-count, 2026-11-12). Implemented rows say that no
+ * hollow path was hit; to-do rows keep "not observed in play" (the sweep is a sample).
+ */
+export function noRuntimeObservationLabel(status: LedgerStatus): string {
+  switch (status) {
+    case 'executable':
+    case 'condition':
+    case 'subsystem':
+      return 'no hollow hits';
+    case 'deferred':
+    case 'unsupported':
+    case 'unmarked':
+      return 'not observed in play';
+    default:
+      return assertNever(status);
+  }
+}
+
 /** Compile-time exhaustiveness guard for `statusLabel` / `statusRank`. */
 function assertNever(value: never): never {
   throw new Error(`Unhandled ledger status: ${String(value)}`);
@@ -53,7 +80,8 @@ function assertNever(value: never): never {
  * Sort rank for the worklist: done states first, Unmarked (data TODO) last. Lower
  * sorts earlier. Order: Executable > Subsystem > Deferred > Condition > Unsupported
  * > Unmarked. `subsystem` (done-elsewhere) ranks alongside Executable as a done
- * state; no hero row carries it today, so the rank is inert for the hero ledger.
+ * state; hero rows carry it since WP-559 / D-24368 (core/spider-man's reveal-count
+ * and reveal-reorder, ca75/agent-x-13's gain-officer).
  */
 function statusRank(status: LedgerStatus): number {
   switch (status) {
@@ -157,19 +185,32 @@ export function buildMechanicDictionary(rows: readonly LedgerRow[]): MechanicEnt
 }
 
 /**
- * Executable share of all ledger rows as a 0–100 number rounded to one decimal.
- * Zero rows yields 0 (avoids divide-by-zero on the empty-stub ledger).
+ * Rows the engine has built: Executable + Condition + Subsystem (D-24827).
+ * why: Condition rows gate on an already-shipped condition (the ledger's
+ * KNOWN_CONDITIONS lists only shipped ones) and Subsystem rows are implemented
+ * outside the hero-effect pipeline (D-24357), so both are done work. Deferred,
+ * Unsupported and Unmarked are the to-dos and stay out of the numerator.
  */
-export function executablePercent(ledger: CoverageLedger): number {
-  return summaryExecutablePercent(ledger.summary);
+export function implementedRowCount(summary: LedgerSummary): number {
+  return (
+    summary.byStatus.executable + summary.byStatus.condition + (summary.byStatus.subsystem ?? 0)
+  );
 }
 
-/** `executablePercent` for a bare summary — the set-scoped headline and By-set table. */
-export function summaryExecutablePercent(summary: LedgerSummary): number {
+/**
+ * Implemented share of all ledger rows as a 0–100 number rounded to one decimal.
+ * Zero rows yields 0 (avoids divide-by-zero on the empty-stub ledger).
+ */
+export function implementedPercent(ledger: CoverageLedger): number {
+  return summaryImplementedPercent(ledger.summary);
+}
+
+/** `implementedPercent` for a bare summary — the set-scoped headline and By-set table. */
+export function summaryImplementedPercent(summary: LedgerSummary): number {
   if (summary.totalRows === 0) {
     return 0;
   }
-  return Math.round((summary.byStatus.executable / summary.totalRows) * 1000) / 10;
+  return Math.round((implementedRowCount(summary) / summary.totalRows) * 1000) / 10;
 }
 
 /**
@@ -248,10 +289,62 @@ export function buildSetBreakdown(
       abbr: setName.abbr,
       name: setName.name,
       summary,
-      percentExecutable: summaryExecutablePercent(summary),
+      percentImplemented: summaryImplementedPercent(summary),
     });
   }
   return entries;
+}
+
+// why: mirrors EXAMPLES_CAP in scripts/runtime-observed-hollows.mjs, so a merged
+// family entry carries no more examples than any single artifact entry does.
+const MERGED_EXAMPLES_CAP = 5;
+
+/**
+ * Re-keys the runtime-observed tally from the harness's raw mechanic keys to the
+ * hero ledger's mechanic keys, merging every variant of a folded family into one
+ * entry. A key absent from the fold map is its own ledger key and passes through.
+ *
+ * why: the runtime harness records the PRE-fold slug (`patrol-the-bridge`,
+ * `patrol-the-sewers`) while the ledger keys one row per family (`patrol`), so a
+ * worklist row joined on the raw keys read "not observed in play" for every folded
+ * family. Merge rule: hit counts and per-reason counts sum (each observation is
+ * one hollow, whichever variant printed it), `lastSeenTurn` takes the max, and
+ * examples concatenate in raw-key order up to the artifact's own cap.
+ *
+ * @param byMechanic - the runtime-observed tally keyed by raw mechanic key.
+ * @param ledgerKeyByMechanic - the build-time runtime-key → ledger-key fold.
+ * @returns the tally keyed by ledger mechanic.
+ */
+export function foldRuntimeObservedByLedgerKey(
+  byMechanic: Readonly<Record<string, RuntimeObservedEntry>>,
+  ledgerKeyByMechanic: Readonly<Record<string, string>>,
+): Record<string, RuntimeObservedEntry> {
+  const merged: Record<string, RuntimeObservedEntry> = {};
+  for (const rawKey of Object.keys(byMechanic).sort()) {
+    const entry = byMechanic[rawKey];
+    if (entry === undefined) {
+      continue;
+    }
+    const ledgerKey = ledgerKeyByMechanic[rawKey] ?? rawKey;
+    const existing = merged[ledgerKey];
+    if (existing === undefined) {
+      merged[ledgerKey] = entry;
+      continue;
+    }
+    merged[ledgerKey] = {
+      hitCount: existing.hitCount + entry.hitCount,
+      lastSeenTurn: Math.max(existing.lastSeenTurn, entry.lastSeenTurn),
+      byReason: {
+        'no-handler': existing.byReason['no-handler'] + entry.byReason['no-handler'],
+        'unsupported-keyword':
+          existing.byReason['unsupported-keyword'] + entry.byReason['unsupported-keyword'],
+        'parse-unrecognized':
+          existing.byReason['parse-unrecognized'] + entry.byReason['parse-unrecognized'],
+      },
+      examples: [...existing.examples, ...entry.examples].slice(0, MERGED_EXAMPLES_CAP),
+    };
+  }
+  return merged;
 }
 
 interface UseCoverageLedgerOptions {
@@ -259,6 +352,8 @@ interface UseCoverageLedgerOptions {
   ledger?: CoverageLedger;
   /** Injectable runtime-observed overlay. Defaults to the build-time bundled artifact. */
   runtimeObserved?: RuntimeObservedHollows;
+  /** Injectable runtime-key → ledger-key fold. Defaults to the build-time bundled map. */
+  mechanicKeyFold?: MechanicKeyFold;
   /** Injectable set-name table. Defaults to the build-time bundled table. */
   setNames?: CoverageSetNames;
 }
@@ -267,10 +362,14 @@ interface UseCoverageLedgerReturn {
   summary: ComputedRef<LedgerSummary>;
   rows: ComputedRef<readonly LedgerRow[]>;
   mechanics: ComputedRef<MechanicEntry[]>;
-  percentExecutable: ComputedRef<number>;
+  percentImplemented: ComputedRef<number>;
   error: string | undefined;
-  /** Runtime-observed hollow tally keyed by mechanic — the overlay join (WP-259). */
+  /** Runtime-observed hollow tally keyed by the harness's RAW mechanic key (WP-259). */
   runtimeObservedByMechanic: ComputedRef<Record<string, RuntimeObservedEntry>>;
+  /** The same tally re-keyed to ledger mechanics (folded families merged) — the worklist join. */
+  runtimeObservedByLedgerMechanic: ComputedRef<Record<string, RuntimeObservedEntry>>;
+  /** The build-time runtime-key → ledger-key fold (only keys the fold rewrites). */
+  ledgerKeyByMechanic: Readonly<Record<string, string>>;
   /** Run-level runtime-observed summary (seed/games provenance + roll-up). */
   runtimeObservedSummary: ComputedRef<RuntimeObservedSummary>;
   /** Per-set roll-up for the By-set table, in release order. */
@@ -290,6 +389,9 @@ export function useCoverageLedger(options?: UseCoverageLedgerOptions): UseCovera
   const runtimeObserved =
     options?.runtimeObserved ?? (runtimeObservedData as unknown as RuntimeObservedHollows);
   const setNames = (options?.setNames ?? (setNamesData as unknown as CoverageSetNames)).sets;
+  const ledgerKeyByMechanic = (
+    options?.mechanicKeyFold ?? (mechanicKeyFoldData as unknown as MechanicKeyFold)
+  ).ledgerKeyByMechanic;
 
   /** Looks up a set's display name, falling back to the abbr itself. */
   function setDisplayName(abbr: string): string {
@@ -303,12 +405,18 @@ export function useCoverageLedger(options?: UseCoverageLedgerOptions): UseCovera
     summary: computed(() => ledger.summary),
     rows: computed(() => ledger.rows),
     mechanics: computed(() => buildMechanicDictionary(ledger.rows)),
-    percentExecutable: computed(() => executablePercent(ledger)),
+    percentImplemented: computed(() => implementedPercent(ledger)),
     error: ledger.error,
-    // why (WP-259): the overlay joins each ledger mechanic row onto this lookup
-    // by mechanic key — a present key reads its runtime-observed entry, an
-    // absent key reads as "not observed in play".
+    // why: the raw-keyed tally stays for consumers that name the printed variant
+    // (the in-play gauge's per-key peaks, the Architect gap intake).
     runtimeObservedByMechanic: computed(() => runtimeObserved.byMechanic),
+    // why (WP-259): the worklist overlay joins each ledger mechanic row onto this
+    // lookup — a present key reads its runtime-observed entry, an absent key reads
+    // as "not observed in play". Folded so a family row sees its variants' hits.
+    runtimeObservedByLedgerMechanic: computed(() =>
+      foldRuntimeObservedByLedgerKey(runtimeObserved.byMechanic, ledgerKeyByMechanic),
+    ),
+    ledgerKeyByMechanic,
     runtimeObservedSummary: computed(() => runtimeObserved.summary),
   };
 }

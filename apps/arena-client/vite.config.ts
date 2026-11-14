@@ -2,6 +2,7 @@ import { defineConfig, type Plugin } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { execSync } from 'node:child_process';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const { version } = require('./package.json');
@@ -82,6 +83,85 @@ function emitVersionJsonPlugin(shortGitSha: string): Plugin {
   };
 }
 
+// why: WP-894 / D-24851 — the offline page's service worker precaches this
+// build's shell, and only the bundle knows the hashed file names, so this
+// plugin emits them as `offline/precache.json`. `build` is the same short sha
+// as `version.json` and the worker's `?build=` registration URL, which ties the
+// list to the worker that reads it (the worker rejects a mismatch).
+// Order is locked: the page, the hashed assets (sorted), then the static shell
+// files the worker's SHELL_STATIC_PATHS and BRAND_CSS_URL name.
+const OFFLINE_PRECACHE_STATIC_URLS = [
+  '/brand-tokens.local.css',
+  '/offline/manifest.webmanifest',
+  '/offline/icon-192.png',
+  '/offline/icon-512.png',
+  '/offline/apple-touch-icon.png',
+  'https://www.legendary-arena.com/brand-tokens.css',
+];
+
+/**
+ * Compares two strings by UTF-16 code-unit order (no locale rules), so the
+ * precache list sorts the same on every machine.
+ *
+ * @param left - The first string.
+ * @param right - The second string.
+ * @returns A negative, zero or positive number.
+ */
+function compareCodeUnits(left: string, right: string): number {
+  if (left < right) {
+    return -1;
+  }
+  if (left > right) {
+    return 1;
+  }
+  return 0;
+}
+
+/**
+ * Emits `offline/precache.json` = `{ build, urls }` for the offline service worker.
+ *
+ * @param shortGitSha - The build's short git sha.
+ * @returns The Vite plugin.
+ */
+function emitOfflinePrecacheManifestPlugin(shortGitSha: string): Plugin {
+  return {
+    name: 'legendary-emit-offline-precache-manifest',
+    apply: 'build',
+    // why: Rollup emits an empty facade chunk per HTML entry (`index-*.js`,
+    // `offline-*.js`) that only imports the shared src/main.ts chunk; Vite's
+    // build-html plugin inlines that import into the HTML and deletes the
+    // facade in its own generateBundle. Running after it ('post') means the
+    // list holds only files that ship; a deleted facade in the list would 404
+    // (or come back as the SPA fallback) and fail every worker install.
+    enforce: 'post',
+    generateBundle(_options, bundle) {
+      // why: with no git sha every such build would register the same
+      // `?build=unknown` worker, which never installs an update, so the offline
+      // copy would pin the first such build forever. Fail the build instead.
+      if (shortGitSha === 'unknown') {
+        throw new Error(
+          'The offline precache manifest needs the git sha, but the build could ' +
+          'not resolve it (gitSha is "unknown"). Build from a git checkout so ' +
+          'each deploy registers a new /offline/sw.js?build=<sha> worker.',
+        );
+      }
+      const assetUrls: string[] = [];
+      for (const fileName of Object.keys(bundle)) {
+        if (fileName.startsWith('assets/') && !fileName.endsWith('.map')) {
+          assetUrls.push('/' + fileName);
+        }
+      }
+      assetUrls.sort(compareCodeUnits);
+      const urls = ['/offline/', ...assetUrls, ...OFFLINE_PRECACHE_STATIC_URLS];
+      this.emitFile({
+        type: 'asset',
+        fileName: 'offline/precache.json',
+        source: JSON.stringify({ build: shortGitSha, urls }),
+      });
+    },
+  };
+}
+
 // why: Vite injects `crossorigin` onto every built `<link rel="stylesheet">`
 // and module `<script>` it emits. For a SAME-ORIGIN stylesheet with no
 // Subresource-Integrity (`integrity`) attribute, `crossorigin` buys nothing —
@@ -122,8 +202,38 @@ function stripCrossoriginFromStylesheetLinksPlugin(): Plugin {
   };
 }
 
+// why: WP-894 — with two HTML entries loading the same src/main.ts, Rollup
+// makes that module a shared chunk and names it after the module (`main-*.js`)
+// instead of the single entry's `index-*.js`. The live entry keeps its old name
+// so `/` ships the same file name as before and `scripts/check-connections.mjs`
+// (which finds the live bundle by `assets/index-*.js`) still matches.
+const MAIN_ENTRY_MODULE_PATH = fileURLToPath(new URL('./src/main.ts', import.meta.url))
+  .replace(/\\/g, '/')
+  .toLowerCase();
+
+/**
+ * Names the shared chunk that holds src/main.ts `index-*.js`; every other chunk
+ * keeps Vite's default `assets/[name]-[hash].js`.
+ *
+ * @param chunkInfo - The chunk Rollup is naming.
+ * @returns The file-name pattern.
+ */
+function nameChunkFile(chunkInfo: { moduleIds: string[] }): string {
+  for (const moduleId of chunkInfo.moduleIds) {
+    if (moduleId.replace(/\\/g, '/').toLowerCase() === MAIN_ENTRY_MODULE_PATH) {
+      return 'assets/index-[hash].js';
+    }
+  }
+  return 'assets/[name]-[hash].js';
+}
+
 export default defineConfig({
-  plugins: [vue(), emitVersionJsonPlugin(gitSha), stripCrossoriginFromStylesheetLinksPlugin()],
+  plugins: [
+    vue(),
+    emitVersionJsonPlugin(gitSha),
+    emitOfflinePrecacheManifestPlugin(gitSha),
+    stripCrossoriginFromStylesheetLinksPlugin(),
+  ],
   // why: these are build-time constants replaced by Vite, not runtime globals
   define: {
     __APP_VERSION__: JSON.stringify(version),
@@ -135,6 +245,18 @@ export default defineConfig({
     target: 'es2022',
     sourcemap: true,
     rollupOptions: {
+      // why: WP-894 / D-24851 — a second HTML entry for the offline page, so
+      // only that page carries the web app manifest link (in index.html the
+      // live game would install as the offline app). Both load the same
+      // src/main.ts, so both reference one shared entry chunk (named by
+      // `nameChunkFile` below).
+      input: {
+        index: fileURLToPath(new URL('./index.html', import.meta.url)),
+        offline: fileURLToPath(new URL('./offline/index.html', import.meta.url)),
+      },
+      output: {
+        chunkFileNames: nameChunkFile,
+      },
       onwarn(warning, defaultHandler) {
         failOnNodeExternalization(warning);
         defaultHandler(warning);

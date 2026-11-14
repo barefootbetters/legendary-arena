@@ -2,12 +2,15 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   statusLabel,
+  noRuntimeObservationLabel,
   buildMechanicDictionary,
-  executablePercent,
-  summaryExecutablePercent,
+  implementedPercent,
+  implementedRowCount,
+  summaryImplementedPercent,
   summarizeRows,
   filterRowsBySet,
   buildSetBreakdown,
+  foldRuntimeObservedByLedgerKey,
   useCoverageLedger,
 } from './useCoverageLedger.js';
 import type {
@@ -65,6 +68,16 @@ test('statusLabel covers every status and throws on an unknown one', () => {
   assert.throws(() => statusLabel('mystery' as unknown as LedgerStatus));
 });
 
+test('noRuntimeObservationLabel separates implemented rows from to-do rows', () => {
+  assert.equal(noRuntimeObservationLabel('executable'), 'no hollow hits');
+  assert.equal(noRuntimeObservationLabel('condition'), 'no hollow hits');
+  assert.equal(noRuntimeObservationLabel('subsystem'), 'no hollow hits');
+  assert.equal(noRuntimeObservationLabel('deferred'), 'not observed in play');
+  assert.equal(noRuntimeObservationLabel('unsupported'), 'not observed in play');
+  assert.equal(noRuntimeObservationLabel('unmarked'), 'not observed in play');
+  assert.throws(() => noRuntimeObservationLabel('mystery' as unknown as LedgerStatus));
+});
+
 test('buildMechanicDictionary groups by mechanic, counts cards, and excludes unmarked', () => {
   const rows: LedgerRow[] = [
     makeRow({ extId: 'a', mechanic: 'berserk', status: 'executable', wp: 'WP-256' }),
@@ -96,15 +109,35 @@ test('buildMechanicDictionary sorts same-status entries by card count then name'
   assert.equal(dict[1]?.mechanic, 'small');
 });
 
-test('executablePercent computes a rounded share and handles an empty ledger', () => {
+test('implementedPercent computes a rounded share and handles an empty ledger', () => {
   const ledger = makeLedger([
     makeRow({ extId: 'a', status: 'executable' }),
     makeRow({ extId: 'b', status: 'unsupported', mechanic: 'x' }),
     makeRow({ extId: 'c', status: 'unsupported', mechanic: 'y' }),
     makeRow({ extId: 'd', status: 'unsupported', mechanic: 'z' }),
   ]);
-  assert.equal(executablePercent(ledger), 25); // 1/4
-  assert.equal(executablePercent(makeLedger([])), 0);
+  assert.equal(implementedPercent(ledger), 25); // 1/4
+  assert.equal(implementedPercent(makeLedger([])), 0);
+});
+
+test('implementedPercent counts Executable, Condition and Subsystem as done, and nothing else (D-24827)', () => {
+  const doneRows = [
+    makeRow({ extId: 'a', mechanic: 'draw', status: 'executable' }),
+    makeRow({ extId: 'b', mechanic: 'outwit', status: 'condition' }),
+    makeRow({ extId: 'c', mechanic: 'reveal-count', status: 'subsystem' }),
+  ];
+  const todoRows = [
+    makeRow({ extId: 'd', mechanic: 'undercover', status: 'deferred' }),
+    makeRow({ extId: 'e', mechanic: 'focus', status: 'unsupported' }),
+    makeRow({ extId: 'f', mechanic: '(unmarked)', status: 'unmarked' }),
+  ];
+  const mixed = summarizeRows([...doneRows, ...todoRows]);
+  assert.equal(implementedRowCount(mixed), 3);
+  assert.equal(summaryImplementedPercent(mixed), 50); // 3/6
+  // A set whose only non-executable rows are Condition / Subsystem reads finished.
+  assert.equal(summaryImplementedPercent(summarizeRows(doneRows)), 100);
+  // A to-do-only set reads zero.
+  assert.equal(summaryImplementedPercent(summarizeRows(todoRows)), 0);
 });
 
 test('useCoverageLedger exposes the injected ledger summary + mechanic dictionary', () => {
@@ -114,7 +147,7 @@ test('useCoverageLedger exposes the injected ledger summary + mechanic dictionar
   ]);
   const view = useCoverageLedger({ ledger });
   assert.equal(view.summary.value.totalRows, 2);
-  assert.equal(view.percentExecutable.value, 50);
+  assert.equal(view.percentImplemented.value, 50);
   assert.equal(view.mechanics.value.length, 2);
   assert.equal(view.rows.value.length, 2);
 });
@@ -168,6 +201,83 @@ test('useCoverageLedger joins the runtime-observed overlay by mechanic key (pres
   assert.equal(view.runtimeObservedSummary.value.distinctMechanics, 1);
 });
 
+/** One runtime-observed entry whose every hit is the given hollow reason. */
+function makeObserved(
+  hitCount: number,
+  lastSeenTurn: number,
+  reason: 'no-handler' | 'unsupported-keyword' | 'parse-unrecognized',
+  cardId: string,
+): RuntimeObservedEntry {
+  const byReason = { 'no-handler': 0, 'unsupported-keyword': 0, 'parse-unrecognized': 0 };
+  byReason[reason] = hitCount;
+  return {
+    hitCount,
+    lastSeenTurn,
+    byReason,
+    examples: [{ cardId, cardType: 'hero', timing: 'onPlay', reason }],
+  };
+}
+
+test("foldRuntimeObservedByLedgerKey merges a folded family's variants into its ledger key", () => {
+  const merged = foldRuntimeObservedByLedgerKey(
+    {
+      'patrol-the-bridge': makeObserved(4, 9, 'parse-unrecognized', 'x/bridge'),
+      'patrol-the-sewers': makeObserved(6, 3, 'no-handler', 'x/sewers'),
+      phase: makeObserved(2, 1, 'no-handler', 'x/phase'),
+    },
+    { 'patrol-the-bridge': 'patrol', 'patrol-the-sewers': 'patrol' },
+  );
+  assert.deepEqual(Object.keys(merged).sort(), ['patrol', 'phase']);
+  const patrol = merged['patrol'];
+  assert.equal(patrol?.hitCount, 10, 'hit counts sum across variants');
+  assert.equal(patrol?.lastSeenTurn, 9, 'lastSeenTurn is the latest variant sighting');
+  assert.deepEqual(patrol?.byReason, {
+    'no-handler': 6,
+    'unsupported-keyword': 0,
+    'parse-unrecognized': 4,
+  });
+  assert.deepEqual(
+    patrol?.examples.map((example) => example.cardId),
+    ['x/bridge', 'x/sewers'],
+  );
+  assert.equal(merged['phase']?.hitCount, 2, 'an unfolded key passes through unchanged');
+});
+
+test("useCoverageLedger joins a folded family row to its variants' runtime hits", () => {
+  // why: the worklist badge reads runtimeObservedByLedgerMechanic. Before the fold,
+  // the `patrol` row read "not observed in play" although its variants were hit.
+  const view = useCoverageLedger({
+    ledger: makeLedger([makeRow({ mechanic: 'patrol', status: 'unsupported' })]),
+    runtimeObserved: makeRuntimeObserved({
+      'patrol-the-bridge': makeObserved(4, 9, 'parse-unrecognized', 'x/bridge'),
+      'patrol-the-sewers': makeObserved(6, 3, 'parse-unrecognized', 'x/sewers'),
+    }),
+    mechanicKeyFold: {
+      schemaVersion: 1,
+      ledgerKeyByMechanic: { 'patrol-the-bridge': 'patrol', 'patrol-the-sewers': 'patrol' },
+    },
+  });
+  assert.equal(view.runtimeObservedByLedgerMechanic.value['patrol']?.hitCount, 10);
+  // the raw tally is untouched for the consumers that name the printed variant
+  assert.equal(view.runtimeObservedByMechanic.value['patrol'], undefined);
+  assert.equal(view.runtimeObservedByMechanic.value['patrol-the-bridge']?.hitCount, 4);
+});
+
+test('useCoverageLedger reads the bundled fold map: the real patrol row sees its variants', () => {
+  // why: end-to-end through src/data/mechanic-key-fold.json, written at build time by
+  // the hero ledger's own foldMechanicFamily. The committed sweep hits patrol variants
+  // and the committed ledger has a `patrol` row, so the merged entry must exist.
+  const view = useCoverageLedger();
+  let variantHits = 0;
+  for (const [mechanic, entry] of Object.entries(view.runtimeObservedByMechanic.value)) {
+    if (mechanic.startsWith('patrol-')) {
+      variantHits += entry.hitCount;
+    }
+  }
+  assert.ok(variantHits > 0, 'the committed sweep observes patrol variants');
+  assert.equal(view.runtimeObservedByLedgerMechanic.value['patrol']?.hitCount, variantHits);
+});
+
 test('useCoverageLedger falls back to the bundled runtime-observed artifact when none is injected', () => {
   const view = useCoverageLedger();
   // The bundled artifact is the real one — byMechanic is a record (possibly empty
@@ -185,8 +295,8 @@ test('summarizeRows matches the generator summary shape and excludes unmarked fr
   ];
   assert.deepEqual(summarizeRows(rows), makeLedger(rows).summary);
   assert.equal(summarizeRows(rows).distinctMechanics, 2);
-  assert.equal(summaryExecutablePercent(summarizeRows(rows)), 50);
-  assert.equal(summaryExecutablePercent(summarizeRows([])), 0);
+  assert.equal(summaryImplementedPercent(summarizeRows(rows)), 50);
+  assert.equal(summaryImplementedPercent(summarizeRows([])), 0);
 });
 
 test('filterRowsBySet keeps one set, and every row for the all sentinel', () => {
@@ -225,8 +335,8 @@ test('buildSetBreakdown rolls up per set in name-table order, unnamed sets last 
   assert.ok(core !== undefined && darkCity !== undefined);
   assert.equal(core.summary.totalRows, 2);
   assert.equal(core.summary.byStatus.executable, 1);
-  assert.equal(core.percentExecutable, 50);
-  assert.equal(darkCity.percentExecutable, 0);
+  assert.equal(core.percentImplemented, 50);
+  assert.equal(darkCity.percentImplemented, 0);
 });
 
 test('useCoverageLedger exposes the set breakdown and set display names', () => {

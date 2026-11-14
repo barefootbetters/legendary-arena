@@ -129,15 +129,23 @@ export interface EffectExecutionOutcome {
  * in the diagnostics export.
  *
  * @property cardId - The card-instance ext_id whose ability was hollow.
- * @property cardType - Whether the source card is a hero, villain, or henchman.
+ * @property cardType - Whether the source card is a hero, villain, henchman, or
+ *   mastermind (`'mastermind'` = a Master Strike that reached no dispatcher arm,
+ *   WP-867 / D-24810).
  * @property timing - The hook timing the hollow mechanic was declared at.
  * @property mechanic - The declared mechanic label that reached no handler.
  * @property reason - The hollow reason (one of the three hollow reasons).
- * @property turn - The boardgame.io turn number the record was observed on.
+ * @property turn - The play-relative turn the record was observed on — the same
+ *   number as the game log's `{turn}.{step}.{action}` prefix (`G.logMeta.turn`;
+ *   first play turn = 1). `recordHollowEffect` stamps it from `G.logMeta`; the
+ *   caller-supplied framework turn survives only when `G.logMeta` is absent.
  */
 export interface HollowEffectRecord {
   cardId: string;
-  cardType: 'hero' | 'villain' | 'henchman';
+  // why: WP-867 / D-24810 — 'mastermind' is appended for a Master Strike whose
+  // Mastermind has no arm in mastermindStrikeHandler: the strike belongs to the
+  // Mastermind card, so labelling it 'villain' would mislabel the panel and sweep.
+  cardType: 'hero' | 'villain' | 'henchman' | 'mastermind';
   timing: string;
   mechanic: string;
   reason: 'parse-unrecognized' | 'no-handler' | 'unsupported-keyword';
@@ -223,13 +231,17 @@ export const DEFERRED_BY_DESIGN_MECHANICS: ReadonlySet<string> = new Set<string>
  *
  * - `fired` — a handler ran (the common case).
  * - `no-op` — a DELIBERATE-no-op handler ran. Determined by PRIMITIVE IDENTITY
- *   (the fixed allowlist `{ become-scheme-twist [D-24287], gain-attached-hero
- *   [D-24270] }`, both of which intentionally mutate nothing), NEVER by
- *   `targets.length` — many real-firing handlers legitimately return empty targets.
+ *   (the fixed allowlist `DELIBERATE_NO_OP_VILLAIN_PRIMITIVES`: `become-scheme-twist`
+ *   [D-24287], `gain-attached-hero` [D-24270], `play-villain-deck-cards` [D-24351],
+ *   `reenter-sewers-if-villain-deck-top` [D-24811] and `stack-cards-enter-city-as-villains`
+ *   [D-24814], all of which intentionally mutate nothing), NEVER by `targets.length` —
+ *   many real-firing handlers legitimately return empty targets.
  * - `no-handler` — no handler was reached for the token (co-recorded as a hollow).
  * - `secondary-site` — the effect's real work fired at a DIFFERENT site than the
- *   executor (Mystique's escape→Scheme-Twist: the executor handler is a no-op; the
- *   twist fires at the villain-deck escape site).
+ *   executor, recorded beside the executor's `no-op` trace: Mystique's escape→Scheme-Twist
+ *   (the villain-deck escape site), and the three bridged primitives
+ *   `play-villain-deck-cards`, `reenter-sewers-if-villain-deck-top` and
+ *   `stack-cards-enter-city-as-villains` (the fight and Ambush bridges; WP-877 / D-24824).
  */
 export type EffectTraceStatus =
   | 'fired'
@@ -259,12 +271,21 @@ export const EFFECT_TRACE_STATUSES: readonly EffectTraceStatus[] = [
  *   `interpretHeroPrimitiveEffect` sub-path.
  * - `escape-scheme-twist` — the villain-deck escape branch where a
  *   `become-scheme-twist` escape fires the real Scheme Twist (the secondary site).
+ * - `villain-fight-bridge` — `runVillainFightFireSiteBridges`, where a defeated card's
+ *   bridged Fight work runs (Endless Armies' play, Mr. Immortal's reenter, a Fight stack entry).
+ * - `villain-ambush-bridge` — the Ambush block of `performVillainReveal`, where a bridged
+ *   Ambush runs (The Leader's play, an Ambush stack entry).
  */
+// why: WP-877 / D-24824 — the two bridge members name WHERE the work ran; the trace's `effect`
+// already names WHAT ran, so one site per bridge (not one per primitive) mirrors
+// `escape-scheme-twist`, which names the escape branch.
 export type EffectTraceFireSite =
   | 'villain-executor'
   | 'hero-executor'
   | 'hero-primitive'
-  | 'escape-scheme-twist';
+  | 'escape-scheme-twist'
+  | 'villain-fight-bridge'
+  | 'villain-ambush-bridge';
 
 // why: canonical drift array (WP-488 / D-24294) — same bidirectional-parity contract
 // as EFFECT_TRACE_STATUSES; a fire site added to the union but not the array (or vice
@@ -275,6 +296,8 @@ export const EFFECT_TRACE_FIRE_SITES: readonly EffectTraceFireSite[] = [
   'hero-executor',
   'hero-primitive',
   'escape-scheme-twist',
+  'villain-fight-bridge',
+  'villain-ambush-bridge',
 ] as const;
 
 /**
@@ -341,9 +364,11 @@ export interface EffectTraceResolution {
  * @property status - The dispatch outcome.
  * @property fireSite - The code site that emitted this trace.
  * @property params - A shallow scalar snapshot of the descriptor's own parameter fields.
- * @property turn - The boardgame.io turn number the trace was observed on (0 only when
- *   the emitting context carries no turn, e.g. a hand-built test context; the
- *   villain-deck reveal path forwards the framework turn since D-24704).
+ * @property turn - The play-relative turn the trace was observed on — the same number
+ *   as the game log's `{turn}.{step}.{action}` prefix (`G.logMeta.turn`; first play
+ *   turn = 1). `recordEffectTrace` stamps it from `G.logMeta` (D-24825, superseding
+ *   D-24704 §3); the emitter-supplied framework turn (0 from a turnless hand-built
+ *   context) survives only when `G.logMeta` is absent.
  * @property resolution - The realized count-scaled computation (WP-706 / D-24528).
  *   Additive OPTIONAL: present only on a count-scaled (`attack-per-count` /
  *   `recruit-per-count`) dispatch, absent on every other trace. Diagnostics-only,

@@ -2,6 +2,7 @@
 import { defineComponent, ref, watch, type PropType } from "vue";
 import type { UIPendingElectromagneticBubbleChoice } from "@legendary-arena/game-engine";
 import type { SubmitMove } from "./uiMoveName.types";
+import CardImage from "./CardImage.vue";
 
 /**
  * Inline prompt for resolving a pending Magneto "Electromagnetic Bubble" X-Men pick
@@ -20,6 +21,7 @@ import type { SubmitMove } from "./uiMoveName.types";
  */
 export default defineComponent({
   name: "PendingElectromagneticBubbleChoicePrompt",
+  components: { CardImage },
   props: {
     pendingElectromagneticBubbleChoice: {
       type: Object as PropType<UIPendingElectromagneticBubbleChoice | undefined>,
@@ -94,9 +96,9 @@ export default defineComponent({
         <span class="pending-electromagnetic-bubble-choice-prompt__card-name">{{
           entry.display.name
         }}</span>
-        <img
+        <CardImage
           v-if="entry.display.imageUrl"
-          :src="entry.display.imageUrl"
+          :image-url="entry.display.imageUrl"
           :alt="entry.display.name"
           class="pending-electromagnetic-bubble-choice-prompt__card-image"
         />

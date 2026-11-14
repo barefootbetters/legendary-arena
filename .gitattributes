@@ -14,6 +14,13 @@
 # index copy is already LF; pinning the checkout to LF makes a build a no-op.
 packages/lagn-spec/schemas/lagn-v1.json text eol=lf
 
+# why: WP-890 / D-24842 — scripts/build-local-spike-bundle.mjs writes this
+# generated fixture with LF, and `pnpm spike:local-bundle --check` plus the
+# arena-client no-aliasing test compare it byte for byte. With `text=auto` a
+# Windows checkout would hold it as CRLF and both checks would fail on a clean
+# clone.
+apps/arena-client/src/fixtures/localSpike/featuredSetupBundle.json text eol=lf
+
 # why (D-24242): the number-allocation ledger is append-only. `merge=union` makes
 # git keep BOTH sides' distinct reservation lines on a local rebase/merge, so two
 # sessions reserving different WP/EC/D numbers never conflict here (unlike the

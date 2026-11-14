@@ -2,6 +2,7 @@
 import { defineComponent, ref, watch, type PropType } from "vue";
 import type { UIPendingMelterKoChoice } from "@legendary-arena/game-engine";
 import type { SubmitMove } from "./uiMoveName.types";
+import CardImage from "./CardImage.vue";
 
 /**
  * Inline prompt for resolving a pending Melter Fight KO/keep choice (WP-603 / D-24413).
@@ -26,6 +27,7 @@ import type { SubmitMove } from "./uiMoveName.types";
  */
 export default defineComponent({
   name: "PendingMelterKoChoicePrompt",
+  components: { CardImage },
   props: {
     pendingMelterKoChoice: {
       type: Object as PropType<UIPendingMelterKoChoice | undefined>,
@@ -109,9 +111,9 @@ export default defineComponent({
         <span class="pending-melter-ko-choice-prompt__card-name" :title="entry.display.name">
           {{ entry.display.name }}
         </span>
-        <img
+        <CardImage
           v-if="entry.display.imageUrl"
-          :src="entry.display.imageUrl"
+          :image-url="entry.display.imageUrl"
           :alt="entry.display.name"
           class="pending-melter-ko-choice-prompt__card-image"
         />

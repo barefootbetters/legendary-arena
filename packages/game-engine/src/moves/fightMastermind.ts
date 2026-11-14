@@ -18,6 +18,7 @@
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
 import { isMastermindHaunting } from '../board/haunt.logic.js';
+import { isMastermindFortified } from '../board/fortify.logic.js';
 import { getSpendableAttackForTarget, spendFightCostForTarget, markExcessiveViolenceUsed } from '../economy/economy.logic.js';
 // why: WP-736 / D-24556 — the fight-time driver that fires every enrolled Excessive Violence
 // ability. Called from THIS move body (never the shared defeatMastermindTacticCore, which non-fight
@@ -25,7 +26,8 @@ import { getSpendableAttackForTarget, spendFightCostForTarget, markExcessiveViol
 import { fireExcessiveViolencePlays } from '../hero/heroEffects.execute.js';
 // why: WP-539 / D-24348 — centralized mastermind fight requirement (base fightCost +
 // the Portals Dark-Portal mastermind bonus), so combat / UI / AI never disagree.
-import { resolveMastermindFightCost } from '../economy/economy.resolve.js';
+import { resolveMastermindFightCost, resolveMastermindFightPrice } from '../economy/economy.resolve.js';
+import { buildFightSizeChangingLine } from './fightVillain.js';
 import {
   defeatTopTactic,
   areAllTacticsDefeated,
@@ -67,7 +69,7 @@ import { hasPendingGiveHqHeroChoice } from './giveHqHeroChoice.resolve.js';
 import { hasPendingCopyPowersChoice } from './copyPowersChoice.resolve.js';
 import { hasPendingSeatChoice } from './seatChoice.resolve.js';
 import { hasHealedThisTurn } from './healWounds.js';
-import { resolveCardName } from '../log/logDisplay.js';
+import { formatCardRef, resolveCardName } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
 import { isEnigmaGuessWellFormed, settleEnigmaGuess } from '../rules/enigmaCode.logic.js';
 
@@ -156,10 +158,21 @@ export function fightMastermind(
     return;
   }
 
+  // why: WP-873 / D-24818 — while a Villain fortifies the Mastermind (Colleen Wing), "the
+  // Mastermind can't be fought". A board-state step-1 return like the Haunt lock above; the
+  // same predicate gates the getLegalMoves mirror. Free defeats ignore it (D-24737: a card
+  // that defeats ignores fight restrictions, and the Mastermind is still in place).
+  if (isMastermindFortified(G)) {
+    return;
+  }
+
   // why: baseCardId is the canonical stats key; fightCost is the fight
   // requirement field per WP-018 D-1805; never use G.mastermind.id or
   // any tactic card ID for stat lookup
-  const requiredFightCost = resolveMastermindFightCost(G, ctx.currentPlayer);
+  // why: D-24802 — the fight is paid at the Size-Changing price (Fin Fang Foom, rules v23
+  // p.33), floored at 0; resolveMastermindFightCost stays the Mastermind's Attack for the log.
+  const mastermindAttack = resolveMastermindFightCost(G, ctx.currentPlayer);
+  const requiredFightCost = resolveMastermindFightPrice(G, ctx.currentPlayer);
   // why: WP-580 / D-24389 — the spendable figure folds in unspent recruit when the
   // recruit-as-attack conversion is active this turn; equal to getAvailableAttack
   // otherwise, so the gate is unchanged on every non-conversion turn.
@@ -260,6 +273,20 @@ export function fightMastermind(
   // defeat spends no attack and is a card play, not a fight. The tactic defeat
   // fires NO onFight ability, so nothing between reads G.turnEconomy or
   // G.hasActedThisTurn — the unmodified fightMastermind tests are the oracle.
+  // why: D-24802 — a Size-Changing note ONLY when the discount changed the price, logged
+  // before the fight's own lines, so every full-price fight's log is byte-identical.
+  if (requiredFightCost !== mastermindAttack) {
+    pushLog(
+      G,
+      buildFightSizeChangingLine(
+        ctx.currentPlayer,
+        formatCardRef(G.cardDisplayData, G.mastermind.baseCardId),
+        mastermindAttack,
+        requiredFightCost,
+      ),
+      'applied',
+    );
+  }
   if (isFinalBlow) {
     awardMastermindOnFinalBlow(G, ctx);
   } else {

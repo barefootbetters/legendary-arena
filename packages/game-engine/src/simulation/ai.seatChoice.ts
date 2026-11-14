@@ -14,8 +14,18 @@
  *   - monarchs-decree-mode: "each other player draws" — the co-op answer.
  *   - escape-hq-ko: the cheapest eligible Hero (the builder orders by cost).
  *   - return-on-discard: return the card to hand.
+ *   - zarathos-eruption: discard the cheapest Covert / Ranged Hero (the builder orders by
+ *     cost); the alternative is a Wound (D-24833).
+ *   - zarathos-imprison: decline. A KO gives up the Villain's VP (RawScore weighs VP x10)
+ *     for that many draws, a strategy call with no engine value model (the Dominate the
+ *     Weak keep-default precedent, D-24754; D-24833).
  *
  * here-hold-this and random-acts-pass-left answers were added by D-24745.
+ * gain-wound-reward, and the Diving Block / Flying Shield Block decline on a Wound gained on
+ * purpose for a reward, were added by WP-883 / D-24834.
+ * hunt-for-victims (rescue from the Escape Pile, else KO from it, else another rescue, else
+ * decline) and hunt-for-victims-ko-hero (a 0-cost Hero, else decline) were added by WP-884 /
+ * D-24835.
  *
  * The absent-seat default and getLegalMoves are untouched, so autoplay, the
  * simulation runner and PAR keep their D-24590 / D-24573 behaviour (D-24745
@@ -48,6 +58,11 @@ import {
   COMPUTER_UPLOADED_GENIUS_DISCARD_KIND,
   CRUSH_PACIFIST_RESISTANCE_KO_KIND,
   CRUSH_PACIFIST_RESISTANCE_LAST_KO_KIND,
+  ZARATHOS_CORRUPTED_SPIRIT_DISCARD_DOWN_KIND,
+  ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT,
+  ZARATHOS_CORRUPTED_SPIRIT_KIND,
+  ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND,
+  ZARATHOS_DEMONIC_ESSENCE_LAST_KIND,
 } from '../moves/seatChoiceTactics.js';
 import {
   ESCAPE_BYSTANDER_DISCARD_KIND,
@@ -57,11 +72,33 @@ import {
 import { hasSeatSubmitted, isSeatAddressed } from '../moves/seatChoice.resolve.js';
 import { TIMESTREAM_PURGE_SEAT_CHOICE_KIND } from '../rules/timestreamPurge.logic.js';
 import { ENIGMA_PEEK_SEAT_CHOICE_KIND } from '../rules/enigmaCode.logic.js';
+import { HEIST_SHUFFLE_SEAT_CHOICE_KIND } from '../hero/heistPayloads.logic.js';
+import {
+  GAIN_WOUND_REWARD_DECLINE_OPTION_INDEX,
+  GAIN_WOUND_REWARD_GAIN_OPTION_INDEX,
+  GAIN_WOUND_REWARD_SEAT_CHOICE_KIND,
+} from '../hero/gainWoundReward.logic.js';
+import { addResources } from '../economy/economy.logic.js';
+import {
+  HUNT_FOR_VICTIMS_KO_HERO_SEAT_CHOICE_KIND,
+  HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND,
+} from '../moves/huntForVictims.logic.js';
+
+// why: WP-876 / D-24823 — the shuffle prompt's "Leave the Villain Deck as it is" option.
+/** The option index of Revolutionary Anthem's leave option. */
+const HEIST_LEAVE_OPTION_INDEX = 1;
 import { victoryPointValueForCard } from '../economy/bloodFrenzy.logic.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
-import { resolveFightCost } from '../economy/economy.resolve.js';
+import { resolveFightPrice } from '../economy/economy.resolve.js';
 import { getPatrolModifier } from '../board/boardKeywords.logic.js';
 import { getLegalMoves } from './ai.legalMoves.js';
+// why: WP-893 / D-24850 — the hero condition evaluator imports no simulation module and none of
+// heroEffects.execute.ts, divingBlock.logic.ts, flyingShieldBlock.logic.ts or
+// seatChoice.resolve.ts, so reading the Rooftops Conqueror condition here adds no cycle.
+import {
+  CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE,
+  evaluateCondition,
+} from '../hero/heroConditions.evaluate.js';
 
 /**
  * Returns the option index a PLAYING seat submits for the open seat choice, or
@@ -109,19 +146,41 @@ function chooseByKind(
   options: readonly SeatChoiceOption[],
 ): number | null {
   if (choice.kind === DIVING_BLOCK_SEAT_CHOICE_KIND) {
+    // why: WP-883 / D-24834 — a Wound taken on purpose for a reward is declined (the reveal
+    // would forfeit the reward). The entry is the seat's FIRST one, as the apply looks it up.
+    const divingBlockEntry = (G.pendingDivingBlockWounds ?? []).find((entry) => entry.playerID === seat);
+    if (divingBlockEntry?.gainWoundReward !== undefined) {
+      return choice.defaultOptionIndex;
+    }
     // why: D-24499 — revealing prevents the Wound and draws a card; it never costs
     // anything (Diving Block stays in hand), so a present player always reveals.
     return DIVING_BLOCK_REVEAL_OPTION_INDEX;
   }
   if (choice.kind === FLYING_SHIELD_BLOCK_SEAT_CHOICE_KIND) {
+    // why: WP-883 / D-24834 — declined on a Wound taken on purpose for a reward, its own or a
+    // teammate's (the teammate keeps the +N; the bot gives up a Bystander rescue). The entry is
+    // the one stamped for this seat, as the apply looks it up.
+    const flyingShieldBlockEntry = (G.pendingFlyingShieldBlockWounds ?? []).find((entry) => entry.addressedSeat === seat);
+    if (flyingShieldBlockEntry?.gainWoundReward !== undefined) {
+      return choice.defaultOptionIndex;
+    }
     // why: WP-827 / D-24760 — revealing prevents a Wound (any player's) and rescues a
     // Bystander for the bot; the card stays put, so a present bot always reveals.
     return FLYING_SHIELD_BLOCK_REVEAL_OPTION_INDEX;
+  }
+  if (choice.kind === GAIN_WOUND_REWARD_SEAT_CHOICE_KIND) {
+    return chooseGainWoundRewardOption(G, choice, seat);
   }
   if (choice.kind === OUT_OF_TIME_GRANT_SEAT_CHOICE_KIND) {
     // why: WP-828 / D-24761 — the granted Hero is played again next turn, so the bot grants the
     // highest-cost listed Hero (first listed on a tie).
     return chooseHighestCostOption(G, options);
+  }
+  if (choice.kind === HEIST_SHUFFLE_SEAT_CHOICE_KIND) {
+    // why: WP-876 / D-24823 — Revolutionary Anthem's optional shuffle: the bot leaves the Villain
+    // Deck as it is (option 1, also the default; belt-and-braces). Reached now that bots attempt a
+    // Heist (WP-878 / D-24826): a bot's won Heist with Revolutionary Anthem readied opens it.
+    return HEIST_LEAVE_OPTION_INDEX;
   }
   if (choice.kind === ENIGMA_PEEK_SEAT_CHOICE_KIND) {
     // why: WP-830 / D-24763 — a seen Enigma card is a right guess later, worth the 1 Recruit; the
@@ -145,6 +204,8 @@ function chooseByKind(
   // cheapest listed Hero.
   // why: WP-829 / D-24762 — the bot Purges the least valuable HQ Hero (its whole Hero Name leaves
   // the HQ for the match), the same pick it makes for a discard.
+  // why: WP-882 / D-24833 — each Corrupted Spirit discard-down round drops a Wound first, else
+  // the cheapest card (the default is the selector's cheapest, which may be a Hero over a Wound).
   if (
     choice.kind === TIMESTREAM_PURGE_SEAT_CHOICE_KIND ||
     choice.kind === MONARCHS_DISCARD_KIND ||
@@ -152,7 +213,8 @@ function chooseByKind(
     choice.kind === ESCAPE_EFFECT_COST_DISCARD_KIND ||
     choice.kind === VILLAIN_EFFECT_TRAIT_DISCARD_KIND ||
     choice.kind === FALLEN_IDOLS_DISCARD_KIND ||
-    choice.kind === COMPUTER_UPLOADED_GENIUS_DISCARD_KIND
+    choice.kind === COMPUTER_UPLOADED_GENIUS_DISCARD_KIND ||
+    choice.kind === ZARATHOS_CORRUPTED_SPIRIT_DISCARD_DOWN_KIND
   ) {
     return indexOfLeastValuableCard(G, options);
   }
@@ -164,6 +226,25 @@ function chooseByKind(
     choice.kind === CRUSH_PACIFIST_RESISTANCE_LAST_KO_KIND
   ) {
     return indexOfZeroCostKoOption(G, options);
+  }
+  // why: WP-884 / D-24835 — the KO-a-Hero pick after Hunt for Victims is optional; the bot-ally
+  // thins a 0-cost Hero (deck thinning, the Crush arm above) or declines.
+  if (choice.kind === HUNT_FOR_VICTIMS_KO_HERO_SEAT_CHOICE_KIND) {
+    return indexOfZeroCostKoOption(G, options);
+  }
+  if (choice.kind === HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND) {
+    return indexOfHuntForVictimsOption(options);
+  }
+  // why: WP-882 / D-24833 — Demonic Essence of Ghost Rider is optional; the bot-ally thins a
+  // 0-cost Hero, one it already played first (D-24754 sibling).
+  if (
+    choice.kind === ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND ||
+    choice.kind === ZARATHOS_DEMONIC_ESSENCE_LAST_KIND
+  ) {
+    return indexOfPlayedFirstZeroCostKoOption(G, options);
+  }
+  if (choice.kind === ZARATHOS_CORRUPTED_SPIRIT_KIND) {
+    return indexOfZarathosCorruptedSpiritOption(G, seat, options);
   }
   if (choice.kind === VANISHING_ILLUSIONS_KO_KIND) {
     return indexOfLowestVictoryPointCard(G, seat, options);
@@ -179,6 +260,40 @@ function chooseByKind(
     return indexOfLeastValuableCard(G, options);
   }
   return null;
+}
+
+/**
+ * Picks the Hunt for Victims option a playing bot takes: rescue from the Escape Pile, else KO from
+ * it, else the first other rescue, else null (the decline default).
+ *
+ * // why: WP-884 / D-24835, WP-887 / D-24839 — a rescue from the Escape Pile removes that Bystander
+ * from bystanderLost and adds its VP. A KO from the Escape Pile is now neutral to bystanderLost (it
+ * moves the Bystander from the escaped count to the KO'd-from-play count, D-24839); the answer
+ * order is kept unchanged here, and whether another rescue should now outrank it is a follow-up. A
+ * KO from a Villain or the Mastermind would add a loss (and removes the VP it would rescue by
+ * fighting), so the bot never takes one, nor a capture.
+ *
+ * @param options - The seat's options; each carries huntAction / huntSource, the decline neither.
+ * @returns The chosen option index, or null to keep the decline.
+ */
+function indexOfHuntForVictimsOption(options: readonly SeatChoiceOption[]): number | null {
+  let escapePileKoIndex: number | null = null;
+  let firstOtherRescueIndex: number | null = null;
+  for (let optionIndex = 0; optionIndex < options.length; optionIndex++) {
+    const option = options[optionIndex]!;
+    if (option.huntSource === 'escape-pile' && option.huntAction === 'rescue') {
+      return optionIndex;
+    }
+    if (option.huntSource === 'escape-pile' && option.huntAction === 'ko' && escapePileKoIndex === null) {
+      escapePileKoIndex = optionIndex;
+    } else if (option.huntAction === 'rescue' && firstOtherRescueIndex === null) {
+      firstOtherRescueIndex = optionIndex;
+    }
+  }
+  if (escapePileKoIndex !== null) {
+    return escapePileKoIndex;
+  }
+  return firstOtherRescueIndex;
 }
 
 /**
@@ -226,6 +341,163 @@ function indexOfHereHoldThisTarget(
     }
   }
   return indexOfCheapestCityTarget(G, seat, options, safeCityIndices);
+}
+
+/**
+ * The bot's answer to "You may gain a Wound. If you do, <reward>". For +N Attack: gain only when
+ * the +N newly enables a fight (a City Villain or the Mastermind) right now; otherwise decline.
+ * Berserk declines; the KO and Transform rewards have their own answers (WP-885 / D-24836).
+ *
+ * // why: WP-883 / D-24834 — a Wound is a dead card for the rest of the game, so it is worth
+ * taking only for a fight the bot could not make without the +N. getLegalMoves is the single
+ * mirror of the fight guards; it is asked about two shallow local copies (the open choice set
+ * aside, then also the +N added). G is never written.
+ *
+ * @param G - The game state (read only).
+ * @param choice - The open 'gain-wound-reward' choice.
+ * @param seat - The addressed seat (the active player).
+ * @returns The gain option when it opens a fight, else the decline option.
+ */
+function chooseGainWoundRewardOption(
+  G: LegendaryGameState,
+  choice: PendingSeatChoice,
+  seat: string,
+): number {
+  const reward = choice.gainWoundReward;
+  if (reward === undefined) {
+    return GAIN_WOUND_REWARD_DECLINE_OPTION_INDEX;
+  }
+  switch (reward.rewardType) {
+    case 'berserk': {
+      // why: WP-885 / D-24836 — Berserk's payoff is the hidden top card of the deck. The bot must
+      // not read it to decide, so it declines (the default).
+      return choice.defaultOptionIndex;
+    }
+    case 'optional-ko-hand-discard': {
+      return chooseGainWoundForKoOption(G, seat, reward.magnitude);
+    }
+    case 'transform': {
+      return chooseGainWoundForTransformOption(G, seat, reward.sourceCardId);
+    }
+    case 'rooftops-conqueror': {
+      // why: WP-893 / D-24850 — Rooftops Conqueror N pays only while a Villain is in the
+      // Rooftops, so with the Rooftops empty (or missing) the Wound buys nothing: decline. With a
+      // Villain there it is +N Attack, so fall through to the Attack fight-count rule.
+      const condition = { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'rooftops' };
+      if (!evaluateCondition(G, seat, condition)) {
+        return GAIN_WOUND_REWARD_DECLINE_OPTION_INDEX;
+      }
+      break;
+    }
+    case 'attack': {
+      break;
+    }
+  }
+  const stateWithoutSeatChoice = { ...G, pendingSeatChoice: undefined } as LegendaryGameState;
+  const stateWithReward = {
+    ...G,
+    pendingSeatChoice: undefined,
+    turnEconomy: addResources(G.turnEconomy, reward.magnitude, 0),
+  } as LegendaryGameState;
+  if (countLegalFights(stateWithReward, seat) > countLegalFights(stateWithoutSeatChoice, seat)) {
+    return GAIN_WOUND_REWARD_GAIN_OPTION_INDEX;
+  }
+  return GAIN_WOUND_REWARD_DECLINE_OPTION_INDEX;
+}
+
+/**
+ * The bot's answer to "You may gain a Wound. If you do, KO up to N other cards from your hand
+ * and/or discard pile": gain only when it already holds N cards worth thinning.
+ *
+ * // why: WP-885 / D-24836 — a Wound is a dead card; trading one for N KOs pays off only when
+ * there are at least N cost-0 cards (Wounds and the starting S.H.I.E.L.D. cards) to KO, counted
+ * before the gain. Cost reads G.cardStats the way selectDefaultOptionalKoTarget does. G is never
+ * written.
+ *
+ * @param G - The game state (read only).
+ * @param seat - The addressed seat (the active player).
+ * @param magnitude - How many cards the reward may KO.
+ * @returns The gain option when enough cost-0 cards exist, else the decline option.
+ */
+function chooseGainWoundForKoOption(G: LegendaryGameState, seat: string, magnitude: number): number {
+  const zones = G.playerZones[seat];
+  if (!zones) {
+    return GAIN_WOUND_REWARD_DECLINE_OPTION_INDEX;
+  }
+  let costZeroCount = 0;
+  for (const cardId of zones.hand) {
+    if ((G.cardStats[cardId]?.cost ?? 0) === 0) {
+      costZeroCount += 1;
+    }
+  }
+  for (const cardId of zones.discard) {
+    if ((G.cardStats[cardId]?.cost ?? 0) === 0) {
+      costZeroCount += 1;
+    }
+  }
+  if (costZeroCount >= magnitude) {
+    return GAIN_WOUND_REWARD_GAIN_OPTION_INDEX;
+  }
+  return GAIN_WOUND_REWARD_DECLINE_OPTION_INDEX;
+}
+
+/**
+ * The bot's answer to "You may gain a Wound. If you do, Transform this into <second form>": gain
+ * only when the Transform can happen.
+ *
+ * // why: WP-885 / D-24836 — the second form is a permanent deck upgrade, worth a Wound, but only
+ * when the base card is still in play and a second-form copy remains in the transform side deck
+ * (otherwise the Wound buys nothing). G is never written.
+ *
+ * @param G - The game state (read only).
+ * @param seat - The addressed seat (the active player).
+ * @param sourceCardId - The played base card.
+ * @returns The gain option when the Transform can resolve, else the decline option.
+ */
+function chooseGainWoundForTransformOption(G: LegendaryGameState, seat: string, sourceCardId: string): number {
+  const zones = G.playerZones[seat];
+  if (!zones || !zones.inPlay.includes(sourceCardId) || !G.transformTargets || !G.transformDeck) {
+    return GAIN_WOUND_REWARD_DECLINE_OPTION_INDEX;
+  }
+  const hashIndex = sourceCardId.indexOf('#');
+  let baseKey = sourceCardId;
+  if (hashIndex !== -1) {
+    baseKey = sourceCardId.slice(0, hashIndex);
+  }
+  const targetKey = G.transformTargets[baseKey];
+  if (targetKey === undefined) {
+    return GAIN_WOUND_REWARD_DECLINE_OPTION_INDEX;
+  }
+  const targetPrefix = `${targetKey}#`;
+  for (const sideDeckId of G.transformDeck) {
+    if (sideDeckId.startsWith(targetPrefix)) {
+      return GAIN_WOUND_REWARD_GAIN_OPTION_INDEX;
+    }
+  }
+  return GAIN_WOUND_REWARD_DECLINE_OPTION_INDEX;
+}
+
+/**
+ * Counts the seat's legal fightVillain + fightMastermind moves in the given state.
+ *
+ * @param state - The state to ask getLegalMoves about (read only).
+ * @param seat - The seat whose fights are counted.
+ * @returns The number of legal fight moves.
+ */
+function countLegalFights(state: LegendaryGameState, seat: string): number {
+  const legalMoves = getLegalMoves(state, {
+    phase: 'play',
+    turn: 0,
+    currentPlayer: seat,
+    numPlayers: Object.keys(state.playerZones).length,
+  });
+  let fights = 0;
+  for (const legalMove of legalMoves) {
+    if (legalMove.name === 'fightVillain' || legalMove.name === 'fightMastermind') {
+      fights++;
+    }
+  }
+  return fights;
 }
 
 /**
@@ -286,8 +558,9 @@ function indexOfCheapestCityTarget(
     if (villainCardId === null || villainCardId === undefined) {
       continue;
     }
+    // why: D-24802 — the price the seat would pay, Size-Changing included (fightVillain's read).
     const fightCost =
-      resolveFightCost(G, villainCardId, seat) + getPatrolModifier(villainCardId, G.cardKeywords ?? {});
+      Math.max(0, resolveFightPrice(G, villainCardId, seat)) + getPatrolModifier(villainCardId, G.cardKeywords ?? {});
     if (fightCost < bestCost) {
       bestCost = fightCost;
       bestIndex = optionIndex;
@@ -377,6 +650,75 @@ function indexOfZeroCostKoOption(
     }
   }
   return options.length - 1;
+}
+
+/**
+ * Picks the first 0-cost Hero the seat already played, else the first 0-cost Hero in
+ * hand, else the last option ("Don't KO").
+ *
+ * // why: WP-882 / D-24833 — a played S.H.I.E.L.D. starter has already given its +1 this
+ * turn, so KOing it costs nothing now, while a hand starter could still be played. The
+ * Demonic Essence options list the hand first, so indexOfZeroCostKoOption would pick the
+ * hand copy; that helper and the Crush arm stay as they are (duplicate first, 00.6).
+ *
+ * @param G - The game state (read for cardStats).
+ * @param options - The seat's options; KO options carry cardId and sourceZone, the last is the decline.
+ * @returns The chosen option index.
+ */
+function indexOfPlayedFirstZeroCostKoOption(
+  G: LegendaryGameState,
+  options: readonly SeatChoiceOption[],
+): number {
+  for (const sourceZone of ['inPlay', 'hand'] as const) {
+    for (let optionIndex = 0; optionIndex < options.length; optionIndex++) {
+      const option = options[optionIndex]!;
+      if (option.cardId === undefined || option.sourceZone !== sourceZone) {
+        continue;
+      }
+      if ((G.cardStats[option.cardId]?.cost ?? 0) === 0) {
+        return optionIndex;
+      }
+    }
+  }
+  return options.length - 1;
+}
+
+/**
+ * Picks Corrupted Spirit of Vengeance's discard-down option when discarding down would
+ * cost only Wounds, else keeps the default (discard the cheapest matching Hero).
+ *
+ * // why: WP-882 / D-24833 — the cards owed (hand size - 3) are no more than the Wounds in
+ * hand, so every card dropped can be a Wound (the bot's own discard-down rounds drop
+ * Wounds first), which beats losing a Hero. Otherwise discarding down costs at least one
+ * real card more than the single Hero discard.
+ *
+ * @param G - The game state (read for the seat's hand).
+ * @param seat - The addressed seat.
+ * @param options - The seat's options; the discard-down option carries no cardId.
+ * @returns The discard-down option index, or null to keep the default.
+ */
+function indexOfZarathosCorruptedSpiritOption(
+  G: LegendaryGameState,
+  seat: string,
+  options: readonly SeatChoiceOption[],
+): number | null {
+  const hand = G.playerZones[seat]?.hand ?? [];
+  const cardsOwed = hand.length - ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT;
+  let woundsInHand = 0;
+  for (const cardId of hand) {
+    if (cardId === WOUND_EXT_ID) {
+      woundsInHand += 1;
+    }
+  }
+  if (cardsOwed > woundsInHand) {
+    return null;
+  }
+  for (let optionIndex = 0; optionIndex < options.length; optionIndex++) {
+    if (options[optionIndex]!.cardId === undefined) {
+      return optionIndex;
+    }
+  }
+  return null;
 }
 
 /**

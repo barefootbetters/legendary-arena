@@ -120,8 +120,44 @@ const MAP_PATH = join(__dirname, 'inputs', 'hero-ability-markers.json');
 // ([keyword:discard-threshold:<n>]); <n> is the cards-discarded threshold, [1-9]\d* to reject the zero form.
 // The engine parses <n> into a cardsDiscardedThisTurnAtLeast wait-and-see condition that gates the line's
 // printed attack, so the grant fires only after a card-effect hand discard this turn.
+// why: WP-853 / D-24789 — owned-card-koed token (Bishop "Absorb Energies": "Whenever a card you own is
+// KO'd this turn, you get +2 Recruit.") is single-segment, no magnitude. The engine parses it into an
+// ownedCardKoedThisTurn wait-and-see condition that gates the line's printed +2 recruit, so the recruit
+// fires once per KO of the player's own card this turn rather than unconditionally on play.
+// why: WP-856 / D-24792 — owned-hero-koed token (Doctor Voodoo "Possessed by Brother's Spirit": "The first
+// time that one of your Heroes … is KO'd this turn, you get +4 Recruit or +4 Attack.") is single-segment,
+// no magnitude; the engine parses it into the one-shot ownedHeroKoedThisTurn wait-and-see condition. The
+// [keyword:recruit:N] token is the flat-recruit option of a choose-one (the [keyword:attack:N] sibling);
+// [1-9]\d* rejects the zero form.
+// why: WP-858 / D-24794 — the Ritual Artifact tokens (Doctor Voodoo): [keyword:ritual-recruited-hero] is Staff of
+// Legba (no magnitude; the reward is the highest Hero cost recruited this turn) and [keyword:ritual-hero-classes:N]
+// is Medallion of Many Loas (N = the printed Hero Class threshold, N >= 1). The useRitualArtifact move executes both.
+// why: WP-860 / D-24796 — [keyword:discard-artifact-or-three-then-ko] is Commune with the Spirit World (no magnitude; the
+// cost and the KO are chosen through seat choices).
+// why: WP-862 / D-24804 — [keyword:hq-hero-gains-size-changing-tech] is Pym Particles' second line (no magnitude; a chosen
+// HQ Hero with no Size-Changing gains Size-Changing [Tech] this turn). Its presence makes the line's printed
+// [keyword:Size-Changing] [hc:tech] descriptive in the engine parser.
+// why: WP-855 / D-24791 — deck-card-koed token (Miek "Endless Appetite": "Whenever a card is KO'd from your deck this
+// turn, you may draw a card.") is single-segment, no magnitude. The engine parses it into the per-KO deckCardKoedThisTurn
+// wait-and-see condition that gates the line's [keyword:draw:1], so the draw fires once per KO from the player's deck.
+// why: WP-859 / D-24795 — deck-koed-attack-icon / deck-koed-non-grey-hero tokens (Miek "Metamorphosis", No-Name
+// "Bursting with Life": "Then, if a card with an [icon:attack] icon / a non-grey Hero was KO'd from your deck this turn,
+// Transform …") are single-segment, no magnitude. The engine parses each into a one-shot wait-and-see condition over the
+// deck-KO turn record, on the Transform half of the line (the parser splits the Feast off).
+// why: WP-876 / D-24823 — the three Heist payload tokens (Ant-Man and the Wasp). [keyword:heist-master-strike-ko] is The
+// Big Score's Master Strike KO and [keyword:heist-move-villain-ko-hero] is X-Con Security Van (both single-segment, no
+// magnitude); [keyword:heist-scheme-twist-bonus:N] is Revolutionary Anthem's Scheme Twist bonus (N = the extra Attack;
+// [1-9]\d* rejects the zero form). Each rides a Heist line, so the engine fires it only from a successful Heist.
+// why: WP-883 / D-24834 — [keyword:gain-wound-reward:<reward>:N] is "You may gain a Wound. If you do, you get
+// +N[icon:attack]" (co2e Hulk Smash!, mdns Scalded by Sunlight). Three segments like ko-wound-reward; [1-9]\d*
+// rejects the zero form. The engine parks a gain / don't choice and grants +N only for a Wound kept.
+// why: WP-884 / D-24835 — [keyword:hunt-for-victims] is Stalk the Night Stalkers' first line ("You may have a Villain or
+// Mastermind Hunt for Victims. If it KOs a Bystander this way, you may KO a Hero from your hand or discard pile.") and
+// [keyword:hunt-for-victims-rescue] is its [hc:tech] line ("you may also rescue that Bystander instead"). Both are
+// single-segment, no magnitude. The line-1 token is required: the generic parse leaves the printed
+// [keyword:Hunt for Victims] unresolved. The engine parks the hunt seat choice; the Tech line adds its rescue options.
 const VALID_TOKEN_PATTERN =
-  /^\[keyword:rescue:\d+\]$|^\[keyword:reveal\]$|^\[keyword:reveal:\d+\]$|^\[keyword:reveal:(?:team|hc)-[a-z][a-z0-9-]*:draw\]$|^\[keyword:reveal:always:choose-discard-or-return\]$|^\[keyword:reveal-ko\]$|^\[keyword:reveal-min:\d+\]$|^\[keyword:reveal-ko-or-draw:\d+\]$|^\[keyword:reveal-cost-attack\]$|^\[keyword:reveal-odd-draw\]$|^\[keyword:reveal-attack-choose:[1-9]\d*\]$|^\[keyword:reveal-ko-attack:[1-9]\d*\]$|^\[keyword:draw:[1-9]\d*\]$|^\[keyword:attack-per-count:[a-z][a-z-]*:[1-9]\d*(?::[1-9]\d*)?\]$|^\[keyword:recruit-per-count:[a-z][a-z-]*:[1-9]\d*(?::[1-9]\d*)?\]$|^\[keyword:kidnap-per-count:[a-z][a-z-]*:[1-9]\d*\]$|^\[keyword:optional-ko-reward:[a-z][a-z-]*:[1-9]\d*\]$|^\[keyword:optional-put-bottom-hq:[1-9]\d*\]$|^\[keyword:put-any-number-bottom-hq:[1-9]\d*\]$|^\[keyword:put-bottom-hq-icon-reward:[1-9]\d*\]$|^\[keyword:return-zero-cost-discard:[1-9]\d*\]$|^\[keyword:gain-wound-self\]$|^\[keyword:gain-wound-each\]$|^\[keyword:shuffle-discard-empty-reward:[a-z][a-z-]*:[1-9]\d*\]$|^\[keyword:ko-wound-reward:[a-z][a-z-]*:[1-9]\d*\]$|^\[keyword:ko-wound\]$|^\[keyword:discard-to-play:[1-9]\d*\]$|^\[keyword:discard-threshold:[1-9]\d*\]$|^\[keyword:defeat-with-bystander\]$|^\[keyword:return-on-discard\]$|^\[keyword:copy-powers\]$|^\[keyword:recruit-threshold:[1-9]\d*\]$|^\[keyword:draw-threshold:[1-9]\d*\]$|^\[keyword:optional-ko-hand-discard\]$|^\[keyword:recruit-as-attack\]$|^\[keyword:steal-abilities\]$|^\[keyword:defeated-villain-or-mastermind\]$|^\[keyword:reveal-from-hand\]$|^\[keyword:optional-play-villain-top:[1-9]\d*\]$|^\[keyword:reveal-herodeck-attack:[1-9]\d*\]$|^\[keyword:smash:[1-9]\d*\]$|^\[keyword:undercover-hand-shield-hero\]$|^\[keyword:undercover-officer-stack\]$|^\[keyword:attack:[1-9]\d*\]$|^\[keyword:do-over\]$|^\[keyword:first-hero-condition\]$|^\[keyword:optional-ko-shield-officer\]$|^\[keyword:diving-block\]$|^\[keyword:pure-fury\]$|^\[keyword:here-hold-this\]$|^\[keyword:random-acts\]$|^\[keyword:put-hand-on-deck-top:[1-9]\d*\]$|^\[keyword:reveal-top-dispose\]$|^\[keyword:reveal-top-dispose-others\]$|^\[keyword:covering-fire\]$|^\[keyword:spinning-cyclone\]$|^\[keyword:no-more-draws\]$|^\[keyword:reveal-three-assign\]$|^\[keyword:reveal-three-assign-again\]$|^\[keyword:optional-discard-draw:[1-9]\d*\]$|^\[keyword:reveal-top-may-ko\]$|^\[keyword:blood-frenzy\]$|^\[keyword:blood-frenzy-recruit\]$|^\[keyword:day-night-both\]$|^\[keyword:optional-ko-your-hero\]$|^\[keyword:play-both-sides\]$|^\[keyword:reveal:cost-zero:discard\+attack-fixed-[1-9]\d*\]$|^\[keyword:master-strike-this-turn\]$|^\[keyword:master-strike-or-ambush-this-turn\]$|^\[keyword:gain-officer\]$|^\[keyword:ko-up-to-shield-hand-discard:[1-9]\d*\]$|^\[keyword:attack-per-ko-this-way:[1-9]\d*\]$|^\[keyword:optional-ko-shield-played-rescue:[1-9]\d*\]$|^\[keyword:flying-shield-block\]$|^\[keyword:grant-out-of-time\]$|^\[keyword:reveal-or-gain-wound-each\]$|^\[keyword:gain-sidekick:[1-9]\d*\]$/;
+  /^\[keyword:rescue:\d+\]$|^\[keyword:reveal\]$|^\[keyword:reveal:\d+\]$|^\[keyword:reveal:(?:team|hc)-[a-z][a-z0-9-]*:draw\]$|^\[keyword:reveal:always:choose-discard-or-return\]$|^\[keyword:reveal-ko\]$|^\[keyword:reveal-min:\d+\]$|^\[keyword:reveal-ko-or-draw:\d+\]$|^\[keyword:reveal-cost-attack\]$|^\[keyword:reveal-odd-draw\]$|^\[keyword:reveal-attack-choose:[1-9]\d*\]$|^\[keyword:reveal-ko-attack:[1-9]\d*\]$|^\[keyword:draw:[1-9]\d*\]$|^\[keyword:attack-per-count:[a-z][a-z-]*:[1-9]\d*(?::[1-9]\d*)?\]$|^\[keyword:recruit-per-count:[a-z][a-z-]*:[1-9]\d*(?::[1-9]\d*)?\]$|^\[keyword:kidnap-per-count:[a-z][a-z-]*:[1-9]\d*\]$|^\[keyword:optional-ko-reward:[a-z][a-z-]*:[1-9]\d*\]$|^\[keyword:optional-put-bottom-hq:[1-9]\d*\]$|^\[keyword:put-any-number-bottom-hq:[1-9]\d*\]$|^\[keyword:put-bottom-hq-icon-reward:[1-9]\d*\]$|^\[keyword:return-zero-cost-discard:[1-9]\d*\]$|^\[keyword:gain-wound-self\]$|^\[keyword:gain-wound-each\]$|^\[keyword:shuffle-discard-empty-reward:[a-z][a-z-]*:[1-9]\d*\]$|^\[keyword:ko-wound-reward:[a-z][a-z-]*:[1-9]\d*\]$|^\[keyword:ko-wound\]$|^\[keyword:discard-to-play:[1-9]\d*\]$|^\[keyword:discard-threshold:[1-9]\d*\]$|^\[keyword:defeat-with-bystander\]$|^\[keyword:return-on-discard\]$|^\[keyword:copy-powers\]$|^\[keyword:recruit-threshold:[1-9]\d*\]$|^\[keyword:draw-threshold:[1-9]\d*\]$|^\[keyword:optional-ko-hand-discard\]$|^\[keyword:recruit-as-attack\]$|^\[keyword:steal-abilities\]$|^\[keyword:defeated-villain-or-mastermind\]$|^\[keyword:owned-card-koed\]$|^\[keyword:owned-hero-koed\]$|^\[keyword:deck-card-koed\]$|^\[keyword:deck-koed-attack-icon\]$|^\[keyword:deck-koed-non-grey-hero\]$|^\[keyword:recruit:[1-9]\d*\]$|^\[keyword:reveal-from-hand\]$|^\[keyword:optional-play-villain-top:[1-9]\d*\]$|^\[keyword:reveal-herodeck-attack:[1-9]\d*\]$|^\[keyword:smash:[1-9]\d*\]$|^\[keyword:undercover-hand-shield-hero\]$|^\[keyword:undercover-officer-stack\]$|^\[keyword:attack:[1-9]\d*\]$|^\[keyword:do-over\]$|^\[keyword:first-hero-condition\]$|^\[keyword:optional-ko-shield-officer\]$|^\[keyword:diving-block\]$|^\[keyword:pure-fury\]$|^\[keyword:here-hold-this\]$|^\[keyword:random-acts\]$|^\[keyword:put-hand-on-deck-top:[1-9]\d*\]$|^\[keyword:reveal-top-dispose\]$|^\[keyword:reveal-top-dispose-others\]$|^\[keyword:covering-fire\]$|^\[keyword:spinning-cyclone\]$|^\[keyword:no-more-draws\]$|^\[keyword:reveal-three-assign\]$|^\[keyword:reveal-three-assign-again\]$|^\[keyword:optional-discard-draw:[1-9]\d*\]$|^\[keyword:reveal-top-may-ko\]$|^\[keyword:blood-frenzy\]$|^\[keyword:blood-frenzy-recruit\]$|^\[keyword:day-night-both\]$|^\[keyword:optional-ko-your-hero\]$|^\[keyword:play-both-sides\]$|^\[keyword:reveal:cost-zero:discard\+attack-fixed-[1-9]\d*\]$|^\[keyword:master-strike-this-turn\]$|^\[keyword:master-strike-or-ambush-this-turn\]$|^\[keyword:gain-officer\]$|^\[keyword:ko-up-to-shield-hand-discard:[1-9]\d*\]$|^\[keyword:attack-per-ko-this-way:[1-9]\d*\]$|^\[keyword:optional-ko-shield-played-rescue:[1-9]\d*\]$|^\[keyword:flying-shield-block\]$|^\[keyword:grant-out-of-time\]$|^\[keyword:reveal-or-gain-wound-each\]$|^\[keyword:gain-sidekick:[1-9]\d*\]$|^\[keyword:discard-top-printed-attack:[1-9]\d*\]$|^\[keyword:ko-discarded-this-way\]$|^\[keyword:ritual-recruited-hero\]$|^\[keyword:ritual-hero-classes:[1-9]\d*\]$|^\[keyword:discard-artifact-or-three-then-ko\]$|^\[keyword:hq-hero-gains-size-changing-tech\]$|^\[keyword:next-hand-extra-draw:[1-9]\d*\]$|^\[keyword:heist-master-strike-ko\]$|^\[keyword:heist-scheme-twist-bonus:[1-9]\d*\]$|^\[keyword:heist-move-villain-ko-hero\]$|^\[keyword:gain-wound-reward:[a-z][a-z-]*:[1-9]\d*\]$|^\[keyword:hunt-for-victims\]$|^\[keyword:hunt-for-victims-rescue\]$/;
 // why: WP-826 / D-24759 — the Cap 75th optional-KO S.H.I.E.L.D. family: [keyword:ko-up-to-shield-hand-discard:N]
 // (Mobilize for War, KO up to N S.H.I.E.L.D. Heroes from hand / discard), [keyword:attack-per-ko-this-way:N]
 // (its Savior line, +N Attack per card KO'd this way) and [keyword:optional-ko-shield-played-rescue:N]
@@ -136,6 +172,10 @@ const VALID_TOKEN_PATTERN =
 // why: WP-844 / D-24778 — [keyword:gain-sidekick:N] is the printed "Gain a [rule:Sidekick]" / "Gain three
 // [rule:Sidekicks]" family (cvwr Inspire a Nation, ssw1 King of Wakanda, ...): N Sidekicks from the top of the
 // Sidekick Stack into the player's discard. N >= 1, so the branch never admits a zero magnitude.
+// why: WP-850 / D-24786 — [keyword:discard-top-printed-attack:N] is Bishop's Firepower from the Future ("Discard
+// the top four cards of your deck. You get +Attack equal to those cards' printed Attack."; N = cards discarded,
+// N >= 1) and [keyword:ko-discarded-this-way] is its "[team:x-men]: KO any number of those cards." line (no
+// magnitude; "those cards" are the ones the first line discarded).
 // why: WP-681 / D-24498 — [keyword:attack:N] is a flat conditional attack grant (High-Tech
 // Weaponry's "[hc:tech]: You get +1[icon:attack]." — the [hc:tech]: prefix is the class gate
 // the parser already reads, attack:N is the grant); [keyword:do-over] + [keyword:first-hero-condition]
@@ -183,6 +223,8 @@ const VALID_TOKEN_PATTERN =
 // why: D-24696 — [keyword:gain-officer] is ca75 Agent X-13 Spy Network's "Gain a S.H.I.E.L.D.
 // Officer" choose-one OPTION marker (paired with [keyword:attack:2] on the same "Choose one:"
 // line); single-segment, no-magnitude bare token consumed by the count-scaled-choose pre-pass.
+// why: WP-866 / D-24809 — [keyword:next-hand-extra-draw:N] is "When you draw a new hand (of cards at the end of) this turn,
+// draw N extra card(s)" (N >= 1, the extra cards). The engine handler adds N to the playing player's next-hand fill target.
 
 // ─── Shared helpers ──────────────────────────────────────────────────────────
 
@@ -333,7 +375,11 @@ function assertValidToken(markupToken, cardSlug, heroSlug, setAbbr) {
         `"[keyword:reveal-ko]", "[keyword:reveal-min:N]", "[keyword:reveal-ko-or-draw:N]", ` +
         `"[keyword:reveal-cost-attack]", "[keyword:reveal-odd-draw]", "[keyword:reveal-attack-choose:N]", ` +
         `"[keyword:reveal-ko-attack:N]", "[keyword:draw:N]", "[keyword:attack-per-count:<source>:N]", ` +
-        `"[keyword:kidnap-per-count:<source>:N]", ` +
+        `"[keyword:kidnap-per-count:<source>:N]", "[keyword:owned-hero-koed]", "[keyword:deck-card-koed]", "[keyword:deck-koed-attack-icon]", "[keyword:deck-koed-non-grey-hero]", "[keyword:recruit:N]", ` +
+        `"[keyword:ritual-recruited-hero]", "[keyword:ritual-hero-classes:N]", "[keyword:discard-artifact-or-three-then-ko]", ` +
+        `"[keyword:hq-hero-gains-size-changing-tech]", "[keyword:next-hand-extra-draw:N]", ` +
+        `"[keyword:heist-master-strike-ko]", "[keyword:heist-scheme-twist-bonus:N]", "[keyword:heist-move-villain-ko-hero]", ` +
+        `"[keyword:gain-wound-reward:<reward>:N]", "[keyword:hunt-for-victims]", "[keyword:hunt-for-victims-rescue]", ` +
         `or "[keyword:optional-ko-reward:<reward>:N]" ` +
         `(N ≥ 1; <source> a lowercase-hyphen count-source slug; <reward> a lowercase-hyphen reward slug). ` +
         `Fix the typo in the marker map, or — if a new ` +

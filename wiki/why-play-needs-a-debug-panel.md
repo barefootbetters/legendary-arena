@@ -62,7 +62,7 @@ games by hand and hoping the board reaches the state the fix is about, then
 reading a log that can't see half the table. This page argues for an
 operator-only debug panel on play that shows every zone, can set up an edge
 case directly, and shows what the bot weighed. It's modelled on the
-[Herbs vs. Ailments debug panel design](https://ewiki.herbs-vs-ailments.com/design/herbs-vs-ailments-debug-panel/)
+[Herbs vs. Ailments debug panel design](https://ewiki.herbsvsailments.com/design/herbs-vs-ailments-debug-panel/)
 and adapted to a turn-based, hidden-information, server-authoritative game.
 It started as a proposal. D-24689 turned it into a four-step arc. The first
 two steps are merged: the server and engine half is live-verified, and the
@@ -580,7 +580,7 @@ WP and a DECISIONS entry own any build.
 
 ## References
 
-- [Herbs vs. Ailments: debug panel and development principles](https://ewiki.herbs-vs-ailments.com/design/herbs-vs-ailments-debug-panel/)
+- [Herbs vs. Ailments: debug panel and development principles](https://ewiki.herbsvsailments.com/design/herbs-vs-ailments-debug-panel/)
   (the structural model; behind Cloudflare Access)
 - [`docs/ai/DECISIONS.md`](../docs/ai/DECISIONS.md): D-24026 (live
   verification is the Definition of Done), D-24684 (Ymir chooser; PASS

@@ -33,6 +33,7 @@ import {
   type SlicePoint,
 } from '../../vfx/villainSlashGeometry';
 import { useEffectIntensity } from '../../vfx/effectIntensity';
+import { cardImageSources } from '../../lib/cardImageTiers';
 import { useComboVfxSignal, type ComboVfxEvent } from '../../composables/useComboVfx';
 import {
   useStrikeBlockedVfxSignal,
@@ -822,6 +823,30 @@ export default defineComponent({
       node.animate(keyframes, { duration: durationMs, easing, fill: 'forwards' });
     }
 
+    /**
+     * Points a slice-half art element at the card's size tiers (WP-891 /
+     * D-24848): the thumb tier with a `thumb 1x, phone 2x` srcset, falling back
+     * once to the original image when a tier fails to load.
+     *
+     * @param art - The imperatively created art element.
+     * @param imageUrl - The card's projected image URL.
+     */
+    function applySliceArtSources(art: HTMLImageElement, imageUrl: string): void {
+      const sources = cardImageSources(imageUrl);
+      if (sources.srcset !== null) {
+        art.srcset = sources.srcset;
+        // why: the handler clears itself before switching to the original, and
+        // is attached only while a tier is in use, so a failing original never
+        // re-enters it and the art cannot reload in a loop.
+        art.onerror = () => {
+          art.onerror = null;
+          art.removeAttribute('srcset');
+          art.src = imageUrl;
+        };
+      }
+      art.src = sources.src;
+    }
+
     // why: WP-755 — one half of the sliced card: a card-box-sized copy of the art
     // (or a silhouette when the prior-frame cache missed), clipped to its side of
     // the cut and pivoting on its own centroid. DOM, not canvas: the single
@@ -862,7 +887,7 @@ export default defineComponent({
       half.style.boxShadow = `inset 0 0 0 2px ${VILLAIN_SLASH_VFX.colors[0]}`;
       if (imageUrl !== null) {
         const art = document.createElement('img');
-        art.src = imageUrl;
+        applySliceArtSources(art, imageUrl);
         art.alt = '';
         art.draggable = false;
         art.style.display = 'block';

@@ -675,14 +675,23 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
   // is not, so twistFallbackWithResourceLoss keeps the last-twist fallback active
   // as its approximate stand-in (the meter reports it as 'twists-fallback').
   // -------------------------------------------------------------------------
+  // why: WP-863 / D-24805 — Trap Heroes in the Microverse models both Evil-Wins halves ("3
+  // Villains per player have escaped or the Villain Deck runs out"), so it has no twist fallback.
+  // Its Twist is "Play two cards from the Villain Deck".
   [
     'antm/trap-heroes-in-the-microverse',
     {
       schemeId: 'antm/trap-heroes-in-the-microverse',
-      resolverId: 'counter-only',
-      params: {},
+      resolverId: 'chained-reveals',
+      params: { revealCount: 2 },
       resourceLossCondition: { kind: 'pile-depleted', pile: 'villainDeck' },
-      twistFallbackWithResourceLoss: true,
+      // why: "Villains" counts Henchmen too (D-24609); Micro-Sized Villains are typed 'villain'.
+      additionalEscapeLossCondition: {
+        kind: 'escaped-pile-count',
+        cardTypes: ['villain', 'henchman'],
+        threshold: 3,
+        isThresholdPerPlayer: true,
+      },
     },
   ],
   [

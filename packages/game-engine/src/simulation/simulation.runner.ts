@@ -53,6 +53,14 @@ import { resolveDeferredHeroGrants } from '../hero/heroEffects.execute.js';
 import { openNonActiveReturnOnDiscardSeatChoiceIfNeeded } from '../moves/resolveReturnOnDiscard.js';
 import { openEscapeProcedureSeatChoiceIfNeeded } from '../villainDeck/villainEscapeProcedure.js';
 import { openRevealOrWoundSeatChoiceIfNeeded } from '../moves/revealOrWoundChoice.logic.js';
+import { openNextHandFromPlaySeatChoiceIfNeeded } from '../moves/nextHandFromPlay.logic.js';
+// why: WP-875 / D-24822 — the loops never run onMove, so they mirror The Mandarin's Ring-entry
+// opener; an entry's escape needs the implementation map.
+import { openMandarinRingEntriesIfNeeded } from '../moves/mandarinRingEntry.logic.js';
+// why: WP-872 / D-24817 — the loops never run onMove, so they mirror the Mandarin's Rings
+// Liar / Nightbringer / Remaker pick opener.
+import { openVillainFightPickSeatChoiceIfNeeded } from '../moves/villainFightPick.logic.js';
+import { DEFAULT_IMPLEMENTATION_MAP } from '../rules/ruleRuntime.impl.js';
 import { resetTurnEconomy } from '../economy/economy.logic.js';
 import { applyOnBeginParity } from './onBeginParity.js';
 import { applyEndOfTurnCleanup } from '../moves/endOfTurnCleanup.logic.js';
@@ -66,6 +74,7 @@ import { revealVillainCard } from '../villainDeck/villainDeck.reveal.js';
 import { fightVillain } from '../moves/fightVillain.js';
 import { recruitHero } from '../moves/recruitHero.js';
 import { exorciseHauntedHero } from '../moves/exorciseHauntedHero.js';
+import { attemptHeist } from '../moves/attemptHeist.js';
 import { fightMastermind } from '../moves/fightMastermind.js';
 // why: WP-286 — draw-or-empowered parks an interactive choice UNCONDITIONALLY when One-Hit
 // Wonder is played (no precondition, unlike the sibling resolve moves whose pending choices a
@@ -343,6 +352,9 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // why: WP-757 / D-24587 — getLegalMoves emits exorciseHauntedHero per affordable Haunted
   // HQ slot; a missing dispatch entry would spin the per-turn loop (pinned by the drift guard).
   exorciseHauntedHero: (context, args) => exorciseHauntedHero(context as never, args as never),
+  // why: WP-878 / D-24826 — getLegalMoves step 4c emits attemptHeist when the bot's Heist odds
+  // favor it; a missing dispatch entry would spin the per-turn loop (pinned by the drift guard).
+  attemptHeist: (context) => attemptHeist(context as never),
   // why: WP-830 / D-24763 — pass the args through: the Enigma Code guess rides on them.
   fightMastermind: (context, args) => fightMastermind(context as never, args as never),
   // why: WP-286 — must be dispatchable; One-Hit Wonder parks a draw-or-empowered choice
@@ -708,6 +720,28 @@ function runPerTurnLoop(
         // position (after the escape opener and the depletion re-check, before the unmirrored
         // Diving Block opener), so a queued revealer is asked in the sim too.
         openRevealOrWoundSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+        // why: WP-875 / D-24822 — mirror the live Mandarin Ring-entry opener at its live position (right
+        // after the reveal-or-wound opener), then the re-run escape opener, the pile-depletion re-check and the re-run
+        // reveal-or-wound opener, as live (the loops never mirror the final-turn latch). The
+        // RevealContext is built from this loop's own locals (the ACTIVE seat and the real turn), never
+        // the acting seat's seatChoiceContext or the possibly-undefined dispatched move context.
+        openMandarinRingEntriesIfNeeded(
+          gameState,
+          undefined,
+          currentPlayer,
+          { random: { Shuffle: <T>(deck: T[]): T[] => shuffleWithPrng(deck, nextRandom) }, ctx: { currentPlayer: currentPlayer, turn: turn } },
+          DEFAULT_IMPLEMENTATION_MAP,
+        );
+        openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+        applyPileDepletionResourceLoss(gameState);
+        openRevealOrWoundSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+        // why: WP-870 / D-24815 — the loops never run the onMove opener, so mirror the owed Zero
+        // pick opener here; without it a sim game that fights Zero never applies the pick.
+        openNextHandFromPlaySeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+        // why: WP-872 / D-24817 — mirror the owed Liar / Nightbringer / Remaker pick opener at its
+        // live position (after the Zero opener). events is undefined and the seat is this loop's
+        // ACTIVE seat; a non-active Liar decide is answered by the WP-749 non-active dispatch.
+        openVillainFightPickSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
         continue;
       }
     }
@@ -815,6 +849,27 @@ function runPerTurnLoop(
     // opener). The getLegalMoves seat-choice short-circuit and the WP-749 non-active dispatch
     // then answer it at its default (Reveal).
     openRevealOrWoundSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+    // why: WP-875 / D-24822 — mirror the live Mandarin Ring-entry opener at its live position (right
+    // after the reveal-or-wound opener), then the re-run escape opener, the pile-depletion re-check and the re-run
+    // reveal-or-wound opener, as live (the loops never mirror the final-turn latch). The
+    // RevealContext is built from this loop's own locals (the ACTIVE seat and the real turn), never
+    // the acting seat's seatChoiceContext or the possibly-undefined dispatched move context.
+    openMandarinRingEntriesIfNeeded(
+      gameState,
+      undefined,
+      currentPlayer,
+      { random: { Shuffle: <T>(deck: T[]): T[] => shuffleWithPrng(deck, nextRandom) }, ctx: { currentPlayer: currentPlayer, turn: turn } },
+      DEFAULT_IMPLEMENTATION_MAP,
+    );
+    openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+    applyPileDepletionResourceLoss(gameState);
+    openRevealOrWoundSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+    // why: WP-870 / D-24815 — the loops never run the onMove opener, so mirror the owed Zero pick
+    // opener here; the getLegalMoves seat-choice short-circuit answers it at its default (0).
+    openNextHandFromPlaySeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+    // why: WP-872 / D-24817 — mirror the owed Liar / Nightbringer / Remaker pick opener at its live
+    // position (after the Zero opener); its seat choices are answered at their default (0).
+    openVillainFightPickSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
 
     // why: zero-legal-moves + endTurn-illegal fallback (RS-6 second clause).
     // If the policy returned endTurn when the stage is not cleanup, the

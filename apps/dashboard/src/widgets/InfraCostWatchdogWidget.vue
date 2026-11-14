@@ -47,6 +47,7 @@ const state = computed<'loading' | 'error' | 'empty' | 'data'>(() => {
 });
 
 const VENDOR_LABEL: Readonly<Record<InfraCostVendor, string>> = {
+  digitalocean: 'DigitalOcean',
   render: 'Render',
   cloudflare: 'Cloudflare',
   postgres: 'Postgres',
@@ -86,6 +87,7 @@ const vendorCards = computed<readonly VendorCard[]>(() => {
   // Build a per-vendor budget lookup so the loop doesn't repeatedly
   // scan props.budgets.
   const budgetByVendor: Record<InfraCostVendor, number> = {
+    digitalocean: 0,
     render: 0,
     cloudflare: 0,
     postgres: 0,

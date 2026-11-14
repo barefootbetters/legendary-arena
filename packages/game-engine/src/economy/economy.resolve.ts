@@ -25,6 +25,7 @@ import { KILLBOT_TWISTS_NEXT_TO_SCHEME, DARK_PORTAL_COUNT } from '../types.js';
 // drive a Brainwash the Military Officer's fight cost.
 import { TRAITOR_BATTALION_TWISTS } from '../types.js';
 import { BRAINWASHED_OFFICER_BASE_ATTACK } from '../rules/brainwashTheMilitary.logic.js';
+import { STACK_VILLAIN_ATTACK } from '../rules/stackVillain.logic.js';
 // why: WP-728 / D-24549 — the fixed City space count bounds the Dark-Portal
 // location scan; CITY_SPACE_NAMES is the single source of the 5-space board.
 import { CITY_SPACE_NAMES, citySpaceNameForIndex } from '../board/citySpaceNames.js';
@@ -37,6 +38,9 @@ import { getFightCostReduction } from './economy.logic.js';
 // why: WP-815 / D-24747 — the Abomination terms read the HQ at fight time; one
 // helper per resolver, so each family is added in exactly one authority.
 import { villainAbominationBonus, mastermindAbominationBonus } from './abomination.logic.js';
+// why: WP-875 / D-24822 — The Mandarin's two read-time cost terms (Rings +1 Attack; The Mandarin
+// -1 Attack per Ring in all Victory Piles, -3 in solo), id-keyed like Baron Zemo's (D-24752).
+import { mandarinRingAttackBonus, mandarinVictoryPileAttackReduction } from '../mastermind/mandarin.logic.js';
 // why: WP-841 / D-24774 — the variable-Attack passives read the City, the Escape Pile
 // and the HQ at fight time; the villain resolver is their only reader.
 import { villainVariableAttackBonus } from './villainVariableAttack.logic.js';
@@ -48,6 +52,9 @@ import { SAVIOR_BYSTANDER_THRESHOLD, countVictoryPileBystanders } from '../board
 // id-keyed like the Master Strike dispatch (D-24300), because Zemo is the only Mastermind
 // that prints "+N unless you are a Savior".
 import { BARON_ZEMO_MASTERMIND_ID } from './rescueOnFight.logic.js';
+// why: D-24802 — the fight side of Size-Changing shares the recruit side's discount step
+// (D-24801), so the two can never count played cards differently.
+import { applySizeChangingDiscount } from '../hero/sizeChanging.logic.js';
 
 // why: WP-539 / D-24348 — the Portals scheme ext_id, gating the Dark-Portal buffs.
 const PORTALS_SCHEME_ID = 'core/portals-to-the-dark-dimension';
@@ -119,13 +126,88 @@ export function resolveFightCost(
     bystanderVillainAttackBonus(G, villainCardId) +
     villainBloodFrenzyBonus(G, villainCardId, fightingPlayerId) +
     villainAbominationBonus(G, villainCardId) +
-    villainVariableAttackBonus(G, villainCardId);
+    villainVariableAttackBonus(G, villainCardId) +
+    // why: WP-875 / D-24822 — "All Mandarin's Rings get +1 Attack" while The Mandarin leads, read
+    // at fight time in this single authority (the D-24752 id-keyed shape), so the fight move, the
+    // bot and the City fightCost projection agree; 0 in every other match.
+    mandarinRingAttackBonus(G, villainCardId);
   // why: WP-794 / D-24663 — the Storm / Forge "Any Villain you fight on the <space> this turn
   // gets -N attack" reduction is applied HERE, in the single authority, so the fight move, the
   // bot's legal moves and the City fightCost projection all agree by construction.
   // why: the 0 floor keeps this function's ">= 0" promise; Patrol (getPatrolModifier) is added
   // by the fight move AFTER this floor, unchanged, so Patrol still pays in full.
   return Math.max(0, costBeforeReduction - cityFightCostReduction(G, villainCardId));
+}
+
+/**
+ * Resolves what the fighting player pays to fight a City villain right now (D-24802).
+ *
+ * The villain's resolved Attack (resolveFightCost) minus its Size-Changing discount: 2 less
+ * for each listed class with a matching card the fighter played this turn, floored at 0
+ * ("A Villain's Attack can't go below 0", rules v23 ~L3418), then 2 less for each
+ * Microscopic icon matched by its own played card, which may go below 0 (rules v23 p.30:
+ * "if you fight a Villain with Microscopic Size-Changing and reduce its value to a negative
+ * number, you gain that many [Attack] when you fight it"). Patrol is added by the caller.
+ *
+ * // why: a separate read from resolveFightCost, like resolveRecruitCost beside the printed
+ * hero cost (D-24801): the discount applies only to the fight. Effects that read a villain's
+ * Attack ("less than N Attack", Pure Fury) keep reading resolveFightCost.
+ *
+ * @param G - Game state (read-only).
+ * @param villainCardId - The villain zone-instance ext_id.
+ * @param fightingPlayerId - The player who would fight. When omitted, no discount applies.
+ * @returns The fight price; negative only through Microscopic Size-Changing.
+ */
+export function resolveFightPrice(
+  G: LegendaryGameState,
+  villainCardId: CardExtId,
+  fightingPlayerId?: string,
+): number {
+  const villainAttack = resolveFightCost(G, villainCardId, fightingPlayerId);
+  return applyFightSizeChanging(G, villainCardId, villainAttack, fightingPlayerId);
+}
+
+/**
+ * Resolves what the fighting player pays to fight the Mastermind right now (D-24802).
+ *
+ * resolveMastermindFightCost minus the current face's Size-Changing discount, floored at 0.
+ *
+ * // why: floored at 0, unlike the villain price. The only Microscopic Mastermind face
+ * (amwp Yellowjacket) is the flip side of Darren Cross, which is not in the transform
+ * allowlist, so no match can fight it yet; the below-0 gain for a Mastermind lands with
+ * that face. Fin Fang Foom's regular Size-Changing floors at 0 either way.
+ *
+ * @param G - Game state (read-only).
+ * @param fightingPlayerId - The player fighting the Mastermind. When omitted, no discount applies.
+ * @returns The Mastermind fight price as a non-negative integer.
+ */
+export function resolveMastermindFightPrice(G: LegendaryGameState, fightingPlayerId?: string): number {
+  const mastermindAttack = resolveMastermindFightCost(G, fightingPlayerId);
+  return Math.max(0, applyFightSizeChanging(G, G.mastermind.baseCardId, mastermindAttack, fightingPlayerId));
+}
+
+/**
+ * Applies a card's Size-Changing fight discount to its resolved Attack (D-24802).
+ *
+ * @param G - Game state (read-only).
+ * @param cardId - The villain instance or mastermind face id.
+ * @param attack - The card's resolved Attack.
+ * @param fightingPlayerId - The fighter, whose played cards drive the discount.
+ * @returns The discounted value, or `attack` unchanged when the card has no discount.
+ */
+function applyFightSizeChanging(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+  attack: number,
+  fightingPlayerId: string | undefined,
+): number {
+  const discount = G.fightSizeChanging?.[cardId];
+  // why: the discount reads the fighter's played cards, so with no fighter there is nothing
+  // to count (the Blood Frenzy convention).
+  if (discount === undefined || fightingPlayerId === undefined) {
+    return attack;
+  }
+  return applySizeChangingDiscount(G, fightingPlayerId, attack, discount.classes, discount.microscopicIcons);
 }
 
 /**
@@ -301,15 +383,19 @@ function resolveBaseFightCost(
   }
 
   // why: WP-514 / D-24327 — a converted Skrull (a Hero shuffled into the Villain Deck
-  // by Secret Invasion) attacks for the Hero's cost + 2. Checked OVERLAY-FIRST, beside
-  // the Killbot branch. PROXY: the printed attack is the Hero's VP + 2, but hero VP
-  // exists nowhere in the data (generated or upstream — buildCardVictoryPoints emits
-  // villains/henchmen/masterminds only), so we approximate with the Hero's cost (present
-  // in G.cardStats). Swap seam: change `G.cardStats[...]?.cost` to
-  // `G.cardVictoryPoints?.[villainCardId]` if hero VP is ever authored. cost typically
-  // runs slightly higher than VP, so Skrulls skew a touch harder than printed.
+  // by Secret Invasion) attacks for the Hero's cost + 2, as printed: the card's icon is
+  // the gold cost coin (D-24327 correction, 2026-11-14; the source data had tagged it
+  // as VP). Checked OVERLAY-FIRST, beside the Killbot branch.
   if (G.convertedVillainOrigins?.[villainCardId] === 'skrull') {
     return (G.cardStats[villainCardId]?.cost ?? 0) + 2;
+  }
+
+  // why: WP-863 / D-24805 — a Trap Heroes in the Microverse Micro-Sized Villain (a Hero card in the
+  // Villain Deck) has "Attack equal to [its] printed cost": the Hero's cost from G.cardStats (a split
+  // card's primary face). Checked OVERLAY-FIRST beside the Skrull branch, because a Hero's
+  // fightCost row is 0.
+  if (G.convertedVillainOrigins?.[villainCardId] === 'micro-sized') {
+    return G.cardStats[villainCardId]?.cost ?? 0;
   }
 
   // why: WP-823 / D-24756 — a Brainwash the Military Officer's Attack "is 3 plus the
@@ -318,6 +404,15 @@ function resolveBaseFightCost(
   // carries no cardStats row (the guard below would return 0).
   if (G.convertedVillainOrigins?.[villainCardId] === 'shield-officer') {
     return BRAINWASHED_OFFICER_BASE_ATTACK + (G.counters[TRAITOR_BATTALION_TWISTS] ?? 0);
+  }
+
+  // why: WP-869 / D-24814 — a stack card that entered the City as a Villain (Groot from Planet X's
+  // Splintered Half-Groots, the S.H.I.E.L.D. Elite Officers) attacks for a fixed 3, the Attack
+  // every marked line prints. Checked OVERLAY-FIRST beside the Officer branch, because a converted
+  // stack card carries no cardStats row (the guard below would return 0).
+  const stackOrigin = G.convertedVillainOrigins?.[villainCardId];
+  if (stackOrigin === 'bystander-stack-villain' || stackOrigin === 'officer-stack-villain') {
+    return STACK_VILLAIN_ATTACK;
   }
 
   const villainStats = G.cardStats[villainCardId];
@@ -389,10 +484,14 @@ export function resolveMastermindFightCost(G: LegendaryGameState, fightingPlayer
   // why: WP-818 / D-24752 — Baron Zemo's +9 unless the fighter is a Savior; added
   // before the reduction, like the Abomination term.
   const nonSaviorBonus = mastermindNonSaviorBonus(G, fightingPlayerId);
+  // why: WP-875 / D-24822 — The Mandarin's "-1 Attack for each Mandarin's Ring among all players'
+  // Victory Piles (-3 in solo)", read at fight time in this single authority (the D-24752 shape);
+  // 0 unless The Mandarin leads. Subtracted inside the 0 floor.
+  const mandarinReduction = mandarinVictoryPileAttackReduction(G);
   // why: the 0 floor keeps this function's ">= 0" promise.
   return Math.max(
     0,
-    baseFightCost + portalBonus + abominationBonus + nonSaviorBonus - mastermindReduction,
+    baseFightCost + portalBonus + abominationBonus + nonSaviorBonus - mastermindReduction - mandarinReduction,
   );
 }
 

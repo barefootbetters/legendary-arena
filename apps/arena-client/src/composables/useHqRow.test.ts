@@ -81,3 +81,31 @@ describe('useHqRow (WP-129)', () => {
     assert.equal(wolverine.display, null);
   });
 });
+
+describe('useHqRow — haunters (WP-759 / D-24587)', () => {
+  test('haunter is null on every cell when hq.haunters is absent (no haunt this match)', () => {
+    const hq: UIHQState = { slots: ['wolverine', 'storm', null, null, null] };
+    const { cells } = useHqRow(hq, decks);
+    for (let index = 0; index < 5; index += 1) {
+      const cell = cells[index] as Extract<HqCell, { kind: 'hero' }>;
+      assert.equal(cell.haunter, null);
+    }
+  });
+
+  test('haunter is read index-aligned from hq.haunters, including a haunted empty slot', () => {
+    const metarchus = {
+      kind: 'villain' as const,
+      extId: 'mdns-fallen-metarchus',
+      display: { extId: 'mdns-fallen-metarchus', name: 'Metarchus', imageUrl: '', cost: null },
+    };
+    const hq: UIHQState = {
+      slots: ['wolverine', 'storm', null, null, null],
+      haunters: [metarchus, null, { kind: 'mastermind' }, null, null],
+    };
+    const { cells } = useHqRow(hq, decks);
+    assert.deepEqual((cells[0] as Extract<HqCell, { kind: 'hero' }>).haunter, metarchus);
+    assert.equal((cells[1] as Extract<HqCell, { kind: 'hero' }>).haunter, null);
+    assert.deepEqual((cells[2] as Extract<HqCell, { kind: 'hero' }>).haunter, { kind: 'mastermind' });
+    assert.equal((cells[2] as Extract<HqCell, { kind: 'hero' }>).cardId, null);
+  });
+});

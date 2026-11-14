@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { moveSfxManifest } from './moveSfxManifest';
 import type { UiMoveName } from '../components/play/uiMoveName.types';
 
-// why: the five player-action moves that carry a Surface-2 tactile cue, spelled
+// why: the seven player-action moves that carry a Surface-2 tactile cue, spelled
 // out locally with their locked ewiki filenames so this drift test fails loudly
 // if a mapping is dropped, renamed, or points at the wrong clip. The
 // `Partial<Record<UiMoveName, string>>` type in moveSfxManifest.ts is the
@@ -12,6 +12,8 @@ import type { UiMoveName } from '../components/play/uiMoveName.types';
 const EXPECTED_MOVE_CLIPS: Readonly<Partial<Record<UiMoveName, string>>> = {
   playCard: 'play-card.mp3',
   recruitHero: 'recruit-hero.mp3',
+  recruitOfficer: 'recruit-hero.mp3',
+  recruitSidekick: 'recruit-hero.mp3',
   fightVillain: 'attack-villain.mp3',
   drawCards: 'draw-cards.mp3',
   endTurn: 'end-turn.mp3',
@@ -19,8 +21,8 @@ const EXPECTED_MOVE_CLIPS: Readonly<Partial<Record<UiMoveName, string>>> = {
 
 const EXPECTED_MOVE_KEYS = Object.keys(EXPECTED_MOVE_CLIPS) as UiMoveName[];
 
-describe('moveSfxManifest (WP-421 §A) — the five dispatch-keyed move cues', () => {
-  test('maps exactly the five player-action move keys', () => {
+describe('moveSfxManifest (WP-421 §A) — the seven dispatch-keyed move cues', () => {
+  test('maps exactly the seven player-action move keys', () => {
     assert.deepEqual(
       Object.keys(moveSfxManifest).sort(),
       [...EXPECTED_MOVE_KEYS].sort(),

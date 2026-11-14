@@ -2,9 +2,10 @@ import '../../testing/jsdom-setup';
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { mount } from '@vue/test-utils';
 import SharedDecks from './SharedDecks.vue';
-import type { UISharedPilesState, UITurnEconomyState } from '@legendary-arena/game-engine';
+import type { UIFortifier, UISharedPilesState, UITurnEconomyState } from '@legendary-arena/game-engine';
 import type { SubmitMove, UiMoveName } from './uiMoveName.types';
 
 interface RecordedCall {
@@ -158,9 +159,10 @@ describe('SharedDecks (WP-648 — recruitable S.H.I.E.L.D. Officer supply)', () 
     const button = wrapper.find('[data-testid="play-recruit-officer"]');
     const image = button.find('[data-testid="card-tile-image"]');
     assert.equal(image.exists(), true, 'the Officer card face image must render');
+    // why: WP-891 / D-24848 — a set-path card face renders its thumb size tier.
     assert.equal(
       image.attributes('src'),
-      'https://images.legendary-arena.com/core/core-so-officer.webp',
+      'https://images.legendary-arena.com/core/thumb/core-so-officer.webp',
     );
     // the count + buy cost still read alongside the card face
     assert.match(button.text(), /\[30\]/);
@@ -310,5 +312,170 @@ describe('SharedDecks — recruitable Sidekick Stack (WP-842 / D-24776)', () => 
     assert.equal(button.find('[data-testid="card-tile-image"]').exists(), false);
     assert.equal(button.find('[data-testid="card-tile-fallback"]').exists(), true);
     assert.match(button.text(), /Sidekick/);
+  });
+});
+
+describe('SharedDecks — band stand-up (WP-854 / D-24790)', () => {
+  test('without isTiltLiftEnabled the root has no shared-decks--tilt-lift class', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(SharedDecks, {
+      props: { piles: piles(), currentStage: 'main', economy: economy(), submitMove },
+    });
+    assert.equal(wrapper.find('[data-testid="play-shared-decks"]').classes('shared-decks--tilt-lift'), false);
+  });
+
+  test('with isTiltLiftEnabled the root has the shared-decks--tilt-lift class', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(SharedDecks, {
+      props: { piles: piles(), currentStage: 'main', economy: economy(), submitMove, isTiltLiftEnabled: true },
+    });
+    assert.equal(wrapper.find('[data-testid="play-shared-decks"]').classes('shared-decks--tilt-lift'), true);
+  });
+});
+
+describe('SharedDecks — card-face-only recruit piles (desktop)', () => {
+  /** Mounts the decks with isCardFaceOnly set and the given economy. */
+  function mountCardFace(economyOver: Partial<UITurnEconomyState>) {
+    const { submitMove } = recorder();
+    return mount(SharedDecks, {
+      props: {
+        piles: piles({ officersCount: 28, sidekicksCount: 12 }),
+        currentStage: 'main',
+        economy: economy(economyOver),
+        submitMove,
+        isCardFaceOnly: true,
+      },
+    });
+  }
+
+  test('without isCardFaceOnly the label stays visible and the card is small', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(SharedDecks, {
+      props: { piles: piles(), currentStage: 'main', economy: economy({ recruit: 5, availableRecruit: 5 }), submitMove },
+    });
+    assert.equal(wrapper.find('[data-testid="play-shared-decks"]').classes('shared-decks--card-face'), false);
+    const officer = wrapper.find('[data-testid="play-recruit-officer"]');
+    assert.equal(officer.find('.shared-decks__name').classes('sr-only'), false);
+    assert.equal(officer.find('[data-testid="card-tile"]').classes('card-tile--sm'), true);
+  });
+
+  test('card-face-only shows a large card and keeps the label only as screen-reader text', () => {
+    const wrapper = mountCardFace({ recruit: 5, availableRecruit: 5 });
+    assert.equal(wrapper.find('[data-testid="play-shared-decks"]').classes('shared-decks--card-face'), true);
+    for (const testId of ['play-recruit-officer', 'play-recruit-sidekick']) {
+      const button = wrapper.find(`[data-testid="${testId}"]`);
+      assert.equal(button.find('[data-testid="card-tile"]').classes('card-tile--lg'), true, `${testId}: large card`);
+      for (const selector of ['.shared-decks__name', '.shared-decks__count', '.shared-decks__cost']) {
+        assert.equal(button.find(selector).classes('sr-only'), true, `${testId} ${selector}: screen-reader only`);
+      }
+    }
+  });
+
+  test('card-face-only puts the name, count and Recruit cost in the card hover text', () => {
+    const wrapper = mountCardFace({ recruit: 5, availableRecruit: 5 });
+    assert.equal(
+      wrapper.find('[data-testid="play-recruit-officer"] [data-testid="card-tile"]').attributes('title'),
+      'S.H.I.E.L.D. Officers [28] — Recruit: 3',
+    );
+    assert.equal(
+      wrapper.find('[data-testid="play-recruit-sidekick"] [data-testid="card-tile"]').attributes('title'),
+      'Sidekicks [12] — Recruit: 2',
+    );
+  });
+
+  test('card-face-only adds the disabled reason on its own line of the hover text', () => {
+    const wrapper = mountCardFace({ recruit: 1, availableRecruit: 1 });
+    assert.equal(
+      wrapper.find('[data-testid="play-recruit-officer"] [data-testid="card-tile"]').attributes('title'),
+      'S.H.I.E.L.D. Officers [28] — Recruit: 3\nNeeds 3 recruit, you have 1.',
+    );
+  });
+});
+
+describe('SharedDecks — Fortify locks the Sidekick Stack (WP-873 / D-24818)', () => {
+  test('T31: with sidekickStackFortifiedReason set and 2 recruit, Recruit Sidekick is disabled with that reason', async () => {
+    const reason = 'Squirrel Girl fortifies the Sidekick Stack. Fight Squirrel Girl first.';
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(SharedDecks, {
+      props: {
+        piles: piles({ sidekicksCount: 12, sidekickStackFortifiedReason: reason }),
+        currentStage: 'main',
+        isViewerTurn: true,
+        economy: economy({ recruit: 2, availableRecruit: 2 }),
+        submitMove,
+      },
+    });
+    const button = wrapper.find('[data-testid="play-recruit-sidekick"]');
+    assert.equal(button.attributes('disabled'), '');
+    assert.equal(button.attributes('title'), reason);
+    await button.trigger('click');
+    assert.equal(calls.length, 0);
+  });
+
+  test('D-24819: the Sidekick Stack fortifier is drawn on the Sidekicks cell, outside the recruit button, and fighting it sends its place', async () => {
+    const reason = 'Squirrel Girl fortifies the Sidekick Stack. Fight Squirrel Girl first.';
+    const squirrelGirl: UIFortifier = {
+      place: 'sidekick-stack',
+      placeLabel: 'the Sidekick Stack',
+      extId: 'cvwr-villain-great-lakes-avengers-squirrel-girl-00',
+      display: { extId: 'cvwr-villain-great-lakes-avengers-squirrel-girl-00', name: 'Squirrel Girl', imageUrl: '', cost: 3 },
+      fightCost: 3,
+      lockText: "Sidekicks can't be recruited or gained",
+    };
+    const colleenWing: UIFortifier = {
+      place: 'mastermind',
+      placeLabel: 'the Mastermind',
+      extId: 'cvwr-villain-heroes-for-hire-colleen-wing-00',
+      display: { extId: 'cvwr-villain-heroes-for-hire-colleen-wing-00', name: 'Colleen Wing', imageUrl: '', cost: 9 },
+      fightCost: 9,
+      lockText: "the Mastermind can't be fought",
+    };
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(SharedDecks, {
+      props: {
+        piles: piles({ sidekicksCount: 12, sidekickStackFortifiedReason: reason }),
+        fortifiers: [squirrelGirl, colleenWing],
+        currentStage: 'main',
+        isViewerTurn: true,
+        economy: economy({ attack: 3, availableAttack: 3 }),
+        submitMove,
+      },
+    });
+    const chips = wrapper.findAll('[data-testid="play-fortifier"]');
+    assert.equal(chips.length, 1, 'only the Sidekick Stack fortifier is drawn on the Sidekicks cell');
+    assert.match(chips[0]!.text(), /Squirrel Girl/);
+    const sidekickCell = wrapper.find('[data-testid="play-shared-deck-sidekicks"]');
+    assert.ok(sidekickCell.element.contains(chips[0]!.element), 'it sits in the Sidekicks cell');
+    const recruitButton = wrapper.find('[data-testid="play-recruit-sidekick"]');
+    assert.equal(recruitButton.element.contains(chips[0]!.element), false, 'not nested inside the recruit button');
+    await wrapper.find('[data-testid="play-fortifier-fight"]').trigger('click');
+    assert.deepStrictEqual(calls, [{ name: 'fightVillain', args: { fortifiedPlace: 'sidekick-stack' } }]);
+  });
+
+  // why: D-24819 — on the tilted desktop board, hovering the Sidekicks cell stands the card up
+  // (WP-854 / D-24790). The fortifier chip lives in that cell, so the lifted card rose over it
+  // and took every click (operator match 6GnBeOwGcXG). jsdom cannot hit-test 3D, so the class
+  // and the selectors that read it are pinned here; the click itself was checked in a browser.
+  test('D-24819: the Sidekicks cell is --fortified exactly while the Stack is fortified, and no stand-up selector lifts it', () => {
+    const reason = 'Squirrel Girl fortifies the Sidekick Stack. Fight Squirrel Girl first.';
+    const { submitMove } = recorder();
+    const fortified = mount(SharedDecks, {
+      props: { piles: piles({ sidekickStackFortifiedReason: reason }), currentStage: 'main', economy: economy(), submitMove },
+    });
+    const cell = fortified.find('[data-testid="play-shared-deck-sidekicks"]');
+    assert.equal(cell.classes().includes('shared-decks__cell--fortified'), true);
+    const open = mount(SharedDecks, {
+      props: { piles: piles(), currentStage: 'main', economy: economy(), submitMove },
+    });
+    assert.equal(open.find('[data-testid="play-shared-deck-sidekicks"]').classes().includes('shared-decks__cell--fortified'), false);
+
+    const sources = [
+      readFileSync(new URL('./SharedDecks.vue', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../pages/PlayDesktop.vue', import.meta.url), 'utf8'),
+    ];
+    for (const source of sources) {
+      assert.equal(source.includes('.shared-decks__cell:hover'), false, 'every stand-up selector must skip a fortified cell');
+      assert.ok(source.includes('.shared-decks__cell:not(.shared-decks__cell--fortified):hover > .shared-decks__recruit'));
+    }
   });
 });

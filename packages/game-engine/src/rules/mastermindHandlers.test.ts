@@ -150,9 +150,9 @@ describe('mastermindStrikeHandler', () => {
   });
 
   // -------------------------------------------------------------------------
-  // Test 4: empty supply — no capture and no message
+  // Test 4: empty supply — no capture; the unresolved strike is flagged
   // -------------------------------------------------------------------------
-  it('appends no message on an empty supply for a mastermind with no printed strike (D-24654)', () => {
+  it('flags the strike of a mastermind with no printed-strike resolver as hollow and captures nothing on an empty supply (D-24654, WP-867)', () => {
     const gameState = makeTestState();
     gameState.piles.bystanders = [];
     const messagesBefore = gameState.messages.length;
@@ -164,10 +164,20 @@ describe('mastermindStrikeHandler', () => {
       0,
       'no bystander captured when supply is empty',
     );
+    // why: WP-867 / D-24810 — 'test-mastermind' has no strike arm, so the strike
+    // is no longer silent: it appends exactly one message, the hollow `blocked`
+    // line, and still never reports on the bystander supply (D-24654).
     assert.equal(
       gameState.messages.length,
-      messagesBefore,
-      'no message appended — the strike no longer reports on the bystander supply',
+      messagesBefore + 1,
+      'exactly one message appended — the unresolved-strike hollow line',
+    );
+    const appended = gameState.messages[messagesBefore];
+    assert.ok(appended !== undefined, 'the hollow line must be present');
+    assert.equal(appended.outcome, 'blocked', 'the hollow line is a blocked line');
+    assert.equal(
+      appended.text,
+      'Unhandled effect observed: card "test-mastermind-base" declared a "master-strike" mechanic at onMastermindStrikeRevealed, but no executable handler was reached (no-handler).',
     );
   });
 
@@ -2424,5 +2434,37 @@ describe('WP-846 / D-24780 — Master Strike each-player order (AC-8 rotation, A
     gameState.piles.wounds = [...THREE_WOUNDS];
     mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
     assert.deepEqual(strikeSeatOrder(gameState, '[Loki Master Strike]'), ['0', '1', '2']);
+  });
+});
+
+describe('WP-758 mastermindStrikeHandler — Zarathos Master Strike (D-24588)', () => {
+  /** A two-player Zarathos strike state with a two-Hero HQ and a Wound supply. */
+  function makeZarathosStrikeState(): LegendaryGameState {
+    const gameState = makeCo2eState(
+      'mdns/zarathos',
+      { '0': [], '1': [] },
+      { cheapHero: co2eStat(3), priceyHero: co2eStat(6) },
+    );
+    gameState.hq = ['cheapHero', 'priceyHero', null, null, null];
+    gameState.piles.wounds = [WOUND_EXT_ID, WOUND_EXT_ID, WOUND_EXT_ID];
+    return gameState;
+  }
+
+  it('the strike reaches the Zarathos arm: first strike haunts, second strike wounds every player from the current one', () => {
+    const gameState = makeZarathosStrikeState();
+
+    mastermindStrikeHandler(gameState, { ctx: { currentPlayer: '1' } }, { cardId: 'strike' }, {});
+    assert.deepEqual(gameState.hqHaunters, [null, { kind: 'mastermind' }, null, null, null], 'the cost-6 Hero is haunted');
+    assert.equal(gameState.piles.wounds.length, 3, 'the first strike wounds nobody');
+
+    mastermindStrikeHandler(gameState, { ctx: { currentPlayer: '1' } }, { cardId: 'strike' }, {});
+    const woundLines = gameState.messages
+      .map((entry) => entry.text)
+      .filter((text) => text.startsWith('[Zarathos Master Strike] Player'));
+    assert.deepEqual(woundLines, [
+      '[Zarathos Master Strike] Player 1 gained a Wound.',
+      '[Zarathos Master Strike] Player 0 gained a Wound.',
+    ]);
+    assert.deepEqual(gameState.hqHaunters, [null, { kind: 'mastermind' }, null, null, null], 'no second haunter');
   });
 });

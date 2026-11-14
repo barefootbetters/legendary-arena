@@ -15,17 +15,22 @@ import { chooseBotEnigmaGuess } from '../rules/enigmaCode.logic.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { LegalMove } from './ai.types.js';
 import { getAvailableRecruit, getSpendableAttackForTarget } from '../economy/economy.logic.js';
+import { resolveRecruitCost } from '../hero/sizeChanging.logic.js';
 import { citySpaceNameForIndex } from '../board/citySpaceNames.js';
 import type { AttackTargetName } from '../economy/economy.types.js';
 import { UNNAMED_CITY_SPACE_TARGET } from '../economy/economy.types.js';
-import { resolveFightCost, resolveMastermindFightCost } from '../economy/economy.resolve.js';
+import { resolveFightPrice, resolveMastermindFightPrice } from '../economy/economy.resolve.js';
 import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic.js';
 import { isHqSlotHaunted, isMastermindHaunting } from '../board/haunt.logic.js';
+import { isMastermindFortified, listFortifications } from '../board/fortify.logic.js';
 import {
   getDefeatRequirement,
   playerMeetsDefeatRequirement,
   getFightDiscardCost,
   selectDefaultCostDiscardCard,
+  getFightRestriction,
+  isFightRestrictionBlocking,
+  findFightableFortifier,
 } from '../moves/villainDefeatRequirement.logic.js';
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
@@ -35,7 +40,11 @@ import { hasPendingRevealThreeAssign, selectDefaultRevealThreeAssignment } from 
 import { hasPendingElectromagneticBubbleChoice } from '../moves/electromagneticBubbleChoice.resolve.js';
 import { hasPendingDiscardChoice } from '../moves/discardChoice.resolve.js';
 import { hasPendingPutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resolve.js';
-import { hasPendingKoDiscardChoice } from '../moves/koDiscardChoice.resolve.js';
+import {
+  hasPendingKoDiscardChoice,
+  getEligibleKoDiscardCards,
+  getRequiredKoDiscardCount,
+} from '../moves/koDiscardChoice.resolve.js';
 import { hasPendingReorderChoice } from '../moves/reorderChoice.resolve.js';
 import { hasPendingDefeatChoice } from '../moves/defeatChoice.resolve.js';
 import { selectDiscardToLimitCards, selectRedSkullKoTarget } from '../rules/mastermindHandlers.js';
@@ -46,7 +55,6 @@ import {
   selectScryKoTarget,
   isCullableDeckTopCard,
 } from '../villain/villainEffects.execute.js';
-import { matchesGreyHeroFilter } from '../hero/splitCard.logic.js';
 import type { KoHeroTarget } from '../villain/villainEffects.execute.js';
 import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { hasPendingSmashDiscard } from '../moves/smashDiscard.resolve.js';
@@ -100,6 +108,10 @@ import {
   hasSeatSubmitted,
 } from '../moves/seatChoice.resolve.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+// why: WP-885 / D-24836 — the spare-a-Wound count lives in the gain-wound-reward grant leaf, which
+// imports no moves/, ui/ or simulation/ module, so this adds no import-cycle edge.
+import { isWoundSparedFromKo } from '../hero/gainWoundRewardGrant.js';
+import { shouldBotAttemptHeist } from './ai.heist.js';
 
 // why: simulation covers the play-phase only; lobby moves (setPlayerReady,
 // startMatchIfReady) are excluded because runSimulation starts the per-game
@@ -246,6 +258,11 @@ export const SIMULATION_MOVE_NAMES = [
   // HQ slot, so it MUST be dispatchable in both sim MOVE_MAPs (and the replay map) or the
   // per-turn loop spins on "unknown move name". Asserted by simulation.moveDispatch.drift.test.ts.
   'exorciseHauntedHero',
+  // why: WP-878 / D-24826 — getLegalMoves step 4c emits attemptHeist when shouldBotAttemptHeist
+  // passes, so it MUST be dispatchable in both sim MOVE_MAPs or the per-turn loop spins on
+  // "unknown move name" (the WP-289 / D-24073 within-turn hang). Asserted by
+  // simulation.moveDispatch.drift.test.ts.
+  'attemptHeist',
 ] as const;
 
 // why: type is exported implicitly via the const array above; external
@@ -277,7 +294,9 @@ export interface SimulationLifecycleContext {
  * Picks the front entry's chooser's Wounds first, then starting S.H.I.E.L.D. Agents and
  * Troopers (the `isCullableDeckTopCard` set the bot already culls for Melter), each in
  * discard order, up to the entry's `maxCount`. A repeated id is one more copy (D-24682).
- * Anything else stays: a recruited Hero or an Officer is never KO'd.
+ * Anything else stays: a recruited Hero or an Officer is never KO'd, except that a mandatory
+ * entry (`minCount`, Flatman, D-24811) tops up with the next untaken cards in discard order until
+ * it holds the required count.
  *
  * @param gameState - The engine state. Not mutated.
  * @returns The card ids to KO; empty when the discard holds nothing cullable.
@@ -287,32 +306,57 @@ export function selectDefaultKoDiscardCardIds(gameState: LegendaryGameState): Ca
   if (front === undefined) {
     return [];
   }
-  const fullDiscard = gameState.playerZones[front.playerID]?.discard ?? [];
-  // why: D-24769 — a filtered entry (grey Heroes only) mirrors the resolve's filter, or the
-  // block-all guard never lifts: a Wound is never offered, and Officers stay kept.
-  const greyFilter = front.greyFilter;
-  const discard =
-    greyFilter === undefined
-      ? fullDiscard
-      : fullDiscard.filter((cardId) => matchesGreyHeroFilter(gameState, cardId, greyFilter));
+  // why: D-24769 / WP-850 D-24786 — a filtered entry (grey Heroes only, or only the cards
+  // Firepower from the Future just discarded) picks from the SAME eligibility helper the
+  // projection uses, or the bot submits a card the resolve rejects and the block-all guard
+  // never lifts. An unfiltered entry gets the whole discard, exactly as before.
+  const discard = getEligibleKoDiscardCards(
+    gameState,
+    front.playerID,
+    front.greyFilter,
+    front.eligibleCardIds,
+  );
   const chosen: CardExtId[] = [];
+  // why: WP-868 / D-24811 — each pass records the discard INDEX it took, because ids repeat
+  // (three Wounds share one id) and the mandatory top-up below must skip exactly the copies
+  // already chosen, not every copy of a chosen id.
+  const takenIndices = new Set<number>();
   // why: D-24688 — Wounds first (a dead card is the best KO), then the starting
   // S.H.I.E.L.D. cards; two passes keep the order deterministic and capped.
-  for (const cardId of discard) {
+  for (let discardIndex = 0; discardIndex < discard.length; discardIndex++) {
     if (chosen.length >= front.maxCount) {
       return chosen;
     }
+    const cardId = discard[discardIndex]!;
     if (cardId === WOUND_EXT_ID) {
       chosen.push(cardId);
+      takenIndices.add(discardIndex);
     }
   }
-  for (const cardId of discard) {
+  for (let discardIndex = 0; discardIndex < discard.length; discardIndex++) {
     if (chosen.length >= front.maxCount) {
       return chosen;
     }
+    const cardId = discard[discardIndex]!;
     if (cardId !== WOUND_EXT_ID && isCullableDeckTopCard(cardId)) {
       chosen.push(cardId);
+      takenIndices.add(discardIndex);
     }
+  }
+  // why: WP-868 / D-24811 — a mandatory entry ("KO a card from your discard pile", Flatman) must
+  // KO at least the required count even when nothing is cullable, or the resolve rejects the
+  // answer and the block-all guard never lifts. The top-up walks the untaken eligible cards in
+  // discard order, by position, to `min(minCount, eligible count)`.
+  const required = getRequiredKoDiscardCount(gameState, front);
+  for (let discardIndex = 0; discardIndex < discard.length; discardIndex++) {
+    if (chosen.length >= required) {
+      break;
+    }
+    if (takenIndices.has(discardIndex)) {
+      continue;
+    }
+    chosen.push(discard[discardIndex]!);
+    takenIndices.add(discardIndex);
   }
   return chosen;
 }
@@ -322,12 +366,20 @@ export function selectDefaultKoDiscardCardIds(gameState: LegendaryGameState): Ca
  *
  * Moves the lowest-index City Villain that holds a captured Bystander to the lowest-index
  * other City space (swapping when occupied), so the printed rescue fires. With no Bystander
- * holder in the City it declines.
+ * holder in the City it declines. An X-Con Security Van entry is always declined.
  *
  * @param gameState - The engine state. Not mutated.
  * @returns The move payload: a move between two City indices, or a decline.
  */
 function selectDefaultMoveVillainArgs(gameState: LegendaryGameState): ResolveMoveVillainChoiceArgs {
+  // why: WP-876 / D-24823 — load-bearing: the Spinning Cyclone answer below may name an occupied
+  // space, which the X-Con variant rejects (empty spaces only), so a bot answering it would never
+  // resolve the entry and a simulation would hang. X-Con's move gains nothing (no rescue) and costs
+  // a Hero, so the bot declines. Reached now that bots attempt a Heist (WP-878 / D-24826), and it
+  // stays load-bearing: a won Heist with X-Con readied parks this entry in a bot game.
+  if (gameState.pendingMoveVillainChoices?.[0]?.variant === 'x-con-security-van') {
+    return { decline: true };
+  }
   // why: WP-831 / D-24764 — a 1-space City has no other space to move a Villain to.
   if (gameState.city.length < 2) {
     return { decline: true };
@@ -404,8 +456,14 @@ function selectDoOverDefault(gameState: LegendaryGameState): { accept: true } | 
  *   3. fightVillain intents — City slot 0..4 ascending (if stage === 'main'
  *      and availableAttack covers baseFightCost + patrolModifier and the
  *      slot is not Guard-blocked)
+ *   3b. fightVillain fortifier intents — one per fightable fortified place,
+ *      FORTIFY_PLACES order (WP-873 / D-24818; empty without a fortification)
  *   4. fightMastermind — one entry (if stage === 'main', tactics remain,
  *      and availableAttack covers the base-card fightCost)
+ *   4b. exorciseHauntedHero intents — HQ slot 0..4 ascending, one per
+ *      affordable Haunted slot (WP-757 / D-24587; empty without a Haunt)
+ *   4c. attemptHeist — one entry (if stage === 'main' and
+ *      shouldBotAttemptHeist passes; WP-878 / D-24826)
  *   5. revealVillainCard — one entry if stage === 'start'
  *   6. advanceStage — one entry if stage !== 'cleanup'
  *   7. endTurn — one entry if stage === 'cleanup'
@@ -689,6 +747,11 @@ export function getLegalMoves(
       isEligible = (cardId: CardExtId) => cardCountsAsShieldHero(gameState, cardId);
     } else if (front.koHeroesOnly === true) {
       isEligible = (cardId: CardExtId) => cardId !== WOUND_EXT_ID;
+    } else if (front.koSparesGainedWound === true) {
+      // why: WP-885 / D-24836 — a Hulk Gets Smashed entry spares the Wound just gained: a Wound is
+      // a legal target only while hand ∪ discard hold at least two (the resolve's count rule,
+      // recounted from current G). Emitting a spared Wound would be rejected and hang the sim.
+      isEligible = (cardId: CardExtId) => !isWoundSparedFromKo(cardId, zones.hand, zones.discard);
     }
     const allowInPlay = front.koZones === undefined || front.koZones.includes('inPlay');
     // why: WP-767 / D-24600 — mirrors allowInPlay: a koZones that omits discard (Snarling
@@ -1072,7 +1135,8 @@ export function getLegalMoves(
       // why: WP-757 / D-24587 — mirror recruitHero's Haunted-slot refusal (you can't
       // recruit a Haunted Hero); offering it would wedge the bot on a no-op recruit.
       if (isHqSlotHaunted(gameState, hqIndex)) continue;
-      const requiredCost = gameState.cardStats[slot]?.cost ?? 0;
+      // why: D-24801 — mirror recruitHero: the Size-Changing-reduced cost, never below 0.
+      const requiredCost = Math.max(0, resolveRecruitCost(gameState, activePlayer, slot));
       if (availableRecruit >= requiredCost) {
         legalMoves.push({ name: 'recruitHero', args: { hqIndex } });
       }
@@ -1113,6 +1177,18 @@ export function getLegalMoves(
       ) {
         continue;
       }
+      // why: WP-871 / D-24816 — mirror the fightVillain move's fight-restriction gate
+      // (Orrgo, Squirrel Girl, Doop) with the same helper at the same position (D-24364:
+      // every move precondition ships with its enumeration mirror). Offering a fight the
+      // move refuses is a no-op the bot re-picks every step until the 100-step cap faults
+      // the turn.
+      const fightRestriction = getFightRestriction(gameState, cityCard);
+      if (
+        fightRestriction !== null &&
+        isFightRestrictionBlocking(gameState, activePlayer, cityIndex, fightRestriction)
+      ) {
+        continue;
+      }
       // why: WP-817 / D-24750 — mirror the fightVillain move's fight-discard-cost gate with
       // the same helpers (D-24364: every move precondition ships with its enumeration
       // mirror). A discard-cost villain (Primus) is offered only with a named card the move
@@ -1128,9 +1204,10 @@ export function getLegalMoves(
       }
       // why: WP-760 / D-24589 — the same fighter the fightVillain move passes, so a
       // Blood Frenzy cost can't diverge between enumeration and the move guard.
-      const baseFightCost = resolveFightCost(gameState, cityCard, activePlayer);
+      // why: D-24802 — mirror fightVillain: the Size-Changing price, never below 0 for the debit.
+      const fightPrice = resolveFightPrice(gameState, cityCard, activePlayer);
       const patrolModifier = getPatrolModifier(cityCard, cardKeywords);
-      const requiredFightCost = baseFightCost + patrolModifier;
+      const requiredFightCost = Math.max(0, fightPrice) + patrolModifier;
       // why: WP-580 / D-24389 + WP-790 / D-24652 — the per-target spendable figure (unspent
       // recruit under the recruit-as-attack conversion, plus restricted attack whose grant
       // names this City space), exactly mirroring the fightVillain move guard so the bot never
@@ -1148,15 +1225,34 @@ export function getLegalMoves(
     }
   }
 
+  // 3b. fightVillain fortifier intents — one per fortified place the active player can fight,
+  //     in FORTIFY_PLACES order.
+  // why: WP-873 / D-24818 — mirrors the fightVillain({ fortifiedPlace }) path (D-24364: a move
+  // precondition ships with its enumeration mirror). findFightableFortifier is the single
+  // authority the move itself calls, and the stage / pending gates are the ones above (this
+  // function returned early on every pending choice), so every emitted intent commits.
+  // Without a fortification the loop pushes nothing, so the output is byte-identical.
+  if (stage === 'main') {
+    for (const entry of listFortifications(gameState)) {
+      if (findFightableFortifier(gameState, activePlayer, entry.place) !== null) {
+        legalMoves.push({ name: 'fightVillain', args: { fortifiedPlace: entry.place } });
+      }
+    }
+  }
+
   // 4. fightMastermind — at most one entry (affordable + tactics remain).
   // why: WP-757 / D-24587 — the Mastermind can't be fought while it haunts an HQ Hero;
   // the same isMastermindHaunting predicate gates the fightMastermind move.
+  // why: WP-873 / D-24818 — nor while a Villain fortifies it (Colleen Wing); the same
+  // isMastermindFortified predicate gates the move (D-24364 mirror).
   if (
     stage === 'main' &&
     gameState.mastermind.tacticsDeck.length > 0 &&
-    !isMastermindHaunting(gameState)
+    !isMastermindHaunting(gameState) &&
+    !isMastermindFortified(gameState)
   ) {
-    const mastermindFightCost = resolveMastermindFightCost(gameState, activePlayer);
+    // why: D-24802 — mirror fightMastermind: the Size-Changing price.
+    const mastermindFightCost = resolveMastermindFightPrice(gameState, activePlayer);
     // why: WP-790 / D-24652 — the same per-target figure the fightMastermind move gates on.
     if (getSpendableAttackForTarget(gameState.turnEconomy, 'mastermind') >= mastermindFightCost) {
       // why: WP-830 / D-24763 — under The Unbreakable Enigma Code the fight needs a guess. The bot
@@ -1191,6 +1287,17 @@ export function getLegalMoves(
         });
       }
     }
+  }
+
+  // 4c. attemptHeist — one entry when the bot's Heist odds favor it.
+  // why: WP-878 / D-24826 — the card-count gate lives here, in the bot's move menu, so every bot
+  // policy (competent, random, server autoplay, bot ally) attempts only under Jeff's rule.
+  // shouldBotAttemptHeist checks isHeistAvailable first, the move's own legality predicate
+  // (D-24364: a move precondition ships with its enumeration mirror), so every emitted attemptHeist
+  // commits. Appended after step 4b so the locked order of the earlier steps is unchanged; without
+  // a readied Heist card it pushes nothing, so the output is byte-identical.
+  if (stage === 'main' && shouldBotAttemptHeist(gameState, activePlayer)) {
+    legalMoves.push({ name: 'attemptHeist', args: {} });
   }
 
   // 5. revealVillainCard — one entry if stage === 'start' AND the once-per-turn

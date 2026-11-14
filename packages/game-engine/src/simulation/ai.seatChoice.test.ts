@@ -30,6 +30,13 @@ import {
   buildEscapeEffectCostDiscardChoice,
 } from '../villainDeck/villainEscapeProcedure.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { parkHeistShuffleChoice } from '../hero/heistPayloads.logic.js';
+import { buildGainWoundRewardChoice } from '../hero/gainWoundReward.logic.js';
+import {
+  buildHuntForVictimsOptions,
+  HUNT_FOR_VICTIMS_KO_HERO_SEAT_CHOICE_KIND,
+  HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND,
+} from '../moves/huntForVictims.logic.js';
 
 /**
  * Minimal G carrying only the fields the builders and the policy read.
@@ -350,5 +357,407 @@ describe('WP-837 bot-ally pick for the every-player trait discard (D-24770)', ()
       defaultOptionIndex: 0,
     } as PendingSeatChoice);
     assert.equal(choosePlayingSeatChoiceOption(G, '0'), 1);
+  });
+});
+
+describe('choosePlayingSeatChoiceOption — Revolutionary Anthem shuffle (WP-876 / D-24823)', () => {
+  it('leaves the Villain Deck as it is', () => {
+    const G = makeState({ '0': [] });
+    // why: built by the engine's own park, so the option order is the order the live game shows.
+    parkHeistShuffleChoice(G, undefined, '0', 'amwp/ant-army/revolutionary-anthem#0');
+    assert.equal(G.pendingSeatChoice?.kind, 'heist-shuffle-villain-deck');
+    assert.equal(choosePlayingSeatChoiceOption(G, '0'), 1);
+    assert.equal(G.pendingSeatChoice!.seatPrompts['0']!.options[1]!.label, 'Leave the Villain Deck as it is');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-882 / D-24833 — Zarathos playing-seat answers
+// ---------------------------------------------------------------------------
+
+import {
+  buildZarathosDiscardDownChoice,
+  ZARATHOS_CORRUPTED_SPIRIT_KIND,
+  ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND,
+  ZARATHOS_DEMONIC_ESSENCE_LAST_KIND,
+  ZARATHOS_ERUPTION_KIND,
+  ZARATHOS_IMPRISON_KIND,
+} from '../moves/seatChoiceTactics.js';
+import type { SeatChoiceOption } from '../types.js';
+
+/** Card stats for the Zarathos bot cases; the S.H.I.E.L.D. starters carry cost 0. */
+const ZARATHOS_BOT_STATS = {
+  cheapHero: { attack: 1, cost: 2 },
+  pricyHero: { attack: 2, cost: 6 },
+  covertHero: { attack: 1, cost: 3 },
+  'starting-shield-agent': { attack: 0, cost: 0 },
+  'starting-shield-trooper': { attack: 1, cost: 0 },
+};
+
+/** A single-seat choice of `kind` for `seat` with the given options and default. */
+function zarathosChoice(
+  kind: string,
+  seat: string,
+  options: SeatChoiceOption[],
+  defaultOptionIndex: number,
+): PendingSeatChoice {
+  return { kind, addressedSeats: [seat], seatPrompts: { [seat]: { options } }, submissions: {}, defaultOptionIndex };
+}
+
+describe('WP-882 choosePlayingSeatChoiceOption — Zarathos kinds (D-24833)', () => {
+  it('discard-down: drops the Wound first, else the cheapest card', () => {
+    const withWound = makeState({ '0': [], '1': ['pricyHero', 'cheapHero', WOUND_EXT_ID, 'covertHero'] }, { cardStats: ZARATHOS_BOT_STATS });
+    withWound.pendingSeatChoice = buildZarathosDiscardDownChoice(withWound, ['1']);
+    const woundIndex = withWound.pendingSeatChoice!.seatPrompts['1']!.options.findIndex((option) => option.cardId === WOUND_EXT_ID);
+    assert.equal(choosePlayingSeatChoiceOption(withWound, '1'), woundIndex);
+
+    const noWound = makeState({ '0': [], '1': ['pricyHero', 'covertHero', 'cheapHero', 'pricyHero'] }, { cardStats: ZARATHOS_BOT_STATS });
+    noWound.pendingSeatChoice = buildZarathosDiscardDownChoice(noWound, ['1']);
+    const options = noWound.pendingSeatChoice!.seatPrompts['1']!.options;
+    assert.equal(options[choosePlayingSeatChoiceOption(noWound, '1')!]!.cardId, 'cheapHero');
+  });
+
+  it('Demonic Essence (both kinds): a played 0-cost starter beats a hand 0-cost starter listed earlier', () => {
+    for (const kind of [ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND, ZARATHOS_DEMONIC_ESSENCE_LAST_KIND]) {
+      const G = makeState({ '0': [] }, { cardStats: ZARATHOS_BOT_STATS });
+      G.pendingSeatChoice = zarathosChoice(kind, '0', [
+        { label: 'KO Cheap', cardId: 'cheapHero', sourceZone: 'hand' },
+        { label: 'KO Agent', cardId: 'starting-shield-agent', sourceZone: 'hand' },
+        { label: 'KO Pricy', cardId: 'pricyHero', sourceZone: 'inPlay' },
+        { label: 'KO Trooper', cardId: 'starting-shield-trooper', sourceZone: 'inPlay' },
+        { label: "Don't KO" },
+      ], 4);
+      assert.equal(choosePlayingSeatChoiceOption(G, '0'), 3, `${kind}: the played starter`);
+    }
+  });
+
+  it('Demonic Essence: a hand starter when none is played, else the decline', () => {
+    const handOnly = makeState({ '0': [] }, { cardStats: ZARATHOS_BOT_STATS });
+    handOnly.pendingSeatChoice = zarathosChoice(ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND, '0', [
+      { label: 'KO Cheap', cardId: 'cheapHero', sourceZone: 'hand' },
+      { label: 'KO Agent', cardId: 'starting-shield-agent', sourceZone: 'hand' },
+      { label: 'KO Pricy', cardId: 'pricyHero', sourceZone: 'inPlay' },
+      { label: "Don't KO" },
+    ], 3);
+    assert.equal(choosePlayingSeatChoiceOption(handOnly, '0'), 1, 'the hand starter');
+
+    const noStarter = makeState({ '0': [] }, { cardStats: ZARATHOS_BOT_STATS });
+    noStarter.pendingSeatChoice = zarathosChoice(ZARATHOS_DEMONIC_ESSENCE_LAST_KIND, '0', [
+      { label: 'KO Cheap', cardId: 'cheapHero', sourceZone: 'hand' },
+      { label: 'KO Pricy', cardId: 'pricyHero', sourceZone: 'inPlay' },
+      { label: "Don't KO" },
+    ], 2);
+    assert.equal(choosePlayingSeatChoiceOption(noStarter, '0'), 2, 'the decline');
+  });
+
+  it('Corrupted Spirit: discards down when the cards owed are no more than the Wounds in hand, else keeps the default', () => {
+    const options: SeatChoiceOption[] = [
+      { label: 'Discard Covert Hero', cardId: 'covertHero' },
+      { label: 'Discard down to 3 cards' },
+    ];
+    const cases: { hand: string[]; expected: number; why: string }[] = [
+      { hand: ['covertHero', 'pricyHero', 'cheapHero', WOUND_EXT_ID], expected: 1, why: '4 cards, one Wound: owes 1' },
+      { hand: ['covertHero', WOUND_EXT_ID, 'pricyHero', WOUND_EXT_ID, 'cheapHero'], expected: 1, why: '5 cards, two Wounds: owes 2' },
+      { hand: ['covertHero', WOUND_EXT_ID, 'pricyHero', 'cheapHero', 'cheapHero'], expected: 0, why: '5 cards, one Wound: owes 2' },
+      { hand: ['covertHero', 'pricyHero', 'cheapHero', 'cheapHero'], expected: 0, why: 'no Wound' },
+    ];
+    for (const { hand, expected, why } of cases) {
+      const G = makeState({ '0': [], '1': hand }, { cardStats: ZARATHOS_BOT_STATS });
+      G.pendingSeatChoice = zarathosChoice(ZARATHOS_CORRUPTED_SPIRIT_KIND, '1', options, 0);
+      assert.equal(choosePlayingSeatChoiceOption(G, '1'), expected, why);
+    }
+  });
+
+  it('Eruption and Imprison return their defaultOptionIndex', () => {
+    const eruption = makeState({ '0': [], '1': ['covertHero', 'cheapHero'] }, { cardStats: ZARATHOS_BOT_STATS });
+    eruption.pendingSeatChoice = zarathosChoice(ZARATHOS_ERUPTION_KIND, '1', [
+      { label: 'Discard Covert Hero', cardId: 'covertHero' },
+      { label: 'Gain a Wound' },
+    ], 0);
+    assert.equal(choosePlayingSeatChoiceOption(eruption, '1'), 0);
+
+    const imprison = makeState({ '0': [] }, { cardStats: ZARATHOS_BOT_STATS });
+    imprison.pendingSeatChoice = zarathosChoice(ZARATHOS_IMPRISON_KIND, '0', [
+      { label: 'KO Villain A — draw 2', cardId: 'villainA' },
+      { label: 'KO Villain B — draw 1', cardId: 'villainB' },
+      { label: "Don't KO" },
+    ], 2);
+    assert.equal(choosePlayingSeatChoiceOption(imprison, '0'), 2);
+  });
+});
+
+describe('WP-883 choosePlayingSeatChoiceOption — gain-wound-reward (D-24834)', () => {
+  const HULK_SMASH = 'co2e/hulk/hulk-smash#0';
+  const REWARD = { rewardType: 'attack' as const, magnitude: 5, sourceCardId: HULK_SMASH };
+
+  it('gains when +5 reaches a City Villain it could not fight; declines when it opens nothing new', () => {
+    const reachable = makeCityState(1, ['villain-a#0', null, null, null, null], { 'villain-a#0': 5 });
+    withChoice(reachable, buildGainWoundRewardChoice('0', REWARD));
+    assert.equal(readAbsentSeatDefault(reachable), 1, 'the absent-seat default declines');
+    assert.equal(choosePlayingSeatChoiceOption(reachable, '0'), 0, '1 + 5 Attack reaches the 5-cost Villain');
+
+    const outOfReach = makeCityState(1, ['villain-a#0', null, null, null, null], { 'villain-a#0': 9 });
+    withChoice(outOfReach, buildGainWoundRewardChoice('0', REWARD));
+    assert.equal(choosePlayingSeatChoiceOption(outOfReach, '0'), 1, '1 + 5 Attack still cannot fight a 9-cost Villain');
+
+    const alreadyFightable = makeCityState(6, ['villain-a#0', null, null, null, null], { 'villain-a#0': 5 });
+    withChoice(alreadyFightable, buildGainWoundRewardChoice('0', REWARD));
+    assert.equal(choosePlayingSeatChoiceOption(alreadyFightable, '0'), 1, 'the fight is open without the Wound');
+  });
+
+  it('never writes G (purity)', () => {
+    const G = makeCityState(1, ['villain-a#0', null, null, null, null], { 'villain-a#0': 5 });
+    withChoice(G, buildGainWoundRewardChoice('0', REWARD));
+    const before = structuredClone(G);
+    choosePlayingSeatChoiceOption(G, '0');
+    assert.deepEqual(G, before);
+  });
+
+  it('declines Diving Block on a tagged Wound and still reveals on an untagged one', () => {
+    const tagged = makeState({ '0': ['core-hero-black-widow-diving-block#0'] }, {
+      pendingDivingBlockWounds: [{ playerID: '0', woundCardId: WOUND_EXT_ID, gainWoundReward: REWARD }],
+    });
+    openDivingBlockSeatChoiceIfNeeded(tagged, undefined);
+    assert.equal(choosePlayingSeatChoiceOption(tagged, '0'), tagged.pendingSeatChoice!.defaultOptionIndex);
+    assert.equal(choosePlayingSeatChoiceOption(tagged, '0'), 1);
+
+    const untagged = makeState({ '0': ['core-hero-black-widow-diving-block#0'] }, {
+      pendingDivingBlockWounds: [{ playerID: '0', woundCardId: WOUND_EXT_ID }],
+    });
+    openDivingBlockSeatChoiceIfNeeded(untagged, undefined);
+    assert.equal(choosePlayingSeatChoiceOption(untagged, '0'), 0);
+  });
+
+  it('one seat with Diving Block entries [untagged, tagged]: reveals in wave 1, declines in wave 2', () => {
+    const G = makeState({ '0': ['core-hero-black-widow-diving-block#0'] }, {
+      pendingDivingBlockWounds: [
+        { playerID: '0', woundCardId: WOUND_EXT_ID },
+        { playerID: '0', woundCardId: WOUND_EXT_ID, gainWoundReward: REWARD },
+      ],
+    });
+    openDivingBlockSeatChoiceIfNeeded(G, undefined);
+    assert.equal(choosePlayingSeatChoiceOption(G, '0'), 0, 'wave 1 resolves the untagged front entry');
+    // why: drain wave 1 the way the apply does (front entry for the seat), then reopen.
+    G.pendingDivingBlockWounds!.shift();
+    delete G.pendingSeatChoice;
+    openDivingBlockSeatChoiceIfNeeded(G, undefined);
+    assert.equal(choosePlayingSeatChoiceOption(G, '0'), 1, 'wave 2 resolves the tagged entry');
+  });
+
+  it('declines Flying Shield Block on a tagged Wound (a teammate\'s too) and still reveals on an untagged one', () => {
+    const flyingShieldBlockChoice = (): PendingSeatChoice => ({
+      kind: 'flying-shield-block',
+      addressedSeats: ['1'],
+      seatPrompts: { '1': { options: [{ label: 'Reveal' }, { label: 'Let Player 0 take the Wound' }] } },
+      submissions: {},
+      defaultOptionIndex: 1,
+    });
+    const tagged = makeState({ '0': [], '1': [] }, {
+      pendingFlyingShieldBlockWounds: [
+        { recipientID: '0', woundCardId: WOUND_EXT_ID, candidateSeats: ['1'], addressedSeat: '1', gainWoundReward: REWARD },
+      ],
+    });
+    withChoice(tagged, flyingShieldBlockChoice());
+    assert.equal(choosePlayingSeatChoiceOption(tagged, '1'), 1);
+
+    const untagged = makeState({ '0': [], '1': [] }, {
+      pendingFlyingShieldBlockWounds: [
+        { recipientID: '0', woundCardId: WOUND_EXT_ID, candidateSeats: ['1'], addressedSeat: '1' },
+      ],
+    });
+    withChoice(untagged, flyingShieldBlockChoice());
+    assert.equal(choosePlayingSeatChoiceOption(untagged, '1'), 0);
+  });
+});
+
+describe('WP-885 choosePlayingSeatChoiceOption — non-Attack gain-wound-reward answers (D-24836)', () => {
+  const VIOLENT_CONDITIONING = 'wpnx/weapon-x-wolverine/violent-conditioning#0';
+  const HULK_GETS_SMASHED = 'msis/bruce-banner/hulk-gets-smashed#0';
+  const MOOD_SWINGS = 'wwhk/skaar-son-of-hulk/mood-swings#0';
+  const RAGING_SAVAGE = 'wwhk/skaar-son-of-hulk/raging-savage#0';
+  const AGENT = 'starter-agent#0';
+  const TROOPER = 'starter-trooper#0';
+  const PRICEY_HERO = 'test/hero/pricey#0';
+
+  it('berserk: declines (the payoff is the hidden deck top), even with Attack-rich cards on top', () => {
+    const G = makeState({ '0': [] }, { cardStats: { 'deck-top#0': makeCardStatEntry({ attack: 9 }) } });
+    G.playerZones['0']!.deck = ['deck-top#0'];
+    withChoice(G, buildGainWoundRewardChoice('0', { rewardType: 'berserk', magnitude: 2, sourceCardId: VIOLENT_CONDITIONING }));
+    assert.equal(choosePlayingSeatChoiceOption(G, '0'), 1);
+  });
+
+  it('optional-ko-hand-discard: gains with two cost-0 cards in hand ∪ discard; declines with one', () => {
+    const reward = { rewardType: 'optional-ko-hand-discard' as const, magnitude: 2, sourceCardId: HULK_GETS_SMASHED };
+    const two = makeState({ '0': [AGENT] }, { cardStats: { [PRICEY_HERO]: makeCardStatEntry({ cost: 6 }) } });
+    two.playerZones['0']!.discard = [TROOPER, PRICEY_HERO];
+    withChoice(two, buildGainWoundRewardChoice('0', reward));
+    assert.equal(choosePlayingSeatChoiceOption(two, '0'), 0, 'Agent + Trooper are worth two KOs');
+
+    const one = makeState({ '0': [AGENT] }, { cardStats: { [PRICEY_HERO]: makeCardStatEntry({ cost: 6 }) } });
+    one.playerZones['0']!.discard = [PRICEY_HERO];
+    withChoice(one, buildGainWoundRewardChoice('0', reward));
+    assert.equal(choosePlayingSeatChoiceOption(one, '0'), 1, 'one cost-0 card is not worth a Wound');
+  });
+
+  it('transform: gains with the base in play and a second-form copy in the side deck; declines without', () => {
+    const reward = { rewardType: 'transform' as const, magnitude: 1, sourceCardId: MOOD_SWINGS };
+    const targets = { 'wwhk/skaar-son-of-hulk/mood-swings': 'wwhk/skaar-son-of-hulk/raging-savage' };
+    const withCopy = makeState({ '0': [] }, { transformTargets: targets, transformDeck: [RAGING_SAVAGE] });
+    withCopy.playerZones['0']!.inPlay = [MOOD_SWINGS];
+    withChoice(withCopy, buildGainWoundRewardChoice('0', reward));
+    assert.equal(choosePlayingSeatChoiceOption(withCopy, '0'), 0);
+
+    const noCopy = makeState({ '0': [] }, { transformTargets: targets, transformDeck: [] });
+    noCopy.playerZones['0']!.inPlay = [MOOD_SWINGS];
+    withChoice(noCopy, buildGainWoundRewardChoice('0', reward));
+    assert.equal(choosePlayingSeatChoiceOption(noCopy, '0'), 1, 'no Raging Savage left: the Wound buys nothing');
+
+    const baseGone = makeState({ '0': [] }, { transformTargets: targets, transformDeck: [RAGING_SAVAGE] });
+    withChoice(baseGone, buildGainWoundRewardChoice('0', reward));
+    assert.equal(choosePlayingSeatChoiceOption(baseGone, '0'), 1, 'the base card is no longer in play');
+  });
+
+  it('never writes G for any non-Attack reward (purity)', () => {
+    const targets = { 'wwhk/skaar-son-of-hulk/mood-swings': 'wwhk/skaar-son-of-hulk/raging-savage' };
+    const rewards = [
+      { rewardType: 'berserk' as const, magnitude: 2, sourceCardId: VIOLENT_CONDITIONING },
+      { rewardType: 'optional-ko-hand-discard' as const, magnitude: 2, sourceCardId: HULK_GETS_SMASHED },
+      { rewardType: 'transform' as const, magnitude: 1, sourceCardId: MOOD_SWINGS },
+    ];
+    for (const reward of rewards) {
+      const G = makeState({ '0': [AGENT] }, { transformTargets: targets, transformDeck: [RAGING_SAVAGE] });
+      G.playerZones['0']!.inPlay = [MOOD_SWINGS];
+      G.playerZones['0']!.deck = ['deck-top#0'];
+      withChoice(G, buildGainWoundRewardChoice('0', reward, G));
+      const before = structuredClone(G);
+      choosePlayingSeatChoiceOption(G, '0');
+      assert.deepEqual(G, before, `${reward.rewardType}: G unchanged`);
+    }
+  });
+});
+
+describe('WP-893 choosePlayingSeatChoiceOption — Rooftops Conqueror gain-wound-reward (D-24850)', () => {
+  const PUT_TO_THE_TORCH = 'anni/super-skrull/put-to-the-torch#0';
+  const REWARD = { rewardType: 'rooftops-conqueror' as const, magnitude: 4, sourceCardId: PUT_TO_THE_TORCH };
+
+  it('gains when a Villain is in the Rooftops and +4 opens a fight it could not make', () => {
+    const G = makeCityState(1, [null, null, 'villain-a#0', null, null], { 'villain-a#0': 5 });
+    withChoice(G, buildGainWoundRewardChoice('0', REWARD));
+    assert.equal(choosePlayingSeatChoiceOption(G, '0'), 0, '1 + 4 Attack reaches the 5-cost Rooftops Villain');
+  });
+
+  it('declines with the Rooftops empty, even though +4 would open a fight', () => {
+    const G = makeCityState(1, ['villain-a#0', null, null, null, null], { 'villain-a#0': 5 });
+    withChoice(G, buildGainWoundRewardChoice('0', REWARD));
+    assert.equal(choosePlayingSeatChoiceOption(G, '0'), 1, 'no Villain in the Rooftops: the Wound buys nothing');
+  });
+
+  it('declines with the Rooftops occupied when +4 opens no fight', () => {
+    const G = makeCityState(1, [null, null, 'villain-a#0', null, null], { 'villain-a#0': 9 });
+    withChoice(G, buildGainWoundRewardChoice('0', REWARD));
+    assert.equal(choosePlayingSeatChoiceOption(G, '0'), 1, '1 + 4 Attack still cannot fight a 9-cost Villain');
+  });
+
+  it('never writes G (purity)', () => {
+    for (const city of [[null, null, 'villain-a#0', null, null], ['villain-a#0', null, null, null, null]]) {
+      const G = makeCityState(1, city, { 'villain-a#0': 5 });
+      withChoice(G, buildGainWoundRewardChoice('0', REWARD));
+      const before = structuredClone(G);
+      choosePlayingSeatChoiceOption(G, '0');
+      assert.deepEqual(G, before);
+    }
+  });
+});
+
+describe('WP-884 choosePlayingSeatChoiceOption — Hunt for Victims (D-24835)', () => {
+  const VILLAIN = 'test/villain/hand-ninjas#0';
+  const BYSTANDER = 'pile-bystander';
+
+  /**
+   * A hunt choice built by the engine's own option builder over the given holders.
+   *
+   * @param holders - Which holders have a Bystander.
+   * @param isRescueAllowed - Whether the Tech line added the rescue twins.
+   * @returns The state with the choice open for seat 0.
+   */
+  function huntState(
+    holders: { city?: boolean; mastermind?: boolean; escapePile?: boolean },
+    isRescueAllowed: boolean,
+  ): LegendaryGameState {
+    const G = makeState({ '0': [] }, {
+      city: [null, VILLAIN, null, null, null],
+      attachedBystanders: holders.city === true ? { [VILLAIN]: [BYSTANDER] } : {},
+      mastermind: { tacticsDefeated: [], baseCardId: 'core-mastermind-loki', attachedBystanders: holders.mastermind === true ? [BYSTANDER] : [] },
+      escapedPile: holders.escapePile === true ? [BYSTANDER] : [],
+      piles: { bystanders: [BYSTANDER], wounds: [], officers: [], sidekicks: [] },
+    });
+    const options = buildHuntForVictimsOptions(G, isRescueAllowed);
+    return withChoice(G, {
+      kind: HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND,
+      addressedSeats: ['0'],
+      seatPrompts: { '0': { options } },
+      submissions: {},
+      defaultOptionIndex: options.length - 1,
+      huntForVictims: { sourceCardId: 'mdns/elsa-bloodstone/stalk-the-night-stalkers#0', isRescueAllowed: true },
+    });
+  }
+
+  /**
+   * The (huntAction, huntSource) of the option the playing bot picks.
+   *
+   * @param G - The state with the hunt choice open.
+   * @returns "action/source", or "decline".
+   */
+  function pick(G: LegendaryGameState): string {
+    const option = G.pendingSeatChoice!.seatPrompts['0']!.options[choosePlayingSeatChoiceOption(G, '0')!]!;
+    if (option.huntAction === undefined) {
+      return 'decline';
+    }
+    return `${option.huntAction}/${option.huntSource}`;
+  }
+
+  it('rescues from the Escape Pile, else KOs from it, else takes another rescue, else declines', () => {
+    assert.equal(pick(huntState({ city: true, mastermind: true, escapePile: true }, true)), 'rescue/escape-pile');
+    assert.equal(pick(huntState({ city: true, mastermind: true, escapePile: true }, false)), 'ko/escape-pile');
+    assert.equal(pick(huntState({ city: true, mastermind: true }, true)), 'rescue/city');
+    assert.equal(pick(huntState({ mastermind: true }, true)), 'rescue/mastermind');
+    assert.equal(pick(huntState({ city: true, mastermind: true }, false)), 'decline', 'never a Villain or Mastermind KO');
+    assert.equal(pick(huntState({}, false)), 'decline', 'never a capture');
+  });
+
+  it('getLegalMoves keeps the decline default', () => {
+    const G = huntState({ escapePile: true }, true);
+    const moves = getLegalMoves(G, { phase: 'play', turn: 1, currentPlayer: '0', numPlayers: 1 });
+    assert.deepEqual(moves, [{ name: 'resolveSeatChoice', args: { optionIndex: G.pendingSeatChoice!.defaultOptionIndex } }]);
+  });
+
+  it('the KO-a-Hero pick KOs a 0-cost Hero, else declines', () => {
+    const koHeroChoice = (): PendingSeatChoice => ({
+      kind: HUNT_FOR_VICTIMS_KO_HERO_SEAT_CHOICE_KIND,
+      addressedSeats: ['0'],
+      seatPrompts: {
+        '0': {
+          options: [
+            { label: 'KO Expensive (discard pile)', cardId: 'test/hero/expensive#0', sourceZone: 'discard' },
+            { label: 'KO S.H.I.E.L.D. Agent (hand)', cardId: 'starting-shield-agent', sourceZone: 'hand' },
+            { label: "Don't KO a Hero" },
+          ],
+        },
+      },
+      submissions: {},
+      defaultOptionIndex: 2,
+      huntForVictims: { sourceCardId: 'mdns/elsa-bloodstone/stalk-the-night-stalkers#0' },
+    });
+    const withAgent = withChoice(makeState({ '0': [] }, {
+      cardStats: { 'test/hero/expensive#0': makeCardStatEntry({ cost: 6 }), 'starting-shield-agent': makeCardStatEntry({ cost: 0 }) },
+    }), koHeroChoice());
+    assert.equal(choosePlayingSeatChoiceOption(withAgent, '0'), 1);
+    const noZeroCost = koHeroChoice();
+    noZeroCost.seatPrompts['0']!.options.splice(1, 1);
+    noZeroCost.defaultOptionIndex = 1;
+    const withoutAgent = withChoice(makeState({ '0': [] }, {
+      cardStats: { 'test/hero/expensive#0': makeCardStatEntry({ cost: 6 }) },
+    }), noZeroCost);
+    assert.equal(choosePlayingSeatChoiceOption(withoutAgent, '0'), 1, 'the decline');
   });
 });

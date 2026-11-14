@@ -2,6 +2,7 @@
 import { defineComponent, ref, watch, type PropType } from "vue";
 import type { UIPendingPutAnyNumberBottomHQ } from "@legendary-arena/game-engine";
 import type { SubmitMove } from "./uiMoveName.types";
+import CardImage from "./CardImage.vue";
 
 /**
  * Inline prompt for resolving a pending put-any-number-bottom-hq choice ("Choose any number of
@@ -27,6 +28,7 @@ import type { SubmitMove } from "./uiMoveName.types";
  */
 export default defineComponent({
   name: "PutAnyNumberBottomHQPrompt",
+  components: { CardImage },
   props: {
     pendingPutAnyNumberBottomHQ: {
       type: Object as PropType<UIPendingPutAnyNumberBottomHQ | undefined>,
@@ -143,9 +145,9 @@ export default defineComponent({
         @click="onToggle(card.cardId)"
       >
         <span class="put-any-number-hq-prompt__card-name">{{ card.display.name }}</span>
-        <img
+        <CardImage
           v-if="card.display.imageUrl"
-          :src="card.display.imageUrl"
+          :image-url="card.display.imageUrl"
           :alt="card.display.name"
           class="put-any-number-hq-prompt__card-image"
         />

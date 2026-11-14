@@ -71,15 +71,19 @@ export interface HeroAbilityHook {
   // provenance only — never affects execution. Additive optional: absent or empty
   // means "no composition resolved here" (legacy keywords + deferred markers yield neither).
   resolvedMarkers?: string[];
-  // why: D-24074 / WP-290 — the normalized Hero Classes this card GAINS when played
-  // (its printed "Size-Changing: [Class]" grant), parsed from the same-line `[hc:...]`
-  // tokens on a `[keyword:Size-Changing]` line. NOT a play-condition — these are an
-  // additive class source consulted at class-read time (heroClassMatch /
-  // distinctHeroClassesAtLeast), never written into G.cardTraits. buildInitialGameState
-  // collapses these per-card into G.cardSizeChangingClasses. Additive optional: absent
-  // or empty means "no granted class" (a Size-Changing line with no [hc:X], or any
-  // non-Size-Changing line).
+  // why: D-24801 (supersedes D-24074's class grant) — the normalized Hero Classes of this
+  // card's printed "Size-Changing: [Class]" line, parsed from the same-line `[hc:...]`
+  // tokens on a `[keyword:Size-Changing]` line. Each class discounts the card's recruit
+  // cost by 2 when a card of that class was played this turn (rules v23 p.33). NOT a
+  // play-condition and NOT a class the card gains. buildInitialGameState collapses these
+  // per-card into G.cardSizeChangingClasses. Additive optional: absent or empty means "no
+  // Size-Changing" (a Size-Changing line with no [hc:X], or any non-Size-Changing line).
   sizeChangingClasses?: string[];
+  // why: D-24801 — the icons of this card's printed "Microscopic Size-Changing" line, one
+  // entry per `[hc:X]` icon (repeats kept). Each matching-class card played this turn, up
+  // to one per icon, discounts the recruit cost by 2 (rules v23 p.30). Collapsed per card
+  // into G.cardMicroscopicSizeChangingClasses. Additive optional, omit-when-empty.
+  microscopicSizeChangingClasses?: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -145,6 +149,13 @@ export interface HeroEffectDescriptor {
   // executor: rescue / draw / attack / recruit). The existing magnitude field
   // carries the reward magnitude. Other keywords ignore it.
   rewardType?: HeroKeyword;
+  // why: WP-885 / D-24836, WP-893 / D-24850 — for a 'gain-wound-reward' effect whose reward is not
+  // a HeroKeyword, rewardComposition names that reward: a composition marker (Violent
+  // Conditioning's "If you do, Berserk, Berserk" — the HERO_COMPOSITION_MARKERS row the kept Wound
+  // runs `magnitude` times; Berserk is not a HeroKeyword, D-24031) or a Conqueror bonus (Put to the
+  // Torch's `rooftops-conqueror`, D-24850). Such a reward cannot travel in rewardType; the parser
+  // never sets both. Other keywords ignore it.
+  rewardComposition?: string;
   // why: D-24069 — for a 'draw-or-empowered' effect, empoweredClass is the normalized
   // hero class parsed from the "Empowered by [hc:X]" tail. It is carried from parse time
   // to the park site, which records it on the PendingDrawOrEmpowered entry so the resolve
@@ -225,6 +236,14 @@ export interface HeroEffectDescriptor {
   // so this array stays plain data (no functions/Maps, acyclic). The handler safe-skips a
   // 'excessive-violence' effect that lacks it. Other keywords ignore it.
   excessiveViolenceEffects?: HeroEffectDescriptor[];
+  // why: WP-865 / D-24808 — for a 'heist' effect, heistEffects is the readied Heist ability's
+  // already-parsed inner effects (the +recruit / +attack / rescue / draw after the printed
+  // "Heist:" prefix, which the parser strips first so no nested 'heist' descriptor ever appears
+  // here). It is FIRED only by a successful attemptHeist (fireHeistPlays), NOT at play — the
+  // play-time handler (heroEffectHeist) only readies the card into the turn-scoped crew ledger.
+  // Plain data (no functions/Maps, acyclic), like excessiveViolenceEffects. The handler safe-skips
+  // a 'heist' effect that lacks it. Other keywords ignore it.
+  heistEffects?: HeroEffectDescriptor[];
   // why: WP-765 / D-24598 — for a 'day-night-both' effect, sunlightEffects / moonlightEffects are
   // the already-parsed inline effects of the card's printed "[keyword:Sunlight]:" and
   // "[keyword:Moonlight]:" lines (fused like the digest-indigestion branches; the same plain-data,
@@ -250,6 +269,12 @@ export interface HeroEffectDescriptor {
   // effect's `magnitude` is N. Set only by the Step 4c clause parser. A plain string, so the hook
   // stays JSON-serializable. Other keywords ignore it.
   fightCostReductionTarget?: AttackTargetName;
+  // why: WP-859 / D-24795 — for a 'feast' effect, nonGreyHeroKoAttack is the Attack paid when that
+  // Feast KOs a non-grey Hero (World-Spanning Hunger's "+2 for each non-grey Hero that was KO'd
+  // from your deck this turn", counted at resolution). Stamped by the parser from the same hook's
+  // `attack-per-count` magnitude; copied onto the parked RevealedTopEntry. Omitted on every other
+  // effect. Other keywords ignore it.
+  nonGreyHeroKoAttack?: number;
 }
 
 // ---------------------------------------------------------------------------

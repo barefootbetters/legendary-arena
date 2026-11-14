@@ -555,6 +555,7 @@ export function mockInfraCostEntries(
   // INFRA_COST_BUDGETS inside the inner loop. Iteration is canonical
   // via INFRA_COST_VENDORS.
   const monthlyBudgetByVendor: Record<InfraCostVendor, number> = {
+    digitalocean: 0,
     render: 0,
     cloudflare: 0,
     postgres: 0,

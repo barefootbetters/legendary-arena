@@ -22,6 +22,7 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { moveCardFromZone } from './zoneOps.js';
 import { koCard } from '../board/ko.logic.js';
+import { recordOwnedCardKoed } from '../hero/deferredConditionalGrants.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { pushLog } from '../log/logPush.js';
 import { resolveCardName, describeKoSourceZone } from '../log/logDisplay.js';
@@ -124,10 +125,11 @@ export function resolveKoHeroChoice({ G, playerID }: MoveContext, args: ResolveK
   // Step 4: Mutate — shorten the source zone and KO the chosen card
   playerZones[args.zone] = moveResult.from;
   G.ko = koCard(G.ko, args.cardId);
+  recordOwnedCardKoed(G, playerID, args.cardId, args.zone);
 
   // Step 5: Narrate the resolved KO in the game log so the player sees WHICH
-  // hero they KO'd. The fight-time line only says "the active player must KO a
-  // hero" for this interactive (>=2-eligible) path — resolve-time naming was a
+  // hero they KO'd. The fight-time line only says who must still choose ("the
+  // active player must KO a hero" / "Player N must choose which") for this interactive (>=2-eligible) path — resolve-time naming was a
   // WP-316 §Scope Out deferral; this completes it. (The exactly-1 auto-KO path
   // already names its target at fight time.) `G.messages` is hash-excluded
   // (D-24081), so this adds no determinism / sentinel impact.
@@ -171,6 +173,7 @@ export function resolveKoHeroChoice({ G, playerID }: MoveContext, args: ResolveK
     if (!forcedMove.found) break; // why: defensive — an unexpected move miss stops progress.
     playerZones[forced.zone] = forcedMove.from;
     G.ko = koCard(G.ko, forced.cardId);
+    recordOwnedCardKoed(G, playerID, forced.cardId, forced.zone);
     const forcedName = resolveCardName(G.cardDisplayData, forced.cardId);
     pushLog(G, `Player ${playerID} KO'd ${forcedName} (${forced.cardId}) from ${describeKoSourceZone(forced.zone)}.`);
     owed -= 1;

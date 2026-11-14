@@ -22,10 +22,50 @@
 
 import type { LegendaryGameState } from '../types.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
+import type { CardExtId } from '../state/zones.types.js';
 import { moveAllCards } from './zoneOps.js';
 import { HAND_SIZE, drawCardsIntoHand } from './drawCards.logic.js';
-import { consumeDeferredHandInjections } from './deferredHandInjection.logic.js';
+import { consumeDeferredHandInjections, setAsideDeferredHandInjections } from './deferredHandInjection.logic.js';
 import { composeDeckReshuffledNarrative } from '../events/notableEvents.compose.js';
+import { isRitualArtifact } from './ritualArtifact.js';
+import { formatCardRef } from '../log/logDisplay.js';
+import { pushLog } from '../log/logPush.js';
+import { clearExpiredHqSizeChangingGrants } from '../hero/sizeChangingGrant.logic.js';
+import { clearHqCostChanges } from '../hero/hqCostChange.logic.js';
+
+/**
+ * Moves the player's in-play Ritual Artifacts into their controlled Artifacts (WP-858 / D-24794).
+ *
+ * Every other in-play card is left for the discard sweep. Writes nothing when no in-play card
+ * is a modeled Ritual Artifact, so a match without one never gains `G.controlledArtifacts`.
+ *
+ * @param G - Game state, mutated in place.
+ * @param playerID - The player whose turn is ending.
+ */
+function keepControlledArtifacts(G: LegendaryGameState, playerID: string): void {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) {
+    return;
+  }
+  // why: WP-858 / D-24794 — rules v23 p.17: "At end of turn, when you discard all the cards you
+  // played that turn, the Artifacts you control stay in front of you." Only marked Ritual
+  // Artifacts are kept (isRitualArtifact keys on the hook keyword); an unmarked Artifact card
+  // still discards, because its ability is unmodeled and keeping it would only remove it from
+  // the deck.
+  const stillInPlay: CardExtId[] = [];
+  for (const cardId of playerZones.inPlay) {
+    if (!isRitualArtifact(G, cardId)) {
+      stillInPlay.push(cardId);
+      continue;
+    }
+    if (G.controlledArtifacts === undefined) {
+      G.controlledArtifacts = {};
+    }
+    G.controlledArtifacts[playerID] = [...(G.controlledArtifacts[playerID] ?? []), cardId];
+    pushLog(G, `Player ${playerID} keeps ${formatCardRef(G.cardDisplayData, cardId)} in front of them as an Artifact.`);
+  }
+  playerZones.inPlay = stillInPlay;
+}
 
 /**
  * Runs the end-of-turn cleanup for one player: discard in-play + hand, then
@@ -34,16 +74,18 @@ import { composeDeckReshuffledNarrative } from '../events/notableEvents.compose.
  *
  * Exact order (locked, EC-738):
  *   1. Discard in-play -> discard, then hand -> discard.
+ *   1b. Set the Electromagnetic Bubble card aside from the discard (D-24797), so the
+ *      fill's reshuffle can neither shuffle it in nor draw it as one of the six.
  *   2. Fill hand to `handSizeOverrides?.[playerID] ?? HAND_SIZE` from the deck
  *      (reshuffling the discard on exhaustion via the ShuffleProvider).
  *   3. Push a `deckReshuffled` notable event iff a reshuffle actually occurred.
  *   4. Consume the one-shot `handSizeOverrides` entry (Doc Ock, D-24300).
  *   5. Consume the deferred hand injection (Electromagnetic Bubble, D-24512) —
- *      it runs AFTER the discard so the chosen X-Men Hero (played or held) has moved to
- *      discard where the injection helper can find it, and AFTER the fill so it
- *      lands as the extra (seventh) card on top of the fresh hand.
+ *      AFTER the fill, so the card set aside at 1b lands as the extra (seventh) card on
+ *      top of the fresh hand.
  *   6. Return teleport-on-discard cards set aside this turn (D-24526).
  *   7. Delete this turn's Copy Powers copied-class / copied-team grants (D-24730).
+ *   8. Drop "this turn" HQ Size-Changing grants and grants whose card left the HQ (D-24804).
  *
  * // why: D-24520 — the draw is at END of turn (this function), not the former
  * start-of-turn onBegin auto-draw, so a player holds their hand during
@@ -64,6 +106,9 @@ export function applyEndOfTurnCleanup(
   if (!playerZones) {
     return;
   }
+  // Step 0: keep the modeled Ritual Artifacts in front of the player.
+  keepControlledArtifacts(G, playerID);
+
   // Step 1: discard in-play, then the remaining hand.
   const inPlayResult = moveAllCards(playerZones.inPlay, playerZones.discard);
   playerZones.inPlay = inPlayResult.from;
@@ -72,6 +117,13 @@ export function applyEndOfTurnCleanup(
   const handResult = moveAllCards(playerZones.hand, playerZones.discard);
   playerZones.hand = handResult.from;
   playerZones.discard = handResult.to;
+
+  // Step 1b: set the Electromagnetic Bubble card aside before the fill.
+  // why: D-24797 — the card is added "as a seventh card", never drawn. Left in the discard, a
+  // short deck's reshuffle could shuffle it in and the fill draw it as one of the six, and the
+  // Step 5 consume then found nothing (live match bujIOIX4wLk). Without a recorded injection
+  // this lifts nothing, so every other cleanup is unchanged.
+  const bubbleSetAside = setAsideDeferredHandInjections(G, playerID, playerZones);
 
   // Step 2: draw the new hand. // why: WP-497 / D-24300 — a tactic Fight resolver
   // (Doc Ock's "Octet of Valence Electrons") may have recorded a one-shot next-hand
@@ -98,8 +150,8 @@ export function applyEndOfTurnCleanup(
   }
 
   // Step 5: consume the deferred hand injection (Electromagnetic Bubble) — after the
-  // discard + fill, adds each recorded card as an extra card and clears the key.
-  consumeDeferredHandInjections(G, playerID, playerZones);
+  // fill, adds each recorded card (set aside at Step 1b) as an extra card and clears the key.
+  consumeDeferredHandInjections(G, playerID, playerZones, bubbleSetAside);
 
   // why: WP-705 / D-24526 — Step 6: return every teleport-on-discard card set aside this
   // turn to its OWNER's hand (Guerrilla Warfare). All-owners (not just the ending player),
@@ -112,6 +164,13 @@ export function applyEndOfTurnCleanup(
 
   // Step 7: end every Copy Powers copy made this turn (D-24730).
   clearCopyPowersGrants(G);
+
+  // Step 8: end every "this turn" HQ Size-Changing grant, and drop grants whose card left the
+  // HQ (WP-862 / D-24804); Shrinking Research Budget's lasting grants stay while the card does.
+  clearExpiredHqSizeChangingGrants(G);
+  // why: WP-868 / D-24811 — every "Heroes currently in the HQ cost N less / more this turn"
+  // change ends with the turn, so the whole overlay goes at the same step.
+  clearHqCostChanges(G);
 }
 
 /**
@@ -123,7 +182,7 @@ export function applyEndOfTurnCleanup(
  * on turn 6 still counted as Strength when it copied a Covert Hero on turn 16). Only the
  * active player plays cards, so dropping every entry at that player's turn end clears
  * exactly this turn's copies. The keys are deleted, not emptied, so a game returns to
- * the omit-when-empty shape. The setup Size-Changing grants in cardSizeChangingClasses
+ * the omit-when-empty shape. The setup Size-Changing classes in cardSizeChangingClasses
  * are printed and stay.
  *
  * @param G - Game state, mutated in place.

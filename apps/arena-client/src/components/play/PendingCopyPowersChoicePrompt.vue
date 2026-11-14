@@ -2,6 +2,7 @@
 import { defineComponent, ref, watch, type PropType } from "vue";
 import type { UIState } from "@legendary-arena/game-engine";
 import type { SubmitMove } from "./uiMoveName.types";
+import CardImage from "./CardImage.vue";
 
 // why: the prop type is derived from the exported UIState field rather than a deep
 // import of the engine's UIPendingCopyPowersChoice interface (a layer-boundary
@@ -32,6 +33,7 @@ type UIPendingCopyPowersChoice = NonNullable<
  */
 export default defineComponent({
   name: "PendingCopyPowersChoicePrompt",
+  components: { CardImage },
   props: {
     pendingCopyPowersChoice: {
       type: Object as PropType<UIPendingCopyPowersChoice | undefined>,
@@ -123,9 +125,9 @@ export default defineComponent({
         >
           Cost {{ entry.display.cost }}
         </span>
-        <img
+        <CardImage
           v-if="entry.display.imageUrl"
-          :src="entry.display.imageUrl"
+          :image-url="entry.display.imageUrl"
           :alt="entry.display.name"
           class="pending-copy-powers-choice-prompt__card-image"
         />

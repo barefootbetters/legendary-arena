@@ -5,7 +5,7 @@
 // arrive in WP-B (acquisition + funnel). Replacing it would force a UX
 // decision about player KPIs ahead of the WP-B PII / data-source posture.
 // The real-data strip rendering here makes the first thing the operator
-// sees real ("WPs Done This Week"), the second thing seen honestly-labeled
+// sees real ("WPs Done, Last 7 Days"), the second thing seen honestly-labeled
 // placeholder.
 
 import { computed, ref } from 'vue';
@@ -47,7 +47,7 @@ const cards = computed<readonly GovernanceKpiCard[]>(() => {
   return [
     {
       id: 'wps-done-this-week',
-      label: 'WPs Done This Week',
+      label: 'WPs Done, Last 7 Days',
       value: current.wpsDoneThisWeek,
       target: 3,
       tolerance: 2,

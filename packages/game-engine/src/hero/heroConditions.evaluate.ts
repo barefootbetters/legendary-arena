@@ -15,18 +15,129 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { HeroCondition } from '../rules/heroAbility.types.js';
 import { getHooksForCard } from '../rules/heroAbility.types.js';
-import { cardHasClassWhenPlayed, getGrantedClasses, getCopiedClasses } from './sizeChanging.logic.js';
+import { cardHasClassWhenPlayed, hasSizeChanging, getCopiedClasses } from './sizeChanging.logic.js';
 import { cardCountsAsTeamMember } from './effectiveTeams.logic.js';
 import { BYSTANDER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { computeDayNight } from '../rules/dayNight.logic.js';
-import { offPlayCardTraits, playedCardIdsStillInPlay, playedCardIdsThisTurn } from './splitCard.logic.js';
+import {
+  matchesGreyHeroFilter,
+  offPlayCardStats,
+  offPlayCardTraits,
+  playedCardIdsStillInPlay,
+  playedCardIdsThisTurn,
+} from './splitCard.logic.js';
 import { heroClassDisplayName, teamDisplayName } from '../log/logDisplay.js';
+import { CITY_SPACE_NAMES } from '../board/citySpaceNames.js';
 
 // why: WP-777 / D-24616 — the one literal for "If you discarded any cards this turn"
 // (New Wings, Pumpkin Bombs). The setup marker arm, the evaluate + describe cases, the
 // wait-and-see list and the discardFromHand counter gate all key on this value, so a
 // named constant keeps them from drifting apart.
 export const CARDS_DISCARDED_THIS_TURN_CONDITION_TYPE = 'cardsDiscardedThisTurnAtLeast';
+
+// why: WP-853 / D-24789 — the one literal for "Whenever a card you own is KO'd this turn"
+// (Bishop's Absorb Energies). The setup marker arm, the evaluate + describe cases, the
+// wait-and-see list, the always-defer branch and the per-KO firing all key on it. It lives
+// here, not in deferredConditionalGrants.ts, because that module imports this one: defining
+// it there would make this file import it back, a load-order cycle that leaves the
+// MASTER_STRIKE_* bindings below uninitialized when the wait-and-see list reads them.
+export const OWNED_CARD_KOED_CONDITION_TYPE = 'ownedCardKoedThisTurn';
+
+// why: WP-856 / D-24792 — the one literal for "The first time that one of your Heroes or a
+// Hero from your deck or discard pile is KO'd this turn" (Doctor Voodoo's Possessed by
+// Brother's Spirit). Lives here beside OWNED_CARD_KOED_CONDITION_TYPE for the same
+// load-order reason.
+export const OWNED_HERO_KOED_CONDITION_TYPE = 'ownedHeroKoedThisTurn';
+
+// why: WP-855 / D-24791 — the one literal for "Whenever a card is KO'd from your deck this
+// turn" (Miek's Endless Appetite), the deck-only sibling of the owned-KO trigger. Lives here
+// beside OWNED_CARD_KOED_CONDITION_TYPE for the same load-order reason.
+export const DECK_CARD_KOED_CONDITION_TYPE = 'deckCardKoedThisTurn';
+
+// why: WP-859 / D-24795 — the two literals for "Then, if a card with an [icon:attack] icon /
+// a non-grey Hero was KO'd from your deck this turn, Transform" (Miek's Metamorphosis, No-Name's
+// Bursting with Life). Both read the turn-scoped G.cardsKoedFromDeckThisTurn record. They live
+// here beside DECK_CARD_KOED_CONDITION_TYPE for the same load-order reason.
+export const ATTACK_ICON_DECK_KO_CONDITION_TYPE = 'attackIconCardKoedFromDeckThisTurn';
+export const NON_GREY_HERO_DECK_KO_CONDITION_TYPE = 'nonGreyHeroKoedFromDeckThisTurn';
+
+// why: WP-881 / D-24832 — the two literals for a hero "[keyword:Patrol the <space>]: If it's
+// empty, … If it's not, …" line (Midnight Sons, Secret Wars Vol. 2). The setup parser, the
+// evaluate + describe cases, the Synergy exclusion, the failed-Patrol clause rule and the hero
+// mechanic ledger all key on these, so a named constant keeps them from drifting apart
+// (HeroCondition.type is a bare string and the evaluator's default is false, so a typo would
+// silently never fire). condition.value is the CitySpaceName ('sewers' … 'bridge'). This is
+// NOT the D-2502 villain board keyword Patrol (+1 fight cost), a different mechanic.
+export const PATROL_SPACE_EMPTY_CONDITION_TYPE = 'patrolSpaceEmpty';
+export const PATROL_SPACE_OCCUPIED_CONDITION_TYPE = 'patrolSpaceOccupied';
+
+// why: WP-886 / D-24837 — the literal for a hero "[keyword:<Space> Conqueror N]" line ("You get
+// +N [Attack] if any Villain is on the <Space>", rules v23 L1157-1159). Its evaluation matches
+// patrolSpaceOccupied today, but it is a distinct type so the Firelord follow-up ("your Heroes'
+// Conqueror abilities also give you Attack if those city spaces have been destroyed") can pass
+// Conqueror on a destroyed space without touching Patrol, and so the hero mechanic ledger can
+// classify `conqueror` by its own condition. condition.value is the CitySpaceName.
+export const CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE = 'conquerorSpaceHasVillain';
+
+// ---------------------------------------------------------------------------
+// Patrol helpers (WP-881 / D-24832)
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the G.city index of the City space a Patrol condition names, or -1 when that
+ * space cannot be patrolled.
+ *
+ * // why: WP-881 / D-24832 — -1 for a value that is not a CITY_SPACE_NAMES entry, a
+ * non-array G.city, or an index at or past G.city.length: a shortened City has lost its far
+ * spaces (D-24764), and rules v23 ~L1780 says that if a card effect makes the City space not
+ * exist, the Patrol ability can't be used at all. Both Patrol gates fail on -1. Pure read.
+ *
+ * @param G - Current game state (read-only).
+ * @param spaceName - The condition's value (a CitySpaceName).
+ * @returns The space's City index, or -1.
+ */
+function patrolSpaceIndex(G: LegendaryGameState, spaceName: string): number {
+  const spaceIndex = (CITY_SPACE_NAMES as readonly string[]).indexOf(spaceName);
+  if (spaceIndex === -1 || !Array.isArray(G.city) || spaceIndex >= G.city.length) {
+    return -1;
+  }
+  return spaceIndex;
+}
+
+/**
+ * Describes why a Patrol condition failed, for the "… ability did not activate — …" log line
+ * (WP-881 / D-24832).
+ *
+ * @param G - Current game state (read-only).
+ * @param condition - The failed patrolSpaceEmpty / patrolSpaceOccupied condition.
+ * @returns The clause naming the space and why the Patrol failed.
+ */
+function describeFailedPatrolCondition(G: LegendaryGameState, condition: HeroCondition): string {
+  const spaceLabel = condition.value.charAt(0).toUpperCase() + condition.value.slice(1);
+  if (patrolSpaceIndex(G, condition.value) === -1) {
+    return `there is no ${spaceLabel} in the City`;
+  }
+  if (condition.type === PATROL_SPACE_EMPTY_CONDITION_TYPE) {
+    return `there's a card in the ${spaceLabel}`;
+  }
+  return `nothing is in the ${spaceLabel}`;
+}
+
+/**
+ * Describes why a Conqueror condition failed, for the "… did not activate[ one of its
+ * abilities] — …" log line (WP-886 / D-24837).
+ *
+ * @param G - Current game state (read-only).
+ * @param condition - The failed conquerorSpaceHasVillain condition.
+ * @returns The clause naming the space and why the Conqueror bonus did not apply.
+ */
+function describeFailedConquerorCondition(G: LegendaryGameState, condition: HeroCondition): string {
+  const spaceLabel = condition.value.charAt(0).toUpperCase() + condition.value.slice(1);
+  if (patrolSpaceIndex(G, condition.value) === -1) {
+    return `there is no ${spaceLabel} in the City`;
+  }
+  return `no Villain is in the ${spaceLabel}`;
+}
 
 // ---------------------------------------------------------------------------
 // matchReadsConditionType — does any hook in this match read a condition?
@@ -333,11 +444,11 @@ export function evaluateCondition(
         for (const cardId of zone) {
           const cost = G.cardStats[cardId as CardExtId]?.cost ?? 0;
           const isCheap = cost === 1 || cost === 2;
-          // why: getGrantedClasses reads G.cardSizeChangingClasses (the
-          // Size-Changing grant map), distinct from Copy-Powers' class/team maps
-          // (cardCopiedClasses / cardCopiedTeams, D-24730), so a non-empty list
-          // identifies Size-Changing specifically — not a copy.
-          const isSizeChanging = getGrantedClasses(G, cardId as CardExtId).length > 0;
+          // why: hasSizeChanging reads the Size-Changing and Microscopic maps (D-24801;
+          // Microscopic "is a type of Size-Changing", rules v23 p.30), distinct from
+          // Copy-Powers' class/team maps (cardCopiedClasses / cardCopiedTeams, D-24730),
+          // so it identifies Size-Changing specifically — not a copy.
+          const isSizeChanging = hasSizeChanging(G, cardId as CardExtId);
           if (isCheap || isSizeChanging) {
             matchCount += 1;
           }
@@ -355,6 +466,58 @@ export function evaluateCondition(
       // after a qualifying defeat — never sticky. Ignores condition.value (a boolean
       // gate, no threshold). Safe-skip parity: an absent flag reads false, never throws.
       return G.villainOrMastermindDefeatedSinceResolve === true;
+    }
+
+    case OWNED_CARD_KOED_CONDITION_TYPE: {
+      // why: WP-853 / D-24789 — Absorb Energies' "Whenever a card you own is KO'd this
+      // turn". The D-24467 edge with a per-owner COUNT: the owned KO sites add to
+      // G.ownedCardsKoedSinceResolve (gated on a waiting grant), the resolve fires once per
+      // counted KO and deletes it, so the gate is true only right after a KO of this
+      // player's own card. Ignores condition.value. An absent map reads false.
+      return (G.ownedCardsKoedSinceResolve?.[playerID] ?? 0) > 0;
+    }
+
+    case OWNED_HERO_KOED_CONDITION_TYPE: {
+      // why: WP-856 / D-24792 — Possessed by Brother's Spirit's "The first time that one of
+      // your Heroes … is KO'd this turn". Reads the per-owner Hero-KO count the owned KO sites
+      // add to (gated on a waiting grant; Wounds and Bystanders skipped) and the resolve
+      // deletes. The grant is not re-armed, so it fires on the first counted KO only.
+      // Ignores condition.value. An absent map reads false.
+      return (G.ownedHeroesKoedSinceResolve?.[playerID] ?? 0) > 0;
+    }
+
+    case DECK_CARD_KOED_CONDITION_TYPE: {
+      // why: WP-855 / D-24791 — Endless Appetite's "Whenever a card is KO'd from your deck this
+      // turn". The owned-KO count narrowed to the deck: the owned KO sites that take a card from
+      // this player's deck add to G.deckCardsKoedSinceResolve (gated on a waiting grant), and the
+      // resolve fires once per counted KO and deletes it. Ignores condition.value. An absent map
+      // reads false.
+      return (G.deckCardsKoedSinceResolve?.[playerID] ?? 0) > 0;
+    }
+
+    case ATTACK_ICON_DECK_KO_CONDITION_TYPE: {
+      // why: WP-859 / D-24795 — Metamorphosis' "if a card with an [icon:attack] icon was KO'd
+      // from your deck this turn". Reads the turn record (KOs before the play count), so it is a
+      // sticky shape-#1 gate: once true it stays true for the turn. The off-play stat view makes
+      // a split card count when either face prints an Attack icon. Ignores condition.value.
+      for (const koedCardId of G.cardsKoedFromDeckThisTurn?.[playerID] ?? []) {
+        if (offPlayCardStats(G, koedCardId)?.hasAttackIcon === true) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    case NON_GREY_HERO_DECK_KO_CONDITION_TYPE: {
+      // why: WP-859 / D-24795 — Bursting with Life's "if a non-grey Hero was KO'd from your deck
+      // this turn". The same turn record; Wounds, Bystanders and grey Heroes fail the filter.
+      // Ignores condition.value.
+      for (const koedCardId of G.cardsKoedFromDeckThisTurn?.[playerID] ?? []) {
+        if (matchesGreyHeroFilter(G, koedCardId, 'non-grey')) {
+          return true;
+        }
+      }
+      return false;
     }
 
     case MASTER_STRIKE_THIS_TURN_CONDITION_TYPE: {
@@ -376,7 +539,7 @@ export function evaluateCondition(
       // why: D-24544 — X-Gene glossary ("X-Gene [class]: <effect>" means "If you have a
       // [class] card in your discard pile, <effect>."): true iff the acting player's
       // discard pile holds >=1 card whose PRINTED class equals condition.value. Printed
-      // class only — Size-Changing grants are an in-play-only effect and never apply to a
+      // class only — a Copy Powers copy is an in-play-only effect and never applies to a
       // discarded card, mirroring the hand-half of countDistinctHeroClassesYouHave.
       // condition.value is the class read from the co-located [hc:X] token at parse time,
       // never a hardcoded literal.
@@ -397,6 +560,39 @@ export function evaluateCondition(
       // why: WP-765 / D-24598 — the Moonlight mirror of the case above (most HQ Heroes have odd
       // printed costs); a tie is neither, so both day/night gates fail on a tie.
       return computeDayNight(G) === 'moonlight';
+    }
+
+    case PATROL_SPACE_EMPTY_CONDITION_TYPE: {
+      // why: WP-881 / D-24832 — hero Patrol (rules v23 ~L1772-1780): "Patrol the Bridge: If it's
+      // empty, …" works only while that City space holds no card. Read from G.city as the hook
+      // resolves, never cached (abilities resolve one at a time, ~L2603-2610). A space the City
+      // no longer has (D-24764) cannot be patrolled, so both Patrol gates fail there. A Location
+      // is not stored in G.city, so a Location above an empty space still reads empty (~L2486).
+      // Deliberately NOT a wait-and-see type: "If that city space becomes empty later in the
+      // turn, it's too late."
+      const spaceIndex = patrolSpaceIndex(G, condition.value);
+      return spaceIndex !== -1 && G.city[spaceIndex] === null;
+    }
+
+    case PATROL_SPACE_OCCUPIED_CONDITION_TYPE: {
+      // why: WP-881 / D-24832 — the "If it's not, …" mirror of the case above; a missing space
+      // fails this one too.
+      const spaceIndex = patrolSpaceIndex(G, condition.value);
+      return spaceIndex !== -1 && G.city[spaceIndex] !== null;
+    }
+
+    case CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE: {
+      // why: WP-886 / D-24837 — hero Conqueror (rules v23 L1157-1159): "Bridge Conqueror 1" means
+      // "You get +1 [Attack] if any Villain is on the Bridge", the same "if" every hero ability
+      // resolves when it is used (L2603-2610), so G.city is read as the hook resolves, never
+      // cached. A destroyed / removed space no longer exists, so Conqueror does nothing there
+      // (L1481-1485, D-24764): patrolSpaceIndex returns -1 and this fails. Every G.city occupant
+      // is a Villain (each writer places a villain / henchman / Mandarin's Ring, swaps or moves
+      // an existing occupant, clears a space, or builds an empty City; Locations are not in
+      // G.city — WP-886 §Assumes 4), so "a card is in the space" means "a Villain is". NOT a
+      // wait-and-see type: a Villain entering the space later in the turn does not fire it.
+      const spaceIndex = patrolSpaceIndex(G, condition.value);
+      return spaceIndex !== -1 && G.city[spaceIndex] !== null;
     }
 
     default: {
@@ -603,9 +799,10 @@ export function findFailedCondition(
  *
  * Gray S.H.I.E.L.D. basics / Officers / Sidekicks carry no `heroClass` (no color),
  * so they never add to the count — matching the printed "color of Hero" wording.
- * A dual-class card contributes BOTH printed classes (WP-703). getGrantedClasses
- * (Size-Changing) is applied only to in-play cards, because that grant is an
- * in-play effect; a card in hand contributes only its printed color(s).
+ * A dual-class card contributes BOTH printed classes (WP-703). A Copy Powers copied
+ * class (D-24730) is applied only to in-play cards, because the copy belongs to the
+ * play; a card in hand contributes only its printed color(s). Size-Changing adds no
+ * color (D-24801: it is a recruit discount, not a class grant).
  *
  * @param G - Current game state (read-only).
  * @param playerID - Active player ID.
@@ -621,7 +818,7 @@ export function countDistinctHeroClassesYouHave(
   }
   const distinctClasses = new Set<string>();
   // why: HAND half — a Hero still in hand counts as "a Hero you have"; use its
-  // printed color(s) only (no Size-Changing grant, which is an in-play effect).
+  // printed color(s) only (no copied class, which belongs to a play).
   for (const handCardId of playerZones.hand) {
     // why: WP-772 / D-24604 — only the HAND half reads the off-play view: a split card in hand
     // counts as both halves' classes (rules v23 p.49), resolved through the split-face map.
@@ -636,8 +833,7 @@ export function countDistinctHeroClassesYouHave(
     }
   }
   // why: PLAY-AREA half — the one played-card class read for both this count and the
-  // Spectrum gate, including heroClass2 and getGrantedClasses (an in-play
-  // Size-Changing Hero contributes each granted color).
+  // Spectrum gate, including heroClass2 and a Copy Powers copied class.
   // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
   // why: WP-803 / D-24692 — a "Heroes you have" read (hand + still in play), so a card that went Out of Time is excluded: rules v23 L3443-3447 (a played card that moved elsewhere doesn't count as "Your Heroes" or "Heroes you Have") + L3457-3470 ("Reveal a Hero" / "KO one of your Heroes" can't pick it).
   for (const playedCardId of playedCardIdsStillInPlay(G, playerZones.inPlay)) {
@@ -648,12 +844,21 @@ export function countDistinctHeroClassesYouHave(
     if (traitEntry !== undefined && typeof traitEntry.heroClass2 === 'string' && traitEntry.heroClass2.length > 0) {
       distinctClasses.add(traitEntry.heroClass2);
     }
-    for (const grantedClass of getGrantedClasses(G, playedCardId as CardExtId)) {
-      distinctClasses.add(grantedClass);
-    }
     // why: D-24730 — Copy Powers' copied class lives in its own turn-scoped map.
     for (const copiedClass of getCopiedClasses(G, playedCardId as CardExtId)) {
       distinctClasses.add(copiedClass);
+    }
+  }
+  // why: WP-858 / D-24794 — CONTROLLED-ARTIFACT half. Rules v23 L930-932: "your Heroes" / "Heroes
+  // you have" include Hero Artifacts you control. Printed class(es) only — a controlled Artifact was
+  // not played this turn, so no copied class applies.
+  for (const artifactCardId of G.controlledArtifacts?.[playerID] ?? []) {
+    const traitEntry = G.cardTraits[artifactCardId];
+    if (traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0) {
+      distinctClasses.add(traitEntry.heroClass);
+    }
+    if (traitEntry !== undefined && typeof traitEntry.heroClass2 === 'string' && traitEntry.heroClass2.length > 0) {
+      distinctClasses.add(traitEntry.heroClass2);
     }
   }
   return distinctClasses.size;
@@ -722,7 +927,7 @@ function countBystandersInVictory(G: LegendaryGameState, playerID: string): numb
  * (`heroClass` or `heroClass2`) equals the given class slug — the scan behind the
  * `heroClassInDiscardPile` condition (D-24544 / WP-723, X-23's X-Gene).
  *
- * why: reads PRINTED class only (`G.cardTraits`), never Size-Changing grants (an
+ * why: reads PRINTED class only (`G.cardTraits`), never a Copy Powers copy (an
  * in-play-only effect that cannot apply to a discarded card), mirroring the hand-half
  * of `countDistinctHeroClassesYouHave`. Explicit `for...of`, no `.reduce()`
  * (.claude/rules/code-style.md). A discarded token with no `cardTraits` row (a
@@ -777,7 +982,7 @@ function countCheapOrSizeChanging(G: LegendaryGameState, playerID: string): numb
     for (const cardId of zone) {
       const cost = G.cardStats[cardId as CardExtId]?.cost ?? 0;
       const isCheap = cost === 1 || cost === 2;
-      const isSizeChanging = getGrantedClasses(G, cardId as CardExtId).length > 0;
+      const isSizeChanging = hasSizeChanging(G, cardId as CardExtId);
       if (isCheap || isSizeChanging) {
         count += 1;
       }
@@ -853,7 +1058,8 @@ export function describeFailedCondition(
     case 'distinctHeroClassesAtLeast': {
       // why: D-24694 — quotes the same hand + play count the gate compared.
       const distinct = countDistinctHeroClassesYouHave(G, playerID);
-      return `it needs ${condition.value} different Hero classes in hand or play — you have ${distinct}`;
+      // why: WP-858 / D-24794 — the count now includes the Artifacts the player controls.
+      return `it needs ${condition.value} different Hero classes in hand, play, or Artifacts you control — you have ${distinct}`;
     }
 
     case 'recruitMadeThisTurnAtLeast':
@@ -901,6 +1107,29 @@ export function describeFailedCondition(
       // the moment a qualifying defeat lands this turn), matching the recorded log text.
       return 'it needs you to defeat a Villain or Mastermind this turn';
 
+    case OWNED_CARD_KOED_CONDITION_TYPE:
+      // why: WP-853 / D-24789 — a per-KO trigger with no running total to quote; the
+      // wait-and-see "not yet" phrasing, like the defeat gate above.
+      return 'it needs a card you own to be KO\'d this turn';
+
+    case OWNED_HERO_KOED_CONDITION_TYPE:
+      // why: WP-856 / D-24792 — a one-shot trigger with no running total to quote; the
+      // wait-and-see "not yet" phrasing, like the owned-KO gate above.
+      return 'it needs a Hero of yours to be KO\'d this turn';
+
+    case DECK_CARD_KOED_CONDITION_TYPE:
+      // why: WP-855 / D-24791 — a per-KO trigger with no running total to quote; the
+      // wait-and-see "not yet" phrasing, like the owned-KO gate above.
+      return 'it needs a card to be KO\'d from your deck this turn';
+
+    case ATTACK_ICON_DECK_KO_CONDITION_TYPE:
+      // why: WP-859 / D-24795 — a boolean turn-record gate; no running count to quote.
+      return 'it needs a card with an Attack icon to be KO\'d from your deck this turn';
+
+    case NON_GREY_HERO_DECK_KO_CONDITION_TYPE:
+      // why: WP-859 / D-24795 — a boolean turn-record gate; no running count to quote.
+      return 'it needs a non-grey Hero to be KO\'d from your deck this turn';
+
     case MASTER_STRIKE_THIS_TURN_CONDITION_TYPE:
       // why: WP-743 / D-24566 — a boolean per-turn gate; no running count to quote.
       return 'it needs a Master Strike played this turn';
@@ -924,6 +1153,16 @@ export function describeFailedCondition(
 
     case 'moonlightInEffect':
       return "it isn't Moonlight";
+
+    case PATROL_SPACE_EMPTY_CONDITION_TYPE:
+    case PATROL_SPACE_OCCUPIED_CONDITION_TYPE:
+      // why: WP-881 / D-24832 — a boolean board-state gate on one named City space.
+      return describeFailedPatrolCondition(G, condition);
+
+    case CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE:
+      // why: WP-886 / D-24837 — a boolean board-state gate on one named City space; it names a
+      // Villain rather than Patrol's "nothing".
+      return describeFailedConquerorCondition(G, condition);
 
     default:
       return `its play condition could not be evaluated (unrecognized condition type "${condition.type}")`;

@@ -2,6 +2,7 @@
 import { defineComponent, ref, watch, type PropType } from 'vue';
 import type {
   UIEnigmaCodeState,
+  UIFortifier,
   UIMastermindState,
   UITurnEconomyState,
 } from '@legendary-arena/game-engine';
@@ -11,6 +12,7 @@ import CardTile from './CardTile.vue';
 import DarkPortalMarker from './DarkPortalMarker.vue';
 import CrossedSwordsIcon from './CrossedSwordsIcon.vue';
 import EnigmaGuessPicker from './EnigmaGuessPicker.vue';
+import FortifiedVillains from './FortifiedVillains.vue';
 import type { SubmitMove } from './uiMoveName.types';
 
 /**
@@ -50,12 +52,19 @@ import type { SubmitMove } from './uiMoveName.types';
  */
 export default defineComponent({
   name: 'MastermindTile',
-  components: { CardTile, DarkPortalMarker, CrossedSwordsIcon, EnigmaGuessPicker },
+  components: { CardTile, DarkPortalMarker, CrossedSwordsIcon, EnigmaGuessPicker, FortifiedVillains },
   emits: ['read'],
   props: {
     mastermind: {
       type: Object as PropType<UIMastermindState>,
       required: true,
+    },
+    // why: D-24819 — UIState.city.fortifiers. A Villain fortifying the Mastermind
+    // (Colleen Wing) is drawn on this tile with its own Fight button.
+    fortifiers: {
+      type: Array as PropType<UIFortifier[]>,
+      required: false,
+      default: () => [],
     },
     // why: WP-727 / D-24548 — the Portals Dark Portal above the Mastermind, as a
     // +N attack. Derived by the parent from scheme.darkPortals (0 = no portal /
@@ -104,6 +113,14 @@ export default defineComponent({
       required: false,
       default: undefined,
     },
+    // why: WP-854 / D-24790 — the band stand-up of the Mastermind card. Only
+    // PlayDesktop sets it (from useBoardTilt's lift gate); every other use,
+    // PlayMobile included, keeps it false and renders the tile as before.
+    isTiltLiftEnabled: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   setup(props, { emit }) {
     // why: WP-830 / D-24763 — null while no guess is being made; otherwise whether the fight the
@@ -148,7 +165,7 @@ export default defineComponent({
 
     function mastermindFightCost(): number | null {
       // why: WP-750 / D-24574 — the engine's projected cost
-      // (resolveMastermindFightCost: printed + the Portals Dark-Portal bonus) is
+      // (resolveMastermindFightPrice: printed + the Portals Dark-Portal bonus, less Size-Changing) is
       // the only fight-cost source. The `display.cost` fallback covers only
       // snapshots from before `fightCost` existed; it never adds a term itself.
       const mastermindFightCost = props.mastermind.fightCost ?? props.mastermind.display.cost;
@@ -199,6 +216,23 @@ export default defineComponent({
       const cost = useCardCostGating(props.economy).canFight(mastermindFightCost(), 'mastermind');
       if (!cost.allowed) {
         return cost;
+      }
+      // why: WP-757 / D-24587 — while the Mastermind haunts an HQ Hero the engine's
+      // fightMastermind refuses the fight (isMastermindHaunting), so a live button here
+      // would be a WP-750 / D-24574 dead button. Every submit path (plain, Excessive
+      // Violence, the Enigma picker) goes through this gate, so one arm covers them all.
+      if (props.mastermind.isHaunting === true) {
+        return {
+          allowed: false,
+          reason: 'The Mastermind is haunting a Hero in the HQ. Exorcise that Hero first.',
+        };
+      }
+      // why: WP-873 / D-24818 — while a Villain fortifies the Mastermind (Colleen Wing) the
+      // engine's fightMastermind refuses (isMastermindFortified). A structural lock, so it sits
+      // after the resource gates and beside the Haunt lock, before the tactics check; the
+      // engine writes the reason, and every submit path goes through this gate.
+      if (props.mastermind.fortifiedReason !== undefined) {
+        return { allowed: false, reason: props.mastermind.fortifiedReason };
       }
       if (props.mastermind.tacticsRemaining === 0) {
         // why: WP-687 / D-24504 — under the optional Final Blow rule, an
@@ -316,9 +350,18 @@ export default defineComponent({
 <template>
   <section
     class="mastermind-tile"
+    :class="{
+      'mastermind-tile--tilt-lift': isTiltLiftEnabled,
+      'mastermind-tile--guessing': enigmaGuessFight !== null && enigmaCode !== undefined,
+      'mastermind-tile--fortified': mastermind.fortifiedReason !== undefined,
+    }"
     data-testid="play-mastermind-tile"
     aria-label="Mastermind"
   >
+    <!-- why: WP-854 / D-24790 — mastermind-tile--guessing mirrors the Enigma
+         picker's own v-if, verbatim, so the card stays flat while the guess is
+         open. The plane's rule already sits inside :has(), which cannot nest, so
+         it tests this static class. -->
     <!-- why: WP-727 / D-24548 — the Portals Dark Portal above the Mastermind
          (twist 1). Shown only when darkPortalBonus > 0 (0 = no portal / a
          non-Portals scheme); the +N is prop-driven, never hardcoded. -->
@@ -376,6 +419,7 @@ export default defineComponent({
           data-testid="play-mastermind-fight-cost"
         >Fight {{ mastermind.fightCost }}</span>
       </span>
+
       <span class="mastermind-status" data-testid="play-mastermind-tactics-remaining">
         Tactics remaining: {{ mastermind.tacticsRemaining }}
       </span>
@@ -392,6 +436,31 @@ export default defineComponent({
         Final blow — fight the Mastermind
       </span>
     </button>
+    <!-- why: WP-759 / D-24587 — while the Mastermind haunts an HQ Hero it can't be
+         fought (the gateForFight haunt lock, PR #3207, already disables the button and
+         hides Excessive Violence); this badge says so without a hover. A sibling of the
+         Fight button in normal flow, like the Fortify chip below. role="status"
+         announces it. -->
+    <span
+      v-if="mastermind.isHaunting === true"
+      class="mastermind-haunting"
+      data-testid="play-mastermind-haunting"
+      role="status"
+    >
+      Haunting an HQ Hero — exorcise it to fight
+    </span>
+    <!-- why: D-24819 — Fortify puts the Villain near the Mastermind (rules v23 L1454). A
+         sibling of the Fight button (a button cannot hold a button), under it in normal
+         flow, never over the card. -->
+    <FortifiedVillains
+      :fortifiers="fortifiers"
+      place="mastermind"
+      :current-stage="currentStage"
+      :is-viewer-turn="isViewerTurn"
+      :has-healed-this-turn="hasHealedThisTurn"
+      :economy="economy"
+      :submit-move="submitMove"
+    />
     <!-- why: WP-738 / D-24561 — the "Fight using Excessive Violence" affordance
          against the Mastermind. A SEPARATE opt-in button (the normal Fight click
          above is unchanged); shown only when the fight is allowed AND the player
@@ -409,15 +478,20 @@ export default defineComponent({
       <span class="mastermind-ev-fight-label">Excessive Violence</span>
       <span class="mastermind-ev-fight-cost">+1</span>
     </button>
-    <!-- why: WP-830 / D-24763 — the Enigma Code guess a Mastermind fight starts with. -->
-    <EnigmaGuessPicker
-      v-if="enigmaGuessFight !== null && enigmaCode !== undefined"
-      :key="enigmaPickerKey()"
-      class="mastermind-tile__enigma-guess"
-      :enigma-code="enigmaCode"
-      @submit="onEnigmaGuess"
-      @cancel="enigmaGuessFight = null"
-    />
+    <!-- why: WP-830 / D-24763 — the Enigma Code guess a Mastermind fight starts with.
+         Jeff feedback (Loki / Enigma Code 2p, 2026-10-31): drawn inside the tile it
+         was ~125×112 px on the scaled, tilted board, each card's colors wrapped two
+         to a line and the sticky actions hid the "Card 2" label, so a click read as
+         one card's landed on the next. It is a body-level dialog now; the Teleport
+         also keeps it out of the board's scale-to-fit, so the board never rescales. -->
+    <Teleport v-if="enigmaGuessFight !== null && enigmaCode !== undefined" to="body">
+      <EnigmaGuessPicker
+        :key="enigmaPickerKey()"
+        :enigma-code="enigmaCode"
+        @submit="onEnigmaGuess"
+        @cancel="enigmaGuessFight = null"
+      />
+    </Teleport>
     <!-- why: the full card + Master-Strike / special rules open in the shared
          CardReaderModal instead of rendering inline, so the tile stays short
          (Jeff: the top row wasted vertical space without being readable). -->
@@ -471,18 +545,7 @@ export default defineComponent({
 </template>
 
 <style scoped>
-/* why: WP-830 / D-24763 — the Enigma guess opens ON TOP of the tile (the #2970 Primus chooser
-   precedent), never inline: an inline picker would grow the nowrap adversary band and make
-   useScaleToFit shrink the whole 1280x720 board mid-guess. */
-.mastermind-tile__enigma-guess {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  overflow-y: auto;
-}
-
 .mastermind-tile {
-  /* why: WP-830 / D-24763 — the positioning context of the Enigma guess overlay. */
   position: relative;
   display: flex;
   flex-direction: column;
@@ -608,6 +671,18 @@ export default defineComponent({
   font-weight: 700;
 }
 
+/* why: WP-759 — the Haunting badge, in the haunter-strip purple HQRow uses, so the
+   locked Mastermind reads as tied to the haunted HQ Hero. */
+.mastermind-haunting {
+  align-self: flex-start;
+  padding: 0.1rem 0.45rem;
+  border-radius: 0.75rem;
+  background: var(--color-haunt, #5b21b6);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 /* why: WP-738 / D-24561, graphic fix-forward 2026-09-22 — the "Fight using
    Excessive Violence" opt-in against the Mastermind. A filled RED overspend action
    so it reads as a deliberate, costly extra-attack fight distinct from the normal
@@ -706,5 +781,41 @@ export default defineComponent({
 
 .mastermind-thralls-item {
   display: flex;
+}
+
+/* why: WP-854 / D-24790 — the Mastermind card stands up on hover, as the City
+   and HQ cards do (D-24788). Pointer devices only, and only under --tilt-lift.
+   Every link from the tile down to the card frame preserves 3D, or the card
+   would rise but stay tilted; the links are on only while the fight button is
+   hovered, because at rest coplanar preserve-3d layers z-fight in Chrome's hit
+   test and steal clicks (EC-890 Amendment A). Never while the Enigma guess is
+   open (--guessing), and never while a Villain fortifies the Mastermind
+   (--fortified, D-24819): the lifted card would rise over the fortifier chip and
+   take its clicks, and the Fight button is locked anyway. */
+@media (hover: hover) {
+  .mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):not(.mastermind-tile--fortified):has(.mastermind__fight-button:hover),
+  .mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):not(.mastermind-tile--fortified):has(.mastermind__fight-button:hover) .mastermind__fight-button,
+  .mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):not(.mastermind-tile--fortified):has(.mastermind__fight-button:hover) .mastermind__card-frame {
+    transform-style: preserve-3d;
+  }
+  /* why: the bottom-edge origin makes the card rise off the table rather than
+     into it, and keeps that edge put (no dead click strip; hence no translateY). */
+  .mastermind-tile--tilt-lift .mastermind__card-frame {
+    transform-origin: 50% 100%;
+    transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+  }
+  /* why: lift the card frame, not the button. The button also holds the
+     "Tactics remaining" and Final Blow lines, which stay on the table, and it is
+     the hover target that never moves, so the lifted card cannot flicker out from
+     under the pointer. */
+  .mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):not(.mastermind-tile--fortified) .mastermind__fight-button:hover .mastermind__card-frame {
+    transform: rotateX(calc(-1 * var(--board-tilt-angle))) scale(1.06);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  }
+  /* why: the tile's own 1.05 hover scale would compound with the lift; inside a
+     lifting frame the lifted card is exactly 1.06. */
+  .mastermind-tile--tilt-lift .mastermind__card-frame .card-tile--interactive:hover {
+    transform: none;
+  }
 }
 </style>

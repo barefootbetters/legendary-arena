@@ -351,3 +351,33 @@ describe('WP-757 — checkNoCardInMultipleZones visits Villain haunters in G.hqH
   });
 });
 
+
+// ===========================================================================
+// WP-873 / D-24818 — a fortifying Villain is a card container for uniqueness
+// ===========================================================================
+
+describe('WP-873 — checkNoCardInMultipleZones visits fortifiers in G.fortifications', () => {
+  const fortifierCardId = 'test-injection-unique-fortifier-001';
+
+  test('T32: passes with the fortifier only in the table', () => {
+    const G = buildValidGameState();
+    G.fortifications = { 'sidekick-stack': { villainCardId: fortifierCardId, lock: 'no-recruit-or-gain' } };
+    assert.doesNotThrow(() => runAllInvariantChecks(G, SETUP_CONTEXT));
+  });
+
+  test('T32: fails with gameRules category when the fortifier is also in a Victory Pile', () => {
+    const G = buildValidGameState();
+    // why: models a fortifier fight that pushed the Villain to the Victory Pile without
+    // removeFortification — the exact bug class the G.fortifications visit exists to catch.
+    G.playerZones['0']!.victory.push(fortifierCardId);
+    G.fortifications = { 'sidekick-stack': { villainCardId: fortifierCardId, lock: 'no-recruit-or-gain' } };
+    assert.throws(
+      () => runAllInvariantChecks(G, SETUP_CONTEXT),
+      (error: Error) =>
+        error instanceof InvariantViolationError &&
+        error.category === 'gameRules' &&
+        error.message.includes(`'${fortifierCardId}'`) &&
+        error.message.includes("'fortifications.sidekick-stack'"),
+    );
+  });
+});

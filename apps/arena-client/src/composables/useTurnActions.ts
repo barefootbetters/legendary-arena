@@ -102,6 +102,7 @@ const NOT_YOUR_TURN: GatingResult = {
  *   - `canRecruitHero`     → `recruitHero` at `play.main`
  *   - `canRecruitOfficer`  → `recruitOfficer` at `play.main` (WP-648)
  *   - `canRecruitSidekick` → `recruitSidekick` at `play.main` (WP-842)
+ *   - `canExorciseHauntedHero` → `exorciseHauntedHero` at `play.main` (WP-759)
  *   - `canFightMastermind` → `fightMastermind` at `play.main`
  *   - `canPassPriority`    → `advanceStage` at any stage (canonical
  *                             stage-advance per D-10011)
@@ -330,6 +331,7 @@ export function useTurnActions(
   canRecruitHero: () => GatingResult;
   canRecruitOfficer: () => GatingResult;
   canRecruitSidekick: () => GatingResult;
+  canExorciseHauntedHero: () => GatingResult;
   canFightMastermind: () => GatingResult;
   canPassPriority: () => GatingResult;
   canEndTurn: () => GatingResult;
@@ -392,6 +394,17 @@ export function useTurnActions(
         return { allowed: false, reason: stageGateReason(currentStage, 'main') };
       }
       return healLockGate(hasHealedThisTurn);
+    },
+    // why: WP-759 / D-24587 — the turn + stage gate for exorcising a Haunted HQ Hero
+    // (exorciseHauntedHero runs only in `main`). Turn + stage only: HQRow layers the
+    // exorcise-worded heal lock and the cost check on top, in the engine guard's order,
+    // so the button never offers a move the engine will no-op.
+    canExorciseHauntedHero: () => {
+      if (!isViewerTurn) return NOT_YOUR_TURN;
+      if (currentStage !== 'main') {
+        return { allowed: false, reason: stageGateReason(currentStage, 'main') };
+      }
+      return ALLOWED;
     },
     canFightMastermind: () => {
       if (!isViewerTurn) return NOT_YOUR_TURN;

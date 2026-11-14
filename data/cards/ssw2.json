@@ -60,7 +60,7 @@
           "recruit": "2",
           "abilities": [
             "[keyword:Wall-Crawl]",
-            "[keyword:Patrol the Sewers]: If it's empty, draw a card."
+            "[keyword:Patrol the Sewers]: If it's empty, draw a card. [keyword:draw:1]"
           ]
         },
         {
@@ -506,7 +506,7 @@
           "attack": "3",
           "recruit": null,
           "abilities": [
-            "[keyword:Patrol the Streets]: If it's empty, you may KO a card from your hand or discard pile."
+            "[keyword:Patrol the Streets]: If it's empty, you may KO a card from your hand or discard pile. [keyword:optional-ko-hand-discard]"
           ]
         },
         {
@@ -630,7 +630,7 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "When you draw a new hand of cards at the end of this turn, draw three extra cards."
+            "When you draw a new hand of cards at the end of this turn, draw three extra cards. [keyword:next-hand-extra-draw:3]"
           ]
         }
       ],
@@ -802,7 +802,7 @@
           "attack": null,
           "recruit": "1",
           "abilities": [
-            "[keyword:Patrol the Streets]: If it's empty, draw a card."
+            "[keyword:Patrol the Streets]: If it's empty, draw a card. [keyword:draw:1]"
           ],
           "hc2": "ranged"
         },
@@ -912,7 +912,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "[keyword:Patrol the Sewers]: If it's empty, rescue a Bystander."
+            "[keyword:Patrol the Sewers]: If it's empty, rescue a Bystander. [keyword:rescue:1]"
           ],
           "hc2": "tech"
         },
@@ -1571,7 +1571,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "[keyword:Patrol the Bridge]: If it's empty, reveal the top card of your deck. If that card costs 2 or less, draw it."
+            "[keyword:Patrol the Bridge]: If it's empty, reveal the top card of your deck. If that card costs 2 or less, draw it. [keyword:reveal:2]"
           ],
           "hc2": "tech"
         },
@@ -1587,7 +1587,7 @@
           "attack": "1+",
           "recruit": null,
           "abilities": [
-            "[keyword:Patrol the Rooftops]: If it's empty, rescue a Bystander, and then you get +1[icon:attack] for every two Bystanders in your Victory Pile."
+            "[keyword:Patrol the Rooftops]: If it's empty, rescue a Bystander, and then you get +1[icon:attack] for every two Bystanders in your Victory Pile. [keyword:rescue:1] [keyword:attack-per-count:victory-bystanders:1:2]"
           ]
         },
         {
@@ -1698,7 +1698,7 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "[keyword:Patrol the Bridge]: If it's empty, then when you draw a new hand of cards at the end of this turn, draw an extra card."
+            "[keyword:Patrol the Bridge]: If it's empty, then when you draw a new hand of cards at the end of this turn, draw an extra card. [keyword:next-hand-extra-draw:1]"
           ]
         },
         {
@@ -2054,7 +2054,7 @@
           "vAttack": "2",
           "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-vi-deadpools-secret-secret-wars-doop.webp",
           "abilities": [
-            "You can't fight Doop if there is a Villain in an adjacent city space."
+            "You can't fight Doop if there is a Villain in an adjacent city space. [fight-restriction:no-adjacent-villain]"
           ],
           "copies": 2
         },
@@ -2222,7 +2222,7 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-vi-monster-metropolis-bug-shiklahs-dragon.webp",
           "abilities": [
-            "Fight: KO a card from your discard pile.",
+            "Fight: KO a card from your discard pile. [effect:ko-from-discard-current:1]",
             "[keyword:Fateful Resurrection]"
           ],
           "copies": 2

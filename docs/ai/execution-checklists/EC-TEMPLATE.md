@@ -42,6 +42,7 @@ For each WP, extract:
 
 **Source:** docs/ai/work-packets/WP-NNN-slug.md
 **Layer:** [Game Engine | Registry | Server | Cross-cutting]
+**Risk Tier:** [LOW | MEDIUM | HIGH — copied verbatim from the WP header]
 
 ## Before Starting
 - [ ] [dependency 1]
@@ -128,6 +129,10 @@ For each WP, extract:
   state "No user-observable change — infrastructure only" so the run is not read
   as visible progress. Engine refactors a player cannot perceive ARE
   `none — infrastructure`; classify honestly.
+- **The `Risk Tier:` header line is copied verbatim from the WP (D-24800).**
+  The WP header is the tier's canonical home; the EC mirrors it so a Builder
+  or Inspector reading the EC first sees the same value. If the two differ, the
+  WP wins and the EC is invalid until corrected. Never re-classify in the EC.
 - **Every EC that touches a WORK_INDEX row MUST gate the roadmap mindmap.**
   `Files to Produce` includes `docs/05-ROADMAP-MINDMAP.md`, and `After
   Completing` includes the node check plus `pnpm roadmap:counts:write` /

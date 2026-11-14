@@ -368,7 +368,7 @@ describe('sweepSetupMatrix — dispatcher invariants', () => {
     assert.equal(base.mastermindId, 'base/mastermind');
   });
 
-  test('per-cell hollow diagnostics pass-through (WP-263): []/0 under the mock registry', () => {
+  test('per-cell hollow diagnostics pass-through (WP-263): only unresolved Master Strike records under the mock registry (WP-867)', () => {
     const collected: SweepCellResult[] = [];
     sweepSetupMatrix(
       createBaseSetupConfig(),
@@ -384,9 +384,25 @@ describe('sweepSetupMatrix — dispatcher invariants', () => {
     );
 
     assert.equal(collected.length, 1);
-    // why (WP-263): the mock registry produces no hollow effects, so the
-    // per-cell fields pass through the CapturedGameResult as []/0.
-    assert.deepEqual(collected[0]!.hollowEffects, []);
+    // why (WP-263, WP-867 / D-24810): the mock registry produces no hero or
+    // villain hollow, but its Mastermind has no strike arm in
+    // mastermindStrikeHandler, so each Master Strike records a master-strike /
+    // mastermind / no-handler hollow, which the per-cell fields pass through from
+    // the CapturedGameResult. No other kind of record may appear.
+    const cellHollows = collected[0]!.hollowEffects;
+    assert.ok(
+      cellHollows.length >= 1,
+      'the mock Mastermind has no strike arm, so its Master Strikes are flagged hollow',
+    );
+    for (const record of cellHollows) {
+      assert.equal(record.mechanic, 'master-strike');
+      assert.equal(record.cardType, 'mastermind');
+      assert.equal(record.reason, 'no-handler');
+    }
+    assert.deepEqual(
+      cellHollows.filter((record) => record.mechanic !== 'master-strike'),
+      [],
+    );
     assert.equal(collected[0]!.hollowEffectsDropped, 0);
   });
 });

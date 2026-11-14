@@ -33,8 +33,9 @@
  *
  * why: D-19904 hardening — HEAD commit date is resolved exactly once per
  * generator run (`git log -1 --format=%cI HEAD` invoked inline below). The
- * resolved string is threaded through `generatedAt`, the ISO week anchor for
- * `wpsDoneThisWeek`, and the day-delta arithmetic for `daysSinceLastDoneFlip`.
+ * resolved string is threaded through `generatedAt`, the rolling 7-day window
+ * end for `wpsDoneThisWeek` (D-24799), and the day-delta arithmetic for
+ * `daysSinceLastDoneFlip`.
  * A second `git log -1 --format=%cI HEAD` call would risk inconsistent values
  * if a commit landed between calls.
  */
@@ -52,6 +53,9 @@ const COMMIT_TAIL_LIMIT = 50;
 const STATUS_TAIL_LIMIT = 50;
 const GIT_LOG_FETCH_COUNT = 50;
 const MILLIS_PER_DAY = 86_400_000;
+// why: D-24799 — `wpsDoneThisWeek` counts Done rows dated within the 7 UTC
+// days ending on the HEAD commit's day (that day plus the six before it).
+const KPI_WINDOW_DAYS = 7;
 
 // why: squash-merged execution commits on main carry the PR title, which is
 // written as `WP-NNN:`, `EC-NNN / WP-NNN:`, or `WP-NNN / EC-NNN:` (and a bare
@@ -214,8 +218,8 @@ function readGitLogSubjects() {
 /**
  * Compute the ISO-8601 week key (YYYY-Www) for a given UTC date. Anchored to
  * the Thursday of the week containing the input date, per ISO-8601. Used by
- * the throughput-bucket horizons; distinct from the Monday-anchored week
- * window for `wpsDoneThisWeek` (which uses the D-19905 algorithm).
+ * the throughput-bucket horizons; distinct from the rolling 7-day window for
+ * `wpsDoneThisWeek` (D-24799).
  */
 function isoWeekKey(date) {
   const thursday = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
@@ -763,41 +767,37 @@ function readStatus(content, workPacketFilenames) {
 }
 
 /**
- * Compute the Monday-anchored ISO week range (UTC) containing the given
- * committer-date ISO. Returns `weekStartIso` and `weekEndIso` as
- * 'YYYY-MM-DD' strings for lex-string membership comparisons, plus the
- * `todayMidnightMs` epoch for day-delta arithmetic.
+ * Compute the rolling 7-day window (UTC) ending on the given committer-date
+ * ISO: the HEAD commit's UTC day and the six days before it. Returns
+ * `windowStartIso` and `windowEndIso` as 'YYYY-MM-DD' strings for lex-string
+ * membership comparisons, plus the `todayMidnightMs` epoch for day-delta
+ * arithmetic.
  *
- * why: D-19905 c — ISO weekday is `((utcDate.getUTCDay() + 6) % 7) + 1`
- * (Mon=1 ... Sun=7). The translation is locked because the naive `getDay()`
- * returns Sunday=0...Saturday=6 which is off by one for ISO week math.
- * `Intl.DateTimeFormat` and `toLocaleString` are FORBIDDEN — locale-
- * dependent calculations vary across runtime ICU versions and break the
- * determinism gate.
+ * why: D-24799 — supersedes the D-19905 c Monday-anchored ISO week for this
+ * KPI. A Monday-anchored window reads 0 every Monday no matter what shipped
+ * over the weekend, so the Builder lane flagged a false critical each week.
+ * A rolling window ending on HEAD's day never resets on a calendar boundary.
+ * `Intl.DateTimeFormat` and `toLocaleString` stay FORBIDDEN (D-19905):
+ * `Date.UTC` day arithmetic is locale-independent and normalizes month and
+ * year rollover itself.
  */
-function computeIsoWeekRange(headCommitIso) {
+function computeRollingWindowRange(headCommitIso) {
   const parsed = new Date(headCommitIso);
   const utcYear = parsed.getUTCFullYear();
   const utcMonth = parsed.getUTCMonth();
   const utcDay = parsed.getUTCDate();
   const todayUtcMidnight = new Date(Date.UTC(utcYear, utcMonth, utcDay));
-  const isoWeekday = ((todayUtcMidnight.getUTCDay() + 6) % 7) + 1;
-  const weekStart = new Date(Date.UTC(utcYear, utcMonth, utcDay - (isoWeekday - 1)));
-  const weekEnd = new Date(Date.UTC(
-    weekStart.getUTCFullYear(),
-    weekStart.getUTCMonth(),
-    weekStart.getUTCDate() + 6,
-  ));
+  const windowStart = new Date(Date.UTC(utcYear, utcMonth, utcDay - (KPI_WINDOW_DAYS - 1)));
   return {
     todayMidnightMs: todayUtcMidnight.getTime(),
-    weekStartIso: formatUtcDateString(weekStart),
-    weekEndIso: formatUtcDateString(weekEnd),
+    windowStartIso: formatUtcDateString(windowStart),
+    windowEndIso: formatUtcDateString(todayUtcMidnight),
   };
 }
 
 /**
  * Format a Date as 'YYYY-MM-DD' using UTC calendar fields. The single
- * formatter site keeps the ISO week range and KPI date arithmetic on the
+ * formatter site keeps the rolling KPI window and date arithmetic on the
  * same representation.
  */
 function formatUtcDateString(date) {
@@ -812,7 +812,7 @@ function formatUtcDateString(date) {
  * Values: `wpsDoneThisWeek`, `daysSinceLastDoneFlip`, `openDrafts`.
  *
  * why: D-19908 — every field is a required non-optional `number`; `0` is
- * the meaningful zero-value (zero WPs done this week is a real, surface-
+ * the meaningful zero-value (zero WPs done in the last 7 days is a real, surface-
  * able operator state, not a missing-data state). The composable returns
  * `null` only for the whole-snapshot-error case.
  *
@@ -822,7 +822,7 @@ function formatUtcDateString(date) {
  * which is permitted within ISO-week-arithmetic context.
  */
 function computeGovernanceKpis(workIndexRows, headCommitIso) {
-  const { todayMidnightMs, weekStartIso, weekEndIso } = computeIsoWeekRange(headCommitIso);
+  const { todayMidnightMs, windowStartIso, windowEndIso } = computeRollingWindowRange(headCommitIso);
   let wpsDoneThisWeek = 0;
   let openDrafts = 0;
   let latestDoneDate = '';
@@ -838,10 +838,10 @@ function computeGovernanceKpis(workIndexRows, headCommitIso) {
     if (row.date === '') {
       continue;
     }
-    // why: D-19905 hardening ii — week membership uses lex-string comparison
+    // why: D-19905 hardening ii — window membership uses lex-string comparison
     // on the 'YYYY-MM-DD' substrings; chronological order equals lexicographic
     // order for ISO dates under Unicode code-unit comparator.
-    if (row.date >= weekStartIso && row.date <= weekEndIso) {
+    if (row.date >= windowStartIso && row.date <= windowEndIso) {
       wpsDoneThisWeek += 1;
     }
     if (latestDoneDate === '' || row.date > latestDoneDate) {
@@ -998,8 +998,8 @@ async function readWorkPacketFilenames() {
  *
  * why: D-19904 hardening b — `git log -1 --format=%cI HEAD` is invoked
  * exactly ONCE per generator run (inline below). The resolved string is
- * threaded through `generatedAt`, the ISO week anchor for
- * `wpsDoneThisWeek`, and the day-delta arithmetic for
+ * threaded through `generatedAt`, the rolling 7-day window end for
+ * `wpsDoneThisWeek` (D-24799), and the day-delta arithmetic for
  * `daysSinceLastDoneFlip`. A second invocation anywhere in the generator
  * would risk inconsistent values if a commit landed mid-run.
  */

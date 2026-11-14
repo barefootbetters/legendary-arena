@@ -9,7 +9,6 @@ tags:
   - deployment
   - operator-reference
   - migration
-  - draft
 related:
   - architecture-inventory.md
   - development-workflow.md
@@ -27,7 +26,8 @@ source:
   - ../docs/ops/DOMAINS.md
   - ../docs/ops/domains.json
   - C:\pcloud\legendary-arena\ops\accounting\expenses2026 (Render bills, Aug and Sep 2026)
-last-reviewed: 2026-10-17
+  - C:\dev\legendary-arena-lab (infra/scripts, infra/systemd — the executable versions)
+last-reviewed: 2026-11-13
 ---
 
 # Ubuntu Lab Provisioning
@@ -37,6 +37,16 @@ last-reviewed: 2026-10-17
 > 2026-10-12). It is an operational migration run by the `legendary-arena-lab`
 > program repo (`docs/PLAN.md`, `infra/`), so it has no Work Packet. The ewiki
 > half of the move is D-24690.
+
+> **Current status (2026-11-12).** The migration is finished. Production has
+> run on this droplet since 2026-10-12, and Render was deleted on 2026-10-22.
+> Every step in [Open Questions](#open-questions) under "Migration" is done. The
+> items still open are operating gaps found a month in: see
+> [First month in production](#first-month-in-production-2026-10-12-to-2026-11-12)
+> and the "Operating" list under Open Questions. The executable versions of
+> everything here live in the `legendary-arena-lab` repo (`infra/scripts/`,
+> `infra/systemd/`, `infra/cloud-init.yaml`) and win over this page; this page
+> is the human-readable record.
 
 ## Summary
 
@@ -115,6 +125,55 @@ repo (`infra/`, `content/`, and its operator wiki), and they are authoritative.
 §1–§6 below are the original hand-run rehearsal procedure, kept because they
 show what each provisioner does.
 
+### Database care
+
+What `30-postgres.ps1` sets, and what PostgreSQL is left to do on its own:
+
+| Area | Current state |
+|---|---|
+| Install source | The PostgreSQL project's own apt repo (PGDG, `apt.postgresql.org`), major version 18. |
+| Memory | Sized from the box's RAM at provision time: `shared_buffers` 25% (979 MB on 4 GB), `effective_cache_size` 75%, `maintenance_work_mem` RAM/16 (max 1 GB). Re-run `30` after a resize so these follow the new RAM. |
+| WAL | `wal_buffers` 16 MB, `min_wal_size` 1 GB, `max_wal_size` 4 GB. On an 80 GB disk with a 66 MB database this is generous, not tight. No WAL archiving (see [Disaster Recovery](disaster-recovery.md), RPO). |
+| Connections | `listen_addresses = 'localhost'`, `scram-sha-256`. The server's `pg.Pool` is `max: 10` per process (`apps/server/src/db/database.ts`); during a deploy the `:3001` standby adds up to 10 more. That is well under PostgreSQL's default `max_connections` of 100, so PgBouncer would add a part with nothing to fix. |
+| Autovacuum | Stock defaults, untuned. |
+| `bgio.matches` growth | Rows are pruned: the WP-327 match reaper deletes finished matches 1 h after `gameover` and abandoned ones after 24 h. The table *file* doesn't shrink, though: deleted rows leave dead TOAST space that autovacuum makes reusable but never returns to disk. To get it back, run `52-vacuum-reclaim.ps1` (a one-shot `VACUUM FULL`, `la-server` stopped) per `docs/ops/RUNBOOK-db-storage-reclaim.md`. `60-monitor` alerts on disk use, which is the signal to do it. |
+| `pg_stat_statements` | The extension came over from Render with the data (`51` pre-creates it), but `30` doesn't add it to `shared_preload_libraries`, so the extension exists and collects nothing; querying its view errors. Turning it on is one setting plus a PostgreSQL restart. Open item. |
+| Minor updates | **Not automatic.** unattended-upgrades applies Ubuntu's own security pocket only (`07` doesn't widen `Allowed-Origins`), and PGDG is a third-party origin. PostgreSQL 18.x security releases install only when the operator runs `apt upgrade`. Open item. |
+| Major upgrade (18 → 19+) | Not rehearsed. With a 66 MB database the simplest path is the one already proven: install the new major next to the old, `pg_dump` from 18, restore with `51-restore.ps1` into the new cluster, point `DATABASE_URL` at it. The 2026-10-12 cutover dump took 13 s. `pg_upgradecluster` is the in-place alternative. |
+
+### Development parity with production
+
+Production is Ubuntu 24.04, Node `24.18.0` (`.node-version`, D-24205), and
+PostgreSQL 18. The development workstation is Windows 11. Three things
+already keep the two from drifting:
+
+- **CI builds and tests every change on Linux.** The engine's CI jobs run on
+  `ubuntu-latest`, so path separators, case-sensitive file names, and line
+  endings fail there before they reach the droplet.
+- **The provisioners are tested on a fresh Ubuntu 24.04 in CI.**
+  `provision-smoke` in the lab repo runs the whole chain, from cloud-init to
+  deploy, on every infra change.
+- **The droplet builds what it runs.** `40-app-deploy.ps1` installs and builds
+  the exact tested commit on the box itself, never an artifact built on Windows.
+
+Where Windows has cost time is at the hand-off to the box:
+
+- Lab scripts `scp`'d from a Windows checkout arrived with CRLF line endings
+  (2026-10-12). Install LF copies with `git show <commit>:<path>`.
+- Secrets piped from PowerShell into `gh secret set` pick up a trailing CRLF.
+  Use `--body`.
+
+Two ways to get a closer local copy of production, if one is wanted:
+
+- **WSL2 running Ubuntu 24.04**, with the same Node pin and PostgreSQL 18.
+- **A throwaway droplet built by the same provisioners.** The 2026-10-22 DR-02
+  drill built one in 13 m 31 s of hands-on time, at the 2/4 droplet's hourly
+  rate (about $0.036 an hour).
+
+Running the workstation itself on Ubuntu is a preference, not a parity
+requirement. The checks above already run on Linux whatever OS the editor
+is on.
+
 ### Rehearsal results (2026-10-11)
 
 The provisioners were rehearsed end to end on a real droplet before any
@@ -171,7 +230,11 @@ Configuration Rule `Origin TLS strict — api hosts`, so no other site on the
 zone is affected. The Cloudflare Origin Certificate covers
 `api.legendary-arena.com` and `api-next.legendary-arena.com` only (no wildcard)
 and is valid to 2041. The operator created it and installed it on the droplet
-personally; the private key went nowhere else. At cutover `api.` joined the
+personally; the private key went nowhere else. **Renewal** is the operator's,
+and nothing reminds anyone before 2041: issue a new Origin Certificate in
+Cloudflare for the same two hostnames, then re-run `21-cloudflare-tls.ps1`
+with `CF_ORIGIN_CERT` / `CF_ORIGIN_KEY` pointing at the new pair. The master
+copy sits in the private ops folder with the other keys. At cutover `api.` joined the
 rule, and its record changed from the DNS-only CNAME to Render into a
 proxied A record to the droplet. Rollback restores that CNAME exactly.
 
@@ -269,6 +332,24 @@ Logs: `journalctl -u la-server` (the server), `journalctl -u
 la-server-standby` (the standby during a deploy), and `journalctl -t
 la-deploy` (the gate).
 
+### First month in production (2026-10-12 to 2026-11-12)
+
+What the box has done since cutover, from the engine and lab repos and the
+billing record.
+
+| Area | Record |
+|---|---|
+| Downtime | **10 m 10 s** at cutover (UptimeRobot, 5-minute granularity). No unplanned outage of the public API since. The planned kernel reboot on 2026-11-13 at 05:14 UTC took about **15 s**: one 502 from Cloudflare, then `/health/db` OK. |
+| Alerts | One, a **false** DOWN: on 2026-10-21 at 05:55 UTC a `la-health` run landed in the ~4 s restart gap of a deploy. The public site stayed up (Nginx served the `:3001` standby, no 5xx), and the next run passed. Fixed in lab #43: `60-monitor` now waits for the deploy lock. Plus one **real** DOWN that was delivered but missed: `la-droplet-monitor` went down on 2026-10-28 at 14:14 UTC, and its email reached the operator's inbox one minute later. `la-droplet-backup` followed on 2026-10-29 at 11:17 UTC. Both stayed down until 2026-11-13 04:58 UTC. Email at normal priority was the only channel (Open Questions, Operating item 7). |
+| **Unnoticed failure** | **From 2026-10-28 ~14:00 UTC to 2026-11-13 (about 15½ days) the on-box timers didn't run: no `la-health` check, no nightly backup (the first missed one was 2026-10-29), and no Cloudflare-range refresh.** The API itself stayed up throughout; UptimeRobot on `/health/db` stayed green. Found while installing lab #45 and fixed the same night (see [Offsite backups](#offsite-backups-r2--pcloud)). |
+| Deploy restarts | Before 2026-10-15, every restart dropped requests: 6 s idle, 36 s with a player's websocket open. Fixed by closing websockets on SIGTERM (#2819), the `:3001` standby (lab #39), and per-commit release directories with a no-rebuild rollback (lab #40). |
+| Recovery | DigitalOcean Droplet backups enabled 2026-10-20 (daily, 7-day retention), as the fast path for a lost droplet. DR-02 full rebuild drilled on a new droplet 2026-10-22: **13 m 31 s** of hands-on steps. Restores from the R2 dumps are drilled separately ([Disaster Recovery](disaster-recovery.md) §7). No restore was needed. RPO by design is ≈ 24 h (nightly dump, no PITR). From 2026-10-29 to 2026-11-13, with no nightly dump, the newest R2/pCloud copy was the 2026-10-28 dump. The DigitalOcean Droplet backups are disk images taken by DigitalOcean, not by anything on the droplet, so the snap failure couldn't stop them. On 2026-11-13 the droplet's Activity log showed a **Backup** event every day for the five days it lists, the newest 8 hours old. Images from earlier in the gap had already aged out of the 7-day retention. So through the gap a lost droplet could still be restored to within about a day; what was missing was the offsite copy that survives losing the DigitalOcean account. |
+| Cost | October (12–31): $17.65 usage, $12.65 charged after a one-time $5 credit. A full month is capped at $24.00 plus backups. Month-by-month figures: [DigitalOcean actuals](render-migration-analysis.md#digitalocean-actuals-from-october-2026). |
+| Capacity | Measured 2026-11-13 02:56 UTC, at a quiet hour: **850 MB used of 3.9 GB (22%), 3.0 GB available**, load average 0.00, **swap 2.8 MB** of 2 GB, disk **8.2 GB of 77 GB (11%)**. Steady-state memory matches the pre-cutover rehearsal (about 800 MB; the deploy build peaked at 1.37 GB). The swap figure is idle pages pushed out at `swappiness` 10, not memory pressure. Nothing is near the resize trigger: memory above ~70%, CPU above ~50% under real traffic, or real swap use outside deploys ([Target configuration](#target-configuration)). This was one reading at an idle hour, not a peak. Since 2026-11-13, `la-health` alerts on memory held high and on swap-out outside a deploy, and every ping body carries the reading (after the reboot: 19% memory, 0 MB swap). CPU load is still checked by hand: `uptime`. |
+| OOM kills | **None.** `sudo journalctl -k --since 2026-10-12 \| grep -ciE 'oom-kill\|out of memory'` returned **0** on 2026-11-13, covering cutover through that night's reboot (the journal persists across boots). It needs `sudo`: run without it, `journalctl -k` can't read kernel messages on this box and prints 0 whatever happened. |
+| Kernel patches | A reboot was pending from before cutover until 2026-11-13: the box had been up 32 days on kernel 6.8.0-142, with 6.8.0-146 and -147 installed on disk. Rebooted 2026-11-13 at 05:14 UTC onto **6.8.0-147**. `la-health` now warns while a reboot is pending and fails once it has waited 7 days. |
+| PostgreSQL | 18.6 until 2026-11-13. Then upgraded to **18.7**, and PGDG minor releases now install unattended. `pg_stat_statements` has been preloaded and collecting since the same night. |
+
 ### Offsite backups (R2 + pCloud)
 
 Every night at 09:17 UTC the droplet's `la-backup` timer runs the lab's
@@ -321,24 +402,129 @@ would have dropped test dumps into the production folders. The shared GFS
 pruning would then have counted them as real backups and pruned real ones to
 make room.
 
+**The 2026-10-28 to 2026-11-13 gap.** On the droplet, PowerShell is a snap.
+`50-backup`, `60-monitor` and `22-cloudflare-ufw-refresh` had installed their
+units with the snap's versioned path, `/snap/powershell/414/…/pwsh`. A routine
+snap refresh around 2026-10-28 14:00 UTC deleted that revision. That's when
+`la-health`'s 5-minute pings stopped. The 2026-10-28 09:17 backup had already
+run, so the first missed backup was 2026-10-29.
+Every run after that failed before the script started (`status=203/EXEC`):
+- no dumps reached R2 or pCloud
+- `la-health` couldn't run to notice the stale backup
+- no pings went to `la-droplet-backup` or `la-droplet-monitor`
+
+The repair, on 2026-11-13:
+- On the box, the three units were pointed at `/snap/powershell/current/…/pwsh`, which snapd keeps on the live revision.
+- The missed backup ran at 04:58 UTC: dumped, checked readable (320 TOC entries), uploaded to R2 and mirrored to pCloud. The firewall refresh found no range changes.
+- Lab #46 makes every future `-Install` write the `current` path. `provision-smoke` now installs the PowerShell snap, as cloud-init does, to prove it. A missed path change would also have moved the scripts' output out of `journalctl -u <unit>`, which the checks below rely on, and the smoke test checks for that too.
+
+Deploys were never affected: `la-deploy` looks up `pwsh` each time it runs.
+
 **Check it by hand:**
 
 ```text
+sudo ls -l /var/backups/la                    # newest dump is from the last 09:17 UTC run
 journalctl -u la-backup -n 15 --no-pager      # dump, "Uploading to r2:…", "Mirroring to pcloud:…", "Backup complete."
 systemctl list-timers la-backup.timer         # next run
 ```
+
+**Reading the backups from the workstation.** The workstation's `r2:` rclone
+remote reads the bucket with its own **read-only** R2 token (Object Read only,
+scoped to `legendary-arena-db-backups`, no expiry, created 2026-11-13). Until
+then the remote had no credentials. It was set to `env_auth = true` with no
+keys in the environment, so every call timed out looking for cloud-server
+credentials. Being read-only, a leaked desktop key can list and download dumps
+but can't change or delete them. The `pcloud:` remote reads the mirror the same
+way.
+
+```powershell
+rclone lsl r2:legendary-arena-db-backups/db-backups/2026/11/13   # one day's dumps
+rclone lsf r2:legendary-arena-db-backups/db-backups/2026/10/ --dirs-only   # which days have a dump
+```
+
+To re-key it, create the R2 token, then read the Access Key ID and the Secret
+Access Key with `Read-Host`. Strip the paste markers with
+`[regex]::Match($value, '[0-9a-f]{32}')` for the ID and `{64}` for the secret,
+then run `rclone config update r2 env_auth=false access_key_id=$id
+secret_access_key=$secret | Out-Null`. `Out-Null` hides rclone's echo of the
+secret.
 
 Restoring from either copy, and the provider-loss scenarios, are on
 [Disaster Recovery](disaster-recovery.md). `51-restore.ps1` restores straight
 from R2 (`RESTORE_FROM_R2=latest`). A pCloud dump restores through
 `RESTORE_DUMP=<file>` after downloading it.
 
+### Secrets and configuration
+
+| File | Holds | Read by |
+|---|---|---|
+| `/etc/la/.env` (root, mode 600, set by `40`) | The app's secrets and settings: the `render.yaml` `sync: false` set plus the keys Render's Environment tab carried (`DASH_GITHUB_*`, `BREVO_*_TEMPLATE_ID`, `PAR_VERSION`), and the droplet-owned `DATABASE_URL`, `PORT`, `LISTEN_HOST`, `LEGENDS_PUBLISHER_ENABLED` | systemd `EnvironmentFile=` for `la-server` and `la-server-standby`; the process runs as `operator` |
+| `/etc/la/backup.env` (root, 600) | R2 backup credentials and bucket, `BACKUP_PCLOUD_TOKEN`, two ping URLs | `la-backup` only, so the running server never holds backup credentials |
+| `/etc/la/monitor.env` (root, 600) | The `la-droplet-monitor` ping URL | `la-health` only |
+
+- **Master copies** sit in the operator's private ops folder. A rebuild reads
+  them from there ([Disaster Recovery](disaster-recovery.md) §4). Refresh the
+  master after any change on the box.
+- **Rotation** follows DR-04 in the runbook: rotate at the source, update the
+  file on the box and the master copy, then `sudo systemctl restart la-server`.
+  The pCloud token has its own re-mint steps above.
+- **systemd `LoadCredential=`** would keep secrets out of the process
+  environment. It isn't adopted: the server reads `process.env`, so it would
+  need code changes for little gain on a one-user box.
+- **Never on a rehearsal box.** See Edge Cases.
+
+### Reaching the droplet
+
+The droplet's public IPv4 isn't written in any repo, because this one is
+public and the address is the one thing the origin lock hides. The engine's
+deploy workflow holds it as the `DEPLOY_HOST` secret, which can't be read back.
+Look it up when you need it:
+
+- **Cloudflare (works from the workstation today):** the proxied `api` A record
+  points at the droplet, so its content is the IP. In the dashboard, open
+  `legendary-arena.com` → DNS → Records → `api` → Content. Or, with the DNS
+  token:
+
+  ```powershell
+  $headers = @{ Authorization = "Bearer $([Environment]::GetEnvironmentVariable('CLOUDFLARE_DNS_API_TOKEN', 'User'))" }
+  $zone = (Invoke-RestMethod -Headers $headers -Uri 'https://api.cloudflare.com/client/v4/zones?name=legendary-arena.com').result[0].id
+  (Invoke-RestMethod -Headers $headers -Uri "https://api.cloudflare.com/client/v4/zones/$zone/dns_records?name=api.legendary-arena.com").result.content
+  ```
+
+- **DigitalOcean control panel:** Droplets → `la-rehearsal-01`. The ipv4
+  address is at the top of the page.
+- **`doctl compute droplet list --format Name,PublicIPv4`** from the
+  workstation. Its token is good until 2027-11-13 (see
+  [Prerequisites & effort](#prerequisites--effort) for how to renew it).
+
+Two checks confirm it's the right box. `ssh-keygen -F <ip>` finds it in
+`~/.ssh/known_hosts` if this workstation has logged in before. On a first
+login, the host key fingerprint ssh shows must match the `ssh-ed25519` line
+held in the engine's `DEPLOY_KNOWN_HOSTS` secret.
+
+Log in as `operator` with the workstation key:
+
+```powershell
+$ip = '<droplet ip>'
+ssh -i $HOME\.ssh\id_ed25519 "operator@$ip"
+```
+
+To skip the lookup next time, give it an alias in the workstation's
+`~/.ssh/config` (not the repo), then `ssh la-droplet`:
+
+```text
+Host la-droplet
+  HostName <droplet ip>
+  User operator
+  IdentityFile ~/.ssh/id_ed25519
+```
+
 ### Verifying the droplet
 
 Two checks cover the box, one from each side:
 
 - **From outside:** `pwsh scripts/Test-ApiDeployment.ps1 -OriginIp <droplet IP>`
-  (IP from `doctl compute droplet list`). It probes the public API surface and
+  (IP from [Reaching the droplet](#reaching-the-droplet)). It probes the public API surface and
   its auth gates through `api.`. It then checks that Cloudflare refuses a
   request bringing its own `cf-connecting-ip` (403), and that the droplet IP's
   443 and 3000 don't answer while port 80 only 301s. The guest rate limiters key
@@ -348,8 +534,12 @@ Two checks cover the box, one from each side:
   §6) and after any UFW or Nginx change.
 - **On the box:** the lab's `60-monitor.ps1`, run every 5 minutes by
   `la-health.timer`. It checks that `la-server` is active, `/health` and
-  `/health/db` return 200, `:3000` listens on loopback only, and that disk use
-  and backup age are within limits, then pings `la-droplet-monitor`. A failed
+  `/health/db` return 200, `:3000` listens on loopback only, that disk use
+  and backup age are within limits, that memory hasn't held above 70% and
+  nothing swapped out outside a deploy, and that no reboot has been pending a
+  week (since 2026-11-13, lab #45). Then it pings `la-droplet-monitor`, and the
+  ping body carries the memory and swap reading and any pending-reboot warning.
+  A failed
   weekly Cloudflare-range refresh (`22-cloudflare-ufw-refresh.ps1`) also fails it.
 
 The origin lock has three parts, each set by a provisioner:
@@ -367,6 +557,31 @@ ss -Htln 'sport = :3000'                        # 127.0.0.1:3000 only
 systemctl list-timers la-cf-ufw-refresh.timer   # next weekly refresh
 ```
 
+**What nothing watches.** The checks above answer "is it up, did the backup
+land, and is the box under memory pressure or waiting on a reboot?" They don't
+cover:
+
+- **CPU load.** The resize trigger's CPU half (above ~50% under real traffic)
+  is still checked by hand with `uptime`.
+- **Logs.** journald runs at Ubuntu's default cap (10% of the filesystem, at
+  most 4 GB), which is fine on 80 GB. `60-monitor`'s disk check would catch
+  runaway growth.
+- **A timer that can't start at all.** If `la-health` or `la-backup` can't
+  launch, as from 2026-10-28 to 2026-11-13, nothing on the box can report it.
+  Only healthchecks.io's missing-ping alerts can. They did fire, on 2026-10-28,
+  and the email was delivered within a minute. But a normal-priority email is
+  easy to miss among other mail, and it was. Since 2026-11-13 every check also
+  alerts through Pushover to the operator's phone, at high priority for DOWN
+  (Open Questions, Operating item 7).
+
+Kernel and libc reboots are automatic since 2026-11-13 (lab #49). When an
+update leaves `/var/run/reboot-required`, unattended-upgrades reboots the
+droplet at **10:30 UTC** that day: 2:30 AM Pacific in winter, after the
+06:00–07:00 UTC upgrade run and the 09:17 UTC backup. A reboot costs about
+15 s with no Nginx standby across it. `la-health`'s pending-reboot warning
+(and its failure after 7 days) is the backstop if a reboot ever doesn't
+happen.
+
 ### Prerequisites & effort
 
 - A DigitalOcean account with an SSH key pair already uploaded.
@@ -376,10 +591,38 @@ systemctl list-timers la-cf-ufw-refresh.timer   # next weekly refresh
   is uploaded to the account. One droplet exists, `la-rehearsal-01` ($24/mo),
   kept as the cutover box (see [Rehearsal results](#rehearsal-results-2026-10-11)).
   A spend alert a little above the droplet price (for example $30 a month,
-  raised on a resize) is recommended; it was not confirmed set as of this
-  revision. The $5 "Inference Cloud Trial" credit expires 2026-10-21 and is
+  raised on a resize) is recommended. It was set on 2026-11-13; see below. The $5 "Inference Cloud Trial" credit expires 2026-10-21 and is
   named for the inference products, so do not count on it covering droplet
-  usage.
+  usage. (It was applied to the October invoice anyway.)
+
+  **2026-11-13:** the 30-day `doctl` token that had expired on 2026-11-12 was
+  replaced with a **1-year, Full Access** token that expires **2027-11-13**.
+  Renew it a week before then: DR-02 starts with `doctl`, so a dead token
+  bites during an incident. The **spend alert is set at $30/month** and goes to
+  an address outside the operator's Microsoft-hosted mailbox, so a mail
+  outage there doesn't hide it.
+
+  **Renewing the token on the Windows workstation.** Panel → API → Tokens →
+  Generate New Token (Full Access, 1 year), then delete the old one. This
+  terminal wraps every paste in invisible bracketed-paste markers (`ESC[200~`
+  before and `ESC[201~` after, 12 characters in all). `Read-Host` keeps them,
+  so a pasted 71-character `dop_v1_…` token reads as 83 characters, and the
+  escape character aborts `doctl`'s own prompt. The regex below keeps only the
+  token. Then, one line at a time:
+
+  ```powershell
+  $secure = Read-Host 'Paste the new DigitalOcean token' -AsSecureString
+  $token = [Regex]::Match([Net.NetworkCredential]::new('', $secure).Password, 'dop_v1_[0-9a-f]{64}').Value; "length $($token.Length)"   # must be 71
+  doctl auth init --access-token $token
+  Remove-Variable token, secure
+  doctl compute droplet list --format Name,PublicIPv4,Status
+  ```
+
+  `doctl auth init` on its own reuses the expired token saved in its config,
+  and its interactive prompt aborts on the paste markers. `--context <name>`
+  ignores `--access-token` and prompts too. Passing `--access-token` on the
+  default profile skips both. The variable keeps the token out of the
+  PowerShell history.
 - A throwaway lab hostname (e.g. `lab.<your-domain>`) ready to point at the
   droplet IP.
 - Familiarity with the production topology in the
@@ -561,6 +804,15 @@ vendors, each with its own health check; see
 [Offsite backups](#offsite-backups-r2--pcloud)), and by a rehearsed restore and
 rebuild (§5–6), which the PLAN makes a hard gate before cutover.
 
+**What the single box accepts, and what would change it:**
+
+| Accepted today | Trigger to revisit | Move |
+|---|---|---|
+| Up to ~24 h of data loss (nightly dump, no PITR) | An RPO under 24 h confirmed as a business need | WAL archiving to R2 / pCloud, or DigitalOcean Managed PostgreSQL ([Disaster Recovery](disaster-recovery.md), provider-native options) |
+| Downtime while a droplet is restored or rebuilt (13 m 31 s hands-on in the drill) | An RTO well under that, or paying players affected by a real outage | A warm standby droplet; Reserved IP for the `api.` record |
+| 2 vCPU / 4 GB | The resize trigger in [Target configuration](#target-configuration) | Resize CPU and RAM only to 4 / 8 GB ($48), keep the disk |
+| One app process | Load one process can't carry | A second app node, which needs a Socket.IO Redis adapter and single-owner scheduling for the cron singletons (Edge Cases) |
+
 ### What a successful lab looks like
 
 Descriptive, not a pass/fail gate: the lab has served its purpose once the
@@ -617,9 +869,11 @@ operator can, unaided —
   is fine. A future multi-node app tier would additionally need a Socket.IO Redis
   adapter (WebSocket fan-out) and leader-election / single-owner scheduling for the
   cron singletons, or the reaper and publisher double-fire.
-- **`bgio` blob growth rides along.** The match store never prunes finished
-  matches, so a restored copy carries that bloat (fine for a lab; a retention job
-  is the standing production follow-up noted in the inventory's DB notes).
+- **`bgio` file bloat rides along.** The match reaper prunes rows (finished
+  matches 1 h after `gameover`, abandoned ones after 24 h), but the table file
+  keeps its dead TOAST space until a `VACUUM FULL`. A `pg_dump` / restore
+  writes only live rows, so a restored copy comes back compact. See
+  [Database care](#database-care).
 - **Build cost moves onto the box.** `pnpm -r build` is heavy; on a 2 vCPU droplet
   it is real wall-clock time, not Render's managed pipeline.
 - **Version pins still bind.** Node must be `24.18.0` to match `.node-version`
@@ -628,7 +882,9 @@ operator can, unaided —
 - **Certificates and kernel patches are now yours.** Certificate renewal (Certbot
   in the hand-run steps, the Cloudflare Origin Certificate in the program) and
   kernel patches are operator responsibilities on a droplet that Render otherwise
-  absorbs; unattended-upgrades may schedule a reboot.
+  absorbs. unattended-upgrades installs security patches but never reboots
+  (`Automatic-Reboot` is off), so a new kernel waits for a manual reboot, and
+  PGDG PostgreSQL updates wait for a manual `apt upgrade`.
 
 ## History
 
@@ -661,13 +917,100 @@ operator can, unaided —
   ranges started refreshing weekly (lab #37), and `Test-RenderDeployment.ps1`
   became `Test-ApiDeployment.ps1` with the origin checks (see
   [Verifying the droplet](#verifying-the-droplet)).
+- **2026-10-15** — Deploy restarts stopped dropping requests: a `:3001`
+  standby behind Nginx (lab #39), per-commit release directories with a
+  no-rebuild rollback (lab #40), and websockets closed on SIGTERM (#2819).
+- **2026-10-20** — DigitalOcean Droplet backups enabled (daily, 7 days).
+- **2026-10-21** — The only alert since cutover, a false DOWN from a health
+  check that landed in a deploy restart; `60-monitor` now waits for the deploy
+  lock (lab #43).
+- **2026-10-22** — Render deleted after the rollback window. The DR-02 full
+  rebuild was drilled on a new droplet in 13 m 31 s of hands-on time.
+- **2026-11-12** — One-month review: the `draft` tag dropped, and
+  [First month in production](#first-month-in-production-2026-10-12-to-2026-11-12),
+  [Database care](#database-care),
+  [Development parity](#development-parity-with-production),
+  [Secrets and configuration](#secrets-and-configuration), and the single-box
+  revisit triggers added. Two stale Edge Cases corrected (the match store *is*
+  pruned; unattended-upgrades never reboots). A live reading on 2026-11-13
+  showed 22% memory, 11% disk, and a kernel reboot pending since before
+  cutover.
+- **2026-11-13** — Lab #45 installed on the droplet: memory, swap and
+  pending-reboot alerts in `la-health`, PGDG minor releases through
+  unattended-upgrades, and `pg_stat_statements` preloaded. The install found
+  that a PowerShell snap refresh had stopped `la-health`, `la-backup` and
+  `la-cf-ufw-refresh` since about 2026-10-28 14:00 UTC: about 15 days without
+  an offsite backup or an on-box check. The DOWN email had reached the inbox on
+  2026-10-28 and gone unnoticed. Repaired on the box, made permanent in the provisioners (lab
+  #46), and the missed backup run. PostgreSQL went from 18.6 to 18.7, and a
+  quiet-hour reboot at 05:14 UTC loaded kernel 6.8.0-147 (about 15 s down).
+  Later that day:
+  - libc6 and kernel 6.8.0-149 needed a second reboot, which made reboots
+    automatic at 10:30 UTC (lab #49).
+  - The PowerShell snap moved to 7.7.0, which dumps core when systemd starts it
+    with no `HOME`. All three timer units now set `Environment=HOME=/root` (lab
+    #50), applied on the box after the droplet had already picked up 7.7.0.
+    `la-health` crashed from about 18:05 UTC, and `la-droplet-monitor` went
+    DOWN at 18:22 UTC and back UP at 19:17 UTC when the fix went in (55 min
+    25 s). The DOWN reached the operator's phone through Pushover. No backup
+    was missed: the 09:17 run had finished before the snap refresh.
 
 ## Open Questions
 
-- **Governance is recorded.** The move is
-  [D-24707](../docs/ai/DECISIONS.md), with the ewiki half as D-24690.
+**Status as of 2026-11-13:** every migration step below is done. Items 1–5
+under Operating were done and installed on the droplet on 2026-11-13, and item
+7 was closed the same night, and item 6 with it. Item 8 is open.
 
-**Remaining actions**, in order (the execution gates are owned by the program):
+**Operating** (most are a provisioner change in the lab repo):
+
+1. ~~**Reboot the droplet at a quiet hour.**~~ Done 2026-11-13 at 05:14 UTC,
+   onto kernel 6.8.0-147. `la-server`, PostgreSQL, `/health/db` and the timers
+   came back, and `la-health` passed with no reboot warning. The `sudo` OOM
+   re-check found no OOM kills since cutover.
+2. ~~**Alert on memory and swap** in `60-monitor`, against the resize
+   trigger.~~ Done (lab #45, installed 2026-11-13). It fails on memory held at or
+   above 70% for 3 runs, or more than 8 MB swapped out between runs with no
+   deploy in between.
+3. ~~**Alert on `/var/run/reboot-required`.**~~ Done (lab #45). A pending
+   reboot is a warning in the ping body, and a failure once it has waited 7
+   days.
+4. ~~**Apply PGDG PostgreSQL minor releases.**~~ Done (lab #45). `07` allows
+   `apt.postgresql.org:noble-pgdg` in unattended-upgrades. 18.7 was applied by
+   hand the same night.
+5. ~~**Preload `pg_stat_statements`** in `30`.~~ Done (lab #45). `30` also no
+   longer appends duplicate config lines on every run.
+6. ~~**Re-mint the desktop `doctl` token** (expired) and confirm the
+   DigitalOcean spend alert.~~ Done 2026-11-13. A 1-year Full Access token
+   (expires 2027-11-13) is installed, and `doctl compute droplet list` works
+   again. The spend alert is set at $30/month to an address outside the
+   Microsoft-hosted mailbox. The renewal steps are under
+   [Prerequisites & effort](#prerequisites--effort).
+7. ~~**Give healthchecks.io a second alert channel.**~~ Done 2026-11-13. A
+   Pushover integration (high priority for DOWN, low for UP) is assigned to
+   every check, alongside the existing email. Its test notification reached the
+   operator's Android phone, and the same day it carried a real alert: the
+   18:22 UTC `la-droplet-monitor` DOWN during the PowerShell 7.7.0 crash buzzed
+   the phone on time (see History, 2026-11-13).
+
+   Why 15 days of missed pings went unnoticed: the alerts fired on time and were
+   delivered. `la-droplet-monitor` went `up ➔ down` on 2026-10-28 at 14:14:52 UTC,
+   its 5-minute period plus 10-minute grace after the last ping. Its DOWN email
+   reached the operator's inbox one minute later. `la-droplet-backup` followed on
+   2026-10-29 at 11:17 UTC, the missed 09:17 run plus its 2-hour grace. Both went
+   `down ➔ up` at the 2026-11-13 04:58 UTC catch-up. The ping's user agent moved
+   from PowerShell 7.6.6 to 7.6.9 across the gap, which is the snap refresh. The
+   only channel was a normal-priority email, which was missed among other mail.
+   (An unrelated Microsoft mailbox outage on 2026-11-13 made it look at first as
+   if the alerts had never arrived; the received timestamps showed otherwise.) A
+   high-priority phone push is the fix for an alert that has to be seen.
+8. **Buy the Pushover Android license before about 2026-12-13.** The device
+   is on Pushover's 30-day trial, which started 2026-11-13. After it ends,
+   Pushover stops delivering to that phone, and item 7's second channel goes
+   quiet without any error. The license is a one-time $4.99 per platform, bought
+   in the app or at pushover.net under Upgrade Now.
+
+**Migration** (done; kept for the record). Governance is
+[D-24707](../docs/ai/DECISIONS.md), with the ewiki half as D-24690.
 
 1. ~~Transcribe the migration decision into `DECISIONS.md`.~~ Done 2026-10-12:
    D-24707.

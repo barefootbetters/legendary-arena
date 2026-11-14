@@ -21,6 +21,9 @@ import {
   SEQUENCE_GATE_CONDITION_TYPES,
   CARDS_DISCARDED_THIS_TURN_CONDITION_TYPE,
   matchReadsConditionType,
+  PATROL_SPACE_EMPTY_CONDITION_TYPE,
+  PATROL_SPACE_OCCUPIED_CONDITION_TYPE,
+  CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE,
 } from './heroConditions.evaluate.js';
 import type { HeroConditionCardData } from './heroConditions.evaluate.js';
 import { WAIT_AND_SEE_CONDITION_TYPES } from './deferredConditionalGrants.js';
@@ -703,26 +706,24 @@ describe('evaluateCondition distinctHeroClassesAtLeast (WP-280)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// WP-290 / D-24074 — Size-Changing class-grant honored by the two class reads
+// D-24801 (supersedes D-24074's class grant) — Size-Changing is a recruit discount
 //
-// A card in inPlay counts as each of its EFFECTIVE classes (printed plus granted).
-// heroClassMatch (self-exclusive) and distinctHeroClassesAtLeast (self-inclusive) both
-// derive class membership from the sizeChanging.logic.ts helper; these tests pin the
-// grant behavior at both reads, including a null-printed (granted-only) card, a dual-class
-// card (printed ≠ granted), and the preserved self-exclusion / self-inclusion semantics.
+// Rules v23 p.33: "Size-Changing [class]" means "you can recruit this card for 2 less if you
+// played any [class] cards this turn". The listed class is NOT a class the played card gains,
+// so neither class read (heroClassMatch, distinctHeroClassesAtLeast) counts it. These tests
+// were the D-24074 grant pins; they now pin the absence of the grant at both reads.
 // ---------------------------------------------------------------------------
 
-describe('heroClassMatch honors the Size-Changing grant (WP-290 / D-24074)', () => {
-  it('a granted-only card (null printed class) satisfies another card\'s match for the granted class', () => {
-    // why: yellowjacket-style — null printed class, instinct granted only by Size-Changing.
+describe('heroClassMatch ignores the Size-Changing classes (D-24801)', () => {
+  it('a card whose only class is a Size-Changing class does not satisfy a match for it', () => {
     const gameState = makeTestState({
-      inPlay: ['sc-granter', 'trigger'],
+      inPlay: ['sc-card', 'trigger'],
       cardTraits: {
-        'sc-granter': { heroClass: null, team: null },
+        'sc-card': { heroClass: null, team: null },
         'trigger': { heroClass: null, team: null },
       },
       cardSizeChangingClasses: {
-        'sc-granter': ['instinct'],
+        'sc-card': ['instinct'],
       },
     });
 
@@ -733,11 +734,10 @@ describe('heroClassMatch honors the Size-Changing grant (WP-290 / D-24074)', () 
       'trigger',
     );
 
-    assert.equal(result, true,
-      'a granted-only instinct card should satisfy another card\'s instinct match');
+    assert.equal(result, false, 'a Size-Changing [instinct] card is not an instinct card');
   });
 
-  it('a dual-class card (printed strength + granted tech) satisfies a match for EITHER class', () => {
+  it('a printed-strength card with Size-Changing tech matches strength only', () => {
     const gameState = makeTestState({
       inPlay: ['giant-ego', 'trigger'],
       cardTraits: {
@@ -752,39 +752,17 @@ describe('heroClassMatch honors the Size-Changing grant (WP-290 / D-24074)', () 
     const matchesPrinted = evaluateCondition(
       gameState, '0', { type: 'heroClassMatch', value: 'strength' }, 'trigger',
     );
-    const matchesGranted = evaluateCondition(
+    const matchesSizeChanging = evaluateCondition(
       gameState, '0', { type: 'heroClassMatch', value: 'tech' }, 'trigger',
     );
 
-    assert.equal(matchesPrinted, true, 'dual-class card matches its printed class (strength)');
-    assert.equal(matchesGranted, true, 'dual-class card matches its granted class (tech)');
-  });
-
-  it('the triggering card\'s own granted class does not satisfy its own match (self-exclusion preserved)', () => {
-    const gameState = makeTestState({
-      inPlay: ['sc-self'],
-      cardTraits: {
-        'sc-self': { heroClass: null, team: null },
-      },
-      cardSizeChangingClasses: {
-        'sc-self': ['instinct'],
-      },
-    });
-
-    const result = evaluateCondition(
-      gameState,
-      '0',
-      { type: 'heroClassMatch', value: 'instinct' },
-      'sc-self',
-    );
-
-    assert.equal(result, false,
-      'the only in-play card is the triggering card — its own granted class is self-excluded');
+    assert.equal(matchesPrinted, true, 'the printed class (strength) still matches');
+    assert.equal(matchesSizeChanging, false, 'the Size-Changing class (tech) does not');
   });
 });
 
-describe('distinctHeroClassesAtLeast honors the Size-Changing grant (WP-290 / D-24074)', () => {
-  it('a single dual-class Size-Changing card contributes BOTH printed and granted classes', () => {
+describe('distinctHeroClassesAtLeast ignores the Size-Changing classes (D-24801)', () => {
+  it('a printed-strength card with Size-Changing tech contributes one class', () => {
     const gameState = makeTestState({
       inPlay: ['giant-ego'],
       cardTraits: {
@@ -795,37 +773,15 @@ describe('distinctHeroClassesAtLeast honors the Size-Changing grant (WP-290 / D-
       },
     });
 
+    const reachesOne = evaluateCondition(
+      gameState, '0', { type: 'distinctHeroClassesAtLeast', value: '1' },
+    );
     const reachesTwo = evaluateCondition(
       gameState, '0', { type: 'distinctHeroClassesAtLeast', value: '2' },
     );
-    const reachesThree = evaluateCondition(
-      gameState, '0', { type: 'distinctHeroClassesAtLeast', value: '3' },
-    );
 
-    assert.equal(reachesTwo, true,
-      'one card contributes 2 distinct effective classes (strength + tech), self-inclusive');
-    assert.equal(reachesThree, false,
-      'one dual-class card cannot reach 3 distinct classes');
-  });
-
-  it('a granted-only card (null printed class) still contributes its granted class to the count', () => {
-    const gameState = makeTestState({
-      inPlay: ['sc-granter', 'plain'],
-      cardTraits: {
-        'sc-granter': { heroClass: null, team: null },
-        'plain': { heroClass: 'covert', team: null },
-      },
-      cardSizeChangingClasses: {
-        'sc-granter': ['instinct'],
-      },
-    });
-
-    const result = evaluateCondition(
-      gameState, '0', { type: 'distinctHeroClassesAtLeast', value: '2' },
-    );
-
-    assert.equal(result, true,
-      'covert (printed) + instinct (granted-only) = 2 distinct effective classes');
+    assert.equal(reachesOne, true, 'the printed class counts');
+    assert.equal(reachesTwo, false, 'the Size-Changing class adds no second class');
   });
 });
 
@@ -953,8 +909,26 @@ describe('distinctHeroClassesAtLeast counts hand + play (Spectrum, D-24694)', ()
     });
 
     const text = describeFailedCondition(gameState, '0', SPECTRUM_CONDITION);
-    assert.match(text, /3 different Hero classes in hand or play/);
+    // why: WP-858 / D-24794 — the count (and so the message) now includes controlled Artifacts.
+    assert.match(text, /3 different Hero classes in hand, play, or Artifacts you control/);
     assert.match(text, /you have 2$/);
+  });
+
+  it('counts the printed class of a controlled Artifact (WP-858 / D-24794)', () => {
+    // why: rules v23 L930-932 — "Heroes you have" include Hero Artifacts you control.
+    const gameState = makeTestState({
+      inPlay: ['spectrum-instinct#0'],
+      hand: ['hero-strength#0'],
+      cardTraits: {
+        'spectrum-instinct#0': { heroClass: 'instinct', team: null },
+        'hero-strength#0': { heroClass: 'strength', team: null },
+        'artifact-tech#0': { heroClass: 'tech', team: null },
+      },
+    });
+    assert.equal(countDistinctHeroClassesYouHave(gameState, '0'), 2, 'unchanged with no controlled Artifact');
+    gameState.controlledArtifacts = { '0': ['artifact-tech#0'] };
+    assert.equal(countDistinctHeroClassesYouHave(gameState, '0'), 3, 'the controlled Tech Artifact adds a class');
+    assert.equal(evaluateCondition(gameState, '0', SPECTRUM_CONDITION, 'spectrum-instinct#0'), true);
   });
 });
 
@@ -2025,5 +1999,224 @@ describe('requiredMatches — repeated prefix icons need that many OTHER cards (
       describeFailedCondition(gameState, '0', { type: 'requiresTeam', value: 'shield', requiredMatches: 1 }),
       'it needs another S.H.I.E.L.D. Hero played this turn',
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// patrolSpaceEmpty / patrolSpaceOccupied (WP-881 / D-24832)
+// ---------------------------------------------------------------------------
+
+describe('patrolSpaceEmpty / patrolSpaceOccupied (WP-881 / D-24832)', () => {
+  // why: the two Patrol condition types, kept as the runtime drift pin — HeroCondition.type is
+  // a bare string, so no compile-time union can catch a missing case.
+  const PATROL_CONDITION_TYPES = [PATROL_SPACE_EMPTY_CONDITION_TYPE, PATROL_SPACE_OCCUPIED_CONDITION_TYPE];
+
+  /** A state whose City is the given spaces (index 0 = Sewers). */
+  function makePatrolTestState(city: (string | null)[]): LegendaryGameState {
+    const gameState = makeTestState();
+    (gameState as unknown as { city: (string | null)[] }).city = city;
+    return gameState;
+  }
+
+  it('the constants are the locked literals', () => {
+    assert.equal(PATROL_SPACE_EMPTY_CONDITION_TYPE, 'patrolSpaceEmpty');
+    assert.equal(PATROL_SPACE_OCCUPIED_CONDITION_TYPE, 'patrolSpaceOccupied');
+  });
+
+  it('an empty space passes patrolSpaceEmpty and fails patrolSpaceOccupied', () => {
+    const gameState = makePatrolTestState([null, null, null, null, null]);
+    assert.equal(evaluateCondition(gameState, '0', { type: PATROL_SPACE_EMPTY_CONDITION_TYPE, value: 'bridge' }), true);
+    assert.equal(evaluateCondition(gameState, '0', { type: PATROL_SPACE_OCCUPIED_CONDITION_TYPE, value: 'bridge' }), false);
+  });
+
+  it('an occupied space passes patrolSpaceOccupied and fails patrolSpaceEmpty', () => {
+    const gameState = makePatrolTestState([null, null, null, null, 'villain-bridge']);
+    assert.equal(evaluateCondition(gameState, '0', { type: PATROL_SPACE_EMPTY_CONDITION_TYPE, value: 'bridge' }), false);
+    assert.equal(evaluateCondition(gameState, '0', { type: PATROL_SPACE_OCCUPIED_CONDITION_TYPE, value: 'bridge' }), true);
+    // why: only the named space is read — the Sewers is still empty.
+    assert.equal(evaluateCondition(gameState, '0', { type: PATROL_SPACE_EMPTY_CONDITION_TYPE, value: 'sewers' }), true);
+  });
+
+  it('a Bank Villain holding a captured Bystander makes the Bank occupied', () => {
+    const gameState = makePatrolTestState([null, 'villain-bank', null, null, null]);
+    (gameState as unknown as { attachedBystanders: Record<string, string[]> }).attachedBystanders = {
+      'villain-bank': [BYSTANDER_EXT_ID],
+    };
+    assert.equal(evaluateCondition(gameState, '0', { type: PATROL_SPACE_OCCUPIED_CONDITION_TYPE, value: 'bank' }), true);
+    assert.equal(evaluateCondition(gameState, '0', { type: PATROL_SPACE_EMPTY_CONDITION_TYPE, value: 'bank' }), false);
+  });
+
+  it('a space a 3-space City no longer has fails both conditions (D-24764)', () => {
+    const gameState = makePatrolTestState([null, null, null]);
+    for (const conditionType of PATROL_CONDITION_TYPES) {
+      assert.equal(evaluateCondition(gameState, '0', { type: conditionType, value: 'bridge' }), false);
+      assert.equal(evaluateCondition(gameState, '0', { type: conditionType, value: 'streets' }), false);
+      assert.equal(
+        describeFailedCondition(gameState, '0', { type: conditionType, value: 'bridge' }),
+        'there is no Bridge in the City',
+      );
+    }
+    // why: the Rooftops (index 2) still exists in a 3-space City.
+    assert.equal(evaluateCondition(gameState, '0', { type: PATROL_SPACE_EMPTY_CONDITION_TYPE, value: 'rooftops' }), true);
+  });
+
+  it('an unknown value or a non-array City fails both conditions and never throws', () => {
+    const gameState = makePatrolTestState([null, null, null, null, null]);
+    for (const conditionType of PATROL_CONDITION_TYPES) {
+      assert.equal(evaluateCondition(gameState, '0', { type: conditionType, value: 'escape-pile' }), false);
+      assert.equal(evaluateCondition(gameState, '0', { type: conditionType, value: '' }), false);
+    }
+    const minimal = { playerZones: { '0': { inPlay: [] } } } as unknown as LegendaryGameState;
+    for (const conditionType of PATROL_CONDITION_TYPES) {
+      assert.doesNotThrow(() => evaluateCondition(minimal, '0', { type: conditionType, value: 'bridge' }));
+      assert.equal(evaluateCondition(minimal, '0', { type: conditionType, value: 'bridge' }), false);
+    }
+  });
+
+  it('re-reads the City on every evaluation (never cached)', () => {
+    const gameState = makePatrolTestState([null, null, null, null, null]);
+    const condition = { type: PATROL_SPACE_EMPTY_CONDITION_TYPE, value: 'streets' };
+    assert.equal(evaluateCondition(gameState, '0', condition), true);
+    gameState.city[3] = 'villain-streets';
+    assert.equal(evaluateCondition(gameState, '0', condition), false);
+  });
+
+  it('describes a failed Patrol gate with the locked strings', () => {
+    const occupied = makePatrolTestState([null, null, null, null, 'villain-bridge']);
+    assert.equal(
+      describeFailedCondition(occupied, '0', { type: PATROL_SPACE_EMPTY_CONDITION_TYPE, value: 'bridge' }),
+      "there's a card in the Bridge",
+    );
+    const empty = makePatrolTestState([null, null, null, null, null]);
+    assert.equal(
+      describeFailedCondition(empty, '0', { type: PATROL_SPACE_OCCUPIED_CONDITION_TYPE, value: 'sewers' }),
+      'nothing is in the Sewers',
+    );
+  });
+
+  it('runtime pin: both types have a real evaluate case and a real describe case, and are neither wait-and-see nor sequence gates', () => {
+    const emptyCity = makePatrolTestState([null, null, null, null, null]);
+    const fullCity = makePatrolTestState(['a', 'b', 'c', 'd', 'e']);
+    for (const conditionType of PATROL_CONDITION_TYPES) {
+      // why: the default evaluate branch only returns false, so a `true` on a satisfying City
+      // proves the case exists.
+      const satisfyingCity = conditionType === PATROL_SPACE_EMPTY_CONDITION_TYPE ? emptyCity : fullCity;
+      assert.equal(
+        evaluateCondition(satisfyingCity, '0', { type: conditionType, value: 'rooftops' }),
+        true,
+        `"${conditionType}" must have a real evaluateCondition case.`,
+      );
+      const description = describeFailedCondition(emptyCity, '0', { type: conditionType, value: 'rooftops' });
+      assert.ok(
+        !description.includes('could not be evaluated'),
+        `"${conditionType}" must have a real describeFailedCondition case.`,
+      );
+      // why: "If that city space becomes empty later in the turn, it's too late" — never wait-and-see.
+      assert.equal(WAIT_AND_SEE_CONDITION_TYPES.includes(conditionType), false,
+        `"${conditionType}" is resolved per line, never a wait-and-see gate.`);
+      assert.equal(SEQUENCE_GATE_CONDITION_TYPES.includes(conditionType), false,
+        `"${conditionType}" is board state, never a play-order sequence gate.`);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// conquerorSpaceHasVillain (WP-886 / D-24837)
+// ---------------------------------------------------------------------------
+
+describe('conquerorSpaceHasVillain (WP-886 / D-24837)', () => {
+  /** A state whose City is the given spaces (index 0 = Sewers). */
+  function makeConquerorTestState(city: (string | null)[]): LegendaryGameState {
+    const gameState = makeTestState();
+    (gameState as unknown as { city: (string | null)[] }).city = city;
+    return gameState;
+  }
+
+  it('the constant is the locked literal', () => {
+    assert.equal(CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, 'conquerorSpaceHasVillain');
+  });
+
+  it('an occupied space passes and an empty space fails, reading only the named space', () => {
+    const gameState = makeConquerorTestState([null, null, null, null, 'villain-bridge']);
+    assert.equal(
+      evaluateCondition(gameState, '0', { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'bridge' }),
+      true,
+    );
+    assert.equal(
+      evaluateCondition(gameState, '0', { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'streets' }),
+      false,
+    );
+    assert.equal(
+      describeFailedCondition(gameState, '0', { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'streets' }),
+      'no Villain is in the Streets',
+    );
+  });
+
+  it('a space a 3-space City no longer has fails and is described as missing (D-24764)', () => {
+    const gameState = makeConquerorTestState(['villain-sewers', 'villain-bank', 'villain-rooftops']);
+    assert.equal(
+      evaluateCondition(gameState, '0', { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'bridge' }),
+      false,
+    );
+    assert.equal(
+      describeFailedCondition(gameState, '0', { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'bridge' }),
+      'there is no Bridge in the City',
+    );
+    assert.equal(
+      describeFailedCondition(gameState, '0', { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'streets' }),
+      'there is no Streets in the City',
+    );
+    // why: the Rooftops (index 2) still exists in a 3-space City.
+    assert.equal(
+      evaluateCondition(gameState, '0', { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'rooftops' }),
+      true,
+    );
+  });
+
+  it('an unknown value or a non-array City fails and never throws', () => {
+    const gameState = makeConquerorTestState(['a', 'b', 'c', 'd', 'e']);
+    assert.equal(
+      evaluateCondition(gameState, '0', { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'escape-pile' }),
+      false,
+    );
+    assert.equal(
+      evaluateCondition(gameState, '0', { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'Bridge' }),
+      false,
+    );
+    const minimal = { playerZones: { '0': { inPlay: [] } } } as unknown as LegendaryGameState;
+    const condition = { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'bridge' };
+    assert.doesNotThrow(() => evaluateCondition(minimal, '0', condition));
+    assert.equal(evaluateCondition(minimal, '0', condition), false);
+  });
+
+  it('re-reads the City on every evaluation (never cached)', () => {
+    const gameState = makeConquerorTestState([null, null, null, null, null]);
+    const condition = { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: 'bank' };
+    assert.equal(evaluateCondition(gameState, '0', condition), false);
+    gameState.city[1] = 'villain-bank';
+    assert.equal(evaluateCondition(gameState, '0', condition), true);
+  });
+
+  it('runtime pin: a real evaluate case and a real describe case, neither wait-and-see nor a sequence gate', () => {
+    const fullCity = makeConquerorTestState(['a', 'b', 'c', 'd', 'e']);
+    const emptyCity = makeConquerorTestState([null, null, null, null, null]);
+    const conditionType = CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE;
+    // why: the default evaluate branch only returns false, so a `true` on an occupied space
+    // proves the case exists.
+    assert.equal(
+      evaluateCondition(fullCity, '0', { type: conditionType, value: 'rooftops' }),
+      true,
+      `"${conditionType}" must have a real evaluateCondition case.`,
+    );
+    const description = describeFailedCondition(emptyCity, '0', { type: conditionType, value: 'rooftops' });
+    assert.ok(
+      !description.includes('could not be evaluated'),
+      `"${conditionType}" must have a real describeFailedCondition case.`,
+    );
+    // why: the hero "if" is read when the line resolves (rules v23 L1157-1159) — never wait-and-see.
+    assert.equal(WAIT_AND_SEE_CONDITION_TYPES.includes(conditionType), false,
+      `"${conditionType}" is resolved per line, never a wait-and-see gate.`);
+    assert.equal(SEQUENCE_GATE_CONDITION_TYPES.includes(conditionType), false,
+      `"${conditionType}" is board state, never a play-order sequence gate.`);
   });
 });

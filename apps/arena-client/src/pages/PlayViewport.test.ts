@@ -350,6 +350,11 @@ describe('PlayViewport build provenance after a reconnect', () => {
     const provenanceStore = useBuildProvenanceStore();
     assert.equal(provenanceStore.provenance?.serverGitSha, 'old0001');
     assert.equal(provenanceStore.provenance?.isMatchOlderThanServer, false);
+    assert.equal(
+      wrapper.find('[data-testid="outdated-match-notice"]').exists(),
+      false,
+      'no older-rules notice while the match is newer than the server',
+    );
 
     // The server restarts on a new build; the socket drops and comes back.
     server = { gitSha: 'new0002', buildTimestamp: '2026-10-26T22:49:54.279Z' };
@@ -363,6 +368,64 @@ describe('PlayViewport build provenance after a reconnect', () => {
     }
     assert.equal(provenanceStore.provenance?.serverGitSha, 'new0002');
     assert.equal(provenanceStore.provenance?.isMatchOlderThanServer, true, 'the match now predates the running server');
+    assert.equal(
+      wrapper.find('[data-testid="outdated-match-notice"]').exists(),
+      true,
+      'the player is told the match runs the rules it started with',
+    );
+    wrapper.unmount();
+  });
+
+  test('the older-rules notice is hidden at game over, where Play Again starts fresh', async () => {
+    setActivePinia(createPinia());
+    installMatchMedia(false);
+    const uiStateStore = useUiStateStore();
+    uiStateStore.setSnapshot(structuredClone(loadUiStateFixture('mid-turn')));
+    const provenanceStore = useBuildProvenanceStore();
+    provenanceStore.provenance = {
+      clientGitSha: 'c1',
+      clientBuildTimestamp: '2026-10-29T13:55:00.000Z',
+      serverGitSha: 's1',
+      serverBootedAtIso: '2026-10-29T13:57:10.000Z',
+      matchId: 'm-2',
+      matchCreatedAtIso: '2026-10-29T13:51:46.000Z',
+      isMatchOlderThanServer: true,
+    };
+    const wrapper = mount(PlayViewport, { props: { submitMove: noopSubmitMove } });
+    await nextTick();
+    assert.equal(wrapper.find('[data-testid="outdated-match-notice"]').exists(), true, 'shown mid-match');
+
+    uiStateStore.setSnapshot(structuredClone(loadUiStateFixture('endgame-win')));
+    await nextTick();
+    assert.equal(wrapper.find('[data-testid="outdated-match-notice"]').exists(), false, 'hidden at game over');
+    wrapper.unmount();
+  });
+});
+
+// why: jsdom's `location` is non-configurable (see bgioClient.test.ts), so the
+// default `/` navigation cannot be observed here; these tests pin the host seam.
+describe('PlayViewport Back to Lobby target (WP-894 follow-up, D-24851)', () => {
+  test('a host-supplied return runs when Back to Lobby is pressed', async () => {
+    setActivePinia(createPinia());
+    installMatchMedia(false);
+    useUiStateStore().setSnapshot(structuredClone(loadUiStateFixture('endgame-win')));
+    let returnCount = 0;
+    const wrapper = mount(PlayViewport, {
+      props: { submitMove: noopSubmitMove, onReturnToLobby: () => { returnCount += 1; } },
+    });
+    await nextTick();
+    const backToLobby = wrapper.find('[data-testid="play-action-return-lobby"]');
+    assert.equal(backToLobby.exists(), true, 'the endgame panel offers Back to Lobby');
+    await backToLobby.trigger('click');
+    assert.equal(returnCount, 1, 'the host return ran once');
+    wrapper.unmount();
+  });
+
+  test('the onReturnToLobby prop defaults to null for every other mount', () => {
+    setActivePinia(createPinia());
+    installMatchMedia(false);
+    const wrapper = mount(PlayViewport, { props: { submitMove: noopSubmitMove } });
+    assert.equal(wrapper.props('onReturnToLobby'), null);
     wrapper.unmount();
   });
 });

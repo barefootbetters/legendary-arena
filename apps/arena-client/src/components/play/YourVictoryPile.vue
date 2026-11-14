@@ -49,6 +49,20 @@ export default defineComponent({
       required: false,
       default: 0,
     },
+    // why: WP-848 / D-24784 — the viewer's live conditional-clause tally, the same
+    // WP-708 tally the endgame Synergy Rate reads (unit = conditional clause). The
+    // engine projects both integers; the client only formats them. Neither name has
+    // consecutive capitals, so the kebab bindings camelize cleanly (see `victoryVp`).
+    conditionalClausesPlayed: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
+    conditionalClausesAssembled: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
   },
   setup(props, { emit }) {
     function buildComposition(): ReturnType<typeof useVictoryPileComposition> {
@@ -70,7 +84,23 @@ export default defineComponent({
       });
     }
 
-    return { buildComposition, onBrowse };
+    /**
+     * Formats the "Effects triggered" line from the projected tally.
+     *
+     * @returns `Effects triggered: {assembled} / {played} ({percent}%)`, or
+     *   `Effects triggered: 0 / 0` when nothing has been played yet.
+     */
+    function buildEffectsTriggeredText(): string {
+      // why: no percentage at played 0 — there is nothing to divide by, and the
+      // line would otherwise read `NaN%`.
+      if (props.conditionalClausesPlayed === 0) {
+        return 'Effects triggered: 0 / 0';
+      }
+      const percent = Math.round((100 * props.conditionalClausesAssembled) / props.conditionalClausesPlayed);
+      return `Effects triggered: ${props.conditionalClausesAssembled} / ${props.conditionalClausesPlayed} (${percent}%)`;
+    }
+
+    return { buildComposition, buildEffectsTriggeredText, onBrowse };
   },
 });
 </script>
@@ -81,11 +111,21 @@ export default defineComponent({
     data-testid="play-your-victory-pile"
     aria-label="Your Victory Pile"
   >
-    <header class="your-victory-pile__header">
-      Your Victory Pile —
-      <span data-testid="play-your-victory-count">{{ victoryCards.length }} cards</span> /
-      <span data-testid="play-your-victory-vp">{{ victoryVp }} VP</span>
-    </header>
+    <!-- why: WP-848 / D-24784 — the Effects triggered pill sits in the header row.
+         It wraps under the header only when the header already fills the row
+         (phone width), rather than squeezing the header onto three lines. -->
+    <div class="your-victory-pile__title-row">
+      <header class="your-victory-pile__header">
+        Your Victory Pile —
+        <span data-testid="play-your-victory-count">{{ victoryCards.length }} cards</span> /
+        <span data-testid="play-your-victory-vp">{{ victoryVp }} VP</span>
+      </header>
+      <!-- why: WP-848 / D-24784 — the live in-play view of the endgame Synergy Rate:
+           conditional hero clauses assembled vs played this match. -->
+      <span class="your-victory-pile__effects" data-testid="play-your-victory-effects">
+        {{ buildEffectsTriggeredText() }}
+      </span>
+    </div>
     <!-- why: the full list is collapsed behind a browse affordance so the
          pile does not grow the mat vertically as victory cards accumulate
          (avoids a late-game page scroll). Clicking emits `open`; the page
@@ -137,6 +177,26 @@ export default defineComponent({
   gap: 0.25rem;
   padding: 0.4rem 0.75rem;
   border: 1px solid var(--color-foreground, #999);
+}
+
+.your-victory-pile__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.6rem;
+}
+
+.your-victory-pile__effects {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--la-color-border-strong, rgba(212, 175, 55, 0.3));
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .your-victory-pile__browse {

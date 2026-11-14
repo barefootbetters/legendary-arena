@@ -348,6 +348,23 @@ export default defineComponent({
       required: false,
       default: false,
     },
+    // why: D-24812 (amends D-24808 §7) — the Attempt Heist control lives in this sticky bar,
+    // beside Heal Wounds and End turn — where the player decides what else to do before ending
+    // the turn. Inside the small, muted played-cards heading it went unnoticed for ~20
+    // readied-Heist turns of operator match OZLV05npDB8. `economy.heistAvailable` (active
+    // player only) is the engine's single legality predicate.
+    heistAvailable: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    // why: D-24812 — the viewer's Heist Count (`economy.heistCount`), shown on the button so
+    // the player can weigh the attempt against the Villain Deck before pressing it.
+    heistCount: {
+      type: Number as PropType<number | undefined>,
+      required: false,
+      default: undefined,
+    },
   },
   setup(props) {
     function activeStep(): 1 | 2 | 3 {
@@ -507,6 +524,26 @@ export default defineComponent({
       blurAfterClick(event);
     }
 
+    /**
+     * Whether the Attempt Heist button shows: only when the engine projects the Heist as
+     * available for the viewer (WP-865 / D-24808 — the client never re-derives the crew or count).
+     *
+     * @returns True when the viewer may attempt a Heist now.
+     */
+    function canAttemptHeist(): boolean {
+      return props.isViewerTurn && props.heistAvailable;
+    }
+
+    /**
+     * Submits the once-per-turn Heist attempt (WP-865 / D-24808; `attemptHeist` takes no arguments).
+     *
+     * @param event - The click event, used to drop the button's lingering focus.
+     */
+    function onAttemptHeist(event: Event): void {
+      props.submitMove('attemptHeist', {});
+      blurAfterClick(event);
+    }
+
     // why (Jeff feedback): one-click Reveal. Advance start → main automatically once
     // the villain is revealed AND no choice is pending. On a plain turn this fires
     // right after the reveal; on a Master-Strike turn the reveal parks a "KO a Hero"
@@ -571,6 +608,8 @@ export default defineComponent({
       onReveal,
       onEndTurn,
       onHealWounds,
+      canAttemptHeist,
+      onAttemptHeist,
     };
   },
 });
@@ -612,6 +651,19 @@ export default defineComponent({
         data-testid="play-turn-step-2"
       >
         <header>Step 2 — Play / Recruit / Fight (play.main)</header>
+        <!-- why: D-24812 — Attempt Heist sits ABOVE the hint so it stays level with Reveal / End turn;
+             below the hint it wrapped under the fixed audio controls on a phone-width board. -->
+        <button
+          v-if="canAttemptHeist()"
+          type="button"
+          class="turn-action-bar__heist"
+          data-testid="attempt-heist"
+          @click="onAttemptHeist($event)"
+        >
+          <!-- why: D-24812 — shown only while the engine projects heistAvailable, the same
+               "only when usable" rule as Heal Wounds, in the always-visible bar. -->
+          Attempt Heist (Heist Count {{ heistCount ?? 0 }})
+        </button>
         <p class="turn-action-bar__hint">
           Play cards from your hand, recruit heroes, and fight villains — tap them
           on the board. Then End turn.
@@ -741,6 +793,22 @@ export default defineComponent({
    not-allowed styling so the enabled/disabled distinction is carried by the
    button itself — an enabled Pass priority at play.start now reads as clickable,
    a stage-blocked button reads as blocked. */
+/* why: D-24812 — Attempt Heist is an optional, once-per-turn gamble, so it is accented (the
+   WP-865 Heist purple) to stand out from the plain Heal / End turn buttons in the same bar. */
+.turn-action-bar__step .turn-action-bar__heist {
+  margin: 0 0 0.25rem 0;
+  border: 1px solid rgba(40, 24, 88, 1);
+  border-radius: 0.3rem;
+  background: rgba(40, 24, 88, 0.92);
+  color: #fff;
+  font-weight: 700;
+}
+
+.turn-action-bar__step .turn-action-bar__heist:hover,
+.turn-action-bar__step .turn-action-bar__heist:focus-visible {
+  background: rgba(88, 56, 176, 0.95);
+}
+
 .turn-action-bar__step button:disabled {
   opacity: 0.4;
   cursor: not-allowed;

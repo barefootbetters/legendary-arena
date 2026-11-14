@@ -26,6 +26,7 @@ import type { LogEntry } from "../log/logOutcome.types.js";
 import type { CardExtId } from "../state/zones.types.js";
 import type { GreyHeroFilter } from "../rules/villainAbility.types.js";
 import type { AttackTargetName } from "../economy/economy.types.js";
+import type { FortifyPlace } from "../board/fortify.types.js";
 import type { MenaceTier, SchemeLossKind } from "../rules/schemeLossProgress.js";
 // why: WP-258 — reuse the engine's canonical HollowEffectRecord rather than
 // declaring a parallel UI type. The projection surfaces the WP-257 runtime
@@ -606,6 +607,28 @@ export interface UIPlayerState {
    * (WP-111 D-11105 aliasing-defense).
    */
   outOfTimeCards?: UIDisplayEntry[];
+  /**
+   * The Ritual Artifacts this player controls, in keep order (WP-858 / D-24794).
+   *
+   * // why: rules v23 p.17 — a played Hero Artifact stays in front of its player at end of
+   * turn. The cards are on the table in the open, so this is PUBLIC (the `outOfTimeCards`
+   * disposition) and passes every audience filter. Omitted when the player controls none.
+   * Per-entry shallow copy via `resolveDisplay`.
+   */
+  controlledArtifacts?: UIDisplayEntry[];
+  /**
+   * This player's running conditional-clause tally: how many conditional Hero
+   * clauses they have played this match, and how many assembled (condition met).
+   *
+   * // why: WP-848 / D-24784 — the WP-708 / D-24531 Synergy Rate tally, projected
+   * live from the hash-excluded `G.diagnostics.conditionalClauses` so the in-play
+   * "Effects triggered" line matches the endgame Synergy Rate. Unit = conditional
+   * clause, not card. Omitted when the seat has no tally entry yet. PUBLIC to every
+   * audience: every outcome is already in the public game log (an assembled clause
+   * shows its effect; an unassembled one pushes the `blocked` "ability did not
+   * activate" line). Display-only; `potentialValue` / `realizedValue` stay endgame-only.
+   */
+  conditionalClauses?: { played: number; assembled: number };
 }
 
 /**
@@ -638,7 +661,7 @@ export interface UICityCard {
    * or display (that would leak a face-down identity).
    */
   attachedBystanderCount: number;
-  /** Engine-resolved fight cost for this villain (WP-214). Static or dynamic. */
+  /** Engine-resolved fight cost for this villain (WP-214). Static or dynamic; the active player's Size-Changing price, floored at 0 (D-24802). */
   fightCost: number;
   /**
    * The costs a card discarded to fight this villain may have (WP-817 / D-24750;
@@ -646,6 +669,14 @@ export interface UICityCard {
    * without a fight discard cost.
    */
   fightDiscardCosts?: number[];
+  /**
+   * WP-871 / D-24816 — present only while the villain's printed fight restriction
+   * (Orrgo, Squirrel Girl, Doop) blocks the current player's fight; the
+   * engine-written reason the client shows as the Fight button's tooltip. Built
+   * from public state (cards played this turn, the City, Villains defeated this
+   * turn), so every audience sees it.
+   */
+  fightRestrictionReason?: string;
 }
 
 /**
@@ -659,6 +690,35 @@ export interface UICityCard {
 export interface UICityState {
   spaces: (UICityCard | null)[];
   escapedPile: UIDisplayEntry[];
+  /**
+   * WP-873 / D-24818 — the Villains fortifying a place (Squirrel Girl at the Sidekick
+   * Stack, Colleen Wing at the Mastermind), in FORTIFY_PLACES order. A fortifier left the
+   * Escape Pile, so the client shows it under the Escaped Pile column with its own Fight
+   * button. Public (every audience). Present only when at least one place is fortified.
+   */
+  fortifiers?: UIFortifier[];
+}
+
+/**
+ * A Villain fortifying a place (WP-873 / D-24818), with what it locks and its fight price.
+ *
+ * // why: every field is built from public state (the fortifier is face up on the table),
+ * and the reason strings are engine-written, so the client renders them verbatim and never
+ * switches on `place` (D-24574: the client gates on projected data).
+ */
+export interface UIFortifier {
+  /** The fortified place; the client sends it back as `fightVillain({ fortifiedPlace })`. */
+  place: FortifyPlace;
+  /** The place's player-facing name (`the Sidekick Stack`). */
+  placeLabel: string;
+  extId: CardExtId;
+  display: UICardDisplay;
+  /** The active player's Size-Changing fight price, floored at 0 (the UICityCard.fightCost rule). */
+  fightCost: number;
+  /** What the place's lock prevents (`Sidekicks can't be recruited or gained`). */
+  lockText: string;
+  /** Present only while the fortifier's printed fight restriction blocks the active player. */
+  fightRestrictionReason?: string;
 }
 
 /**
@@ -699,6 +759,15 @@ export interface UIHQState {
   // Omit-when-absent: present only once G.hqHaunters exists (the first haunt). It is
   // optional, so a missed filter pass-through is silent — see uiState.filter.ts.
   haunters?: (UIHQHaunter | null)[];
+  // why: D-24801 — the price the ACTIVE player pays to recruit each slot now, index-aligned
+  // with `slots` (null for an empty slot): the printed cost after Size-Changing, the same
+  // resolveRecruitCost the recruitHero guard reads. Negative only through Microscopic
+  // Size-Changing (the recruiter pays 0 and gains the difference). The client gates and
+  // labels recruits on it instead of the printed display.cost. Present iff the match has a
+  // Size-Changing card; omitted otherwise, so every other match is unchanged. Public (the
+  // active player's played cards are face up). Passed through the audience filter explicitly
+  // (uiState.filter.ts) — a build-only field is silently dropped (the EC-206 failure mode).
+  recruitCosts?: (number | null)[];
 }
 
 /**
@@ -749,7 +818,8 @@ export interface UIMastermindState {
   finalBlowPending?: boolean;
   // why: WP-750 / D-24574 — the attack the engine will actually charge to fight
   // the Mastermind: resolveMastermindFightCost, the same authority the
-  // fightMastermind guard reads (printed cost + the Portals Dark-Portal bonus).
+  // fightMastermind guard reads (printed cost + the Portals Dark-Portal bonus). D-24802:
+  // now resolveMastermindFightPrice, which also takes off the active player's Size-Changing.
   // The client gates Fight on this instead of the printed display.cost. Optional
   // so typed fixtures and snapshots that predate it still compile (the client
   // falls back to display.cost); passed through the audience filter explicitly,
@@ -759,6 +829,10 @@ export interface UIMastermindState {
   // fought until that Hero is exorcised). Public; omit-when-absent (never `false`), so
   // the key appears only while the Mastermind actually haunts.
   isHaunting?: true;
+  // why: WP-873 / D-24818 — present only while a Villain fortifies the Mastermind (Colleen
+  // Wing): the engine-written reason it can't be fought, which the tile shows as the Fight
+  // button's tooltip. Public; omit-when-absent.
+  fortifiedReason?: string;
 }
 
 /**
@@ -894,6 +968,28 @@ export interface UITurnEconomyState {
    */
   phasingOptions?: CardExtId[];
   /**
+   * WP-858 / D-24794 — the Ritual Artifacts (played this turn or controlled) the active player
+   * may use right now, exactly `ritualArtifactOptions(G, currentPlayer)` from
+   * `moves/ritualArtifact.ts` — the same predicate the `useRitualArtifact` move validates
+   * against. Drives the client **Use** button. Omit-when-absent (present only when non-empty)
+   * and active-player-only (absent from `REDACTED_ECONOMY`, the `phasingOptions` disposition).
+   */
+  ritualArtifactOptions?: CardExtId[];
+  /**
+   * WP-865 / D-24808 — true iff the active player may attempt a Heist right now, exactly
+   * `isHeistAvailable(G, currentPlayer)` from `moves/attemptHeist.ts` — the same predicate the
+   * `attemptHeist` move validates against. Drives the client **Attempt Heist** button.
+   * Omit-when-absent (present only when true) and active-player-only (absent from
+   * `REDACTED_ECONOMY`, the `excessiveViolenceAvailable` disposition).
+   */
+  heistAvailable?: true;
+  /**
+   * WP-865 / D-24808 — the active player's current Heist Count (distinct non-zero printed costs
+   * among the Heroes they have), shown on the Attempt Heist button. Present only with
+   * `heistAvailable`; active-player-only.
+   */
+  heistCount?: number;
+  /**
    * WP-790 / D-24652 — the active player's unspent "usable only against …"
    * attack, one entry per grant with `remaining > 0`, in grant order: the
    * amount, where it may be spent, and a display label (e.g. `"Rooftops"`).
@@ -960,6 +1056,10 @@ export interface UISharedPilesState {
   // type ONLY so hand-written fixtures need no backfill; `uiState.build.ts` ALWAYS
   // populates it.
   sidekickDisplay?: UICardDisplay;
+  // why: WP-873 / D-24818 — present only while a Villain fortifies the Sidekick Stack
+  // (Squirrel Girl): the engine-written reason Sidekicks can't be recruited, which the
+  // Sidekicks cell shows as the Recruit button's tooltip. Public; omit-when-absent.
+  sidekickStackFortifiedReason?: string;
 }
 
 /**
@@ -1510,15 +1610,25 @@ export interface UIPendingDefeatChoice {
  * Ymir: `'grey'`), so the prompt can say "grey Heroes"; `discard` is already filtered to match.
  * Absent on an unfiltered entry (Loki's Maniacal Tyrant, Salomé).
  *
+ * // why: WP-850 / D-24786 — `isLimitedToDiscardedThisWay` is `true` only on an entry limited to
+ * the cards one play just discarded (Bishop's Firepower from the Future, "KO any number of those
+ * cards"), so the prompt can say so; `discard` already lists only those cards. Omitted otherwise.
+ *
+ * // why: WP-868 / D-24811 — `minCount` is present only on a mandatory entry (Flatman's "KO a card
+ * from your discard pile"): the prompt keeps submit disabled until `min(minCount, discard.length)`
+ * cards are picked and never offers "KO None". Omitted on every "up to N" entry.
+ *
  * @see WP-693 §Scope (In)
  * @see EC-730 Locked Values
- * @see DECISIONS.md D-24510, D-24769, D-24783
+ * @see DECISIONS.md D-24510, D-24769, D-24783, D-24786, D-24811
  */
 export interface UIPendingKoDiscardChoice {
   choiceType: "ko-from-discard";
   playerID: string;
   maxCount: number;
   greyFilter?: GreyHeroFilter;
+  isLimitedToDiscardedThisWay?: boolean;
+  minCount?: number;
   discard: UIDiscardChoiceHandCard[];
 }
 
@@ -1704,6 +1814,12 @@ export interface UIPendingMoveVillainChoice {
   playerID: string;
   /** The ascending engine indices (0..length-1, WP-831) of the City spaces holding a Villain, from the live City. */
   villainCityIndices: number[];
+  // why: WP-876 / D-24823 — X-Con Security Van's entry: the client offers only EMPTY City spaces
+  // (G.city[i] === null on the projected City), never "swap with …", and shows the X-Con heading
+  // and KO note. Absent for Spinning Cyclone (omitted, never an `undefined` literal). Chooser-only,
+  // like the rest of this projection.
+  /** The card variant this prompt resolves as; absent for Spinning Cyclone. */
+  variant?: 'x-con-security-van';
 }
 
 /**
@@ -1782,14 +1898,16 @@ export interface UIPendingCountScaledChoiceOption {
   // why: D-24696 — ca75 Spy Network adds a S.H.I.E.L.D. Officer gain ('gain-officer', label
   // only) and a flat attack grant ('flat-attack', resource 'attack' + total = the flat amount).
   /** Discriminant — a count-scaled resource grant, an Undercover send, an Officer gain, or a flat attack. */
-  kind: 'count-scaled' | 'undercover' | 'gain-officer' | 'flat-attack';
-  /** count-scaled / flat-attack: which resource this option grants. */
+  // why: WP-856 / D-24792 — 'flat-recruit' is the flat-attack sibling (Possessed by Brother's
+  // Spirit's "+4 Recruit or +4 Attack"): resource 'recruit' + total = the flat amount.
+  kind: 'count-scaled' | 'undercover' | 'gain-officer' | 'flat-attack' | 'flat-recruit';
+  /** count-scaled / flat-attack / flat-recruit: which resource this option grants. */
   resource?: 'attack' | 'recruit';
   /** count-scaled: the per-unit rate (attack/recruit per counted card). */
   perUnit?: number;
   /** count-scaled: the resolved count (of qualifying cards / S.H.I.E.L.D. Level). */
   count?: number;
-  /** count-scaled: the grant this option would apply now (perUnit × floor(count / perEach)); flat-attack: the flat amount. */
+  /** count-scaled: the grant this option would apply now (perUnit × floor(count / perEach)); flat-attack / flat-recruit: the flat amount. */
   total?: number;
   /** A display label for the button (always present; e.g. "+3 attack" or "Send a S.H.I.E.L.D. Hero Undercover"). */
   label: string;

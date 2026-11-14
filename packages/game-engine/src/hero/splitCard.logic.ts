@@ -242,11 +242,18 @@ export function playedCardIdsThisTurn(G: LegendaryGameState, inPlay: readonly Ca
   // you played that moved elsewhere still counts as "cards you played this turn"). The card
   // left inPlay, so the turn ledger supplies it. A card present in both (the turn-2 replay,
   // while it is still in inPlay) counts once.
-  const outOfTimePlayed = G.turnEconomy?.outOfTimePlayedCardIds;
-  if (outOfTimePlayed === undefined) {
-    return played;
-  }
+  const outOfTimePlayed = G.turnEconomy?.outOfTimePlayedCardIds ?? [];
   for (const cardId of outOfTimePlayed) {
+    if (!played.includes(cardId)) {
+      played.push(cardId);
+    }
+  }
+  // why: WP-858 / D-24794 — rules v23 L3441-3453: a Ritual Artifact played this turn and then
+  // used (discarded) left inPlay but still counts as "cards you played this turn", so the turn
+  // ledger supplies it. No early return above this loop: a Doctor Voodoo match has no Out of Time
+  // ledger, and the union must still run.
+  const ritualUsedPlayed = G.turnEconomy?.ritualUsedPlayedCardIds ?? [];
+  for (const cardId of ritualUsedPlayed) {
     if (!played.includes(cardId)) {
       played.push(cardId);
     }

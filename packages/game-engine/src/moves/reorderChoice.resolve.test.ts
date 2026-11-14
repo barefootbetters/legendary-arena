@@ -4,9 +4,10 @@
  *
  * Covers: resolve rewrites the top-N of the deck to the submitted permutation +
  * front-pop (AC-2), leaving cards below the top-N untouched; a non-permutation
- * (drop / dupe / wrong length), a wrong playerID, an empty queue, a non-array /
- * empty orderedCardIds, and a drifted deck top are silent no-ops that leave the
- * queue byte-identical; hasPendingReorderChoice; a block-all no-op on an action
+ * (drop / dupe / wrong length), a wrong playerID, an empty queue and a non-array /
+ * empty orderedCardIds are silent no-ops that leave the queue byte-identical; a
+ * drifted deck top drops the front with a neutral log line, deck unchanged
+ * (WP-870 / D-24815); hasPendingReorderChoice; a block-all no-op on an action
  * move while a reorder choice is pending (AC-3).
  *
  * Uses node:test + node:assert only. No boardgame.io testing imports.
@@ -189,13 +190,20 @@ describe('resolveReorderChoice (WP-479 / D-24286)', () => {
     }
   });
 
-  it('no-ops when the deck top has drifted from the parked remainder (defense-in-depth)', () => {
-    // parked [A, B, C] but the live deck top is [A, B] — the block-all guard should
-    // prevent this; if it ever regresses, the resolve must not scramble the deck.
+  it('drops the front when the deck top has drifted from the parked remainder (D-24815)', () => {
+    // why: WP-870 / D-24815 — intentional behavior change (amends the D-24286 drift no-op).
+    // Parked [A, B, C] but the live deck is [A, B]: a fight-time reorder can be overtaken in the
+    // same move, and a front left queued would hold the block-all guard forever. The resolve
+    // still never scrambles the deck; it drops the stale front and logs why.
     const G = makeTestGameState({ deck: [A, B], pendingReorderChoices: [reorderEntry([A, B, C])] });
+    G.messages = [];
     resolveReorderChoice(makeMoveContext(G), { orderedCardIds: [C, B, A] });
     assert.deepStrictEqual(G.playerZones['0']!.deck, [A, B], 'deck unchanged on drift');
-    assert.equal(G.pendingReorderChoices!.length, 1, 'queue intact');
+    assert.equal(G.pendingReorderChoices, undefined, 'drifted front dropped; the emptied queue is deleted');
+    assert.deepStrictEqual(G.messages, [{
+      text: "Player 0's revealed cards are no longer all on top of their deck; nothing to put back in order.",
+      outcome: 'neutral',
+    }]);
   });
 
   it('hasPendingReorderChoice reflects the queue', () => {

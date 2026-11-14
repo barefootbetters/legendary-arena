@@ -7,7 +7,11 @@
  * `hasActedThisTurn` / `hasHealedThisTurn`), drops every wait-and-see
  * deferred conditional grant (`deferredConditionalGrants`, WP-568 / D-24377)
  * and clears the WP-656 defeat edge flag
- * (`villainOrMastermindDefeatedSinceResolve`, D-24467), deletes the WP-743 per-turn
+ * (`villainOrMastermindDefeatedSinceResolve`, D-24467) and the WP-853 owned-KO count
+ * (`ownedCardsKoedSinceResolve`, D-24789) and the WP-856 Hero-KO count
+ * (`ownedHeroesKoedSinceResolve`, D-24792) and the WP-855 deck-KO count
+ * (`deckCardsKoedSinceResolve`, D-24791) and the WP-859 deck-KO turn record
+ * (`cardsKoedFromDeckThisTurn`, D-24795), deletes the WP-743 per-turn
  * Master Strike / Ambush Villain flags (`masterStrikePlayedThisTurn`,
  * `ambushVillainPlayedThisTurn`, D-24566), and stamps the per-turn
  * log numbering (`logMeta`, WP-328) and `lastPlayEffectsFired` (WP-409). None of the engine's
@@ -51,7 +55,10 @@ import { clearDeferredConditionalGrants } from '../hero/deferredConditionalGrant
  *
  * @param gameState - the live per-game state; the allowance flags are
  *   mutated in place, and `deferredConditionalGrants`,
- *   `villainOrMastermindDefeatedSinceResolve`, `masterStrikePlayedThisTurn` and
+ *   `villainOrMastermindDefeatedSinceResolve`, `ownedCardsKoedSinceResolve`,
+ *   `ownedHeroesKoedSinceResolve`, `deckCardsKoedSinceResolve`,
+ *   `cardsKoedFromDeckThisTurn`,
+ *   `masterStrikePlayedThisTurn` and
  *   `ambushVillainPlayedThisTurn` are deleted when present.
  * @param playerId - the seat whose turn is beginning (unused now beyond symmetry;
  *   the flags are global-per-turn, not per-seat, but kept for call-site clarity).
@@ -89,6 +96,26 @@ export function applyOnBeginParity(
   if (gameState.villainOrMastermindDefeatedSinceResolve !== undefined) {
     delete gameState.villainOrMastermindDefeatedSinceResolve;
   }
+  // why: WP-853 / D-24789 — mirrors game.ts onBegin's owned-KO count clear, in the same
+  // order. Guarded so a never-set G stays byte-unchanged.
+  if (gameState.ownedCardsKoedSinceResolve !== undefined) {
+    delete gameState.ownedCardsKoedSinceResolve;
+  }
+  // why: WP-856 / D-24792 — mirrors game.ts onBegin's Hero-KO count clear, in the same
+  // order. Guarded so a never-set G stays byte-unchanged.
+  if (gameState.ownedHeroesKoedSinceResolve !== undefined) {
+    delete gameState.ownedHeroesKoedSinceResolve;
+  }
+  // why: WP-855 / D-24791 — mirrors game.ts onBegin's deck-KO count clear, in the same
+  // order. Guarded so a never-set G stays byte-unchanged.
+  if (gameState.deckCardsKoedSinceResolve !== undefined) {
+    delete gameState.deckCardsKoedSinceResolve;
+  }
+  // why: WP-859 / D-24795 — mirrors game.ts onBegin's turn-record clear ("KO'd from your deck
+  // this turn"), in the same order. Guarded so a never-set G stays byte-unchanged.
+  if (gameState.cardsKoedFromDeckThisTurn !== undefined) {
+    delete gameState.cardsKoedFromDeckThisTurn;
+  }
   // why: WP-777 / D-24616 — mirrors game.ts onBegin's per-turn discard-count delete for the
   // rebuilt loops, so a harness turn never inherits the previous turn's discards. Guarded so
   // a never-set G stays byte-unchanged (no key is created or removed).
@@ -119,6 +146,21 @@ export function applyOnBeginParity(
   }
   if (gameState.pendingOutOfTimeGrants !== undefined) {
     delete gameState.pendingOutOfTimeGrants;
+  }
+  // why: WP-870 / D-24815 — mirrors game.ts onBegin's owed Zero pick delete. Guarded so a
+  // never-set G stays byte-unchanged.
+  if (gameState.pendingNextHandFromPlayPicks !== undefined) {
+    delete gameState.pendingNextHandFromPlayPicks;
+  }
+  // why: WP-875 / D-24822 — mirrors game.ts onBegin's owed Mandarin's Ring entry delete. Guarded
+  // so a never-set G stays byte-unchanged.
+  if (gameState.pendingMandarinRingEntries !== undefined) {
+    delete gameState.pendingMandarinRingEntries;
+  }
+  // why: WP-872 / D-24817 — mirrors game.ts onBegin's owed Mandarin's Rings pick delete. Guarded so
+  // a never-set G stays byte-unchanged.
+  if (gameState.pendingVillainFightPicks !== undefined) {
+    delete gameState.pendingVillainFightPicks;
   }
   // why: WP-328 — mirrors game.ts onBegin's logMeta stamp so harness log lines carry
   // the same play-relative {turn}.{step}.{action} prefix as live play. Live derives the

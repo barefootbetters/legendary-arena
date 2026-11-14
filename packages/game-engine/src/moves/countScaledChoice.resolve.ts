@@ -143,6 +143,13 @@ export function resolveCountScaledChoice(
       type: 'attack',
       magnitude: chosen.magnitude,
     });
+  } else if (chosen.kind === 'flat-recruit') {
+    // why: WP-856 / D-24792 — Possessed by Brother's Spirit's "+4[icon:recruit]": reuse the
+    // shipped flat `recruit` executor (the flat-attack mirror above), no re-implementation.
+    executeSingleEffect(G, context, playerID, front.cardId as CardExtId, {
+      type: 'recruit',
+      magnitude: chosen.magnitude,
+    });
   } else {
     // why: WP-675 / D-24490 — the count-scaled option maps to the shipped per-count effect
     // type; front.cardId is threaded so an "each OTHER card" source excludes the played card.

@@ -26,12 +26,16 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { moveCardFromZone } from './zoneOps.js';
 import { koCard } from '../board/ko.logic.js';
+import { recordOwnedCardKoed } from '../hero/deferredConditionalGrants.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardCountsAsShieldHero } from '../hero/effectiveTeams.logic.js';
 import { gainOfficerToHand } from './recruitOfficer.js';
 import { pushLog } from '../log/logPush.js';
 import { formatCardRef, describeKoSourceZone } from '../log/logDisplay.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+// why: WP-885 / D-24836 — the spare-a-Wound count lives in the gain-wound-reward grant leaf, which
+// imports no moves/, ui/ or simulation/ module, so this adds no import-cycle edge.
+import { isWoundSparedFromKo } from '../hero/gainWoundRewardGrant.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -160,6 +164,18 @@ export function resolveOptionalKoReward(
     return;
   }
 
+  // why: WP-885 / D-24836 — enforce the entry's koSparesGainedWound. ABSENT = no filter (every
+  // existing entry is unchanged); true (Hulk Gets Smashed's "KO up to two OTHER cards") rejects a
+  // Wound unless hand ∪ discard still hold at least two, so the Wound just gained is never KO'd.
+  // Wounds are fungible, so the rule is a count, recounted from current G. Silent no-op (queue
+  // intact, resubmit); the projection omits such a Wound, so a well-behaved client never sends one.
+  if (front.koSparesGainedWound === true) {
+    const spareZones = G.playerZones[playerID];
+    if (spareZones && isWoundSparedFromKo(cardId as CardExtId, spareZones.hand, spareZones.discard)) {
+      return;
+    }
+  }
+
   // Step 4: KO request — the chosen card must be present in the named zone right
   // now (no eligible snapshot is stored; eligibility is recomputed fresh).
   const playerZones = G.playerZones[playerID];
@@ -176,6 +192,7 @@ export function resolveOptionalKoReward(
   // Step 5: Mutate — shorten the source zone and KO the chosen card.
   playerZones[targetZone] = moveResult.from;
   G.ko = koCard(G.ko, targetCardId);
+  recordOwnedCardKoed(G, playerID, targetCardId, targetZone);
 
   // why: D-24399 — the KO is the paid cost of the optional-KO-reward; log it here
   // (before the Step-6 reward line) so the spent card is observable in the game

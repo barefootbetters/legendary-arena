@@ -360,7 +360,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "You may gain a Wound. If you do, [keyword:Berserk], [keyword:Berserk]."
+            "You may gain a Wound. If you do, [keyword:Berserk], [keyword:Berserk]. [keyword:gain-wound-reward:berserk:2]"
           ]
         },
         {

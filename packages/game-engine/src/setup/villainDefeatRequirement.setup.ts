@@ -22,7 +22,10 @@ import type {
   VillainDefeatRequirement,
   VillainDefeatRequirementKind,
   VillainFightDiscardCost,
+  VillainFightRestriction,
+  VillainFightRestrictionKind,
 } from '../rules/villainAbility.types.js';
+import { VILLAIN_FIGHT_RESTRICTION_KINDS } from '../rules/villainAbility.types.js';
 import { normalizeTraitSlug } from '../state/traits.normalize.js';
 // why: WP-841 / D-24774 — the variable-Attack entry type and its source list live in
 // the fight-cost logic file (the WP-815 precedent); the marker parser validates the
@@ -604,4 +607,120 @@ export function buildVillainVariableAttack(
   }
 
   return variableAttack;
+}
+
+// ---------------------------------------------------------------------------
+// Fight restriction marker + builder (WP-871 / D-24816)
+// ---------------------------------------------------------------------------
+
+/** Regex for the [fight-restriction:<kind>] marker (WP-871 / D-24816). */
+const FIGHT_RESTRICTION_MARKER_PATTERN = /\[fight-restriction:([^\]]+)\]/g;
+
+/**
+ * Checks whether a string is one of the canonical fight-restriction kinds.
+ *
+ * @param value - The candidate kind token.
+ * @returns True when value is a member of VILLAIN_FIGHT_RESTRICTION_KINDS.
+ */
+function isFightRestrictionKind(value: string): value is VillainFightRestrictionKind {
+  for (const kind of VILLAIN_FIGHT_RESTRICTION_KINDS) {
+    if (kind === value) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Parses the first valid `[fight-restriction:<kind>]` marker on an ability line
+ * into a fight restriction, or null when the line carries none.
+ *
+ * `<kind>` must be one of VILLAIN_FIGHT_RESTRICTION_KINDS verbatim. An unknown
+ * kind, an empty kind, or an extra colon-separated segment yields null — the
+ * marker is then inert (no entry, never a throw).
+ *
+ * @param abilityLine - One villain ability text line.
+ * @returns The parsed fight restriction, or null.
+ */
+export function parseFightRestrictionLine(abilityLine: string): VillainFightRestriction | null {
+  const regex = new RegExp(FIGHT_RESTRICTION_MARKER_PATTERN.source, 'g');
+  let match: RegExpExecArray | null = regex.exec(abilityLine);
+  while (match !== null) {
+    const kindToken = match[1]!;
+    // why: an extra `:` segment fails the membership test (no kind contains `:`), so
+    // `[fight-restriction:no-adjacent-villain:1]` is inert rather than half-parsed.
+    if (isFightRestrictionKind(kindToken)) {
+      return { kind: kindToken };
+    }
+    match = regex.exec(abilityLine);
+  }
+  return null;
+}
+
+/**
+ * Builds the per-villain-instance fight-restriction table from registry data at
+ * setup.
+ *
+ * Called during Game.setup() via buildInitialGameState, beside
+ * buildVillainFightDiscardCosts, with the EFFECTIVE villain groups (so a Clash of
+ * the Monsters Unleashed Monster Pit Orrgo is covered). Reads villain per-card
+ * ability text for those groups, parses the first valid `[fight-restriction:<kind>]`
+ * marker on any line, and fans one entry out per copy-indexed instance ext_id via
+ * the shared villainCardInstanceExtIds emitter.
+ *
+ * After setup, G.villainFightRestrictions is immutable — moves must never modify it.
+ *
+ * @param registry - Card registry for resolving ability text. Setup-time only.
+ *   Accepts unknown to support narrow test mocks; returns an empty record when
+ *   the registry does not satisfy the reader interface.
+ * @param matchConfig - Validated match setup config (villainGroupIds).
+ * @returns The fight-restriction table; empty when no villain is marked.
+ */
+// why: WP-871 / D-24816 — a sibling table, not a third VillainDefeatRequirement kind:
+// a defeat requirement is "have a Hero with trait X" with a value, a fight discard cost
+// is a move-argument cost (D-24750); a fight restriction is a third shape (a turn / board
+// predicate with no value), so it follows the D-24750 sibling-table precedent.
+export function buildVillainFightRestrictions(
+  registry: unknown,
+  matchConfig: MatchSetupConfig,
+): Record<CardExtId, VillainFightRestriction> {
+  const restrictions: Record<CardExtId, VillainFightRestriction> = {};
+  if (!isRegistryReader(registry)) {
+    return restrictions;
+  }
+
+  for (const villainGroupId of matchConfig.villainGroupIds) {
+    const parsed = parseQualifiedId(villainGroupId);
+    if (parsed === null) continue;
+    const setData = registry.getSet(parsed.setAbbr);
+    const groupCards = findVillainGroupCards(setData, parsed.slug);
+    if (groupCards === null) continue;
+
+    for (const card of groupCards) {
+      if (typeof card.slug !== 'string') continue;
+      if (!Array.isArray(card.abilities)) continue;
+
+      let restriction: VillainFightRestriction | null = null;
+      for (const abilityLine of card.abilities) {
+        if (typeof abilityLine !== 'string') continue;
+        restriction = parseFightRestrictionLine(abilityLine);
+        if (restriction !== null) break;
+      }
+      if (restriction === null) continue;
+
+      const instanceExtIds = villainCardInstanceExtIds(
+        parsed.setAbbr,
+        parsed.slug,
+        card.slug,
+        card,
+      );
+      // why: a fresh object per copy instance, so copies never alias one another
+      // (D-13502) and the fightVillain gate keyed by a zone-instance ext_id finds its entry.
+      for (const cardId of instanceExtIds) {
+        restrictions[cardId] = { kind: restriction.kind };
+      }
+    }
+  }
+
+  return restrictions;
 }

@@ -12,13 +12,20 @@
  *   1. no page scroll in either axis (the board fits the floor),
  *   2. the TurnActionBar does not vertically overlap the cockpit zones
  *      (played row / economy / victory pile) — the exact WP-688 regression,
- *   3. the authoring stage's visual box fits inside its fit container.
+ *   3. the authoring stage's visual box fits inside its fit container,
+ *   4. (WP-852 / D-24788) the table perspective: the board plane is tilted, City
+ *      boxes keep a gap, the plane clears the HUD and cockpit, resting cards take
+ *      their own clicks, and a hovered City / HQ card lifts and squares up; a
+ *      fresh page at Effect Intensity `off` is flat; and (WP-854 / D-24790) the
+ *      band's Mastermind, Officers and Sidekicks take their resting clicks, lift
+ *      clear of the HUD, survive an Officers / Sidekicks slide-and-click, and the
+ *      Mastermind stays down while the Enigma guess is open.
  *
  * Run it via `pnpm --filter @legendary-arena/arena-client test:visual` (which
  * lets this script spawn the `vite` DEV server), or point it at an
  * already-running server with `PLAY_URL=… node visual/play-surface.visual.mjs`
- * (the `test:visual:run` script). One-time browser install: `npx playwright
- * install chromium`.
+ * (the `test:visual:run` script). One-time browser install: `pnpm --filter
+ * @legendary-arena/arena-client exec playwright install chromium`.
  *
  * why the DEV server, not `vite preview`: the `?fixture=…&play=1` route only
  * loads its snapshot under `import.meta.env.DEV` (`apps/arena-client/src/main.ts`),
@@ -241,6 +248,393 @@ async function measureDiscardChooser() {
 }
 
 /**
+ * Measure the WP-852 table-perspective invariants on the untouched fixture: the
+ * board plane is tilted, neighbouring City boxes stay apart, and the tilted plane
+ * stays clear of the top status bar and the cockpit. Runs in the browser context.
+ *
+ * why gaps, not a pixel tolerance: the slash gesture's full-crossing rule and the
+ * VFX overlay anchors both read `getBoundingClientRect()`, an axis-aligned box that
+ * reaches a few px past a tilted card's visible trapezoid. That slop is harmless
+ * as long as neighbouring boxes never touch (a stroke can still cross one box
+ * fully without entering the next), so the guard pins the gap itself (> 0) rather
+ * than a slop budget that would have to track the angle.
+ */
+function measureTilt() {
+  const plane = document.querySelector('.play-desktop__board-plane');
+  const hud = document.querySelector('.top-hud-bar');
+  const cockpit = document.querySelector('.play-desktop__player-zone');
+  const cityBoxes = [
+    ...document.querySelectorAll('[data-testid="play-city-villain"], [data-testid="play-city-empty"]'),
+  ]
+    .map((element) => element.getBoundingClientRect())
+    .sort((first, second) => first.left - second.left);
+  let smallestCityGap = Infinity;
+  for (let i = 1; i < cityBoxes.length; i += 1) {
+    smallestCityGap = Math.min(smallestCityGap, cityBoxes[i].left - cityBoxes[i - 1].right);
+  }
+  const planeRect = plane === null ? null : plane.getBoundingClientRect();
+  const hudRect = hud === null ? null : hud.getBoundingClientRect();
+  const cockpitRect = cockpit === null ? null : cockpit.getBoundingClientRect();
+  const planeM22 = plane === null ? 1 : new DOMMatrix(getComputedStyle(plane).transform).m22;
+  return {
+    isBoardTilted: planeM22 < 0.999,
+    hasCityBoxGaps: cityBoxes.length > 1 && smallestCityGap > 0,
+    isPlaneClearOfHud: planeRect !== null && hudRect !== null && planeRect.top >= hudRect.bottom - 1,
+    isPlaneClearOfCockpit: planeRect !== null && cockpitRect !== null && planeRect.bottom <= cockpitRect.top + 1,
+    planeM22,
+    smallestCityGap,
+    cityBoxCount: cityBoxes.length,
+  };
+}
+
+/**
+ * Check that every resting City villain and HQ hero takes its own clicks: a 3x3
+ * interior grid on each button hit-tests to that button. Runs in the browser
+ * context.
+ *
+ * why (WP-852 EC amendment A): with the locked preserve-3d chain on at rest,
+ * coplanar 3D layers z-fought in Chrome's hit test and the board plane took up
+ * to 60% of a resting HQ card's clicks, while every geometry check still passed.
+ * The interior grid stays off the rounded corners, which a flat board misses too.
+ */
+function measureRestingHits(selector) {
+  const missedCards = [];
+  const buttons = document.querySelectorAll(selector);
+  for (const button of buttons) {
+    const box = button.getBoundingClientRect();
+    let missCount = 0;
+    for (const fractionX of [0.25, 0.5, 0.75]) {
+      for (const fractionY of [0.25, 0.5, 0.75]) {
+        const hit = document.elementFromPoint(box.left + box.width * fractionX, box.top + box.height * fractionY);
+        if (hit === null || !button.contains(hit)) missCount += 1;
+      }
+    }
+    // why: WP-854 — the band buttons (Mastermind, Officers, Sidekicks) carry no
+    // data-card-id, so they are named by their data-testid instead.
+    if (missCount > 0) {
+      missedCards.push({ cardId: button.getAttribute('data-card-id') ?? button.getAttribute('data-testid'), missCount });
+    }
+  }
+  return { isRestingCardHitIntact: buttons.length > 0 && missedCards.length === 0, cardCount: buttons.length, missedCards };
+}
+
+/** Read the first element matching `selector` as a plain rect (browser context). */
+function readRect(selector) {
+  const element = document.querySelector(selector);
+  if (element === null) return null;
+  const box = element.getBoundingClientRect();
+  return { left: box.left, top: box.top, right: box.right, bottom: box.bottom, width: box.width, height: box.height };
+}
+
+/**
+ * Measure a hovered (lifted) board card against its resting rect: it rose, its new
+ * top is visible and on top, the 3D chain from the button up to the board plane is
+ * intact, and the resting card's bottom edge still hits the button. Optionally
+ * re-checks the City box gaps with the card lifted. Runs in the browser context.
+ */
+function measureHover({ selector, restingRect, isCityGapCheck }) {
+  const button = document.querySelector(selector);
+  if (button === null) return { found: false };
+  const box = button.getBoundingClientRect();
+  const centreX = restingRect.left + restingRect.width / 2;
+  const topHit = document.elementFromPoint(centreX, box.top + 3);
+  const bottomHit = document.elementFromPoint(centreX, restingRect.bottom - 3);
+  // why: a single non-3D link (a clip, a fade, a filter) flattens everything under
+  // it, so the card rises but stays tilted, and still passes the lift and
+  // visibility checks. Walk the whole chain to catch that.
+  const brokenLinks = [];
+  let link = button;
+  while (link !== null) {
+    const style = getComputedStyle(link);
+    const isLinkIntact =
+      style.transformStyle === 'preserve-3d' &&
+      style.overflowX === 'visible' &&
+      style.overflowY === 'visible' &&
+      style.opacity === '1' &&
+      style.filter === 'none';
+    if (!isLinkIntact) {
+      brokenLinks.push({
+        element: link.className || link.tagName,
+        transformStyle: style.transformStyle,
+        overflow: `${style.overflowX}/${style.overflowY}`,
+        opacity: style.opacity,
+        filter: style.filter,
+      });
+    }
+    if (link.classList.contains('play-desktop__board-plane')) break;
+    link = link.parentElement;
+  }
+  const result = {
+    found: true,
+    isHoverLifted: box.top < restingRect.top - 4,
+    isHoverVisible: topHit !== null && button.contains(topHit),
+    isHoverChainIntact: link !== null && brokenLinks.length === 0,
+    isHoverBottomCovered: bottomHit !== null && button.contains(bottomHit),
+    restingTop: restingRect.top,
+    liftedTop: box.top,
+    brokenLinks,
+  };
+  if (isCityGapCheck) {
+    const cityBoxes = [
+      ...document.querySelectorAll('[data-testid="play-city-villain"], [data-testid="play-city-empty"]'),
+    ]
+      .map((element) => element.getBoundingClientRect())
+      .sort((first, second) => first.left - second.left);
+    let smallestCityGap = Infinity;
+    for (let i = 1; i < cityBoxes.length; i += 1) {
+      smallestCityGap = Math.min(smallestCityGap, cityBoxes[i].left - cityBoxes[i - 1].right);
+    }
+    result.hasCityBoxGapsWhileHovered = cityBoxes.length > 1 && smallestCityGap > 0;
+    result.smallestCityGapWhileHovered = smallestCityGap;
+  }
+  return result;
+}
+
+/**
+ * Hover the first element matching `selector`, wait for the 150 ms lift to
+ * settle, and measure it with `measureHover`; then move the mouse away.
+ */
+async function hoverAndMeasure(page, selector, isCityGapCheck) {
+  const restingRect = await page.evaluate(readRect, selector);
+  if (restingRect === null) return { found: false };
+  await page.hover(selector);
+  await page.waitForTimeout(300);
+  const result = await page.evaluate(measureHover, { selector, restingRect, isCityGapCheck });
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(300);
+  return result;
+}
+
+/** Push the City, HQ or band hover-check failures for one viewport. */
+function collectHoverFailures(failures, label, rowName, hover, isCityGapCheck) {
+  if (!hover.found) {
+    failures.push(`${label}: no ${rowName} card to hover`);
+    return;
+  }
+  if (!hover.isHoverLifted) failures.push(`${label}: hovered ${rowName} card did not lift`);
+  if (!hover.isHoverVisible) failures.push(`${label}: hovered ${rowName} card is clipped or covered`);
+  if (isCityGapCheck && !hover.hasCityBoxGapsWhileHovered) {
+    failures.push(`${label}: neighbouring City boxes touch while a card is lifted`);
+  }
+  if (!hover.isHoverChainIntact) {
+    failures.push(`${label}: hovered ${rowName} card lifts but stays tilted (preserve-3d chain broken)`);
+  }
+  if (!hover.isHoverBottomCovered) {
+    failures.push(`${label}: the bottom of a lifted ${rowName} card does not hit its button`);
+  }
+}
+
+/**
+ * Read every element matching `selector` as an id + click point (browser context).
+ * why: WP-854 — the band recruit buttons carry no data-card-id, so they are named
+ * by their data-testid; City and HQ buttons always carry data-card-id.
+ */
+function readSlideTargets(selector) {
+  return [...document.querySelectorAll(selector)].map((element) => {
+    const box = element.getBoundingClientRect();
+    return {
+      cardId: element.getAttribute('data-card-id') ?? element.getAttribute('data-testid'),
+      x: box.left + box.width / 2,
+      y: box.top + box.height * 0.75,
+    };
+  });
+}
+
+/**
+ * Record which board button each click lands on, and swallow it in the capture
+ * phase so the guard never submits a fight or recruit (browser context).
+ */
+function installClickRecorder() {
+  window.__wp852SlideClicks = [];
+  window.__wp852SlideRecorder = (event) => {
+    const button = event.target.closest('button');
+    // why: WP-854 — the data-testid fallback names the band recruit buttons, which
+    // carry no data-card-id (it matches readSlideTargets).
+    window.__wp852SlideClicks.push(
+      button === null ? null : button.getAttribute('data-card-id') ?? button.getAttribute('data-testid'),
+    );
+    event.preventDefault();
+    event.stopPropagation();
+  };
+  document.addEventListener('click', window.__wp852SlideRecorder, true);
+}
+
+/** Remove the click recorder and return what it saw (browser context). */
+function removeClickRecorder() {
+  document.removeEventListener('click', window.__wp852SlideRecorder, true);
+  return window.__wp852SlideClicks;
+}
+
+/**
+ * Slide from each lifted card onto its neighbour (both directions) and click at
+ * once, with no settle time; every click must land on the neighbour's button.
+ *
+ * why (WP-852 EC amendment A): the moment the pointer reaches a neighbour, the
+ * 3D chain is on but the new card has not risen yet, so it is coplanar with the
+ * board plane, and the plane could win the hit test and swallow the click. The
+ * plane's `pointer-events: none` while 3D fixes that; this step pins it. The
+ * race is timing-dependent, so it runs every neighbour pair in both directions.
+ */
+async function slideAndClick(page, selector) {
+  const targets = await page.evaluate(readSlideTargets, selector);
+  const slides = [];
+  for (let i = 0; i + 1 < targets.length; i += 1) {
+    slides.push([targets[i], targets[i + 1]], [targets[i + 1], targets[i]]);
+  }
+  await page.evaluate(installClickRecorder);
+  for (const [from, to] of slides) {
+    await page.mouse.move(from.x, from.y);
+    await page.waitForTimeout(250);
+    await page.mouse.move(to.x, to.y, { steps: 6 });
+    await page.mouse.down();
+    await page.mouse.up();
+  }
+  const clicks = await page.evaluate(removeClickRecorder);
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(300);
+  const missedSlides = [];
+  for (let i = 0; i < slides.length; i += 1) {
+    if (clicks[i] !== slides[i][1].cardId) {
+      missedSlides.push({ from: slides[i][0].cardId, to: slides[i][1].cardId, clicked: clicks[i] ?? null });
+    }
+  }
+  return { slideCount: slides.length, isSlideClickIntact: slides.length > 0 && missedSlides.length === 0, missedSlides };
+}
+
+/** Read the top status bar's bottom edge, or `null` when it is missing (browser context). */
+function readHudBottom() {
+  const hud = document.querySelector('.top-hud-bar');
+  return hud === null ? null : hud.getBoundingClientRect().bottom;
+}
+
+/** Add the Enigma-guess class to the Mastermind tile (browser context). */
+function addGuessingClass() {
+  document.querySelector('.mastermind-tile')?.classList.add('mastermind-tile--guessing');
+}
+
+/** Remove the Enigma-guess class from the Mastermind tile (browser context). */
+function removeGuessingClass() {
+  document.querySelector('.mastermind-tile')?.classList.remove('mastermind-tile--guessing');
+}
+
+/**
+ * WP-854 / D-24790 — the band stand-up: resting band cards take their own clicks,
+ * the Mastermind, Officers and Sidekicks each lift and square up on hover, and no
+ * lifted card reaches the top status bar. Then the slide and Enigma checks.
+ */
+async function checkBandStandUp(page, label, failures) {
+  const restingHits = await page.evaluate(
+    measureRestingHits,
+    '[data-testid="play-mastermind-button"], [data-testid="play-recruit-officer"], [data-testid="play-recruit-sidekick"]',
+  );
+  console.log(`  ${label} band resting hits:`, JSON.stringify({
+    isBandRestingHitIntact: restingHits.isRestingCardHitIntact,
+    cardCount: restingHits.cardCount,
+    missedCards: restingHits.missedCards,
+  }));
+  if (!restingHits.isRestingCardHitIntact) {
+    failures.push(`${label}: a resting Mastermind, Officers or Sidekicks card does not take its own clicks under the tilt`);
+  }
+  const hudBottom = await page.evaluate(readHudBottom);
+  const unclearNames = [];
+  // why: measureHover requires opacity 1 from the lifted element up, so the
+  // recruit checks rely on the fixture's recruit buttons being enabled; a disabled
+  // one (opacity 0.55) lifts correctly but would fail the walk, and stays on the
+  // D-24026 live check.
+  for (const { name, selector } of [
+    { name: 'Mastermind', selector: '.mastermind__card-frame' },
+    { name: 'Officers', selector: '[data-testid="play-recruit-officer"]' },
+    { name: 'Sidekicks', selector: '[data-testid="play-recruit-sidekick"]' },
+  ]) {
+    const hover = await hoverAndMeasure(page, selector, false);
+    console.log(`  ${label} ${name} hover:`, JSON.stringify(hover));
+    collectHoverFailures(failures, label, name, hover, false);
+    if (hover.found && (hudBottom === null || hover.liftedTop < hudBottom - 1)) unclearNames.push(name);
+  }
+  console.log(`  ${label} band HUD clearance:`, JSON.stringify({ isBandLiftClearOfHud: unclearNames.length === 0 }));
+  for (const name of unclearNames) failures.push(`${label}: a lifted ${name} card reaches the top status bar`);
+  await checkBandSlideAndGuessing(page, label, failures);
+}
+
+/**
+ * WP-854 / D-24790 — a click right after sliding between the Officers and
+ * Sidekicks lands on the target, and the Mastermind stays down while the Enigma
+ * guess is open.
+ *
+ * why isBandGuessingFlat: the unit test can only see the --guessing class toggle,
+ * not that the :not(.mastermind-tile--guessing) selectors hold the card down; this
+ * pins the selectors. The fixture has no Enigma scheme, so the class is injected,
+ * and removed in a finally so it cannot leak into the discard-chooser check.
+ */
+async function checkBandSlideAndGuessing(page, label, failures) {
+  const bandSlide = await slideAndClick(page, '[data-testid="play-recruit-officer"], [data-testid="play-recruit-sidekick"]');
+  console.log(`  ${label} band slide-and-click:`, JSON.stringify({
+    slideCount: bandSlide.slideCount,
+    isBandSlideClickIntact: bandSlide.isSlideClickIntact,
+    missedSlides: bandSlide.missedSlides,
+  }));
+  if (!bandSlide.isSlideClickIntact) {
+    failures.push(`${label}: a click right after sliding between the Officers and Sidekicks missed it: ${JSON.stringify(bandSlide.missedSlides)}`);
+  }
+  let guessingHover;
+  try {
+    await page.evaluate(addGuessingClass);
+    guessingHover = await hoverAndMeasure(page, '.mastermind__card-frame', false);
+  } finally {
+    await page.evaluate(removeGuessingClass);
+  }
+  const isBandGuessingFlat = guessingHover.found === true && guessingHover.isHoverLifted === false;
+  console.log(`  ${label} band guessing:`, JSON.stringify({
+    isBandGuessingFlat,
+    found: guessingHover.found,
+    isHoverLifted: guessingHover.isHoverLifted,
+  }));
+  if (!isBandGuessingFlat) failures.push(`${label}: the Mastermind still stands up while the Enigma guess is open`);
+}
+
+/** Read the open discard chooser's City space rect (browser context). */
+function readChooserSpaceRect() {
+  const chooser = document.querySelector('[data-testid="play-city-discard-chooser"]');
+  const space = chooser === null ? null : chooser.closest('li.city-space');
+  if (space === null) return null;
+  const box = space.getBoundingClientRect();
+  return { left: box.left, top: box.top, width: box.width, height: box.height };
+}
+
+/**
+ * Re-check that every open discard-chooser button is the topmost element at its
+ * centre (the same loop as `measureDiscardChooser`), here with the pointer over
+ * the chooser's own City space. Runs in the browser context.
+ *
+ * why: a lifted card stands out of the table in 3D, where depth order beats
+ * z-index, so it would paint over the flat chooser in the same space. The
+ * `city-space--choosing` exclusion keeps that space from lifting; this pins it.
+ */
+function measureChooserCoveredButtons() {
+  const chooser = document.querySelector('[data-testid="play-city-discard-chooser"]');
+  if (chooser === null) return { chooserOpen: false, coveredButtons: [] };
+  const coveredButtons = [];
+  for (const button of chooser.querySelectorAll('button')) {
+    button.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    const box = button.getBoundingClientRect();
+    const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+    if (hit === null || !button.contains(hit)) {
+      coveredButtons.push({
+        text: button.textContent.trim(),
+        coveredBy: hit === null ? null : hit.getAttribute('data-testid') ?? hit.className ?? hit.tagName,
+      });
+    }
+  }
+  return { chooserOpen: true, coveredButtons };
+}
+
+/** Read the board plane's computed m22 (1 when flat, browser context). */
+function readPlaneM22() {
+  const plane = document.querySelector('.play-desktop__board-plane');
+  return plane === null ? null : new DOMMatrix(getComputedStyle(plane).transform).m22;
+}
+
+/**
  * Load the fixture route in a page and wait for the board to mount. Uses a
  * generous timeout because a COLD `vite` dev server compiles the app's modules
  * on the first browser request (hundreds of modules — can take far longer than a
@@ -305,6 +699,55 @@ async function run() {
       if (result.turnBarOverlapsCockpit) failures.push(`${label}: TurnActionBar overlaps the cockpit (the WP-688 regression)`);
       if (!result.boardFitsContainer) failures.push(`${label}: board stage does not fit its container`);
 
+      // WP-852 / D-24788 — the table perspective, on the untouched fixture.
+      const tilt = await page.evaluate(measureTilt);
+      console.log(`  ${label} tilt:`, JSON.stringify(tilt));
+      if (!tilt.isBoardTilted) failures.push(`${label}: board plane is not tilted`);
+      if (!tilt.hasCityBoxGaps) failures.push(`${label}: neighbouring City boxes touch or overlap under the tilt`);
+      if (!tilt.isPlaneClearOfHud) failures.push(`${label}: tilted board overlaps the top status bar`);
+      if (!tilt.isPlaneClearOfCockpit) failures.push(`${label}: tilted board overlaps the cockpit`);
+      const restingHits = await page.evaluate(
+        measureRestingHits,
+        '[data-testid="play-city-villain"], [data-testid="play-hq-hero"]',
+      );
+      console.log(`  ${label} resting hits:`, JSON.stringify(restingHits));
+      if (!restingHits.isRestingCardHitIntact) {
+        failures.push(`${label}: a resting City or HQ card does not take its own clicks under the tilt`);
+      }
+
+      const cityHover = await hoverAndMeasure(page, '[data-testid="play-city-villain"]', true);
+      console.log(`  ${label} City hover:`, JSON.stringify(cityHover));
+      collectHoverFailures(failures, label, 'City', cityHover, true);
+      const hqHover = await hoverAndMeasure(page, '[data-testid="play-hq-hero"]', false);
+      console.log(`  ${label} HQ hover:`, JSON.stringify({
+        found: hqHover.found,
+        isHqHoverLifted: hqHover.isHoverLifted,
+        isHqHoverVisible: hqHover.isHoverVisible,
+        isHqHoverChainIntact: hqHover.isHoverChainIntact,
+        isHqHoverBottomCovered: hqHover.isHoverBottomCovered,
+        restingTop: hqHover.restingTop,
+        liftedTop: hqHover.liftedTop,
+        brokenLinks: hqHover.brokenLinks,
+      }));
+      collectHoverFailures(failures, label, 'HQ', hqHover, false);
+
+      const citySlide = await slideAndClick(page, '[data-testid="play-city-villain"]');
+      console.log(`  ${label} City slide-and-click:`, JSON.stringify(citySlide));
+      if (!citySlide.isSlideClickIntact) {
+        failures.push(`${label}: a click right after sliding onto a City card missed it: ${JSON.stringify(citySlide.missedSlides)}`);
+      }
+      const hqSlide = await slideAndClick(page, '[data-testid="play-hq-hero"]');
+      console.log(`  ${label} HQ slide-and-click:`, JSON.stringify({
+        slideCount: hqSlide.slideCount,
+        isHqSlideClickIntact: hqSlide.isSlideClickIntact,
+        missedSlides: hqSlide.missedSlides,
+      }));
+      if (!hqSlide.isSlideClickIntact) {
+        failures.push(`${label}: a click right after sliding onto an HQ card missed it: ${JSON.stringify(hqSlide.missedSlides)}`);
+      }
+      // WP-854 / D-24790 — the band stand-up (Mastermind, Officers, Sidekicks).
+      await checkBandStandUp(page, label, failures);
+
       // why: last, because it re-stages the board; the fit invariants above are
       // measured on the untouched fixture.
       const chooser = await page.evaluate(measureDiscardChooser);
@@ -316,10 +759,40 @@ async function run() {
         failures.push(`${label}: clicking a discard-cost villain did not open the discard chooser`);
       } else if (chooser.coveredButtons.length > 0) {
         failures.push(`${label}: discard chooser buttons are covered and cannot be clicked: ${JSON.stringify(chooser.coveredButtons)}`);
+      } else {
+        // why: WP-852 — a raw mouse move, because the open chooser covers the
+        // villain button and page.hover() would refuse to hover a covered element.
+        const spaceRect = await page.evaluate(readChooserSpaceRect);
+        if (spaceRect === null) {
+          failures.push(`${label}: discard chooser space not found for the hovered re-check`);
+        } else {
+          await page.mouse.move(spaceRect.left + spaceRect.width / 2, spaceRect.top + spaceRect.height / 2);
+          await page.waitForTimeout(300);
+          const hoveredChooser = await page.evaluate(measureChooserCoveredButtons);
+          console.log(`  ${label} discard chooser (space hovered):`, JSON.stringify(hoveredChooser));
+          if (!hoveredChooser.chooserOpen || hoveredChooser.coveredButtons.length > 0) {
+            failures.push(`${label}: discard chooser covered while its space is hovered`);
+          }
+        }
       }
 
       await page.close();
     }
+
+    // why: WP-852 — Effect Intensity off flattens the board. Its own fresh page
+    // (a new browser context), with the preference stored before the app loads.
+    const offPage = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+    await offPage.addInitScript(() => {
+      localStorage.setItem('arenaClientEffectIntensity', 'off');
+    });
+    await loadBoard(offPage, baseUrl, 30_000);
+    await offPage.waitForTimeout(700);
+    const offM22 = await offPage.evaluate(readPlaneM22);
+    console.log('  1280x720 off:', JSON.stringify({ planeM22: offM22 }));
+    if (offM22 === null || offM22 < 0.999) {
+      failures.push('1280x720 off: board still tilted at Effect Intensity off');
+    }
+    await offPage.close();
   } finally {
     await browser.close();
     await stop();

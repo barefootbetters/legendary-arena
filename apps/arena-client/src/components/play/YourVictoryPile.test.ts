@@ -94,3 +94,40 @@ describe('YourVictoryPile (WP-129)', () => {
     assert.equal(wrapper.find('[data-testid="play-victory-villains"]').text(), '0');
   });
 });
+
+describe('YourVictoryPile — Effects triggered line (WP-848 / D-24784)', () => {
+  test('renders 3 / 5 (60%) for played 5 / assembled 3', () => {
+    const wrapper = mount(YourVictoryPile, {
+      props: { conditionalClausesPlayed: 5, conditionalClausesAssembled: 3 },
+    });
+    assert.equal(wrapper.find('[data-testid="play-your-victory-effects"]').text(), 'Effects triggered: 3 / 5 (60%)');
+  });
+
+  test('rounds the percentage: 2 / 3 renders 67%', () => {
+    const wrapper = mount(YourVictoryPile, {
+      props: { conditionalClausesPlayed: 3, conditionalClausesAssembled: 2 },
+    });
+    assert.equal(wrapper.find('[data-testid="play-your-victory-effects"]').text(), 'Effects triggered: 2 / 3 (67%)');
+  });
+
+  test('renders 0 / 0 with no percentage when nothing has been played', () => {
+    const wrapper = mount(YourVictoryPile, { props: {} });
+    const text = wrapper.find('[data-testid="play-your-victory-effects"]').text();
+    assert.equal(text, 'Effects triggered: 0 / 0');
+    assert.equal(text.includes('%'), false, 'no percentage at played 0');
+  });
+
+  test('the line never uses the internal-vocabulary words', () => {
+    // why: DESIGN-SYNERGY-REALIZATION two-vocabulary rule — player copy never says these.
+    const forbiddenWords = ['whiff', 'failed', 'missed', 'wasted', 'error'];
+    for (const [played, assembled] of [[0, 0], [5, 0], [5, 3], [4, 4]] as const) {
+      const wrapper = mount(YourVictoryPile, {
+        props: { conditionalClausesPlayed: played, conditionalClausesAssembled: assembled },
+      });
+      const text = wrapper.find('[data-testid="play-your-victory-effects"]').text().toLowerCase();
+      for (const word of forbiddenWords) {
+        assert.equal(text.includes(word), false, `"${text}" must not contain "${word}"`);
+      }
+    }
+  });
+});

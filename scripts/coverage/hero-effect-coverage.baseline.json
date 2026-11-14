@@ -1,9 +1,9 @@
 {
   "corpus": {
-    "executable": 3759,
+    "executable": 3946,
     "heroes": 324,
-    "hooks": 6383,
-    "noEffect": 2520,
+    "hooks": 6397,
+    "noEffect": 2347,
     "parsedNotExecuted": 104
   },
   "perSet": {
@@ -18,9 +18,9 @@
       "noEffect": 34
     },
     "amwp": {
-      "executable": 96,
-      "hooks": 190,
-      "noEffect": 94
+      "executable": 150,
+      "hooks": 195,
+      "noEffect": 45
     },
     "anni": {
       "executable": 45,
@@ -28,14 +28,14 @@
       "noEffect": 77
     },
     "antm": {
-      "executable": 94,
+      "executable": 106,
       "hooks": 109,
-      "noEffect": 15
+      "noEffect": 3
     },
     "asrd": {
-      "executable": 52,
+      "executable": 57,
       "hooks": 102,
-      "noEffect": 50
+      "noEffect": 45
     },
     "bkpt": {
       "executable": 58,
@@ -53,14 +53,14 @@
       "noEffect": 0
     },
     "chmp": {
-      "executable": 67,
+      "executable": 75,
       "hooks": 143,
-      "noEffect": 76
+      "noEffect": 68
     },
     "co2e": {
-      "executable": 196,
+      "executable": 204,
       "hooks": 241,
-      "noEffect": 45
+      "noEffect": 37
     },
     "core": {
       "executable": 229,
@@ -68,19 +68,19 @@
       "noEffect": 3
     },
     "cosm": {
-      "executable": 49,
+      "executable": 54,
       "hooks": 212,
-      "noEffect": 163
+      "noEffect": 158
     },
     "cvwr": {
-      "executable": 313,
+      "executable": 316,
       "hooks": 400,
-      "noEffect": 87
+      "noEffect": 84
     },
     "dead": {
-      "executable": 46,
+      "executable": 47,
       "hooks": 82,
-      "noEffect": 36
+      "noEffect": 35
     },
     "dims": {
       "executable": 42,
@@ -88,14 +88,14 @@
       "noEffect": 63
     },
     "dkcy": {
-      "executable": 177,
+      "executable": 191,
       "hooks": 298,
-      "noEffect": 121
+      "noEffect": 107
     },
     "dstr": {
-      "executable": 53,
+      "executable": 58,
       "hooks": 76,
-      "noEffect": 23
+      "noEffect": 18
     },
     "fear": {
       "executable": 43,
@@ -108,9 +108,9 @@
       "noEffect": 43
     },
     "gotg": {
-      "executable": 27,
+      "executable": 32,
       "hooks": 105,
-      "noEffect": 78
+      "noEffect": 73
     },
     "mdns": {
       "executable": 80,
@@ -118,9 +118,9 @@
       "noEffect": 42
     },
     "mgtg": {
-      "executable": 53,
+      "executable": 55,
       "hooks": 99,
-      "noEffect": 46
+      "noEffect": 44
     },
     "msis": {
       "executable": 76,
@@ -128,9 +128,9 @@
       "noEffect": 25
     },
     "msmc": {
-      "executable": 69,
+      "executable": 74,
       "hooks": 182,
-      "noEffect": 113
+      "noEffect": 108
     },
     "msp1": {
       "executable": 95,
@@ -153,9 +153,9 @@
       "noEffect": 25
     },
     "rlmk": {
-      "executable": 45,
+      "executable": 50,
       "hooks": 132,
-      "noEffect": 87
+      "noEffect": 82
     },
     "rvlt": {
       "executable": 74,
@@ -178,14 +178,14 @@
       "noEffect": 65
     },
     "ssw2": {
-      "executable": 187,
+      "executable": 188,
       "hooks": 271,
-      "noEffect": 84
+      "noEffect": 83
     },
     "vill": {
-      "executable": 199,
+      "executable": 204,
       "hooks": 288,
-      "noEffect": 89
+      "noEffect": 84
     },
     "vnom": {
       "executable": 70,
@@ -203,14 +203,14 @@
       "noEffect": 53
     },
     "wwhk": {
-      "executable": 215,
-      "hooks": 337,
-      "noEffect": 122
+      "executable": 254,
+      "hooks": 341,
+      "noEffect": 87
     },
     "xmen": {
-      "executable": 148,
-      "hooks": 367,
-      "noEffect": 219
+      "executable": 158,
+      "hooks": 372,
+      "noEffect": 214
     }
   },
   "schemaVersion": 1,
@@ -253,10 +253,8 @@
     "excessive-kindness": 7,
     "explore": 2,
     "fated-future": 6,
-    "feast": 7,
     "focus": 25,
     "fortify": 1,
-    "heist": 3,
     "highest-abomination": 1,
     "hunt-for-victims": 1,
     "hyperspeed": 14,
@@ -264,7 +262,6 @@
     "last-stand": 3,
     "liberate": 7,
     "lightshow": 16,
-    "microscopic-size-changing": 13,
     "moonlight": 10,
     "patrol-any-city-space": 3,
     "patrol-every-city-space": 1,

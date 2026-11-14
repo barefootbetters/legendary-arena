@@ -9,6 +9,7 @@ import type {
   UICityCard,
   UICityState,
   UIDecksState,
+  UIFortifier,
   UITurnEconomyState,
 } from '@legendary-arena/game-engine';
 import type { SubmitMove, UiMoveName } from './uiMoveName.types';
@@ -1461,5 +1462,238 @@ describe('CityRow — a resized City (WP-831 / D-24764)', () => {
     const gone = wrapper.findAll('[data-testid="play-city-gone"]');
     assert.deepEqual(gone.map((cell) => cell.attributes('data-city-index')), ['4', '3']);
     assert.equal(wrapper.findAll('[data-testid="play-city-villain"]').length + wrapper.findAll('[data-testid="play-city-empty"]').length, 3);
+  });
+});
+
+describe('CityRow — table-perspective hover lift (WP-852 / D-24788)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    __resetSlashGestureSettingForTests();
+    __resetSlashGestureSignalsForTests();
+  });
+
+  /** Mounts the five-space City with the given lift flag (omitted when undefined). */
+  function mountLift(isTiltLiftEnabled: boolean | undefined) {
+    const { submitMove } = recorder();
+    const liftProp = isTiltLiftEnabled === undefined ? {} : { isTiltLiftEnabled };
+    return mount(CityRow, {
+      props: {
+        city: fullCity(),
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+        ...liftProp,
+      },
+    });
+  }
+
+  test('without isTiltLiftEnabled the row never carries the lift class', async () => {
+    const wrapper = mountLift(undefined);
+    await setRowFits(wrapper.find('ol.city-spaces').element, true);
+    assert.equal(wrapper.find('[data-testid="play-city-row"]').classes().includes('city-row--tilt-lift'), false);
+    wrapper.unmount();
+  });
+
+  test('with isTiltLiftEnabled and a row that fits, the root gains city-row--tilt-lift', async () => {
+    const wrapper = mountLift(true);
+    await setRowFits(wrapper.find('ol.city-spaces').element, true);
+    assert.equal(wrapper.find('[data-testid="play-city-row"]').classes().includes('city-row--tilt-lift'), true);
+    wrapper.unmount();
+  });
+
+  test('with isTiltLiftEnabled and a row that scrolls sideways, the lift class is absent', async () => {
+    const wrapper = mountLift(true);
+    await setRowFits(wrapper.find('ol.city-spaces').element, false);
+    assert.equal(wrapper.find('[data-testid="play-city-row"]').classes().includes('city-row--tilt-lift'), false);
+    wrapper.unmount();
+  });
+
+  test('an open discard chooser marks only its own space city-space--choosing', async () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: {
+        city: {
+          spaces: [
+            { ...villain('primus', 3), fightDiscardCosts: [2, 3, 5, 7] },
+            null,
+            villain('electro', 5),
+            null,
+            null,
+          ],
+          escapedPile: [],
+        },
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+        isTiltLiftEnabled: true,
+        viewerHandCards: ['hero-cost5'],
+        viewerHandDisplay: [
+          { extId: 'hero-cost5', name: 'hero-cost5 name', imageUrl: 'https://images.legendary-arena.com/hero-cost5.png', cost: 5 },
+        ],
+        viewerHandCosts: [5],
+      },
+    });
+    assert.equal(wrapper.findAll('li.city-space--choosing').length, 0, 'no space is choosing before the click');
+    await wrapper.find('[data-testid="play-city-villain"][data-card-id="primus"]').trigger('click');
+    assert.equal(wrapper.find('[data-testid="play-city-discard-chooser"]').exists(), true, 'the chooser opened');
+    const choosing = wrapper.findAll('li.city-space--choosing');
+    assert.equal(choosing.length, 1, 'exactly one space is choosing');
+    assert.equal(choosing[0]!.find('[data-card-id="primus"]').exists(), true, 'it is the Primus space');
+    wrapper.unmount();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-871 / D-24816 — villain fight restrictions (Orrgo, Squirrel Girl, Doop): the
+// engine-projected reason disables Fight, EV, Fight + Rescue and the slash gesture,
+// and the loud "Can't fight yet" cue explains it in the viewer's Main stage.
+// ---------------------------------------------------------------------------
+
+describe('WP-871 CityRow — fight restriction (D-24816)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    __resetSlashGestureSettingForTests();
+    __resetSlashGestureSignalsForTests();
+  });
+
+  const DOOP_REASON = 'A Villain is in an adjacent city space';
+
+  /** A City with Doop (cost 2, restricted) at index 2 and Electro (cost 5) beside it at index 3. */
+  function restrictedCity(doopCost = 2): UICityState {
+    return {
+      spaces: [
+        null,
+        null,
+        { ...villain('doop', doopCost), fightRestrictionReason: DOOP_REASON },
+        villain('electro', 5),
+        null,
+      ],
+      escapedPile: [],
+    };
+  }
+
+  /** Mounts the row with EV and the rescue cue on, so every Fight affordance could show. */
+  function mountRestricted(
+    submitMove: SubmitMove,
+    over: { isViewerTurn?: boolean; attack?: number; doopCost?: number } = {},
+  ) {
+    const attack = over.attack ?? 9;
+    return mount(CityRow, {
+      props: {
+        city: restrictedCity(over.doopCost),
+        decks: DECKS,
+        currentStage: 'main',
+        isViewerTurn: over.isViewerTurn ?? true,
+        economy: economy({
+          attack,
+          availableAttack: attack,
+          recruit: 2,
+          availableRecruit: 2,
+          excessiveViolenceAvailable: true,
+          rescueOnFightAvailable: true,
+        }),
+        submitMove,
+      },
+    });
+  }
+
+  /** Finds Doop's villain button in a mounted row. */
+  function doopButton(wrapper: ReturnType<typeof mount>) {
+    return wrapper.find('[data-testid="play-city-villain"][data-card-id="doop"]');
+  }
+
+  test('T22: a restricted, affordable cell in the viewer Main stage disables Fight with the reason and shows the cue', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mountRestricted(submitMove);
+    const button = doopButton(wrapper);
+    assert.equal(button.attributes('disabled'), '');
+    assert.equal(button.attributes('title'), DOOP_REASON);
+    const cue = button.find('[data-testid="play-city-fight-restriction"]');
+    assert.equal(cue.exists(), true);
+    assert.equal(cue.text(), "Can't fight yet");
+    assert.equal(cue.attributes('title'), DOOP_REASON);
+    assert.equal(
+      wrapper.find('[data-testid="play-city-villain-ev"][data-city-index="2"]').exists(),
+      false,
+      'no Excessive Violence button on the restricted villain',
+    );
+    assert.equal(
+      wrapper.find('[data-testid="play-city-villain-rescue"][data-city-index="2"]').exists(),
+      false,
+      'no Fight + Rescue button on the restricted villain',
+    );
+    assert.equal(
+      wrapper.find('[data-testid="play-city-villain-ev"][data-city-index="3"]').exists(),
+      true,
+      'the unrestricted neighbour still offers EV',
+    );
+    await button.trigger('click');
+    assert.deepEqual(calls, [], 'clicking the restricted villain submits nothing');
+    assert.equal(
+      wrapper.find('[data-testid="play-city-villain"][data-card-id="electro"]').find('[data-testid="play-city-fight-restriction"]').exists(),
+      false,
+      'an unrestricted villain never shows the cue',
+    );
+  });
+
+  test('T23: no cue during another player turn; an unaffordable restricted cell reports the cost reason first', () => {
+    const { submitMove } = recorder();
+    const otherTurn = mountRestricted(submitMove, { isViewerTurn: false });
+    assert.equal(otherTurn.find('[data-testid="play-city-fight-restriction"]').exists(), false);
+    assert.equal(doopButton(otherTurn).attributes('disabled'), '');
+    assert.notEqual(doopButton(otherTurn).attributes('title'), DOOP_REASON, 'the stage reason wins');
+
+    const unaffordable = mountRestricted(submitMove, { attack: 1 });
+    const button = doopButton(unaffordable);
+    assert.equal(button.attributes('disabled'), '');
+    assert.notEqual(button.attributes('title'), DOOP_REASON, 'cost gates before the restriction');
+    assert.match(button.attributes('title') ?? '', /attack/i);
+  });
+
+  test('T24: a slash stroke across the restricted cell and its neighbour fights only the neighbour', async () => {
+    useSlashGestureSetting().setEnabled(true);
+    const { calls, submitMove } = recorder();
+    const wrapper = mountRestricted(submitMove);
+    await nextTick();
+    stubVillainRects(wrapper.element);
+    const row = wrapper.find('ol.city-spaces').element;
+    // why: engine index 2 (Doop) spans x 300-380 and index 3 (Electro) x 400-480.
+    row.dispatchEvent(pointerEvent('pointerdown', 260, 150));
+    row.dispatchEvent(pointerEvent('pointermove', 490, 150));
+    row.dispatchEvent(pointerEvent('pointerup', 490, 150));
+    assert.deepEqual(calls, [{ name: 'fightVillain', args: { cityIndex: 3 } }]);
+    wrapper.unmount();
+  });
+});
+
+describe('CityRow — fortifying Villains are drawn on their place, not in the City (WP-873 / D-24819)', () => {
+  const fortifier: UIFortifier = {
+    place: 'sidekick-stack',
+    placeLabel: 'the Sidekick Stack',
+    extId: 'cvwr-villain-great-lakes-avengers-squirrel-girl-00',
+    display: { extId: 'cvwr-villain-great-lakes-avengers-squirrel-girl-00', name: 'Squirrel Girl', imageUrl: '', cost: 3 },
+    fightCost: 3,
+    lockText: "Sidekicks can't be recruited or gained",
+  };
+
+  // why: D-24819 — behavior intentionally changed. WP-873's strip under the Escaped Pile
+  // stretched the City row and shrank the scale-to-fit board (D-24505); the City row never
+  // draws a fortifier now.
+  test('T29: a fortifier never renders in the City row; the escaped cell holds only the Escaped Pile', () => {
+    const { submitMove } = recorder();
+    const withFortifier = mount(CityRow, {
+      props: {
+        city: { ...fullCity(), fortifiers: [fortifier] },
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy({ attack: 3, availableAttack: 3 }),
+        submitMove,
+      },
+    });
+    assert.equal(withFortifier.find('[data-testid="play-fortifier"]').exists(), false, 'no fortifier tile in the City row');
+    const escapedCell = withFortifier.find('[data-testid="play-escaped-pile"]').element.parentElement!;
+    assert.equal(escapedCell.children.length, 1, 'the escaped cell holds only the Escaped Pile');
   });
 });

@@ -26,7 +26,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "[keyword:Patrol the Rooftops]: If it's empty, reveal the top card of your deck. You may KO it.",
+            "[keyword:Patrol the Rooftops]: If it's empty, reveal the top card of your deck. You may KO it. [keyword:reveal-top-may-ko]",
             "[keyword:Patrol the Sewers]: If it's empty, reveal the bottom card of your deck. You may KO it."
           ]
         },
@@ -42,7 +42,7 @@
           "attack": null,
           "recruit": "2+",
           "abilities": [
-            "[keyword:Patrol the Rooftops]: If it's empty, draw a card.",
+            "[keyword:Patrol the Rooftops]: If it's empty, draw a card. [keyword:draw:1]",
             "[keyword:Patrol the Sewers]: If it's empty, you get +1[icon:recruit]."
           ]
         },
@@ -170,8 +170,8 @@
           "attack": "3",
           "recruit": null,
           "abilities": [
-            "You may have a Villain or Mastermind [keyword:Hunt for Victims]. If it KOs a Bystander this way, you may KO a Hero from your hand or discard pile.",
-            "[hc:tech]: If a Bystander is KO'd this way, you may also rescue that Bystander instead of putting it in the KO pile."
+            "You may have a Villain or Mastermind [keyword:Hunt for Victims]. If it KOs a Bystander this way, you may KO a Hero from your hand or discard pile. [keyword:hunt-for-victims]",
+            "[hc:tech]: If a Bystander is KO'd this way, you may also rescue that Bystander instead of putting it in the KO pile. [keyword:hunt-for-victims-rescue]"
           ]
         },
         {
@@ -265,7 +265,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "[keyword:Sunlight]: You may gain a Wound. If you do, you get +2[icon:attack].",
+            "[keyword:Sunlight]: You may gain a Wound. If you do, you get +2[icon:attack]. [keyword:gain-wound-reward:attack:2]",
             "[keyword:Moonlight]: You may KO a Wound from your hand or discard pile. If you do, you get +2[icon:attack]. [keyword:ko-wound-reward:attack:2]"
           ]
         },
@@ -472,7 +472,7 @@
           "attack": "1",
           "recruit": null,
           "abilities": [
-            "[keyword:Patrol the Bridge]: If it's empty, draw a card."
+            "[keyword:Patrol the Bridge]: If it's empty, draw a card. [keyword:draw:1]"
           ]
         },
         {
@@ -503,7 +503,7 @@
           "attack": "0+",
           "recruit": null,
           "abilities": [
-            "[keyword:Patrol the Bridge]: If it's empty, draw two cards. If it's not, you get +5[icon:attack] usable only to fight Villains on the Bridge."
+            "[keyword:Patrol the Bridge]: If it's empty, draw two cards. If it's not, you get +5[icon:attack] usable only to fight Villains on the Bridge. [keyword:draw:2]"
           ]
         },
         {
@@ -739,8 +739,8 @@
           "imageUrl": "https://images.legendary-arena.com/mdns/mdns-vi-lilin-meatmarket.webp",
           "abilities": [
             "Meatmarket gets +1[icon:attack] for each Bystander in the KO pile.",
-            "Ambush: [keyword:Hunt for Victims]",
-            "Fight: You may KO a card from your discard pile."
+            "Ambush: [keyword:Hunt for Victims] [effect:villain-hunt-for-victims]",
+            "Fight: You may KO a card from your discard pile. [effect:ko-up-to-from-discard-current:1]"
           ],
           "copies": 2
         },
@@ -776,7 +776,7 @@
           "imageUrl": "https://images.legendary-arena.com/mdns/mdns-vi-lilin-skinner.webp",
           "abilities": [
             "Skinner gets +2[icon:attack] if there are at least four Bystanders in the KO pile.",
-            "Ambush: [keyword:Hunt for Victims]",
+            "Ambush: [keyword:Hunt for Victims] [effect:villain-hunt-for-victims]",
             "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ],
           "copies": 2
@@ -789,7 +789,7 @@
           "imageUrl": "https://images.legendary-arena.com/mdns/mdns-vi-lilin-blackout.webp",
           "abilities": [
             "[keyword:Moonlight]: Blackout gets +1[icon:attack] for each Bystander in the KO pile.",
-            "Ambush: [keyword:Hunt for Victims]. If it's Moonlight, [keyword:Hunt for Victims] again.",
+            "Ambush: [keyword:Hunt for Victims]. If it's Moonlight, [keyword:Hunt for Victims] again. [effect:villain-hunt-for-victims] [effect:villain-hunt-for-victims!moonlight]",
             "Escape: (After the normal Escape KO) If it's Moonlight, each player gains a Wound."
           ],
           "copies": 1

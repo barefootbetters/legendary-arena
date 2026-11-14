@@ -492,6 +492,12 @@ type CarriedTurnFields = Partial<
     | 'outOfTimePlayedCardIds'
     | 'hasRecruitedSidekickThisTurn'
     | 'sidekicksReturnedThisTurn'
+    | 'highestRecruitedHeroCost'
+    | 'ritualUsedPlayedCardIds'
+    | 'heistCrewCards'
+    | 'hasAttemptedHeistThisTurn'
+    | 'heistRevealedCardId'
+    | 'hasDefeatedVillainThisTurn'
   >
 >;
 
@@ -578,6 +584,40 @@ function carryConversionFlag(economy: TurnEconomy): CarriedTurnFields {
   }
   if (economy.sidekicksReturnedThisTurn !== undefined) {
     carried.sidekicksReturnedThisTurn = economy.sidekicksReturnedThisTurn;
+  }
+  // why: WP-858 / D-24794 — carry the recruited-Hero cost record and the used-Ritual played
+  // ledger ONLY when present (omit-when-absent keeps both hash oracles byte-stable). Without
+  // the carry, the next addResources / spend rebuild would drop the record (Staff of Legba
+  // would stop being usable) or the ledger (a used Ritual would stop counting as played).
+  if (economy.highestRecruitedHeroCost !== undefined) {
+    carried.highestRecruitedHeroCost = economy.highestRecruitedHeroCost;
+  }
+  if (economy.ritualUsedPlayedCardIds !== undefined) {
+    carried.ritualUsedPlayedCardIds = economy.ritualUsedPlayedCardIds;
+  }
+  // why: WP-865 / D-24808 — carry the Heist crew and the once-per-turn attempt latch beside the
+  // Excessive Violence ledger, ONLY when present (omit-when-absent keeps both hash oracles
+  // byte-stable). Without the carry, the very next addResources rebuild (a later play, or the
+  // Heist's own +Attack) would drop the crew (nothing left to fire) or the latch (a second
+  // attempt would be allowed).
+  if (economy.heistCrewCards !== undefined) {
+    carried.heistCrewCards = economy.heistCrewCards;
+  }
+  if (economy.hasAttemptedHeistThisTurn !== undefined) {
+    carried.hasAttemptedHeistThisTurn = economy.hasAttemptedHeistThisTurn;
+  }
+  // why: WP-876 / D-24823 — carry the Heist's recorded revealed card beside the latch, ONLY when
+  // present. Without the carry, the Heist's own +Attack (an addResources rebuild) would drop it
+  // and a later Big Score or Revolutionary Anthem in the same Heist would see no revealed card.
+  if (economy.heistRevealedCardId !== undefined) {
+    carried.heistRevealedCardId = economy.heistRevealedCardId;
+  }
+  // why: WP-871 / D-24816 — carry Orrgo's "defeated a Villain this turn" flag ONLY when
+  // present (omit-when-absent keeps both hash oracles byte-stable). fightVillain rebuilds
+  // the economy (spendFightCostForTarget) AFTER the defeat core sets the flag, so without
+  // the carry the very fight that set it would drop it and Orrgo would stay unfightable.
+  if (economy.hasDefeatedVillainThisTurn !== undefined) {
+    carried.hasDefeatedVillainThisTurn = economy.hasDefeatedVillainThisTurn;
   }
   return carried;
 }
@@ -1033,6 +1073,34 @@ export function recordSidekickReturned(economy: TurnEconomy): TurnEconomy {
 }
 
 /**
+ * Records that the current player defeated a City Villain this turn (WP-871 / D-24816).
+ *
+ * Called by `defeatCityVillainCore` only in a match with a
+ * `requires-villain-defeated-this-turn` fight restriction (Orrgo), so every other match
+ * keeps the key absent. Sets `hasDefeatedVillainThisTurn: true`; every other field is
+ * carried unchanged through the single carry chokepoint. `resetTurnEconomy` drops the flag
+ * at the next turn start.
+ *
+ * @param economy - Current turn economy state.
+ * @returns New TurnEconomy with `hasDefeatedVillainThisTurn: true`.
+ */
+export function recordVillainDefeated(economy: TurnEconomy): TurnEconomy {
+  return {
+    attack: economy.attack,
+    recruit: economy.recruit,
+    spentAttack: economy.spentAttack,
+    spentRecruit: economy.spentRecruit,
+    piercing: economy.piercing,
+    woundsDrawn: economy.woundsDrawn,
+    cardsDrawn: economy.cardsDrawn,
+    // why: spread the single carry chokepoint so recording the defeat never drops a flag or
+    // ledger set earlier this turn. The explicit assignment then sets this one.
+    ...carryConversionFlag(economy),
+    hasDefeatedVillainThisTurn: true,
+  };
+}
+
+/**
  * Records a split card's inPlay entry (its face-a id) as played both-sides this turn
  * (WP-780 / D-24619).
  *
@@ -1061,6 +1129,132 @@ export function markBothSidesPlayed(economy: TurnEconomy, cardId: CardExtId): Tu
     // play never drops the Penumbra flag (or any other lazy field) set earlier this turn.
     ...carryConversionFlag(economy),
     bothSidesPlayedCardIds: nextBothSidesPlayed,
+  };
+}
+
+/**
+ * Records the printed cost of a Hero the current player just recruited (WP-858 / D-24794).
+ *
+ * Keeps the HIGHEST cost recruited this turn in `highestRecruitedHeroCost`, materializing it
+ * on the first call. Every other field is carried unchanged. `resetTurnEconomy` drops it at
+ * the next turn start.
+ *
+ * @param economy - Current turn economy state.
+ * @param cost - The recruited Hero's printed cost (the recruit move's own `requiredCost`).
+ * @returns New TurnEconomy with the highest recorded cost.
+ */
+export function recordRecruitedHeroCost(economy: TurnEconomy, cost: number): TurnEconomy {
+  // why: WP-858 / D-24794 RS-1 — "that Hero's cost" when several Heroes were recruited is the
+  // highest; the player would always choose it (D-24470 pure-upside posture).
+  let highestCost = cost;
+  if (economy.highestRecruitedHeroCost !== undefined && economy.highestRecruitedHeroCost > cost) {
+    highestCost = economy.highestRecruitedHeroCost;
+  }
+  return {
+    attack: economy.attack,
+    recruit: economy.recruit,
+    spentAttack: economy.spentAttack,
+    spentRecruit: economy.spentRecruit,
+    piercing: economy.piercing,
+    woundsDrawn: economy.woundsDrawn,
+    cardsDrawn: economy.cardsDrawn,
+    // why: WP-858 / D-24794 — spread the single carry chokepoint so recording a recruit never
+    // drops another lazy field set earlier this turn.
+    ...carryConversionFlag(economy),
+    highestRecruitedHeroCost: highestCost,
+  };
+}
+
+/**
+ * Records a Ritual Artifact the current player played this turn and then used, so it still
+ * counts as played this turn (WP-858 / D-24794).
+ *
+ * Appends `cardId` to `ritualUsedPlayedCardIds`, materializing the array on the first call.
+ * Every other field is carried unchanged. `resetTurnEconomy` drops the ledger at the next
+ * turn start.
+ *
+ * @param economy - Current turn economy state.
+ * @param cardId - The Ritual Artifact used from `inPlay`.
+ * @returns New TurnEconomy with `cardId` appended to `ritualUsedPlayedCardIds`.
+ */
+export function recordRitualUsedPlayed(economy: TurnEconomy, cardId: CardExtId): TurnEconomy {
+  // why: WP-858 / D-24794 — build a NEW array (mirrors recordOutOfTimePlayed) so the rebuild
+  // never aliases the prior economy's ledger.
+  const nextRitualUsedPlayed = [...(economy.ritualUsedPlayedCardIds ?? []), cardId];
+  return {
+    attack: economy.attack,
+    recruit: economy.recruit,
+    spentAttack: economy.spentAttack,
+    spentRecruit: economy.spentRecruit,
+    piercing: economy.piercing,
+    woundsDrawn: economy.woundsDrawn,
+    cardsDrawn: economy.cardsDrawn,
+    // why: WP-858 / D-24794 — spread the single carry chokepoint so recording a used Ritual
+    // never drops another lazy field set earlier this turn.
+    ...carryConversionFlag(economy),
+    ritualUsedPlayedCardIds: nextRitualUsedPlayed,
+  };
+}
+
+/**
+ * Readies a Heist card into the current turn's Heist crew (WP-865 / D-24808).
+ *
+ * Called by the `heist` hero handler when an allowlisted Heist card is played before this turn's
+ * attempt. Appends `cardId` to `heistCrewCards`, materializing the array on the first call.
+ * Append order is fire order; duplicates are kept. Every other field is carried unchanged.
+ * `resetTurnEconomy` drops the crew at the next turn start.
+ *
+ * @param economy - Current turn economy state.
+ * @param cardId - The played Heist card's CardExtId.
+ * @returns New TurnEconomy with `cardId` appended to `heistCrewCards`.
+ */
+export function enrollHeistCard(economy: TurnEconomy, cardId: CardExtId): TurnEconomy {
+  // why: WP-865 / D-24808 — build a NEW array (mirrors enrollExcessiveViolenceCard) so the
+  // rebuild never aliases the prior economy's crew.
+  const nextHeistCrew = [...(economy.heistCrewCards ?? []), cardId];
+  return {
+    attack: economy.attack,
+    recruit: economy.recruit,
+    spentAttack: economy.spentAttack,
+    spentRecruit: economy.spentRecruit,
+    piercing: economy.piercing,
+    woundsDrawn: economy.woundsDrawn,
+    cardsDrawn: economy.cardsDrawn,
+    // why: WP-865 / D-24808 — spread the single carry chokepoint so readying a Heist card never
+    // drops another lazy field set earlier this turn.
+    ...carryConversionFlag(economy),
+    heistCrewCards: nextHeistCrew,
+  };
+}
+
+/**
+ * Marks that the current player has attempted this turn's Heist (WP-865 / D-24808).
+ *
+ * Called by `attemptHeist` before the outcome resolves. Every other field, including the Heist
+ * crew, is carried unchanged. `resetTurnEconomy` clears the latch and the revealed card at the
+ * next turn start.
+ *
+ * @param economy - Current turn economy state.
+ * @param revealedCardId - The Villain Deck card this Heist revealed (WP-876 / D-24823).
+ * @returns New TurnEconomy with `hasAttemptedHeistThisTurn` set true and `heistRevealedCardId`
+ *   set to `revealedCardId`.
+ */
+export function markHeistAttempted(economy: TurnEconomy, revealedCardId: CardExtId): TurnEconomy {
+  return {
+    attack: economy.attack,
+    recruit: economy.recruit,
+    spentAttack: economy.spentAttack,
+    spentRecruit: economy.spentRecruit,
+    piercing: economy.piercing,
+    woundsDrawn: economy.woundsDrawn,
+    cardsDrawn: economy.cardsDrawn,
+    // why: WP-865 / D-24808 — spread the single carry chokepoint so setting the latch never
+    // drops the crew the attempt is about to fire.
+    ...carryConversionFlag(economy),
+    hasAttemptedHeistThisTurn: true,
+    // why: WP-876 / D-24823 — recorded, not re-read: The Big Score and Revolutionary Anthem read
+    // this id's type, because an earlier Heist ability can change the live Villain Deck top.
+    heistRevealedCardId: revealedCardId,
   };
 }
 

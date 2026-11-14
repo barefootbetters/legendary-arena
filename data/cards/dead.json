@@ -506,7 +506,7 @@
           "attack": "4+",
           "recruit": null,
           "abilities": [
-            "You may KO a card from your hand or discard pile.",
+            "You may KO a card from your hand or discard pile. [keyword:optional-ko-hand-discard]",
             "[team:mercs-for-money]: You get +1/2[icon:attack] for each Hero in the KO pile."
           ]
         }

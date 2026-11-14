@@ -90,6 +90,9 @@ export type SchemeHeroCountRule =
 // is rejected. One closed table, so the next printed rule is a data row rather than
 // another `if`. Keyed by scheme ext_id. Only the main Hero Deck is counted:
 // Heroes a scheme keeps outside it (The Time Heist's Past Hero Deck) are not.
+// Exception (WP-863 / D-24805): a scheme whose extra Hero goes into the Villain
+// Deck (Trap Heroes in the Microverse) is counted, because that Hero still
+// arrives through heroDeckIds, the loadout's only Hero input.
 /**
  * Every printed Hero Deck count rule, keyed by scheme ext_id (D-24672). The only
  * reader is `resolveEffectiveHeroCount`.
@@ -115,6 +118,10 @@ export const SCHEME_HERO_COUNT_RULES: Readonly<Record<string, SchemeHeroCountRul
   // into the Hero Deck, so the requirement is base + 2.
   'mdns/wager-at-blackjack-for-heroes-souls': { kind: 'add', amount: 2, fromPlayerCount: 1 },
   'antm/age-of-ultron': { kind: 'add', amount: 1, fromPlayerCount: 4 },
+  // why: WP-863 / D-24805 — "Add all 14 cards for an extra Hero to the Villain Deck." The extra
+  // Hero still arrives through heroDeckIds (the only Hero input), so it is counted here even though
+  // it sits in the Villain Deck, not the Hero Deck: the engine traps the LAST listed Hero.
+  'antm/trap-heroes-in-the-microverse': { kind: 'add', amount: 1, fromPlayerCount: 1 },
   'bkwd/frame-heroes-for-murder': { kind: 'exact', count: 6 },
   'dkcy/detonate-the-helicarrier': { kind: 'exact', count: 6 },
   'rvlt/house-of-m': { kind: 'exact', count: 6 },

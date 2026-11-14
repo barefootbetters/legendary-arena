@@ -201,17 +201,23 @@ the pipeline is pure.
 
 **Three of the five `PenaltyEventType` values have an engine producer today —
 `villainEscaped`, `schemeTwistNegative`, and `bystanderLost`.** The first two are
-pure end-of-match counter reads; `bystanderLost` counts the Bystander
+pure end-of-match counter reads; `bystanderLost` sums two buckets: the Bystander
 entries of `G.escapedPile` — where "Bystander" means **either** a villain-deck
 Bystander **or** a supply-pile Bystander (`BYSTANDER_EXT_ID`), resolved through the
-shared `isBystanderCard` predicate (WP-586 / D-24395). The remaining two are hardcoded to `0` in
+shared `isBystanderCard` predicate (WP-586 / D-24395) — **plus** the Bystanders KO'd
+from play, the lazily written `G.counters.bystandersKoedFromPlay` (WP-887 / D-24839).
+"From play" means a Bystander KO'd from a City Villain's or the Mastermind's
+captives, from the Escape Pile, or from the HQ (today: Hunt for Victims, a Hero's
+or a Lilin Villain's). A KO from the Bystander supply or a Victory Pile does not
+count, and a rescue is never a KO. An Escape-Pile KO nets to zero: it leaves one
+lost bucket for the other. The remaining two are hardcoded to `0` in
 `deriveScoringInputs` as D-4801 safe-skips, each with a `// why:` comment naming
 its deferred follow-up:
 
 | Penalty event | Producer | Status |
 |---|---|---|
 | `villainEscaped` | `ENDGAME_CONDITIONS.ESCAPED_VILLAINS` counter | **live** |
-| `bystanderLost` | `G.escapedPile` (via `isBystanderCard`) | **live** — counts civilians carried away by escaping Villains, from **both** villain-deck and supply-pile Bystander sources (WP-528 / D-24339; two-source count corrected WP-586 / D-24395) |
+| `bystanderLost` | `G.escapedPile` (via `isBystanderCard`) + `G.counters.bystandersKoedFromPlay` | **live** — counts civilians carried away by escaping Villains, from **both** villain-deck and supply-pile Bystander sources (WP-528 / D-24339; two-source count corrected WP-586 / D-24395), plus civilians KO'd from play (WP-887 / D-24839) |
 | `schemeTwistNegative` | `G.counters.schemeTwistCount` counter | **live** — counts every scheme twist (WP-529 / D-24340; no polarity classification) |
 | `mastermindTacticUntaken` | none | safe-skip `0` — derivable at endgame, but the semantics need per-turn history |
 | `scenarioSpecificPenalty` | none | safe-skip `0` — no generic producer; awaits structured scenario events |
@@ -222,8 +228,9 @@ validated, but a penalty with no producer contributes nothing to
 `weightedPenaltyTotal`. `bystanderLost` — which the sole surviving
 structural invariant ranks above `villainEscaped` (WP-599 removed the two
 invariants that referenced the deleted rescue reward) — is **now produced**
-(from the escaped pile), so a match that lets civilians be carried away *is*
-scored on that loss. There is no longer a separate rescue reward: as of
+(from the escaped pile and the KO'd-from-play counter), so a match that lets
+civilians be carried away or KO'd from play *is* scored on that loss, and KOing
+one can never improve a score. There is no longer a separate rescue reward: as of
 WP-599 / D-24409 a rescued bystander scores only its printed 1 VP through the
 victory-point term (the bystander count is still derived from the victory pile,
 but as a VP contributor and an informational stat, not a standalone reward).
@@ -482,7 +489,9 @@ ranked-gauntlet loadouts, and AI coaching with the Legendary Pass.
     entries of `G.escapedPile` — both villain-deck and supply-pile Bystanders, via
     the shared `isBystanderCard` predicate (civilians an escaping Villain carried
     away, D-24314; two-source count corrected WP-586) — mirrors the `bystandersRescued`
-    victory-zone count
+    victory-zone count — plus the Bystanders KO'd from play (City or Mastermind
+    captives, the Escape Pile, the HQ), read from `G.counters.bystandersKoedFromPlay`
+    (WP-887 / D-24839); supply and Victory-Pile KOs do not count
 - **[Scheme Twist](scheme-twist.md).** The `schemeTwistNegative`
   penalty event ties scoring to twist outcomes. The Scheme Twist
   page documents the trigger; this page documents the penalty

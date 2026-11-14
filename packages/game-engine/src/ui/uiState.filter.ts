@@ -27,6 +27,7 @@ import type {
   UIPlayerState,
   UITurnEconomyState,
   UICityCard,
+  UIFortifier,
   UIHQCard,
   UIHQHaunter,
   UIDisplayEntry,
@@ -92,6 +93,33 @@ function buildVillainAttachedHeroesFilterCopy(
   return result;
 }
 
+/**
+ * Rebuilds the fortifier tiles field by field (WP-873 / D-24818).
+ *
+ * // why: every field is public (a fortifier is face up on the table); `display` is
+ * deep-copied like a City card's so the filtered state never aliases the input.
+ *
+ * @param fortifiers - The projected fortifier tiles.
+ * @returns Fresh copies, in the same order.
+ */
+function deepCopyFortifiers(fortifiers: UIFortifier[]): UIFortifier[] {
+  const result: UIFortifier[] = [];
+  for (const fortifier of fortifiers) {
+    result.push({
+      place: fortifier.place,
+      placeLabel: fortifier.placeLabel,
+      extId: fortifier.extId,
+      display: { ...fortifier.display },
+      fightCost: fortifier.fightCost,
+      lockText: fortifier.lockText,
+      ...(fortifier.fightRestrictionReason !== undefined
+        ? { fightRestrictionReason: fortifier.fightRestrictionReason }
+        : {}),
+    });
+  }
+  return result;
+}
+
 // why: WP-111 — City display is public; shallow copies at every level
 // prevent aliasing with the input UIState's card objects. Mirrors the
 // WP-028 cardKeywords post-mortem aliasing-prevention precedent.
@@ -121,6 +149,12 @@ function deepCopyCitySpaces(
         // spread (never a literal undefined) with a fresh array copy.
         ...(space.fightDiscardCosts !== undefined
           ? { fightDiscardCosts: [...space.fightDiscardCosts] }
+          : {}),
+        // why: WP-871 / D-24816 — the public fight-restriction reason MUST pass through
+        // here or the whitelist drops it (five-step contract, step 3): the Fight button
+        // would look enabled while the engine refuses the fight. Every audience.
+        ...(space.fightRestrictionReason !== undefined
+          ? { fightRestrictionReason: space.fightRestrictionReason }
           : {}),
       });
     }
@@ -294,6 +328,21 @@ function redactHandCards(player: UIPlayerState): UIPlayerState {
     base.outOfTimeCards = deepCopyDisplayEntries(player.outOfTimeCards);
   }
 
+  // why: WP-858 / D-24794 — controlledArtifacts is PUBLIC (the outOfTimeCards disposition): the
+  // Ritual Artifacts sit in front of the player in the open. Per-entry shallow copy.
+  if (player.controlledArtifacts !== undefined) {
+    base.controlledArtifacts = deepCopyDisplayEntries(player.controlledArtifacts);
+  }
+
+  // why: WP-848 / D-24784 — conditionalClauses is PUBLIC: every outcome it counts is
+  // already in the public game log. Fresh object so no audience aliases the built state.
+  if (player.conditionalClauses !== undefined) {
+    base.conditionalClauses = {
+      played: player.conditionalClauses.played,
+      assembled: player.conditionalClauses.assembled,
+    };
+  }
+
   return base;
 }
 
@@ -427,6 +476,21 @@ function preserveHandCards(player: UIPlayerState): UIPlayerState {
     base.outOfTimeCards = deepCopyDisplayEntries(player.outOfTimeCards);
   }
 
+  // why: WP-858 / D-24794 — controlledArtifacts is PUBLIC (the outOfTimeCards disposition): the
+  // Ritual Artifacts sit in front of the player in the open. Per-entry shallow copy.
+  if (player.controlledArtifacts !== undefined) {
+    base.controlledArtifacts = deepCopyDisplayEntries(player.controlledArtifacts);
+  }
+
+  // why: WP-848 / D-24784 — conditionalClauses is PUBLIC (same disposition as in
+  // redactHandCards); fresh object so the owner view never aliases the built state.
+  if (player.conditionalClauses !== undefined) {
+    base.conditionalClauses = {
+      played: player.conditionalClauses.played,
+      assembled: player.conditionalClauses.assembled,
+    };
+  }
+
   return base;
 }
 
@@ -523,6 +587,23 @@ export function filterUIStateForAudience(
       ...(uiState.economy.phasingOptions !== undefined && uiState.economy.phasingOptions.length > 0
         ? { phasingOptions: [...uiState.economy.phasingOptions] }
         : {}),
+      // why: WP-858 / D-24794 — the usable Ritual Artifacts pass through for the ACTIVE player only
+      // (the phasingOptions disposition), as a copied array, omit-when-absent. REDACTED_ECONOMY
+      // (non-active players + spectators) never carries them.
+      ...(uiState.economy.ritualArtifactOptions !== undefined && uiState.economy.ritualArtifactOptions.length > 0
+        ? { ritualArtifactOptions: [...uiState.economy.ritualArtifactOptions] }
+        : {}),
+      // why: WP-865 / D-24808 — pass the Heist availability and Heist Count through for the ACTIVE
+      // player only (the excessiveViolenceAvailable disposition), omit-when-absent. The filter is a
+      // whitelist: a field it does not name is silently dropped (EC-206), and the Attempt Heist
+      // button would never appear. REDACTED_ECONOMY (non-active players + spectators) never
+      // carries them, so opponents never see the Heist Count.
+      ...(uiState.economy.heistAvailable === true
+        ? {
+          heistAvailable: true as const,
+          ...(uiState.economy.heistCount !== undefined ? { heistCount: uiState.economy.heistCount } : {}),
+        }
+        : {}),
       // why: WP-790 / D-24652 — pass the restricted-attack grants through for the ACTIVE player
       // only (Board-Visible Field Rule step 3), beside the recruit-as-attack cue, omit-when-absent,
       // copying each entry and its `targets`. REDACTED_ECONOMY (non-active players + spectators)
@@ -557,6 +638,14 @@ export function filterUIStateForAudience(
     city: {
       spaces: deepCopyCitySpaces(uiState.city.spaces),
       escapedPile: deepCopyDisplayEntries(uiState.city.escapedPile),
+      // why: WP-873 / D-24818 — the fortifying Villains are public shared-board information
+      // for every audience and MUST survive this field-by-field whitelist (five-step UIState
+      // contract, step 3). Optional, so TypeScript does not flag a missing pass-through (the
+      // EC-206 drop). Conditional spread keeps it omit-when-absent; entries are rebuilt field
+      // by field so nothing aliases the input.
+      ...(uiState.city.fortifiers !== undefined
+        ? { fortifiers: deepCopyFortifiers(uiState.city.fortifiers) }
+        : {}),
     },
     hq: {
       slots: [...uiState.hq.slots],
@@ -573,6 +662,12 @@ export function filterUIStateForAudience(
       // spread keeps it omit-when-absent; fresh copies prevent aliasing.
       ...(uiState.hq.haunters !== undefined
         ? { haunters: deepCopyHqHaunters(uiState.hq.haunters) }
+        : {}),
+      // why: D-24801 — the Size-Changing recruit prices are public shared-board information
+      // (derived from the HQ and the active player's face-up played cards) for every audience,
+      // and MUST survive this whitelist (the EC-206 drop). Omit-when-absent; fresh copy.
+      ...(uiState.hq.recruitCosts !== undefined
+        ? { recruitCosts: [...uiState.hq.recruitCosts] }
         : {}),
     },
     mastermind: {
@@ -628,6 +723,12 @@ export function filterUIStateForAudience(
       // information for every audience; optional, so it MUST be passed through here or
       // it is silently dropped (the EC-206 failure mode). Omit-when-absent.
       ...(uiState.mastermind.isHaunting === true ? { isHaunting: true as const } : {}),
+      // why: WP-873 / D-24818 — "a Villain fortifies the Mastermind" is public shared-board
+      // information; the Mastermind object is a field-by-field whitelist, so the optional
+      // reason MUST be passed through here or it is silently dropped (the PR #1165 class).
+      ...(uiState.mastermind.fortifiedReason !== undefined
+        ? { fortifiedReason: uiState.mastermind.fortifiedReason }
+        : {}),
     },
     scheme: {
       id: uiState.scheme.id,
@@ -712,6 +813,12 @@ export function filterUIStateForAudience(
       // same way, so the filtered UIState never aliases the full one's object.
       ...(uiState.piles.sidekickDisplay !== undefined
         ? { sidekickDisplay: { ...uiState.piles.sidekickDisplay } }
+        : {}),
+      // why: WP-873 / D-24818 — the Sidekick Stack's Fortify reason is public. The
+      // `...uiState.piles` spread above already carries this primitive; the explicit
+      // conditional spread documents the five-step pass-through and stays omit-when-absent.
+      ...(uiState.piles.sidekickStackFortifiedReason !== undefined
+        ? { sidekickStackFortifiedReason: uiState.piles.sidekickStackFortifiedReason }
         : {}),
     },
     koPile: deepCopyKoPile(uiState.koPile),
@@ -1110,6 +1217,17 @@ export function filterUIStateForAudience(
       ...(uiState.pendingKoDiscardChoice.greyFilter !== undefined
         ? { greyFilter: uiState.pendingKoDiscardChoice.greyFilter }
         : {}),
+      // why: WP-850 / D-24786 — pass the "limited to the cards just discarded" flag through to the
+      // chooser (the whitelist drops any field it does not name); omitted on every other entry.
+      ...(uiState.pendingKoDiscardChoice.isLimitedToDiscardedThisWay === true
+        ? { isLimitedToDiscardedThisWay: true }
+        : {}),
+      // why: WP-868 / D-24811 — pass the mandatory minimum through to the chooser (the whitelist
+      // drops any field it does not name, and a dropped minCount would offer "KO None" on
+      // Flatman's mandatory KO); omitted on every "up to N" entry.
+      ...(uiState.pendingKoDiscardChoice.minCount !== undefined
+        ? { minCount: uiState.pendingKoDiscardChoice.minCount }
+        : {}),
       discard: discardCopy,
     };
   }
@@ -1293,6 +1411,13 @@ export function filterUIStateForAudience(
       playerID: uiState.pendingMoveVillainChoice.playerID,
       villainCityIndices: [...uiState.pendingMoveVillainChoice.villainCityIndices],
     };
+    // why: WP-876 / D-24823 — pass the X-Con Security Van variant through to the chooser (the
+    // D-12803 step 3 whitelist; a field built but not copied here is silently dropped and the prompt
+    // would offer Spinning Cyclone's swaps). Omitted when absent; opponents and spectators never
+    // reach this branch, so they get no prompt at all.
+    if (uiState.pendingMoveVillainChoice.variant !== undefined) {
+      result.pendingMoveVillainChoice.variant = uiState.pendingMoveVillainChoice.variant;
+    }
   }
 
   // why: WP-724 / D-24546 — the pending split-face "choose a side" picker is private to the chooser

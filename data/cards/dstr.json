@@ -135,7 +135,7 @@
           "attack": null,
           "recruit": "2",
           "abilities": [
-            "You may discard an [keyword:Artifact] you control or three cards from your hand. If you do, KO a card from your hand or discard pile."
+            "You may discard an [keyword:Artifact] you control or three cards from your hand. If you do, KO a card from your hand or discard pile. [keyword:discard-artifact-or-three-then-ko]"
           ]
         },
         {
@@ -150,7 +150,7 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "[keyword:Ritual Artifact] — If you have at least three Hero Classes, you may discard Medallion of Many Loas to get +1[icon:attack] for each Hero Class you have, including this one."
+            "[keyword:Ritual Artifact] — If you have at least three Hero Classes, you may discard Medallion of Many Loas to get +1[icon:attack] for each Hero Class you have, including this one. [keyword:ritual-hero-classes:3]"
           ]
         },
         {
@@ -165,7 +165,7 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "[keyword:Ritual Artifact] — If you recruited a Hero, you may discard Staff of Legba to get +[icon:attack] equal to that Hero's cost."
+            "[keyword:Ritual Artifact] — If you recruited a Hero, you may discard Staff of Legba to get +[icon:attack] equal to that Hero's cost. [keyword:ritual-recruited-hero]"
           ]
         },
         {
@@ -180,7 +180,7 @@
           "attack": "4+",
           "recruit": "0+",
           "abilities": [
-            "The first time that one of your Heroes or a Hero from your deck or discard pile is KO'd this turn, you get +4[icon:recruit] or +4[icon:attack]."
+            "The first time that one of your Heroes or a Hero from your deck or discard pile is KO'd this turn, you get +4[icon:recruit] or +4[icon:attack]. [keyword:owned-hero-koed] [keyword:recruit:4] [keyword:attack:4]"
           ]
         }
       ],

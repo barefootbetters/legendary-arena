@@ -49,6 +49,7 @@ function budget(
 }
 
 const STANDARD_BUDGETS: readonly InfraCostBudget[] = [
+  budget('digitalocean', 3500),
   budget('render', 10000),
   budget('cloudflare', 5000),
   budget('postgres', 3000),
@@ -103,8 +104,9 @@ test('should_map_status_via_computeKpiStatus_when_mtd_crosses_budget_and_toleran
 
 test('should_compute_total_utilization_ratio_when_series_and_budgets_are_summed', () => {
   // Total MTD = 8000 + 5500 + 5000 + 2500 = 21000 cents
-  // Total budget = 10000 + 5000 + 3000 + 2500 = 20500 cents
-  // Utilization = 21000 / 20500 ≈ 1.0244
+  // Total budget = 3500 + 10000 + 5000 + 3000 + 2500 = 24000 cents
+  // (digitalocean has no entry here, so it adds budget but no spend)
+  // Utilization = 21000 / 24000 = 0.875
   const series: readonly InfraCostEntry[] = [
     entry('render', '2026-06-15', 8000),
     entry('cloudflare', '2026-06-15', 5500),
@@ -114,12 +116,12 @@ test('should_compute_total_utilization_ratio_when_series_and_budgets_are_summed'
   const { totalMtdCents, totalMonthlyBudgetCents, totalBudgetUtilizationRatio } =
     useInfraCostWatchdog(() => wrap(series), STANDARD_BUDGETS);
   assert.equal(totalMtdCents.value, 21000);
-  assert.equal(totalMonthlyBudgetCents.value, 20500);
-  assert.ok(Math.abs(totalBudgetUtilizationRatio.value - 21000 / 20500) < 1e-9);
+  assert.equal(totalMonthlyBudgetCents.value, 24000);
+  assert.ok(Math.abs(totalBudgetUtilizationRatio.value - 21000 / 24000) < 1e-9);
 });
 
 test('should_render_zero_for_vendors_with_no_current_month_entries_when_partial_data_observed', () => {
-  // Only `render` has current-month entries; the other 3 vendors have
+  // Only `render` has current-month entries; the other 4 vendors have
   // none and must render `0` (D-19908 numeric-zero semantics), not
   // null. This is the partial-data case the widget's `data` state
   // handles by displaying `$0` per vendor (only the strip widget
@@ -226,6 +228,7 @@ test('should_passthrough_source_and_updatedAt_and_bound_mock_factory_when_called
   // §Mock value bounds factory assertions — per-vendor monthly sum
   // (across the entries the mock emitted) ≤ 200% of monthlyBudgetCents.
   const budgetLookup: Record<InfraCostVendor, number> = {
+    digitalocean: 3500,
     render: 10000,
     cloudflare: 5000,
     postgres: 3000,

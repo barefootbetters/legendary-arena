@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 815,
+    "totalRows": 876,
     "byStatus": {
-      "executable": 430,
+      "executable": 505,
       "deferred": 16,
-      "condition": 49,
-      "unsupported": 290,
-      "unmarked": 27,
+      "condition": 76,
+      "unsupported": 254,
+      "unmarked": 22,
       "subsystem": 3
     },
-    "distinctMechanics": 167
+    "distinctMechanics": 182
   },
   "rows": [
     {
@@ -441,6 +441,10 @@
         {
           "slug": "anticipate",
           "name": "Anticipate"
+        },
+        {
+          "slug": "up-the-ante",
+          "name": "Up the Ante"
         }
       ]
     },
@@ -449,10 +453,10 @@
       "heroName": "Ant Army",
       "set": "amwp",
       "mechanic": "heist",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#heist",
       "designs": [
         {
           "slug": "revolutionary-anthem",
@@ -468,11 +472,27 @@
       "extId": "amwp/ant-army",
       "heroName": "Ant Army",
       "set": "amwp",
+      "mechanic": "heist-scheme-twist-bonus",
+      "status": "executable",
+      "wp": "WP-876",
+      "decision": "D-24823",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#heist-scheme-twist-bonus",
+      "designs": [
+        {
+          "slug": "revolutionary-anthem",
+          "name": "Revolutionary Anthem"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/ant-army",
+      "heroName": "Ant Army",
+      "set": "amwp",
       "mechanic": "microscopic-size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
-      "decision": "",
-      "handler": "",
+      "decision": "D-24801",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing",
       "designs": [
         {
           "slug": "anti-tank-weapons",
@@ -494,8 +514,8 @@
       "set": "amwp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -532,11 +552,27 @@
       "extId": "amwp/ant-man",
       "heroName": "Ant-Man",
       "set": "amwp",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "designs": [
+        {
+          "slug": "tiny-little-risk",
+          "name": "Tiny little Risk"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/ant-man",
+      "heroName": "Ant-Man",
+      "set": "amwp",
       "mechanic": "heist",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#heist",
       "designs": [
         {
           "slug": "tiny-little-risk",
@@ -549,10 +585,10 @@
       "heroName": "Ant-Man",
       "set": "amwp",
       "mechanic": "microscopic-size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
-      "decision": "",
-      "handler": "",
+      "decision": "D-24801",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing",
       "designs": [
         {
           "slug": "bug-swarm",
@@ -572,10 +608,42 @@
       "extId": "amwp/ant-man",
       "heroName": "Ant-Man",
       "set": "amwp",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
+        {
+          "slug": "bug-swarm",
+          "name": "Bug Swarm"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/ant-man",
+      "heroName": "Ant-Man",
+      "set": "amwp",
+      "mechanic": "reveal",
+      "status": "executable",
+      "wp": "WP-253",
+      "decision": "D-24024",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal",
+      "designs": [
+        {
+          "slug": "look-out-for-the-little-guy",
+          "name": "Look Out for the Little Guy!"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/ant-man",
+      "heroName": "Ant-Man",
+      "set": "amwp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -613,10 +681,10 @@
       "heroName": "Cassie Lang",
       "set": "amwp",
       "mechanic": "microscopic-size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
-      "decision": "",
-      "handler": "",
+      "decision": "D-24801",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing",
       "designs": [
         {
           "slug": "inspire-revolution",
@@ -638,8 +706,8 @@
       "set": "amwp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -660,6 +728,26 @@
       "extId": "amwp/freedom-fighters",
       "heroName": "Freedom Fighters",
       "set": "amwp",
+      "mechanic": "conqueror",
+      "status": "condition",
+      "wp": "WP-886",
+      "decision": "D-24837",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "steel-warrior",
+          "name": "Steel Warrior"
+        },
+        {
+          "slug": "xolum",
+          "name": "Xolum"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/freedom-fighters",
+      "heroName": "Freedom Fighters",
+      "set": "amwp",
       "mechanic": "draw",
       "status": "executable",
       "wp": "WP-022",
@@ -669,6 +757,22 @@
         {
           "slug": "steel-warrior",
           "name": "Steel Warrior"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/freedom-fighters",
+      "heroName": "Freedom Fighters",
+      "set": "amwp",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
+        {
+          "slug": "mystics",
+          "name": "Mystics"
         }
       ]
     },
@@ -689,13 +793,45 @@
       ]
     },
     {
+      "extId": "amwp/janet-van-dyne",
+      "heroName": "Janet van Dyne",
+      "set": "amwp",
+      "mechanic": "microscopic-size-changing",
+      "status": "executable",
+      "wp": "",
+      "decision": "D-24801",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing",
+      "designs": [
+        {
+          "slug": "subatomic-size",
+          "name": "Subatomic Size"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/janet-van-dyne",
+      "heroName": "Janet van Dyne",
+      "set": "amwp",
+      "mechanic": "size-changing",
+      "status": "executable",
+      "wp": "",
+      "decision": "D-24801",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
+      "designs": [
+        {
+          "slug": "wasp-of-another-generation",
+          "name": "Wasp of Another Generation"
+        }
+      ]
+    },
+    {
       "extId": "amwp/jentorra",
       "heroName": "Jentorra",
       "set": "amwp",
       "mechanic": "conqueror",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "status": "condition",
+      "wp": "WP-886",
+      "decision": "D-24837",
       "handler": "",
       "designs": [
         {
@@ -736,23 +872,145 @@
       "extId": "amwp/scott-lang-cat-burglar",
       "heroName": "Scott Lang, Cat Burglar",
       "set": "amwp",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": []
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "putting-a-crew-together",
+          "name": "Putting a Crew Together"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/scott-lang-cat-burglar",
+      "heroName": "Scott Lang, Cat Burglar",
+      "set": "amwp",
+      "mechanic": "heist-master-strike-ko",
+      "status": "executable",
+      "wp": "WP-876",
+      "decision": "D-24823",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#heist-master-strike-ko",
+      "designs": [
+        {
+          "slug": "the-big-score",
+          "name": "The Big Score"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/scott-lang-cat-burglar",
+      "heroName": "Scott Lang, Cat Burglar",
+      "set": "amwp",
+      "mechanic": "heist-move-villain-ko-hero",
+      "status": "executable",
+      "wp": "WP-876",
+      "decision": "D-24823",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#heist-move-villain-ko-hero",
+      "designs": [
+        {
+          "slug": "x-con-security-van",
+          "name": "X-Con Security Van"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/scott-lang-cat-burglar",
+      "heroName": "Scott Lang, Cat Burglar",
+      "set": "amwp",
+      "mechanic": "rescue",
+      "status": "executable",
+      "wp": "WP-215",
+      "decision": "D-21501",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
+      "designs": [
+        {
+          "slug": "anything-for-cassie",
+          "name": "Anything for Cassie"
+        }
+      ]
     },
     {
       "extId": "amwp/wasp",
       "heroName": "Wasp",
       "set": "amwp",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "first-hero-condition",
+      "status": "condition",
       "wp": "",
       "decision": "",
       "handler": "",
-      "designs": []
+      "designs": [
+        {
+          "slug": "follow-my-lead",
+          "name": "Follow my Lead"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/wasp",
+      "heroName": "Wasp",
+      "set": "amwp",
+      "mechanic": "microscopic-size-changing",
+      "status": "executable",
+      "wp": "",
+      "decision": "D-24801",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing",
+      "designs": [
+        {
+          "slug": "hope-returns",
+          "name": "Hope Returns"
+        },
+        {
+          "slug": "infiltrate",
+          "name": "Infiltrate"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/wasp",
+      "heroName": "Wasp",
+      "set": "amwp",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
+        {
+          "slug": "infiltrate",
+          "name": "Infiltrate"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/wasp",
+      "heroName": "Wasp",
+      "set": "amwp",
+      "mechanic": "size-changing",
+      "status": "executable",
+      "wp": "",
+      "decision": "D-24801",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
+      "designs": [
+        {
+          "slug": "flitting-sting",
+          "name": "Flitting Sting"
+        },
+        {
+          "slug": "follow-my-lead",
+          "name": "Follow my Lead"
+        },
+        {
+          "slug": "master-physicist",
+          "name": "Master Physicist"
+        },
+        {
+          "slug": "positive-ions",
+          "name": "Positive Ions"
+        }
+      ]
     },
     {
       "extId": "anni/brainstorm",
@@ -839,9 +1097,9 @@
       "heroName": "Heralds of Galactus",
       "set": "anni",
       "mechanic": "conqueror",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "status": "condition",
+      "wp": "WP-886",
+      "decision": "D-24837",
       "handler": "",
       "designs": [
         {
@@ -934,26 +1192,10 @@
       "extId": "anni/super-skrull",
       "heroName": "Super-Skrull",
       "set": "anni",
-      "mechanic": "bridge",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": [
-        {
-          "slug": "put-to-the-torch",
-          "name": "Put to the Torch"
-        }
-      ]
-    },
-    {
-      "extId": "anni/super-skrull",
-      "heroName": "Super-Skrull",
-      "set": "anni",
       "mechanic": "conqueror",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "status": "condition",
+      "wp": "WP-886",
+      "decision": "D-24837",
       "handler": "",
       "designs": [
         {
@@ -998,27 +1240,11 @@
       "extId": "anni/super-skrull",
       "heroName": "Super-Skrull",
       "set": "anni",
-      "mechanic": "rooftops",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": [
-        {
-          "slug": "put-to-the-torch",
-          "name": "Put to the Torch"
-        }
-      ]
-    },
-    {
-      "extId": "anni/super-skrull",
-      "heroName": "Super-Skrull",
-      "set": "anni",
-      "mechanic": "streets",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
+      "mechanic": "gain-wound-reward",
+      "status": "executable",
+      "wp": "WP-883",
+      "decision": "D-24834",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-reward",
       "designs": [
         {
           "slug": "put-to-the-torch",
@@ -1062,11 +1288,27 @@
       "extId": "antm/ant-man",
       "heroName": "Ant-Man",
       "set": "antm",
+      "mechanic": "hq-hero-gains-size-changing-tech",
+      "status": "executable",
+      "wp": "WP-862",
+      "decision": "D-24804",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#hq-hero-gains-size-changing-tech",
+      "designs": [
+        {
+          "slug": "pym-particles",
+          "name": "Pym Particles"
+        }
+      ]
+    },
+    {
+      "extId": "antm/ant-man",
+      "heroName": "Ant-Man",
+      "set": "antm",
       "mechanic": "microscopic-size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
-      "decision": "",
-      "handler": "",
+      "decision": "D-24801",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing",
       "designs": [
         {
           "slug": "pym-particles",
@@ -1100,8 +1342,8 @@
       "set": "antm",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -1224,8 +1466,8 @@
       "set": "antm",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -1255,10 +1497,10 @@
       "heroName": "Wasp",
       "set": "antm",
       "mechanic": "microscopic-size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
-      "decision": "",
-      "handler": "",
+      "decision": "D-24801",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing",
       "designs": [
         {
           "slug": "bio-electric-sting",
@@ -1276,8 +1518,8 @@
       "set": "antm",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -1368,8 +1610,8 @@
       "set": "antm",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -1550,26 +1792,10 @@
       "extId": "asrd/valkyrie",
       "heroName": "Valkyrie",
       "set": "asrd",
-      "mechanic": "bridge",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": [
-        {
-          "slug": "usher-to-valhalla",
-          "name": "Usher to Valhalla"
-        }
-      ]
-    },
-    {
-      "extId": "asrd/valkyrie",
-      "heroName": "Valkyrie",
-      "set": "asrd",
       "mechanic": "conqueror",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "status": "condition",
+      "wp": "WP-886",
+      "decision": "D-24837",
       "handler": "",
       "designs": [
         {
@@ -1587,26 +1813,6 @@
         {
           "slug": "usher-to-valhalla",
           "name": "Usher to Valhalla"
-        }
-      ]
-    },
-    {
-      "extId": "asrd/valkyrie",
-      "heroName": "Valkyrie",
-      "set": "asrd",
-      "mechanic": "streets",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": [
-        {
-          "slug": "flying-stallion",
-          "name": "Flying Stallion"
-        },
-        {
-          "slug": "ride-of-the-valkyries",
-          "name": "Ride of the Valkyries"
         }
       ]
     },
@@ -1630,26 +1836,10 @@
       "extId": "asrd/warriors-three-the",
       "heroName": "Warriors Three, The",
       "set": "asrd",
-      "mechanic": "bridge",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": [
-        {
-          "slug": "volstagg-the-valiant",
-          "name": "Volstagg the Valiant"
-        }
-      ]
-    },
-    {
-      "extId": "asrd/warriors-three-the",
-      "heroName": "Warriors Three, The",
-      "set": "asrd",
       "mechanic": "conqueror",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "status": "condition",
+      "wp": "WP-886",
+      "decision": "D-24837",
       "handler": "",
       "designs": [
         {
@@ -1675,6 +1865,22 @@
         {
           "slug": "fandral-the-dashing",
           "name": "Fandral the Dashing"
+        }
+      ]
+    },
+    {
+      "extId": "asrd/warriors-three-the",
+      "heroName": "Warriors Three, The",
+      "set": "asrd",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
+        {
+          "slug": "hogun-the-grim",
+          "name": "Hogun the Grim"
         }
       ]
     },
@@ -2880,8 +3086,8 @@
       "set": "chmp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -2946,6 +3152,22 @@
       "extId": "chmp/ms-marvel",
       "heroName": "Ms. Marvel",
       "set": "chmp",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
+        {
+          "slug": "need-to-stretch-my-legs",
+          "name": "Need to Stretch My Legs"
+        }
+      ]
+    },
+    {
+      "extId": "chmp/ms-marvel",
+      "heroName": "Ms. Marvel",
+      "set": "chmp",
       "mechanic": "rescue",
       "status": "executable",
       "wp": "WP-215",
@@ -2964,8 +3186,8 @@
       "set": "chmp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -3044,8 +3266,8 @@
       "set": "chmp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -3132,8 +3354,8 @@
       "set": "chmp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -3174,10 +3396,26 @@
       "extId": "chmp/viv-vision",
       "heroName": "Viv Vision",
       "set": "chmp",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
+        {
+          "slug": "expanding-neural-network",
+          "name": "Expanding Neural Network"
+        }
+      ]
+    },
+    {
+      "extId": "chmp/viv-vision",
+      "heroName": "Viv Vision",
+      "set": "chmp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -3498,6 +3736,22 @@
       "extId": "co2e/hulk",
       "heroName": "Hulk",
       "set": "co2e",
+      "mechanic": "gain-wound-reward",
+      "status": "executable",
+      "wp": "WP-883",
+      "decision": "D-24834",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-reward",
+      "designs": [
+        {
+          "slug": "hulk-smash",
+          "name": "Hulk Smash!"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/hulk",
+      "heroName": "Hulk",
+      "set": "co2e",
       "mechanic": "ko-wound-reward",
       "status": "executable",
       "wp": "WP-382",
@@ -3649,12 +3903,17 @@
       "extId": "co2e/spider-man-miles-morales",
       "heroName": "Spider-Man (Miles Morales)",
       "set": "co2e",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": []
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
+        {
+          "slug": "web-trap",
+          "name": "Web-Trap"
+        }
+      ]
     },
     {
       "extId": "co2e/storm",
@@ -4616,6 +4875,22 @@
       ]
     },
     {
+      "extId": "cosm/adam-warlock",
+      "heroName": "Adam Warlock",
+      "set": "cosm",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
+        {
+          "slug": "regenerative-cocoon",
+          "name": "Regenerative Cocoon"
+        }
+      ]
+    },
+    {
       "extId": "cosm/captain-mar-vell",
       "heroName": "Captain Mar-Vell",
       "set": "cosm",
@@ -4999,8 +5274,8 @@
       "set": "cvwr",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -5111,8 +5386,8 @@
       "set": "cvwr",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -5143,8 +5418,8 @@
       "set": "cvwr",
       "mechanic": "fortify",
       "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-873",
+      "decision": "D-24818",
       "handler": "",
       "designs": [
         {
@@ -5286,8 +5561,8 @@
       "set": "cvwr",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -5329,6 +5604,22 @@
         {
           "slug": "gathering-rain-clouds",
           "name": "Gathering Rain Clouds"
+        }
+      ]
+    },
+    {
+      "extId": "cvwr/storm-black-panther",
+      "heroName": "Storm & Black Panther",
+      "set": "cvwr",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
+        {
+          "slug": "tsunami-of-justice",
+          "name": "Tsunami of Justice"
         }
       ]
     },
@@ -5418,8 +5709,8 @@
       "set": "cvwr",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -5597,6 +5888,22 @@
         {
           "slug": "sting-of-the-stingrays-sting",
           "name": "Sting of the Stingray's Sting"
+        }
+      ]
+    },
+    {
+      "extId": "dead/stingray",
+      "heroName": "Stingray",
+      "set": "dead",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
+        {
+          "slug": "phd-in-oceanography",
+          "name": "PhD in Oceanography"
         }
       ]
     },
@@ -5783,6 +6090,22 @@
       "extId": "dkcy/bishop",
       "heroName": "Bishop",
       "set": "dkcy",
+      "mechanic": "discard-top-printed-attack",
+      "status": "executable",
+      "wp": "WP-850",
+      "decision": "D-24786",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-top-printed-attack",
+      "designs": [
+        {
+          "slug": "firepower-from-the-future",
+          "name": "Firepower from the Future"
+        }
+      ]
+    },
+    {
+      "extId": "dkcy/bishop",
+      "heroName": "Bishop",
+      "set": "dkcy",
       "mechanic": "draw",
       "status": "executable",
       "wp": "WP-022",
@@ -5792,6 +6115,54 @@
         {
           "slug": "whatever-the-cost",
           "name": "Whatever the Cost"
+        }
+      ]
+    },
+    {
+      "extId": "dkcy/bishop",
+      "heroName": "Bishop",
+      "set": "dkcy",
+      "mechanic": "ko-discarded-this-way",
+      "status": "executable",
+      "wp": "WP-850",
+      "decision": "D-24786",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-discarded-this-way",
+      "designs": [
+        {
+          "slug": "firepower-from-the-future",
+          "name": "Firepower from the Future"
+        }
+      ]
+    },
+    {
+      "extId": "dkcy/bishop",
+      "heroName": "Bishop",
+      "set": "dkcy",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
+        {
+          "slug": "whatever-the-cost",
+          "name": "Whatever the Cost"
+        }
+      ]
+    },
+    {
+      "extId": "dkcy/bishop",
+      "heroName": "Bishop",
+      "set": "dkcy",
+      "mechanic": "owned-card-koed",
+      "status": "condition",
+      "wp": "WP-853",
+      "decision": "D-24789",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "absorb-energies",
+          "name": "Absorb Energies"
         }
       ]
     },
@@ -5902,6 +6273,22 @@
         {
           "slug": "ninjitsu",
           "name": "Ninjitsu"
+        }
+      ]
+    },
+    {
+      "extId": "dkcy/elektra",
+      "heroName": "Elektra",
+      "set": "dkcy",
+      "mechanic": "first-hero-condition",
+      "status": "condition",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "first-strike",
+          "name": "First Strike"
         }
       ]
     },
@@ -6061,12 +6448,17 @@
       "extId": "dkcy/professor-x",
       "heroName": "Professor X",
       "set": "dkcy",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": []
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
+        {
+          "slug": "class-dismissed",
+          "name": "Class Dismissed"
+        }
+      ]
     },
     {
       "extId": "dkcy/punisher",
@@ -6114,6 +6506,22 @@
           "slug": "animal-instincts",
           "name": "Animal Instincts"
         },
+        {
+          "slug": "no-mercy",
+          "name": "No Mercy"
+        }
+      ]
+    },
+    {
+      "extId": "dkcy/wolverine",
+      "heroName": "Wolverine",
+      "set": "dkcy",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
         {
           "slug": "no-mercy",
           "name": "No Mercy"
@@ -6284,6 +6692,70 @@
       "extId": "dstr/doctor-voodoo",
       "heroName": "Doctor Voodoo",
       "set": "dstr",
+      "mechanic": "attack",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack",
+      "designs": [
+        {
+          "slug": "posessed-by-brothers-spirit",
+          "name": "Posessed by Brother's Spirit"
+        }
+      ]
+    },
+    {
+      "extId": "dstr/doctor-voodoo",
+      "heroName": "Doctor Voodoo",
+      "set": "dstr",
+      "mechanic": "discard-artifact-or-three-then-ko",
+      "status": "executable",
+      "wp": "WP-860",
+      "decision": "D-24796",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-artifact-or-three-then-ko",
+      "designs": [
+        {
+          "slug": "commune-with-the-spirit-world",
+          "name": "Commune with the Spirit World"
+        }
+      ]
+    },
+    {
+      "extId": "dstr/doctor-voodoo",
+      "heroName": "Doctor Voodoo",
+      "set": "dstr",
+      "mechanic": "owned-hero-koed",
+      "status": "condition",
+      "wp": "WP-856",
+      "decision": "D-24792",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "posessed-by-brothers-spirit",
+          "name": "Posessed by Brother's Spirit"
+        }
+      ]
+    },
+    {
+      "extId": "dstr/doctor-voodoo",
+      "heroName": "Doctor Voodoo",
+      "set": "dstr",
+      "mechanic": "recruit",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#recruit",
+      "designs": [
+        {
+          "slug": "posessed-by-brothers-spirit",
+          "name": "Posessed by Brother's Spirit"
+        }
+      ]
+    },
+    {
+      "extId": "dstr/doctor-voodoo",
+      "heroName": "Doctor Voodoo",
+      "set": "dstr",
       "mechanic": "ritual-artifact",
       "status": "unsupported",
       "wp": "",
@@ -6294,6 +6766,38 @@
           "slug": "medallion-of-many-loas",
           "name": "Medallion of Many Loas"
         },
+        {
+          "slug": "staff-of-legba",
+          "name": "Staff of Legba"
+        }
+      ]
+    },
+    {
+      "extId": "dstr/doctor-voodoo",
+      "heroName": "Doctor Voodoo",
+      "set": "dstr",
+      "mechanic": "ritual-hero-classes",
+      "status": "executable",
+      "wp": "WP-858",
+      "decision": "D-24794",
+      "handler": "packages/game-engine/src/moves/ritualArtifact.ts",
+      "designs": [
+        {
+          "slug": "medallion-of-many-loas",
+          "name": "Medallion of Many Loas"
+        }
+      ]
+    },
+    {
+      "extId": "dstr/doctor-voodoo",
+      "heroName": "Doctor Voodoo",
+      "set": "dstr",
+      "mechanic": "ritual-recruited-hero",
+      "status": "executable",
+      "wp": "WP-858",
+      "decision": "D-24794",
+      "handler": "packages/game-engine/src/moves/ritualArtifact.ts",
+      "designs": [
         {
           "slug": "staff-of-legba",
           "name": "Staff of Legba"
@@ -6736,12 +7240,17 @@
       "extId": "gotg/groot",
       "heroName": "Groot",
       "set": "gotg",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": []
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
+        {
+          "slug": "surviving-sprig",
+          "name": "Surviving Sprig"
+        }
+      ]
     },
     {
       "extId": "gotg/rocket-raccoon",
@@ -6819,6 +7328,22 @@
       "extId": "mdns/blade-daywalker",
       "heroName": "Blade, Daywalker",
       "set": "mdns",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "designs": [
+        {
+          "slug": "where-monsters-lurk",
+          "name": "Where Monsters Lurk"
+        }
+      ]
+    },
+    {
+      "extId": "mdns/blade-daywalker",
+      "heroName": "Blade, Daywalker",
+      "set": "mdns",
       "mechanic": "moonlight",
       "status": "condition",
       "wp": "",
@@ -6856,9 +7381,9 @@
       "heroName": "Blade, Daywalker",
       "set": "mdns",
       "mechanic": "patrol",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "status": "condition",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "handler": "",
       "designs": [
         {
@@ -6868,6 +7393,22 @@
         {
           "slug": "where-monsters-lurk",
           "name": "Where Monsters Lurk"
+        }
+      ]
+    },
+    {
+      "extId": "mdns/blade-daywalker",
+      "heroName": "Blade, Daywalker",
+      "set": "mdns",
+      "mechanic": "reveal-top-may-ko",
+      "status": "executable",
+      "wp": "WP-754",
+      "decision": "D-24581",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-may-ko",
+      "designs": [
+        {
+          "slug": "hunt-high-and-low",
+          "name": "Hunt High And Low"
         }
       ]
     },
@@ -6908,10 +7449,26 @@
       "heroName": "Elsa Bloodstone",
       "set": "mdns",
       "mechanic": "hunt-for-victims",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
+      "status": "executable",
+      "wp": "WP-884",
+      "decision": "D-24835",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#hunt-for-victims",
+      "designs": [
+        {
+          "slug": "stalk-the-night-stalkers",
+          "name": "Stalk the Night Stalkers"
+        }
+      ]
+    },
+    {
+      "extId": "mdns/elsa-bloodstone",
+      "heroName": "Elsa Bloodstone",
+      "set": "mdns",
+      "mechanic": "hunt-for-victims-rescue",
+      "status": "executable",
+      "wp": "WP-884",
+      "decision": "D-24835",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#hunt-for-victims-rescue",
       "designs": [
         {
           "slug": "stalk-the-night-stalkers",
@@ -6924,9 +7481,9 @@
       "heroName": "Elsa Bloodstone",
       "set": "mdns",
       "mechanic": "patrol",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "status": "condition",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "handler": "",
       "designs": [
         {
@@ -6980,6 +7537,22 @@
         {
           "slug": "mesmerize",
           "name": "Mesmerize"
+        }
+      ]
+    },
+    {
+      "extId": "mdns/morbius",
+      "heroName": "Morbius",
+      "set": "mdns",
+      "mechanic": "gain-wound-reward",
+      "status": "executable",
+      "wp": "WP-883",
+      "decision": "D-24834",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-reward",
+      "designs": [
+        {
+          "slug": "scalded-by-sunlight",
+          "name": "Scalded by Sunlight"
         }
       ]
     },
@@ -7171,10 +7744,30 @@
       "extId": "mdns/wong-master-of-the-mystic-arts",
       "heroName": "Wong, Master of the Mystic Arts",
       "set": "mdns",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "designs": [
+        {
+          "slug": "bridge-between-dimensions",
+          "name": "Bridge Between Dimensions"
+        },
+        {
+          "slug": "seal-the-rift",
+          "name": "Seal the Rift"
+        }
+      ]
+    },
+    {
+      "extId": "mdns/wong-master-of-the-mystic-arts",
+      "heroName": "Wong, Master of the Mystic Arts",
+      "set": "mdns",
       "mechanic": "patrol",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "status": "condition",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "handler": "",
       "designs": [
         {
@@ -7304,6 +7897,38 @@
         {
           "slug": "resourceful-fugitive",
           "name": "Resourceful Fugitive"
+        }
+      ]
+    },
+    {
+      "extId": "mgtg/gamora",
+      "heroName": "Gamora",
+      "set": "mgtg",
+      "mechanic": "draw-threshold",
+      "status": "condition",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "stolen-necroblaster",
+          "name": "Stolen Necroblaster"
+        }
+      ]
+    },
+    {
+      "extId": "mgtg/gamora",
+      "heroName": "Gamora",
+      "set": "mgtg",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
+        {
+          "slug": "stolen-necroblaster",
+          "name": "Stolen Necroblaster"
         }
       ]
     },
@@ -7544,6 +8169,22 @@
         {
           "slug": "great-many-lives-lost",
           "name": "Great Many Lives Lost"
+        }
+      ]
+    },
+    {
+      "extId": "msis/bruce-banner",
+      "heroName": "Bruce Banner",
+      "set": "msis",
+      "mechanic": "gain-wound-reward",
+      "status": "executable",
+      "wp": "WP-883",
+      "decision": "D-24834",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-reward",
+      "designs": [
+        {
+          "slug": "hulk-gets-smashed",
+          "name": "Hulk Gets Smashed"
         }
       ]
     },
@@ -8252,6 +8893,22 @@
         {
           "slug": "superhuman-senses",
           "name": "Superhuman Senses"
+        }
+      ]
+    },
+    {
+      "extId": "msmc/warpath",
+      "heroName": "Warpath",
+      "set": "msmc",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
+        {
+          "slug": "endless-endurance",
+          "name": "Endless Endurance"
         }
       ]
     },
@@ -9335,6 +9992,22 @@
         {
           "slug": "trample-underhoof",
           "name": "Trample Underhoof"
+        }
+      ]
+    },
+    {
+      "extId": "rlmk/karnak",
+      "heroName": "Karnak",
+      "set": "rlmk",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
+        {
+          "slug": "brilliant-strategist",
+          "name": "Brilliant Strategist"
         }
       ]
     },
@@ -10876,10 +11549,26 @@
       "extId": "ssw2/agent-venom",
       "heroName": "Agent Venom",
       "set": "ssw2",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "designs": [
+        {
+          "slug": "big-slimeportunity",
+          "name": "Big Slimeportunity"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/agent-venom",
+      "heroName": "Agent Venom",
+      "set": "ssw2",
       "mechanic": "patrol",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "status": "condition",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "handler": "",
       "designs": [
         {
@@ -10953,9 +11642,9 @@
       "heroName": "Arkon the Magnificent",
       "set": "ssw2",
       "mechanic": "patrol",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "status": "condition",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "handler": "",
       "designs": [
         {
@@ -11026,8 +11715,8 @@
       "set": "ssw2",
       "mechanic": "patrol",
       "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "handler": "",
       "designs": [
         {
@@ -11088,10 +11777,26 @@
       "extId": "ssw2/captain-britain",
       "heroName": "Captain Britain",
       "set": "ssw2",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
+        {
+          "slug": "lead-the-captain-britain-corps",
+          "name": "Lead the Captain Britain Corps"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/captain-britain",
+      "heroName": "Captain Britain",
+      "set": "ssw2",
       "mechanic": "patrol",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "status": "condition",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "handler": "",
       "designs": [
         {
@@ -11104,10 +11809,26 @@
       "extId": "ssw2/captain-and-the-devil-the",
       "heroName": "Captain and the Devil, The",
       "set": "ssw2",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
+        {
+          "slug": "feeding-grounds",
+          "name": "Feeding Grounds"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/captain-and-the-devil-the",
+      "heroName": "Captain and the Devil, The",
+      "set": "ssw2",
       "mechanic": "patrol",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "status": "condition",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "handler": "",
       "designs": [
         {
@@ -11142,8 +11863,8 @@
       "set": "ssw2",
       "mechanic": "patrol",
       "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "handler": "",
       "designs": [
         {
@@ -11156,10 +11877,26 @@
       "extId": "ssw2/dr-punisher-soldier-supreme",
       "heroName": "Dr. Punisher, Soldier Supreme",
       "set": "ssw2",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "designs": [
+        {
+          "slug": "sweep-the-streets-of-trash",
+          "name": "Sweep the Streets of Trash"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/dr-punisher-soldier-supreme",
+      "heroName": "Dr. Punisher, Soldier Supreme",
+      "set": "ssw2",
       "mechanic": "patrol",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "status": "condition",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "handler": "",
       "designs": [
         {
@@ -11209,10 +11946,26 @@
       "heroName": "Elsa Bloodstone",
       "set": "ssw2",
       "mechanic": "patrol",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "status": "condition",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "handler": "",
+      "designs": [
+        {
+          "slug": "monster-hunter",
+          "name": "Monster Hunter"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/elsa-bloodstone",
+      "heroName": "Elsa Bloodstone",
+      "set": "ssw2",
+      "mechanic": "rescue",
+      "status": "executable",
+      "wp": "WP-215",
+      "decision": "D-21501",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
       "designs": [
         {
           "slug": "monster-hunter",
@@ -11308,9 +12061,9 @@
       "heroName": "Shang-Chi",
       "set": "ssw2",
       "mechanic": "patrol",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "status": "condition",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "handler": "",
       "designs": [
         {
@@ -11471,10 +12224,26 @@
       "extId": "ssw2/spider-gwen",
       "heroName": "Spider-Gwen",
       "set": "ssw2",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "save-the-day",
+          "name": "Save the Day"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/spider-gwen",
+      "heroName": "Spider-Gwen",
+      "set": "ssw2",
       "mechanic": "patrol",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "status": "condition",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "handler": "",
       "designs": [
         {
@@ -11488,6 +12257,38 @@
         {
           "slug": "save-the-day",
           "name": "Save the Day"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/spider-gwen",
+      "heroName": "Spider-Gwen",
+      "set": "ssw2",
+      "mechanic": "rescue",
+      "status": "executable",
+      "wp": "WP-215",
+      "decision": "D-21501",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
+      "designs": [
+        {
+          "slug": "save-the-day",
+          "name": "Save the Day"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/spider-gwen",
+      "heroName": "Spider-Gwen",
+      "set": "ssw2",
+      "mechanic": "reveal",
+      "status": "executable",
+      "wp": "WP-253",
+      "decision": "D-24024",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal",
+      "designs": [
+        {
+          "slug": "fateful-bridge",
+          "name": "Fateful Bridge"
         }
       ]
     },
@@ -11515,10 +12316,26 @@
       "extId": "ssw2/time-traveling-jean-grey",
       "heroName": "Time-Traveling Jean Grey",
       "set": "ssw2",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
+        {
+          "slug": "bridge-to-a-better-future",
+          "name": "Bridge to a Better Future"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/time-traveling-jean-grey",
+      "heroName": "Time-Traveling Jean Grey",
+      "set": "ssw2",
       "mechanic": "patrol",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "status": "condition",
+      "wp": "WP-881",
+      "decision": "D-24832",
       "handler": "",
       "designs": [
         {
@@ -11576,6 +12393,22 @@
         {
           "slug": "crazed-experiments",
           "name": "Crazed Experiments"
+        }
+      ]
+    },
+    {
+      "extId": "vill/dr-octopus",
+      "heroName": "Dr. Octopus",
+      "set": "vill",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
+        {
+          "slug": "brilliant-research",
+          "name": "Brilliant Research"
         }
       ]
     },
@@ -12117,8 +12950,8 @@
       "set": "vnom",
       "mechanic": "optional-ko-hand-discard",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-667",
+      "decision": "D-24480",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
       "designs": [
         {
@@ -12489,6 +13322,22 @@
           "slug": "raging-regeneration",
           "name": "Raging Regeneration"
         },
+        {
+          "slug": "violent-conditioning",
+          "name": "Violent Conditioning"
+        }
+      ]
+    },
+    {
+      "extId": "wpnx/weapon-x-wolverine",
+      "heroName": "Weapon X (Wolverine)",
+      "set": "wpnx",
+      "mechanic": "gain-wound-reward",
+      "status": "executable",
+      "wp": "WP-883",
+      "decision": "D-24834",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-reward",
+      "designs": [
         {
           "slug": "violent-conditioning",
           "name": "Violent Conditioning"
@@ -13035,6 +13884,22 @@
       "extId": "wwhk/bruce-banner",
       "heroName": "Bruce Banner",
       "set": "wwhk",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
+        {
+          "slug": "solve-the-impossible",
+          "name": "Solve the Impossible"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/bruce-banner",
+      "heroName": "Bruce Banner",
+      "set": "wwhk",
       "mechanic": "outwit",
       "status": "condition",
       "wp": "",
@@ -13116,6 +13981,22 @@
         {
           "slug": "shadow-queen",
           "name": "Shadow Queen"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/caiera",
+      "heroName": "Caiera",
+      "set": "wwhk",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
+        {
+          "slug": "focus-the-old-power",
+          "name": "Focus The Old Power"
         }
       ]
     },
@@ -13491,11 +14372,59 @@
       "extId": "wwhk/miek-the-unhived",
       "heroName": "Miek, The Unhived",
       "set": "wwhk",
-      "mechanic": "feast",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "mechanic": "deck-card-koed",
+      "status": "condition",
+      "wp": "WP-855",
+      "decision": "D-24791",
       "handler": "",
+      "designs": [
+        {
+          "slug": "endless-appetite",
+          "name": "Endless Appetite"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/miek-the-unhived",
+      "heroName": "Miek, The Unhived",
+      "set": "wwhk",
+      "mechanic": "deck-koed-attack-icon",
+      "status": "condition",
+      "wp": "WP-859",
+      "decision": "D-24795",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "metamorphosis",
+          "name": "Metamorphosis"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/miek-the-unhived",
+      "heroName": "Miek, The Unhived",
+      "set": "wwhk",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "designs": [
+        {
+          "slug": "endless-appetite",
+          "name": "Endless Appetite"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/miek-the-unhived",
+      "heroName": "Miek, The Unhived",
+      "set": "wwhk",
+      "mechanic": "feast",
+      "status": "executable",
+      "wp": "WP-857",
+      "decision": "D-24793",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#feast",
       "designs": [
         {
           "slug": "devouring-frenzy",
@@ -13532,10 +14461,10 @@
       "heroName": "Miek, The Unhived",
       "set": "wwhk",
       "mechanic": "transform",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#transform",
       "designs": [
         {
           "slug": "metamorphosis",
@@ -13599,12 +14528,48 @@
       "extId": "wwhk/no-name-brood-queen",
       "heroName": "No-Name, Brood Queen",
       "set": "wwhk",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "world-spanning-hunger",
+          "name": "World-Spanning Hunger"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/no-name-brood-queen",
+      "heroName": "No-Name, Brood Queen",
+      "set": "wwhk",
+      "mechanic": "deck-koed-non-grey-hero",
+      "status": "condition",
+      "wp": "WP-859",
+      "decision": "D-24795",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "bursting-with-life",
+          "name": "Bursting with Life"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/no-name-brood-queen",
+      "heroName": "No-Name, Brood Queen",
+      "set": "wwhk",
       "mechanic": "draw",
       "status": "executable",
       "wp": "WP-022",
       "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
+        {
+          "slug": "surprise-attack",
+          "name": "Surprise Attack"
+        },
         {
           "slug": "torrent-of-broodlings",
           "name": "Torrent of Broodlings"
@@ -13616,10 +14581,10 @@
       "heroName": "No-Name, Brood Queen",
       "set": "wwhk",
       "mechanic": "feast",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
+      "status": "executable",
+      "wp": "WP-857",
+      "decision": "D-24793",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#feast",
       "designs": [
         {
           "slug": "appetite-for-destruction",
@@ -13632,6 +14597,22 @@
         {
           "slug": "world-spanning-hunger",
           "name": "World-Spanning Hunger"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/no-name-brood-queen",
+      "heroName": "No-Name, Brood Queen",
+      "set": "wwhk",
+      "mechanic": "first-hero-condition",
+      "status": "condition",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "surprise-attack",
+          "name": "Surprise Attack"
         }
       ]
     },
@@ -13656,10 +14637,10 @@
       "heroName": "No-Name, Brood Queen",
       "set": "wwhk",
       "mechanic": "transform",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#transform",
       "designs": [
         {
           "slug": "bursting-with-life",
@@ -13729,8 +14710,8 @@
       "set": "wwhk",
       "mechanic": "feast",
       "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-857",
+      "decision": "D-24793",
       "handler": "",
       "designs": [
         {
@@ -13809,8 +14790,8 @@
       "set": "wwhk",
       "mechanic": "optional-ko-hand-discard",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-667",
+      "decision": "D-24480",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
       "designs": [
         {
@@ -13907,6 +14888,22 @@
       "extId": "wwhk/skaar-son-of-hulk",
       "heroName": "Skaar, Son of Hulk",
       "set": "wwhk",
+      "mechanic": "gain-wound-reward",
+      "status": "executable",
+      "wp": "WP-883",
+      "decision": "D-24834",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-reward",
+      "designs": [
+        {
+          "slug": "mood-swings",
+          "name": "Mood Swings"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/skaar-son-of-hulk",
+      "heroName": "Skaar, Son of Hulk",
+      "set": "wwhk",
       "mechanic": "smash",
       "status": "executable",
       "wp": "WP-676",
@@ -13924,10 +14921,10 @@
       "heroName": "Skaar, Son of Hulk",
       "set": "wwhk",
       "mechanic": "transform",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#transform",
       "designs": [
         {
           "slug": "mood-swings",
@@ -14615,6 +15612,22 @@
       "extId": "xmen/phoenix",
       "heroName": "Phoenix",
       "set": "xmen",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
+        {
+          "slug": "life-death-incarnate",
+          "name": "Life & Death Incarnate"
+        }
+      ]
+    },
+    {
+      "extId": "xmen/phoenix",
+      "heroName": "Phoenix",
+      "set": "xmen",
       "mechanic": "piercing-energy",
       "status": "unsupported",
       "wp": "",
@@ -14656,6 +15669,22 @@
         {
           "slug": "electromagnetic-pulse",
           "name": "Electromagnetic Pulse"
+        }
+      ]
+    },
+    {
+      "extId": "xmen/polaris",
+      "heroName": "Polaris",
+      "set": "xmen",
+      "mechanic": "next-hand-extra-draw",
+      "status": "executable",
+      "wp": "WP-866",
+      "decision": "D-24809",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw",
+      "designs": [
+        {
+          "slug": "ride-the-magnetic-waves",
+          "name": "Ride the Magnetic Waves"
         }
       ]
     },
@@ -14833,8 +15862,8 @@
       "set": "xmen",
       "mechanic": "optional-ko-hand-discard",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-667",
+      "decision": "D-24480",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
       "designs": [
         {

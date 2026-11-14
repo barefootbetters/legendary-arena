@@ -189,3 +189,94 @@ describe('MoveVillainChoicePrompt — a 6-space City (WP-831 / D-24764)', () => 
     assert.ok(destinations.some((text) => text.includes('Space 6')));
   });
 });
+
+describe('MoveVillainChoicePrompt — the X-Con Security Van variant (WP-876 / D-24823)', () => {
+  /**
+   * Mounts the prompt for an X-Con Security Van entry on the given City.
+   *
+   * @param spaces - The projected City spaces.
+   * @param villainCityIndices - The engine indices holding a Villain.
+   * @returns The wrapper and the recorded submissions.
+   */
+  function mountXCon(spaces: UICityState['spaces'], villainCityIndices: number[]) {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MoveVillainChoicePrompt, {
+      props: {
+        pendingMoveVillainChoice: { playerID: 'player-0', villainCityIndices, variant: 'x-con-security-van' },
+        city: { spaces, escapedPile: [] },
+        viewerPlayerId: 'player-0',
+        submitMove,
+      },
+    });
+    return { wrapper, calls };
+  }
+
+  /**
+   * The engine indices of the spaces a City holds no Villain in (the engine's G.city[i] === null).
+   *
+   * @param spaces - The projected City spaces.
+   * @param sourceIndex - The source space, never a destination.
+   * @returns The empty indices, ascending.
+   */
+  function emptyIndices(spaces: UICityState['spaces'], sourceIndex: number): number[] {
+    const indices: number[] = [];
+    for (let cityIndex = 0; cityIndex < spaces.length; cityIndex++) {
+      if (spaces[cityIndex] === null && cityIndex !== sourceIndex) {
+        indices.push(cityIndex);
+      }
+    }
+    return indices;
+  }
+
+  test('shows the X-Con heading, region label and KO note', () => {
+    const { wrapper } = mountXCon(mockCity.spaces, [0, 3]);
+    const region = wrapper.find('[data-testid="move-villain-prompt"]');
+    assert.equal(wrapper.find('.move-villain-prompt__heading').text(), 'X-Con Security Van: move a Villain to an empty space');
+    assert.equal(region.attributes('aria-label'), 'X-Con Security Van: move a Villain to an empty space');
+    assert.equal(wrapper.find('[data-testid="move-villain-x-con-note"]').text(), 'If you move a Villain, you KO one of your Heroes.');
+    assert.ok(!wrapper.text().includes('Spinning Cyclone'));
+    assert.ok(!wrapper.text().includes('rescued'));
+  });
+
+  test('a five-space City offers exactly the engine\'s empty spaces, never "swap with"', async () => {
+    const { wrapper, calls } = mountXCon(mockCity.spaces, [0, 3]);
+    await wrapper.find('[data-testid="move-villain-source"]').trigger('click');
+    const destinations = wrapper.findAll('[data-testid="move-villain-destination"]');
+    const labels = destinations.map((destination) => destination.text());
+    assert.ok(labels.every((label) => !label.includes('swap with')));
+    assert.equal(labels.length, emptyIndices(mockCity.spaces, 3).length);
+    // why: the first source in visual order is the Streets (engine 3); submit to the first offered
+    // destination (the Bridge, engine 4) and check the ENGINE indices.
+    await destinations[0]!.trigger('click');
+    await wrapper.find('[data-testid="move-villain-confirm"]').trigger('click');
+    assert.deepEqual(calls, [{ name: 'resolveMoveVillainChoice', args: { fromCityIndex: 3, toCityIndex: 4 } }]);
+    assert.ok(emptyIndices(mockCity.spaces, 3).includes(4));
+  });
+
+  test('a six-space City offers exactly the engine\'s empty spaces, the unnamed sixth included', async () => {
+    const spaces: UICityState['spaces'] = [
+      cityCard('villain-sewers', 'HYDRA Kidnappers'),
+      cityCard('villain-bank', 'Doombot Legion'),
+      null,
+      cityCard('villain-streets', 'Savage Land Mutates'),
+      null,
+      null,
+    ];
+    const { wrapper } = mountXCon(spaces, [0, 1, 3]);
+    const sources = wrapper.findAll('[data-testid="move-villain-source"]');
+    await sources[sources.length - 1]!.trigger('click');
+    const labels = wrapper.findAll('[data-testid="move-villain-destination"]').map((destination) => destination.text());
+    assert.deepEqual(labels, ['Space 6', 'Bridge', 'Rooftops']);
+    assert.equal(labels.length, emptyIndices(spaces, 0).length);
+  });
+
+  test('without the variant the Spinning Cyclone rendering is unchanged', async () => {
+    const { wrapper } = mountPrompt();
+    assert.equal(wrapper.find('.move-villain-prompt__heading').text(), 'Spinning Cyclone: move a Villain');
+    assert.equal(wrapper.find('[data-testid="move-villain-prompt"]').attributes('aria-label'), 'Spinning Cyclone: move a Villain');
+    assert.equal(wrapper.find('[data-testid="move-villain-x-con-note"]').exists(), false);
+    await wrapper.find('[data-testid="move-villain-source"]').trigger('click');
+    const labels = wrapper.findAll('[data-testid="move-villain-destination"]').map((destination) => destination.text());
+    assert.ok(labels.some((label) => label.includes('swap with')), 'occupied spaces still offer a swap');
+  });
+});

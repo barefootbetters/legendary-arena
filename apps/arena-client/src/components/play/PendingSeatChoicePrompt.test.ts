@@ -323,3 +323,144 @@ describe('PendingSeatChoicePrompt — WP-845 reveal or gain a Wound (D-24779)', 
     assert.deepEqual(calls[0]!.args, { optionIndex: 1 });
   });
 });
+
+describe('PendingSeatChoicePrompt — WP-876 Revolutionary Anthem shuffle (D-24823)', () => {
+  test('the heist-shuffle-villain-deck kind shows its heading and the two locked options', async () => {
+    const { calls, submitMove } = recorder();
+    const choice: UIPendingSeatChoice = {
+      kind: 'heist-shuffle-villain-deck',
+      addressedSeats: ['player-0'],
+      outstandingSeats: ['player-0'],
+      seatPrompts: {
+        'player-0': { options: [{ label: 'Shuffle the Villain Deck' }, { label: 'Leave the Villain Deck as it is' }] },
+      },
+    };
+    const wrapper = mount(PendingSeatChoicePrompt, {
+      props: { pendingSeatChoice: choice, viewerPlayerId: 'player-0', submitMove },
+    });
+    assert.equal(wrapper.find('.pending-seat-choice-prompt__heading').text(), 'Revolutionary Anthem: shuffle the Villain Deck?');
+    assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-0"]').text(), 'Shuffle the Villain Deck');
+    assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-1"]').text(), 'Leave the Villain Deck as it is');
+    await wrapper.find('[data-testid="pending-seat-choice-option-0"]').trigger('click');
+    assert.deepEqual(calls, [{ name: 'resolveSeatChoice', args: { optionIndex: 0 } }]);
+  });
+});
+
+describe('PendingSeatChoicePrompt — WP-882 Zarathos tactic headings (D-24833)', () => {
+  // why: the five WP-758 kinds showed "Your choice"; each now names its tactic and the ask.
+  const zarathosHeadings: { kind: string; heading: string }[] = [
+    {
+      kind: 'zarathos-corrupted-spirit-discard-down',
+      heading: 'Corrupted Spirit of Vengeance — discard down to 3 cards: choose a card to discard',
+    },
+    {
+      kind: 'zarathos-eruption',
+      heading: 'Eruption of Hellfire — discard a Covert or Ranged Hero, or gain a Wound',
+    },
+    {
+      kind: 'zarathos-corrupted-spirit',
+      heading: 'Corrupted Spirit of Vengeance — discard an Instinct or Covert Hero, or discard down to 3 cards',
+    },
+    {
+      kind: 'zarathos-imprison',
+      heading: 'Imprison in the Soul Crystal — KO a Villain from your Victory Pile and draw cards equal to its VP?',
+    },
+    {
+      kind: 'zarathos-demonic-essence-first',
+      heading: 'Demonic Essence of Ghost Rider — KO one of your Heroes?',
+    },
+    {
+      kind: 'zarathos-demonic-essence-last',
+      heading: 'Demonic Essence of Ghost Rider — KO one of your Heroes?',
+    },
+  ];
+  for (const { kind, heading } of zarathosHeadings) {
+    test(`the ${kind} kind renders its exact heading`, () => {
+      const { submitMove } = recorder();
+      const choice: UIPendingSeatChoice = {
+        kind,
+        addressedSeats: ['player-1'],
+        outstandingSeats: ['player-1'],
+        seatPrompts: { 'player-1': { options: [{ label: 'Option A' }, { label: 'Option B' }] } },
+      };
+      const wrapper = mount(PendingSeatChoicePrompt, {
+        props: { pendingSeatChoice: choice, viewerPlayerId: 'player-1', submitMove },
+      });
+      assert.equal(wrapper.find('.pending-seat-choice-prompt__heading').text(), heading);
+    });
+  }
+});
+
+describe('PendingSeatChoicePrompt — WP-884 Hunt for Victims (D-24835)', () => {
+  const cases: Array<[string, string]> = [
+    ['hunt-for-victims', 'Have a Villain or Mastermind Hunt for Victims?'],
+    ['hunt-for-victims-ko-hero', 'KO a Hero from your hand or discard pile?'],
+  ];
+  for (const [kind, heading] of cases) {
+    test(`the ${kind} kind shows its heading and its projected options`, async () => {
+      const { calls, submitMove } = recorder();
+      const choice: UIPendingSeatChoice = {
+        kind,
+        addressedSeats: ['player-0'],
+        outstandingSeats: ['player-0'],
+        seatPrompts: {
+          'player-0': { options: [{ label: 'KO a Bystander from the Escape Pile' }, { label: "Don't Hunt for Victims" }] },
+        },
+      };
+      const wrapper = mount(PendingSeatChoicePrompt, {
+        props: { pendingSeatChoice: choice, viewerPlayerId: 'player-0', submitMove },
+      });
+      assert.equal(wrapper.find('.pending-seat-choice-prompt__heading').text(), heading);
+      assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-0"]').text(), 'KO a Bystander from the Escape Pile');
+      await wrapper.find('[data-testid="pending-seat-choice-option-1"]').trigger('click');
+      assert.deepEqual(calls, [{ name: 'resolveSeatChoice', args: { optionIndex: 1 } }]);
+    });
+  }
+});
+
+describe('PendingSeatChoicePrompt — WP-889 villain Hunt for Victims (D-24841)', () => {
+  test('the villain-hunt-for-victims kind shows its heading and its projected holder options', async () => {
+    const { calls, submitMove } = recorder();
+    const choice: UIPendingSeatChoice = {
+      kind: 'villain-hunt-for-victims',
+      addressedSeats: ['player-0'],
+      outstandingSeats: ['player-0'],
+      seatPrompts: {
+        'player-0': {
+          options: [{ label: 'KO a Bystander held by Hand Ninjas (Bank)' }, { label: 'KO a Bystander from the Escape Pile' }],
+        },
+      },
+    };
+    const wrapper = mount(PendingSeatChoicePrompt, {
+      props: { pendingSeatChoice: choice, viewerPlayerId: 'player-0', submitMove },
+    });
+    assert.equal(wrapper.find('.pending-seat-choice-prompt__heading').text(), "Hunt for Victims: choose which Bystander is KO'd");
+    assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-0"]').text(), 'KO a Bystander held by Hand Ninjas (Bank)');
+    assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-1"]').text(), 'KO a Bystander from the Escape Pile');
+    await wrapper.find('[data-testid="pending-seat-choice-option-0"]').trigger('click');
+    assert.deepEqual(calls, [{ name: 'resolveSeatChoice', args: { optionIndex: 0 } }]);
+  });
+});
+
+describe('PendingSeatChoicePrompt — WP-883 gain-wound-reward (D-24834)', () => {
+  test('the gain-wound-reward kind shows its heading and the two projected options', async () => {
+    const { calls, submitMove } = recorder();
+    const choice: UIPendingSeatChoice = {
+      kind: 'gain-wound-reward',
+      addressedSeats: ['player-0'],
+      outstandingSeats: ['player-0'],
+      seatPrompts: {
+        'player-0': { options: [{ label: 'Gain a Wound: you get +5 Attack' }, { label: "Don't gain a Wound" }] },
+      },
+    };
+    const wrapper = mount(PendingSeatChoicePrompt, {
+      props: { pendingSeatChoice: choice, viewerPlayerId: 'player-0', submitMove },
+    });
+    // why: WP-885 / D-24836 — the heading is reward-neutral now (amends D-24834 §5); the options name the reward.
+    assert.equal(wrapper.find('.pending-seat-choice-prompt__heading').text(), 'Gain a Wound?');
+    assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-0"]').text(), 'Gain a Wound: you get +5 Attack');
+    assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-1"]').text(), "Don't gain a Wound");
+    await wrapper.find('[data-testid="pending-seat-choice-option-0"]').trigger('click');
+    assert.deepEqual(calls, [{ name: 'resolveSeatChoice', args: { optionIndex: 0 } }]);
+  });
+});

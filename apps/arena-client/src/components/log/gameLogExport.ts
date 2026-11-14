@@ -3,19 +3,32 @@
  *
  * The engine log reaches the client as `UIState.log` — a `LogEntry[]` (WP-434) in
  * chronological (append) order. These helpers turn that array into a plain-text
- * transcript for the Copy (clipboard) and Save (`game-log.txt` download)
- * affordances on `GameLogPanel`. They are extracted from the component so the
+ * transcript for the Copy (clipboard) and Save (match-scoped `.txt` download)
+ * affordances on `GameLogPanel` and the endgame `GameLogDownloadButton`. They are extracted from the component so the
  * export payload is unit-testable without the clipboard / Blob browser APIs
  * (the WP-321 `gameLogScroll` testability precedent) — the DOM side effects
  * themselves are covered by the D-24026 live-verify.
  */
 
-// why: the plain-text download file name for the "Save" affordance; a fixed name
-// keeps the Save deterministic and avoids a wall-clock read (this is a human
-// transcript, not the timestamped JSON diagnostics export in DiagnosticExportButton).
 import type { LogEntry } from '@legendary-arena/game-engine';
 
-export const GAME_LOG_EXPORT_FILE_NAME = 'game-log.txt';
+/**
+ * Builds the download file name for a game-log transcript, mirroring the
+ * diagnostics export scheme (`legendary-arena-diagnostics-<match>-<ms>.json`) so
+ * a per-match archive keeps the log and diagnostics files side by side and two
+ * exports of the same setup never collide. An absent or empty match id becomes
+ * the literal `no-match`; `/` and `\` in the id are replaced with `-` so the
+ * name stays a single safe filename component (as `buildDiagnosticFileName`).
+ *
+ * @param matchId      The `?match=` id (already URL-decoded) or `null` when absent.
+ * @param capturedAtMs The single `Date.now()` read at click time.
+ * @returns The `.txt` file name.
+ */
+export function buildGameLogFileName(matchId: string | null, capturedAtMs: number): string {
+  const rawMatchSegment = matchId !== null && matchId !== '' ? matchId : 'no-match';
+  const safeMatchSegment = rawMatchSegment.replaceAll('/', '-').replaceAll('\\', '-');
+  return `legendary-arena-game-log-${safeMatchSegment}-${capturedAtMs}.txt`;
+}
 
 /**
  * Builds the plain-text transcript for the game log: one entry per line, in the

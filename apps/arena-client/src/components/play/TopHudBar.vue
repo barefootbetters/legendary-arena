@@ -206,6 +206,16 @@ export default defineComponent({
       <slot name="skin-selector">
         <SkinSelector />
       </slot>
+      <!-- why: WP-804 / D-24689 §3 — the public operator-match badge, for every
+           seat, so nobody mistakes an unscored operator match for a ranked one.
+           In the strip's flow (right end of the short second row) rather than a
+           fixed overlay: as a fixed chip below the header it sat on "Mastermind:"
+           wherever the board fills the width. -->
+      <span
+        v-if="snapshot.isDebugMatch === true"
+        class="top-hud-bar__operator-badge"
+        data-testid="operator-match-badge"
+      >Operator match — not scored</span>
     </div>
   </header>
 </template>
@@ -239,6 +249,19 @@ export default defineComponent({
 .top-hud-bar__end-game {
   margin-inline-start: auto;
   text-transform: none;
+}
+
+/* why: pushed to the far right of row 2, mirroring End Game on row 1, so it never
+   lengthens the left-aligned counters into a wrap (a wrap would grow the HUD and
+   shrink the fitted board). */
+.top-hud-bar__operator-badge {
+  margin-inline-start: auto;
+  padding: 0 0.5rem;
+  font-weight: 700;
+  color: var(--la-color-gold);
+  background: var(--la-color-surface);
+  border: 1px solid var(--la-color-border-strong);
+  border-radius: 0.4rem;
 }
 
 .top-hud-bar__stage {

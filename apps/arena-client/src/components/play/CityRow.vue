@@ -12,6 +12,7 @@ import { useCardCostGating, type GatingResult } from '../../composables/useCardC
 import { useTurnActions, healLockGate } from '../../composables/useTurnActions';
 import { useSlashGesture } from '../../composables/useSlashGesture';
 import { useSlashGestureSetting } from '../../composables/useSlashGestureSetting';
+import { useRowFit } from '../../composables/useRowFit';
 import CardTile from './CardTile.vue';
 import EscapedPile from './EscapedPile.vue';
 import DarkPortalMarker from './DarkPortalMarker.vue';
@@ -133,6 +134,14 @@ export default defineComponent({
       required: false,
       default: () => [],
     },
+    // why: WP-852 / D-24788 — the desktop board's straighten-on-hover. Only
+    // PlayDesktop sets it (from useBoardTilt's lift gate); every other use,
+    // PlayMobile included, keeps it false and renders the row exactly as before.
+    isTiltLiftEnabled: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   setup(props) {
     function buildCells(): CityCell[] {
@@ -198,7 +207,7 @@ export default defineComponent({
       if (!healLock.allowed) {
         return healLock;
       }
-      // why: WP-750 / D-24574 — gate on `fightCost`, which is resolveFightCost,
+      // why: WP-750 / D-24574 — gate on `fightCost`, which is resolveFightPrice (D-24802: Size-Changing included),
       // the same authority the fightVillain guard reads (captured Heroes, the
       // Dark-Portal space bonus, Killbot / Skrull overlays; Patrol / Guard are
       // unset per D-2504), never on the printed `display.cost`.
@@ -220,6 +229,13 @@ export default defineComponent({
           allowed: false,
           reason: `Needs a card that costs ${formatCostList(fightDiscardCosts)} to discard`,
         };
+      }
+      // why: WP-871 / D-24816 — the villain's printed fight restriction (Orrgo, Squirrel
+      // Girl, Doop) gates after the resource gates (stage → heal → cost → discard →
+      // restriction), per the EC-132 §3 order (resource before structural). The engine
+      // writes the reason only while the restriction blocks; the client never re-tests it.
+      if (cell.card.fightRestrictionReason !== undefined) {
+        return { allowed: false, reason: cell.card.fightRestrictionReason };
       }
       return cost;
     }
@@ -283,6 +299,29 @@ export default defineComponent({
         return false;
       }
       return eligibleDiscardCards(fightDiscardCosts).length === 0;
+    }
+
+    /**
+     * Whether the fight-restriction cue shows on a cell (WP-871 / D-24816).
+     *
+     * @param cell - The City cell.
+     * @returns True for a restricted villain in the viewer's Main stage with no heal lock.
+     */
+    function isFightRestricted(cell: CityCell): boolean {
+      // why (Jeff feedback, match OSth9-iV03C): a reason only in the tooltip is not
+      // enough. WP-871 / D-24816 — the restriction cue shows in the window where it
+      // explains a disabled Fight: the viewer's Main stage, no heal lock, and an
+      // engine-projected restriction reason.
+      if (cell.kind !== 'slot' || cell.card === null) {
+        return false;
+      }
+      if (cell.card.fightRestrictionReason === undefined) {
+        return false;
+      }
+      if (!useTurnActions(props.currentStage, props.isViewerTurn).canFightVillain().allowed) {
+        return false;
+      }
+      return healLockGate(props.hasHealedThisTurn).allowed;
     }
 
     function hasFightCostBadge(cell: CityCell): boolean {
@@ -460,6 +499,12 @@ export default defineComponent({
       isEnabled: isSlashGestureSettingOn,
     });
 
+    // why: WP-852 — the hover lift needs `overflow: visible` on the list, and a
+    // scroll container forces its subtree flat and clips it, so the lift is on
+    // only while the row fits without sideways scroll. A row that scrolls keeps
+    // its scrolling (the long-press slash depends on it) and its plain hover.
+    const isRowFitting = useRowFit(cityRowEl, () => props.city);
+
     return {
       buildCells,
       gateForCell,
@@ -467,6 +512,7 @@ export default defineComponent({
       isFightCostUnaffordable,
       discardCostCue,
       isFightDiscardUnpayable,
+      isFightRestricted,
       onFight,
       showEvFight,
       onFightEV,
@@ -482,6 +528,7 @@ export default defineComponent({
       isTouchGestureEnabled,
       isLongPressArmed,
       isLongPressHoldEnabled,
+      isRowFitting,
     };
   },
 });
@@ -490,7 +537,10 @@ export default defineComponent({
 <template>
   <section
     class="city-row"
-    :class="{ 'city-row--column-aligned': isColumnAligned }"
+    :class="{
+      'city-row--column-aligned': isColumnAligned,
+      'city-row--tilt-lift': isTiltLiftEnabled && isRowFitting,
+    }"
     data-testid="play-city-row"
     aria-label="City"
   >
@@ -516,9 +566,15 @@ export default defineComponent({
         v-for="(cell, position) in buildCells()"
         :key="position"
         class="city-space"
-        :class="cell.kind === 'slot' || cell.kind === 'gone' ? 'city-space--space-column' : 'city-space--edge-column'"
+        :class="[
+          cell.kind === 'slot' || cell.kind === 'gone' ? 'city-space--space-column' : 'city-space--edge-column',
+          { 'city-space--choosing': cell.kind === 'slot' && isDiscardChooserOpen(cell.cityIndex) },
+        ]"
       >
         <template v-if="cell.kind === 'escaped'">
+          <!-- why: D-24819 — a fortifying Villain is drawn on the place it fortifies
+               (SharedDecks / MastermindTile), never in this cell: a strip here stretched
+               the whole City row and shrank the scale-to-fit board. -->
           <EscapedPile :pile="cell.entries" />
         </template>
         <!-- why: WP-831 / D-24764 — a space a scheme removed from the City keeps its column (so the
@@ -605,6 +661,22 @@ export default defineComponent({
               }"
               data-testid="play-city-discard-cost"
             >{{ discardCostCue(cell.card.fightDiscardCosts) }}</span>
+            <!-- why: WP-871 / D-24816 — the fight-restriction cue (Orrgo, Squirrel Girl,
+                 Doop). The 80px desktop tile cannot hold the English reason, so the cue is
+                 the fixed short text and the full reason is its title (the Discard N
+                 precedent). Stacked above the Fight N badge when both show. -->
+            <span
+              v-if="isFightRestricted(cell)"
+              class="city-space__fight-restriction"
+              :class="{
+                'city-space__fight-restriction--stacked':
+                  hasFightCostBadge(cell) !== (cell.card.fightDiscardCosts !== undefined),
+                'city-space__fight-restriction--stacked-twice':
+                  hasFightCostBadge(cell) && cell.card.fightDiscardCosts !== undefined,
+              }"
+              data-testid="play-city-fight-restriction"
+              :title="cell.card.fightRestrictionReason"
+            >Can't fight yet</span>
           </button>
           <!-- why (Jeff feedback): the empty placeholder no longer prints the slot
                name inside it — the name is now the side label above. It stays a
@@ -922,6 +994,46 @@ export default defineComponent({
   }
 }
 
+/* why: WP-871 / D-24816 — the fight-restriction cue, shown only while it explains a
+   disabled Fight, so it is always loud: the discard cue's pill in its unpayable red,
+   ring and single pulse (Jeff feedback, match OSth9-iV03C). */
+.city-space__fight-restriction {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  width: max-content;
+  max-width: calc(100% - 6px);
+  padding: 0.05rem 0.35rem;
+  border-radius: 0.75rem;
+  background: #b91c1c;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9), 0 0 10px rgba(185, 28, 28, 0.85);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  pointer-events: none;
+  animation: city-space__fight-cost-pulse 700ms ease-out 1;
+}
+
+/* why: clears one pill below it (the Fight N badge or the Discard cue), including the
+   badge's larger loud state; --stacked-twice clears both. */
+.city-space__fight-restriction--stacked {
+  bottom: 1.45rem;
+}
+
+.city-space__fight-restriction--stacked-twice {
+  bottom: 2.85rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .city-space__fight-restriction {
+    animation: none;
+  }
+}
+
 /* why: WP-727 — the Dark Portal marker sits at the top of the space, centered,
    overlapping the cell. Kept inside the cell's top edge (not above it) so the
    `.city-spaces` overflow-x scroll container never clips it. */
@@ -1171,5 +1283,46 @@ export default defineComponent({
 
 .city-space__discard-option {
   font-weight: 700;
+}
+
+/* why: WP-852 / D-24788 — the board-card straighten-on-hover. Pointer devices
+   only, and only under --tilt-lift (the lift gate AND a row that fits: a scroll
+   container forces its subtree flat and clips, so the list's overflow turns
+   visible here and nowhere else). Every link from the tilted plane down to the
+   button preserves 3D, or the card would rise but stay tilted. The links are on
+   only while a liftable card is hovered: at rest, coplanar preserve-3d layers
+   z-fight in Chrome's hit test and steal clicks from resting cards (WP-852 EC
+   amendment A). */
+@media (hover: hover) {
+  .city-row--tilt-lift:has(.city-space:not(.city-space--choosing):hover > .city-space__villain),
+  .city-row--tilt-lift:has(.city-space:not(.city-space--choosing):hover > .city-space__villain) .city-spaces,
+  .city-row--tilt-lift:has(.city-space:not(.city-space--choosing):hover > .city-space__villain) .city-space,
+  .city-row--tilt-lift:has(.city-space:not(.city-space--choosing):hover > .city-space__villain) .city-space__villain {
+    transform-style: preserve-3d;
+  }
+  .city-row--tilt-lift .city-spaces {
+    overflow: visible;
+  }
+  /* why: the bottom-edge origin makes the card rise off the table rather than
+     into it, and keeps that edge put, so every point of the resting card stays
+     under the lifted one (no dead click strip; hence no translateY). */
+  .city-row--tilt-lift .city-space__villain {
+    transform-origin: 50% 100%;
+    transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+  }
+  /* why: the hover sits on the li, which keeps its box, while the transform
+     moves the button; hovering the button itself would flicker as it moves out
+     from under the pointer. :not(.city-space--choosing) — inside a preserve-3d
+     context depth order beats z-index, so a raised card would paint over the
+     open WP-817 discard chooser that shares its li. */
+  .city-row--tilt-lift .city-space:not(.city-space--choosing):hover > .city-space__villain {
+    transform: rotateX(calc(-1 * var(--board-tilt-angle))) scale(1.06);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  }
+  /* why: the tile's own 1.05 hover scale would compound with the lift; inside a
+     lifting row the lifted card is exactly 1.06. */
+  .city-row--tilt-lift .card-tile--interactive:hover {
+    transform: none;
+  }
 }
 </style>

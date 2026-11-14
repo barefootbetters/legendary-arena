@@ -2,7 +2,7 @@
 import { computed, defineComponent } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useUiStateStore } from '../stores/uiState';
-import { buildGameLogText } from './log/gameLogExport';
+import { buildGameLogFileName, buildGameLogText } from './log/gameLogExport';
 import { downloadTextFile } from '../lib/downloadTextFile';
 import { useBuildProvenanceStore } from '../stores/buildProvenance';
 import { formatProvenanceHeaderLines } from '../diagnostics/buildProvenance';
@@ -43,20 +43,14 @@ export default defineComponent({
     });
 
     /**
-     * Builds a match-scoped file name mirroring the diagnostics export scheme
-     * (`legendary-arena-diagnostics-<match>-<ts>.json`) so a player's per-match
-     * archive keeps the log and diagnostics files side by side.
+     * Builds the match-scoped file name from the `?match=` URL param at the
+     * export moment.
      */
     function buildFileName(): string {
       const matchId = new URLSearchParams(window.location.search).get('match');
-      const rawMatchSegment = matchId !== null && matchId !== '' ? matchId : 'no-match';
-      // why: a match id can carry '/' or '\' (set-qualified ids); strip them so
-      // the value is a safe single file-name segment, exactly as
-      // buildDiagnosticFileName does.
-      const safeMatchSegment = rawMatchSegment.replaceAll('/', '-').replaceAll('\\', '-');
       // why: Date.now() is a client-layer file-name stamp for the export moment,
       // outside the engine determinism boundary (mirrors the diagnostics export).
-      return `legendary-arena-game-log-${safeMatchSegment}-${Date.now()}.txt`;
+      return buildGameLogFileName(matchId, Date.now());
     }
 
     function onDownloadGameLog(): void {

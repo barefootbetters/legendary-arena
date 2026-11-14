@@ -25,8 +25,10 @@
 
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
-import { getAvailableRecruit, markSidekickRecruited, recordSidekickReturned, spendRecruit } from '../economy/economy.logic.js';
+import { getAvailableRecruit, markSidekickRecruited, recordRecruitedHeroCost, recordSidekickReturned, spendRecruit } from '../economy/economy.logic.js';
+import { matchHasRecruitedHeroRitual } from './ritualArtifact.js';
 import { SIDEKICK_EXT_ID } from '../setup/pilesInit.js';
+import { isSidekickStackFortified } from '../board/fortify.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { drawCardsIntoHand } from './drawCards.logic.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
@@ -92,6 +94,12 @@ export const SIDEKICK_RETURN_DRAW_COUNT = 2;
  * @param context - boardgame.io move context with G, ctx.
  */
 export function recruitSidekick({ G, ctx }: MoveContext): void {
+  // why: WP-873 / D-24818 — while a Villain fortifies the Sidekick Stack (Squirrel Girl),
+  // "Sidekicks can't be recruited or gained": a silent board-state return before any write,
+  // like the Haunt lock. isSidekickStackFortified is the single predicate.
+  if (isSidekickStackFortified(G)) {
+    return;
+  }
   // Step 1: Validate — the Sidekick Stack must be non-empty.
   // why: an exhausted Stack is a silent no-op, never a throw — the deterministic
   // move contract. pile[0] is the top card (the locked supply-pile convention
@@ -182,6 +190,12 @@ export function recruitSidekick({ G, ctx }: MoveContext): void {
   G.piles.sidekicks = G.piles.sidekicks.slice(1);
   zones.discard = [...zones.discard, sidekickId];
   G.turnEconomy = markSidekickRecruited(spendRecruit(G.turnEconomy, requiredCost));
+  // why: WP-858 / D-24794 — record the recruited Hero's printed cost for Staff of Legba's Ritual
+  // ("If you recruited a Hero … +Attack equal to that Hero's cost"), only in a match whose hooks
+  // carry ritual-recruited-hero, so no other match's turnEconomy gains the field (no hash surface).
+  if (matchHasRecruitedHeroRitual(G)) {
+    G.turnEconomy = recordRecruitedHeroCost(G.turnEconomy, requiredCost);
+  }
   G.hasActedThisTurn = true;
 
   // why: replay-visible log line; the format is locked at this site (D-24776; never

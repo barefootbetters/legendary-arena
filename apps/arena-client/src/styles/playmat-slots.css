@@ -195,6 +195,13 @@
   padding: 0.25rem 0.4rem !important;
 }
 
+/* why: on the desktop board the Officers and Sidekicks panels show only their
+   card (SharedDecks --card-face), so the card fills the panel; the button keeps
+   a thin inset so its corners stay inside the rounded frame. */
+.play-viewport .play-desktop__stage .shared-decks--card-face .shared-decks__cell:has(> .shared-decks__recruit) {
+  padding: 0 !important;
+}
+
 .play-viewport .play-desktop__stage .top-hud-bar,
 .play-viewport .play-desktop__stage .turn-action-bar,
 .play-viewport .play-desktop__stage .economy-bar,

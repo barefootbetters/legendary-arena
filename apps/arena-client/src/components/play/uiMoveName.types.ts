@@ -58,6 +58,10 @@ export type UiMoveName =
   // viewer's discard, once per turn. Dispatched with an empty payload; the engine
   // move takes no arguments (all Sidekicks are identical tokens).
   | 'recruitSidekick'
+  // why: WP-759 / D-24587 — pays a Haunted HQ Hero's cost, then KOs it or gives it to a
+  // chosen player. Payload `{ hqIndex, outcome: 'ko' }` or `{ hqIndex, outcome: 'gain',
+  // recipientPlayerId }`; the engine (exorciseHauntedHero) validates and decides.
+  | 'exorciseHauntedHero'
   | 'fightMastermind'
   | 'resolveHeroChoice'
   | 'resolveKoHeroChoice'
@@ -148,6 +152,14 @@ export type UiMoveName =
   // why: WP-783 / D-24629 — surfaces the Phasing hand swap (engine phaseCard). Dispatched as
   // { cardId } from the Phase button on a phasable hand card; the engine decides legality.
   | 'phaseCard'
+  // why: WP-858 / D-24794 — surfaces the Ritual Artifact use (engine useRitualArtifact). Dispatched
+  // as { cardId } from the Use button on a played or controlled Ritual Artifact listed in
+  // economy.ritualArtifactOptions; the engine decides legality.
+  | 'useRitualArtifact'
+  // why: WP-865 / D-24808 — surfaces the once-per-turn Heist attempt (engine attemptHeist).
+  // Dispatched with no payload from the Attempt Heist button, shown only while
+  // economy.heistAvailable is set; the engine decides legality.
+  | 'attemptHeist'
   // why: WP-502 / D-24306 — surfaces the "End Game" control (engine endMatchEarly).
   // Dispatched with an empty payload; the move takes no arguments. Latches the
   // MATCH_ENDED_EARLY endgame counter so the match ends for every seat.

@@ -495,3 +495,346 @@ describe('WP-821 resolveSeatChoice — Arnim Zola kinds and the Crush chain (D-2
     assert.deepEqual(genius.playerZones['2']!.discard, ['card-b'], 'seat 2 discards its pick');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-758 / D-24588 — Zarathos's seat-choice applies and the Demonic Essence chain
+// ---------------------------------------------------------------------------
+
+import {
+  buildZarathosCorruptedSpiritChoice,
+  buildZarathosDemonicEssenceChoice,
+  buildZarathosDiscardDownChoice,
+  buildZarathosEruptionChoice,
+  buildZarathosImprisonChoice,
+  ZARATHOS_CORRUPTED_SPIRIT_DISCARD_DOWN_KIND,
+  ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND,
+  ZARATHOS_DEMONIC_ESSENCE_LAST_KIND,
+} from './seatChoiceTactics.js';
+import { selectDiscardToLimitCards } from '../rules/mastermindHandlers.js';
+import { openNonActiveReturnOnDiscardSeatChoiceIfNeeded } from './resolveReturnOnDiscard.js';
+
+const ZARATHOS_WOUND = 'pile-wound';
+
+/**
+ * Builds a Zarathos resolve state: per-seat zones, a Wound supply, and the stats /
+ * traits / names / Villain types / VP of the test cards.
+ *
+ * @param zonesBySeat - Each seat's deck / hand / inPlay / victory.
+ * @param wounds - The Wound supply size.
+ * @returns A LegendaryGameState carrying only the fields the resolve paths read.
+ */
+function makeZarathosResolveState(
+  zonesBySeat: Record<string, { deck?: string[]; hand?: string[]; inPlay?: string[]; victory?: string[] }>,
+  wounds = 5,
+): LegendaryGameState {
+  const playerZones: Record<string, unknown> = {};
+  for (const seat of Object.keys(zonesBySeat)) {
+    const zones = zonesBySeat[seat]!;
+    playerZones[seat] = {
+      deck: [...(zones.deck ?? [])],
+      hand: [...(zones.hand ?? [])],
+      discard: [],
+      inPlay: [...(zones.inPlay ?? [])],
+      victory: [...(zones.victory ?? [])],
+    };
+  }
+  const woundPile: string[] = [];
+  for (let index = 0; index < wounds; index++) {
+    woundPile.push(ZARATHOS_WOUND);
+  }
+  return {
+    playerZones,
+    piles: { bystanders: [], wounds: woundPile },
+    ko: [],
+    messages: [],
+    mastermind: { tacticsDefeated: [], baseCardId: 'mdns-mastermind-zarathos-zarathos' },
+    turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0, cardsDrawn: 0 },
+    villainDeckCardTypes: { villainA: 'villain', villainNoVp: 'villain' },
+    cardVictoryPoints: { villainA: 2 },
+    cardStats: {
+      covertHero: { attack: 1, cost: 3 },
+      instinctHero: { attack: 1, cost: 4 },
+      strengthHero: { attack: 1, cost: 4 },
+      rangedHero: { attack: 1, cost: 4 },
+      filler: { attack: 0, cost: 0 },
+    },
+    cardTraits: {
+      covertHero: { heroClass: 'covert', team: null },
+      instinctHero: { heroClass: 'instinct', team: null },
+      strengthHero: { heroClass: 'strength', team: null },
+      rangedHero: { heroClass: 'ranged', team: null },
+    },
+    cardDisplayData: {
+      covertHero: { name: 'Covert Hero' },
+      strengthHero: { name: 'Strength Hero' },
+      rangedHero: { name: 'Ranged Hero' },
+      villainA: { name: 'Villain A' },
+    },
+  } as unknown as LegendaryGameState;
+}
+
+/** A resolveSeatChoice context for `playerID`, with seat 0 active and a real Shuffle. */
+function makeZarathosResolveContext(
+  G: LegendaryGameState,
+  playerID: string,
+): Parameters<typeof resolveSeatChoice>[0] {
+  return {
+    G,
+    playerID,
+    ctx: { currentPlayer: '0', playOrder: Object.keys(G.playerZones) },
+    events: {},
+    random: { Shuffle: <T,>(items: T[]): T[] => [...items] },
+    log: {},
+  } as unknown as Parameters<typeof resolveSeatChoice>[0];
+}
+
+describe('WP-758 resolveSeatChoice — Zarathos kinds (D-24588)', () => {
+  it('Eruption applies in ascending seat order: a discard, then a Wound', () => {
+    const G = makeZarathosResolveState({ '0': {}, '1': { hand: ['covertHero'] }, '2': { hand: ['rangedHero'] } });
+    G.pendingSeatChoice = buildZarathosEruptionChoice(G, ['1', '2'], ['covert', 'ranged']);
+    resolveSeatChoice(makeZarathosResolveContext(G, '2'), { optionIndex: 1 });
+    resolveSeatChoice(makeZarathosResolveContext(G, '1'), { optionIndex: 0 });
+    assert.equal(G.pendingSeatChoice, undefined);
+    assert.deepEqual(G.playerZones['1']!.discard, ['covertHero']);
+    assert.deepEqual(G.playerZones['2']!.hand, ['rangedHero'], 'seat 2 chose the Wound and keeps its Hero');
+    assert.deepEqual(G.playerZones['2']!.discard, [ZARATHOS_WOUND]);
+  });
+
+  it('Eruption: when the supply runs dry mid-apply, the later seat gets a logged no-op (accepted residual)', () => {
+    const G = makeZarathosResolveState({ '0': {}, '1': { hand: ['covertHero'] }, '2': { hand: ['rangedHero'] } }, 1);
+    G.pendingSeatChoice = buildZarathosEruptionChoice(G, ['1', '2'], ['covert', 'ranged']);
+    resolveSeatChoice(makeZarathosResolveContext(G, '1'), { optionIndex: 1 });
+    resolveSeatChoice(makeZarathosResolveContext(G, '2'), { optionIndex: 1 });
+    assert.deepEqual(G.playerZones['1']!.discard, [ZARATHOS_WOUND], 'seat 1 (ascending first) gets the last Wound');
+    assert.deepEqual(G.playerZones['2']!.discard, []);
+    assert.ok(G.messages.some((entry) => typeof entry !== 'string' && entry.text === 'Player 2 gained no Wound — the Wound supply is empty (Eruption of Hellfire).'));
+  });
+
+  it('Corrupted Spirit "Discard down to 3 cards" discards nothing at once and parks the discard-down round (WP-882 / D-24833)', () => {
+    const G = makeZarathosResolveState({ '0': {}, '1': { hand: ['covertHero', 'filler', 'instinctHero', 'filler', 'filler'] } });
+    G.pendingSeatChoice = buildZarathosCorruptedSpiritChoice(G, ['1'], ['instinct', 'covert']);
+    const downIndex = G.pendingSeatChoice!.seatPrompts['1']!.options.length - 1;
+    resolveSeatChoice(makeZarathosResolveContext(G, '1'), { optionIndex: downIndex });
+    assert.equal(G.playerZones['1']!.hand.length, 5, 'no card leaves the hand before the seat picks it');
+    assert.deepEqual(G.playerZones['1']!.discard, []);
+    assert.equal(G.pendingSeatChoice?.kind, ZARATHOS_CORRUPTED_SPIRIT_DISCARD_DOWN_KIND);
+    assert.deepEqual(G.pendingSeatChoice!.addressedSeats, ['1']);
+    assert.ok(G.messages.some((entry) => typeof entry !== 'string' && entry.text === 'Player 1 chose to discard down to 3 cards (Corrupted Spirit of Vengeance).'));
+  });
+
+  it('Imprison KO moves the Villain to the KO pile and draws its VP, counted in cardsDrawn', () => {
+    const G = makeZarathosResolveState({ '0': { deck: ['d1', 'd2', 'd3'], victory: ['villainA', 'villainNoVp'] } });
+    G.pendingSeatChoice = buildZarathosImprisonChoice(G, '0');
+    resolveSeatChoice(makeZarathosResolveContext(G, '0'), { optionIndex: 0 });
+    assert.deepEqual(G.playerZones['0']!.victory, ['villainNoVp']);
+    assert.deepEqual(G.ko, ['villainA']);
+    assert.deepEqual(G.playerZones['0']!.hand, ['d1', 'd2'], 'printed VP 2 → two cards');
+    assert.equal(G.turnEconomy.cardsDrawn, 2, 'D-24732');
+  });
+
+  it('Imprison on a Villain with no printed VP draws VP_VILLAIN (1), mirroring scoring', () => {
+    const G = makeZarathosResolveState({ '0': { deck: ['d1', 'd2'], victory: ['villainNoVp'] } });
+    G.pendingSeatChoice = buildZarathosImprisonChoice(G, '0');
+    assert.equal(G.pendingSeatChoice!.seatPrompts['0']!.options[0]!.label, 'KO villainNoVp — draw 1');
+    resolveSeatChoice(makeZarathosResolveContext(G, '0'), { optionIndex: 0 });
+    assert.deepEqual(G.playerZones['0']!.hand, ['d1']);
+  });
+
+  it('Imprison "Don\'t KO" changes no zone', () => {
+    const G = makeZarathosResolveState({ '0': { deck: ['d1'], victory: ['villainA'] } });
+    G.pendingSeatChoice = buildZarathosImprisonChoice(G, '0');
+    resolveSeatChoice(makeZarathosResolveContext(G, '0'), { optionIndex: 1 });
+    assert.deepEqual(G.playerZones['0']!.victory, ['villainA']);
+    assert.deepEqual(G.playerZones['0']!.hand, []);
+    assert.deepEqual(G.ko, []);
+  });
+
+  it('Demonic Essence first pick chains the last pick after a KO, built from the current zones', () => {
+    const G = makeZarathosResolveState({ '0': { hand: ['rangedHero', 'covertHero'], inPlay: ['strengthHero'] } });
+    G.pendingSeatChoice = buildZarathosDemonicEssenceChoice(G, '0', ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND);
+    resolveSeatChoice(makeZarathosResolveContext(G, '0'), { optionIndex: 0 });
+    assert.deepEqual(G.ko, ['rangedHero']);
+    assert.equal(G.pendingSeatChoice?.kind, ZARATHOS_DEMONIC_ESSENCE_LAST_KIND);
+    assert.deepEqual(
+      G.pendingSeatChoice!.seatPrompts['0']!.options.map((option) => option.label),
+      ['KO Covert Hero from their hand', 'KO Strength Hero from the cards they played this turn', "Don't KO"],
+    );
+  });
+
+  it('Demonic Essence first pick chains the last pick after a decline too', () => {
+    const G = makeZarathosResolveState({ '0': { hand: ['rangedHero'], inPlay: ['strengthHero'] } });
+    G.pendingSeatChoice = buildZarathosDemonicEssenceChoice(G, '0', ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND);
+    resolveSeatChoice(makeZarathosResolveContext(G, '0'), { optionIndex: 2 });
+    assert.deepEqual(G.ko, []);
+    assert.equal(G.pendingSeatChoice?.kind, ZARATHOS_DEMONIC_ESSENCE_LAST_KIND);
+  });
+
+  it('Demonic Essence: KOing the only Strength Hero with the first pick ends the effect (no last pick)', () => {
+    const G = makeZarathosResolveState({ '0': { hand: ['rangedHero'], inPlay: ['strengthHero'] } });
+    G.pendingSeatChoice = buildZarathosDemonicEssenceChoice(G, '0', ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND);
+    resolveSeatChoice(makeZarathosResolveContext(G, '0'), { optionIndex: 1 });
+    assert.deepEqual(G.ko, ['strengthHero']);
+    assert.deepEqual(G.playerZones['0']!.inPlay, []);
+    assert.equal(G.pendingSeatChoice, undefined, 'the second sentence\'s condition is read when it resolves');
+  });
+
+  it('Demonic Essence: the last pick never chains, and a timed-out first pick does not chain', () => {
+    const last = makeZarathosResolveState({ '0': { hand: ['rangedHero', 'strengthHero'] } });
+    last.pendingSeatChoice = buildZarathosDemonicEssenceChoice(last, '0', ZARATHOS_DEMONIC_ESSENCE_LAST_KIND);
+    resolveSeatChoice(makeZarathosResolveContext(last, '0'), { optionIndex: 0 });
+    assert.equal(last.pendingSeatChoice, undefined);
+
+    const timedOut = makeZarathosResolveState({ '0': { hand: ['rangedHero', 'strengthHero'] } });
+    timedOut.pendingSeatChoice = buildZarathosDemonicEssenceChoice(timedOut, '0', ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND);
+    applySeatChoiceTimeoutDefault(timedOut, ['0']);
+    assert.equal(timedOut.pendingSeatChoice, undefined, 'the timeout path does not chain (D-24501)');
+    assert.deepEqual(timedOut.ko, [], 'the default is the decline');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-882 / D-24833 — Corrupted Spirit's discard-down rounds, re-chained in resolveSeatChoice
+// ---------------------------------------------------------------------------
+
+/** A stub events surface that records each setActivePlayers stage ride. */
+function makeRecordingEvents(): { setActivePlayers: (arg: unknown) => void; admitted: unknown[] } {
+  const admitted: unknown[] = [];
+  return { admitted, setActivePlayers: (arg: unknown) => admitted.push(arg) };
+}
+
+/** A resolveSeatChoice context for `playerID` whose events record every stage ride. */
+function makeRecordingContext(
+  G: LegendaryGameState,
+  playerID: string,
+  events: { setActivePlayers: (arg: unknown) => void },
+): Parameters<typeof resolveSeatChoice>[0] {
+  return {
+    G,
+    playerID,
+    ctx: { currentPlayer: '0', playOrder: Object.keys(G.playerZones) },
+    events,
+    random: { Shuffle: <T,>(items: T[]): T[] => [...items] },
+    log: {},
+  } as unknown as Parameters<typeof resolveSeatChoice>[0];
+}
+
+/** The texts of G.messages, in order. */
+function messageTexts(G: LegendaryGameState): string[] {
+  const texts: string[] = [];
+  for (const entry of G.messages) {
+    texts.push(typeof entry === 'string' ? entry : entry.text);
+  }
+  return texts;
+}
+
+/** The stage-ride argument parkSeatChoice passes for exactly `seats`. */
+function expectedRide(seats: string[]): unknown {
+  const value: Record<string, unknown> = {};
+  for (const seat of seats) {
+    value[seat] = { stage: SEAT_CHOICE_STAGE, moveLimit: 1 };
+  }
+  return { value, revert: true };
+}
+
+describe('WP-882 resolveSeatChoice — Corrupted Spirit discard-down rounds (D-24833)', () => {
+  it('two owing seats with 5 and 6 cards: rounds 1-2 address both, round 3 only the 6-card seat, then nothing parks; each re-chain rides exactly the seats still above 3', () => {
+    const G = makeZarathosResolveState({
+      '0': {},
+      '1': { hand: ['filler', 'covertHero', 'filler', 'instinctHero', 'filler'] },
+      '2': { hand: ['filler', 'filler', 'covertHero', 'filler', 'instinctHero', 'filler'] },
+    });
+    G.pendingSeatChoice = buildZarathosDiscardDownChoice(G, ['2', '1']);
+    const events = makeRecordingEvents();
+    assert.deepEqual(G.pendingSeatChoice!.addressedSeats, ['1', '2']);
+
+    // Round 1: seat 2 answers first; the apply still runs in ascending seat order.
+    resolveSeatChoice(makeRecordingContext(G, '2', events), { optionIndex: 0 });
+    resolveSeatChoice(makeRecordingContext(G, '1', events), { optionIndex: 0 });
+    assert.deepEqual(G.pendingSeatChoice?.addressedSeats, ['1', '2'], 'round 2 addresses both');
+    assert.deepEqual(events.admitted, [expectedRide(['1', '2'])]);
+
+    resolveSeatChoice(makeRecordingContext(G, '2', events), { optionIndex: 0 });
+    resolveSeatChoice(makeRecordingContext(G, '1', events), { optionIndex: 0 });
+    assert.equal(G.playerZones['1']!.hand.length, 3);
+    assert.deepEqual(G.pendingSeatChoice?.addressedSeats, ['2'], 'round 3 addresses only the 6-card seat');
+    assert.deepEqual(events.admitted, [expectedRide(['1', '2']), expectedRide(['2'])]);
+
+    resolveSeatChoice(makeRecordingContext(G, '2', events), { optionIndex: 0 });
+    assert.equal(G.pendingSeatChoice, undefined, 'the chain ends once every seat holds 3');
+    assert.equal(G.playerZones['2']!.hand.length, 3);
+    assert.equal(events.admitted.length, 2, 'no ride follows the last round');
+
+    const discardLines = messageTexts(G).filter((text) => text.endsWith('(Corrupted Spirit of Vengeance).'));
+    assert.deepEqual(discardLines, [
+      'Player 1 discarded filler (Corrupted Spirit of Vengeance).',
+      'Player 2 discarded filler (Corrupted Spirit of Vengeance).',
+      'Player 1 discarded filler (Corrupted Spirit of Vengeance).',
+      'Player 2 discarded filler (Corrupted Spirit of Vengeance).',
+      'Player 2 discarded filler (Corrupted Spirit of Vengeance).',
+    ], 'ascending seat order within each round, whatever order the seats answered in');
+  });
+
+  it('parity: answered at defaultOptionIndex every round, the discards equal selectDiscardToLimitCards in set and order', () => {
+    const originalHand = ['instinctHero', 'covertHero', ZARATHOS_WOUND, 'covertHero', 'filler', 'strengthHero', 'filler'];
+    const G = makeZarathosResolveState({ '0': {}, '1': { hand: originalHand } });
+    const expected = selectDiscardToLimitCards(G, originalHand, originalHand.length - 3);
+    assert.deepEqual(expected, [ZARATHOS_WOUND, 'filler', 'filler', 'covertHero'], 'the fixture exercises a Wound, duplicates and a cost tie');
+    G.pendingSeatChoice = buildZarathosDiscardDownChoice(G, ['1']);
+    let rounds = 0;
+    while (G.pendingSeatChoice !== undefined && rounds < 10) {
+      resolveSeatChoice(makeZarathosResolveContext(G, '1'), { optionIndex: G.pendingSeatChoice.defaultOptionIndex });
+      rounds += 1;
+    }
+    assert.equal(rounds, 4);
+    assert.deepEqual(G.playerZones['1']!.discard, expected);
+    assert.deepEqual(G.playerZones['1']!.hand, ['instinctHero', 'covertHero', 'strengthHero']);
+  });
+
+  it('a forced seat joins round 1 with a seat that chose discard-down; a Hero-discarder still holding 4 cards does not', () => {
+    const G = makeZarathosResolveState({
+      '0': {},
+      '1': { hand: ['covertHero', 'filler', 'filler', 'filler', 'filler'] },
+      '2': { hand: ['instinctHero', 'filler', 'filler', 'filler', 'filler'] },
+      '3': { hand: ['filler', 'filler', 'filler', 'filler'] },
+    });
+    G.pendingSeatChoice = buildZarathosCorruptedSpiritChoice(G, ['1', '2'], ['instinct', 'covert'], ['3']);
+    assert.deepEqual(G.pendingSeatChoice!.zarathosDiscardDownSeats, ['3']);
+    resolveSeatChoice(makeZarathosResolveContext(G, '1'), { optionIndex: 0 });
+    resolveSeatChoice(makeZarathosResolveContext(G, '2'), { optionIndex: 1 });
+    assert.deepEqual(G.playerZones['1']!.discard, ['covertHero']);
+    assert.equal(G.playerZones['1']!.hand.length, 4, 'seat 1 discarded its Hero and still holds 4');
+    assert.equal(G.pendingSeatChoice?.kind, ZARATHOS_CORRUPTED_SPIRIT_DISCARD_DOWN_KIND);
+    assert.deepEqual(G.pendingSeatChoice!.addressedSeats, ['2', '3']);
+  });
+
+  it('a return-on-discard card discarded in round 1 queues; round 2 still parks, and the return opens only after the chain ends', () => {
+    const G = makeZarathosResolveState({ '0': {}, '1': { hand: ['echo', 'filler', 'covertHero', 'instinctHero', 'strengthHero'] } });
+    (G as unknown as { heroAbilityHooks: unknown[] }).heroAbilityHooks = [
+      { cardId: 'echo', timing: 'onDiscard', keywords: ['return-on-discard'] },
+    ];
+    (G as unknown as { counters: Record<string, number> }).counters = {};
+    G.pendingSeatChoice = buildZarathosDiscardDownChoice(G, ['1']);
+    const echoIndex = G.pendingSeatChoice!.seatPrompts['1']!.options.findIndex((option) => option.cardId === 'echo');
+    resolveSeatChoice(makeZarathosResolveContext(G, '1'), { optionIndex: echoIndex });
+    assert.deepEqual(G.pendingReturnOnDiscard, [{ playerID: '1', cardId: 'echo' }]);
+    assert.equal(G.pendingSeatChoice?.kind, ZARATHOS_CORRUPTED_SPIRIT_DISCARD_DOWN_KIND, 'round 2 parks');
+
+    openNonActiveReturnOnDiscardSeatChoiceIfNeeded(G, undefined, '0');
+    assert.equal(G.pendingSeatChoice?.kind, ZARATHOS_CORRUPTED_SPIRIT_DISCARD_DOWN_KIND, 'the return waits while a round is open');
+
+    resolveSeatChoice(makeZarathosResolveContext(G, '1'), { optionIndex: 0 });
+    assert.equal(G.pendingSeatChoice, undefined, 'the chain ended');
+    openNonActiveReturnOnDiscardSeatChoiceIfNeeded(G, undefined, '0');
+    assert.equal(G.pendingSeatChoice?.kind, 'return-on-discard');
+    assert.deepEqual(G.pendingSeatChoice!.addressedSeats, ['1']);
+  });
+
+  it('applySeatChoiceTimeoutDefault on a discard-down round discards option 0 and does not chain (D-24501)', () => {
+    const G = makeZarathosResolveState({ '0': {}, '1': { hand: ['covertHero', 'filler', 'instinctHero', 'filler', 'filler'] } });
+    G.pendingSeatChoice = buildZarathosDiscardDownChoice(G, ['1']);
+    applySeatChoiceTimeoutDefault(G, ['1']);
+    assert.deepEqual(G.playerZones['1']!.discard, ['filler']);
+    assert.equal(G.playerZones['1']!.hand.length, 4);
+    assert.equal(G.pendingSeatChoice, undefined);
+  });
+});

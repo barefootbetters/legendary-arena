@@ -11,6 +11,7 @@ import ViewLoadoutButton from '../components/ViewLoadoutButton.vue';
 import WaitingForPlayersPanel from '../components/WaitingForPlayersPanel.vue';
 import BattlePlanPanel from '../components/BattlePlanPanel.vue';
 import BattleBrief from '../components/play/BattleBrief.vue';
+import type { LoadoutSummary } from '../lib/loadoutSummary';
 import HollowEffectsPanel from '../components/play/HollowEffectsPanel.vue';
 import DeckProbabilityPanel from '../components/play/DeckProbabilityPanel.vue';
 import AudioControls from '../components/play/AudioControls.vue';
@@ -18,6 +19,7 @@ import VfxOverlay from '../components/play/VfxOverlay.vue';
 import PlaymatBackground from '../components/play/PlaymatBackground.vue';
 import BotAllyStallBanner from '../components/BotAllyStallBanner.vue';
 import UpdateAvailableBanner from '../components/UpdateAvailableBanner.vue';
+import OutdatedMatchNotice from '../components/OutdatedMatchNotice.vue';
 import EndgameActions from '../components/play/EndgameActions.vue';
 import FinalTurnBanner from '../components/hud/FinalTurnBanner.vue';
 import { useViewport } from '../composables/useViewport';
@@ -154,7 +156,7 @@ export function computeCasualCoachMatchId(
  */
 export default defineComponent({
   name: 'PlayViewport',
-  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, GameLogDownloadButton, GameLogCopyButton, ViewLoadoutButton, WaitingForPlayersPanel, BattlePlanPanel, BattleBrief, HollowEffectsPanel, DeckProbabilityPanel, AudioControls, VfxOverlay, PlaymatBackground, BotAllyStallBanner, UpdateAvailableBanner, EndgameActions, FinalTurnBanner, OperatorBoardPanel },
+  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, GameLogDownloadButton, GameLogCopyButton, ViewLoadoutButton, WaitingForPlayersPanel, BattlePlanPanel, BattleBrief, HollowEffectsPanel, DeckProbabilityPanel, AudioControls, VfxOverlay, PlaymatBackground, BotAllyStallBanner, UpdateAvailableBanner, OutdatedMatchNotice, EndgameActions, FinalTurnBanner, OperatorBoardPanel },
   props: {
     submitMove: {
       type: Function as PropType<SubmitMove>,
@@ -175,6 +177,22 @@ export default defineComponent({
     playerId: {
       type: String,
       default: '',
+    },
+    // why: WP-894 follow-up — forwarded to <BattleBrief> only. The offline page
+    // passes the lineup built from its setup bundle (no server to read the match
+    // LAGN from); every other mount leaves it null and the brief fetches as before.
+    providedLineup: {
+      type: Object as PropType<LoadoutSummary | null>,
+      default: null,
+    },
+    // why: WP-894 follow-up (D-24851) — a host whose lobby is not `/` passes its
+    // own return. The offline page's service worker is scoped to `/offline/`, so
+    // `/` is outside it and an offline "Back to Lobby" landed on the browser's
+    // error page. Every other mount leaves it null and navigates to `/` as before.
+    // `[Function, null]` per the WP-807 OperatorBoardPanel note (a bare cast is TS2352).
+    onReturnToLobby: {
+      type: [Function, null] as PropType<(() => void) | null>,
+      default: null,
     },
     villainGroupIds: {
       type: Array as PropType<string[]>,
@@ -394,8 +412,13 @@ export default defineComponent({
     // why: the stall escape is a NON-DESTRUCTIVE, client-only navigation — it
     // returns to the lobby (the default route, reached by clearing the live
     // `?match=` params) and calls NO server endpoint; the server-side match is
-    // never abandoned from here.
+    // never abandoned from here. A host-supplied return (the offline page) runs
+    // instead, so the player stays inside that host's own surface.
     function returnToLobby(): void {
+      if (props.onReturnToLobby !== null) {
+        props.onReturnToLobby();
+        return;
+      }
       window.location.assign('/');
     }
 
@@ -436,6 +459,22 @@ export default defineComponent({
     );
     const isEndedEarly = computed<boolean>(
       () => endgameSnapshot.value?.gameOver?.endedEarly === true,
+    );
+
+    // why: a match created before the running server booted keeps the card rules
+    // of its setup build (hero hooks are built once at Game.setup), so a player
+    // verifying a just-shipped rule in it sees the old behaviour. This reads the
+    // SAME build-provenance flag the game-log header and diagnostics export carry
+    // (loaded above, refreshed after each reconnect, so a mid-match server deploy
+    // raises it too). Hidden at game over, where Play Again already starts fresh.
+    const isOutdatedMatchNoticeShown = computed<boolean>(
+      () => buildProvenanceStore.provenance?.isMatchOlderThanServer === true && !isGameOver.value,
+    );
+    const outdatedMatchCreatedAtIso = computed<string | null>(
+      () => buildProvenanceStore.provenance?.matchCreatedAtIso ?? null,
+    );
+    const outdatedServerBootedAtIso = computed<string | null>(
+      () => buildProvenanceStore.provenance?.serverBootedAtIso ?? null,
     );
     // why: the loadout this match launched with, stashed client-side at create
     // (matchSetupSession). Null when the viewer joined a match they did not create
@@ -527,6 +566,9 @@ export default defineComponent({
       returnToLobby,
       isUpdateAvailable,
       reloadForUpdate,
+      isOutdatedMatchNoticeShown,
+      outdatedMatchCreatedAtIso,
+      outdatedServerBootedAtIso,
       isGameOver,
       isEndedEarly,
       canPlayAgain,
@@ -553,6 +595,19 @@ export default defineComponent({
       // disturbs the display:contents root or intercepts a click.
     -->
     <PlaymatBackground />
+    <!--
+      // why: the older-rules notice, mounted once here so it covers BOTH play
+      // surfaces. Self-hides unless the match predates the running server. On
+      // phones it is the column's first row; on desktop it is a fixed bar over the
+      // brand header (its own CSS), dropped below the update banner when both show.
+    -->
+    <OutdatedMatchNotice
+      :class="{ 'outdated-match-notice--below-update-banner': isUpdateAvailable }"
+      :is-match-older-than-server="isOutdatedMatchNoticeShown"
+      :match-created-at-iso="outdatedMatchCreatedAtIso"
+      :server-booted-at-iso="outdatedServerBootedAtIso"
+      :start-new-match="returnToLobby"
+    />
     <PlayMobile
       v-if="isMobile"
       :submit-move="submitMove"
@@ -633,14 +688,14 @@ export default defineComponent({
       // play. It reads the UIState snapshot only for the D-24450 lifecycle gating
       // (which phase is editable) — never writes G/ctx/UIState, never submitMove.
     -->
-    <BattlePlanPanel />
+    <BattlePlanPanel class="play-battle-plan" />
     <!--
       // why: WP-786 / D-24634 — mounted ONCE at the shared viewport root so the
       // battle brief covers BOTH <PlayMobile> and <PlayDesktop> (PlayMobile has no
       // matchId, D-16501). It renders only in the engine's lobby phase and sends
       // only setPlayerReady, then startMatchIfReady after the next server frame.
     -->
-    <BattleBrief :submit-move="submitMove" :match-id="matchId" />
+    <BattleBrief :submit-move="submitMove" :match-id="matchId" :provided-lineup="providedLineup" />
     <!--
       // why: WP-258 — mounted ONCE here at the shared viewport root (the
       // Mounting Rule's shared-child case), alongside <DiagnosticExportButton>,
@@ -651,10 +706,9 @@ export default defineComponent({
     -->
     <HollowEffectsPanel />
     <!--
-      // why: WP-804 / D-24689 §3 — the public operator-match badge, for every
-      // seat, so nobody mistakes an unscored operator match for a ranked one.
+      // why: WP-804 / D-24689 §3 — the public operator-match badge lives in
+      // <TopHudBar>'s flow (both play surfaces), not as a fixed chip here.
     -->
-    <p v-if="isOperatorMatch" class="operator-match-badge" data-testid="operator-match-badge">Operator match — not scored</p>
     <!--
       // why: WP-804 / D-24689 §6 — the lazy operator board panel, mounted ONCE
       // here at the shared viewport root so it covers both play surfaces. Shown
@@ -818,30 +872,35 @@ export default defineComponent({
   }
 }
 
+/* why: desktop — the Battle Plan toggle sits in the brand header's empty band,
+   just right of the wordmark (24px padding + a ~137px wordmark at the fixed 22px
+   h4 size, so 11.5rem leaves a ~24px gap), vertically centered in the ~68px
+   header. Its old top-right corner covered the header nav ("Sign out"), and
+   below the header the board's status strip and the operator panel fill the
+   width. Phones keep the component's own top-right placement. The extra
+   .play-viewport ancestor outranks the component's own scoped .battle-plan rule. */
+@media (min-width: 768px) {
+  .play-viewport .play-battle-plan {
+    top: 1.2rem;
+    right: auto;
+    left: 11.5rem;
+  }
+
+  /* why: the update and outdated-match banners are fixed bars over the header
+     (z 50 / 49) that cover the nav links while shown; the toggle drops beneath
+     them like the nav does instead of painting over the banner's text. Its
+     normal 9999 stays otherwise, so an open plan sits above the Battle Brief. */
+  .play-viewport:has(.update-banner, .outdated-match-notice) .play-battle-plan {
+    z-index: 48;
+  }
+}
+
 /* why: WP-654 — position the shared final-turn banner as a fixed top-center
    overlay over the play surface (the banner-overlay precedent set by the other
    viewport-root banners, which own their own fixed positioning). Vue applies
    this component's scope id to the child <FinalTurnBanner>'s root element, so
    this class styles that root without editing the pure component. z-index sits
    above the mat but below the fixed audio/diagnostics controls. */
-/* why: WP-804 — the operator-match badge sits top-left, below the app header,
-   clear of the centered final-turn banner and the right-side operator panel. */
-.operator-match-badge {
-  position: fixed;
-  top: 4.5rem;
-  left: 8px;
-  z-index: 46;
-  margin: 0;
-  padding: 0.25rem 0.6rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--la-color-gold);
-  background: var(--la-color-surface);
-  border: 1px solid var(--la-color-border-strong);
-  border-radius: 0.4rem;
-  pointer-events: none;
-}
-
 .final-turn-banner-overlay {
   position: fixed;
   top: 0.75rem;
@@ -851,5 +910,18 @@ export default defineComponent({
   width: max-content;
   max-width: min(92vw, 40rem);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+</style>
+
+<style>
+/* why: phones — the fixed audio controls and utility dock cover the bottom ~5rem
+   of the viewport, so the brand footer (copyright + build stamp) at the end of
+   the scrolling PlayMobile column always sat underneath them. Extra bottom
+   padding on the footer, only while a play viewport is mounted, lets it scroll
+   clear. Unscoped because the footer belongs to AppShell, not this component. */
+@media (max-width: 767px) {
+  .app-shell:has(.play-viewport) .brand-footer {
+    padding-bottom: 6rem;
+  }
 }
 </style>

@@ -324,8 +324,18 @@ succeed before the next is attempted.
 3. **Upload images to R2.** For every image referenced by the new
    set's `imageUrl` fields, upload under the corresponding path
    (hero / mastermind / villain / henchman / scheme / bystander /
-   wound). Use `rclone sync` against a local staging directory that
-   mirrors the R2 path layout.
+   wound). Use `rclone copy` from a local staging directory that
+   mirrors the R2 path layout, never `rclone sync`: each R2 set folder
+   also holds the `thumb/`, `phone/` and `large/` size tiers, which no
+   staging directory has (§A.8). Then build and publish the set's tiers
+   and byte manifest (WP-888 / D-24840):
+
+   ```pwsh
+   $W = Join-Path $env:LOCALAPPDATA 'legendary-arena\card-image-sizes'
+   pnpm images:sizes:pull --work-root $W --set {newSetAbbr}
+   pnpm images:sizes      --work-root $W --set {newSetAbbr}
+   pnpm images:sizes:push --work-root $W --set {newSetAbbr}
+   ```
 
    - [ ] Every uploaded image returns HTTP 200 to a `HEAD` probe at
          its `imageUrl`.
@@ -401,10 +411,16 @@ config files. Either direction silently destroys half of production.
 | Push a single file | `rclone copyto ./data/metadata/sets.json legendary-r2:legendary-images/metadata/sets.json` | one object, no directory diff (this is the §A.7 new-set pattern) |
 | Audit drift without mutating | `rclone check legendary-r2:legendary-images/metadata/ ./data/metadata/` | read-only (§A.6) |
 
-`rclone sync` is appropriate **only** for image staging (§A.7 step 3),
-where the local staging directory genuinely mirrors the entire remote
-image subtree. It is never appropriate against the shared `metadata/`
-directory.
+**Image folders are no exception (WP-888 / D-24840).** No local
+directory mirrors a whole image subtree any more either: each
+`{set}/` folder on R2 also holds its `thumb/`, `phone/` and `large/`
+size tiers, `metadata/image-sizes/` holds the per-set byte manifests,
+and R2 is the only home of the card originals (no off-Cloudflare copy;
+`docs/ops/DISASTER_RECOVERY.md`). `rclone sync` from an image staging
+directory deletes that set's tiers. Upload images with `rclone copy`
+(§A.7 step 3) and tiers with `pnpm images:sizes:push`, which runs
+`copy` / `copyto` only. `rclone sync` has no safe use against this
+bucket.
 
 **Recovery, if `metadata/` per-set files are wiped:** the source data is
 intact in-repo. Re-run the additive copy:
@@ -417,7 +433,7 @@ Then re-verify with R2-mode validation (§A.1) or a spot HEAD check:
 `curl -s -o /dev/null -w "%{http_code}" https://images.legendary-arena.com/metadata/core.json` → `200`.
 
 - [ ] No release procedure or ad-hoc upload step invokes `rclone sync`
-      with `legendary-r2:legendary-images/metadata/` as the destination.
+      with any `legendary-r2:legendary-images/` path as the destination.
 
 > **Incident precedent (2026-05-27):** during the WP-184 pattern-taxonomy
 > R2 upload, `rclone sync data/metadata r2:legendary-images/metadata`

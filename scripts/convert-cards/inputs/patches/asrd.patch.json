@@ -7,21 +7,21 @@
         {
           "slug": "flying-stallion",
           "abilities": [
-            "[keyword:Streets] [keyword:Conqueror] 1",
+            "[keyword:Rooftops Conqueror 1]",
             "When an Ambush ability is played, before it takes effect, you may discard this card. If you do, draw two extra cards at the end of this turn."
           ]
         },
         {
           "slug": "usher-to-valhalla",
           "abilities": [
-            "[keyword:Bridge] [keyword:Conqueror] 1",
+            "[keyword:Bridge Conqueror 1]",
             "[team:heroes-of-asgard]: The first time you defeat a Villain this turn, you may KO one of your cards or a card from your discard pile."
           ]
         },
         {
           "slug": "ride-of-the-valkyries",
           "abilities": [
-            "[keyword:Streets] [keyword:Conqueror] 1",
+            "[keyword:Streets Conqueror 1]",
             "[hc:instinct]: You get +1[icon:attack] for every 4 Heroes in the KO pile."
           ]
         }
@@ -40,8 +40,8 @@
         {
           "slug": "volstagg-the-valiant",
           "abilities": [
-            "[keyword:Bridge] [keyword:Conqueror] 1",
-            "[hc:instinct]: Instead, [keyword:Conqueror]"
+            "[keyword:Bridge Conqueror 1]",
+            "[hc:instinct]: Instead, [keyword:Bridge Conqueror 3]"
           ]
         }
       ],

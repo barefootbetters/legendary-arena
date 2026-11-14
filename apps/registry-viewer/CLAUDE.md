@@ -81,6 +81,8 @@ App Mount
 | `src/App.vue` | Root component — all state, filters, both views |
 | `src/components/CardGrid.vue` | Responsive tile grid with lazy images, type badges, rarity dots |
 | `src/components/CardDetail.vue` | Card detail panel — stats, tokenized abilities, raw JSON |
+| `src/components/CardFaceImage.vue` | The single card-face `<img>` for the grid and detail panel (the lightbox excepted): renders a WP-888 size tier on a density ladder and falls back once to the original before emitting `error` (WP-892 / D-24849) |
+| `src/lib/cardImageTiers.ts` | Tier path rule (`imageUrl` → `{set}/{tier}/{file}.webp`), the `small` / `large` density ladders, `gridImageLadder` (slider ≤ 130 px and not split → `small`), `resolveCardFaceSources` (WP-892 / D-24849) |
 | `src/components/ThemeGrid.vue` | Theme tile grid with tag-colored accents |
 | `src/components/ThemeDetail.vue` | Theme detail — setup intent with cross-links to cards |
 | `src/components/HealthPanel.vue` | Diagnostics modal — set counts, parse errors |

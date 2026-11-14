@@ -6,6 +6,8 @@
  * the generator in `scripts/hero-mechanic-ledger.mjs`.
  */
 
+import type { EffectIndexEntryScope } from '@legendary-arena/registry/schema';
+
 /**
  * The six kinds of coverage state (drift-pinned by `types/coverage.drift.test.ts`).
  * `subsystem` (WP-548 / D-24357) marks a card implemented by a subsystem OTHER than
@@ -95,13 +97,40 @@ export interface CoverageSetNames {
 
 /**
  * One row of the By-set table: a card set's ledger rows rolled up by status.
- * `percentExecutable` uses the same row-weighted formula as the page headline.
+ * `percentImplemented` uses the same row-weighted formula as the page headline
+ * (Executable + Condition + Subsystem rows ÷ all rows, D-24827).
  */
 export interface SetCoverageEntry {
   abbr: string;
   name: string;
   summary: LedgerSummary;
-  percentExecutable: number;
+  percentImplemented: number;
+}
+
+/**
+ * One card type's slice of a set in the effect-implementation index (WP-880 /
+ * D-24829): `implemented` uses D-24827's formula (Executable + Condition +
+ * Subsystem); `total` is every entry of that scope. `label` is the plural
+ * display label (`cardTypeLabel`).
+ */
+export interface CardTypeCoverage {
+  scope: EffectIndexEntryScope;
+  label: string;
+  implemented: number;
+  total: number;
+}
+
+/**
+ * One row of the all-types By-set table (WP-880 / D-24829): a card set's
+ * effect-index entries rolled up by status across every card type, plus the
+ * per-type breakdown. Same release order as `SetCoverageEntry`.
+ */
+export interface AllTypesSetCoverageEntry {
+  abbr: string;
+  name: string;
+  summary: LedgerSummary;
+  percentImplemented: number;
+  byType: CardTypeCoverage[];
 }
 
 /** How many of a mechanic's card rows carry one status. */
@@ -200,6 +229,17 @@ export interface InPlayHollowBaseline {
   schemaVersion: number;
   generatedAt: string;
   byMechanic: Record<string, InPlayHollowBaselineEntry>;
+}
+
+/**
+ * The runtime-key → ledger-key fold map — `src/data/mechanic-key-fold.json`,
+ * written by `scripts/build-coverage-ledger.mjs` through the hero ledger's own
+ * `foldMechanicFamily`. Lists only the runtime-observed / baseline keys the fold
+ * rewrites (`patrol-the-bridge` → `patrol`); any other key IS its ledger key.
+ */
+export interface MechanicKeyFold {
+  schemaVersion: number;
+  ledgerKeyByMechanic: Record<string, string>;
 }
 
 /**

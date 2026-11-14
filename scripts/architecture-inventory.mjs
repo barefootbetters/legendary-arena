@@ -81,9 +81,15 @@ const SKIP_DIRECTORIES = new Set([
 // Vite apps' apps/*/public/ hold _headers, robots.txt, brand tokens, og images.
 // So they are skipped by exact repo-relative path suffix: only the ewiki build
 // output is excluded, and every tracked apps/*/public/ asset still counts.
+// why: apps/wiki-viewer/data/ops/ is the gitignored projection of
+// docs/ops/*.json written by `pnpm wiki-viewer:project` (D-24710). Same leak as
+// content/: a local regen after a wiki build listed its service-dependencies.json
+// copy as a brevo file (2026-10-27). Skipped by path, not by the bare name
+// `data`, because the repo-root data/cards/ is tracked source.
 const SKIP_DIRECTORY_PATH_SUFFIXES = [
   'apps/wiki-viewer/public',
   'apps/wiki-viewer/resources',
+  'apps/wiki-viewer/data/ops',
 ];
 
 /**
@@ -171,19 +177,22 @@ const LANGUAGE_MARKER_PROBES = [
 // (2026-07-21): setting immutable Cache-Control on R2 card-image objects per
 // docs/ops/RUNBOOK-r2-image-cache-control.md, done with boto3's S3 CopyObject
 // (MetadataDirective=REPLACE) against the Cloudflare R2 S3 endpoint. Trap worth
-// recording: the `python` on the operator PATH is Inkscape's bundled interpreter
-// (no boto3); the pip-installed boto3 lives under the Python 3.12 install, which
-// must be invoked by its full path.
+// recording: bare `python` on the operator PATH is Inkscape's bundled interpreter
+// (no pip, no boto3) in any shell that doesn't load the operator's pwsh profile
+// (Bash tool, cmd, CI-style runs). Invoke Python 3.12 with the Windows launcher
+// instead — `py -3 -m pip install boto3`, `py -3 script.py` — which resolves to
+// 3.12 in every shell. Inkscape stays on PATH because
+// ewiki/branding/build-lockup-svg.py calls the `inkscape` CLI.
 const OPERATOR_OPS_TOOLCHAIN = [
   {
     tool: 'Python',
     version: '3.12 (Programs\\Python\\Python312)',
-    role: 'Interpreter for out-of-band ops scripts (R2 object-metadata via boto3). Invoke by full path — the `python` on PATH is Inkscape\'s and lacks boto3.',
+    role: 'Interpreter for out-of-band ops scripts (R2 object-metadata via boto3). Invoke with the Windows launcher, `py -3 script.py` — bare `python` on the operator PATH is Inkscape\'s and lacks boto3.',
   },
   {
     tool: 'pip',
     version: 'bundled with Python 3.12',
-    role: 'Installs boto3 into the Python 3.12 site-packages.',
+    role: 'Installs boto3 into the Python 3.12 site-packages via `py -3 -m pip install boto3`.',
   },
   {
     tool: 'boto3',
@@ -1204,6 +1213,27 @@ async function collectSourceFiles(directory, accumulator) {
 // ---------------------------------------------------------------------------
 
 /**
+ * Decide whether a file lies inside one of the labelled (external) scan
+ * targets' roots, so the home-repo SaaS walk does not count it a second time.
+ *
+ * @param {string} filePath - The file's path as walked.
+ * @param {Array<{ root: string, label: string | null }>} scanTargets
+ * @returns {boolean} true when the file belongs to an external target.
+ */
+function isInsideExternalRoot(filePath, scanTargets) {
+  const resolvedFilePath = resolve(filePath);
+  for (const { root, label } of scanTargets) {
+    if (label === null) {
+      continue;
+    }
+    if (resolvedFilePath.startsWith(resolve(root) + sep)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Scan one or more directory trees for SaaS tool usage defined by
  * `SAAS_DETECTORS`. Returns a Map<toolName, { files: string[] }>
  * where each `files` entry is the repo-relative (or label-prefixed)
@@ -1230,8 +1260,20 @@ async function scanForSaas(scanTargets) {
     if (!existsSync(root)) {
       continue;
     }
-    const allFiles = [];
-    await collectAllFiles(root, allFiles);
+    const collectedFiles = [];
+    await collectAllFiles(root, collectedFiles);
+
+    // why: the architecture-inventory workflow clones the website repo INSIDE
+    // the workspace (actions/checkout cannot check out above it) and passes it
+    // as `--external`. The home-repo walk from REPO_ROOT then reaches the same
+    // clone, so every website file was listed twice — once as
+    // `[legendary-arena-website] x`, once as `legendary-arena-website/x`
+    // (cron PR #2584, 2026-10-26: brevo 22 files for 14 + 4). An external root
+    // belongs to its labelled target only, so the unlabelled home walk drops
+    // anything inside one.
+    const allFiles = label === null
+      ? collectedFiles.filter((filePath) => !isInsideExternalRoot(filePath, scanTargets))
+      : collectedFiles;
 
     // why: filter to text-readable extensions up front rather than
     // attempting to read binary blobs (images, fonts, compiled assets).

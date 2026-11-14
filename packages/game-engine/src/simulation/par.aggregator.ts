@@ -30,6 +30,7 @@
  */
 
 import type { LegendaryGameState } from '../types.js';
+import { BYSTANDERS_KOED_FROM_PLAY } from '../types.js';
 import { pushLog } from '../log/logPush.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
@@ -63,6 +64,14 @@ import { resolveDeferredHeroGrants } from '../hero/heroEffects.execute.js';
 import { openNonActiveReturnOnDiscardSeatChoiceIfNeeded } from '../moves/resolveReturnOnDiscard.js';
 import { openEscapeProcedureSeatChoiceIfNeeded } from '../villainDeck/villainEscapeProcedure.js';
 import { openRevealOrWoundSeatChoiceIfNeeded } from '../moves/revealOrWoundChoice.logic.js';
+import { openNextHandFromPlaySeatChoiceIfNeeded } from '../moves/nextHandFromPlay.logic.js';
+// why: WP-875 / D-24822 — the loops never run onMove, so they mirror The Mandarin's Ring-entry
+// opener; an entry's escape needs the implementation map.
+import { openMandarinRingEntriesIfNeeded } from '../moves/mandarinRingEntry.logic.js';
+// why: WP-872 / D-24817 — the loops never run onMove, so they mirror the Mandarin's Rings
+// Liar / Nightbringer / Remaker pick opener.
+import { openVillainFightPickSeatChoiceIfNeeded } from '../moves/villainFightPick.logic.js';
+import { DEFAULT_IMPLEMENTATION_MAP } from '../rules/ruleRuntime.impl.js';
 import { computeFinalScores, isBystanderCard, isVictoryPileBystander } from '../scoring/scoring.logic.js';
 import { computeRawScore, computeParScore } from '../scoring/parScoring.logic.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
@@ -81,6 +90,7 @@ import { revealVillainCard } from '../villainDeck/villainDeck.reveal.js';
 import { fightVillain } from '../moves/fightVillain.js';
 import { recruitHero } from '../moves/recruitHero.js';
 import { exorciseHauntedHero } from '../moves/exorciseHauntedHero.js';
+import { attemptHeist } from '../moves/attemptHeist.js';
 import { fightMastermind } from '../moves/fightMastermind.js';
 // why: WP-286 — same reason as simulation.runner.ts: One-Hit Wonder parks a draw-or-empowered
 // choice unconditionally, so any getLegalMoves-driven loop (this PAR aggregator included) that
@@ -499,6 +509,9 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // why: WP-757 / D-24587 — getLegalMoves emits exorciseHauntedHero per affordable Haunted
   // HQ slot; a missing dispatch entry would spin the per-turn loop (pinned by the drift guard).
   exorciseHauntedHero: (context, args) => exorciseHauntedHero(context as never, args as never),
+  // why: WP-878 / D-24826 — getLegalMoves step 4c emits attemptHeist when the bot's Heist odds
+  // favor it; a missing dispatch entry would spin the per-turn loop (pinned by the drift guard).
+  attemptHeist: (context) => attemptHeist(context as never),
   // why: WP-830 / D-24763 — pass the args through: the Enigma Code guess rides on them.
   fightMastermind: (context, args) => fightMastermind(context as never, args as never),
   // why: WP-286 — must be dispatchable (One-Hit Wonder parks a draw-or-empowered choice
@@ -783,6 +796,27 @@ function simulateOneGame(
         // position (after the escape opener and the depletion re-check, before the unmirrored
         // Diving Block opener), so a queued revealer is asked in the PAR loop too.
         openRevealOrWoundSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+        // why: WP-875 / D-24822 — mirror the live Mandarin Ring-entry opener at its live position (right
+        // after the reveal-or-wound opener), then the re-run escape opener, the pile-depletion re-check and the re-run
+        // reveal-or-wound opener, as live (the loops never mirror the final-turn latch). The
+        // RevealContext is built from this loop's own locals (the ACTIVE seat and the real turn), never
+        // the acting seat's seatChoiceContext or the possibly-undefined dispatched move context.
+        openMandarinRingEntriesIfNeeded(
+          gameState,
+          undefined,
+          currentPlayer,
+          { random: { Shuffle: <T>(deck: T[]): T[] => shuffleWithPrng(deck, nextRandom) }, ctx: { currentPlayer: currentPlayer, turn: turn } },
+          DEFAULT_IMPLEMENTATION_MAP,
+        );
+        openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+        applyPileDepletionResourceLoss(gameState);
+        openRevealOrWoundSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+        // why: WP-870 / D-24815 — the loops never run the onMove opener, so mirror the owed Zero
+        // pick opener here; without it a PAR game that fights Zero never applies the pick.
+        openNextHandFromPlaySeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+        // why: WP-872 / D-24817 — mirror the owed Liar / Nightbringer / Remaker pick opener at its
+        // live position (after the Zero opener); events undefined, the loop's ACTIVE seat.
+        openVillainFightPickSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
         continue;
       }
     }
@@ -870,6 +904,27 @@ function simulateOneGame(
     // (after the escape opener and the depletion re-check, before the unmirrored Diving Block
     // opener). The WP-749 non-active dispatch then answers it at its default (Reveal).
     openRevealOrWoundSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+    // why: WP-875 / D-24822 — mirror the live Mandarin Ring-entry opener at its live position (right
+    // after the reveal-or-wound opener), then the re-run escape opener, the pile-depletion re-check and the re-run
+    // reveal-or-wound opener, as live (the loops never mirror the final-turn latch). The
+    // RevealContext is built from this loop's own locals (the ACTIVE seat and the real turn), never
+    // the acting seat's seatChoiceContext or the possibly-undefined dispatched move context.
+    openMandarinRingEntriesIfNeeded(
+      gameState,
+      undefined,
+      currentPlayer,
+      { random: { Shuffle: <T>(deck: T[]): T[] => shuffleWithPrng(deck, nextRandom) }, ctx: { currentPlayer: currentPlayer, turn: turn } },
+      DEFAULT_IMPLEMENTATION_MAP,
+    );
+    openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+    applyPileDepletionResourceLoss(gameState);
+    openRevealOrWoundSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+    // why: WP-870 / D-24815 — the loops never run the onMove opener, so mirror the owed Zero pick
+    // opener here; the seat-choice dispatch answers it at its default (0).
+    openNextHandFromPlaySeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+    // why: WP-872 / D-24817 — mirror the owed Liar / Nightbringer / Remaker pick opener at its live
+    // position (after the Zero opener); its seat choices are answered at their default (0).
+    openVillainFightPickSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
 
     // why: zero-legal-moves fallback. If the policy returned endTurn
     // outside cleanup, the move is a silent no-op and the loop would
@@ -944,8 +999,9 @@ function simulateOneGame(
  * pipeline). Three penalty-event types have engine producers derived here —
  * villainEscaped (ESCAPED_VILLAINS counter) and schemeTwistNegative
  * (schemeTwistCount counter, WP-529 / D-24340) by counter reads, and
- * bystanderLost (WP-528 / D-24339) by counting 'bystander'-typed entries of
- * G.escapedPile; the remaining two (mastermindTacticUntaken,
+ * bystanderLost (WP-528 / D-24339, WP-887 / D-24839) by summing the Bystander
+ * entries of G.escapedPile and the G.counters[BYSTANDERS_KOED_FROM_PLAY] count of
+ * Bystanders KO'd from play; the remaining two (mastermindTacticUntaken,
  * scenarioSpecificPenalty) follow the WP-048 safe-skip (D-4801) for categories
  * with no engine producer today. Kept symmetric with deriveScoringInputs so
  * calibrated PAR is not systematically easier than the live score.
@@ -999,19 +1055,23 @@ export function deriveScoringInputsFromFinalState(
   // score on twist-heavy scenarios). Derives from existing terminal state — no G field.
   const schemeTwistNegativeCount = finalState.counters.schemeTwistCount ?? 0;
 
-  // why: WP-528 / D-24339 — count the 'bystander'-typed entries of G.escapedPile
-  // (civilians an escaping Villain carried away, carryEscapedBystandersToPile / D-24314,
-  // from both the reveal and scheme-twist escape paths), the mirror of the
-  // bystandersRescued victory-zone loop above and of the live deriveScoringInputs (kept
-  // symmetric — else calibrated PAR would be easier than the live score on bystander-loss
-  // scenarios). Escaped Villains (typed 'villain') are the separate villainEscaped count,
-  // so they are not double-counted. Derives from existing terminal state — no G field.
+  // why: WP-528 / D-24339 + WP-887 / D-24839 — a civilian is "lost" in two buckets,
+  // summed. (1) Carried away: the Bystander entries of G.escapedPile (isBystanderCard,
+  // both sources, D-24395; carryEscapedBystandersToPile / D-24314, from both the reveal
+  // and scheme-twist escape paths), the mirror of the bystandersRescued victory-zone loop
+  // above. Escaped Villains (typed 'villain') are the separate villainEscaped count, so
+  // they are not double-counted. (2) KO'd from play: the lazily written
+  // G.counters[BYSTANDERS_KOED_FROM_PLAY] (absent → 0). An Escape-Pile KO moves one
+  // Bystander between the buckets, so it nets to zero. Kept textually parallel with the
+  // live deriveScoringInputs — else calibrated PAR would be easier than the live score on
+  // bystander-loss scenarios.
   let bystanderLostCount = 0;
   for (const cardExtId of finalState.escapedPile) {
     if (isBystanderCard(finalState, cardExtId)) {
       bystanderLostCount = bystanderLostCount + 1;
     }
   }
+  bystanderLostCount = bystanderLostCount + (finalState.counters[BYSTANDERS_KOED_FROM_PLAY] ?? 0);
 
   // why: D-4801 safe-skip — the two penalty types still without an engine producer
   // (mastermindTacticUntaken, scenarioSpecificPenalty) are zeroed here. The PAR pipeline

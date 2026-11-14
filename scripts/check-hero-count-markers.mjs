@@ -177,7 +177,7 @@ export const DEFERRED = [
     card: 'medallion-of-many-loas',
     abilityIndex: 0,
     reason:
-      'Ritual Artifact: optional discard at a 3+ Hero Class threshold, then per-class attack; an artifact-activation mechanic, not an onPlay grant.',
+      'Ritual Artifact modeled by WP-858 / D-24794 (`ritual-hero-classes`); not a per-count onPlay grant.',
   },
 ];
 

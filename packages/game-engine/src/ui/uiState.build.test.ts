@@ -2842,4 +2842,107 @@ describe('buildUIState — WP-836 grey-filtered KO projections (D-24769)', () =>
     );
     assert.equal(Object.keys(buildUIState(plainState, mockCtx).pendingKoDiscardChoice!).includes('greyFilter'), false);
   });
+
+  it('T21 (WP-850 / D-24786): an eligibleCardIds entry lists only those cards, multiset-capped, and is flagged', () => {
+    // why: the discard holds two Wounds but the play discarded one; the filter keeps one Wound
+    // (the first in discard order) plus tech-a, and drops the Agent it never named.
+    const discard = [WOUND, 'tech-a' as CardExtId, AGENT, WOUND];
+    const limitedState = withGreyDiscard(discard);
+    limitedState.pendingKoDiscardChoices = [{
+      choiceType: 'ko-from-discard', playerID: '0', maxCount: 2,
+      sourceCardId: 'dkcy/bishop/firepower-from-the-future#0' as CardExtId,
+      eligibleCardIds: ['tech-a' as CardExtId, WOUND],
+    }];
+    const limitedChoice = buildUIState(limitedState, mockCtx).pendingKoDiscardChoice!;
+    assert.deepStrictEqual(limitedChoice.discard.map((entry) => entry.cardId), [WOUND, 'tech-a']);
+    assert.equal(limitedChoice.isLimitedToDiscardedThisWay, true);
+    assert.equal(limitedChoice.maxCount, 2, 'maxCount is projected unchanged');
+
+    const plainState = withGreyDiscard(discard);
+    plainState.pendingKoDiscardChoices = [{ choiceType: 'ko-from-discard', playerID: '0', maxCount: 2 }];
+    assert.equal(Object.hasOwn(buildUIState(plainState, mockCtx).pendingKoDiscardChoice!, 'isLimitedToDiscardedThisWay'), false,
+      'a Loki / Salomé entry carries no isLimitedToDiscardedThisWay key at all');
+  });
+});
+describe('buildUIState — live conditionalClauses tally (WP-848 / D-24784)', () => {
+  it('projects { played, assembled } per seat, omits a seat with no entry, and never aliases G.diagnostics', () => {
+    const gameState = createTestGameState();
+    // why: WP-848 — the hash-excluded WP-708 tally, read live in the per-player loop. Only
+    // played / assembled are projected; potentialValue / realizedValue stay endgame-only.
+    gameState.diagnostics = {
+      hollowEffects: [],
+      hollowEffectsDropped: 0,
+      conditionalClauses: {
+        '0': { played: 5, assembled: 3, potentialValue: 7, realizedValue: 4 },
+      },
+    };
+
+    const ui = buildUIState(gameState, mockCtx);
+    const player0 = ui.players.find((player) => player.playerId === '0')!;
+    const player1 = ui.players.find((player) => player.playerId === '1')!;
+
+    assert.deepStrictEqual(player0.conditionalClauses, { played: 5, assembled: 3 });
+    assert.equal(Object.keys(player1).includes('conditionalClauses'), false, 'no tally entry ⇒ the key is absent');
+
+    // why: aliasing defense — mutating the projection must leave G.diagnostics untouched.
+    player0.conditionalClauses!.played = 99;
+    player0.conditionalClauses!.assembled = 99;
+    assert.deepStrictEqual(gameState.diagnostics.conditionalClauses!['0'], {
+      played: 5,
+      assembled: 3,
+      potentialValue: 7,
+      realizedValue: 4,
+    });
+
+    // why: WP-712 — a count-scaled-only seat has an entry with played 0; it is still projected.
+    gameState.diagnostics.conditionalClauses!['1'] = { played: 0, assembled: 0, potentialValue: 2, realizedValue: 2 };
+    const rebuilt = buildUIState(gameState, mockCtx);
+    assert.deepStrictEqual(
+      rebuilt.players.find((player) => player.playerId === '1')!.conditionalClauses,
+      { played: 0, assembled: 0 },
+    );
+  });
+});
+
+describe('buildUIState — City and Mastermind fightCost are the Size-Changing price (D-24802)', () => {
+  it('projects 2 less once the active player played a card of the listed class, and never below 0', () => {
+    const gameState = createTestGameState();
+    const villainId = 'sc-villain' as CardExtId;
+    gameState.city = [villainId, null, null, null, null];
+    gameState.cardStats[villainId] = makeCardStatEntry({ fightCost: 5 });
+    const mastermindId = gameState.mastermind.baseCardId;
+    gameState.cardStats[mastermindId] = makeCardStatEntry({ fightCost: 3 });
+    gameState.fightSizeChanging = {
+      [villainId]: { classes: ['tech'], microscopicIcons: [] },
+      [mastermindId]: { classes: ['tech', 'covert'], microscopicIcons: [] },
+    };
+    gameState.cardTraits = {
+      ...gameState.cardTraits,
+      ['tech-hero' as CardExtId]: { heroClass: 'tech', team: null },
+      ['covert-hero' as CardExtId]: { heroClass: 'covert', team: null },
+    } as LegendaryGameState['cardTraits'];
+
+    const beforePlay = buildUIState(gameState, mockCtx);
+    assert.equal(beforePlay.city.spaces[0]!.fightCost, 5, 'no Tech card played: the printed Attack');
+    assert.equal(beforePlay.mastermind.fightCost, 3);
+
+    gameState.playerZones[mockCtx.currentPlayer]!.inPlay = ['tech-hero', 'covert-hero'] as CardExtId[];
+    const afterPlay = buildUIState(gameState, mockCtx);
+    assert.equal(afterPlay.city.spaces[0]!.fightCost, 3);
+    assert.equal(afterPlay.mastermind.fightCost, 0, '3 - 4 floors at 0');
+  });
+
+  it('projects a negative Microscopic price as 0 (the debit fightVillain makes)', () => {
+    const gameState = createTestGameState();
+    const villainId = 'micro-villain' as CardExtId;
+    gameState.city = [villainId, null, null, null, null];
+    gameState.cardStats[villainId] = makeCardStatEntry({ fightCost: 1 });
+    gameState.fightSizeChanging = { [villainId]: { classes: [], microscopicIcons: ['tech'] } };
+    gameState.cardTraits = {
+      ...gameState.cardTraits,
+      ['tech-hero' as CardExtId]: { heroClass: 'tech', team: null },
+    } as LegendaryGameState['cardTraits'];
+    gameState.playerZones[mockCtx.currentPlayer]!.inPlay = ['tech-hero'] as CardExtId[];
+    assert.equal(buildUIState(gameState, mockCtx).city.spaces[0]!.fightCost, 0);
+  });
 });

@@ -666,7 +666,7 @@ export function buildScoringKey(): ScoringKey {
       {
         label: 'Bystander lost',
         points: `+${BYSTANDER_LOST_WEIGHT}`,
-        note: 'a civilian carried away by an escaping villain — the heaviest penalty',
+        note: 'a civilian carried away by an escaping villain or KO’d from play — the heaviest penalty',
       },
     ],
   };

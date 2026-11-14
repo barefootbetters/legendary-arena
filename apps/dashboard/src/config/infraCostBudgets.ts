@@ -35,9 +35,9 @@ export interface InfraCostBudget {
 
 // why: WP-204 §Cost-budget config + D-20403 — placeholder per-vendor
 // budgets. Order matches `INFRA_COST_VENDORS` canonical iteration so
-// the widget's 4-card grid renders in the locked render/cloudflare/
-// postgres/hanko sequence. Uniform `toleranceRatio: 0.20` (20%
-// over-budget band before `'off-track'` fires) across all four vendors
+// the widget's vendor cards render in the locked digitalocean/render/
+// cloudflare/postgres/hanko sequence. Uniform `toleranceRatio: 0.20` (20%
+// over-budget band before `'off-track'` fires) across every vendor
 // in v1 per D-20403 — per-vendor tuning (tighter band on highest-spend
 // vendor; seasonal adjustments) is a future finance-loop WP. All
 // entries carry the mock flag; the `InfraCostWatchdogWidget` reads
@@ -45,6 +45,10 @@ export interface InfraCostBudget {
 // source of truth — mirrors WP-196 `revenueDeductions.ts` (`isMock:
 // true` until the finance review flips it).
 export const INFRA_COST_BUDGETS: readonly InfraCostBudget[] = [
+  // why: `digitalocean` $35/mo (3500 cents), the DigitalOcean line of
+  // `ledger.budget.byVendor` in dashboard.json. The 2 vCPU / 4 GB droplet caps
+  // at $24.00 a month; the rest covers backups and a short drill droplet.
+  { vendor: 'digitalocean', monthlyBudgetCents: 3500, toleranceRatio: 0.2, isMock: true },
   // why: D-20403 — `render` placeholder $100/mo (10000 cents). Render hosts
   // the game server; the v1 budget reflects a single web-service free-to-
   // standard transition with no autoscaling yet. Real number set by finance.

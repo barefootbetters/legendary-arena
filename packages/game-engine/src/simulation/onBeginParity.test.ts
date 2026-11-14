@@ -197,6 +197,73 @@ describe('applyOnBeginParity (WP-266 / WP-701)', () => {
     assert.equal('cardsDiscardedThisTurn' in gameState, false);
   });
 
+  it('deletes the owned-KO count at the turn boundary (WP-853 / D-24789)', () => {
+    const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
+    gameState.ownedCardsKoedSinceResolve = { '0': 2 };
+
+    applyOnBeginParity(gameState, '0');
+
+    // why: mirrors game.ts onBegin — a count surviving the turn boundary would let Absorb
+    // Energies fire next turn with no KO. ABSENT, not merely zero.
+    assert.equal('ownedCardsKoedSinceResolve' in gameState, false);
+  });
+
+  it('deletes the Hero-KO count at the turn boundary (WP-856 / D-24792)', () => {
+    const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
+    gameState.ownedHeroesKoedSinceResolve = { '0': 1 };
+
+    applyOnBeginParity(gameState, '0');
+
+    // why: mirrors game.ts onBegin — a count surviving the turn boundary would let Possessed by
+    // Brother's Spirit fire next turn with no KO. ABSENT, not merely zero.
+    assert.equal('ownedHeroesKoedSinceResolve' in gameState, false);
+  });
+
+  it('deletes the deck-KO count at the turn boundary, and never creates it (WP-855 / D-24791)', () => {
+    const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
+    gameState.deckCardsKoedSinceResolve = { '0': 1 };
+
+    applyOnBeginParity(gameState, '0');
+
+    // why: mirrors game.ts onBegin — a count held to the end of the turn by a parked choice
+    // must not let Endless Appetite draw next turn. ABSENT, not merely zero.
+    assert.equal('deckCardsKoedSinceResolve' in gameState, false);
+
+    const neverCounted = makeStateWithDeck(['c1'], ['h1'], []).gameState;
+    applyOnBeginParity(neverCounted, '0');
+    assert.equal('deckCardsKoedSinceResolve' in neverCounted, false, 'no key is created (oracle safety)');
+  });
+
+  it('deletes the deck-KO turn record at the turn boundary, and never creates it (WP-859 / D-24795)', () => {
+    const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
+    gameState.cardsKoedFromDeckThisTurn = { '0': ['c0'] };
+
+    applyOnBeginParity(gameState, '0');
+
+    // why: mirrors game.ts onBegin — "KO'd from your deck this turn" must not carry into the next
+    // turn, or Metamorphosis would Transform at play next turn. ABSENT, not merely empty.
+    assert.equal('cardsKoedFromDeckThisTurn' in gameState, false);
+
+    const neverRecorded = makeStateWithDeck(['c1'], ['h1'], []).gameState;
+    applyOnBeginParity(neverRecorded, '0');
+    assert.equal('cardsKoedFromDeckThisTurn' in neverRecorded, false, 'no key is created (oracle safety)');
+  });
+
+  it('never creates the Hero-KO count on a G that never had it (oracle safety, WP-856 / D-24792)', () => {
+    const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
+    applyOnBeginParity(gameState, '0');
+    assert.equal('ownedHeroesKoedSinceResolve' in gameState, false);
+  });
+
+  it('never creates the owned-KO count on a G that never had it (oracle safety, WP-853 / D-24789)', () => {
+    const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
+    assert.equal('ownedCardsKoedSinceResolve' in gameState, false);
+
+    applyOnBeginParity(gameState, '0');
+
+    assert.equal('ownedCardsKoedSinceResolve' in gameState, false);
+  });
+
   it('never creates the discard count on a G that never had it (oracle safety, WP-777 / D-24616)', () => {
     const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
     assert.equal('cardsDiscardedThisTurn' in gameState, false);

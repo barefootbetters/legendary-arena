@@ -25,6 +25,8 @@ import { useCardSize } from "../composables/useCardSize";
 // the numeric literal.
 import { ABILITY_THRESHOLD_PX } from "../composables/cardTileThresholds";
 import CardDataTile from "./CardDataTile.vue";
+import CardFaceImage from "./CardFaceImage.vue";
+import { gridImageLadder } from "../lib/cardImageTiers";
 
 const props = defineProps<{
   cards: FlatCard[];
@@ -114,7 +116,12 @@ watch(() => props.selectedKey, (newKey) => {
         -->
         <div class="img-wrap" :class="{ 'data-expanded': viewMode === 'data' && cardSize >= ABILITY_THRESHOLD_PX }">
           <template v-if="viewMode === 'image'">
-            <img :src="card.physicalCardImageUrl ?? card.imageUrl" :alt="card.name" loading="lazy"
+            <!-- why: card faces render a WP-888 size tier picked by the slider
+                 value and the split flag, with a one-time fallback to the
+                 original before this dimming handler runs (WP-892 / D-24849). -->
+            <CardFaceImage :image-url="card.physicalCardImageUrl ?? card.imageUrl"
+              :ladder="gridImageLadder(cardSize, card.physicalCardImageHalf !== undefined)"
+              :alt="card.name" loading="lazy"
               :class="card.physicalCardImageHalf ? `split-${card.physicalCardImageHalf}` : undefined"
               @error="($event.target as HTMLImageElement).style.opacity = '0.2'; devLog('render', 'image load failed', { card: card.name, url: card.physicalCardImageUrl ?? card.imageUrl })" />
             <span class="type-badge" :style="{ background: TYPE_COLOR[card.cardType] + '22', color: TYPE_COLOR[card.cardType] }">
