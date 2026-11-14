@@ -296,8 +296,8 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 | TypeScript | 1600 |
 | Vue SFC | 208 |
 | JavaScript | 161 |
-| JSON | 125 |
 | Markdown | 122 |
+| JSON | 116 |
 | HTML | 45 |
 | CSS | 16 |
 | PowerShell | 14 |
@@ -310,9 +310,9 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 |---|---:|
 | `.ts` | 1595 |
 | `.vue` | 208 |
-| `.json` | 125 |
 | `.md` | 122 |
 | `.mjs` | 118 |
+| `.json` | 116 |
 | `.html` | 45 |
 | `.js` | 41 |
 | `.css` | 16 |
@@ -671,13 +671,17 @@ dependency-based inventory.
 
 | Service | Category | Detected in | Description |
 |---|---|---:|---|
-| `brevo` | marketing / email | 14 files | Transactional + marketing email, newsletter forms, SMTP relay. |
-| `snipcart` | ecommerce | 1 file | Cart overlay via CDN script + HTML data attributes. |
+| `brevo` | marketing / email | 18 files | Transactional + marketing email, newsletter forms, SMTP relay. |
+| `snipcart` | ecommerce | 8 files | Cart overlay via CDN script + HTML data attributes. |
 
 ### SaaS usage detail
 
 #### brevo
 
+- `[legendary-arena-website] docs/ai/work-packets/WP-015-newsletter-brevo.md`
+- `[legendary-arena-website] docs/ai/work-packets/WP-018-brevo-automation.md`
+- `[legendary-arena-website] docs/brevo/email-automation.md`
+- `[legendary-arena-website] functions/api/subscribe.js`
 - `apps/server/src/marketing/brevoEnqueue.logic.test.ts`
 - `apps/server/src/marketing/brevoEnqueue.logic.ts`
 - `apps/server/src/marketing/brevoTransactional.logic.test.ts`
@@ -695,6 +699,13 @@ dependency-based inventory.
 
 #### snipcart
 
+- `[legendary-arena-website] assets/js/snipcart-lazy.js`
+- `[legendary-arena-website] docs/01-VISION.md`
+- `[legendary-arena-website] docs/ai/work-packets/WP-019-snipcart-commerce.md`
+- `[legendary-arena-website] docs/ai/work-packets/WP-044-site-performance-recovery.md`
+- `[legendary-arena-website] layouts/_partials/header.html`
+- `[legendary-arena-website] layouts/shop/list.html`
+- `[legendary-arena-website] layouts/shop/single.html`
 - `wiki/hugo-web-system.md`
 
 ## Importance tiering
