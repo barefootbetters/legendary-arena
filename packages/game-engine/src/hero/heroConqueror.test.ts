@@ -220,6 +220,20 @@ describe('hero Conqueror at play (WP-886 / D-24837)', () => {
     assert.equal(empty.turnEconomy.attack, 0);
   });
 
+  it('Volstagg with the Bridge empty logs "no Villain is in the Bridge" once, not once per hook', () => {
+    // why: WP-886 live-verify (match 1pm4YRmtW_0) showed the line twice — the base and Instead
+    // hooks both fail on the Bridge. Checked with and without another Instinct Hero played.
+    const withoutInstinct = makeState(warriorsHooks, cityWith('sewers'));
+    play(withoutInstinct, volstagg);
+    const withInstinct = makeState(warriorsHooks, cityWith('sewers'));
+    withInstinct.playerZones['0']!.inPlay = [OTHER_INSTINCT_CARD];
+    play(withInstinct, volstagg);
+    for (const G of [withoutInstinct, withInstinct]) {
+      const bridgeLines = messageTexts(G).filter((message) => message.includes('no Villain is in the Bridge'));
+      assert.equal(bridgeLines.length, 1, `expected one Bridge line, got: ${messageTexts(G).join(' | ')}`);
+    }
+  });
+
   it('Rock Solid after another Strength Hero with a Sewers Villain: +1 and 1 assembled', () => {
     const G = makeState(skrullHooks, cityWith('sewers'));
     G.playerZones['0']!.inPlay = [OTHER_STRENGTH_CARD];
