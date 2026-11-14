@@ -2,6 +2,7 @@
 import { defineComponent } from 'vue';
 
 import { useAuthNav } from '../../composables/useAuthNav';
+import { useNetworkOnline } from '../../composables/useNetworkOnline';
 import ThemeToggle from './ThemeToggle.vue';
 
 // why: defineComponent (NOT <script setup>) matches the established
@@ -13,12 +14,19 @@ export default defineComponent({
   setup() {
     const { isSignedIn, isBootstrapping, displayLabel, signOut } =
       useAuthNav();
+    // why: D-24851 follow-up — on the offline page (`/offline/`) with no
+    // network, the wordmark, Play (`/`, outside the worker's scope), Home and
+    // Cards all land on the browser's error page, and the account links reload
+    // the page and drop the match. They are hidden while the browser reports
+    // no network, and an "Offline" label says why.
+    const isOnline = useNetworkOnline();
 
     return {
       isSignedIn,
       isBootstrapping,
       displayLabel,
       signOut,
+      isOnline,
     };
   },
 });
@@ -26,25 +34,43 @@ export default defineComponent({
 
 <template>
   <header class="brand-header" data-testid="brand-header">
-    <a class="brand-wordmark" href="https://www.legendary-arena.com">
+    <a
+      v-if="isOnline"
+      class="brand-wordmark"
+      href="https://www.legendary-arena.com"
+      data-testid="brand-wordmark"
+    >
       Legendary Arena
     </a>
+    <span v-else class="brand-wordmark" data-testid="brand-wordmark">Legendary Arena</span>
     <nav class="brand-nav" aria-label="Site navigation">
       <!-- why: "/" is this app's own root. App.vue's selectRoute() has no
            explicit route param at the root, so it falls back to the lobby —
            the play entry point. This is the primary in-app destination (Home
            and Cards leave to other sites), so it leads the nav. -->
-      <a class="brand-nav-link" href="/" data-testid="brand-nav-play">Play</a>
-      <a class="brand-nav-link" href="https://www.legendary-arena.com">Home</a>
-      <a class="brand-nav-link" href="https://cards.legendary-arena.com">
-        Cards
-      </a>
+      <template v-if="isOnline">
+        <a class="brand-nav-link" href="/" data-testid="brand-nav-play">Play</a>
+        <a class="brand-nav-link" href="https://www.legendary-arena.com" data-testid="brand-nav-home">Home</a>
+        <a class="brand-nav-link" href="https://cards.legendary-arena.com" data-testid="brand-nav-cards">
+          Cards
+        </a>
+      </template>
+      <span
+        v-else
+        class="brand-nav-offline"
+        role="status"
+        data-testid="brand-nav-offline"
+      >Offline</span>
 
       <!-- why: day/night toggle — always present regardless of auth state, so it
            sits before the conditional sign-in / profile block. -->
       <ThemeToggle />
 
-      <template v-if="isBootstrapping">
+      <!-- why: with no network, sign-in cannot reach the server, and on
+           `/offline/` the `?route=` links only reload the offline page, which
+           drops the match in progress; the account block waits for the network. -->
+      <template v-if="!isOnline"></template>
+      <template v-else-if="isBootstrapping">
         <span
           class="auth-nav-bootstrapping"
           data-testid="auth-nav-bootstrapping"
@@ -139,6 +165,13 @@ export default defineComponent({
 .brand-nav-link:hover,
 .brand-nav-link:focus-visible {
   color: var(--la-color-cta);
+}
+
+.brand-nav-offline {
+  font-family: var(--la-font-body);
+  font-size: var(--la-font-size-body);
+  color: var(--la-color-text-secondary);
+  font-weight: 600;
 }
 
 .auth-nav-bootstrapping {

@@ -1,10 +1,17 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import VersionBadge from './VersionBadge.vue';
+import { useNetworkOnline } from '../../composables/useNetworkOnline';
 
 export default defineComponent({
   name: 'BrandFooter',
   components: { VersionBadge },
+  setup() {
+    // why: D-24851 follow-up — with no network the www link only reaches the
+    // browser's error page, so the name is shown as plain text instead.
+    const isOnline = useNetworkOnline();
+    return { isOnline };
+  },
 });
 </script>
 
@@ -12,9 +19,15 @@ export default defineComponent({
   <footer class="brand-footer" data-testid="brand-footer">
     <span class="brand-footer-copyright">
       &copy; 2026
-      <a class="brand-footer-link" href="https://www.legendary-arena.com">
+      <a
+        v-if="isOnline"
+        class="brand-footer-link"
+        href="https://www.legendary-arena.com"
+        data-testid="brand-footer-link"
+      >
         Legendary Arena
       </a>
+      <span v-else data-testid="brand-footer-name">Legendary Arena</span>
     </span>
     <!--
       // why: the build stamp sits on its own line under the copyright. On the play
