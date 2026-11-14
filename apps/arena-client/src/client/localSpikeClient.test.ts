@@ -23,18 +23,24 @@ import type { LegendaryGameState, UIState } from '@legendary-arena/game-engine';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error — boardgame.io v0.50 ships no .d.ts alongside the dist CJS bundle.
 import * as boardgameioInternal from 'boardgame.io/dist/cjs/internal.js';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-expect-error — boardgame.io v0.50 ships no .d.ts alongside the dist CJS bundle.
+import * as boardgameioMultiplayer from 'boardgame.io/dist/cjs/multiplayer.js';
 
 import featuredSetupBundleJson from '../fixtures/localSpike/featuredSetupBundle.json';
 import { FEATURED_TABLE } from '../lobby/featuredTable';
 import { useConnectionStore } from '../stores/connection';
 import { createSetupBundleReader, parseLocalSpikeSetupBundle } from './setupBundleReader';
 import {
+  createLocalMultiplayer,
   createLocalSpikeClient,
   createLocalSpikeGame,
   LOCAL_SPIKE_DEFAULT_SEED,
   replayLocalSpikeRecord,
   type LocalSpikeClientHandle,
   type LocalSpikeRecord,
+  type LocalTransportCtor,
+  type LocalTransportOptions,
 } from './localSpikeClient';
 
 const BUNDLE_FILE_PATH = fileURLToPath(
@@ -245,3 +251,78 @@ function driveMatchAgainstReference(): DrivenMatch {
     isGameOver: reference.ctx.gameover !== undefined,
   };
 }
+
+// why: D-24851 follow-up (b). boardgame.io 0.50's `Local()` keeps its masters in
+// a module-level map that is never pruned. These tests run the REAL `Local()`, so
+// a boardgame.io upgrade that changes how that map is keyed fails here loudly.
+describe('local master map: one entry per page (D-24851 follow-up)', () => {
+  const multiplayerNs = boardgameioMultiplayer as unknown as {
+    Local?: LocalTransportCtor;
+    default?: { Local?: LocalTransportCtor };
+  };
+  const Local = multiplayerNs.Local ?? multiplayerNs.default?.Local;
+
+  /**
+   * Builds the transport options a boardgame.io client would pass, for a tiny game.
+   *
+   * @param gameKey - The key the client would pass (its own game object).
+   * @returns The options.
+   */
+  function makeTransportOptions(gameKey: object): LocalTransportOptions {
+    return {
+      gameKey,
+      game: { name: 'map-probe', setup: () => ({}) },
+      transportDataCallback: () => undefined,
+      matchID: 'default',
+      playerID: '0',
+      gameName: 'map-probe',
+      numPlayers: 1,
+    };
+  }
+
+  /**
+   * Reads the master a local transport is bound to.
+   *
+   * @param transport - A transport from a `multiplayer` factory.
+   * @returns Its master.
+   */
+  function readMaster(transport: unknown): unknown {
+    return (transport as { master: unknown }).master;
+  }
+
+  test('Local() is found in the installed boardgame.io bundle', () => {
+    assert.equal(typeof Local, 'function');
+  });
+
+  test('each client gets a fresh master, and a new client overwrites the shared entry', () => {
+    assert.ok(Local !== undefined);
+    const firstFactory = createLocalMultiplayer(Local);
+    const firstMaster = readMaster(firstFactory(makeTransportOptions({})));
+    // Same factory again: Local() finds its own entry, so the master is reused.
+    assert.equal(readMaster(firstFactory(makeTransportOptions({}))), firstMaster, 'the same client reuses its master');
+
+    const secondFactory = createLocalMultiplayer(Local);
+    const secondMaster = readMaster(secondFactory(makeTransportOptions({})));
+    assert.notEqual(secondMaster, firstMaster, 'a new client gets a fresh master');
+
+    // The first client's entry was overwritten: asking with its storageKey again
+    // builds yet another master instead of finding the old one. If the map held
+    // one entry per game object (the leak), this would return firstMaster.
+    const rebuiltMaster = readMaster(firstFactory(makeTransportOptions({})));
+    assert.notEqual(rebuiltMaster, firstMaster, 'the first master is no longer in the map');
+    assert.notEqual(rebuiltMaster, secondMaster);
+  });
+
+  test('without the shared key, Local() keeps one master per game object (the leak this avoids)', () => {
+    assert.ok(Local !== undefined);
+    const plainFactory = Local();
+    const firstGameKey = {};
+    const firstMaster = readMaster(plainFactory(makeTransportOptions(firstGameKey)));
+    readMaster(plainFactory(makeTransportOptions({})));
+    assert.equal(
+      readMaster(plainFactory(makeTransportOptions(firstGameKey))),
+      firstMaster,
+      'boardgame.io still holds the first game object\'s master',
+    );
+  });
+});
