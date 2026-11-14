@@ -237,7 +237,18 @@ export default defineComponent({
       >{{ statusLine }}</span>
       <button type="button" data-testid="offline-new-game" @click="onNewGame">New game</button>
     </section>
-    <PlayViewport v-if="errorMessage === null" :key="matchKey" :submit-move="submitMove" :provided-lineup="lineup" />
+    <!--
+      // why: Back to Lobby starts a fresh offline match (its lobby phase, with the
+      // Battle Brief) instead of navigating to `/`, which is outside the worker's
+      // scope and has no offline copy.
+    -->
+    <PlayViewport
+      v-if="errorMessage === null"
+      :key="matchKey"
+      :submit-move="submitMove"
+      :provided-lineup="lineup"
+      :on-return-to-lobby="onNewGame"
+    />
   </div>
 </template>
 
