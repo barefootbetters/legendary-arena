@@ -2254,7 +2254,7 @@
       "wp": "WP-886",
       "state": "verified",
       "date": "2026-11-12",
-      "evidence": "Operator match 1pm4YRmtW_0 (server 18ead03c, client ede2bcc, created 2026-11-12T14:49Z), Bridge Villain staged. Volstagg before any Instinct Hero: +3 printed, +1 (1.2.71), Instead line blocked \"it needs another Instinct Hero played this turn\" (1.2.72), Attack 12 -> 16. After Keen Senses: +3 printed, +1 and +2 (1.2.76, 1.2.77), Attack 17 -> 23. Bridge emptied by the Escape setter: +3 printed, \"no Villain is in the Bridge\" logged once per hook (1.2.85, 1.2.86), Attack 23 -> 26. Card viewer shows Flying Stallion \"Rooftops Conqueror 1\".",
+      "evidence": "Operator match 1pm4YRmtW_0 (server 18ead03c, client ede2bcc, created 2026-11-12T14:49Z), Bridge Villain staged. Volstagg before any Instinct Hero: +3 printed, +1 (1.2.71), Instead line blocked \"it needs another Instinct Hero played this turn\" (1.2.72), Attack 12 -> 16. After Keen Senses: +3 printed, +1 and +2 (1.2.76, 1.2.77), Attack 17 -> 23. Bridge emptied by the Escape setter: +3 printed, \"no Villain is in the Bridge\" logged once per hook (1.2.85, 1.2.86), Attack 23 -> 26. Card viewer shows Flying Stallion \"Rooftops Conqueror 1\". Duplicate line fixed by #3363: operator match gZtCwQbEVHo (server 62103d8b, 2026-11-14) logs one Bridge line with the Bridge empty, both before an Instinct Hero (2.2.8) and after Keen Senses (2.2.15).",
       "note": "Live check (NEW match created after the deploy, with the Warriors Three; operator setters stage a Bridge Villain): Volstagg adds +3 with a Bridge Villain after another Instinct Hero, +1 without one, and nothing with the Bridge empty. D-24837."
     },
     {
