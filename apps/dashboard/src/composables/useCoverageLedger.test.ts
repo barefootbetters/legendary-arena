@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   statusLabel,
+  noRuntimeObservationLabel,
   buildMechanicDictionary,
   implementedPercent,
   implementedRowCount,
@@ -65,6 +66,16 @@ test('statusLabel covers every status and throws on an unknown one', () => {
   assert.equal(statusLabel('unsupported'), 'Unsupported');
   assert.equal(statusLabel('unmarked'), 'Unmarked');
   assert.throws(() => statusLabel('mystery' as unknown as LedgerStatus));
+});
+
+test('noRuntimeObservationLabel separates implemented rows from to-do rows', () => {
+  assert.equal(noRuntimeObservationLabel('executable'), 'no hollow hits');
+  assert.equal(noRuntimeObservationLabel('condition'), 'no hollow hits');
+  assert.equal(noRuntimeObservationLabel('subsystem'), 'no hollow hits');
+  assert.equal(noRuntimeObservationLabel('deferred'), 'not observed in play');
+  assert.equal(noRuntimeObservationLabel('unsupported'), 'not observed in play');
+  assert.equal(noRuntimeObservationLabel('unmarked'), 'not observed in play');
+  assert.throws(() => noRuntimeObservationLabel('mystery' as unknown as LedgerStatus));
 });
 
 test('buildMechanicDictionary groups by mechanic, counts cards, and excludes unmarked', () => {
