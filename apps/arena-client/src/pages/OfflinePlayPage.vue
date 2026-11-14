@@ -22,6 +22,8 @@ import { createLocalSpikeClient, type LocalSpikeClientHandle } from '../client/l
 import type { SubmitMove, UiMoveName } from '../components/play/uiMoveName.types';
 import { registerOfflineServiceWorker } from '../offline/registerOfflineServiceWorker';
 import { warmOfflineCardImages } from '../offline/offlineImageCache';
+import { summarizeOfflineLineup } from '../offline/offlineLineup';
+import type { LoadoutSummary } from '../lib/loadoutSummary';
 import {
   describeOfflineStatus,
   type OfflineRegistrationStatus,
@@ -83,6 +85,9 @@ export default defineComponent({
     // why: bumped on every match start so PlayViewport remounts; otherwise the
     // board's own component state outlives the match New game replaced.
     const matchKey = ref(0);
+    // why: the Battle Brief's lineup, built from the bundle because there is no
+    // server to read the match LAGN from. Every match uses the same bundle.
+    const lineup = ref<LoadoutSummary | null>(null);
     let bundle: LocalSpikeSetupBundle | null = null;
     let handle: LocalSpikeClientHandle | null = null;
 
@@ -109,6 +114,7 @@ export default defineComponent({
       handle = null;
       try {
         bundle ??= parseLocalSpikeSetupBundle(featuredSetupBundleJson);
+        lineup.value ??= summarizeOfflineLineup(bundle);
         const nextHandle = createLocalSpikeClient({
           bundle,
           matchConfiguration: bundle.matchConfiguration,
@@ -210,6 +216,7 @@ export default defineComponent({
     return {
       errorMessage,
       matchKey,
+      lineup,
       submitMove,
       onNewGame,
       statusLine,
@@ -230,7 +237,7 @@ export default defineComponent({
       >{{ statusLine }}</span>
       <button type="button" data-testid="offline-new-game" @click="onNewGame">New game</button>
     </section>
-    <PlayViewport v-if="errorMessage === null" :key="matchKey" :submit-move="submitMove" />
+    <PlayViewport v-if="errorMessage === null" :key="matchKey" :submit-move="submitMove" :provided-lineup="lineup" />
   </div>
 </template>
 
