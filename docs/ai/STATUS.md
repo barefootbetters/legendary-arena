@@ -10,6 +10,17 @@
 
 ## Current State
 
+### Live-verify stale-row guard: CI fails a checked WORK_INDEX row that still says its live-verify is pending after live-verify.json records it verified (WP-895 / EC-933, D-24852) (2026-11-14)
+
+**No user-observable change — infrastructure only.** A new Coverage & Ledger Gates step stops the drift the 2026-11-14 reconciliation (#3371 / #3373 / #3374, 91 rows) fixed by hand.
+
+- **Guard.** `scripts/check-workindex-liveverify-pending.mjs` (`pnpm workindex:liveverify:check`) fails on a `- [x]` row whose text says its D-24026 live-verify is pending (clause-bounded pattern, D-24852) while every `docs/ai/coverage/live-verify.json` entry naming that WP is `verified`. A row with no entry, or any `partial` / `pending` entry, passes. Detect-only; `node:fs` only.
+- **Tests.** `scripts/check-workindex-liveverify-pending.test.ts` 8 / 0 (`pnpm workindex:liveverify:test`), run in CI before the check. Revert proofs: removing the all-verified decision fails the positive case; removing the clause bound fails the cross-clause negative.
+- **Observed.** Exit 0 on `main`; exit 1 with 58 rows on the docs before #3371 (`62ac480e7^`). `workindex:rows:check`, `workindex:executed:check`, `ledger:numbers:check`, `roadmap:counts:check` all 0 after the close.
+- **Lane.** Lightweight (D-24028): one layer, 4 code/test files, additive, no determinism or hash surface. The CI step landed in its own `INFRA:` commit (D-24444 Guard A).
+- **Follow-up (D-24852 blind spot).** Add a `partial` / `pending` live-verify.json entry for WP-862's Look Out for the Little Guy, then add `partial` to the D-24852 pattern. Until then the WP-864 / WP-865 rows must be hand-updated when their pending entries flip to verified.
+- **Live-verify (D-24026):** N/A, infrastructure only. The step runs on this PR's own CI.
+
 ### Airplane mode slice 1: an installable `/offline/` page plays the free featured solo table with no network (WP-894 / EC-932, D-24851) (2026-11-13)
 
 **User-visible on `play.legendary-arena.com/offline/` after deploy (reachable by URL only; `/` unchanged).** Opened online once, the page plays the featured solo table on the device (a boardgame.io `Local()` master running the unchanged engine, fresh seed per match), caches the app shell and the table's card images, and says **Ready offline**. After that it reloads, cold-starts and plays to the end with no network, and it installs to the home screen. Nothing is saved: a refresh starts a new match (slice 2 adds save).

@@ -60,6 +60,8 @@
     "workindex:rows:test":  "node --import tsx --test scripts/check-workindex-rows.test.ts",
     "workindex:executed:check": "node scripts/check-workindex-executed-open.mjs",
     "workindex:executed:test":  "node --import tsx --test scripts/check-workindex-executed-open.test.ts",
+    "workindex:liveverify:check": "node scripts/check-workindex-liveverify-pending.mjs",
+    "workindex:liveverify:test":  "node --import tsx --test scripts/check-workindex-liveverify-pending.test.ts",
     "guard:test":           "node --import tsx --test scripts/commit-reward-integrity-guard.test.ts scripts/commit-msg-merge-exemption.test.ts scripts/ensure-worktree-hooks-path.test.ts",
 
     "spike:local-bundle":   "node scripts/build-local-spike-bundle.mjs",
