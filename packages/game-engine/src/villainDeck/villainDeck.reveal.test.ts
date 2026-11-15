@@ -2511,3 +2511,50 @@ describe('WP-837 The Leader reveal gate at the onAmbush fire site (D-24770)', ()
     assert.equal(playedTexts.some((text) => text.includes('revealed a Strength Hero')), false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-838 / D-24771 — a supply Bystander in the Villain Deck reveals as a Bystander (T28)
+// ---------------------------------------------------------------------------
+
+describe('WP-838 Villain Deck classifier fallback for supply Bystanders (D-24771)', () => {
+  it('T28: a pile-bystander with no map entry is captured by the Villain closest to the Villain Deck', () => {
+    const gameState = createMockGameState({ deck: [BYSTANDER_EXT_ID, 'villain-next' as CardExtId], discard: [], cardTypes: {} });
+    gameState.city = ['villain-x' as CardExtId, null, 'villain-y' as CardExtId, null, null];
+
+    const moveContext = createMockMoveContext(gameState);
+    revealVillainCard(moveContext);
+
+    assert.deepStrictEqual(moveContext.G.attachedBystanders['villain-x'], [BYSTANDER_EXT_ID]);
+    assert.deepStrictEqual(moveContext.G.villainDeck.deck, ['villain-next']);
+    assert.ok(
+      moveContext.G.notableEvents.some((event) => event.type === 'bystanderRevealed'),
+      'the reveal emits bystanderRevealed',
+    );
+    assert.equal(
+      Object.hasOwn(moveContext.G.villainDeckCardTypes, BYSTANDER_EXT_ID),
+      false,
+      'the fallback never writes villainDeckCardTypes',
+    );
+    assert.ok(
+      !moveContext.G.messages.some((message) => message.text.includes('has no entry in villainDeckCardTypes')),
+      'no fail-closed line',
+    );
+  });
+
+  it('T28: an unknown id still fails closed and stays on top', () => {
+    const gameState = createMockGameState({ deck: ['mystery-01' as CardExtId], discard: [], cardTypes: {} });
+    gameState.city = ['villain-x' as CardExtId, null, null, null, null];
+
+    const moveContext = createMockMoveContext(gameState);
+    revealVillainCard(moveContext);
+
+    assert.deepStrictEqual(moveContext.G.villainDeck.deck, ['mystery-01']);
+    assert.ok(
+      moveContext.G.messages.some(
+        (message) =>
+          message.text ===
+          'Villain deck reveal failed: card "mystery-01" has no entry in villainDeckCardTypes. No removal or trigger occurred.',
+      ),
+    );
+  });
+});

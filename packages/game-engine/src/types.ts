@@ -491,6 +491,7 @@ import type { HeroKeyword } from './rules/heroKeywords.js';
 import type {
   GreyHeroFilter,
   VillainAbilityHook,
+  VillainAttackPerCaptured,
   VillainDefeatRequirement,
   VillainFightDiscardCost,
   VillainFightRestriction,
@@ -3366,6 +3367,16 @@ export interface LegendaryGameState {
   // byte-identical G (hash oracles).
   /** Per-villain variable-Attack passives. Built at setup, read-only; absent when none. */
   villainVariableAttack?: Record<CardExtId, VillainVariableAttack>;
+
+  // why: WP-838 / D-24771 — per-villain-instance "+N Attack for each <Hero|Bystander> he
+  // has" passive (co2e Venom: captured Heroes; co2e Enchantress and Baron Zemo: captured
+  // Bystanders). Read by resolveFightCost only: an entry replaces the dynamic captured-Hero
+  // cost sum and adds count x attackPerCard of its kind. Built once at setup from the
+  // [attack-per-captured:<kind>:<N>] marker, keyed by copy-suffixed instance ext_id, never
+  // written by a move. OMITTED ENTIRELY when no marked villain is in the match, so every
+  // other match keeps a byte-identical G (hash oracles).
+  /** Per-villain attack per captured card. Built at setup, read-only; absent when none. */
+  villainAttackPerCaptured?: Record<CardExtId, VillainAttackPerCaptured>;
 
   // why: WP-760 / D-24589 — per-villain-instance Blood Frenzy flag ("+1 Attack for
   // each different Victory Point value among the cards in your Victory Pile"; The

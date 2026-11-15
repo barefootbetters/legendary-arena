@@ -55,7 +55,11 @@ export function categorizeVillainCard(extId: string): RevealedCardType {
   if (extId.startsWith('scheme-twist-')) {
     return 'scheme-twist';
   }
-  if (extId.startsWith('bystander-villain-deck-')) {
+  // why: WP-838 / D-24771 — Baron Strucker shuffles supply Bystanders (the fungible
+  // 'pile-bystander' id, BYSTANDER_EXT_ID in the engine's pilesInit.ts) into the Villain Deck;
+  // the engine reveals them as Bystanders, so the odds count them as Bystanders too. A literal,
+  // because this file imports the engine type-only.
+  if (extId.startsWith('bystander-villain-deck-') || extId === 'pile-bystander') {
     return 'bystander';
   }
   if (extId.startsWith('henchman-')) {

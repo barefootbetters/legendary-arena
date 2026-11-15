@@ -22,7 +22,8 @@ import { SHIELD_OFFICER_EXT_ID, BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 // why: WP-869 / D-24814 — the Fight-site stack-villain clause reads the free ids.
 import { listFreeStackVillainIds } from '../rules/stackVillain.logic.js';
 import { awardAttachedBystanders } from '../board/bystanders.logic.js';
-import { awardAttachedHeroes } from '../board/heroCapture.logic.js';
+import { awardAttachedHeroes, awardOneAttachedHeroRestToBottom } from '../board/heroCapture.logic.js';
+import type { ReturnedCapturedHero } from '../board/heroCapture.logic.js';
 import { getSpendableAttackForTarget, spendFightCostForTarget, markExcessiveViolenceUsed, spendRecruit, addResources, recordVillainDefeated } from '../economy/economy.logic.js';
 import type { AttackTargetName } from '../economy/economy.types.js';
 import { UNNAMED_CITY_SPACE_TARGET } from '../economy/economy.types.js';
@@ -55,6 +56,7 @@ import {
   executeVillainAbilities,
   resolveEffectResultNames,
   villainCardPlaysVillainDeckCards,
+  villainCardGainsOneCapturedHero,
   villainCardReenterSewersKinds,
   villainCardStackVillainEntry,
   resolveCardDisplayName,
@@ -652,8 +654,33 @@ export function defeatCityVillainCore(
   // deletes the mapping entry, so the log below can name each hero returned to
   // the defeating player's discard ("Fight: Gain that Hero"). Deterministic
   // append order; empty when the villain captured no HQ hero.
-  const heroesReturnedToDiscard = [...(G.villainAttachedHeroes?.[cardId] ?? [])];
-  awardAttachedHeroes(G, cardId, currentPlayer);
+  let heroesReturnedToDiscard = [...(G.villainAttachedHeroes?.[cardId] ?? [])];
+  // why: WP-838 / D-24771 — Venom's "You may gain a Hero captured by Venom. Put the rest on the
+  // bottom …": the generic award below runs BEFORE the executor, so the split happens HERE (the
+  // D-24270 / D-24351 executor-no-op pattern; the primitive's handler is a deliberate no-op).
+  // Every other villain takes the unchanged awardAttachedHeroes path.
+  let capturedHeroesReturnedToBottom: ReturnedCapturedHero[] = [];
+  let isCapturedHeroSplit = false;
+  if (villainCardGainsOneCapturedHero(G, cardId)) {
+    isCapturedHeroSplit = true;
+    // why: D-24824 §7 — a deliberate-no-op primitive whose work runs at a fire-site bridge
+    // records a `secondary-site` trace there, immediately before the work.
+    recordVillainSecondarySiteTrace(
+      G,
+      cardId,
+      'onFight',
+      'gain-one-attached-hero-rest-to-bottom',
+      'awardOneAttachedHeroRestToBottom',
+      'villain-fight-bridge',
+      {},
+      readTurnNumber(ctx),
+    );
+    const splitOutcome = awardOneAttachedHeroRestToBottom(G, cardId, currentPlayer);
+    heroesReturnedToDiscard = splitOutcome.gainedHeroId === null ? [] : [splitOutcome.gainedHeroId];
+    capturedHeroesReturnedToBottom = splitOutcome.returnedToBottom;
+  } else {
+    awardAttachedHeroes(G, cardId, currentPlayer);
+  }
 
   // why: WP-819 / D-24753 — Baron Zemo's paid rescue resolves BEFORE the Villain's Fight
   // effects. Rules v23 L772-792 let the player do the Fight and Rescue effects "in any order";
@@ -708,6 +735,21 @@ export function defeatCityVillainCore(
     pushLog(G,
       `Player ${currentPlayer} gained ${formatCardRef(G.cardDisplayData, heroId)} from ${formatCardRef(G.cardDisplayData, cardId)} into their discard pile.`,
     );
+  }
+  // why: WP-838 / D-24771 — narrate where Venom's other captured cards went, one line each, so
+  // a card leaving the board has a log trail; with nothing captured, say so.
+  if (isCapturedHeroSplit) {
+    for (const returnedHero of capturedHeroesReturnedToBottom) {
+      pushLog(G,
+        `Fight effect: ${formatCardRef(G.cardDisplayData, returnedHero.heroId)} went to the bottom of the ${capturedHeroDeckLabel(returnedHero.deck)}.`,
+      );
+    }
+    if (heroesReturnedToDiscard.length === 0) {
+      pushLog(G,
+        `Fight effect: ${formatCardRef(G.cardDisplayData, cardId)} had no captured Hero to gain.`,
+        'blocked',
+      );
+    }
   }
 
   // why: WP-316 + WP-319 — resolve the effect targets to display names ONCE (via
@@ -787,6 +829,22 @@ export function defeatCityVillainCore(
   // stack entry) moved verbatim into runVillainFightFireSiteBridges, so Nightbringer's Villain
   // Deck defeat runs the same bridges; it stays this core's last step.
   runVillainFightFireSiteBridges(G, ctx, cardId, shuffleContext);
+}
+
+/**
+ * Returns the log label of the deck a captured card went under (WP-838 / D-24771).
+ *
+ * @param deck - The home deck of a card Venom's Fight returned.
+ * @returns `Hero Deck`, `Sidekick Deck` or `S.H.I.E.L.D. Officer Deck`.
+ */
+function capturedHeroDeckLabel(deck: ReturnedCapturedHero['deck']): string {
+  if (deck === 'sidekick-deck') {
+    return 'Sidekick Deck';
+  }
+  if (deck === 'officer-deck') {
+    return 'S.H.I.E.L.D. Officer Deck';
+  }
+  return 'Hero Deck';
 }
 
 /**

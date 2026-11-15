@@ -118,11 +118,14 @@
       },
       "enemies-of-asgard": {
         "destroyer": { "ambush": ["ko-hero:each:1:discard:non-grey"], "fight": ["ko-up-to-from-discard-current:2:grey"], "escape": ["ko-hero:each:1:discard:non-grey"] },
+        "enchantress": { "ambush": ["captureBystander", "capture-bystander-each-victory-pile"] },
         "frost-giant-warrior": { "ambush": ["discard-hero-or-wound-each-player-by-trait:hc:ranged"], "fight": ["ko-up-to-from-discard-current:1:grey"] },
         "ymir-frost-giant-king": { "fight": ["ko-up-to-from-discard-current:1:grey"] }
       },
       "hydra": {
+        "baron-strucker-supreme-hydra": { "fight": ["shuffle-bystanders-into-villain-deck:4", "play-villain-deck-cards:2"] },
         "endless-armies-of-hydra": { "fight": ["koHeroEachPlayer", "play-villain-deck-cards:2"] },
+        "hydra-kidnappers": { "ambush": ["capture-pile-hero:officer+sidekick"], "fight": ["gain-attached-hero"] },
         "viper": { "fight": ["gain-wound-unless-victory-villain-group:hydra"], "escape": ["gain-wound-unless-victory-villain-group:hydra"] }
       },
       "masters-of-evil": {
@@ -139,7 +142,8 @@
       },
       "sinister-spider-foes": {
         "scorpion": { "ambush": ["gain-wound:each!another-group-villain-in-city"], "fight": ["koHeroCurrentPlayer"] },
-        "the-lizard": { "fight": ["ko-hero:current@sewers", "gain-wound:each-other@sewers"] }
+        "the-lizard": { "fight": ["ko-hero:current@sewers", "gain-wound:each-other@sewers"] },
+        "venom": { "ambush": ["capture-pile-hero:sidekick", "capture-hq-heroes-cost-lte:2"], "fight": ["gain-one-attached-hero-rest-to-bottom"] }
       },
       "sinister-syndicate": {
         "beetle": { "fight": ["draw-cards-current-count-by-trait:hc:covert"], "escape": ["reveal-or-wound:hc:covert"] },

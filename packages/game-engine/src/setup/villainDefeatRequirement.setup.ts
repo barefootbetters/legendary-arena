@@ -19,13 +19,18 @@
 import type { CardExtId } from '../state/zones.types.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type {
+  VillainAttackPerCaptured,
+  VillainCapturedKind,
   VillainDefeatRequirement,
   VillainDefeatRequirementKind,
   VillainFightDiscardCost,
   VillainFightRestriction,
   VillainFightRestrictionKind,
 } from '../rules/villainAbility.types.js';
-import { VILLAIN_FIGHT_RESTRICTION_KINDS } from '../rules/villainAbility.types.js';
+import {
+  VILLAIN_CAPTURED_KINDS,
+  VILLAIN_FIGHT_RESTRICTION_KINDS,
+} from '../rules/villainAbility.types.js';
 import { normalizeTraitSlug } from '../state/traits.normalize.js';
 // why: WP-841 / D-24774 — the variable-Attack entry type and its source list live in
 // the fight-cost logic file (the WP-815 precedent); the marker parser validates the
@@ -723,4 +728,122 @@ export function buildVillainFightRestrictions(
   }
 
   return restrictions;
+}
+
+// ---------------------------------------------------------------------------
+// Attack per captured card marker + builder (WP-838 / D-24771)
+// ---------------------------------------------------------------------------
+
+/** Regex for the [attack-per-captured:<kind>:<N>] marker (WP-838 / D-24771). */
+const ATTACK_PER_CAPTURED_MARKER_PATTERN = /\[attack-per-captured:([^\]]+)\]/g;
+
+/**
+ * Checks whether a string is one of the canonical captured-card kinds.
+ *
+ * @param value - The candidate kind token.
+ * @returns True when value is a member of VILLAIN_CAPTURED_KINDS.
+ */
+function isCapturedKind(value: string): value is VillainCapturedKind {
+  for (const kind of VILLAIN_CAPTURED_KINDS) {
+    if (kind === value) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Parses the first valid `[attack-per-captured:<kind>:<N>]` marker on an ability
+ * line, or null when the line carries none.
+ *
+ * `<kind>` must be one of VILLAIN_CAPTURED_KINDS verbatim and `<N>` a positive
+ * decimal integer with no sign or leading zero (`^[1-9][0-9]*$`). A missing or
+ * extra colon-separated segment, an unknown kind or a bad number yields no entry
+ * for that marker (inert, never a throw); a later valid marker on the line still
+ * wins.
+ *
+ * @param abilityLine - One villain ability text line.
+ * @returns The parsed entry, or null.
+ */
+export function parseAttackPerCapturedLine(abilityLine: string): VillainAttackPerCaptured | null {
+  const regex = new RegExp(ATTACK_PER_CAPTURED_MARKER_PATTERN.source, 'g');
+  let match: RegExpExecArray | null = regex.exec(abilityLine);
+  while (match !== null) {
+    const segments = match[1]!.split(':');
+    if (segments.length === 2) {
+      const kindToken = segments[0]!;
+      const countToken = segments[1]!;
+      if (isCapturedKind(kindToken) && /^[1-9][0-9]*$/.test(countToken)) {
+        return { kind: kindToken, attackPerCard: Number.parseInt(countToken, 10) };
+      }
+    }
+    match = regex.exec(abilityLine);
+  }
+  return null;
+}
+
+/**
+ * Builds the per-villain-instance attack-per-captured table from registry data
+ * at setup.
+ *
+ * Called during Game.setup() via buildInitialGameState, beside
+ * buildVillainVariableAttack. Reads villain per-card ability text for the
+ * selected villain groups, parses the first valid `[attack-per-captured:…]`
+ * marker on any line, and fans one entry out per copy-indexed instance ext_id
+ * via the shared villainCardInstanceExtIds emitter.
+ *
+ * After setup, G.villainAttackPerCaptured is immutable — moves must never modify it.
+ *
+ * @param registry - Card registry for resolving ability text. Setup-time only.
+ *   Accepts unknown to support narrow test mocks; returns an empty record when
+ *   the registry does not satisfy the reader interface.
+ * @param matchConfig - Validated match setup config (villainGroupIds).
+ * @returns The attack-per-captured table; empty when no villain is marked.
+ */
+// why: D-24771 — a deliberate fifth copy of the setup registry walk (beside the
+// defeat-requirement, fight-discard-cost, variable-Attack and fight-restriction
+// builders). A shared walk would put four shipped tables at risk for no behavior gain.
+export function buildVillainAttackPerCaptured(
+  registry: unknown,
+  matchConfig: MatchSetupConfig,
+): Record<CardExtId, VillainAttackPerCaptured> {
+  const attackPerCaptured: Record<CardExtId, VillainAttackPerCaptured> = {};
+  if (!isRegistryReader(registry)) {
+    return attackPerCaptured;
+  }
+
+  for (const villainGroupId of matchConfig.villainGroupIds) {
+    const parsed = parseQualifiedId(villainGroupId);
+    if (parsed === null) continue;
+    const setData = registry.getSet(parsed.setAbbr);
+    const groupCards = findVillainGroupCards(setData, parsed.slug);
+    if (groupCards === null) continue;
+
+    for (const card of groupCards) {
+      if (typeof card.slug !== 'string') continue;
+      if (!Array.isArray(card.abilities)) continue;
+
+      let entry: VillainAttackPerCaptured | null = null;
+      for (const abilityLine of card.abilities) {
+        if (typeof abilityLine !== 'string') continue;
+        entry = parseAttackPerCapturedLine(abilityLine);
+        if (entry !== null) break;
+      }
+      if (entry === null) continue;
+
+      const instanceExtIds = villainCardInstanceExtIds(
+        parsed.setAbbr,
+        parsed.slug,
+        card.slug,
+        card,
+      );
+      // why: a fresh object per copy instance, so copies never alias one another
+      // (D-13502) and resolveFightCost keyed by a zone-instance ext_id finds its entry.
+      for (const cardId of instanceExtIds) {
+        attackPerCaptured[cardId] = { kind: entry.kind, attackPerCard: entry.attackPerCard };
+      }
+    }
+  }
+
+  return attackPerCaptured;
 }

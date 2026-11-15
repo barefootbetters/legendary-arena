@@ -216,6 +216,12 @@ function isLockedEffectKeyword(keyword) {
 // `villain-hunt-for-victims` (no-param) appended at position 52 by WP-889 (D-24841 — mdns Lilin
 // Skinner, Meatmarket and Blackout "Ambush: [keyword:Hunt for Victims]"; validates via the terminal
 // `parts.length === 1` branch, with or without the `!moonlight` suffix).
+// `capture-bystander-each-victory-pile` (no-param), `capture-pile-hero` (`:<pile>[+<pile>]`),
+// `capture-hq-heroes-cost-lte` (`:<N>`), `gain-one-attached-hero-rest-to-bottom` (no-param) and
+// `shuffle-bystanders-into-villain-deck` (`:<N>`) appended at positions 53-57 by WP-838 (D-24771 —
+// the co2e capture family: Enchantress, HYDRA Kidnappers, Venom, Baron Strucker; the two no-param
+// ones validate via the terminal `parts.length === 1` branch, the three parameterized ones via
+// their own branches below, so their bare tokens are rejected).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -269,6 +275,11 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'reveal-villain-deck-defeat-low-vp-current',
   'give-card-to-right-player-current',
   'villain-hunt-for-victims',
+  'capture-bystander-each-victory-pile',
+  'capture-pile-hero',
+  'capture-hq-heroes-cost-lte',
+  'gain-one-attached-hero-rest-to-bottom',
+  'shuffle-bystanders-into-villain-deck',
 ];
 
 // why: WP-836 / D-24769 — hand-synced local copy of the engine's HERO_CLASSES
@@ -294,6 +305,13 @@ const VILLAIN_EFFECT_CONDITIONS = ['savior', 'another-group-villain-in-city', 'm
 // this list, so a mistyped space in the marker map is rejected (never a silent
 // accept) and any engine-side rename breaks this script until it is updated here.
 const CITY_SPACE_NAMES = ['sewers', 'bank', 'rooftops', 'streets', 'bridge'];
+
+// why: WP-838 / D-24771 — hand-synced local copy of the engine's VILLAIN_CAPTURE_PILES
+// (packages/game-engine/src/rules/villainAbility.types.ts). Same no-import-from-packages
+// discipline + loud-fail-on-drift posture as CITY_SPACE_NAMES above: the capture-pile-hero
+// pile list validates against it, so a mistyped pile in the marker map is rejected, and an
+// engine-side change breaks this script until it is updated here.
+const VILLAIN_CAPTURE_PILES = ['officer', 'sidekick'];
 
 // why: WP-873 / D-24818 — hand-synced local copy of the engine's FORTIFY_ALLOWED_LOCKS
 // (packages/game-engine/src/board/fortify.types.ts); its keys are FORTIFY_PLACES. Same
@@ -341,6 +359,26 @@ function isValidEligibleCostList(costListToken) {
     const cost = Number(costToken);
     if (cost <= previousCost) return false;
     previousCost = cost;
+  }
+  return true;
+}
+
+/**
+ * Returns true when a `+`-joined capture-pile list (`officer+sidekick`) is well-formed: one or
+ * two tokens, each a member of VILLAIN_CAPTURE_PILES (case-sensitive), no repeat (D-24771).
+ * Mirrors the engine parser's parseCapturePileList.
+ *
+ * @param {string} pileListToken - the text after the primitive's `:`.
+ * @returns {boolean} true when the list is well-formed.
+ */
+function isValidCapturePileList(pileListToken) {
+  const pileTokens = pileListToken.split('+');
+  if (pileTokens.length > VILLAIN_CAPTURE_PILES.length) return false;
+  const seenPiles = [];
+  for (const pileToken of pileTokens) {
+    if (!VILLAIN_CAPTURE_PILES.includes(pileToken)) return false;
+    if (seenPiles.includes(pileToken)) return false;
+    seenPiles.push(pileToken);
   }
   return true;
 }
@@ -596,6 +634,17 @@ function isValidParameterizedEffectToken(token) {
     // Primus: :2+3+5+7). Mirrors the engine parser's parseEligibleCostList so producer +
     // consumer agree on the grammar.
     return parts.length === 2 && isValidEligibleCostList(parts[1]);
+  }
+  if (primitive === 'capture-pile-hero') {
+    // why: D-24771 — grammar capture-pile-hero:<pile>[+<pile>] (exactly 2 tokens; HYDRA
+    // Kidnappers :officer+sidekick, Venom :sidekick). Mirrors the engine parser's
+    // parseCapturePileList so producer + consumer agree on the grammar.
+    return parts.length === 2 && isValidCapturePileList(parts[1]);
+  }
+  if (primitive === 'capture-hq-heroes-cost-lte' || primitive === 'shuffle-bystanders-into-villain-deck') {
+    // why: D-24771 — grammar <primitive>:<N> (exactly 2 tokens; Venom :2, Baron Strucker :4), N a
+    // positive integer. The bare token has no default, so it must not reach the no-param branch.
+    return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
   }
   // why: hero-deck-top-to-escape, gain-officer-current, and the other no-param
   // primitives take no params.

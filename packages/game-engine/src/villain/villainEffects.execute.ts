@@ -41,6 +41,7 @@ import type {
   VillainEffectPlayerTargets,
   VillainKoZone,
   VillainWoundOutcomes,
+  VillainCapturePile,
 } from '../rules/villainAbility.types.js';
 import {
   getVillainHooksForCard,
@@ -74,7 +75,11 @@ import {
   findFirstVictoryPileBystander,
   SAVIOR_BYSTANDER_THRESHOLD,
 } from '../board/bystanders.logic.js';
-import { captureHeroFromHq } from '../board/heroCapture.logic.js';
+import {
+  attachCapturedHero,
+  captureHeroFromHq,
+  captureHeroFromHqSlot,
+} from '../board/heroCapture.logic.js';
 // why: WP-873 / D-24818 — the Fortify escape handler writes G.fortifications only through the
 // fortify helpers (pure, type-only imports back into the engine; no cycle).
 import { fortifyWithEscapedVillain, getFortification } from '../board/fortify.logic.js';
@@ -92,6 +97,9 @@ import { moveCardFromZone } from '../moves/zoneOps.js';
 import { discardFromHand } from '../moves/discardFromHand.js';
 import { reshuffleDiscardIntoDeck, drawCardsIntoHand, HAND_SIZE } from '../moves/drawCards.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
+// why: WP-838 / D-24771 — Baron Strucker's shuffle goes through the one engine shuffle helper,
+// with the fight site's ShuffleProvider (the only randomness this packet adds).
+import { shuffleDeck } from '../setup/shuffle.js';
 import { pushLog } from '../log/logPush.js';
 import { describeKoSourceZone, formatCardRef } from '../log/logDisplay.js';
 // why: WP-870 / D-24815 — Zero's handler only queues the owed next-hand pick; that module never
@@ -882,6 +890,10 @@ const DELIBERATE_NO_OP_VILLAIN_PRIMITIVES: ReadonlySet<VillainEffectPrimitive> =
     // end of defeatCityVillainCore and in performVillainReveal moves the cards), so its trace must
     // read `no-op`, not `fired`.
     'stack-cards-enter-city-as-villains',
+    // why: WP-838 / D-24771 — Venom's gain-one / bottom-the-rest mutates nothing in the executor:
+    // the generic attached-Hero award runs at the fight site BEFORE the executor, so the split
+    // happens there (defeatCityVillainCore Step 3c); its trace must read `no-op`, not `fired`.
+    'gain-one-attached-hero-rest-to-bottom',
   ]);
 
 /**
@@ -971,8 +983,18 @@ export function recordVillainSecondarySiteTrace(
   G: LegendaryGameState,
   cardId: CardExtId,
   timing: VillainAbilityTiming,
-  effect: 'play-villain-deck-cards' | 'reenter-sewers-if-villain-deck-top' | 'stack-cards-enter-city-as-villains',
-  handler: 'playTopVillainDeckCards' | 'reenterSewersOnVillainDeckReveal' | 'enterStackCardsAsVillains',
+  // why: WP-838 / D-24771 — `gain-one-attached-hero-rest-to-bottom` / `awardOneAttachedHeroRestToBottom`
+  // appended under the D-24824 §7 forward rule: Venom's split runs at the fight site, not the executor.
+  effect:
+    | 'play-villain-deck-cards'
+    | 'reenter-sewers-if-villain-deck-top'
+    | 'stack-cards-enter-city-as-villains'
+    | 'gain-one-attached-hero-rest-to-bottom',
+  handler:
+    | 'playTopVillainDeckCards'
+    | 'reenterSewersOnVillainDeckReveal'
+    | 'enterStackCardsAsVillains'
+    | 'awardOneAttachedHeroRestToBottom',
   fireSite: 'villain-fight-bridge' | 'villain-ambush-bridge',
   params: Record<string, string | number | boolean>,
   turn: number,
@@ -5164,6 +5186,14 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   // why: WP-889 / D-24841 — position 52: the Lilin Ambush Hunt for Victims (Skinner, Meatmarket,
   // Blackout). Keyword-less, self-narrating through the WP-884 module's helpers.
   'villain-hunt-for-victims': villainEffectHuntForVictims,
+  // why: WP-838 / D-24771 — positions 53-57, the co2e capture family (Enchantress, HYDRA
+  // Kidnappers, Venom, Baron Strucker). All keyword-less and self-narrating; Venom's Fight is a
+  // deliberate no-op whose split runs at the fight site.
+  'capture-bystander-each-victory-pile': villainEffectCaptureBystanderEachVictoryPile,
+  'capture-pile-hero': villainEffectCapturePileHero,
+  'capture-hq-heroes-cost-lte': villainEffectCaptureHqHeroesCostLte,
+  'gain-one-attached-hero-rest-to-bottom': villainEffectGainOneAttachedHeroRestToBottom,
+  'shuffle-bystanders-into-villain-deck': villainEffectShuffleBystandersIntoVillainDeck,
 };
 
 /**
@@ -6073,4 +6103,285 @@ export function koOneOfYourHeroes(G: LegendaryGameState, playerID: string): KoOn
     return { outcome: 'none' };
   }
   return { outcome: 'koed', koedCardId, zone: target.zone };
+}
+
+// ---------------------------------------------------------------------------
+// WP-838 / D-24771 — the co2e capture family
+// ---------------------------------------------------------------------------
+
+/**
+ * capture-bystander-each-victory-pile primitive — Enchantress's Ambush "captures a Bystander …
+ * from each player's Victory Pile (of that player's choice)" (WP-838 / D-24771).
+ *
+ * For each player in sorted id order, the first Bystander in their Victory Pile leaves it and is
+ * appended to `G.attachedBystanders[cardId]`; a player with none is untouched, and no entry is
+ * created when nothing moved. No-param, keyword-less, self-narrates; never throws.
+ *
+ * @param G - Game state (mutated: Victory Piles, attachedBystanders, messages).
+ * @param _currentPlayer - Unused; the effect reaches every player.
+ * @param cardId - The capturing villain's zone-instance ext_id.
+ * @param timing - The timing that fired (for the "<Ambush|Fight|Escape> effect:" label).
+ * @returns `{ targets: [] }` always — a keyword-less result is never recorded.
+ */
+function villainEffectCaptureBystanderEachVictoryPile(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+): VillainEffectApplication {
+  const capturedPlayerIds: string[] = [];
+  let capturedBystanders: CardExtId[] = [];
+  // why: D-24780 §13 (amended 2026-10-27) — stays sorted, not current-player-first: no Wound,
+  // discard or reaction runs here, so the order only sets the append order of
+  // G.attachedBystanders[cardId] and the log names (the D-24780 §6 append-order class).
+  for (const playerId of Object.keys(G.playerZones).sort()) {
+    const zones = G.playerZones[playerId];
+    if (!zones) continue;
+    // why: D-24749 / D-24771 — the rules give each player the pick, but the engine treats every
+    // Bystander as identical (1 VP, no rescue ability implemented), so the first Bystander in pile
+    // order is a deterministic no-choice pick that needs no non-active-seat prompt.
+    const bystanderId = findFirstVictoryPileBystander(zones.victory);
+    if (bystanderId === undefined) continue;
+    const moveResult = moveCardFromZone(zones.victory, capturedBystanders, bystanderId);
+    zones.victory = moveResult.from;
+    capturedBystanders = moveResult.to;
+    capturedPlayerIds.push(playerId);
+  }
+  const label = villainEffectTimingLabel(timing);
+  if (capturedBystanders.length === 0) {
+    pushLog(G, `${label} effect: no player had a Bystander in their Victory Pile to capture.`, 'blocked');
+    return { targets: [] };
+  }
+  // why: a fresh array (never a push onto a shared one), and the entry exists only because a
+  // Bystander moved (D-21401: an attachment entry exists only while non-empty).
+  const existingBystanders = G.attachedBystanders[cardId] ?? [];
+  G.attachedBystanders[cardId] = [...existingBystanders, ...capturedBystanders];
+  const names = capturedPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
+  pushLog(G, `${label} effect: captured a Bystander from the Victory Pile of ${names}.`, 'applied');
+  return { targets: [] };
+}
+
+/**
+ * Returns the supply pile array a capture pile names (WP-838 / D-24771).
+ *
+ * @param G - Game state (read-only).
+ * @param pile - The capture pile.
+ * @returns The live pile array (`G.piles.officers` or `G.piles.sidekicks`).
+ */
+function readCapturePile(G: LegendaryGameState, pile: VillainCapturePile): CardExtId[] {
+  if (pile === 'officer') {
+    return G.piles.officers;
+  }
+  return G.piles.sidekicks;
+}
+
+/**
+ * Returns the display label of a capture pile for the log (WP-838 / D-24771).
+ *
+ * @param pile - The capture pile.
+ * @returns `S.H.I.E.L.D. Officer Deck` or `Sidekick Deck`.
+ */
+function capturePileLabel(pile: VillainCapturePile): string {
+  if (pile === 'officer') {
+    return 'S.H.I.E.L.D. Officer Deck';
+  }
+  return 'Sidekick Deck';
+}
+
+/**
+ * capture-pile-hero primitive — HYDRA Kidnappers' "capture a card from the S.H.I.E.L.D. Officer
+ * Deck or Sidekick Deck" and Venom's "captures a Hero from the Sidekick Deck" (WP-838 / D-24771).
+ *
+ * Takes the top card (`[0]`) of the first listed pile that has a card and attaches it to the
+ * villain through attachCapturedHero. All listed piles empty (or no `capturePiles`) → a blocked
+ * line and no mutation. Keyword-less, self-narrates; never throws.
+ *
+ * @param G - Game state (mutated: one supply pile, villainAttachedHeroes, messages).
+ * @param _currentPlayer - Unused.
+ * @param cardId - The capturing villain's zone-instance ext_id.
+ * @param timing - The timing that fired.
+ * @param descriptor - Carries `capturePiles` in preference order.
+ * @returns `{ targets: [] }` always.
+ */
+function villainEffectCapturePileHero(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const label = villainEffectTimingLabel(timing);
+  const capturePiles = descriptor.capturePiles ?? [];
+  // why: rules v23 L3199-3201 — "do A or do B" picks an option you can actually do, so the first
+  // listed pile with a card wins; the marked order is Officer first (D-24771: the Officer, cost 3
+  // and +2 Recruit, is the stronger card the fighter later gains, and the fight cost is static).
+  for (const pile of capturePiles) {
+    const pileCards = readCapturePile(G, pile);
+    const capturedId = pileCards[0];
+    if (capturedId === undefined) continue;
+    if (pile === 'officer') {
+      G.piles.officers = pileCards.slice(1);
+    } else {
+      G.piles.sidekicks = pileCards.slice(1);
+    }
+    attachCapturedHero(G, cardId, capturedId);
+    pushLog(
+      G,
+      `${label} effect: captured ${resolveCardDisplayName(G, capturedId)} from the ${capturePileLabel(pile)}.`,
+      'applied',
+    );
+    return { targets: [] };
+  }
+  const pileLabels = capturePiles.map((pile) => capturePileLabel(pile));
+  let emptyClause = 'no capture pile was named';
+  if (pileLabels.length === 1) {
+    emptyClause = `the ${pileLabels[0]} is empty`;
+  } else if (pileLabels.length > 1) {
+    emptyClause = `the ${pileLabels.join(' and the ')} are empty`;
+  }
+  pushLog(G, `${label} effect: nothing was captured because ${emptyClause}.`, 'blocked');
+  return { targets: [] };
+}
+
+/**
+ * capture-hq-heroes-cost-lte primitive — Venom's "captures … each Hero that costs 2 or less
+ * from the HQ" (WP-838 / D-24771).
+ *
+ * Snapshots the HQ slot indices (ascending) whose Hero has a `G.cardStats` entry costing
+ * `magnitude` or less, then captures each through captureHeroFromHqSlot, which refills the slot
+ * at once. A Hero with no stats entry is not eligible. Missing `magnitude` → the blocked line.
+ * Keyword-less, self-narrates; never throws.
+ *
+ * @param G - Game state (mutated: HQ, Hero Deck, villainAttachedHeroes, messages).
+ * @param _currentPlayer - Unused.
+ * @param cardId - The capturing villain's zone-instance ext_id.
+ * @param timing - The timing that fired.
+ * @param descriptor - Carries the cost ceiling as `magnitude`.
+ * @returns `{ targets: [] }` always.
+ */
+function villainEffectCaptureHqHeroesCostLte(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const label = villainEffectTimingLabel(timing);
+  const limit = descriptor.magnitude;
+  if (limit === undefined) {
+    pushLog(G, `${label} effect: no Hero in the HQ costs the printed amount or less, so none was captured.`, 'blocked');
+    return { targets: [] };
+  }
+  // why: rules v23 L749-755 refill an empty HQ space immediately, so the printed "each Hero" is
+  // the HQ when the effect starts: snapshot the eligible slots first, and never re-check a Hero
+  // that arrives as a refill.
+  const eligibleIndexes: number[] = [];
+  for (let hqIndex = 0; hqIndex < G.hq.length; hqIndex++) {
+    const heroId = G.hq[hqIndex];
+    if (heroId === null || heroId === undefined) continue;
+    const heroStats = G.cardStats[heroId];
+    if (heroStats === undefined) continue;
+    if (heroStats.cost <= limit) {
+      eligibleIndexes.push(hqIndex);
+    }
+  }
+  const capturedNames: string[] = [];
+  for (const hqIndex of eligibleIndexes) {
+    const captureResult = captureHeroFromHqSlot(G, cardId, hqIndex);
+    if (captureResult !== null) {
+      capturedNames.push(resolveCardDisplayName(G, captureResult.capturedHeroId));
+    }
+  }
+  if (capturedNames.length === 0) {
+    pushLog(G, `${label} effect: no Hero in the HQ costs ${limit} or less, so none was captured.`, 'blocked');
+    return { targets: [] };
+  }
+  pushLog(G, `${label} effect: captured ${capturedNames.join(', ')} from the HQ (cost ${limit} or less).`, 'applied');
+  return { targets: [] };
+}
+
+/**
+ * gain-one-attached-hero-rest-to-bottom primitive — Venom's Fight "You may gain a Hero captured
+ * by Venom. Put the rest on the bottom of the Hero Deck and/or Sidekick Deck" (WP-838 / D-24771).
+ *
+ * A DELIBERATE NO-OP: no mutation, no log. The generic attached-Hero award runs at the fight site
+ * BEFORE the executor, so defeatCityVillainCore asks villainCardGainsOneCapturedHero and splits
+ * the award there instead (the D-24270 / D-24351 executor-no-op pattern). Listed in
+ * DELIBERATE_NO_OP_VILLAIN_PRIMITIVES so its executor trace reads `no-op`.
+ *
+ * @returns `{ targets: [] }` always.
+ */
+function villainEffectGainOneAttachedHeroRestToBottom(): VillainEffectApplication {
+  return { targets: [] };
+}
+
+/**
+ * shuffle-bystanders-into-villain-deck primitive — Baron Strucker's Fight "Shuffle four cards
+ * from the Bystander Deck into the Villain Deck" (WP-838 / D-24771).
+ *
+ * Moves up to `magnitude` cards from the top of `G.piles.bystanders` and shuffles them into the
+ * Villain Deck through the fire site's ShuffleProvider. No shuffle source, or an empty Bystander
+ * Deck → a blocked line, no mutation and no shuffle call. Keyword-less, self-narrates; never throws.
+ *
+ * @param G - Game state (mutated: Bystander Deck, Villain Deck, messages).
+ * @param _currentPlayer - Unused.
+ * @param _cardId - Unused.
+ * @param timing - The timing that fired.
+ * @param descriptor - Carries the shuffle count as `magnitude`.
+ * @param shuffleContext - The fire site's ShuffleProvider.
+ * @returns `{ targets: [] }` always.
+ */
+function villainEffectShuffleBystandersIntoVillainDeck(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+  shuffleContext?: ShuffleProvider,
+): VillainEffectApplication {
+  const label = villainEffectTimingLabel(timing);
+  if (shuffleContext === undefined) {
+    pushLog(G, `${label} effect: no shuffle source was available, so no Bystander was shuffled into the Villain Deck.`, 'blocked');
+    return { targets: [] };
+  }
+  const requestedCount = descriptor.magnitude ?? 0;
+  const movedCount = Math.min(requestedCount, G.piles.bystanders.length);
+  if (movedCount <= 0) {
+    pushLog(G, `${label} effect: the Bystander Deck is empty, so no Bystander was shuffled into the Villain Deck.`, 'blocked');
+    return { targets: [] };
+  }
+  const movedBystanders = G.piles.bystanders.slice(0, movedCount);
+  G.piles.bystanders = G.piles.bystanders.slice(movedCount);
+  // why: D-24351 / D-24771 — shuffle here, during the executor; the printed "Then play two cards"
+  // runs at the play-villain-deck-cards bridge after the defeat settles, so the order holds.
+  G.villainDeck.deck = shuffleDeck([...G.villainDeck.deck, ...movedBystanders], shuffleContext);
+  pushLog(G, `${label} effect: shuffled ${movedBystanders.length} Bystander(s) from the Bystander Deck into the Villain Deck.`, 'applied');
+  return { targets: [] };
+}
+
+/**
+ * Returns whether a villain's onFight hooks carry `gain-one-attached-hero-rest-to-bottom`
+ * (WP-838 / D-24771: co2e Venom). Read by defeatCityVillainCore, which then splits the
+ * attached-Hero award instead of giving the fighter every captured card. Mirrors
+ * villainCardPlaysVillainDeckCards's guards. Pure lookup; no mutation.
+ *
+ * @param G - Game state (read-only).
+ * @param cardId - The defeated villain's zone-instance ext_id.
+ * @returns True when the split applies.
+ */
+export function villainCardGainsOneCapturedHero(G: LegendaryGameState, cardId: CardExtId): boolean {
+  // why: guard against G states / test mocks lacking villainAbilityHooks (the
+  // villainCardPlaysVillainDeckCards guard) — getVillainHooksForCard would throw on undefined.
+  if (!G.villainAbilityHooks || G.villainAbilityHooks.length === 0) {
+    return false;
+  }
+  const hooks = getVillainHooksForCard(G.villainAbilityHooks, cardId, 'onFight');
+  for (const hook of hooks) {
+    for (const descriptor of hook.effects ?? []) {
+      if (descriptor.primitive === 'gain-one-attached-hero-rest-to-bottom') {
+        return true;
+      }
+    }
+  }
+  return false;
 }

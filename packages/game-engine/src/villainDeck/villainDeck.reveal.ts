@@ -15,6 +15,8 @@
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
+import type { RevealedCardType } from './villainDeck.types.js';
+import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import type { RuleEffect } from '../rules/ruleHooks.types.js';
 import type { ImplementationMap } from '../rules/ruleRuntime.execute.js';
@@ -213,6 +215,34 @@ export function revealVillainCard({ G, ctx, ...context }: MoveContext): void {
 }
 
 /**
+ * Classifies a Villain Deck card for the reveal (WP-838 / D-24771).
+ *
+ * The setup-built `G.villainDeckCardTypes` entry; else `'bystander'` for the
+ * fungible supply Bystander (BYSTANDER_EXT_ID); else undefined, which the reveal
+ * still fails closed on. Writes nothing to `G.villainDeckCardTypes`.
+ *
+ * @param G - Game state (read-only).
+ * @param cardId - The Villain Deck card.
+ * @returns The card's type, or undefined when unknown.
+ */
+// why: D-24771 — supply Bystanders share one id with no map entry; Baron Strucker shuffles them
+// into the Villain Deck, and without this fallback the first one to reach the top would fail
+// closed and jam the deck. The same rule is used by Finding Zemo and the client deck-odds bucket.
+function resolveRevealedCardType(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+): RevealedCardType | undefined {
+  const mappedType = G.villainDeckCardTypes[cardId];
+  if (mappedType !== undefined) {
+    return mappedType;
+  }
+  if (cardId === BYSTANDER_EXT_ID) {
+    return 'bystander';
+  }
+  return undefined;
+}
+
+/**
  * Reveals the top card from the villain deck and runs the full trigger pipeline.
  *
  * Pipeline: draw → classify → City routing (villain/henchman) → trigger →
@@ -258,7 +288,7 @@ export function performVillainReveal(
   }
 
   // Step 3: Look up classification — fail-closed if missing
-  const cardType = G.villainDeckCardTypes[cardId];
+  const cardType = resolveRevealedCardType(G, cardId);
 
   if (!cardType) {
     pushLog(G, 

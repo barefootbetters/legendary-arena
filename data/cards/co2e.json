@@ -2127,8 +2127,8 @@
           "vAttack": "5+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-enemies-of-asgard-enchantress.webp",
           "abilities": [
-            "Enchantress gets +1[icon:attack] for each Bystander she has.",
-            "Ambush: Enchantress captures a Bystander from the Bystander Deck and from each player's Victory Pile (of that player's choice)."
+            "Enchantress gets +1[icon:attack] for each Bystander she has. [attack-per-captured:bystander:1]",
+            "Ambush: Enchantress captures a Bystander from the Bystander Deck and from each player's Victory Pile (of that player's choice). [effect:captureBystander] [effect:capture-bystander-each-victory-pile]"
           ],
           "copies": 2
         },
@@ -2174,7 +2174,7 @@
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-hydra-baron-strucker-supreme-hydra.webp",
           "abilities": [
             "Baron Strucker gets +1[icon:attack] for each other HYDRA Villain in the city and/or Escape Pile. [variable-attack:per-other-hydra-villain:1]",
-            "Fight: Shuffle four cards from the Bystander Deck into the Villain Deck. Then play two cards from the Villain Deck."
+            "Fight: Shuffle four cards from the Bystander Deck into the Villain Deck. Then play two cards from the Villain Deck. [effect:shuffle-bystanders-into-villain-deck:4] [effect:play-villain-deck-cards:2]"
           ],
           "copies": 2
         },
@@ -2196,8 +2196,8 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-hydra-hydra-kidnappers.webp",
           "abilities": [
-            "Ambush: HYDRA Kidnappers capture a card from the S.H.I.E.L.D. Officer Deck or Sidekick Deck.",
-            "Fight: Choose a player to gain that Hero."
+            "Ambush: HYDRA Kidnappers capture a card from the S.H.I.E.L.D. Officer Deck or Sidekick Deck. [effect:capture-pile-hero:officer+sidekick]",
+            "Fight: Choose a player to gain that Hero. [effect:gain-attached-hero]"
           ],
           "copies": 2
         },
@@ -2228,7 +2228,7 @@
           "vAttack": "4+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-masters-of-evil-baron-zemo.webp",
           "abilities": [
-            "Baron Zemo gets +1[icon:attack] for each Bystander he has.",
+            "Baron Zemo gets +1[icon:attack] for each Bystander he has. [attack-per-captured:bystander:1]",
             "Ambush: Baron Zemo captures a Bystander. Then he captures another Bystander for each [team:avengers] Hero in the HQ. [effect:capture-bystanders-plus-per-hq-hero-by-trait:team:avengers]"
           ],
           "copies": 2
@@ -2374,9 +2374,9 @@
           "vAttack": "5+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-spider-foes-venom.webp",
           "abilities": [
-            "Venom gets +1[icon:attack] for each Hero he has.",
-            "Ambush: Venom captures a Hero from the Sidekick Deck and each Hero that costs 2 or less from the HQ.",
-            "Fight: You may gain a Hero captured by Venom. Put the rest on the bottom of the Hero Deck and/or Sidekick Deck as appropriate."
+            "Venom gets +1[icon:attack] for each Hero he has. [attack-per-captured:hero:1]",
+            "Ambush: Venom captures a Hero from the Sidekick Deck and each Hero that costs 2 or less from the HQ. [effect:capture-pile-hero:sidekick] [effect:capture-hq-heroes-cost-lte:2]",
+            "Fight: You may gain a Hero captured by Venom. Put the rest on the bottom of the Hero Deck and/or Sidekick Deck as appropriate. [effect:gain-one-attached-hero-rest-to-bottom]"
           ],
           "copies": 2
         }

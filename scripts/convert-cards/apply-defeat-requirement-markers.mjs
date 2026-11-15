@@ -54,6 +54,14 @@
  * `requires-villain-defeated-this-turn`, `at-most-one-card-played`,
  * `no-adjacent-villain`. The engine reads it into G.villainFightRestrictions.
  *
+ * WP-838 / D-24771 adds a fifth, optional list, `attackPerCaptured`: a printed
+ * "<Villain> gets +N Attack for each <Hero|Bystander> he has" passive (co2e
+ * Enchantress, Venom, Baron Zemo). Each entry `{ set, group, card, kind,
+ * attackPerCard }` appends `[attack-per-captured:<kind>:<attackPerCard>]` to the
+ * single ability line whose lower-cased text contains "[icon:attack] for each ".
+ * `kind` is `hero` or `bystander`. The engine reads it into
+ * G.villainAttackPerCaptured.
+ *
  * Loud-fail (non-zero exit, full-sentence message) on:
  *   - a `kind` outside the two locked tokens (`team`, `hc`);
  *   - a named set / villain-group / villain-card that does not exist;
@@ -68,7 +76,10 @@
  *     abilities carry zero, or more than one, " gets +" + "[icon:attack]" line;
  *   - a `fightRestrictions` entry with an unknown `kind`, a missing set / group /
  *     card, or a card whose abilities carry zero, or more than one, line beginning
- *     with "You can't fight ".
+ *     with "You can't fight ";
+ *   - an `attackPerCaptured` entry with an unknown `kind`, an `attackPerCard` that
+ *     is not a positive integer, a missing set / group / card, or a card whose
+ *     abilities carry zero, or more than one, "[icon:attack] for each " line.
  *
  * Usage:
  *   node scripts/convert-cards/apply-defeat-requirement-markers.mjs
@@ -131,6 +142,17 @@ const LOCKED_FIGHT_RESTRICTION_KINDS = [
 // carries no timing prefix and no inline token, so this is the only stable anchor;
 // a card with zero or several such lines loud-fails.
 const FIGHT_RESTRICTION_LINE_PREFIX = "you can't fight ";
+
+// why: WP-838 / D-24771 — the two locked captured-card kinds, in the engine's canonical
+// order. Kept hand-synced with VILLAIN_CAPTURED_KINDS in rules/villainAbility.types.ts,
+// never imported from packages/ (the .mjs ops-script discipline); drift here loud-fails on
+// an unknown kind until manually updated.
+const LOCKED_CAPTURED_KINDS = ['hero', 'bystander'];
+
+// why: WP-838 / D-24771 — the passive line is located by its printed shape
+// ("Venom gets +1[icon:attack] for each Hero he has."), compared on the lower-cased line;
+// a card with zero or several such lines loud-fails.
+const ATTACK_PER_CAPTURED_LINE_LOCATOR = '[icon:attack] for each ';
 
 /**
  * Builds the absolute path to a set's card-data JSON file.
@@ -326,6 +348,39 @@ function validateVariableAttackEntry(entry) {
 }
 
 /**
+ * Validates one `attackPerCaptured` entry, loud-failing on anything wrong.
+ *
+ * @param {object} entry - One attack-per-captured map entry.
+ * @throws If set / group / card / kind is missing or blank, `kind` is not locked,
+ *   or `attackPerCard` is not a positive integer.
+ */
+function validateAttackPerCapturedEntry(entry) {
+  for (const field of ['set', 'group', 'card', 'kind']) {
+    if (typeof entry[field] !== 'string' || entry[field].length === 0) {
+      throw new Error(
+        `villain-defeat-requirements.json has an attackPerCaptured entry missing the required ` +
+          `string field "${field}" (entry: ${JSON.stringify(entry)}). Every entry needs set, ` +
+          `group, card, kind, and attackPerCard.`,
+      );
+    }
+  }
+  const label = `"${entry.set}/${entry.group}/${entry.card}"`;
+  if (!LOCKED_CAPTURED_KINDS.includes(entry.kind)) {
+    throw new Error(
+      `villain-defeat-requirements.json gives attackPerCaptured entry ${label} the kind ` +
+        `"${entry.kind}", but the locked kinds are ` +
+        `[${LOCKED_CAPTURED_KINDS.map((value) => `"${value}"`).join(', ')}]. Fix the kind in the map.`,
+    );
+  }
+  if (!Number.isInteger(entry.attackPerCard) || entry.attackPerCard < 1) {
+    throw new Error(
+      `villain-defeat-requirements.json gives attackPerCaptured entry ${label} an "attackPerCard" of ` +
+        `${JSON.stringify(entry.attackPerCard)}, but it must be a positive integer such as 1 or 2.`,
+    );
+  }
+}
+
+/**
  * Finds the villain card named by an entry, loud-failing on a missing group or
  * card so a typo'd entry is caught before any file write.
  *
@@ -509,6 +564,50 @@ function findSingleVariableAttackLineIndex(abilities, entityLabel) {
 }
 
 /**
+ * Finds the single ability-line index whose lower-cased text contains
+ * "[icon:attack] for each ". Loud-fails on zero or more than one match.
+ *
+ * @param {string[]} abilities - The card's ability lines.
+ * @param {string} entityLabel - A human label for the failing card.
+ * @returns {number} The index of the single matching ability line.
+ * @throws If zero or more than one ability line matches.
+ */
+function findSingleAttackPerCapturedLineIndex(abilities, entityLabel) {
+  const matchingIndexes = [];
+  for (let index = 0; index < abilities.length; index++) {
+    const line = abilities[index];
+    if (typeof line === 'string' && line.toLowerCase().includes(ATTACK_PER_CAPTURED_LINE_LOCATOR)) {
+      matchingIndexes.push(index);
+    }
+  }
+  if (matchingIndexes.length === 0) {
+    throw new Error(
+      `villain-defeat-requirements.json maps an attack per captured card onto ${entityLabel}, but ` +
+        `that card has no ability line containing "[icon:attack] for each ". Fix the card in the ` +
+        `map, or correct the source ability text.`,
+    );
+  }
+  if (matchingIndexes.length > 1) {
+    throw new Error(
+      `villain-defeat-requirements.json maps an attack per captured card onto ${entityLabel}, but ` +
+        `${matchingIndexes.length} ability lines contain "[icon:attack] for each " — the overlay ` +
+        `cannot say which line owns the passive. Disambiguate the source text before marking this card.`,
+    );
+  }
+  return matchingIndexes[0];
+}
+
+/**
+ * Builds the `[attack-per-captured:<kind>:<N>]` marker for a validated entry.
+ *
+ * @param {object} entry - One validated attack-per-captured entry.
+ * @returns {string} The marker token.
+ */
+function attackPerCapturedMarker(entry) {
+  return `[attack-per-captured:${entry.kind}:${entry.attackPerCard}]`;
+}
+
+/**
  * Builds the `[variable-attack:<source>:<N>[@<space>[+<space>…]]]` marker for a
  * validated entry. The gate, when present, sits inside the brackets.
  *
@@ -615,6 +714,28 @@ function collectVariableAttackEdit(setData, entry) {
 }
 
 /**
+ * Collects the surgical edit descriptor for one attack-per-captured entry
+ * (read-only over the set data). Returns null when the marker is already
+ * present (idempotent).
+ *
+ * @param {object} setData - The parsed set object (read-only).
+ * @param {object} entry - One validated attack-per-captured entry.
+ * @returns {{ groupSlug: string, cardSlug: string, oldLine: string, newLine: string } | null}
+ */
+function collectAttackPerCapturedEdit(setData, entry) {
+  const card = findVillainCard(setData, entry);
+  const abilities = Array.isArray(card.abilities) ? card.abilities : [];
+  const entityLabel = `villain card "${entry.set}/${entry.group}/${entry.card}"`;
+  const lineIndex = findSingleAttackPerCapturedLineIndex(abilities, entityLabel);
+  const oldLine = abilities[lineIndex];
+  const newLine = appendRequirementMarker(oldLine, attackPerCapturedMarker(entry));
+  if (newLine === oldLine) {
+    return null;
+  }
+  return { groupSlug: entry.group, cardSlug: entry.card, oldLine, newLine };
+}
+
+/**
  * Collects the surgical edit descriptor for one fight-restriction entry
  * (read-only over the set data). Returns null when the marker is already
  * present (idempotent).
@@ -686,9 +807,9 @@ function applyEditToText(text, edit) {
 /**
  * Reads and validates the curated requirement map.
  *
- * @returns {{ requirements: object[], fightDiscardCosts: object[], variableAttack: object[], fightRestrictions: object[] }}
- *   The validated defeat-requirement, fight-discard-cost, variable-Attack and
- *   fight-restriction entries (an absent optional list = empty).
+ * @returns {{ requirements: object[], fightDiscardCosts: object[], variableAttack: object[], fightRestrictions: object[], attackPerCaptured: object[] }}
+ *   The validated defeat-requirement, fight-discard-cost, variable-Attack,
+ *   fight-restriction and attack-per-captured entries (an absent optional list = empty).
  * @throws If the map is missing, malformed, or any entry is invalid.
  */
 function readRequirementMap() {
@@ -742,7 +863,24 @@ function readRequirementMap() {
   for (const entry of fightRestrictions) {
     validateFightRestrictionEntry(entry);
   }
-  return { requirements: parsed.requirements, fightDiscardCosts, variableAttack, fightRestrictions };
+  // why: WP-838 / D-24771 — `attackPerCaptured` is optional too; absent = empty.
+  const attackPerCaptured = parsed.attackPerCaptured ?? [];
+  if (!Array.isArray(attackPerCaptured)) {
+    throw new Error(
+      `villain-defeat-requirements.json has an "attackPerCaptured" value that is not an array. ` +
+        `Make it an array of { set, group, card, kind, attackPerCard } entries, or remove it.`,
+    );
+  }
+  for (const entry of attackPerCaptured) {
+    validateAttackPerCapturedEntry(entry);
+  }
+  return {
+    requirements: parsed.requirements,
+    fightDiscardCosts,
+    variableAttack,
+    fightRestrictions,
+    attackPerCaptured,
+  };
 }
 
 /**
@@ -773,27 +911,31 @@ function runApply() {
   const fightDiscardCostsBySet = groupEntriesBySet(map.fightDiscardCosts);
   const variableAttackBySet = groupEntriesBySet(map.variableAttack);
   const fightRestrictionsBySet = groupEntriesBySet(map.fightRestrictions);
+  const attackPerCapturedBySet = groupEntriesBySet(map.attackPerCaptured);
   const sortedSetAbbrs = [
     ...new Set([
       ...requirementsBySet.keys(),
       ...fightDiscardCostsBySet.keys(),
       ...variableAttackBySet.keys(),
       ...fightRestrictionsBySet.keys(),
+      ...attackPerCapturedBySet.keys(),
     ]),
   ].sort();
 
-  console.log('🏷  Overlaying [require-to-defeat:], [discard-to-fight:], [variable-attack:] and [fight-restriction:] markers onto curated villain restriction lines...\n');
+  console.log('🏷  Overlaying [require-to-defeat:], [discard-to-fight:], [attack-per-captured:], [variable-attack:] and [fight-restriction:] markers onto curated villain restriction lines...\n');
 
   let totalRequirementMarkers = 0;
   let totalFightDiscardMarkers = 0;
   let totalVariableAttackMarkers = 0;
   let totalFightRestrictionMarkers = 0;
+  let totalAttackPerCapturedMarkers = 0;
   for (const setAbbr of sortedSetAbbrs) {
     const setData = readSetData(setAbbr);
     const edits = [];
     let fightDiscardEditCount = 0;
     let variableAttackEditCount = 0;
     let fightRestrictionEditCount = 0;
+    let attackPerCapturedEditCount = 0;
     for (const entry of requirementsBySet.get(setAbbr) ?? []) {
       const edit = collectEdit(setData, entry);
       if (edit !== null) {
@@ -821,6 +963,13 @@ function runApply() {
         fightRestrictionEditCount += 1;
       }
     }
+    for (const entry of attackPerCapturedBySet.get(setAbbr) ?? []) {
+      const edit = collectAttackPerCapturedEdit(setData, entry);
+      if (edit !== null) {
+        edits.push(edit);
+        attackPerCapturedEditCount += 1;
+      }
+    }
 
     let text = readFileSync(setFilePath(setAbbr), 'utf8');
     for (const edit of edits) {
@@ -829,16 +978,22 @@ function runApply() {
     writeFileSync(setFilePath(setAbbr), text, 'utf8');
     // why: WP-871 / D-24816 — subtract every sibling list's edits, or the new
     // fight-restriction edits would be miscounted as [require-to-defeat:] markers.
+    // why: WP-838 / D-24771 — the attack-per-captured edits are subtracted the same way.
     totalRequirementMarkers +=
-      edits.length - fightDiscardEditCount - variableAttackEditCount - fightRestrictionEditCount;
+      edits.length -
+      fightDiscardEditCount -
+      variableAttackEditCount -
+      fightRestrictionEditCount -
+      attackPerCapturedEditCount;
     totalFightDiscardMarkers += fightDiscardEditCount;
     totalVariableAttackMarkers += variableAttackEditCount;
     totalFightRestrictionMarkers += fightRestrictionEditCount;
+    totalAttackPerCapturedMarkers += attackPerCapturedEditCount;
     console.log(`  ✅ ${setAbbr}.json — ${edits.length} new marker(s) this run`);
   }
 
   console.log(
-    `\nDone. ${sortedSetAbbrs.length} set(s) processed, ${totalRequirementMarkers} new [require-to-defeat:] marker(s), ${totalFightDiscardMarkers} new [discard-to-fight:] marker(s), ${totalVariableAttackMarkers} new [variable-attack:] marker(s) and ${totalFightRestrictionMarkers} new [fight-restriction:] marker(s) appended.`,
+    `\nDone. ${sortedSetAbbrs.length} set(s) processed, ${totalRequirementMarkers} new [require-to-defeat:] marker(s), ${totalFightDiscardMarkers} new [discard-to-fight:] marker(s), ${totalAttackPerCapturedMarkers} new [attack-per-captured:] marker(s), ${totalVariableAttackMarkers} new [variable-attack:] marker(s) and ${totalFightRestrictionMarkers} new [fight-restriction:] marker(s) appended.`,
   );
 }
 
@@ -893,8 +1048,22 @@ function runPropose() {
       `${entry.set} | ${entry.group} | ${entry.card} | ${fightRestrictionMarker(entry)} | ${abilities[lineIndex]}`,
     );
   }
+  for (const entry of map.attackPerCaptured) {
+    const setData = readSetData(entry.set);
+    const card = findVillainCard(setData, entry);
+    const abilities = Array.isArray(card.abilities) ? card.abilities : [];
+    const entityLabel = `villain card "${entry.set}/${entry.group}/${entry.card}"`;
+    const lineIndex = findSingleAttackPerCapturedLineIndex(abilities, entityLabel);
+    console.log(
+      `${entry.set} | ${entry.group} | ${entry.card} | ${attackPerCapturedMarker(entry)} | ${abilities[lineIndex]}`,
+    );
+  }
   const entryCount =
-    entries.length + map.fightDiscardCosts.length + map.variableAttack.length + map.fightRestrictions.length;
+    entries.length +
+    map.fightDiscardCosts.length +
+    map.variableAttack.length +
+    map.fightRestrictions.length +
+    map.attackPerCaptured.length;
   console.error(`\n(${entryCount} entry(ies); --propose is read-only and wrote nothing.)`);
 }
 

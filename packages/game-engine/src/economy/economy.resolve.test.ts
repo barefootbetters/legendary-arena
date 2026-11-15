@@ -988,3 +988,114 @@ describe('resolveFightCost — villain variable-Attack passives (WP-841)', () =>
     assert.equal(resolveFightCost(withTable, 'villain-dynamic' as CardExtId), 7);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-838 / D-24771 — attack per captured card (T25-T27)
+// ---------------------------------------------------------------------------
+
+describe('WP-838 resolveFightCost — attack per captured card (D-24771)', () => {
+  const VENOM = 'co2e-villain-sinister-spider-foes-venom-00';
+  const ENCHANTRESS = 'co2e-villain-enemies-of-asgard-enchantress-00';
+  const KIDNAPPERS = 'co2e-villain-hydra-hydra-kidnappers-00';
+
+  /**
+   * A G with one villain `villainId` (dynamic base 5 or static 4) and the given captures.
+   */
+  function makeCapturedG(options: {
+    villainId: string;
+    stats: { fightCost: number; fightCostMode: 'static' | 'dynamic'; fightCostBase: number };
+    attackPerCaptured?: { kind: 'hero' | 'bystander'; attackPerCard: number };
+    attachedHeroes?: string[];
+    attachedBystanders?: string[];
+    schemeId?: string;
+  }): LegendaryGameState {
+    return {
+      cardStats: {
+        [options.villainId]: options.stats,
+        'pile-sidekick': { fightCost: 0, fightCostMode: 'static', fightCostBase: 0, cost: 2 },
+        'pile-shield-officer': { fightCost: 0, fightCostMode: 'static', fightCostBase: 0, cost: 3 },
+        'h-cost2a': { fightCost: 0, fightCostMode: 'static', fightCostBase: 0, cost: 2 },
+        'h-cost2b': { fightCost: 0, fightCostMode: 'static', fightCostBase: 0, cost: 2 },
+        'h-cost3': { fightCost: 0, fightCostMode: 'static', fightCostBase: 0, cost: 3 },
+      },
+      villainAttachedHeroes:
+        options.attachedHeroes === undefined ? {} : { [options.villainId]: options.attachedHeroes },
+      attachedBystanders:
+        options.attachedBystanders === undefined ? {} : { [options.villainId]: options.attachedBystanders },
+      ...(options.attackPerCaptured === undefined
+        ? {}
+        : { villainAttackPerCaptured: { [options.villainId]: options.attackPerCaptured } }),
+      ...(options.schemeId === undefined ? {} : { selection: { schemeId: options.schemeId } }),
+      city: [null, null, null, null, options.villainId],
+      counters: {},
+    } as unknown as LegendaryGameState;
+  }
+
+  const DYNAMIC_FIVE = { fightCost: 5, fightCostMode: 'dynamic' as const, fightCostBase: 5 };
+
+  it('T25: a hero-kind entry replaces the captured-cost sum with +1 per captured card', () => {
+    const attached = ['pile-sidekick', 'h-cost2a', 'h-cost2b'];
+    const flagged = makeCapturedG({
+      villainId: VENOM,
+      stats: DYNAMIC_FIVE,
+      attackPerCaptured: { kind: 'hero', attackPerCard: 1 },
+      attachedHeroes: attached,
+    });
+    assert.equal(resolveFightCost(flagged, VENOM as CardExtId), 8);
+    const unflagged = makeCapturedG({ villainId: VENOM, stats: DYNAMIC_FIVE, attachedHeroes: attached });
+    assert.equal(resolveFightCost(unflagged, VENOM as CardExtId), 11, 'unflagged keeps the cost sum');
+  });
+
+  it('T26: a bystander-kind entry adds +1 per Bystander and replaces the cost sum too', () => {
+    const threeBystanders = ['pile-bystander', 'pile-bystander', 'bystander-villain-deck-01'];
+    const entry = { kind: 'bystander' as const, attackPerCard: 1 };
+    assert.equal(
+      resolveFightCost(
+        makeCapturedG({ villainId: ENCHANTRESS, stats: DYNAMIC_FIVE, attackPerCaptured: entry, attachedBystanders: threeBystanders }),
+        ENCHANTRESS as CardExtId,
+      ),
+      8,
+    );
+    assert.equal(
+      resolveFightCost(
+        makeCapturedG({
+          villainId: ENCHANTRESS,
+          stats: DYNAMIC_FIVE,
+          attackPerCaptured: entry,
+          attachedBystanders: threeBystanders,
+          schemeId: 'core/midtown-bank-robbery',
+        }),
+        ENCHANTRESS as CardExtId,
+      ),
+      11,
+      'the Midtown family bonus stacks on top',
+    );
+    assert.equal(
+      resolveFightCost(makeCapturedG({ villainId: ENCHANTRESS, stats: DYNAMIC_FIVE, attackPerCaptured: entry }), ENCHANTRESS as CardExtId),
+      5,
+    );
+    assert.equal(
+      resolveFightCost(
+        makeCapturedG({
+          villainId: ENCHANTRESS,
+          stats: DYNAMIC_FIVE,
+          attackPerCaptured: entry,
+          attachedBystanders: ['pile-bystander'],
+          attachedHeroes: ['h-cost3'],
+        }),
+        ENCHANTRESS as CardExtId,
+      ),
+      6,
+      'a captured Hero adds nothing to a bystander-kind villain',
+    );
+  });
+
+  it('T27: a static villain never moves with its captures', () => {
+    const G = makeCapturedG({
+      villainId: KIDNAPPERS,
+      stats: { fightCost: 4, fightCostMode: 'static', fightCostBase: 0 },
+      attachedHeroes: ['pile-shield-officer'],
+    });
+    assert.equal(resolveFightCost(G, KIDNAPPERS as CardExtId), 4);
+  });
+});

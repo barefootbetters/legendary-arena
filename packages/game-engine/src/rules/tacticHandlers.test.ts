@@ -2121,3 +2121,27 @@ describe('WP-758 dispatchTacticOnFight — Zarathos tactics (D-24588)', () => {
     ));
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-838 / D-24771 — Finding Zemo counts a shuffled-in supply Bystander (T30)
+// ---------------------------------------------------------------------------
+
+describe('WP-838 Finding Zemo and supply Bystanders (D-24771)', () => {
+  it('T30: a pile-bystander in the top 5 (no map entry) is KO\'d and counted', () => {
+    const G = makeZemoTacticState(
+      { '0': {}, '1': {} },
+      {
+        wounds: 5,
+        deck: ['v1', 'pile-bystander', 'b1', 'v2', 's1', 'v3'],
+        deckTypes: { v1: 'villain', v2: 'villain', v3: 'villain', b1: 'bystander', s1: 'scheme-twist' },
+      },
+    );
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZEMO_FINDING_ZEMO_ID, makeMockCtx());
+    assert.deepEqual(G.ko, ['pile-bystander', 'b1']);
+    assert.deepEqual(zemoLogLines(G)[0], {
+      text: "Fight effect: revealed the top 5 card(s) of the Villain Deck and KO'd 2 Bystander(s) (Finding Zemo).",
+      outcome: 'applied',
+    });
+    assert.equal(Object.hasOwn(G.villainDeckCardTypes, 'pile-bystander'), false);
+  });
+});

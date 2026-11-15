@@ -402,7 +402,16 @@ export type VillainEffectPrimitive =
   // why: WP-889 / D-24841 — the Lilin Ambush "Hunt for Victims" (Skinner, Meatmarket, Blackout),
   // appended last. Named apart from the hero keyword `hunt-for-victims`, whose key in the flat shared
   // mechanic-provenance map is WP-884's.
-  | 'villain-hunt-for-victims';
+  | 'villain-hunt-for-victims'
+  // why: WP-838 / D-24771 — the co2e capture family, appended last: Enchantress's per-player
+  // Victory Pile capture, the Officer / Sidekick pile capture (HYDRA Kidnappers, Venom), Venom's
+  // cheap-HQ-Hero capture and his gain-one / bottom-the-rest Fight (a deliberate executor no-op;
+  // the fight site splits the award), and Baron Strucker's Bystander shuffle.
+  | 'capture-bystander-each-victory-pile'
+  | 'capture-pile-hero'
+  | 'capture-hq-heroes-cost-lte'
+  | 'gain-one-attached-hero-rest-to-bottom'
+  | 'shuffle-bystanders-into-villain-deck';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -622,7 +631,35 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   // villain ledgers. The marker script's hand-synced copy
   // (`scripts/convert-cards/apply-effect-markers.mjs`) appends it at the same position.
   'villain-hunt-for-victims',
+  // why: WP-838 / D-24771 — appended at positions 53-57, the co2e capture family. Enchantress's
+  // Ambush (`capture-bystander-each-victory-pile`, no param: each player's first Victory-Pile
+  // Bystander), HYDRA Kidnappers' and Venom's Ambush (`capture-pile-hero:<pile>[+<pile>]`: the top
+  // card of the first non-empty listed supply pile, carried on `capturePiles`, which stays out of
+  // `descriptorKey`), Venom's Ambush (`capture-hq-heroes-cost-lte:<N>`: every HQ Hero costing N or
+  // less), Venom's Fight (`gain-one-attached-hero-rest-to-bottom`, no param: a DELIBERATE NO-OP in
+  // the executor; defeatCityVillainCore splits the award) and Baron Strucker's Fight
+  // (`shuffle-bystanders-into-villain-deck:<N>`). All keyword-less, so each self-narrates (the no-op
+  // through the fight site). The marker script's hand-synced copy
+  // (`scripts/convert-cards/apply-effect-markers.mjs`) appends them at the same positions.
+  'capture-bystander-each-victory-pile',
+  'capture-pile-hero',
+  'capture-hq-heroes-cost-lte',
+  'gain-one-attached-hero-rest-to-bottom',
+  'shuffle-bystanders-into-villain-deck',
 ] as const;
+
+/**
+ * A supply pile a villain can capture a Hero from (WP-838 / D-24771): the
+ * S.H.I.E.L.D. Officer Deck (`G.piles.officers`) or the Sidekick Deck
+ * (`G.piles.sidekicks`).
+ */
+export type VillainCapturePile = 'officer' | 'sidekick';
+
+// why: drift-detection array — must match VillainCapturePile exactly
+// (villainAbility.types.test.ts asserts it at runtime, D-24372). The marker
+// script keeps a hand-synced copy (`scripts/convert-cards/apply-effect-markers.mjs`).
+/** All capture piles in canonical order. */
+export const VILLAIN_CAPTURE_PILES: readonly VillainCapturePile[] = ['officer', 'sidekick'] as const;
 
 /**
  * Which side of the grey line a KO accepts (WP-836 / D-24769). Rules v23 L1487-1492:
@@ -877,6 +914,11 @@ export interface VillainEffectDescriptor {
   // `descriptorKey` — the primitive is keyword-less, so the fire sites narrate regardless.
   stackVillainKind?: 'bystander' | 'officer';
   stackVillainName?: string;
+  // why: WP-838 / D-24771 — present ONLY on `{ primitive: 'capture-pile-hero' }` descriptors
+  // (HYDRA Kidnappers: ['officer', 'sidekick']; Venom: ['sidekick']): the supply piles in
+  // preference order, non-empty, no duplicate. Deliberately NOT part of `descriptorKey` — the
+  // primitive is keyword-less, so it self-narrates regardless (the `eligibleCosts` precedent).
+  capturePiles?: readonly VillainCapturePile[];
 }
 
 // why: D-24023 — the frozen legacy-keyword → descriptor translation table. The
@@ -1009,6 +1051,35 @@ export interface VillainDefeatRequirement {
  */
 export interface VillainFightDiscardCost {
   eligibleCosts: number[];
+}
+
+// ---------------------------------------------------------------------------
+// Villain attack per captured card (WP-838 / D-24771)
+// ---------------------------------------------------------------------------
+
+/**
+ * The kind of captured card a villain's printed "+N Attack for each … he has"
+ * counts (WP-838 / D-24771): captured Heroes (`G.villainAttachedHeroes`, Venom)
+ * or captured Bystanders (`G.attachedBystanders`, Enchantress, co2e Baron Zemo).
+ */
+export type VillainCapturedKind = 'hero' | 'bystander';
+
+// why: drift-detection array — must match VillainCapturedKind exactly
+// (villainAbility.types.test.ts asserts it at runtime, D-24372). The overlay
+// script keeps a hand-synced copy (`apply-defeat-requirement-markers.mjs`).
+/** All captured-card kinds in canonical order. */
+export const VILLAIN_CAPTURED_KINDS: readonly VillainCapturedKind[] = ['hero', 'bystander'] as const;
+
+/**
+ * The Attack a villain gains per captured card of `kind` (WP-838 / D-24771).
+ * Built at setup from the `[attack-per-captured:<kind>:<N>]` marker on the
+ * printed passive line and stored per villain instance in
+ * G.villainAttackPerCaptured; immutable during play. Read only by
+ * resolveFightCost.
+ */
+export interface VillainAttackPerCaptured {
+  kind: VillainCapturedKind;
+  attackPerCard: number;
 }
 
 // ---------------------------------------------------------------------------

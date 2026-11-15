@@ -2409,3 +2409,125 @@ describe('WP-873 fortify grammar (D-24818)', () => {
     assert.equal(checked, 2, 'both cards were found in cvwr.json');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-838 / D-24771 — the co2e capture-family grammars (T3-T5)
+// ---------------------------------------------------------------------------
+
+describe('buildVillainAbilityHooks — WP-838 capture-family grammars (D-24771)', () => {
+  const grammarTokens: Array<{ slug: string; token: string }> = [
+    { slug: 'each-victory-pile', token: 'capture-bystander-each-victory-pile' },
+    { slug: 'officer-sidekick', token: 'capture-pile-hero:officer+sidekick' },
+    { slug: 'sidekick', token: 'capture-pile-hero:sidekick' },
+    { slug: 'hq-lte-two', token: 'capture-hq-heroes-cost-lte:2' },
+    { slug: 'gain-one', token: 'gain-one-attached-hero-rest-to-bottom' },
+    { slug: 'shuffle-four', token: 'shuffle-bystanders-into-villain-deck:4' },
+    { slug: 'reject-victory-param', token: 'capture-bystander-each-victory-pile:1' },
+    { slug: 'reject-pile-bare', token: 'capture-pile-hero' },
+    { slug: 'reject-pile-empty', token: 'capture-pile-hero:' },
+    { slug: 'reject-pile-repeat', token: 'capture-pile-hero:officer+officer' },
+    { slug: 'reject-pile-unknown', token: 'capture-pile-hero:wound' },
+    { slug: 'reject-pile-extra', token: 'capture-pile-hero:officer:sidekick' },
+    { slug: 'reject-hq-bare', token: 'capture-hq-heroes-cost-lte' },
+    { slug: 'reject-hq-zero', token: 'capture-hq-heroes-cost-lte:0' },
+    { slug: 'reject-hq-letter', token: 'capture-hq-heroes-cost-lte:x' },
+    { slug: 'reject-gain-param', token: 'gain-one-attached-hero-rest-to-bottom:1' },
+    { slug: 'reject-shuffle-bare', token: 'shuffle-bystanders-into-villain-deck' },
+    { slug: 'reject-shuffle-zero', token: 'shuffle-bystanders-into-villain-deck:0' },
+  ];
+  const registry = makeRegistry(
+    'core',
+    [
+      {
+        slug: 'wp838',
+        cards: grammarTokens.map((entry) => ({
+          slug: entry.slug,
+          abilities: [`Ambush: test line. [effect:${entry.token}]`],
+        })),
+      },
+    ],
+    [],
+  );
+  const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/wp838'], []));
+  const hookFor = (slug: string) =>
+    hooks.find((h) => h.cardId === `core-villain-wp838-${slug}-00`)!;
+
+  it('T3: parses every Locked-Values marker into its descriptor', () => {
+    assert.deepStrictEqual(hookFor('each-victory-pile').effects, [{ primitive: 'capture-bystander-each-victory-pile' }]);
+    assert.deepStrictEqual(hookFor('officer-sidekick').effects, [
+      { primitive: 'capture-pile-hero', capturePiles: ['officer', 'sidekick'] },
+    ]);
+    assert.deepStrictEqual(hookFor('sidekick').effects, [{ primitive: 'capture-pile-hero', capturePiles: ['sidekick'] }]);
+    assert.deepStrictEqual(hookFor('hq-lte-two').effects, [{ primitive: 'capture-hq-heroes-cost-lte', magnitude: 2 }]);
+    assert.deepStrictEqual(hookFor('gain-one').effects, [{ primitive: 'gain-one-attached-hero-rest-to-bottom' }]);
+    assert.deepStrictEqual(hookFor('shuffle-four').effects, [
+      { primitive: 'shuffle-bystanders-into-villain-deck', magnitude: 4 },
+    ]);
+  });
+
+  it('T4: every malformed token resolves to unresolvedMarkers, never a silent accept', () => {
+    for (const entry of grammarTokens) {
+      if (!entry.slug.startsWith('reject-')) continue;
+      assert.deepStrictEqual(hookFor(entry.slug).effects, [], `${entry.token} must yield no descriptor`);
+      assert.deepStrictEqual(
+        hookFor(entry.slug).unresolvedMarkers,
+        [entry.token],
+        `${entry.token} must land in unresolvedMarkers`,
+      );
+    }
+  });
+
+  it('T5: the regenerated co2e lines build the expected hooks; the passive lines build none', () => {
+    // why: these lines are copied verbatim from the regenerated data/cards/co2e.json.
+    const co2eRegistry = makeRegistry(
+      'co2e',
+      [
+        { slug: 'enemies-of-asgard', cards: [{ slug: 'enchantress', abilities: ["Enchantress gets +1[icon:attack] for each Bystander she has. [attack-per-captured:bystander:1]", "Ambush: Enchantress captures a Bystander from the Bystander Deck and from each player's Victory Pile (of that player's choice). [effect:captureBystander] [effect:capture-bystander-each-victory-pile]"] }] },
+        {
+          slug: 'hydra',
+          cards: [
+            { slug: 'baron-strucker-supreme-hydra', abilities: ["Baron Strucker gets +1[icon:attack] for each other HYDRA Villain in the city and/or Escape Pile. [variable-attack:per-other-hydra-villain:1]", "Fight: Shuffle four cards from the Bystander Deck into the Villain Deck. Then play two cards from the Villain Deck. [effect:shuffle-bystanders-into-villain-deck:4] [effect:play-villain-deck-cards:2]"] },
+            { slug: 'hydra-kidnappers', abilities: ["Ambush: HYDRA Kidnappers capture a card from the S.H.I.E.L.D. Officer Deck or Sidekick Deck. [effect:capture-pile-hero:officer+sidekick]", "Fight: Choose a player to gain that Hero. [effect:gain-attached-hero]"] },
+          ],
+        },
+        { slug: 'sinister-spider-foes', cards: [{ slug: 'venom', abilities: ["Venom gets +1[icon:attack] for each Hero he has. [attack-per-captured:hero:1]", "Ambush: Venom captures a Hero from the Sidekick Deck and each Hero that costs 2 or less from the HQ. [effect:capture-pile-hero:sidekick] [effect:capture-hq-heroes-cost-lte:2]", "Fight: You may gain a Hero captured by Venom. Put the rest on the bottom of the Hero Deck and/or Sidekick Deck as appropriate. [effect:gain-one-attached-hero-rest-to-bottom]"] }] },
+      ],
+      [],
+    );
+    const co2eHooks = buildVillainAbilityHooks(
+      co2eRegistry,
+      makeConfig(['co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/sinister-spider-foes'], []),
+    );
+    const effectsFor = (cardId: string, timing: string) =>
+      co2eHooks.filter((h) => h.cardId === cardId && h.timing === timing).map((h) => h.effects);
+    assert.deepStrictEqual(effectsFor('co2e-villain-enemies-of-asgard-enchantress-00', 'onAmbush'), [
+      [{ ...LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR.captureBystander }, { primitive: 'capture-bystander-each-victory-pile' }],
+    ]);
+    assert.deepStrictEqual(effectsFor('co2e-villain-hydra-hydra-kidnappers-00', 'onAmbush'), [
+      [{ primitive: 'capture-pile-hero', capturePiles: ['officer', 'sidekick'] }],
+    ]);
+    assert.deepStrictEqual(effectsFor('co2e-villain-hydra-hydra-kidnappers-00', 'onFight'), [
+      [{ primitive: 'gain-attached-hero' }],
+    ]);
+    assert.deepStrictEqual(effectsFor('co2e-villain-sinister-spider-foes-venom-00', 'onAmbush'), [
+      [
+        { primitive: 'capture-pile-hero', capturePiles: ['sidekick'] },
+        { primitive: 'capture-hq-heroes-cost-lte', magnitude: 2 },
+      ],
+    ]);
+    assert.deepStrictEqual(effectsFor('co2e-villain-sinister-spider-foes-venom-00', 'onFight'), [
+      [{ primitive: 'gain-one-attached-hero-rest-to-bottom' }],
+    ]);
+    assert.deepStrictEqual(effectsFor('co2e-villain-hydra-baron-strucker-supreme-hydra-00', 'onFight'), [
+      [
+        { primitive: 'shuffle-bystanders-into-villain-deck', magnitude: 4 },
+        { primitive: 'play-villain-deck-cards', magnitude: 2 },
+      ],
+    ]);
+    for (const builtHook of co2eHooks) {
+      assert.deepStrictEqual(builtHook.unresolvedMarkers ?? [], [], `${builtHook.cardId} has no unresolved marker`);
+    }
+    // why: the passive "+1[icon:attack] for each …" lines carry no timing prefix, so they build no hook.
+    assert.equal(co2eHooks.length, 6);
+  });
+});
