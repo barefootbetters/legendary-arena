@@ -237,8 +237,9 @@ The workflow's build job invokes, in order:
 2. `pnpm wiki-viewer:check-links` — case-sensitive validation of
    every internal `<page>.md` → `<page>.md` link in the projected
    tree. A broken link fails the build.
-3. `hugo --source apps/wiki-viewer --minify` — renders the site to
-   `apps/wiki-viewer/public/`. External `../X` links are rewritten
+3. `hugo --source apps/wiki-viewer --minify --panicOnWarning` — renders
+   the site to `apps/wiki-viewer/public/`; any Hugo warning fails the
+   build. External `../X` links are rewritten
    to GitHub blob URLs by the markdown render hook (D-13809).
 
 The CI workflow at
