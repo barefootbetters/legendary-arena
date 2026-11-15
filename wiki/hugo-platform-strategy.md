@@ -16,7 +16,7 @@ source:
   - C:\dev\legendary-arena\wiki\hugo-platform-strategy.md (this page — https://ewiki.legendary-arena.com/hugo-platform-strategy/)
   - ../docs/ai/work-packets/WP-139-engineering-wiki-viewer.md
   - ../apps/wiki-viewer/README.md
-last-reviewed: 2026-10-20
+last-reviewed: 2026-11-15
 ---
 
 ## Summary
@@ -30,8 +30,9 @@ Hextra pilot showed Hextra doesn't fix the drift. The extracted theme is
 released as `barefootbetters/bb-studio-ewiki-theme` (renamed from
 `ewiki-theme` on 2026-10-18; latest `v1.4.1`), vendored
 into each wiki (D-24728); the wikis move onto it one at a time.
-Corporate memory, Herbs vs. Ailments, the studio ewiki and the engine
-ewiki are on it; the personal wiki comes next (the engine moved ahead of
+Corporate memory, Herbs vs. Ailments, the studio ewiki, the engine
+ewiki, Organized Walls, the Scooby engine wiki, the studio site and the
+theme's own wiki are on it; the personal wiki comes next (the engine moved ahead of
 it, D-24781). The marketing site stays
 on PaperMod for now. The page also covers selling on a static site
 and the laptop-to-live publishing flow. Sources: a 2026-10-15 Claude Chat,
@@ -44,10 +45,12 @@ joined the list on 2026-10-17 ([bb-studio-dashboard decision 2026-10-17-01](http
 
 | Site | Repo | Theme | Theme source | Hosting |
 |---|---|---|---|---|
-| Engine ewiki (`ewiki.legendary-arena.com`) | `legendary-arena` (`apps/wiki-viewer/`) | The shared theme | `barefootbetters/bb-studio-ewiki-theme` `v1.4.1`, vendored (step 4 on `v1.3.0`, WP-847 / D-24782; moved ahead of the personal wiki by D-24781) | Cloudflare Worker, deployed by GitHub Actions, behind Access |
-| Herbs vs. Ailments ewiki (`ewiki.herbsvsailments.com`) | `herbs-vs-ailments` (`apps/ewiki/`) | The shared theme | `barefootbetters/bb-studio-ewiki-theme` `v1.2.0`, vendored (step 2, done 2026-10-20, [herbs-vs-ailments#297](https://github.com/barefootbetters/herbs-vs-ailments/pull/297)) | Cloudflare Worker `herbs-vs-ailments-ewiki`, behind Access |
-| Corporate-memory viewer | `jefferyjjensen-corporate-memory` (`viewer/`) | The shared theme | `barefootbetters/bb-studio-ewiki-theme` `v1.1.1`, vendored (step 1, done 2026-10-16) | Cloudflare Pages |
-| Studio ewiki (`studio-ewiki.barefootbetters.com`) | `bb-studio-dashboard` (`ewiki/`, rendering that repo's `docs/`) | The shared theme | `barefootbetters/bb-studio-ewiki-theme` `v1.2.0`, vendored (step 3, done 2026-10-20, [bb-studio-dashboard#29](https://github.com/barefootbetters/bb-studio-dashboard/pull/29)) | Cloudflare Worker `bb-studio-ewiki`, behind Access |
+| Engine ewiki (`ewiki.legendary-arena.com`) | `legendary-arena` (`apps/wiki-viewer/`) | The shared theme | `barefootbetters/bb-studio-ewiki-theme` `v1.4.1`, vendored (step 4 on `v1.3.0`, WP-847 / D-24782; moved ahead of the personal wiki by D-24781; `v1.4.1` since 2026-11-14, #3390) | Cloudflare Worker, deployed by GitHub Actions, behind Access |
+| Herbs vs. Ailments ewiki (`ewiki.herbsvsailments.com`) | `herbs-vs-ailments` (`apps/ewiki/`) | The shared theme | `barefootbetters/bb-studio-ewiki-theme` `v1.4.1`, vendored (step 2, done 2026-10-20 on `v1.2.0`, [herbs-vs-ailments#297](https://github.com/barefootbetters/herbs-vs-ailments/pull/297); `v1.4.1` since 2026-11-14, [herbs-vs-ailments#668](https://github.com/barefootbetters/herbs-vs-ailments/pull/668)) | Cloudflare Worker `herbs-vs-ailments-ewiki`, behind Access |
+| Corporate-memory viewer | `jefferyjjensen-corporate-memory` (`viewer/`) | The shared theme | `barefootbetters/bb-studio-ewiki-theme` `v1.3.0`, vendored (step 1, done 2026-10-16 on `v1.1.1`; `v1.3.0` since 2026-10-26, jefferyjjensen-corporate-memory#88) | Cloudflare Pages |
+| Studio ewiki (`studio-ewiki.barefootbetters.com`) | `bb-studio-dashboard` (`ewiki/`, rendering that repo's `docs/`) | The shared theme | `barefootbetters/bb-studio-ewiki-theme` `v1.3.0`, vendored (step 3, done 2026-10-20 on `v1.2.0`, [bb-studio-dashboard#29](https://github.com/barefootbetters/bb-studio-dashboard/pull/29); `v1.3.0` since 2026-10-26, [bb-studio-dashboard#42](https://github.com/barefootbetters/bb-studio-dashboard/pull/42)) | Cloudflare Worker `bb-studio-ewiki`, behind Access |
+| Organized Walls ewiki (`ewiki.organizedwalls.com`) | `organized-walls` (`ewiki/`) | The shared theme | `barefootbetters/bb-studio-ewiki-theme` `v1.3.0`, vendored (installed fresh on `v1.2.2`, [organized-walls#1](https://github.com/barefootbetters/organized-walls/pull/1); `v1.3.0` since 2026-10-26, [organized-walls#53](https://github.com/barefootbetters/organized-walls/pull/53)) | Cloudflare Worker `organized-walls-ewiki`, behind Access |
+| The theme's own wiki (`ewiki-theme.barefootbetters.com`) | `bb-studio-ewiki-theme` (`ewiki/`, rendering that repo's `docs/`) | The shared theme | `barefootbetters/bb-studio-ewiki-theme` `v1.3.0`, vendored (since 2026-11-14) | Cloudflare Worker `bb-studio-ewiki-theme-wiki`, behind Access |
 | Personal wiki | `jefferyjjensen-wiki` | Hand-rolled | Its own copy, until its migration packet (step 5) | — |
 | Scooby engine wiki (`scooby-engine-ewiki.barefootbetters.com`) | `scooby-engine` (`ewiki/`) | The shared theme | `barefootbetters/bb-studio-ewiki-theme` `v1.1.1`, vendored | Cloudflare Worker `scooby-engine-ewiki`, behind Access |
 | Studio site (`studio.barefootbetters.com`) | `bb-studio-www` | The shared theme | `barefootbetters/bb-studio-ewiki-theme` `v1.1.1`, vendored | Cloudflare Pages |
@@ -222,12 +225,15 @@ cheaper until WP-814 ran. Its actuals:
   Go. A Hugo module was rejected because it needs Go and private-repo
   credentials in CI (D-24728). A git submodule wasn't evaluated.
 - **The migrations, measured one at a time.** Each is its own packet, so
-  the cost lands one wiki at a time. Corporate memory went first and is
-  live on `v1.1.1` (2026-10-16). Herbs vs. Ailments (herbs WP-005) and the
+  the cost lands one wiki at a time. Corporate memory went first, live on
+  `v1.1.1` (2026-10-16). Herbs vs. Ailments (herbs WP-005) and the
   studio ewiki (bb-studio-dashboard WP-014) followed on `v1.2.0`, both
   merged 2026-10-20. On 2026-10-26 Jeff moved the engine ewiki ahead of the
   personal wiki (D-24781): its own copy was the one drifting. It moved on
-  `v1.3.0` (WP-847, D-24782), and the personal wiki is next.
+  `v1.3.0` (WP-847, D-24782), and the personal wiki is next. Upgrades
+  after a move are smaller: corporate memory, the studio ewiki and
+  Organized Walls went to `v1.3.0` on 2026-10-26, and the engine ewiki and
+  Herbs to `v1.4.1` on 2026-11-14.
 
 ### Next step: move the remaining wikis onto `bb-studio-ewiki-theme`
 
@@ -244,6 +250,15 @@ default, for the herbs migration: `Invoke-WikiGates.ps1 -AllowedScript`,
 which lets the JS-free gate (gate 5) accept a script carrying a named
 `data-` marker such as the Mermaid loader, and `titlePrefixCapitalize`,
 which uppercases a title's first letter where `titlePrefix` is stripped.
+`v1.2.1` and `v1.2.2` are fixes (a page's own `# Title` renders above the
+metadata panel; `Compare-WikiBuild.ps1` pairs a themed baseline's links).
+`v1.3.0` (commit `2c735f5a`) added two opt-in navigation features,
+`sidebarCollapsible` and `searchFilters`. `v1.4.0` (commit `ab01a7d9`)
+moved the authoring guide into the theme, with an `ewiki-guide` shortcode
+that shows one of its sections on a wiki's own page, so every wiki shows
+the one copy instead of keeping its own. `v1.4.1` (commit `60fde633`,
+manifest digest `258b487d…` in the release notes) fixed the guide and
+that shortcode, as found by the engine and Herbs upgrades.
 D-24728 records where the theme lives and how a wiki consumes it:
 
 - **Vendored, not a Hugo module.** A wiki commits a tagged copy under
@@ -269,16 +284,16 @@ instead of a redirect.
 
 The wikis move in this order, each in its own packet:
 
-1. corporate memory (done 2026-10-16, now on `v1.1.1`)
-2. Herbs vs. Ailments (done 2026-10-20 on `v1.2.0`; herbs WP-005,
+1. corporate memory (done 2026-10-16 on `v1.1.1`, now on `v1.3.0`)
+2. Herbs vs. Ailments (done 2026-10-20 on `v1.2.0`, now on `v1.4.1`; herbs WP-005,
    [herbs-vs-ailments#297](https://github.com/barefootbetters/herbs-vs-ailments/pull/297))
-3. the studio ewiki (done 2026-10-20 on `v1.2.0`; [bb-studio-dashboard
+3. the studio ewiki (done 2026-10-20 on `v1.2.0`, now on `v1.3.0`; [bb-studio-dashboard
    WP-014](https://github.com/barefootbetters/bb-studio-dashboard/blob/main/docs/ai/work-packets/WP-014-studio-ewiki-on-the-shared-theme.md),
    [bb-studio-dashboard#29](https://github.com/barefootbetters/bb-studio-dashboard/pull/29)).
    Jeff ran it without waiting on herbs; herbs merged first anyway
    ([decision 2026-10-20-01](https://github.com/barefootbetters/bb-studio-dashboard/blob/main/docs/ai/decision-log/2026-10-20-01-the-studio-ewiki-moves-onto-the-shared-theme-now.md)).
    Both wikis use `-AllowedScript` for their Mermaid diagrams.
-4. the engine ewiki (on `v1.3.0`; WP-847, D-24782), moved ahead of the
+4. the engine ewiki (done on `v1.3.0`, now on `v1.4.1`; WP-847, D-24782), moved ahead of the
    personal wiki on 2026-10-26 (D-24781): the personal wiki had no
    pending feature, and the engine's own copy was the one drifting
 5. the personal wiki
@@ -396,7 +411,7 @@ Resolved:
 - [DECISIONS.md](../docs/ai/DECISIONS.md) — D-24725 (one shared wiki platform), D-24727 (theme: the current theme, extracted; Hextra not adopted), D-24728 (the theme lives in `barefootbetters/ewiki-theme`, since renamed `bb-studio-ewiki-theme`, vendored), D-24293 (Pagefind and the JS-free amendment), D-24690 (Worker hosting)
 - [WP-814](../docs/ai/work-packets/WP-814-shared-wiki-theme-extraction.md) — the extraction: the survey of the four copies, the contract, and the shadow-build record
 - [bb-studio-dashboard WP-014](https://github.com/barefootbetters/bb-studio-dashboard/blob/main/docs/ai/work-packets/WP-014-studio-ewiki-on-the-shared-theme.md) — the studio ewiki's migration packet, merged in [bb-studio-dashboard#29](https://github.com/barefootbetters/bb-studio-dashboard/pull/29); decisions [2026-10-20-01](https://github.com/barefootbetters/bb-studio-dashboard/blob/main/docs/ai/decision-log/2026-10-20-01-the-studio-ewiki-moves-onto-the-shared-theme-now.md) (it moves now, on `v1.2.0`), [2026-10-17-01](https://github.com/barefootbetters/bb-studio-dashboard/blob/main/docs/ai/decision-log/2026-10-17-01-the-studio-ewiki-is-the-studios-own-wiki.md) (the studio's own wiki) and [2026-10-17-02](https://github.com/barefootbetters/bb-studio-dashboard/blob/main/docs/ai/decision-log/2026-10-17-02-the-ewiki-products-marketing-page.md) (the product page)
-- [barefootbetters/bb-studio-ewiki-theme](https://github.com/barefootbetters/bb-studio-ewiki-theme) — the shared theme (private); each release's notes carry its manifest digest ([`v1.2.0`](https://github.com/barefootbetters/bb-studio-ewiki-theme/releases/tag/v1.2.0) is the latest), and its `CLAUDE.md` lists every consumer
+- [barefootbetters/bb-studio-ewiki-theme](https://github.com/barefootbetters/bb-studio-ewiki-theme) — the shared theme (private); each release's notes carry its manifest digest ([`v1.4.1`](https://github.com/barefootbetters/bb-studio-ewiki-theme/releases/tag/v1.4.1) is the latest), and its `CLAUDE.md` lists every consumer
 - [herbs-vs-ailments#297](https://github.com/barefootbetters/herbs-vs-ailments/pull/297) — herbs WP-005, the Herbs vs. Ailments ewiki on the shared theme `v1.2.0`
 - [herbs-vs-ailments#247](https://github.com/barefootbetters/herbs-vs-ailments/pull/247) — the Hextra pilot and its evaluation (`apps/ewiki/HEXTRA-PILOT.md`), closed unmerged
 - [Hextra on GitHub](https://github.com/imfing/hextra) — the theme evaluated (MIT; FlexSearch search; no Node.js needed to use it)
