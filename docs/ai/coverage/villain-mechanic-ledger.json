@@ -4,13 +4,13 @@
   "summary": {
     "totalRows": 770,
     "byStatus": {
-      "executable": 268,
+      "executable": 271,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 497,
+      "unmarked": 494,
       "subsystem": 4
     },
-    "distinctMechanics": 66
+    "distinctMechanics": 69
   },
   "rows": [
     {
@@ -1261,11 +1261,11 @@
       "cardName": "Bulldozer",
       "set": "chmp",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "charge",
+      "status": "executable",
+      "wp": "WP-874",
+      "decision": "D-24820",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#charge"
     },
     {
       "extId": "chmp-villain-monsters-unleashed-goom",
@@ -1360,22 +1360,22 @@
       "cardName": "The Wrecker",
       "set": "chmp",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "demolish-each-player-per-group-villain-in-city",
+      "status": "executable",
+      "wp": "WP-874",
+      "decision": "D-24820",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#demolish-each-player-per-group-villain-in-city"
     },
     {
       "extId": "chmp-villain-wrecking-crew-thunderball",
       "cardName": "Thunderball",
       "set": "chmp",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "demolish-each-other-player",
+      "status": "executable",
+      "wp": "WP-874",
+      "decision": "D-24820",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#demolish-each-other-player"
     },
     {
       "extId": "chmp-villain-monsters-unleashed-tim-boo-ba",

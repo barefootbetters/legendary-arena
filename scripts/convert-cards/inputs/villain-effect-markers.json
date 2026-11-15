@@ -107,7 +107,10 @@
         "zzutak": { "escape": ["demolish-each-player"] }
       },
       "wrecking-crew": {
-        "piledriver": { "fight": ["koHeroCurrentPlayer"], "escape": ["demolish-each-player"] }
+        "bulldozer": { "ambush": ["charge:1:demolish-if-pushed"] },
+        "piledriver": { "fight": ["koHeroCurrentPlayer"], "escape": ["demolish-each-player"] },
+        "thunderball": { "fight": ["demolish-each-other-player@sewers+bank"] },
+        "the-wrecker": { "ambush": ["demolish-each-player-per-group-villain-in-city"] }
       }
     },
     "co2e": {

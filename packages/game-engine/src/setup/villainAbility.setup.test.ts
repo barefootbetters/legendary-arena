@@ -2531,3 +2531,66 @@ describe('buildVillainAbilityHooks — WP-838 capture-family grammars (D-24771)'
     assert.equal(co2eHooks.length, 6);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-874 / D-24820 — the Wrecking Crew grammars and the one Charge primitive
+// ---------------------------------------------------------------------------
+
+describe('buildVillainAbilityHooks — WP-874 Wrecking Crew grammars (D-24820)', () => {
+  const grammarTokens: Array<{ slug: string; token: string }> = [
+    { slug: 'charge-demolish', token: 'charge:1:demolish-if-pushed' },
+    { slug: 'charge-two', token: 'charge:2' },
+    { slug: 'each-other-gated', token: 'demolish-each-other-player@sewers+bank' },
+    { slug: 'per-group', token: 'demolish-each-player-per-group-villain-in-city' },
+    { slug: 'reject-charge-bare', token: 'charge' },
+    { slug: 'reject-charge-zero', token: 'charge:0' },
+    { slug: 'reject-charge-letter', token: 'charge:x' },
+    { slug: 'reject-charge-other', token: 'charge:1:other' },
+    // why: D-24820 — not a VILLAIN_CHARGE_PUSH_CONSEQUENCES member yet; WP-839's append flips this
+    // case to a positive one (a deliberate test change).
+    { slug: 'reject-charge-discard', token: 'charge:1:discard-if-pushed' },
+    { slug: 'reject-charge-extra', token: 'charge:1:demolish-if-pushed:x' },
+    { slug: 'reject-each-other-param', token: 'demolish-each-other-player:1' },
+    { slug: 'reject-per-group-param', token: 'demolish-each-player-per-group-villain-in-city:1' },
+  ];
+  const registry = makeRegistry(
+    'core',
+    [
+      {
+        slug: 'wp874',
+        cards: grammarTokens.map((entry) => ({
+          slug: entry.slug,
+          abilities: [`Ambush: test line. [effect:${entry.token}]`],
+        })),
+      },
+    ],
+    [],
+  );
+  const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/wp874'], []));
+  const hookFor = (slug: string) =>
+    hooks.find((h) => h.cardId === `core-villain-wp874-${slug}-00`)!;
+
+  it('parses every Locked-Values marker into its descriptor', () => {
+    assert.deepStrictEqual(hookFor('charge-demolish').effects, [
+      { primitive: 'charge', magnitude: 1, chargePushConsequence: 'demolish-if-pushed' },
+    ]);
+    assert.deepStrictEqual(hookFor('charge-two').effects, [{ primitive: 'charge', magnitude: 2 }]);
+    assert.ok(!('chargePushConsequence' in hookFor('charge-two').effects[0]!), 'an absent consequence is omitted');
+    assert.deepStrictEqual(hookFor('each-other-gated').effects, [
+      { primitive: 'demolish-each-other-player', requireCitySpaces: ['sewers', 'bank'] },
+    ]);
+    assert.deepStrictEqual(hookFor('per-group').effects, [{ primitive: 'demolish-each-player-per-group-villain-in-city' }]);
+  });
+
+  it('every malformed token resolves to unresolvedMarkers, never a silent accept', () => {
+    for (const entry of grammarTokens) {
+      if (!entry.slug.startsWith('reject-')) continue;
+      assert.deepStrictEqual(hookFor(entry.slug).effects, [], `${entry.token} must yield no descriptor`);
+      assert.deepStrictEqual(
+        hookFor(entry.slug).unresolvedMarkers,
+        [entry.token],
+        `${entry.token} must land in unresolvedMarkers`,
+      );
+    }
+  });
+});

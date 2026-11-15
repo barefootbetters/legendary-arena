@@ -42,6 +42,7 @@ import type {
   VillainKoZone,
   VillainWoundOutcomes,
   VillainCapturePile,
+  VillainChargePushConsequence,
 } from '../rules/villainAbility.types.js';
 import {
   getVillainHooksForCard,
@@ -84,7 +85,7 @@ import {
 // fortify helpers (pure, type-only imports back into the engine; no cycle).
 import { fortifyWithEscapedVillain, getFortification } from '../board/fortify.logic.js';
 import { demolishEachPlayer } from '../board/demolish.logic.js';
-import type { DemolishResult } from '../board/demolish.logic.js';
+import type { DemolishResult, DemolishSeatScope } from '../board/demolish.logic.js';
 import { FORTIFY_LOCK_TEXT, FORTIFY_PLACE_LABELS } from '../board/fortify.types.js';
 import type { CaptureHeroResult } from '../board/heroCapture.logic.js';
 // why: WP-522 / D-24335 — give-hq-hero-by-trait-to-current refills the vacated HQ slot
@@ -1032,6 +1033,10 @@ const DELIBERATE_NO_OP_VILLAIN_PRIMITIVES: ReadonlySet<VillainEffectPrimitive> =
     // the generic attached-Hero award runs at the fight site BEFORE the executor, so the split
     // happens there (defeatCityVillainCore Step 3c); its trace must read `no-op`, not `fired`.
     'gain-one-attached-hero-rest-to-bottom',
+    // why: WP-874 / D-24820 — the charge mutates nothing in the executor: the Ambush bridge in
+    // performVillainReveal moves the cards before the executor runs and narrates the charge, so its
+    // trace must read `no-op`, not `fired`.
+    'charge',
   ]);
 
 /**
@@ -1123,16 +1128,20 @@ export function recordVillainSecondarySiteTrace(
   timing: VillainAbilityTiming,
   // why: WP-838 / D-24771 — `gain-one-attached-hero-rest-to-bottom` / `awardOneAttachedHeroRestToBottom`
   // appended under the D-24824 §7 forward rule: Venom's split runs at the fight site, not the executor.
+  // why: WP-874 / D-24820 — `charge` / `chargeAmbushVillain` appended under the same D-24824 §7 rule:
+  // the charge runs at the Ambush bridge, before the executor.
   effect:
     | 'play-villain-deck-cards'
     | 'reenter-sewers-if-villain-deck-top'
     | 'stack-cards-enter-city-as-villains'
-    | 'gain-one-attached-hero-rest-to-bottom',
+    | 'gain-one-attached-hero-rest-to-bottom'
+    | 'charge',
   handler:
     | 'playTopVillainDeckCards'
     | 'reenterSewersOnVillainDeckReveal'
     | 'enterStackCardsAsVillains'
-    | 'awardOneAttachedHeroRestToBottom',
+    | 'awardOneAttachedHeroRestToBottom'
+    | 'chargeAmbushVillain',
   fireSite: 'villain-fight-bridge' | 'villain-ambush-bridge',
   params: Record<string, string | number | boolean>,
   turn: number,
@@ -2347,6 +2356,64 @@ export function villainCardStackVillainEntry(
           nameToken: descriptor.stackVillainName ?? null,
         };
       }
+    }
+  }
+  return null;
+}
+
+/**
+ * What a card's `charge` descriptor does at the given timing (WP-874 / D-24820): how many spaces
+ * it charges, and what it does after the charge when a step pushed a Villain.
+ */
+export interface VillainChargeEffect {
+  /** The spaces charged (the descriptor's `magnitude`). */
+  spaces: number;
+  /** The push consequence, or null when the line names none. */
+  pushConsequence: VillainChargePushConsequence | null;
+}
+
+/**
+ * Returns the first `charge` descriptor a card carries at the given timing as
+ * `{ spaces, pushConsequence }`, or null when it carries none there or that descriptor is gated
+ * (WP-874 / D-24820: Bulldozer's Ambush, `charge:1:demolish-if-pushed`).
+ *
+ * Read only by the Ambush bridge in performVillainReveal; the executor handler is a deliberate
+ * no-op, so a `charge` at any other timing is inert. Mirrors villainCardReenterSewersKinds's
+ * guards. Pure lookup over G.villainAbilityHooks; no mutation.
+ *
+ * @param G - Game state (read-only).
+ * @param cardId - The revealed card's zone-instance ext_id.
+ * @param timing - The timing to inspect (the Ambush site passes 'onAmbush').
+ * @returns The charge, or null.
+ */
+export function villainCardChargeEffect(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+): VillainChargeEffect | null {
+  // why: guard against G states / test mocks lacking villainAbilityHooks (the
+  // villainCardPlaysVillainDeckCards guard) — getVillainHooksForCard would throw on undefined.
+  if (!G.villainAbilityHooks || G.villainAbilityHooks.length === 0) {
+    return null;
+  }
+  const hooks = getVillainHooksForCard(G.villainAbilityHooks, cardId, timing);
+  for (const hook of hooks) {
+    for (const descriptor of hook.effects ?? []) {
+      if (descriptor.primitive !== 'charge') {
+        continue;
+      }
+      // why: WP-874 / D-24820 — the executor fails a gated descriptor closed at the Ambush site (no
+      // fought space, D-24295; the condition gate, D-24749), so a gated `charge` must not charge at
+      // the bridge either. No marked carrier is gated.
+      if (descriptor.requireCitySpaces !== undefined || descriptor.requireCondition !== undefined) {
+        return null;
+      }
+      // why: the parser always sets `magnitude` (the `:N` count); a hand-built test hook lacking it
+      // falls back to 1 (the villainCardStackVillainEntry precedent).
+      return {
+        spaces: descriptor.magnitude ?? 1,
+        pushConsequence: descriptor.chargePushConsequence ?? null,
+      };
     }
   }
   return null;
@@ -5386,6 +5453,13 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'capture-hq-heroes-cost-lte': villainEffectCaptureHqHeroesCostLte,
   'gain-one-attached-hero-rest-to-bottom': villainEffectGainOneAttachedHeroRestToBottom,
   'shuffle-bystanders-into-villain-deck': villainEffectShuffleBystandersIntoVillainDeck,
+  // why: WP-874 / D-24820 — positions 58-60, the chmp Wrecking Crew lines. Thunderball's Fight
+  // (each other player) and The Wrecker's Ambush (once per own-group City Villain) both Demolish
+  // through the shared demolishEachPlayer and set their narrative clause; Bulldozer's charge is a
+  // deliberate no-op (the Ambush bridge in performVillainReveal moves the cards).
+  'demolish-each-other-player': villainEffectDemolishEachOtherPlayer,
+  'demolish-each-player-per-group-villain-in-city': villainEffectDemolishEachPlayerPerGroupVillainInCity,
+  charge: villainEffectCharge,
 };
 
 /**
@@ -5416,6 +5490,124 @@ function villainEffectDemolishEachPlayer(
 }
 
 /**
+ * demolish-each-other-player primitive — "[Demolish] each other player" (WP-874 / D-24820:
+ * Thunderball's Fight, marked `@sewers+bank`). Rules v23 p.24.
+ *
+ * Delegates to the shared `demolishEachPlayer` resolver with the `each-other` seat scope: one
+ * Hero Deck reveal, bottomed, and every player except the current (fighting) player discards the
+ * earliest hand card of its cost. No params; keyword-less, so the resolver's own lines narrate it.
+ * Never throws.
+ *
+ * @param G - Game state (mutated: Hero Deck order, hands, discards, messages).
+ * @param currentPlayer - The active (fighting) player, skipped by the discards.
+ * @param _cardId - Unused.
+ * @param timing - The timing that fired (for the "<Fight|Ambush|Escape> effect:" label).
+ * @returns No targets, with the clause of the resolver's lines as the narrative clause.
+ */
+// why: WP-874 / D-24820 — "in the Sewers or Bank" is the marker's `@sewers+bank` suffix: the
+// D-24295 location gate skips this descriptor (and logs "no effect") before dispatch when the
+// fought space is anywhere else, or when the fight site has no fought space; no new gate code.
+function villainEffectDemolishEachOtherPlayer(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+): VillainEffectApplication {
+  const label = `${villainEffectTimingLabel(timing)} effect:`;
+  const demolishResult = demolishEachPlayer(G, currentPlayer, label, 'each-other');
+  // why: WP-874 / D-24854 §6 — a keyword-less handler reports the clause of the lines it logged;
+  // the clause mirror takes the same `each-other` scope as the resolver call, so it cannot name
+  // the fighter's seat.
+  return {
+    targets: [],
+    narrativeClause: composeDemolishNarrativeClause(G, currentPlayer, demolishResult, 'each-other'),
+  };
+}
+
+/**
+ * demolish-each-player-per-group-villain-in-city primitive — "For each [group] Villain in the
+ * city (including this one), [Demolish] each player" (WP-874 / D-24820: The Wrecker's Ambush).
+ *
+ * Finds the card's own Villain Group by the D-24770 prefix, counts the City Villains of that
+ * group once (the card itself included), then calls the shared `demolishEachPlayer` resolver that
+ * many times. An unresolved group, or a count of zero, logs a blocked line and Demolishes no one.
+ * Keyword-less, self-narrating; never throws.
+ *
+ * @param G - Game state (mutated: Hero Deck order, hands, discards, messages).
+ * @param currentPlayer - The active player; each Demolish's discards start with them (D-24780).
+ * @param cardId - The triggering Villain (its group sets the prefix).
+ * @param timing - The timing that fired (for the "<Ambush|...> effect:" label).
+ * @returns No targets, with the clause of every line it and the resolver logged.
+ */
+function villainEffectDemolishEachPlayerPerGroupVillainInCity(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+): VillainEffectApplication {
+  const label = `${villainEffectTimingLabel(timing)} effect:`;
+  const group = resolveVillainGroupPrefix(G, cardId);
+  if (group === null) {
+    const clause = "the Villain's group is not among this match's Villain Groups, so no one is Demolished";
+    pushLog(G, `${label} ${clause}.`, 'blocked');
+    return { targets: [], narrativeClause: clause };
+  }
+  // why: WP-874 / D-24820 — the D-24770 own-group prefix, counted ONCE before any Demolish (a
+  // Demolish moves no Villain), over every occupied City space, the card itself included
+  // ("including this one"). If an entry escape already moved it out of the City, only the others
+  // count.
+  const count = countCityVillainsWithPrefix(G, group.groupPrefix);
+  if (count === 0) {
+    const clause = `no ${group.groupSlug} Villain is in the City, so no one is Demolished`;
+    pushLog(G, `${label} ${clause}.`, 'blocked');
+    return { targets: [], narrativeClause: clause };
+  }
+  const headerClause = `Demolish each player ${count} time(s), once for each ${group.groupSlug} Villain in the City`;
+  pushLog(G, `${label} ${headerClause}.`, 'neutral');
+  const clauses: string[] = [headerClause];
+  for (let demolishNumber = 0; demolishNumber < count; demolishNumber++) {
+    const demolishResult = demolishEachPlayer(G, currentPlayer, label);
+    clauses.push(composeDemolishNarrativeClause(G, currentPlayer, demolishResult));
+  }
+  // why: WP-874 / D-24854 §6 — the clause is exactly the lines logged: the header, then each
+  // Demolish's own lines, in log order.
+  return { targets: [], narrativeClause: clauses.join('; ') };
+}
+
+/**
+ * Counts the occupied City spaces whose card id starts with a Villain Group prefix
+ * (WP-874 / D-24820).
+ *
+ * @param G - Game state (read-only).
+ * @param groupPrefix - The anchored `${set}-villain-${slug}-` prefix.
+ * @returns How many City Villains belong to the group.
+ */
+function countCityVillainsWithPrefix(G: LegendaryGameState, groupPrefix: string): number {
+  let count = 0;
+  for (const occupant of G.city) {
+    if (occupant !== null && occupant !== undefined && occupant.startsWith(groupPrefix)) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+/**
+ * charge primitive — the rulebook Charge keyword (WP-874 / D-24820: Bulldozer's Ambush, "moves
+ * an extra space forward"). Rules v23 p.20.
+ *
+ * A DELIBERATE NO-OP: no mutation, no log, no narrative clause. The Ambush bridge in
+ * performVillainReveal (`chargeAmbushVillain`) reads `villainCardChargeEffect`, moves the cards
+ * BEFORE the executor runs, and narrates the charge (the D-24351 executor-no-op pattern). Listed
+ * in DELIBERATE_NO_OP_VILLAIN_PRIMITIVES so its executor trace reads `no-op`.
+ *
+ * @returns `{ targets: [] }` always.
+ */
+function villainEffectCharge(): VillainEffectApplication {
+  return { targets: [] };
+}
+
+/**
  * Re-derives the clause of the lines `demolishEachPlayer` logged (WP-897 / D-24854), in the
  * resolver's three shapes: an empty Hero Deck, a revealed Hero with no cost, or a revealed
  * Hero followed by one clause per seat in the resolver's seat order.
@@ -5423,6 +5615,7 @@ function villainEffectDemolishEachPlayer(
  * @param G - Game state (read-only: display data and seats).
  * @param currentPlayer - The active player the resolver started its seat walk from.
  * @param demolishResult - What the resolver returned.
+ * @param seatScope - The seat scope the resolver was called with (WP-874 / D-24820).
  * @returns The logged lines' clauses joined with `; `.
  */
 // why: WP-897 / D-24854 — `DemolishResult.discards` lists only the seats that discarded, so the
@@ -5432,6 +5625,10 @@ function composeDemolishNarrativeClause(
   G: LegendaryGameState,
   currentPlayer: string,
   demolishResult: DemolishResult,
+  // why: WP-874 / D-24820 — the mirror must take the same seat scope as the resolver call it
+  // describes, or an `each-other` clause would name the skipped seat. Defaulted to `each` so the
+  // WP-897 `demolish-each-player` clause is byte-identical.
+  seatScope: DemolishSeatScope = 'each',
 ): string {
   const revealedCardId = demolishResult.revealedCardId;
   if (revealedCardId === null) {
@@ -5443,7 +5640,18 @@ function composeDemolishNarrativeClause(
     return `Demolish revealed ${revealedName} and put it on the bottom of the Hero Deck, but it has no cost, so no one discards`;
   }
   const clauses: string[] = [`Demolish revealed ${revealedName} (cost ${cost}) and put it on the bottom of the Hero Deck`];
+  const seats: string[] = [];
   for (const playerId of seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)) {
+    if (seatScope === 'each-other' && playerId === currentPlayer) {
+      continue;
+    }
+    seats.push(playerId);
+  }
+  if (seats.length === 0) {
+    clauses.push('there is no other player to discard');
+    return clauses.join('; ');
+  }
+  for (const playerId of seats) {
     const discard = demolishResult.discards.find((entry) => entry.playerId === playerId);
     if (discard === undefined) {
       clauses.push(`Player ${playerId} has no card that costs ${cost} to discard`);

@@ -21,6 +21,13 @@ import { seatsInTurnOrderFrom } from '../turn/seatOrder.logic.js';
 import { selectDefaultCostDiscardCard } from '../moves/villainDefeatRequirement.logic.js';
 import { discardFromHand } from '../moves/discardFromHand.js';
 
+/**
+ * Which players a Demolish makes discard (WP-874 / D-24820): `each` is every player
+ * ("[Demolish] each player"); `each-other` skips the current player (Thunderball's
+ * "[Demolish] each other player").
+ */
+export type DemolishSeatScope = 'each' | 'each-other';
+
 /** One player's discard made by a Demolish. */
 export interface DemolishDiscard {
   playerId: string;
@@ -46,12 +53,17 @@ export interface DemolishResult {
  *   (stub contexts) keeps the sorted seat order.
  * @param logPrefix - The source label every log line starts with (e.g.
  *   `[Fin Fang Foom Master Strike]` or `Ambush effect:`).
+ * @param seatScope - Which players discard (WP-874 / D-24820): `each` (the default) or
+ *   `each-other`, which skips a non-null `currentPlayer`.
  * @returns What was revealed and who discarded what.
  */
 export function demolishEachPlayer(
   G: LegendaryGameState,
   currentPlayer: string | null,
   logPrefix: string,
+  // why: WP-874 / D-24820 — trailing and defaulted to `each`, so the D-24807 callers (Fin Fang
+  // Foom's Master Strike, the `demolish-each-player` primitive) stay byte-identical.
+  seatScope: DemolishSeatScope = 'each',
 ): DemolishResult {
   // why: rules v23 p.24 — "Reveal only one card": one Hero Deck reveal per Demolish, read
   // once here, outside the per-player loop, so every player discards against the same cost.
@@ -82,7 +94,7 @@ export function demolishEachPlayer(
     'applied',
   );
 
-  const discards = discardCardOfCostForEachPlayer(G, currentPlayer, cost, logPrefix);
+  const discards = discardCardOfCostForEachPlayer(G, currentPlayer, cost, logPrefix, seatScope);
 
   // why: the result names what was revealed and who discarded what, so later Demolish
   // readers ("for each player that discards a card this way", Epic Fin Fang Foom's "KO all
@@ -97,6 +109,7 @@ export function demolishEachPlayer(
  * @param currentPlayer - The active player, or null for sorted order.
  * @param cost - The revealed Hero's printed cost.
  * @param logPrefix - The source label every log line starts with.
+ * @param seatScope - Which players discard (`each-other` skips a non-null current player).
  * @returns Each player's discard, in the order they were made.
  */
 function discardCardOfCostForEachPlayer(
@@ -104,11 +117,19 @@ function discardCardOfCostForEachPlayer(
   currentPlayer: string | null,
   cost: number,
   logPrefix: string,
+  seatScope: DemolishSeatScope,
 ): DemolishDiscard[] {
   const discards: DemolishDiscard[] = [];
   // why: rules v23 L2247 — start with the current player, then clockwise (D-24780); a null
   // currentPlayer (stub contexts) keeps the sorted order.
-  const playerIds = seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer);
+  const playerIds = demolishSeats(G, currentPlayer, seatScope);
+  if (playerIds.length === 0) {
+    // why: WP-874 / D-24820 — an `each-other` Demolish with no other seat (solo) still revealed
+    // and bottomed the Hero Deck card above: the reveal is the Demolish itself, and only the
+    // discards have no one to apply to.
+    pushLog(G, `${logPrefix} there is no other player to discard.`, 'blocked');
+    return discards;
+  }
   for (const playerId of playerIds) {
     // why: the rulebook lets each player choose which card of that cost to discard. Every
     // candidate has the same cost, so the engine auto-picks the earliest one in hand order
@@ -128,4 +149,31 @@ function discardCardOfCostForEachPlayer(
     discards.push({ playerId, cardId });
   }
   return discards;
+}
+
+/**
+ * The seats a Demolish walks, in the D-24780 order (current player first), with the current
+ * player removed for an `each-other` Demolish.
+ *
+ * @param G - The game state (read-only: the seats).
+ * @param currentPlayer - The active player, or null for sorted order.
+ * @param seatScope - Which players discard.
+ * @returns The seat ids to walk, in order.
+ */
+function demolishSeats(
+  G: LegendaryGameState,
+  currentPlayer: string | null,
+  seatScope: DemolishSeatScope,
+): string[] {
+  const orderedSeats = seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer);
+  if (seatScope === 'each' || currentPlayer === null) {
+    return orderedSeats;
+  }
+  const otherSeats: string[] = [];
+  for (const playerId of orderedSeats) {
+    if (playerId !== currentPlayer) {
+      otherSeats.push(playerId);
+    }
+  }
+  return otherSeats;
 }
