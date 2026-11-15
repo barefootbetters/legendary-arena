@@ -21,9 +21,11 @@ import type {
   VillainEffectPrimitive,
   VillainEffectCondition,
   VillainCapturePile,
+  VillainChargePushConsequence,
 } from '../rules/villainAbility.types.js';
 import {
   VILLAIN_CAPTURE_PILES,
+  VILLAIN_CHARGE_PUSH_CONSEQUENCES,
   VILLAIN_ABILITY_TIMINGS,
   VILLAIN_EFFECT_KEYWORDS,
   VILLAIN_EFFECT_PRIMITIVES,
@@ -275,6 +277,44 @@ function parseEligibleCostList(token: string): number[] | null {
     costs.push(cost);
   }
   return costs;
+}
+
+/**
+ * Parses the `charge` grammar (WP-874 / D-24820): `charge:<N>` or `charge:<N>:<consequence>`.
+ *
+ * `N` is a positive integer (the spaces charged, carried as `magnitude`); the optional
+ * consequence is a VILLAIN_CHARGE_PUSH_CONSEQUENCES member verbatim, carried as
+ * `chargePushConsequence`. Bare `charge`, a bad count, an unknown consequence or a fourth
+ * colon-part returns null (→ unresolvedMarkers).
+ *
+ * @param parts - The marker value split on `:` (parts[0] is `charge`).
+ * @returns The charge descriptor, or null.
+ */
+// why: WP-874 / D-24820 — `charge` is the engine's one Charge primitive (the rulebook keyword,
+// rules v23 p.20). The consequence is accepted only by looping the canonical array (the
+// parseCapturePileList precedent), so a new member appended there (WP-839's Speed Demon) needs no
+// parser edit. The bare token has no meaningful default, so it never reaches the no-param tail.
+function parseChargeEffect(parts: readonly string[]): VillainEffectDescriptor | null {
+  if (parts.length !== 2 && parts.length !== 3) {
+    return null;
+  }
+  const magnitude = parsePositiveInteger(parts[1]!);
+  if (magnitude === null) {
+    return null;
+  }
+  if (parts.length === 2) {
+    return { primitive: 'charge', magnitude };
+  }
+  let chargePushConsequence: VillainChargePushConsequence | null = null;
+  for (const consequence of VILLAIN_CHARGE_PUSH_CONSEQUENCES) {
+    if (consequence === parts[2]) {
+      chargePushConsequence = consequence;
+    }
+  }
+  if (chargePushConsequence === null) {
+    return null;
+  }
+  return { primitive: 'charge', magnitude, chargePushConsequence };
 }
 
 /**
@@ -583,6 +623,9 @@ function parseLocationGatedEffect(
  *     repeat; D-24771)
  *   - `capture-hq-heroes-cost-lte:<N>` and `shuffle-bystanders-into-villain-deck:<N>`  (N a
  *     positive integer carried as `magnitude`; D-24771)
+ *   - `charge:<N>[:<consequence>]`  (N a positive integer carried as `magnitude`; the consequence
+ *     a VILLAIN_CHARGE_PUSH_CONSEQUENCES member carried as `chargePushConsequence`; D-24820)
+ *   - `demolish-each-other-player` | `demolish-each-player-per-group-villain-in-city` (D-24820)
  *   - `capture-bystander-each-victory-pile` | `gain-one-attached-hero-rest-to-bottom` (D-24771) |
  *   - `hero-deck-top-to-escape` | `gain-officer-current` |
  *     `ko-bystander-each-victory-pile` (D-24749) |
@@ -1148,6 +1191,9 @@ function parseUngatedEffect(
       return null;
     }
     return { primitive: primitiveToken, magnitude };
+  }
+  if (primitiveToken === 'charge') {
+    return parseChargeEffect(parts);
   }
   // why: hero-deck-top-to-escape, gain-officer-current, and the other no-param
   // primitives take no params; reject any trailing colon-separated tokens so a

@@ -2027,6 +2027,39 @@
       "note": "Live check (NEW match with Wrecking Crew after the deploy): when Piledriver escapes the log shows \"Escape effect: Demolish revealed <Hero> (cost C) and put it on the bottom of the Hero Deck.\" and each player's discard line; his Fight still KOs one of your Heroes. D-24807."
     },
     {
+      "key": "chmp-villain-wrecking-crew-the-wrecker|demolish-each-player-per-group-villain-in-city",
+      "kind": "villain",
+      "card": "The Wrecker",
+      "ability": "Ambush: For each Wrecking Crew Villain in the city (including this one), [Demolish] each player.",
+      "wp": "WP-874",
+      "state": "pending",
+      "date": "2026-11-15",
+      "evidence": "",
+      "note": "Live check (NEW match with Wrecking Crew after the deploy): when The Wrecker enters the City the log shows \"Ambush effect: Demolish each player N time(s), once for each wrecking-crew Villain in the City.\" (N counts The Wrecker plus the other Wrecking Crew Villains in the City), then N Demolish reveals with each player's discard line; the Ambush overlay names the same Demolishes. D-24820."
+    },
+    {
+      "key": "chmp-villain-wrecking-crew-bulldozer|charge",
+      "kind": "villain",
+      "card": "Bulldozer",
+      "ability": "Ambush: Bulldozer moves an extra space forward. If this pushes any Villains forward, [Demolish] each player.",
+      "wp": "WP-874",
+      "state": "pending",
+      "date": "2026-11-15",
+      "evidence": "",
+      "note": "Live check (NEW match with Wrecking Crew after the deploy): when Bulldozer enters the City it ends in the Bank (City positions in Play Diagnostics) and the log shows \"Ambush effect: Bulldozer charged forward one space to the Bank.\"; with a Villain in the Sewers the line adds \", pushing the Villains ahead of it forward.\" and a Demolish follows (a Villain pushed off the Bridge escapes), otherwise \"pushed no Villains forward, so no one is Demolished.\" The Ambush overlay names the charge. D-24820."
+    },
+    {
+      "key": "chmp-villain-wrecking-crew-thunderball|demolish-each-other-player",
+      "kind": "villain",
+      "card": "Thunderball",
+      "ability": "Fight: If you fight Thunderball in the Sewers or Bank, [Demolish] each other player.",
+      "wp": "WP-874",
+      "state": "pending",
+      "date": "2026-11-15",
+      "evidence": "",
+      "note": "Live check (NEW match with Wrecking Crew after the deploy): fighting Thunderball in the Sewers or Bank logs \"Fight effect: Demolish revealed <Hero> (cost C) …\" with a discard line for every player except the fighter (solo: \"there is no other player to discard.\"); fought anywhere else it logs \"Fight effect: not fought on the Sewers or Bank; no effect.\" D-24820."
+    },
+    {
       "key": "chmp-villain-monsters-unleashed-groot-from-planet-x|stack-cards-enter-city-as-villains",
       "kind": "villain",
       "card": "Groot from Planet X",

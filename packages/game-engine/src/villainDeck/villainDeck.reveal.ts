@@ -17,7 +17,7 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { RevealedCardType } from './villainDeck.types.js';
 import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
-import { formatCardRef } from '../log/logDisplay.js';
+import { formatCardRef, resolveCardName } from '../log/logDisplay.js';
 import type { RuleEffect } from '../rules/ruleHooks.types.js';
 import type { ImplementationMap } from '../rules/ruleRuntime.execute.js';
 import { executeRuleHooks } from '../rules/ruleRuntime.execute.js';
@@ -53,9 +53,17 @@ import {
   villainCardStackVillainEntry,
   resolveCardDisplayName,
   recordVillainSecondarySiteTrace,
+  villainCardChargeEffect,
 } from '../villain/villainEffects.execute.js';
-import type { StackVillainEntry } from '../villain/villainEffects.execute.js';
-import type { VillainAbilityTiming } from '../rules/villainAbility.types.js';
+import type { StackVillainEntry, VillainChargeEffect } from '../villain/villainEffects.execute.js';
+// why: WP-874 / D-24820 — the Ambush charge bridge steps the City through the pure Charge helper and
+// runs a pushed Demolish through the one shared resolver. reveal.ts already reaches
+// demolish.logic.ts through villainEffects.execute.ts, so neither import adds a module cycle.
+import { chargeCityVillainOneSpace } from '../board/villainCharge.logic.js';
+import type { ChargeOutcome } from '../board/villainCharge.logic.js';
+import { demolishEachPlayer } from '../board/demolish.logic.js';
+import { citySpaceNameForIndex } from '../board/citySpaceNames.js';
+import type { VillainAbilityTiming, VillainChargePushConsequence } from '../rules/villainAbility.types.js';
 import { listFreeStackVillainIds } from '../rules/stackVillain.logic.js';
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
@@ -86,6 +94,7 @@ import { hasPendingReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostD
 import {
   composeAmbushNarrative,
   composeBystanderRevealedNarrative,
+  composeChargeClause,
   composeEffectResultLogLine,
   composeStackVillainEntryClause,
   composeVillainDeckPlayClause,
@@ -380,6 +389,29 @@ export function performVillainReveal(
       if (matchReadsConditionType(G, MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE)) {
         G.ambushVillainPlayedThisTurn = true;
       }
+      // why: WP-874 / D-24820 — the Ambush charge bridge (D-24351). Charge is an Ambush effect
+      // resolved after entry escapes (rules v23 L571-575, L1117-1119), so it runs after
+      // resolveVillainEscape above and BEFORE the onAmbush executor below: that is printed order for
+      // every marked carrier (the charge is the first or only Ambush clause; a real-data test pins
+      // it). Its secondary-site trace therefore precedes the executor's `no-op` trace (D-24824).
+      const ambushChargeEffect = villainCardChargeEffect(G, cardId, 'onAmbush');
+      let ambushChargeClause: string | undefined;
+      if (ambushChargeEffect !== null) {
+        // why: WP-874 / D-24824 §3 — the executor traces the charge `no-op`; record where it really
+        // fires, inside the guard and immediately before the bridge. `magnitude` is the marked count.
+        recordVillainSecondarySiteTrace(
+          G,
+          cardId,
+          'onAmbush',
+          'charge',
+          'chargeAmbushVillain',
+          'villain-ambush-bridge',
+          { magnitude: ambushChargeEffect.spaces },
+          readRevealContextTurn(context),
+        );
+        const chargeOutcome = chargeAmbushVillain(G, context, implementationMap, cardId, ambushChargeEffect);
+        ambushChargeClause = composeChargeClause(chargeOutcome);
+      }
       // why: WP-478 / D-24285 — pass the reveal move's shuffle source (uniform with
       // the Fight/Escape fire sites) so a future Ambush-timed scry could reshuffle.
       // why: WP-489 / D-24295 — the Ambush fire site has no fought City space, so
@@ -471,6 +503,8 @@ export function performVillainReveal(
           ambushPlayCount,
           ambushStackVillainClause,
           ambushExecution.narrativeClauses,
+          // why: WP-874 / D-24854 §6 — the bridged charge clause is the sixth, trailing parameter.
+          ambushChargeClause,
         ),
       });
 
@@ -994,4 +1028,188 @@ export function playTopVillainDeckCards(
     }
     performVillainReveal(G, context, implementationMap);
   }
+}
+
+/**
+ * Charges an Ambush Villain forward (WP-874 / D-24820: the rulebook Charge keyword, Bulldozer's
+ * `charge:1:demolish-if-pushed`), then resolves the line's push consequence.
+ *
+ * Each step moves the Villain one space toward the escape edge through the pure
+ * `chargeCityVillainOneSpace`, pushing the contiguous block ahead of it; a card pushed off the
+ * end, or the charger itself from the last space, escapes through `resolveVillainEscape`. After
+ * the steps (also when the charger escaped), a `demolish-if-pushed` consequence Demolishes each
+ * player once if any step pushed a Villain.
+ *
+ * @param G - The game state (mutated: the City, escapes, the Hero Deck, hands, the log).
+ * @param context - The reveal context (escapes and the Demolish read it).
+ * @param implementationMap - The rule handler map an escape's rule hooks need.
+ * @param cardId - The charging Villain.
+ * @param chargeEffect - The spaces and push consequence from `villainCardChargeEffect`.
+ * @returns What the charge did, for the narrative.
+ */
+// why: WP-874 / D-24820 — all state lives in locals (no module-level state), so a nested reveal
+// reached through resolveVillainEscape (an escape that becomes a Scheme Twist whose resolver
+// reveals) runs its own bridge to completion first; this loop re-reads indexOf every step, so
+// escape side effects that move City cards are absorbed.
+function chargeAmbushVillain(
+  G: LegendaryGameState,
+  context: RevealContext,
+  implementationMap: ImplementationMap,
+  cardId: CardExtId,
+  chargeEffect: VillainChargeEffect,
+): ChargeOutcome {
+  const outcome: ChargeOutcome = {
+    spacesMoved: 0,
+    hasPushedAnyVillain: false,
+    hasChargerEscaped: false,
+    triggeredPushConsequence: null,
+  };
+  for (let stepNumber = 0; stepNumber < chargeEffect.spaces; stepNumber++) {
+    const hasStepped = applyChargeStep(G, context, implementationMap, cardId, outcome);
+    if (!hasStepped || outcome.hasChargerEscaped) {
+      break;
+    }
+  }
+  if (chargeEffect.pushConsequence !== null) {
+    outcome.triggeredPushConsequence = resolveChargePushConsequence(
+      G,
+      context,
+      cardId,
+      chargeEffect.pushConsequence,
+      outcome.hasPushedAnyVillain,
+    );
+  }
+  return outcome;
+}
+
+/**
+ * Applies one charge step: moves the charger one space through the pure step, logs it, and runs
+ * the escape of any card the step pushed out of the City.
+ *
+ * @param G - The game state (mutated: the City, escapes, the log).
+ * @param context - The reveal context an escape needs.
+ * @param implementationMap - The rule handler map an escape's rule hooks need.
+ * @param cardId - The charging Villain.
+ * @param outcome - The charge outcome (mutated: the step's push, move and escape).
+ * @returns False when the charger is no longer in the City, so no step ran.
+ */
+function applyChargeStep(
+  G: LegendaryGameState,
+  context: RevealContext,
+  implementationMap: ImplementationMap,
+  cardId: CardExtId,
+  outcome: ChargeOutcome,
+): boolean {
+  const fromIndex = G.city.indexOf(cardId);
+  if (fromIndex === -1) {
+    return false;
+  }
+  const step = chargeCityVillainOneSpace(G.city, fromIndex);
+  G.city = step.city;
+  if (step.hasPushedVillain) {
+    outcome.hasPushedAnyVillain = true;
+  }
+  if (step.hasChargerEscaped) {
+    outcome.hasChargerEscaped = true;
+  } else {
+    outcome.spacesMoved += 1;
+  }
+  logChargeStep(G, cardId, fromIndex + 1, step.hasPushedVillain, step.hasChargerEscaped);
+  if (step.escapedCardId !== null) {
+    // why: WP-874 / D-24587 — every escape, a pushed Villain's or the charger's own, runs the full
+    // escape procedure (Escape Pile, escape counter, its Escape effect). Its HQ KO and Bystander
+    // steps stay queued until after the move (D-24656 §4), so a pushed Demolish discards before
+    // them, the same accepted order as an entry escape followed by an Ambush.
+    resolveVillainEscape(G, context, implementationMap, step.escapedCardId);
+  }
+  return true;
+}
+
+/**
+ * Resolves a charge's push consequence: it fires only when a step pushed a Villain forward.
+ *
+ * @param G - The game state (mutated by the consequence, and the log).
+ * @param context - The reveal context (the current player).
+ * @param cardId - The charging Villain (named in the no-push line).
+ * @param consequence - The line's push consequence.
+ * @param hasPushedAnyVillain - Whether any step pushed a Villain.
+ * @returns The consequence the push triggered, or null when nothing was pushed.
+ */
+// why: WP-874 / D-24820 — the consequence reads whether the charge pushed, so it runs inside the
+// bridge right after the charge, not in the executor.
+function resolveChargePushConsequence(
+  G: LegendaryGameState,
+  context: RevealContext,
+  cardId: CardExtId,
+  consequence: VillainChargePushConsequence,
+  hasPushedAnyVillain: boolean,
+): VillainChargePushConsequence | null {
+  switch (consequence) {
+    case 'demolish-if-pushed':
+      if (!hasPushedAnyVillain) {
+        pushLog(
+          G,
+          `Ambush effect: ${resolveCardName(G.cardDisplayData, cardId)} pushed no Villains forward, so no one is Demolished.`,
+          'blocked',
+        );
+        return null;
+      }
+      demolishEachPlayer(G, context.ctx.currentPlayer, 'Ambush effect:');
+      return 'demolish-if-pushed';
+    default: {
+      // why: D-24820 — exhaustive over VillainChargePushConsequence; a new member (WP-839's
+      // 'discard-if-pushed') must add its own case, with its own no-push line, or this fails to
+      // compile.
+      const unhandled: never = consequence;
+      return unhandled;
+    }
+  }
+}
+
+/**
+ * Logs one charge step.
+ *
+ * @param G - The game state (the log is appended).
+ * @param cardId - The charging Villain.
+ * @param destinationIndex - The space the charger moved to (unused when it left the City).
+ * @param hasPushedVillain - Whether the step pushed Villains forward.
+ * @param hasChargerEscaped - Whether the charger left the City.
+ */
+function logChargeStep(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+  destinationIndex: number,
+  hasPushedVillain: boolean,
+  hasChargerEscaped: boolean,
+): void {
+  const chargerName = resolveCardName(G.cardDisplayData, cardId);
+  if (hasChargerEscaped) {
+    pushLog(G, `Ambush effect: ${chargerName} charged forward out of the city.`, 'threat');
+    return;
+  }
+  const spaceLabel = describeCitySpace(destinationIndex);
+  if (hasPushedVillain) {
+    pushLog(
+      G,
+      `Ambush effect: ${chargerName} charged forward one space to ${spaceLabel}, pushing the Villains ahead of it forward.`,
+      'threat',
+    );
+    return;
+  }
+  pushLog(G, `Ambush effect: ${chargerName} charged forward one space to ${spaceLabel}.`, 'threat');
+}
+
+/**
+ * Names a City space for a log line: `the Bank` for a named space, else `city space <index>`
+ * (a grown City's extra spaces have no name).
+ *
+ * @param cityIndex - The 0-based City index.
+ * @returns The space label.
+ */
+function describeCitySpace(cityIndex: number): string {
+  const spaceName = citySpaceNameForIndex(cityIndex);
+  if (spaceName === undefined) {
+    return `city space ${cityIndex}`;
+  }
+  return `the ${spaceName.charAt(0).toUpperCase()}${spaceName.slice(1)}`;
 }

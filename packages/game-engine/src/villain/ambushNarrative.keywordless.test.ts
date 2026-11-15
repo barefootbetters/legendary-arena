@@ -44,6 +44,9 @@ const FIXTURE_GROUP_IDS = [
   'co2e/radiation',
   'core/enemies-of-asgard',
   'chmp/monsters-unleashed',
+  // why: WP-874 / D-24820 / D-24854 §6 — The Wrecker's hook, and its own group in the selection so
+  // resolveVillainGroupPrefix resolves (a sanctioned fixture edit).
+  'chmp/wrecking-crew',
   'mdns/fallen',
   'mdns/lilin',
   'msis/infinity-stones',
@@ -60,6 +63,8 @@ const MYSTIQUE = 'co2e-villain-brotherhood-of-mutants-mystique-00' as CardExtId;
 const JUGGERNAUT = 'co2e-villain-brotherhood-of-mutants-juggernaut-00' as CardExtId;
 const LEADER = 'co2e-villain-radiation-the-leader-00' as CardExtId;
 const TRULL = 'chmp-villain-monsters-unleashed-trull-the-unhuman-00' as CardExtId;
+const THE_WRECKER = 'chmp-villain-wrecking-crew-the-wrecker-00' as CardExtId;
+const THUNDERBALL = 'chmp-villain-wrecking-crew-thunderball-00' as CardExtId;
 const METARCHUS = 'mdns-villain-fallen-metarchus-00' as CardExtId;
 const MIND_STONE = 'msis-villain-infinity-stones-the-mind-stone-00' as CardExtId;
 const BLACKOUT = 'mdns-villain-lilin-blackout-00' as CardExtId;
@@ -446,7 +451,9 @@ const PINNED_LOGS: Record<string, string[]> = {
 };
 
 describe('the keyword-less Ambush set in the card data (WP-897 RS-5)', () => {
-  it('the real parser finds exactly the 16 keyword-less Ambush primitives, in printed order', () => {
+  // why: WP-874 / D-24820 / D-24854 §6 — Bulldozer's `charge` and The Wrecker's per-group Demolish
+  // join the set, 16 → 18 (a sanctioned pin change).
+  it('the real parser finds exactly the 18 keyword-less Ambush primitives, in printed order', () => {
     const primitives = new Set<string>();
     const descriptorsByCard = new Map<string, { isLegacy: boolean; primitive: string; isConditional: boolean }[]>();
     for (const hook of buildAllHooks()) {
@@ -481,7 +488,9 @@ describe('the keyword-less Ambush set in the card data (WP-897 RS-5)', () => {
       'capture-bystanders-plus-per-hq-hero-by-trait',
       'capture-hq-heroes-cost-lte',
       'capture-pile-hero',
+      'charge',
       'demolish-each-player',
+      'demolish-each-player-per-group-villain-in-city',
       'discard-hand-matching-hq-card-names-each-player',
       'discard-hero-each-player-by-trait',
       'discard-hero-or-wound-each-player-by-trait',
@@ -670,6 +679,30 @@ describe('every clause-setting primitive narrates its logged clause (WP-897 AC 3
     );
     assert.deepEqual(ambushFor(G, TRULL).appliedEffects, ['captureBystander']);
     assert.deepEqual(traceStatuses(G, TRULL), ['capture-bystander:fired', 'demolish-each-player:fired']);
+  });
+
+  it("The Wrecker (WP-874 / D-24820): the overlay names each Demolish, equal to the log (AC 3)", () => {
+    const G = makeState();
+    G.city = [null, null, THUNDERBALL, null, null];
+    G.heroDeck = [DEMOLISHED, HERO_REFILL_A];
+    setCost(G, DEMOLISHED, 3);
+    setCost(G, HERO_REFILL_A, 2);
+    setCost(G, HAND_THREE, 3);
+    G.playerZones['0']!.hand = [HAND_THREE];
+    reveal(G, THE_WRECKER);
+    const clauses = ambushEffectClauses(G);
+    assert.deepEqual(clauses, [
+      'Demolish each player 2 time(s), once for each wrecking-crew Villain in the City',
+      'Demolish revealed Demolished Hero (cost 3) and put it on the bottom of the Hero Deck',
+      'Player 0 discarded Three Coster (cost 3)',
+      'Player 1 has no card that costs 3 to discard',
+      'Demolish revealed Refill A (cost 2) and put it on the bottom of the Hero Deck',
+      'Player 0 has no card that costs 2 to discard',
+      'Player 1 has no card that costs 2 to discard',
+    ]);
+    assertNarrativeEqualsLog(G, THE_WRECKER);
+    assert.deepEqual(ambushFor(G, THE_WRECKER).appliedEffects, []);
+    assert.deepEqual(traceStatuses(G, THE_WRECKER), ['demolish-each-player-per-group-villain-in-city:fired']);
   });
 
   it('Trull (Demolish shape a): the Hero Deck is empty', () => {

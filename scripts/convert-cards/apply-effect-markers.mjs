@@ -222,6 +222,11 @@ function isLockedEffectKeyword(keyword) {
 // the co2e capture family: Enchantress, HYDRA Kidnappers, Venom, Baron Strucker; the two no-param
 // ones validate via the terminal `parts.length === 1` branch, the three parameterized ones via
 // their own branches below, so their bare tokens are rejected).
+// `demolish-each-other-player` (no-param), `demolish-each-player-per-group-villain-in-city`
+// (no-param) and `charge` (`:<N>[:<consequence>]`) appended at positions 58-60 by WP-874 (D-24820 —
+// chmp Thunderball's Fight, The Wrecker's Ambush and Bulldozer's Ambush; the two no-param ones
+// validate via the terminal `parts.length === 1` branch, `charge` via its own branch below, so its
+// bare token is rejected; `charge` is the engine's one Charge primitive).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -280,6 +285,9 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'capture-hq-heroes-cost-lte',
   'gain-one-attached-hero-rest-to-bottom',
   'shuffle-bystanders-into-villain-deck',
+  'demolish-each-other-player',
+  'demolish-each-player-per-group-villain-in-city',
+  'charge',
 ];
 
 // why: WP-836 / D-24769 — hand-synced local copy of the engine's HERO_CLASSES
@@ -312,6 +320,13 @@ const CITY_SPACE_NAMES = ['sewers', 'bank', 'rooftops', 'streets', 'bridge'];
 // pile list validates against it, so a mistyped pile in the marker map is rejected, and an
 // engine-side change breaks this script until it is updated here.
 const VILLAIN_CAPTURE_PILES = ['officer', 'sidekick'];
+
+// why: WP-874 / D-24820 — hand-synced local copy of the engine's VILLAIN_CHARGE_PUSH_CONSEQUENCES
+// (packages/game-engine/src/rules/villainAbility.types.ts). Same no-import-from-packages
+// discipline + loud-fail-on-drift posture as VILLAIN_CAPTURE_PILES above: the optional third token
+// of `charge:<N>:<consequence>` validates against it. Append-only; WP-839's Speed Demon appends
+// 'discard-if-pushed' here and in the engine array together.
+const VILLAIN_CHARGE_PUSH_CONSEQUENCES = ['demolish-if-pushed'];
 
 // why: WP-873 / D-24818 — hand-synced local copy of the engine's FORTIFY_ALLOWED_LOCKS
 // (packages/game-engine/src/board/fortify.types.ts); its keys are FORTIFY_PLACES. Same
@@ -645,6 +660,15 @@ function isValidParameterizedEffectToken(token) {
     // why: D-24771 — grammar <primitive>:<N> (exactly 2 tokens; Venom :2, Baron Strucker :4), N a
     // positive integer. The bare token has no default, so it must not reach the no-param branch.
     return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
+  }
+  if (primitive === 'charge') {
+    // why: D-24820 — grammar charge:<N>[:<consequence>] (2 or 3 tokens; Bulldozer
+    // :1:demolish-if-pushed), N a positive integer, the consequence a
+    // VILLAIN_CHARGE_PUSH_CONSEQUENCES member. Mirrors the engine parser's parseChargeEffect; the
+    // bare token has no default, so it must not reach the no-param branch.
+    if (parts.length !== 2 && parts.length !== 3) return false;
+    if (!/^[1-9][0-9]*$/.test(parts[1])) return false;
+    return parts.length === 2 || VILLAIN_CHARGE_PUSH_CONSEQUENCES.includes(parts[2]);
   }
   // why: hero-deck-top-to-escape, gain-officer-current, and the other no-param
   // primitives take no params.

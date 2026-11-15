@@ -840,7 +840,7 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/chmp/chmp-vi-wrecking-crew-bulldozer.webp",
           "abilities": [
-            "Ambush: Bulldozer moves an extra space forward. If this pushes any Villains forward, [keyword:Demolish] each player."
+            "Ambush: Bulldozer moves an extra space forward. If this pushes any Villains forward, [keyword:Demolish] each player. [effect:charge:1:demolish-if-pushed]"
           ],
           "copies": 2
         },
@@ -863,7 +863,7 @@
           "vAttack": "5",
           "imageUrl": "https://images.legendary-arena.com/chmp/chmp-vi-wrecking-crew-thunderball.webp",
           "abilities": [
-            "Fight: If you fight Thunderball in the Sewers or Bank, [keyword:Demolish] each other player."
+            "Fight: If you fight Thunderball in the Sewers or Bank, [keyword:Demolish] each other player. [effect:demolish-each-other-player@sewers+bank]"
           ],
           "copies": 2
         },
@@ -874,7 +874,7 @@
           "vAttack": "7",
           "imageUrl": "https://images.legendary-arena.com/chmp/chmp-vi-wrecking-crew-the-wrecker.webp",
           "abilities": [
-            "Ambush: For each Wrecking Crew Villain in the city (including this one), [keyword:Demolish] each player."
+            "Ambush: For each Wrecking Crew Villain in the city (including this one), [keyword:Demolish] each player. [effect:demolish-each-player-per-group-villain-in-city]"
           ],
           "copies": 2
         }

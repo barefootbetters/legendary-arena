@@ -411,7 +411,14 @@ export type VillainEffectPrimitive =
   | 'capture-pile-hero'
   | 'capture-hq-heroes-cost-lte'
   | 'gain-one-attached-hero-rest-to-bottom'
-  | 'shuffle-bystanders-into-villain-deck';
+  | 'shuffle-bystanders-into-villain-deck'
+  // why: WP-874 / D-24820 — the chmp Wrecking Crew lines, appended last: Thunderball's Fight
+  // Demolishes each other player, The Wrecker's Ambush Demolishes each player once per own-group
+  // Villain in the City, and Bulldozer's Ambush charges (the rulebook Charge keyword; the engine's
+  // one Charge primitive, a deliberate executor no-op bridged at the Ambush fire site).
+  | 'demolish-each-other-player'
+  | 'demolish-each-player-per-group-villain-in-city'
+  | 'charge';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -646,6 +653,19 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'capture-hq-heroes-cost-lte',
   'gain-one-attached-hero-rest-to-bottom',
   'shuffle-bystanders-into-villain-deck',
+  // why: WP-874 / D-24820 — appended at positions 58-60, the chmp Wrecking Crew lines.
+  // Thunderball's Fight (`demolish-each-other-player`, no param, gated `@sewers+bank` by the D-24295
+  // location gate) and The Wrecker's Ambush (`demolish-each-player-per-group-villain-in-city`, no
+  // param: once per City Villain of its own group, itself included) both call the D-24807
+  // `demolishEachPlayer` resolver. Bulldozer's Ambush (`charge:<N>[:<consequence>]`, the count on
+  // `magnitude`, the consequence on `chargePushConsequence`) is the rulebook Charge keyword and the
+  // engine's ONE Charge primitive for villain-card Ambush Charge lines (WP-839's Speed Demon reuses
+  // it): a DELIBERATE NO-OP in the executor, bridged at the Ambush fire site before the executor.
+  // The marker script's hand-synced copy (`scripts/convert-cards/apply-effect-markers.mjs`) appends
+  // them at the same positions.
+  'demolish-each-other-player',
+  'demolish-each-player-per-group-villain-in-city',
+  'charge',
 ] as const;
 
 /**
@@ -660,6 +680,24 @@ export type VillainCapturePile = 'officer' | 'sidekick';
 // script keeps a hand-synced copy (`scripts/convert-cards/apply-effect-markers.mjs`).
 /** All capture piles in canonical order. */
 export const VILLAIN_CAPTURE_PILES: readonly VillainCapturePile[] = ['officer', 'sidekick'] as const;
+
+/**
+ * What a `charge` descriptor does after its charge, when a step pushed a Villain forward
+ * (WP-874 / D-24820): `demolish-if-pushed` is Bulldozer's "If this pushes any Villains forward,
+ * [Demolish] each player."
+ */
+export type VillainChargePushConsequence = 'demolish-if-pushed';
+
+// why: drift-detection array — must match VillainChargePushConsequence exactly
+// (villainAbility.types.test.ts asserts it at runtime, D-24372). Append-only (D-24820): `charge`
+// is the engine's one Charge primitive, so a later Ambush Charge consequence (WP-839's Speed Demon,
+// `'discard-if-pushed'`) appends one member here, to the drift pin, to the marker script's
+// hand-synced copy (`scripts/convert-cards/apply-effect-markers.mjs`) and one `case` to the bridge's
+// and the clause's exhaustive `switch`; never a second primitive.
+/** All charge push consequences in canonical order. */
+export const VILLAIN_CHARGE_PUSH_CONSEQUENCES: readonly VillainChargePushConsequence[] = [
+  'demolish-if-pushed',
+] as const;
 
 /**
  * Which side of the grey line a KO accepts (WP-836 / D-24769). Rules v23 L1487-1492:
@@ -919,6 +957,12 @@ export interface VillainEffectDescriptor {
   // preference order, non-empty, no duplicate. Deliberately NOT part of `descriptorKey` — the
   // primitive is keyword-less, so it self-narrates regardless (the `eligibleCosts` precedent).
   capturePiles?: readonly VillainCapturePile[];
+  // why: WP-874 / D-24820 — present ONLY on `{ primitive: 'charge' }` descriptors that name a push
+  // consequence (Bulldozer: 'demolish-if-pushed'): what the Ambush bridge does after the charge when
+  // a step pushed a Villain. The charge distance is `magnitude`. Written only when present (never
+  // `undefined`). Deliberately NOT part of `descriptorKey` — the primitive is keyword-less, and the
+  // Ambush bridge narrates it.
+  chargePushConsequence?: VillainChargePushConsequence;
 }
 
 // why: D-24023 — the frozen legacy-keyword → descriptor translation table. The

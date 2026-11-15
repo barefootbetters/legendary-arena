@@ -11,11 +11,11 @@
       "scheme": 664
     },
     "byStatus": {
-      "executable": 860,
+      "executable": 863,
       "deferred": 18,
       "condition": 76,
       "unsupported": 255,
-      "unmarked": 1661,
+      "unmarked": 1658,
       "subsystem": 7
     }
   },
@@ -6996,11 +6996,11 @@
       "name": "Bulldozer",
       "set": "chmp",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "charge",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#charge",
+      "wp": "WP-874",
+      "decision": "D-24820"
     },
     {
       "extId": "chmp-villain-wrecking-crew-piledriver",
@@ -7029,22 +7029,22 @@
       "name": "The Wrecker",
       "set": "chmp",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "demolish-each-player-per-group-villain-in-city",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#demolish-each-player-per-group-villain-in-city",
+      "wp": "WP-874",
+      "decision": "D-24820"
     },
     {
       "extId": "chmp-villain-wrecking-crew-thunderball",
       "name": "Thunderball",
       "set": "chmp",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "demolish-each-other-player",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#demolish-each-other-player",
+      "wp": "WP-874",
+      "decision": "D-24820"
     },
     {
       "extId": "chmp/gwenpool",
@@ -40762,7 +40762,7 @@
     "chmp-villain-wrecking-crew-bulldozer": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "charge"
       ]
     },
     "chmp-villain-wrecking-crew-piledriver": {
@@ -40775,13 +40775,13 @@
     "chmp-villain-wrecking-crew-the-wrecker": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "demolish-each-player-per-group-villain-in-city"
       ]
     },
     "chmp-villain-wrecking-crew-thunderball": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "demolish-each-other-player"
       ]
     },
     "chmp/gwenpool": {

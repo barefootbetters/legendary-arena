@@ -29,7 +29,9 @@ import {
   composeNoOtherDeckNarrative,
   composeExcessiveViolenceFiredNarrative,
   composeStackVillainEntryClause,
+  composeChargeClause,
 } from './notableEvents.compose.js';
+import type { ChargeOutcome } from '../board/villainCharge.logic.js';
 
 describe('composeFightNarrative (WP-319 — names the effect targets)', () => {
   it('emits the bare-fight sentence when no effects applied and no bystanders rescued', () => {
@@ -749,5 +751,74 @@ describe('composeAmbushNarrative — WP-897 keyword-less descriptor clauses (D-2
   it('an empty clause list is byte-identical to omitting it', () => {
     assert.equal(composeAmbushNarrative('Outcast', [], 0, undefined, []), '"Outcast" entered the city with no Ambush effect.');
     assert.equal(composeAmbushNarrative('The Leader', [], 1, undefined, []), composeAmbushNarrative('The Leader', [], 1));
+  });
+});
+
+describe('composeChargeClause and the sixth composeAmbushNarrative slot (WP-874 / D-24820)', () => {
+  /**
+   * A charge outcome with defaults (one space, nothing pushed).
+   *
+   * @param overrides - The fields to change.
+   * @returns The outcome.
+   */
+  function outcome(overrides: Partial<ChargeOutcome>): ChargeOutcome {
+    return { spacesMoved: 1, hasPushedAnyVillain: false, hasChargerEscaped: false, triggeredPushConsequence: null, ...overrides };
+  }
+
+  it('one space, nothing pushed', () => {
+    assert.equal(composeChargeClause(outcome({})), 'charged forward one space');
+  });
+
+  it('several spaces use the plural count', () => {
+    assert.equal(composeChargeClause(outcome({ spacesMoved: 2 })), 'charged forward 2 spaces');
+  });
+
+  it('an escaped charger reads "charged out of the city", whatever it moved first', () => {
+    assert.equal(composeChargeClause(outcome({ spacesMoved: 1, hasChargerEscaped: true })), 'charged out of the city');
+  });
+
+  it('no movement and no escape is no clause', () => {
+    assert.equal(composeChargeClause(outcome({ spacesMoved: 0 })), undefined);
+  });
+
+  it('a push appends the pushing clause, and a triggered Demolish its summary', () => {
+    assert.equal(
+      composeChargeClause(outcome({ hasPushedAnyVillain: true })),
+      'charged forward one space, pushing Villains forward',
+    );
+    assert.equal(
+      composeChargeClause(outcome({ hasPushedAnyVillain: true, triggeredPushConsequence: 'demolish-if-pushed' })),
+      'charged forward one space, pushing Villains forward, then Demolished each player',
+    );
+    assert.equal(
+      composeChargeClause(outcome({ hasChargerEscaped: true, hasPushedAnyVillain: true, triggeredPushConsequence: 'demolish-if-pushed' })),
+      'charged out of the city, pushing Villains forward, then Demolished each player',
+    );
+  });
+
+  it('the sixth argument lands after the stack clause', () => {
+    assert.equal(
+      composeAmbushNarrative(
+        'Order Test',
+        [{ keyword: 'captureBystander', targetNames: [] }],
+        1,
+        'two Officers enter the City as Villains',
+        ['a descriptor clause'],
+        'charged forward one space',
+      ),
+      '"Order Test" ambushed: a bystander was captured; a descriptor clause; plays the top card of the Villain Deck; two Officers enter the City as Villains; charged forward one space.',
+    );
+    assert.equal(
+      composeAmbushNarrative('Bulldozer', [], 0, undefined, [], 'charged forward one space'),
+      '"Bulldozer" ambushed: charged forward one space.',
+    );
+  });
+
+  it('no charge clause leaves the narrative byte-identical', () => {
+    assert.equal(
+      composeAmbushNarrative('Outcast', [], 0, undefined, [], undefined),
+      composeAmbushNarrative('Outcast', [], 0, undefined, []),
+    );
+    assert.equal(composeAmbushNarrative('The Leader', [], 1, undefined, [], undefined), composeAmbushNarrative('The Leader', [], 1));
   });
 });

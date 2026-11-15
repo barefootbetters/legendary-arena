@@ -18,6 +18,9 @@
 
 import type { GreyHeroFilter, VillainEffectKeyword, VillainWoundOutcomes } from '../rules/villainAbility.types.js';
 import type { SchemeTwistResolverKey, StrikeBlockThreatKind } from './notableEvents.types.js';
+// why: WP-874 / D-24820 — type-only: the charge outcome is defined beside the pure City step, so
+// this module never imports the reveal path.
+import type { ChargeOutcome } from '../board/villainCharge.logic.js';
 
 // ---------------------------------------------------------------------------
 // Effect-keyword → human label
@@ -425,6 +428,47 @@ export function composeVillainDeckPlayClause(playCount: number): string {
 }
 
 /**
+ * Composes the clause for an Ambush charge (WP-874 / D-24820: Bulldozer), e.g. "charged forward
+ * one space, pushing Villains forward, then Demolished each player".
+ *
+ * @param outcome - What the Ambush bridge's charge did.
+ * @returns The clause (no leading label, no trailing period), or undefined when the charge did
+ *   nothing a player can see.
+ */
+export function composeChargeClause(outcome: ChargeOutcome): string | undefined {
+  let clause: string;
+  if (outcome.hasChargerEscaped) {
+    clause = 'charged out of the city';
+  } else if (outcome.spacesMoved === 1) {
+    clause = 'charged forward one space';
+  } else if (outcome.spacesMoved > 1) {
+    clause = `charged forward ${outcome.spacesMoved} spaces`;
+  } else {
+    return undefined;
+  }
+  if (outcome.hasPushedAnyVillain) {
+    clause += ', pushing Villains forward';
+  }
+  if (outcome.triggeredPushConsequence !== null) {
+    const consequence = outcome.triggeredPushConsequence;
+    switch (consequence) {
+      case 'demolish-if-pushed':
+        // why: WP-874 / D-24820 — a summary by choice: the Demolish's own reveal and discards are in
+        // the log, and a bridged clause summarizes (the play / stack precedent).
+        clause += ', then Demolished each player';
+        break;
+      default: {
+        // why: D-24820 — exhaustive over VillainChargePushConsequence; a new member (WP-839's
+        // 'discard-if-pushed') must add its own case here or this fails to compile.
+        const unhandled: never = consequence;
+        return unhandled;
+      }
+    }
+  }
+  return clause;
+}
+
+/**
  * Composes the single-sentence narrative for an `ambushResolved` event.
  *
  * The unconditional city-entry bystander attach is NOT an Ambush effect
@@ -441,6 +485,8 @@ export function composeVillainDeckPlayClause(playCount: number): string {
  * @param descriptorClauses - The narrative clauses of the keyword-less Ambush descriptors that
  *   ran, in dispatch order (WP-897 / D-24854): each is the clause its handler logged, or the
  *   "its Ambush effect resolved (see the log)" fallback. Empty → byte-identical.
+ * @param chargeClause - Optional clause naming the Ambush charge the reveal fire site performed
+ *   (WP-874 / D-24820, `composeChargeClause`). Absent → byte-identical.
  * @returns Single English sentence describing the resolved ambush.
  */
 export function composeAmbushNarrative(
@@ -449,6 +495,7 @@ export function composeAmbushNarrative(
   villainDeckPlayCount: number = 0,
   stackVillainClause?: string,
   descriptorClauses: readonly string[] = [],
+  chargeClause?: string,
 ): string {
   // why: D-24703 — The Leader's "Ambush: Play the top card of the Villain Deck" is
   // played by the reveal fire site, not the executor (its handler is a deliberate
@@ -476,6 +523,12 @@ export function composeAmbushNarrative(
   // fire site (the executor handler is a deliberate no-op), the D-24703 precedent above.
   if (stackVillainClause !== undefined) {
     clauses.push(stackVillainClause);
+  }
+  // why: WP-874 / D-24703 / D-24854 §6 — the charge is performed by the reveal fire site's bridge
+  // (the executor handler is a deliberate no-op), so its clause is a trailing parameter, ordered
+  // after the stack clause.
+  if (chargeClause !== undefined) {
+    clauses.push(chargeClause);
   }
   if (clauses.length === 0) {
     return `"${cardName}" entered the city with no Ambush effect.`;

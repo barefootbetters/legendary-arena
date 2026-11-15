@@ -18,7 +18,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { demolishEachPlayer } from './demolish.logic.js';
 import { buildVillainAbilityHooks } from '../setup/villainAbility.setup.js';
-import { executeVillainAbilities } from '../villain/villainEffects.execute.js';
+import { executeVillainAbilities, executeVillainAbilitiesWithNarrative } from '../villain/villainEffects.execute.js';
 import { mastermindStrikeHandler } from '../rules/mastermindHandlers.js';
 import { descriptorToLegacyKeyword } from '../rules/villainAbility.types.js';
 import { resolveCardName } from '../log/logDisplay.js';
@@ -118,6 +118,12 @@ const ZZUTAK = villainCopyId(HOOKS, 'chmp-villain-monsters-unleashed-zzutak');
 const GOOM = villainCopyId(HOOKS, 'chmp-villain-monsters-unleashed-goom');
 const PILEDRIVER = villainCopyId(HOOKS, 'chmp-villain-wrecking-crew-piledriver');
 const BULLDOZER = villainCopyId(HOOKS, 'chmp-villain-wrecking-crew-bulldozer');
+// why: WP-874 / D-24820 — The Wrecker and Thunderball, two copies each (copy suffixes -00 / -01).
+const THE_WRECKER = villainCopyId(HOOKS, 'chmp-villain-wrecking-crew-the-wrecker');
+const THUNDERBALL = villainCopyId(HOOKS, 'chmp-villain-wrecking-crew-thunderball');
+const THUNDERBALL_SECOND = HOOKS.find(
+  (candidate) => candidate.cardId.startsWith('chmp-villain-wrecking-crew-thunderball-') && candidate.cardId !== THUNDERBALL,
+)!.cardId;
 
 /**
  * A three-seat state wide enough for the resolver, the strike handler and the villain executor.
@@ -125,12 +131,14 @@ const BULLDOZER = villainCopyId(HOOKS, 'chmp-villain-wrecking-crew-bulldozer');
  * @param hands - Each seat's hand.
  * @param heroDeck - The Hero Deck, top first.
  * @param mastermindId - The selected Mastermind (Fin Fang Foom unless a test says otherwise).
+ * @param villainGroupIds - The selected Villain Groups (WP-874: The Wrecker's own-group prefix).
  * @returns A LegendaryGameState sufficient for these tests.
  */
 function makeState(
   hands: Record<string, CardExtId[]>,
   heroDeck: CardExtId[],
   mastermindId: string = FIN_FANG_FOOM,
+  villainGroupIds: string[] = [],
 ): LegendaryGameState {
   const stat = (cost: number) => makeCardStatEntry({ cost });
   const playerZones: LegendaryGameState['playerZones'] = {};
@@ -149,7 +157,7 @@ function makeState(
     selection: {
       schemeId: 'test-scheme',
       mastermindId,
-      villainGroupIds: [],
+      villainGroupIds: [...villainGroupIds],
       henchmanGroupIds: [],
       heroDeckIds: [],
     },
@@ -450,6 +458,246 @@ describe('WP-864 demolish-each-player villain primitive (RS-4, D-24807)', () => 
         discardLine(gameState, 'Escape effect:', '0', HAND_COST_5, 5),
         discardLine(gameState, 'Escape effect:', '1', HAND_COST_5, 5),
       ]);
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// WP-874 / D-24820 — the seat scope, The Wrecker and Thunderball
+// ---------------------------------------------------------------------------
+
+/**
+ * The clause of the log lines with a prefix: the prefix and the final period stripped, joined
+ * with `; ` (the D-24854 overlay-equals-log shape).
+ *
+ * @param gameState - The game state.
+ * @param prefix - The `<Timing> effect:` prefix.
+ * @returns The joined clause.
+ */
+function loggedClause(gameState: LegendaryGameState, prefix: string): string {
+  const clauses: string[] = [];
+  for (const line of linesWithPrefix(gameState, prefix)) {
+    clauses.push(line.slice(prefix.length + 1, line.length - 1));
+  }
+  return clauses.join('; ');
+}
+
+describe('WP-874 demolishEachPlayer seat scope (RS-1, D-24820)', () => {
+  it("'each-other' skips the current player, who keeps their hand", () => {
+    const gameState = makeState(
+      { '0': [HAND_COST_3_FIRST], '1': [HAND_COST_3_OTHER], '2': [HAND_COST_3_SECOND] },
+      [DECK_COST_3, DECK_COST_5],
+    );
+
+    const result = demolishEachPlayer(gameState, '1', 'Test:', 'each-other');
+
+    assert.deepEqual(gameState.heroDeck, [DECK_COST_5, DECK_COST_3], 'the reveal and rotation still happen');
+    assert.deepEqual(gameState.playerZones['1']!.hand, [HAND_COST_3_OTHER], 'the current player keeps their hand');
+    assert.deepEqual(gameState.playerZones['1']!.discard, []);
+    assert.deepEqual(result.discards.map((discard) => discard.playerId), ['2', '0'], 'the others, in D-24780 order');
+    assert.deepEqual(gameState.messages, [
+      { text: revealLine(gameState, 'Test:', DECK_COST_3, 3), outcome: 'applied' },
+      { text: discardLine(gameState, 'Test:', '2', HAND_COST_3_SECOND, 3), outcome: 'applied' },
+      { text: discardLine(gameState, 'Test:', '0', HAND_COST_3_FIRST, 3), outcome: 'applied' },
+    ]);
+  });
+
+  it("'each-other' with no other seat still reveals and bottoms, then logs the solo line", () => {
+    const gameState = makeState({ '0': [HAND_COST_3_FIRST] }, [DECK_COST_3, DECK_COST_5]);
+
+    const result = demolishEachPlayer(gameState, '0', 'Test:', 'each-other');
+
+    assert.deepEqual(result, { revealedCardId: DECK_COST_3, cost: 3, discards: [] });
+    assert.deepEqual(gameState.heroDeck, [DECK_COST_5, DECK_COST_3]);
+    assert.deepEqual(gameState.playerZones['0']!.hand, [HAND_COST_3_FIRST]);
+    assert.deepEqual(gameState.messages, [
+      { text: revealLine(gameState, 'Test:', DECK_COST_3, 3), outcome: 'applied' },
+      { text: 'Test: there is no other player to discard.', outcome: 'blocked' },
+    ]);
+  });
+
+  it("the default scope is 'each' (byte-identical to an explicit 'each')", () => {
+    const hands = { '0': [HAND_COST_3_FIRST], '1': [HAND_COST_3_OTHER] };
+    const defaultState = makeState(hands, [DECK_COST_3]);
+    const explicitState = makeState(hands, [DECK_COST_3]);
+
+    const defaultResult = demolishEachPlayer(defaultState, '0', 'Test:');
+    const explicitResult = demolishEachPlayer(explicitState, '0', 'Test:', 'each');
+
+    assert.deepEqual(defaultResult, explicitResult);
+    assert.deepEqual(defaultState.messages, explicitState.messages);
+    assert.deepEqual(defaultState.playerZones, explicitState.playerZones);
+  });
+});
+
+describe("WP-874 The Wrecker's Ambush (RS-3, D-24820)", () => {
+  /**
+   * A state whose selection includes the Wrecking Crew group, so the own-group prefix resolves.
+   *
+   * @param city - The City.
+   * @param villainGroupIds - The selected Villain Groups.
+   * @returns The state.
+   */
+  function makeWreckerState(
+    city: (CardExtId | null)[],
+    villainGroupIds: string[] = ['chmp/monsters-unleashed', 'chmp/wrecking-crew'],
+  ): LegendaryGameState {
+    const gameState = makeState(
+      { '0': [HAND_COST_3_FIRST, HAND_COST_5], '1': [HAND_COST_3_OTHER, HAND_COST_4] },
+      [DECK_COST_3, DECK_COST_5, DECK_COST_4, DECK_COST_2],
+      FIN_FANG_FOOM,
+      villainGroupIds,
+    );
+    gameState.city = city;
+    return gameState;
+  }
+
+  it('parses to the per-group Demolish primitive', () => {
+    assert.deepStrictEqual(hookAt(HOOKS, THE_WRECKER, 'onAmbush').effects, [
+      { primitive: 'demolish-each-player-per-group-villain-in-city' },
+    ]);
+  });
+
+  it('alone in the City, Demolishes each player once; the clause equals the log', () => {
+    const gameState = makeWreckerState([THE_WRECKER, null, null, null, null]);
+
+    const execution = executeVillainAbilitiesWithNarrative(gameState, { currentPlayer: '0', turn: 1 }, THE_WRECKER, 'onAmbush');
+
+    assert.deepEqual(gameState.heroDeck, [DECK_COST_5, DECK_COST_4, DECK_COST_2, DECK_COST_3], 'one rotation');
+    assert.deepEqual(gameState.playerZones['0']!.discard, [HAND_COST_3_FIRST]);
+    assert.deepEqual(gameState.playerZones['1']!.discard, [HAND_COST_3_OTHER]);
+    assert.deepEqual(linesWithPrefix(gameState, 'Ambush effect:'), [
+      'Ambush effect: Demolish each player 1 time(s), once for each wrecking-crew Villain in the City.',
+      revealLine(gameState, 'Ambush effect:', DECK_COST_3, 3),
+      discardLine(gameState, 'Ambush effect:', '0', HAND_COST_3_FIRST, 3),
+      discardLine(gameState, 'Ambush effect:', '1', HAND_COST_3_OTHER, 3),
+    ]);
+    assert.deepEqual(execution.narrativeClauses, [loggedClause(gameState, 'Ambush effect:')]);
+  });
+
+  it('with two more Wrecking Crew Villains in the City, Demolishes three times', () => {
+    const gameState = makeWreckerState([THE_WRECKER, THUNDERBALL, null, PILEDRIVER, null]);
+
+    const execution = executeVillainAbilitiesWithNarrative(gameState, { currentPlayer: '0', turn: 1 }, THE_WRECKER, 'onAmbush');
+
+    assert.deepEqual(gameState.heroDeck, [DECK_COST_2, DECK_COST_3, DECK_COST_5, DECK_COST_4], 'three rotations');
+    const revealCount = logLines(gameState).filter((text) => text.includes('Demolish revealed')).length;
+    assert.equal(revealCount, 3);
+    assert.deepEqual(gameState.playerZones['0']!.discard, [HAND_COST_3_FIRST, HAND_COST_5]);
+    assert.deepEqual(gameState.playerZones['1']!.discard, [HAND_COST_3_OTHER, HAND_COST_4]);
+    assert.ok(
+      logLines(gameState).includes('Ambush effect: Demolish each player 3 time(s), once for each wrecking-crew Villain in the City.'),
+    );
+    assert.deepEqual(execution.narrativeClauses, [loggedClause(gameState, 'Ambush effect:')]);
+  });
+
+  it('a Villain of another group is not counted', () => {
+    const gameState = makeWreckerState([THE_WRECKER, TRULL, GOOM, null, null]);
+
+    const execution = executeVillainAbilitiesWithNarrative(gameState, { currentPlayer: '0', turn: 1 }, THE_WRECKER, 'onAmbush');
+
+    const revealCount = logLines(gameState).filter((text) => text.includes('Demolish revealed')).length;
+    assert.equal(revealCount, 1, 'only The Wrecker counts');
+    assert.deepEqual(execution.narrativeClauses, [loggedClause(gameState, 'Ambush effect:')]);
+  });
+
+  it("a match whose selection lacks the group logs the blocked line and Demolishes no one", () => {
+    const gameState = makeWreckerState([THE_WRECKER, null, null, null, null], ['chmp/monsters-unleashed']);
+
+    const execution = executeVillainAbilitiesWithNarrative(gameState, { currentPlayer: '0', turn: 1 }, THE_WRECKER, 'onAmbush');
+
+    assert.deepEqual(gameState.heroDeck, [DECK_COST_3, DECK_COST_5, DECK_COST_4, DECK_COST_2], 'no rotation');
+    assert.deepEqual(gameState.messages, [
+      {
+        text: "Ambush effect: the Villain's group is not among this match's Villain Groups, so no one is Demolished.",
+        outcome: 'blocked',
+      },
+    ]);
+    assert.deepEqual(execution.narrativeClauses, [loggedClause(gameState, 'Ambush effect:')]);
+  });
+
+  it('when The Wrecker has already left the City and no other is there, the count is zero', () => {
+    const gameState = makeWreckerState([TRULL, null, null, null, null]);
+
+    const execution = executeVillainAbilitiesWithNarrative(gameState, { currentPlayer: '0', turn: 1 }, THE_WRECKER, 'onAmbush');
+
+    assert.deepEqual(gameState.heroDeck, [DECK_COST_3, DECK_COST_5, DECK_COST_4, DECK_COST_2]);
+    assert.deepEqual(gameState.messages, [
+      { text: 'Ambush effect: no wrecking-crew Villain is in the City, so no one is Demolished.', outcome: 'blocked' },
+    ]);
+    assert.deepEqual(execution.narrativeClauses, [loggedClause(gameState, 'Ambush effect:')]);
+  });
+});
+
+describe("WP-874 Thunderball's Fight (RS-2, D-24820)", () => {
+  it('parses to the each-other-player Demolish gated to the Sewers or Bank', () => {
+    assert.deepStrictEqual(hookAt(HOOKS, THUNDERBALL, 'onFight').effects, [
+      { primitive: 'demolish-each-other-player', requireCitySpaces: ['sewers', 'bank'] },
+    ]);
+  });
+
+  for (const cityIndex of [0, 1]) {
+    it(`fought on city index ${cityIndex}, Demolishes every other player; the clause equals the log`, () => {
+      const gameState = makeState(
+        { '0': [HAND_COST_3_FIRST], '1': [HAND_COST_3_OTHER], '2': [HAND_COST_3_SECOND] },
+        [DECK_COST_3, DECK_COST_5],
+      );
+
+      const execution = executeVillainAbilitiesWithNarrative(
+        gameState,
+        { currentPlayer: '1', turn: 1 },
+        THUNDERBALL,
+        'onFight',
+        undefined,
+        cityIndex,
+      );
+
+      assert.deepEqual(gameState.heroDeck, [DECK_COST_5, DECK_COST_3]);
+      assert.deepEqual(gameState.playerZones['1']!.hand, [HAND_COST_3_OTHER], 'the fighter keeps their hand');
+      assert.deepEqual(gameState.playerZones['2']!.discard, [HAND_COST_3_SECOND]);
+      assert.deepEqual(gameState.playerZones['0']!.discard, [HAND_COST_3_FIRST]);
+      assert.deepEqual(linesWithPrefix(gameState, 'Fight effect:'), [
+        revealLine(gameState, 'Fight effect:', DECK_COST_3, 3),
+        discardLine(gameState, 'Fight effect:', '2', HAND_COST_3_SECOND, 3),
+        discardLine(gameState, 'Fight effect:', '0', HAND_COST_3_FIRST, 3),
+      ]);
+      const clause = loggedClause(gameState, 'Fight effect:');
+      assert.ok(!clause.includes('Player 1'), "the fighter's seat is absent from the clause");
+      assert.deepEqual(execution.narrativeClauses, [clause]);
+    });
+  }
+
+  it('solo, the reveal still happens and the clause names no other player', () => {
+    const gameState = makeState({ '0': [HAND_COST_3_FIRST] }, [DECK_COST_3, DECK_COST_5]);
+
+    const execution = executeVillainAbilitiesWithNarrative(gameState, { currentPlayer: '0', turn: 1 }, THUNDERBALL_SECOND, 'onFight', undefined, 0);
+
+    assert.deepEqual(gameState.heroDeck, [DECK_COST_5, DECK_COST_3]);
+    assert.deepEqual(gameState.playerZones['0']!.hand, [HAND_COST_3_FIRST]);
+    const clause = loggedClause(gameState, 'Fight effect:');
+    assert.ok(clause.endsWith('; there is no other player to discard'));
+    assert.deepEqual(execution.narrativeClauses, [clause]);
+  });
+
+  for (const cityIndex of [2, undefined]) {
+    it(`fought on city index ${String(cityIndex)}, reveals nothing and logs the D-24295 "no effect" line`, () => {
+      const gameState = makeState({ '0': [HAND_COST_3_FIRST], '1': [HAND_COST_3_OTHER] }, [DECK_COST_3, DECK_COST_5]);
+
+      const execution = executeVillainAbilitiesWithNarrative(
+        gameState,
+        { currentPlayer: '0', turn: 1 },
+        THUNDERBALL,
+        'onFight',
+        undefined,
+        cityIndex,
+      );
+
+      assert.deepEqual(gameState.heroDeck, [DECK_COST_3, DECK_COST_5], 'no reveal');
+      assert.deepEqual(gameState.playerZones['1']!.hand, [HAND_COST_3_OTHER]);
+      assert.deepEqual(gameState.messages, [
+        { text: 'Fight effect: not fought on the Sewers or Bank; no effect.', outcome: 'blocked' },
+      ]);
+      assert.deepEqual(execution.narrativeClauses, []);
     });
   }
 });
