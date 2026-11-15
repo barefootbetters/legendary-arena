@@ -13,6 +13,10 @@ import {
   captureHeroFromHq,
   awardAttachedHeroes,
   moveAttachedHeroesToEscapedPile,
+  attachCapturedHero,
+  captureHeroFromHqSlot,
+  selectCapturedHeroToGain,
+  awardOneAttachedHeroRestToBottom,
 } from './heroCapture.logic.js';
 
 /**
@@ -340,5 +344,97 @@ describe('moveAttachedHeroesToEscapedPile — escape lifecycle', () => {
     moveAttachedHeroesToEscapedPile(G, 'villain-a' as CardExtId);
     assert.deepStrictEqual(G.escapedPile, ['villain-a', 'h1']);
     assert.deepStrictEqual(G.ko, ['pre-existing-ko']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-838 / D-24771 — attach, per-slot capture and Venom's split award (T19-T21)
+// ---------------------------------------------------------------------------
+
+describe('WP-838 capture helpers (D-24771)', () => {
+  const COSTS: Record<string, { cost: number }> = {
+    'h-cost1': { cost: 1 },
+    'h-cost2a': { cost: 2 },
+    'h-cost2b': { cost: 2 },
+    'pile-sidekick': { cost: 2 },
+    'pile-shield-officer': { cost: 3 },
+  };
+
+  /**
+   * A G with the supply piles the split award writes.
+   */
+  function makeSplitG(attached: CardExtId[] | undefined): LegendaryGameState {
+    const G = makeG({
+      cardStats: COSTS,
+      heroDeck: ['deck-a' as CardExtId],
+      villainAttachedHeroes: attached === undefined ? {} : { 'venom-01': attached },
+      playerZones: { '0': { discard: [] } },
+    });
+    (G as unknown as { piles: { sidekicks: CardExtId[]; officers: CardExtId[] } }).piles = {
+      sidekicks: ['pile-sidekick' as CardExtId],
+      officers: [],
+    };
+    return G;
+  }
+
+  it('T19: captureHeroFromHqSlot captures and refills an occupied slot; an empty or out-of-range slot is null', () => {
+    const G = makeG({
+      hq: ['h0' as CardExtId, null, 'h2' as CardExtId, null, null],
+      heroDeck: ['refill-1' as CardExtId],
+    });
+    const result = captureHeroFromHqSlot(G, 'venom-01' as CardExtId, 2);
+    assert.deepStrictEqual(result, { capturedHeroId: 'h2', hqIndex: 2, refilledHeroId: 'refill-1' });
+    assert.deepStrictEqual(G.villainAttachedHeroes['venom-01'], ['h2']);
+    assert.deepStrictEqual(G.hq, ['h0', null, 'refill-1', null, null]);
+    assert.equal(captureHeroFromHqSlot(G, 'venom-01' as CardExtId, 1), null);
+    assert.equal(captureHeroFromHqSlot(G, 'venom-01' as CardExtId, 9), null);
+    assert.deepStrictEqual(G.villainAttachedHeroes['venom-01'], ['h2'], 'null results write nothing');
+  });
+
+  it('T19: attachCapturedHero creates the entry, then appends', () => {
+    const G = makeG({});
+    attachCapturedHero(G, 'kid-01' as CardExtId, 'pile-shield-officer' as CardExtId);
+    attachCapturedHero(G, 'kid-01' as CardExtId, 'pile-sidekick' as CardExtId);
+    assert.deepStrictEqual(G.villainAttachedHeroes['kid-01'], ['pile-shield-officer', 'pile-sidekick']);
+  });
+
+  it('T20: selectCapturedHeroToGain ranks by cost, a Hero winning a tie with the Sidekick', () => {
+    const G = makeG({ cardStats: COSTS });
+    assert.equal(selectCapturedHeroToGain(G, ['pile-sidekick', 'h-cost2a', 'h-cost1'] as CardExtId[]), 1);
+    assert.equal(selectCapturedHeroToGain(G, ['pile-sidekick', 'h-cost1'] as CardExtId[]), 0);
+    assert.equal(selectCapturedHeroToGain(G, ['h-cost2a', 'h-cost2b'] as CardExtId[]), 0);
+    assert.equal(selectCapturedHeroToGain(G, ['pile-sidekick'] as CardExtId[]), 0);
+    assert.equal(selectCapturedHeroToGain(G, []), -1);
+  });
+
+  it('T21: awardOneAttachedHeroRestToBottom gains one and bottoms the rest in capture order', () => {
+    const G = makeSplitG(['pile-sidekick', 'h-cost2a', 'h-cost1'] as CardExtId[]);
+    const outcome = awardOneAttachedHeroRestToBottom(G, 'venom-01' as CardExtId, '0');
+    assert.deepStrictEqual(outcome, {
+      gainedHeroId: 'h-cost2a',
+      returnedToBottom: [
+        { heroId: 'pile-sidekick', deck: 'sidekick-deck' },
+        { heroId: 'h-cost1', deck: 'hero-deck' },
+      ],
+    });
+    assert.deepStrictEqual(G.playerZones['0']!.discard, ['h-cost2a']);
+    assert.deepStrictEqual(G.heroDeck, ['deck-a', 'h-cost1']);
+    assert.deepStrictEqual(G.piles.sidekicks, ['pile-sidekick', 'pile-sidekick']);
+    assert.equal(Object.hasOwn(G.villainAttachedHeroes, 'venom-01'), false, 'the entry is deleted (D-21401)');
+  });
+
+  it('T21: an Officer returns to the Officer Deck; no entry writes nothing', () => {
+    const G = makeSplitG(['pile-shield-officer', 'h-cost1'] as CardExtId[]);
+    const outcome = awardOneAttachedHeroRestToBottom(G, 'venom-01' as CardExtId, '0');
+    assert.equal(outcome.gainedHeroId, 'pile-shield-officer');
+    assert.deepStrictEqual(G.heroDeck, ['deck-a', 'h-cost1']);
+
+    const emptyG = makeSplitG(undefined);
+    const before = structuredClone(emptyG);
+    assert.deepStrictEqual(awardOneAttachedHeroRestToBottom(emptyG, 'venom-01' as CardExtId, '0'), {
+      gainedHeroId: null,
+      returnedToBottom: [],
+    });
+    assert.deepStrictEqual(emptyG, before);
   });
 });

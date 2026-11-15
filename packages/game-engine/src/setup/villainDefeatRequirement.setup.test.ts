@@ -17,6 +17,8 @@ import {
   parseVariableAttackLine,
   buildVillainFightRestrictions,
   parseFightRestrictionLine,
+  buildVillainAttackPerCaptured,
+  parseAttackPerCapturedLine,
 } from './villainDefeatRequirement.setup.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 
@@ -468,5 +470,71 @@ describe('WP-871 buildVillainFightRestrictions (D-24816)', () => {
 
   it('returns an empty record for a registry that is not a reader', () => {
     assert.deepStrictEqual(buildVillainFightRestrictions({}, makeConfig(['ssw2/mixed-restrictions'])), {});
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-838 — parseAttackPerCapturedLine / buildVillainAttackPerCaptured (D-24771)
+// ---------------------------------------------------------------------------
+
+// why: the three passive lines copied verbatim from the regenerated data/cards/co2e.json.
+const ENCHANTRESS_PASSIVE_LINE =
+  "Enchantress gets +1[icon:attack] for each Bystander she has. [attack-per-captured:bystander:1]";
+const VENOM_PASSIVE_LINE =
+  "Venom gets +1[icon:attack] for each Hero he has. [attack-per-captured:hero:1]";
+const ZEMO_PASSIVE_LINE =
+  "Baron Zemo gets +1[icon:attack] for each Bystander he has. [attack-per-captured:bystander:1]";
+
+describe('WP-838 buildVillainAttackPerCaptured (D-24771)', () => {
+  it('T6: Enchantress, Venom and co2e Baron Zemo fan out to both copies as fresh objects; a plain villain is absent', () => {
+    const registry = makeRegistry('co2e', [
+      { slug: 'enemies-of-asgard', cards: [{ slug: 'enchantress', copies: 2, abilities: [ENCHANTRESS_PASSIVE_LINE] }] },
+      {
+        slug: 'sinister-spider-foes',
+        cards: [
+          { slug: 'venom', copies: 2, abilities: [VENOM_PASSIVE_LINE] },
+          { slug: 'plain-villain', copies: 2, abilities: ['Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]'] },
+        ],
+      },
+      { slug: 'masters-of-evil', cards: [{ slug: 'baron-zemo', copies: 2, abilities: [ZEMO_PASSIVE_LINE] }] },
+    ]);
+    const table = buildVillainAttackPerCaptured(
+      registry,
+      makeConfig(['co2e/enemies-of-asgard', 'co2e/sinister-spider-foes', 'co2e/masters-of-evil']),
+    );
+    assert.deepStrictEqual(table, {
+      'co2e-villain-enemies-of-asgard-enchantress-00': { kind: 'bystander', attackPerCard: 1 },
+      'co2e-villain-enemies-of-asgard-enchantress-01': { kind: 'bystander', attackPerCard: 1 },
+      'co2e-villain-sinister-spider-foes-venom-00': { kind: 'hero', attackPerCard: 1 },
+      'co2e-villain-sinister-spider-foes-venom-01': { kind: 'hero', attackPerCard: 1 },
+      'co2e-villain-masters-of-evil-baron-zemo-00': { kind: 'bystander', attackPerCard: 1 },
+      'co2e-villain-masters-of-evil-baron-zemo-01': { kind: 'bystander', attackPerCard: 1 },
+    });
+    assert.notEqual(
+      table['co2e-villain-sinister-spider-foes-venom-00'],
+      table['co2e-villain-sinister-spider-foes-venom-01'],
+      'copies must not alias one object',
+    );
+    assert.deepStrictEqual(buildVillainAttackPerCaptured({}, makeConfig(['co2e/enemies-of-asgard'])), {});
+  });
+
+  it('T7: every malformed marker is inert and never throws; a later valid marker on the line wins', () => {
+    const malformedLines = [
+      'X gets +1. [attack-per-captured:hero]',
+      'X gets +1. [attack-per-captured:hero:0]',
+      'X gets +1. [attack-per-captured:wound:1]',
+      'X gets +1. [attack-per-captured:hero:1:2]',
+      'X gets +1. [attack-per-captured:hero:x]',
+      'X gets +1. [attack-per-captured:hero:01]',
+      'Fight: KO one of your Heroes.',
+    ];
+    for (const line of malformedLines) {
+      assert.doesNotThrow(() => parseAttackPerCapturedLine(line));
+      assert.equal(parseAttackPerCapturedLine(line), null, `${line} must produce no entry`);
+    }
+    assert.deepStrictEqual(
+      parseAttackPerCapturedLine('X. [attack-per-captured:wound:1] [attack-per-captured:bystander:2]'),
+      { kind: 'bystander', attackPerCard: 2 },
+    );
   });
 });

@@ -22,7 +22,11 @@ import { makeMockCtx } from '../test/mockCtx.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
 import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
-import { buildVillainFightRestrictions, buildVillainVariableAttack } from './villainDefeatRequirement.setup.js';
+import {
+  buildVillainAttackPerCaptured,
+  buildVillainFightRestrictions,
+  buildVillainVariableAttack,
+} from './villainDefeatRequirement.setup.js';
 
 /**
  * Creates a valid mock MatchSetupConfig for shape tests.
@@ -630,6 +634,40 @@ describe('buildInitialGameState — shape', () => {
     assert.deepStrictEqual(markedState.villainFightRestrictions, {
       'core-villain-brotherhood-lonely-villain-00': { kind: 'no-adjacent-villain' },
       'core-villain-brotherhood-lonely-villain-01': { kind: 'no-adjacent-villain' },
+    });
+  });
+
+  it('T29 (WP-838): G has no villainAttackPerCaptured key without a marked villain (omit-when-empty)', () => {
+    const plainState = buildInitialGameState(
+      createTestConfig(),
+      createMockRegistry(),
+      makeMockCtx({ numPlayers: 2 }),
+    );
+    assert.equal(Object.prototype.hasOwnProperty.call(plainState, 'villainAttackPerCaptured'), false);
+    assert.deepStrictEqual(buildVillainAttackPerCaptured(createMockRegistry(), createTestConfig()), {});
+    const unmarkedFixtureState = buildInitialGameState(
+      buildShapeFixtureConfig(),
+      buildShapeFixtureRegistry(),
+      makeMockCtx({ numPlayers: 2 }),
+    );
+    assert.equal(Object.prototype.hasOwnProperty.call(unmarkedFixtureState, 'villainAttackPerCaptured'), false);
+  });
+
+  it('T29b (WP-838): a marked villain lands in G.villainAttackPerCaptured, one entry per copy (wiring)', () => {
+    // why: a local copy of the shared fixture with one marked villain added, so the other shape
+    // tests keep their fixture; it proves the buildVillainAttackPerCaptured call and spread are wired.
+    const registry = buildShapeFixtureRegistry();
+    const setData = registry.getSet('core') as { villains: Array<{ cards: unknown[] }> };
+    setData.villains[0]!.cards.push({
+      slug: 'greedy-villain',
+      vAttack: '5+',
+      copies: 2,
+      abilities: ['Greedy Villain gets +1[icon:attack] for each Hero he has. [attack-per-captured:hero:1]'],
+    });
+    const markedState = buildInitialGameState(buildShapeFixtureConfig(), registry, makeMockCtx({ numPlayers: 2 }));
+    assert.deepStrictEqual(markedState.villainAttackPerCaptured, {
+      'core-villain-brotherhood-greedy-villain-00': { kind: 'hero', attackPerCard: 1 },
+      'core-villain-brotherhood-greedy-villain-01': { kind: 'hero', attackPerCard: 1 },
     });
   });
 });

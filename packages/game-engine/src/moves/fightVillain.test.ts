@@ -2161,3 +2161,141 @@ describe('WP-873 fightVillain — City fights with a fortification present (D-24
     assert.deepStrictEqual(fortifiedRest, JSON.parse(JSON.stringify(plainContext.G)), 'every other field matches the no-fortify fight');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-838 / D-24771 — the capture family at the fight site (T22-T24)
+// ---------------------------------------------------------------------------
+
+describe('WP-838 fightVillain — Venom, HYDRA Kidnappers and Baron Strucker (D-24771)', () => {
+  const VENOM = 'venom-01' as CardExtId;
+  const KIDNAPPERS = 'kid-01' as CardExtId;
+  const STRUCKER = 'strucker-01' as CardExtId;
+  const SUPPLY_BYSTANDER = 'pile-bystander' as CardExtId;
+  const HERO_STATS = {
+    'h-cost1': makeCardStatEntry({ cost: 1 }),
+    'h-cost2a': makeCardStatEntry({ cost: 2 }),
+    'pile-sidekick': makeCardStatEntry({ cost: 2 }),
+    'pile-shield-officer': makeCardStatEntry({ cost: 3 }),
+  };
+
+  /**
+   * A one-villain fight fixture whose onFight hook carries the given descriptors.
+   */
+  function makeCaptureFightState(
+    villainId: CardExtId,
+    effects: VillainAbilityHook['effects'],
+    attached: CardExtId[] | undefined,
+  ): LegendaryGameState {
+    const gameState = createMockGameState({
+      city: [villainId, null, null, null, null],
+      villainAbilityHooks: [{ cardId: villainId, timing: 'onFight', keywords: [], effects }],
+      ...(attached === undefined ? {} : { villainAttachedHeroes: { [villainId]: attached } }),
+    });
+    gameState.cardStats = { ...gameState.cardStats, ...HERO_STATS } as LegendaryGameState['cardStats'];
+    gameState.heroDeck = ['deck-a' as CardExtId];
+    gameState.piles = { ...gameState.piles, sidekicks: ['pile-sidekick' as CardExtId] };
+    return gameState;
+  }
+
+  it('T22: fighting Venom gains one captured card and bottoms the rest, each logged', () => {
+    const gameState = makeCaptureFightState(
+      VENOM,
+      [{ primitive: 'gain-one-attached-hero-rest-to-bottom' }],
+      ['pile-sidekick', 'h-cost2a', 'h-cost1'] as CardExtId[],
+    );
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    assert.ok(gameState.playerZones['0']!.victory.includes(VENOM), 'Venom is defeated into the Victory Pile');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['h-cost2a'], 'only the chosen card is gained');
+    assert.deepStrictEqual(gameState.heroDeck, ['deck-a', 'h-cost1']);
+    assert.deepStrictEqual(gameState.piles.sidekicks, ['pile-sidekick', 'pile-sidekick']);
+    assert.equal(Object.hasOwn(gameState.villainAttachedHeroes, VENOM), false);
+    const texts = gameState.messages.map((message) => message.text);
+    const gainedIndex = texts.indexOf(
+      `Player 0 gained ${formatCardRef(gameState.cardDisplayData, 'h-cost2a')} from ${formatCardRef(gameState.cardDisplayData, VENOM)} into their discard pile.`,
+    );
+    const sidekickIndex = texts.indexOf(
+      `Fight effect: ${formatCardRef(gameState.cardDisplayData, 'pile-sidekick')} went to the bottom of the Sidekick Deck.`,
+    );
+    const heroIndex = texts.indexOf(
+      `Fight effect: ${formatCardRef(gameState.cardDisplayData, 'h-cost1')} went to the bottom of the Hero Deck.`,
+    );
+    assert.ok(gainedIndex >= 0 && sidekickIndex > gainedIndex && heroIndex > sidekickIndex, 'gain line, then the two bottom lines in capture order');
+    // why: D-24824 §7 — the executor traces the no-op and the fight site traces where the split ran.
+    const traces = gameState.diagnostics?.traces ?? [];
+    const executorTrace = traces.find(
+      (trace) => trace.fireSite === 'villain-executor' && trace.effect === 'gain-one-attached-hero-rest-to-bottom',
+    );
+    const bridgeTrace = traces.find(
+      (trace) => trace.fireSite === 'villain-fight-bridge' && trace.effect === 'gain-one-attached-hero-rest-to-bottom',
+    );
+    assert.equal(executorTrace?.status, 'no-op');
+    assert.equal(bridgeTrace?.status, 'secondary-site');
+    assert.equal(bridgeTrace?.handler, 'awardOneAttachedHeroRestToBottom');
+  });
+
+  it('T22: fighting Venom with nothing captured logs the blocked line', () => {
+    const gameState = makeCaptureFightState(VENOM, [{ primitive: 'gain-one-attached-hero-rest-to-bottom' }], undefined);
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0 });
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, []);
+    assert.ok(
+      gameState.messages.some(
+        (message) =>
+          message.text === `Fight effect: ${formatCardRef(gameState.cardDisplayData, VENOM)} had no captured Hero to gain.` &&
+          message.outcome === 'blocked',
+      ),
+    );
+  });
+
+  it('T23: fighting HYDRA Kidnappers gains the captured Officer through the unchanged generic path', () => {
+    const gameState = makeCaptureFightState(
+      KIDNAPPERS,
+      [{ primitive: 'gain-attached-hero' }],
+      ['pile-shield-officer'] as CardExtId[],
+    );
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0 });
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['pile-shield-officer']);
+    assert.ok(
+      gameState.messages.some(
+        (message) =>
+          message.text ===
+          `Player 0 gained ${formatCardRef(gameState.cardDisplayData, 'pile-shield-officer')} from ${formatCardRef(gameState.cardDisplayData, KIDNAPPERS)} into their discard pile.`,
+      ),
+    );
+    assert.ok(!gameState.messages.some((message) => message.text.includes('went to the bottom of')));
+    assert.ok(
+      !(gameState.diagnostics?.traces ?? []).some((trace) => trace.fireSite === 'villain-fight-bridge'),
+      'the generic path records no bridge trace',
+    );
+  });
+
+  it('T24: fighting Baron Strucker shuffles first, then plays two; supply Bystanders reveal as Bystanders', () => {
+    const gameState = makeCaptureFightState(
+      STRUCKER,
+      [
+        { primitive: 'shuffle-bystanders-into-villain-deck', magnitude: 4 },
+        { primitive: 'play-villain-deck-cards', magnitude: 2 },
+      ],
+      undefined,
+    );
+    gameState.villainDeck = { deck: ['v1'] as CardExtId[], discard: [] };
+    gameState.villainDeckCardTypes = { v1: 'villain' };
+    gameState.piles = { ...gameState.piles, bystanders: [SUPPLY_BYSTANDER, SUPPLY_BYSTANDER, SUPPLY_BYSTANDER, SUPPLY_BYSTANDER] };
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    assert.deepStrictEqual(gameState.piles.bystanders, []);
+    assert.deepStrictEqual(gameState.villainDeck.deck, [SUPPLY_BYSTANDER, SUPPLY_BYSTANDER, 'v1']);
+    const mastermindId = gameState.mastermind.baseCardId;
+    assert.deepStrictEqual(gameState.attachedBystanders[mastermindId], [SUPPLY_BYSTANDER, SUPPLY_BYSTANDER]);
+    const texts = gameState.messages.map((message) => message.text);
+    const shuffleIndex = texts.indexOf('Fight effect: shuffled 4 Bystander(s) from the Bystander Deck into the Villain Deck.');
+    const playIndex = texts.findIndex((text) => text.endsWith('plays the top 2 card(s) of the Villain Deck.'));
+    assert.ok(shuffleIndex >= 0 && playIndex > shuffleIndex, 'the shuffle line precedes the play line');
+    assert.equal(texts.filter((text) => text.includes('revealed and captured by')).length, 2);
+    assert.ok(!texts.some((text) => text.includes('has no entry in villainDeckCardTypes')), 'no fail-closed line');
+  });
+});

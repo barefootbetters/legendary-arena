@@ -83,6 +83,7 @@ import {
   buildVillainFightDiscardCosts,
   buildVillainFightRestrictions,
   buildVillainVariableAttack,
+  buildVillainAttackPerCaptured,
 } from './villainDefeatRequirement.setup.js';
 import { buildVillainBloodFrenzy } from './buildVillainBloodFrenzy.js';
 import { buildCardAbomination } from './buildCardAbomination.js';
@@ -502,6 +503,14 @@ export function buildInitialGameState(
   // Paibok, Super-Skrull, Hydro-Man), built from the same registry read and read only
   // by resolveFightCost. Narrow test mocks → empty record (omitted below).
   const villainVariableAttack = buildVillainVariableAttack(
+    registry as unknown,
+    villainBuildConfig,
+  );
+
+  // why: WP-838 / D-24771 — per-villain "+N Attack for each <Hero|Bystander> he has"
+  // passives (co2e Venom, Enchantress, Baron Zemo), built from the same registry read and
+  // read only by resolveFightCost. Narrow test mocks → empty record (omitted below).
+  const villainAttackPerCaptured = buildVillainAttackPerCaptured(
     registry as unknown,
     villainBuildConfig,
   );
@@ -1023,6 +1032,11 @@ export function buildInitialGameState(
     // on G ONLY when a selected villain carries a [variable-attack:...] marker, so every
     // match without those four co2e villains keeps a byte-identical finalStateHash.
     ...(Object.keys(villainVariableAttack).length > 0 ? { villainVariableAttack } : {}),
+    // why: WP-838 / D-24771 — same hash-stability discipline: villainAttackPerCaptured is
+    // on G ONLY when a selected villain carries an [attack-per-captured:...] marker, so
+    // every match without co2e Venom / Enchantress / Baron Zemo keeps a byte-identical
+    // finalStateHash.
+    ...(Object.keys(villainAttackPerCaptured).length > 0 ? { villainAttackPerCaptured } : {}),
     // why: WP-760 / D-24589 — same hash-stability discipline: villainBloodFrenzy is on G
     // ONLY when a selected villain group prints Blood Frenzy, so every other match keeps
     // a byte-identical finalStateHash.

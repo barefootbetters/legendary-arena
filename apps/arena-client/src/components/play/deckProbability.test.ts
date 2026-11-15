@@ -109,3 +109,17 @@ test('tallyOwnDeck groups by resolved name with an Unknown fallback, sorted', ()
     { name: 'Unknown', count: 1 },
   ]);
 });
+
+// why: WP-838 / D-24771 (T31) — Baron Strucker shuffles supply Bystanders ('pile-bystander')
+// into the Villain Deck; the engine reveals them as Bystanders, so the odds bucket agrees.
+test('WP-838: a shuffled-in supply Bystander counts as a Bystander, not a Villain', () => {
+  assert.equal(categorizeVillainCard('pile-bystander'), 'bystander');
+  const summary = summarizeVillainDeck([
+    'pile-bystander',
+    'bystander-villain-deck-01',
+    'co2e-villain-hydra-viper-01',
+  ]);
+  assert.equal(summary.counts.bystander, 2);
+  assert.equal(summary.counts.villain, 1);
+  assert.equal(summary.total, 3);
+});

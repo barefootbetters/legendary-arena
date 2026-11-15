@@ -20,8 +20,10 @@ import type {
   VillainEffectDescriptor,
   VillainEffectPrimitive,
   VillainEffectCondition,
+  VillainCapturePile,
 } from '../rules/villainAbility.types.js';
 import {
+  VILLAIN_CAPTURE_PILES,
   VILLAIN_ABILITY_TIMINGS,
   VILLAIN_EFFECT_KEYWORDS,
   VILLAIN_EFFECT_PRIMITIVES,
@@ -273,6 +275,41 @@ function parseEligibleCostList(token: string): number[] | null {
     costs.push(cost);
   }
   return costs;
+}
+
+/**
+ * Parses a `+`-joined capture-pile list (`officer+sidekick`) into canonical
+ * VillainCapturePile values in preference order, or null when malformed.
+ *
+ * One or two tokens, each a member of VILLAIN_CAPTURE_PILES verbatim
+ * (case-sensitive), with no repeat. An empty token, an unknown pile or a repeat
+ * returns null.
+ *
+ * @param token - The raw pile-list token (the text after the primitive's `:`).
+ * @returns The parsed piles, or null.
+ */
+// why: WP-838 / D-24771 — the marker script's isValidCapturePileList mirrors this
+// grammar against its hand-synced VILLAIN_CAPTURE_PILES copy, so producer and consumer
+// accept the same tokens.
+function parseCapturePileList(token: string): VillainCapturePile[] | null {
+  const pileTokens = token.split('+');
+  if (pileTokens.length > VILLAIN_CAPTURE_PILES.length) {
+    return null;
+  }
+  const capturePiles: VillainCapturePile[] = [];
+  for (const pileToken of pileTokens) {
+    let matchedPile: VillainCapturePile | null = null;
+    for (const pile of VILLAIN_CAPTURE_PILES) {
+      if (pile === pileToken) {
+        matchedPile = pile;
+      }
+    }
+    if (matchedPile === null || capturePiles.includes(matchedPile)) {
+      return null;
+    }
+    capturePiles.push(matchedPile);
+  }
+  return capturePiles;
 }
 
 /**
@@ -542,6 +579,11 @@ function parseLocationGatedEffect(
  *   - `capture-bystander` | `capture-bystander:<N>`  (N a rescue count; D-24295)
  *   - `gain-recruit-current` | `gain-recruit-current:<N>`  (N a recruit count, default 1; D-24350)
  *   - `discard-hero-each-player-by-cost:<c>[+<c>…]`  (strictly ascending costs; D-24750)
+ *   - `capture-pile-hero:<pile>[+<pile>]`  (pile `officer` | `sidekick`, preference order, no
+ *     repeat; D-24771)
+ *   - `capture-hq-heroes-cost-lte:<N>` and `shuffle-bystanders-into-villain-deck:<N>`  (N a
+ *     positive integer carried as `magnitude`; D-24771)
+ *   - `capture-bystander-each-victory-pile` | `gain-one-attached-hero-rest-to-bottom` (D-24771) |
  *   - `hero-deck-top-to-escape` | `gain-officer-current` |
  *     `ko-bystander-each-victory-pile` (D-24749) |
  *     `gain-recruit-current-per-hero-class` (D-24750) |
@@ -1080,6 +1122,32 @@ function parseUngatedEffect(
       return null;
     }
     return { primitive: 'discard-hero-each-player-by-cost', eligibleCosts };
+  }
+  if (primitiveToken === 'capture-pile-hero') {
+    // why: WP-838 / D-24771 — grammar `capture-pile-hero:<pile>[+<pile>]` (HYDRA Kidnappers
+    // `:officer+sidekick`, Venom `:sidekick`). Exactly 2 colon-parts; the pile list is required
+    // (no meaningful default). Anything else returns null (→ unresolvedMarkers).
+    if (parts.length !== 2) {
+      return null;
+    }
+    const capturePiles = parseCapturePileList(parts[1]!);
+    if (capturePiles === null) {
+      return null;
+    }
+    return { primitive: 'capture-pile-hero', capturePiles };
+  }
+  if (primitiveToken === 'capture-hq-heroes-cost-lte' || primitiveToken === 'shuffle-bystanders-into-villain-deck') {
+    // why: WP-838 / D-24771 — grammar `<primitive>:<N>` (exactly 2 colon-parts; Venom's cost ceiling
+    // `:2`, Baron Strucker's shuffle count `:4`), N a positive integer carried as `magnitude`. The
+    // bare token has no meaningful default, so it must NOT fall through to the no-param tail below.
+    if (parts.length !== 2) {
+      return null;
+    }
+    const magnitude = parsePositiveInteger(parts[1]!);
+    if (magnitude === null) {
+      return null;
+    }
+    return { primitive: primitiveToken, magnitude };
   }
   // why: hero-deck-top-to-escape, gain-officer-current, and the other no-param
   // primitives take no params; reject any trailing colon-separated tokens so a

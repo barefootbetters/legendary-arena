@@ -2111,10 +2111,12 @@ export function resolveFindingZemo(
 
   // why: only cards typed 'bystander' count. On the Killbots scheme the villain-deck
   // Bystanders are typed 'villain' (D-24324): they are Killbots while in the deck.
+  // why: WP-838 / D-24771 — a supply Bystander Baron Strucker shuffled in carries no map entry
+  // but is a Bystander (the reveal's classifier rule), so it is KO'd too.
   let koedCount = 0;
   let rest: CardExtId[] = [];
   for (const cardExtId of deck.slice(0, revealCount)) {
-    if (G.villainDeckCardTypes[cardExtId] === 'bystander') {
+    if (G.villainDeckCardTypes[cardExtId] === 'bystander' || cardExtId === BYSTANDER_EXT_ID) {
       G.ko = koCard(G.ko, cardExtId);
       koedCount += 1;
     } else {

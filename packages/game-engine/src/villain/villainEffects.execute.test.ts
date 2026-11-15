@@ -21,6 +21,7 @@ import {
   villainCardPlaysVillainDeckCards,
   resolveEffectResultNames,
   selectKoHeroTargetByGreyFilter,
+  villainCardGainsOneCapturedHero,
 } from './villainEffects.execute.js';
 import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { composeEffectResultLogLine, composeWoundOutcomeClause } from '../events/notableEvents.compose.js';
@@ -7179,5 +7180,332 @@ describe('WP-837 co2e each-player discard and reveal-gated Ambushes (D-24770)', 
         `reaction queue order for ${JSON.stringify(testCase.ctx)}`,
       );
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-838 / D-24771 — the co2e capture family (T8-T18)
+// ---------------------------------------------------------------------------
+
+describe('WP-838 co2e capture family handlers (D-24771)', () => {
+  const ENCHANTRESS = 'ench-01' as CardExtId;
+  const KIDNAPPERS = 'kid-01' as CardExtId;
+  const VENOM = 'venom-01' as CardExtId;
+  const STRUCKER = 'strucker-01' as CardExtId;
+  const SUPPLY_BYSTANDER = 'pile-bystander' as CardExtId;
+  const OFFICER = 'pile-shield-officer' as CardExtId;
+  const SIDEKICK = 'pile-sidekick' as CardExtId;
+  const COSTS: Record<string, { cost: number }> = {
+    'h-cost1': { cost: 1 },
+    'h-cost2a': { cost: 2 },
+    'h-cost2b': { cost: 2 },
+    'h-cost3': { cost: 3 },
+    'h-cost4': { cost: 4 },
+    'h-cost5': { cost: 5 },
+    'd-cost1': { cost: 1 },
+    'd-cost2': { cost: 2 },
+    'pile-sidekick': { cost: 2 },
+    'pile-shield-officer': { cost: 3 },
+  };
+
+  /**
+   * Builds a keyword-less descriptor hook (the shared `hook` helper only takes legacy keywords).
+   */
+  function descriptorHook(
+    cardId: CardExtId,
+    timing: 'onAmbush' | 'onFight' | 'onEscape',
+    effects: VillainAbilityHook['effects'],
+    keywords: VillainAbilityHook['keywords'] = [],
+  ): VillainAbilityHook {
+    return { cardId, timing, keywords, effects };
+  }
+
+  /**
+   * A three-seat Victory-Pile fixture (T8 / T10).
+   */
+  function threeSeatVictories(): NonNullable<MakeGOptions['playerZones']> {
+    return {
+      '0': { deck: [], hand: [], discard: [], inPlay: [], victory: ['villain-a' as CardExtId, SUPPLY_BYSTANDER] },
+      '1': {
+        deck: [],
+        hand: [],
+        discard: [],
+        inPlay: [],
+        victory: ['bystander-villain-deck-03' as CardExtId, SUPPLY_BYSTANDER],
+      },
+      '2': { deck: [], hand: [], discard: [], inPlay: [], victory: ['villain-b' as CardExtId] },
+    };
+  }
+
+  /**
+   * A reversing ShuffleProvider that counts its calls (the makeMockCtx convention).
+   */
+  function countingShuffle(): { provider: ShuffleProvider; calls: () => number } {
+    let callCount = 0;
+    const provider: ShuffleProvider = {
+      random: {
+        Shuffle: <T>(deck: T[]): T[] => {
+          callCount += 1;
+          return [...deck].reverse();
+        },
+      },
+    };
+    return { provider, calls: () => callCount };
+  }
+
+  it('T8: capture-bystander-each-victory-pile takes each player\'s first Victory-Pile Bystander, sorted seats', () => {
+    const G = makeG({
+      hooks: [descriptorHook(ENCHANTRESS, 'onAmbush', [{ primitive: 'capture-bystander-each-victory-pile' }])],
+      playerZones: threeSeatVictories(),
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, ENCHANTRESS, 'onAmbush');
+    assert.deepStrictEqual(G.attachedBystanders[ENCHANTRESS], [SUPPLY_BYSTANDER, 'bystander-villain-deck-03']);
+    assert.deepStrictEqual(G.playerZones['0']!.victory, ['villain-a']);
+    assert.deepStrictEqual(G.playerZones['1']!.victory, [SUPPLY_BYSTANDER]);
+    assert.deepStrictEqual(G.playerZones['2']!.victory, ['villain-b']);
+    assert.deepStrictEqual(G.messages.at(-1), {
+      text: 'Ambush effect: captured a Bystander from the Victory Pile of Player 0, Player 1.',
+      outcome: 'applied',
+    });
+  });
+
+  it('T9: with no Victory-Pile Bystander it logs the blocked line and creates no entry', () => {
+    const G = makeG({
+      hooks: [descriptorHook(ENCHANTRESS, 'onAmbush', [{ primitive: 'capture-bystander-each-victory-pile' }])],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, ENCHANTRESS, 'onAmbush');
+    assert.equal(Object.hasOwn(G.attachedBystanders, ENCHANTRESS), false);
+    assert.deepStrictEqual(G.messages.at(-1), {
+      text: 'Ambush effect: no player had a Bystander in their Victory Pile to capture.',
+      outcome: 'blocked',
+    });
+  });
+
+  it('T10: Enchantress\'s full Ambush captures the supply top first, then each Victory Pile', () => {
+    const G = makeG({
+      hooks: [
+        descriptorHook(
+          ENCHANTRESS,
+          'onAmbush',
+          [{ ...LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR.captureBystander }, { primitive: 'capture-bystander-each-victory-pile' }],
+          ['captureBystander'],
+        ),
+      ],
+      playerZones: threeSeatVictories(),
+      bystanders: [SUPPLY_BYSTANDER, SUPPLY_BYSTANDER, SUPPLY_BYSTANDER],
+      messages: [],
+    });
+    const results = executeVillainAbilities(G, CTX, ENCHANTRESS, 'onAmbush');
+    assert.deepStrictEqual(G.attachedBystanders[ENCHANTRESS], [
+      SUPPLY_BYSTANDER,
+      SUPPLY_BYSTANDER,
+      'bystander-villain-deck-03',
+    ]);
+    assert.equal(G.piles.bystanders.length, 2);
+    assert.equal(results.length, 1, 'only the legacy captureBystander records a result');
+    assert.equal(results[0]!.keyword, 'captureBystander');
+  });
+
+  it('T11: capture-pile-hero takes the Officer Deck top first', () => {
+    const G = makeG({
+      hooks: [descriptorHook(KIDNAPPERS, 'onAmbush', [{ primitive: 'capture-pile-hero', capturePiles: ['officer', 'sidekick'] }])],
+      officers: [OFFICER, OFFICER],
+      cardStats: COSTS,
+      messages: [],
+    });
+    G.piles.sidekicks = [SIDEKICK];
+    executeVillainAbilities(G, CTX, KIDNAPPERS, 'onAmbush');
+    assert.deepStrictEqual(G.villainAttachedHeroes[KIDNAPPERS], [OFFICER]);
+    assert.equal(G.piles.officers.length, 1);
+    assert.deepStrictEqual(G.piles.sidekicks, [SIDEKICK]);
+    assert.deepStrictEqual(G.messages.at(-1), {
+      text: 'Ambush effect: captured pile-shield-officer from the S.H.I.E.L.D. Officer Deck.',
+      outcome: 'applied',
+    });
+  });
+
+  it('T12: capture-pile-hero falls back to the Sidekick Deck, then logs both piles empty', () => {
+    const G = makeG({
+      hooks: [descriptorHook(KIDNAPPERS, 'onAmbush', [{ primitive: 'capture-pile-hero', capturePiles: ['officer', 'sidekick'] }])],
+      messages: [],
+    });
+    G.piles.sidekicks = [SIDEKICK];
+    executeVillainAbilities(G, CTX, KIDNAPPERS, 'onAmbush');
+    assert.deepStrictEqual(G.villainAttachedHeroes[KIDNAPPERS], [SIDEKICK]);
+    assert.deepStrictEqual(G.piles.sidekicks, []);
+    assert.deepStrictEqual(G.messages.at(-1), {
+      text: 'Ambush effect: captured pile-sidekick from the Sidekick Deck.',
+      outcome: 'applied',
+    });
+
+    const emptyG = makeG({
+      hooks: [descriptorHook(KIDNAPPERS, 'onAmbush', [{ primitive: 'capture-pile-hero', capturePiles: ['officer', 'sidekick'] }])],
+      messages: [],
+    });
+    executeVillainAbilities(emptyG, CTX, KIDNAPPERS, 'onAmbush');
+    assert.equal(Object.hasOwn(emptyG.villainAttachedHeroes, KIDNAPPERS), false);
+    assert.deepStrictEqual(emptyG.messages.at(-1), {
+      text: 'Ambush effect: nothing was captured because the S.H.I.E.L.D. Officer Deck and the Sidekick Deck are empty.',
+      outcome: 'blocked',
+    });
+  });
+
+  it('T13: capture-hq-heroes-cost-lte captures the snapshot of cheap Heroes; refills are never re-checked', () => {
+    const G = makeG({
+      hooks: [descriptorHook(VENOM, 'onAmbush', [{ primitive: 'capture-hq-heroes-cost-lte', magnitude: 2 }])],
+      hq: ['h-cost1', 'h-cost3', 'h-cost2a', 'h-cost4', 'h-cost2b'] as CardExtId[],
+      heroDeck: ['d-cost1', 'd-cost2', 'h-cost5'] as CardExtId[],
+      cardStats: COSTS,
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, VENOM, 'onAmbush');
+    assert.deepStrictEqual(G.villainAttachedHeroes[VENOM], ['h-cost1', 'h-cost2a', 'h-cost2b']);
+    assert.deepStrictEqual(G.hq, ['d-cost1', 'h-cost3', 'd-cost2', 'h-cost4', 'h-cost5']);
+    assert.deepStrictEqual(G.heroDeck, []);
+    assert.deepStrictEqual(G.messages.at(-1), {
+      text: 'Ambush effect: captured h-cost1, h-cost2a, h-cost2b from the HQ (cost 2 or less).',
+      outcome: 'applied',
+    });
+  });
+
+  it('T14: no HQ Hero costing 2 or less (one with no stats entry) captures nothing', () => {
+    const G = makeG({
+      hooks: [descriptorHook(VENOM, 'onAmbush', [{ primitive: 'capture-hq-heroes-cost-lte', magnitude: 2 }])],
+      hq: ['h-cost3', 'no-stats-hero', 'h-cost4', null, 'h-cost5'] as (CardExtId | null)[],
+      heroDeck: ['d-cost1'] as CardExtId[],
+      cardStats: COSTS,
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, VENOM, 'onAmbush');
+    assert.deepStrictEqual(G.hq, ['h-cost3', 'no-stats-hero', 'h-cost4', null, 'h-cost5']);
+    assert.equal(Object.hasOwn(G.villainAttachedHeroes, VENOM), false);
+    assert.deepStrictEqual(G.messages.at(-1), {
+      text: 'Ambush effect: no Hero in the HQ costs 2 or less, so none was captured.',
+      outcome: 'blocked',
+    });
+  });
+
+  it('T15: Venom\'s full Ambush captures the Sidekick, then the cheap HQ Heroes; an empty Sidekick Deck logs and continues', () => {
+    const venomAmbush: VillainAbilityHook['effects'] = [
+      { primitive: 'capture-pile-hero', capturePiles: ['sidekick'] },
+      { primitive: 'capture-hq-heroes-cost-lte', magnitude: 2 },
+    ];
+    const G = makeG({
+      hooks: [descriptorHook(VENOM, 'onAmbush', venomAmbush)],
+      hq: ['h-cost1', 'h-cost3', 'h-cost2a', 'h-cost4', 'h-cost2b'] as CardExtId[],
+      heroDeck: ['d-cost1', 'd-cost2', 'h-cost5'] as CardExtId[],
+      cardStats: COSTS,
+      messages: [],
+    });
+    G.piles.sidekicks = [SIDEKICK];
+    executeVillainAbilities(G, CTX, VENOM, 'onAmbush');
+    assert.deepStrictEqual(G.villainAttachedHeroes[VENOM], [SIDEKICK, 'h-cost1', 'h-cost2a', 'h-cost2b']);
+
+    const emptyG = makeG({
+      hooks: [descriptorHook(VENOM, 'onAmbush', venomAmbush)],
+      hq: ['h-cost1', 'h-cost3', 'h-cost2a', 'h-cost4', 'h-cost2b'] as CardExtId[],
+      heroDeck: ['d-cost1', 'd-cost2', 'h-cost5'] as CardExtId[],
+      cardStats: COSTS,
+      messages: [],
+    });
+    executeVillainAbilities(emptyG, CTX, VENOM, 'onAmbush');
+    assert.deepStrictEqual(emptyG.villainAttachedHeroes[VENOM], ['h-cost1', 'h-cost2a', 'h-cost2b']);
+    assert.ok(
+      emptyG.messages.some(
+        (entry) =>
+          entry.text === 'Ambush effect: nothing was captured because the Sidekick Deck is empty.' &&
+          entry.outcome === 'blocked',
+      ),
+    );
+  });
+
+  it('T16: shuffle-bystanders-into-villain-deck moves four supply Bystanders and shuffles them in', () => {
+    const G = makeG({
+      hooks: [descriptorHook(STRUCKER, 'onFight', [{ primitive: 'shuffle-bystanders-into-villain-deck', magnitude: 4 }])],
+      bystanders: Array.from({ length: 6 }, () => SUPPLY_BYSTANDER),
+      messages: [],
+    });
+    (G as unknown as { villainDeck: { deck: CardExtId[]; discard: CardExtId[] } }).villainDeck = {
+      deck: ['v1', 'v2'] as CardExtId[],
+      discard: [],
+    };
+    executeVillainAbilities(G, CTX, STRUCKER, 'onFight', makeMockCtx());
+    assert.equal(G.piles.bystanders.length, 2);
+    assert.deepStrictEqual(G.villainDeck.deck, [
+      SUPPLY_BYSTANDER,
+      SUPPLY_BYSTANDER,
+      SUPPLY_BYSTANDER,
+      SUPPLY_BYSTANDER,
+      'v2',
+      'v1',
+    ]);
+    assert.deepStrictEqual(G.messages.at(-1), {
+      text: 'Fight effect: shuffled 4 Bystander(s) from the Bystander Deck into the Villain Deck.',
+      outcome: 'applied',
+    });
+  });
+
+  it('T17: a short supply shuffles what there is; an empty supply or no shuffle source shuffles nothing', () => {
+    const struckerHook = descriptorHook(STRUCKER, 'onFight', [{ primitive: 'shuffle-bystanders-into-villain-deck', magnitude: 4 }]);
+    const shortG = makeG({ hooks: [struckerHook], bystanders: [SUPPLY_BYSTANDER, SUPPLY_BYSTANDER], messages: [] });
+    (shortG as unknown as { villainDeck: { deck: CardExtId[]; discard: CardExtId[] } }).villainDeck = { deck: [], discard: [] };
+    executeVillainAbilities(shortG, CTX, STRUCKER, 'onFight', makeMockCtx());
+    assert.deepStrictEqual(shortG.villainDeck.deck, [SUPPLY_BYSTANDER, SUPPLY_BYSTANDER]);
+    assert.equal(shortG.messages.at(-1)!.text, 'Fight effect: shuffled 2 Bystander(s) from the Bystander Deck into the Villain Deck.');
+
+    const emptyG = makeG({ hooks: [struckerHook], messages: [] });
+    (emptyG as unknown as { villainDeck: { deck: CardExtId[]; discard: CardExtId[] } }).villainDeck = {
+      deck: ['v1'] as CardExtId[],
+      discard: [],
+    };
+    const spy = countingShuffle();
+    executeVillainAbilities(emptyG, CTX, STRUCKER, 'onFight', spy.provider);
+    assert.equal(spy.calls(), 0, 'no Bystander moved, so no randomness is spent');
+    assert.deepStrictEqual(emptyG.villainDeck.deck, ['v1']);
+    assert.deepStrictEqual(emptyG.messages.at(-1), {
+      text: 'Fight effect: the Bystander Deck is empty, so no Bystander was shuffled into the Villain Deck.',
+      outcome: 'blocked',
+    });
+
+    const noSourceG = makeG({ hooks: [struckerHook], bystanders: [SUPPLY_BYSTANDER], messages: [] });
+    (noSourceG as unknown as { villainDeck: { deck: CardExtId[]; discard: CardExtId[] } }).villainDeck = {
+      deck: ['v1'] as CardExtId[],
+      discard: [],
+    };
+    executeVillainAbilities(noSourceG, CTX, STRUCKER, 'onFight');
+    assert.deepStrictEqual(noSourceG.piles.bystanders, [SUPPLY_BYSTANDER]);
+    assert.deepStrictEqual(noSourceG.villainDeck.deck, ['v1']);
+    assert.deepStrictEqual(noSourceG.messages.at(-1), {
+      text: 'Fight effect: no shuffle source was available, so no Bystander was shuffled into the Villain Deck.',
+      outcome: 'blocked',
+    });
+  });
+
+  it('T18: the gain-one handler is a no-op traced `no-op`; the predicate reads only onFight gain-one hooks', () => {
+    const venomFight = descriptorHook(VENOM, 'onFight', [{ primitive: 'gain-one-attached-hero-rest-to-bottom' }]);
+    const G = makeG({
+      hooks: [venomFight],
+      villainAttachedHeroes: { [VENOM]: [SIDEKICK, 'h-cost2a' as CardExtId] },
+      cardStats: COSTS,
+      messages: [],
+    });
+    const before = structuredClone({ ...G, diagnostics: undefined });
+    const results = executeVillainAbilities(G, { currentPlayer: '0', turn: 3 }, VENOM, 'onFight');
+    assert.deepStrictEqual(results, []);
+    assert.deepStrictEqual({ ...G, diagnostics: undefined }, before, 'the handler mutates nothing and logs nothing');
+    const venomTrace = G.diagnostics?.traces?.find(
+      (trace) => trace.cardId === VENOM && trace.effect === 'gain-one-attached-hero-rest-to-bottom',
+    );
+    assert.ok(venomTrace, 'the executor records a trace for the dispatch');
+    assert.equal(venomTrace!.status, 'no-op');
+
+    assert.equal(villainCardGainsOneCapturedHero(G, VENOM), true);
+    const kidnappersG = makeG({ hooks: [descriptorHook(KIDNAPPERS, 'onFight', [{ primitive: 'gain-attached-hero' }])] });
+    assert.equal(villainCardGainsOneCapturedHero(kidnappersG, KIDNAPPERS), false);
+    const noHooksG = makeG({});
+    (noHooksG as unknown as { villainAbilityHooks?: unknown }).villainAbilityHooks = undefined;
+    assert.equal(villainCardGainsOneCapturedHero(noHooksG, VENOM), false);
   });
 });

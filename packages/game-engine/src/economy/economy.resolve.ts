@@ -127,6 +127,10 @@ export function resolveFightCost(
     villainBloodFrenzyBonus(G, villainCardId, fightingPlayerId) +
     villainAbominationBonus(G, villainCardId) +
     villainVariableAttackBonus(G, villainCardId) +
+    // why: WP-838 / D-24771 — "+1 Attack for each Hero / Bystander he has" (co2e Venom,
+    // Enchantress, Baron Zemo), read here so the fight move, the bot and the City projection
+    // agree; before the reduction and the 0 floor. 0 without a G.villainAttackPerCaptured entry.
+    villainCapturedCountBonus(G, villainCardId) +
     // why: WP-875 / D-24822 — "All Mandarin's Rings get +1 Attack" while The Mandarin leads, read
     // at fight time in this single authority (the D-24752 id-keyed shape), so the fight move, the
     // bot and the City fightCost projection agree; 0 in every other match.
@@ -361,6 +365,34 @@ function bystanderVillainAttackBonus(
 }
 
 /**
+ * A villain's printed "+N Attack for each <Hero|Bystander> he has" bonus (WP-838 / D-24771).
+ *
+ * No G.villainAttackPerCaptured entry → 0. `hero` counts G.villainAttachedHeroes
+ * (Venom), `bystander` counts G.attachedBystanders (Enchantress, co2e Baron Zemo),
+ * each times `attackPerCard`.
+ *
+ * @param G - Game state (read-only).
+ * @param villainCardId - The villain zone-instance ext_id.
+ * @returns The captured-count bonus, or 0.
+ */
+// why: D-24771 — the card's own per-card rule replaces the default captured-Hero cost sum
+// (resolveBaseFightCost returns the base for these villains), then this term adds captured
+// Heroes (Venom) or captured Bystanders (Enchantress, Baron Zemo).
+function villainCapturedCountBonus(
+  G: LegendaryGameState,
+  villainCardId: CardExtId,
+): number {
+  const entry = G.villainAttackPerCaptured?.[villainCardId];
+  if (entry === undefined) {
+    return 0;
+  }
+  if (entry.kind === 'hero') {
+    return (G.villainAttachedHeroes?.[villainCardId]?.length ?? 0) * entry.attackPerCard;
+  }
+  return (G.attachedBystanders?.[villainCardId]?.length ?? 0) * entry.attackPerCard;
+}
+
+/**
  * Resolves the base fight cost for a villain (WP-214), before any scheme-driven
  * bonus. See resolveFightCost for the Portals Dark-Portal wrapper.
  *
@@ -432,7 +464,13 @@ function resolveBaseFightCost(
   // why: WP-841 / D-24774 (Operator fork F2) — on a variable-Attack villain the `+`
   // marks the printed passive, not a captured-Hero cost, so the passive term in
   // resolveFightCost is the whole variable part and a captured Hero adds nothing.
-  if (G.villainVariableAttack?.[villainCardId] !== undefined) {
+  // why: WP-838 / D-24771 — the same for an attack-per-captured villain (either kind): the card
+  // prints its own per-card rule ("+1 for each Hero / Bystander he has"), which replaces the
+  // default captured-Hero cost sum; villainCapturedCountBonus in resolveFightCost adds it.
+  if (
+    G.villainVariableAttack?.[villainCardId] !== undefined ||
+    G.villainAttackPerCaptured?.[villainCardId] !== undefined
+  ) {
     return base;
   }
 
