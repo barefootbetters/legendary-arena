@@ -535,7 +535,7 @@ high-water: 422
 - WP-894 — airplane-mode-offline-shell (airplane-mode slice 1: web app manifest + service worker so the featured solo setup installs and plays to the end with no network; the phone airplane-mode test. reserved 2026-11-13, claude/wp894-airplane-offline-shell-reserve; LANDED 2026-11-13)
 - WP-895 — workindex-liveverify-stale-row-check (CI guard: fail on a done WORK_INDEX row that still says its D-24026 live-verify is pending while every live-verify.json entry for that WP is verified. reserved 2026-11-14, claude/wp895-liveverify-stale-row-reserve; LANDED 2026-11-14)
 - WP-896 — workindex-liveverify-row-token (a structured `[live-verify: verified|partial|pending|n/a]` token on every done WORK_INDEX row, checked against live-verify.json where the WP has entries. reserved 2026-11-14, claude/wp896-liveverify-row-token-reserve; LANDED 2026-11-14)
-- WP-897 — ambush-overlay-keywordless-narration (the center-screen Ambush overlay names keyword-less Ambush effects instead of "entered the city with no Ambush effect". reserved 2026-11-15, claude/wp897-ambush-overlay-narration-reserve)
+- WP-897 — ambush-overlay-keywordless-narration (the center-screen Ambush overlay names keyword-less Ambush effects instead of "entered the city with no Ambush effect". reserved 2026-11-15, claude/wp897-ambush-overlay-narration-reserve; LANDED 2026-11-15)
 - WP-898 — villain-setup-walk-fold (one shared enumerator for the five villain setup registry walks in villainDefeatRequirement.setup.ts; decides the G.villainAttackPerCaptured -> G.villainVariableAttack table fold, D-24774 §8-9. reserved 2026-11-15, claude/wp898-villain-setup-walk-fold-reserve; LANDED 2026-11-15)
 
 ## EC
@@ -1034,7 +1034,7 @@ high-water: 457
 - EC-932 — airplane-mode-offline-shell (WP-894. reserved 2026-11-13, claude/wp894-airplane-offline-shell-reserve; LANDED 2026-11-13)
 - EC-933 — workindex-liveverify-stale-row-check (WP-895. reserved 2026-11-14, claude/wp895-liveverify-stale-row-reserve; LANDED 2026-11-14)
 - EC-934 — workindex-liveverify-row-token (WP-896. reserved 2026-11-14, claude/wp896-liveverify-row-token-reserve; LANDED 2026-11-14)
-- EC-935 — ambush-overlay-keywordless-narration (WP-897. reserved 2026-11-15, claude/wp897-ambush-overlay-narration-reserve)
+- EC-935 — ambush-overlay-keywordless-narration (WP-897. reserved 2026-11-15, claude/wp897-ambush-overlay-narration-reserve; LANDED 2026-11-15)
 - EC-936 — villain-setup-walk-fold (WP-898. reserved 2026-11-15, claude/wp898-villain-setup-walk-fold-reserve; LANDED 2026-11-15)
 
 ## D
@@ -1667,5 +1667,5 @@ section below) and the allocation protocol in
 - D-24851 — airplane-mode-offline-shell (WP-894; the service worker's scope, cache and update policy, and where the offline featured match is served. reserved 2026-11-13, claude/wp894-airplane-offline-shell-reserve; LANDED 2026-11-13)
 - D-24852 — workindex-liveverify-stale-row-check (WP-895; what counts as a stale live-verify-pending WORK_INDEX row: the pending-text pattern, and that a WP with no live-verify.json entry, or any non-verified entry, stays legitimately pending. reserved 2026-11-14, claude/wp895-liveverify-stale-row-reserve; LANDED 2026-11-14)
 - D-24853 — workindex-liveverify-row-token (WP-896; every done WORK_INDEX row carries exactly one live-verify state token, the status of record, never auto-written. reserved 2026-11-14, claude/wp896-liveverify-row-token-reserve; LANDED 2026-11-14)
-- D-24854 — ambush-overlay-keywordless-narration (WP-897; how a keyword-less villain-ability descriptor contributes its clause to the ambushResolved narrative, and the orphaned WP-252 → WP-253 narration deferral. reserved 2026-11-15, claude/wp897-ambush-overlay-narration-reserve)
+- D-24854 — ambush-overlay-keywordless-narration (WP-897; how a keyword-less villain-ability descriptor contributes its clause to the ambushResolved narrative, and the orphaned WP-252 → WP-253 narration deferral. reserved 2026-11-15, claude/wp897-ambush-overlay-narration-reserve; LANDED 2026-11-15)
 - D-24855 — villain-setup-walk-fold (WP-898; the shared villain setup enumerator and the attack-per-captured table-fold verdict. reserved 2026-11-15, claude/wp898-villain-setup-walk-fold-reserve; LANDED 2026-11-15)

@@ -2398,6 +2398,28 @@
       "evidence": "2p autoplay 9L2FBYe3ifK (Doctor Doom / Unleash the Power of the Cosmic Cube; HYDRA + Sinister Spider-Foes; Hand Ninjas; Spider-Man, Spider-Man (Miles Morales), Cyclops, Hawkeye, Nick Fury; server 3cc2c042 (the #3394 merge, built 2026-11-15T06:50:42Z), client 3cc2c04, every match created after the deploy): \"captured Trick Arrow, Web-Shooters, Web-Shooters from the HQ (cost 2 or less).\" (19.1.3) and \"captured Witty Banter from the HQ (cost 2 or less).\" (31.1.3), traced fired."
     },
     {
+      "key": "co2e-villain-hydra-hydra-kidnappers|ambush-narrative",
+      "kind": "villain",
+      "card": "HYDRA Kidnappers",
+      "ability": "Ambush overlay narrative (ambushResolved.narrative) names the keyword-less Ambush outcome",
+      "wp": "WP-897",
+      "state": "pending",
+      "date": "2026-11-15",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy): when the card is revealed, the center-screen Ambush overlay names what its Ambush did, matching the log line, and never reads \"entered the city with no Ambush effect\". D-24854."
+    },
+    {
+      "key": "co2e-villain-sinister-spider-foes-venom|ambush-narrative",
+      "kind": "villain",
+      "card": "Venom",
+      "ability": "Ambush overlay narrative (ambushResolved.narrative) names the keyword-less Ambush outcome",
+      "wp": "WP-897",
+      "state": "pending",
+      "date": "2026-11-15",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy): when the card is revealed, the center-screen Ambush overlay names what its Ambush did, matching the log line, and never reads \"entered the city with no Ambush effect\". D-24854."
+    },
+    {
       "key": "co2e-villain-sinister-spider-foes-venom|gain-one-attached-hero-rest-to-bottom",
       "kind": "villain",
       "card": "Venom",
