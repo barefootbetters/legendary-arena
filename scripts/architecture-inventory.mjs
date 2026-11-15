@@ -24,10 +24,11 @@
  */
 
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { argv, cwd, exit, stdout } from 'node:process';
+import { argv, cwd, exit, stderr, stdout } from 'node:process';
 
 // ---------------------------------------------------------------------------
 // Configuration — workspace layout, scan roots, ignore set
@@ -103,6 +104,9 @@ const SKIP_DIRECTORY_PATH_SUFFIXES = [
  */
 function isSkippedDirectory(entryName, directoryPath) {
   if (SKIP_DIRECTORIES.has(entryName)) {
+    return true;
+  }
+  if (isGitignoredPath(directoryPath)) {
     return true;
   }
   // why: normalize Windows backslashes so the POSIX-style suffix match works on
@@ -297,6 +301,62 @@ const LANGUAGE_SCAN_ROOTS = ['apps', 'packages', 'scripts', 'wiki'];
 // an editor terminal that started elsewhere.
 const SCRIPT_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(SCRIPT_DIRECTORY, '..');
+
+// why: the cron regenerates from a clean checkout, so a local regen must
+// count only what a clean checkout holds. The hand-written skip lists above
+// keep missing gitignored build output: content/, static/, public/,
+// data/ops/, and (2026-11-14) nine generated apps/dashboard/src/data/*.json
+// files that sit beside tracked ones in the same folder, so no path skip can
+// separate them. A local regen committed JSON 125 where the cron saw 116.
+// Asking git which paths it ignores makes local and cron runs agree. The
+// static lists stay as the fallback when git is unavailable.
+const GITIGNORED_PATHS = loadGitignoredPaths();
+
+/**
+ * List the repo's gitignored paths, repo-relative with forward slashes. A
+ * fully ignored directory appears once (`--directory`), without its trailing
+ * slash. Untracked-but-not-ignored paths (the CI website clone) are not
+ * included; `scanForSaas` handles those.
+ *
+ * @returns {Set<string>} The ignored paths, or an empty set when git fails.
+ */
+function loadGitignoredPaths() {
+  const ignoredPaths = new Set();
+  let output;
+  try {
+    output = execFileSync(
+      'git',
+      ['ls-files', '--others', '--ignored', '--exclude-standard', '--directory', '-z'],
+      { cwd: REPO_ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
+    );
+  } catch (gitError) {
+    stderr.write(
+      `architecture-inventory: could not list gitignored paths (${gitError.message}). ` +
+        'Falling back to the static skip lists, so gitignored build output may be counted. ' +
+        'Run this script from inside a git checkout with git on PATH.\n',
+    );
+    return ignoredPaths;
+  }
+  for (const entry of output.split('\0')) {
+    if (entry.length === 0) {
+      continue;
+    }
+    ignoredPaths.add(entry.endsWith('/') ? entry.slice(0, -1) : entry);
+  }
+  return ignoredPaths;
+}
+
+/**
+ * Decide whether a path is gitignored in this repo. Paths outside the repo
+ * (external scan roots) never match.
+ *
+ * @param {string} absolutePath - The file or directory path as walked.
+ * @returns {boolean} true when git ignores the path.
+ */
+function isGitignoredPath(absolutePath) {
+  const relativePath = relative(REPO_ROOT, absolutePath).split(sep).join('/');
+  return GITIGNORED_PATHS.has(relativePath);
+}
 
 // why: keep the date-stamped header reproducible regardless of the host
 // timezone — the user runs this from Windows (Pacific) but reports may
@@ -1200,9 +1260,13 @@ async function collectSourceFiles(directory, accumulator) {
         continue;
       }
       const extension = entry.name.slice(dotIndex);
-      if (SOURCE_EXTENSIONS.includes(extension)) {
-        accumulator.push(join(current, entry.name));
+      if (!SOURCE_EXTENSIONS.includes(extension)) {
+        continue;
       }
+      if (isGitignoredPath(join(current, entry.name))) {
+        continue;
+      }
+      accumulator.push(join(current, entry.name));
     }
   }
 }
@@ -1369,6 +1433,9 @@ async function collectAllFiles(directory, accumulator) {
       }
       if (entry.isFile()) {
         if (SKIP_FILE_NAMES.has(entry.name)) {
+          continue;
+        }
+        if (isGitignoredPath(join(current, entry.name))) {
           continue;
         }
         accumulator.push(join(current, entry.name));
