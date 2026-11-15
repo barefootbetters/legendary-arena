@@ -24,7 +24,7 @@ disableHugoGeneratorInject = true
 
 # why: D-24782 — the page shell, the core partials, the render hooks and the
 # shared shortcodes come from the shared ewiki theme, bb-studio-ewiki-theme
-# v1.3.0, vendored read-only at themes/ewiki/ and pinned by digest in
+# v1.4.1, vendored read-only at themes/ewiki/ and pinned by digest in
 # .github/workflows/wiki-viewer.yml (D-24728). The engine's own behavior
 # (type-grouped sidebar, six-field metadata panel, Related / Sources, its
 # footer paragraphs) lives in layouts/partials/ewiki/ and assets/css/. This key

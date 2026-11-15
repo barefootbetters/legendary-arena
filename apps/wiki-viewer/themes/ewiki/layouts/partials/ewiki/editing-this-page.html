@@ -95,6 +95,22 @@
       <code>include-section</code> lines that choose which sections appear.
     </p>
     {{- end }}
+    {{- /*
+      why: an ewiki-guide block (v1.4.0) is rendered from the theme's own
+      authoring guide, which ships in the vendored theme. Its text is edited
+      in the theme repo and reaches this wiki with a theme upgrade, never in
+      this wiki's vendored copy. Detected the same way as include-section.
+    */}}
+    {{- if findRE `\{\{[<%][ \t]*ewiki-guide` $page.RawContent 1 }}
+    <p>
+      <strong>Parts of this page come from the theme's guide.</strong> Each
+      <strong>Linked section</strong> block naming the ewiki theme's guide is
+      rendered from the theme's authoring guide (<code>ewiki-guide</code>).
+      Edit it in the theme repo, barefootbetters/bb-studio-ewiki-theme; this
+      wiki picks up the change when it upgrades the theme. Never edit the
+      vendored copy under <code>themes/ewiki/</code>.
+    </p>
+    {{- end }}
     {{- partial "ewiki/editing-extra.html" $page }}
   </div>
 </details>

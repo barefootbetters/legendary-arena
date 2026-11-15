@@ -90,7 +90,7 @@ a DECISIONS entry.
 
 ## Theme
 
-The studio's own shared ewiki theme, `bb-studio-ewiki-theme` `v1.3.0`,
+The studio's own shared ewiki theme, `bb-studio-ewiki-theme` `v1.4.1`,
 vendored into `themes/ewiki/` so it stays inside this app (Open Decision B,
 locked; D-24728 §2, D-24782). The build stays offline and needs no
 third-party theme dependency. A future WP that wants Docsy / Hextra / etc.
@@ -120,7 +120,7 @@ the GitHub UI but does not block the wiki deploy.
 
 - `hugo.toml` — site config + determinism knobs, `theme = "ewiki"` and the
   theme's `[params.ewiki]` settings (D-24782).
-- `themes/ewiki/` — the shared ewiki theme, `bb-studio-ewiki-theme` `v1.3.0`,
+- `themes/ewiki/` — the shared ewiki theme, `bb-studio-ewiki-theme` `v1.4.1`,
   vendored read-only by its `tools/Sync-EwikiTheme.ps1` and pinned by digest
   in `.github/workflows/wiki-viewer.yml` (D-24728). Never edit it: a change
   lands in the theme repo, ships in a tag, and is re-synced. It supplies the

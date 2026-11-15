@@ -1,0 +1,94 @@
+{{- /*
+  Ewiki-guide shortcode (v1.4.0): show one section of the theme's authoring
+  guide on a wiki's own page.
+
+  Usage:
+    {{< ewiki-guide section="audio" >}}
+
+  why: every wiki on the theme needs the same authoring rules (formatting,
+  links, images, the shortcodes, what fails the build). The guide ships
+  inside the theme, at assets/ewiki-guide/ewiki-authoring.md, so every wiki
+  has the copy that matches its release at build time. A wiki's authoring
+  page shows the sections it wants with this shortcode and writes only what
+  it owns (its media host, its front matter, its deploy) around them. The
+  text is written once, in the theme repo.
+
+  why: `section` is the guide heading's anchor, cut the way include-section
+  cuts an owner page (ewiki/section-text.html). A missing or ambiguous anchor,
+  or an empty section, fails the build naming the page, so a heading renamed
+  in a theme release fails the upgrade PR, never renders an empty block.
+
+  why: the block wears include-section's caption, labelled Linked section,
+  and names the guide page, the guide's file at the vendored release (read
+  from themes/ewiki/THEME-VERSION, which Sync writes), and where to edit it.
+  The guide's in-page (#anchor) links point at the published guide, since
+  the anchor is the guide's, not this page's. Unlike include-section, the
+  block is indexed by search: the guide has no page in this wiki to own it.
+  Output is static and reads no clock, so two builds match.
+
+  why: a subheading inside the shown section renders as a bold line, not a
+  heading (v1.4.1), so the including page gets no heading or id it doesn't
+  own, and a section with subsections (Images, say) can be shown whole.
+*/ -}}
+{{- $sectionId := .Get "section" -}}
+{{- $where := .Page.File.Path -}}
+{{- $guidePath := "assets/ewiki-guide/ewiki-authoring.md" -}}
+{{- $guideUrl := "https://ewiki-theme.barefootbetters.com/ewiki-authoring/" -}}
+{{- $themeRepo := "https://github.com/barefootbetters/bb-studio-ewiki-theme" -}}
+{{- $guide := resources.Get (strings.TrimPrefix "assets/" $guidePath) -}}
+{{- if not $sectionId -}}
+  {{- errorf "ewiki-guide on %s needs section=, the anchor of a heading in the theme's authoring guide, for example section=\"audio\"." $where -}}
+{{- else if not $guide -}}
+  {{- errorf "ewiki-guide on %s: the theme's guide %s is missing. Re-sync the theme with tools/Sync-EwikiTheme.ps1." $where $guidePath -}}
+{{- else -}}
+{{- $found := partial "ewiki/section-text.html" (dict "raw" $guide.Content "section" $sectionId "flatten" true) -}}
+{{- if eq $found.count 0 -}}
+  {{- errorf "ewiki-guide on %s: the theme's authoring guide has no heading with anchor %q. A theme release probably renamed it; point section= at its current anchor (the guide's headings are listed at %s)." $where $sectionId $guideUrl -}}
+{{- else if gt $found.count 1 -}}
+  {{- errorf "ewiki-guide on %s: the theme's authoring guide has %d headings with anchor %q. Fix the guide in the theme repo so each anchor is unique." $where $found.count $sectionId -}}
+{{- else if not $found.body -}}
+  {{- errorf "ewiki-guide on %s: section %q of the theme's authoring guide is empty (the next heading follows it directly). Point section= at a heading with text under it." $where $sectionId -}}
+{{- else -}}
+{{- $title := "Ewiki Authoring" -}}
+{{- with findRESubmatch `(?m)^title:[ \t]*"?([^"\r\n]+?)"?[ \t]*\r?$` $guide.Content 1 -}}
+  {{- $title = index (index . 0) 1 -}}
+{{- end -}}
+{{- /*
+  why: link the guide's file at the release this wiki vendored, so the
+  source a reader opens is the text this page rendered. THEME-VERSION is
+  `<tag> <commit>`, or `untagged <commit>`; with no file (a theme copied
+  by hand), fall back to main.
+*/ -}}
+{{- $ref := "main" -}}
+{{- $refLabel := "" -}}
+{{- $versionFile := "themes/ewiki/THEME-VERSION" -}}
+{{- if os.FileExists $versionFile -}}
+  {{- $fields := split (trim (os.ReadFile $versionFile) " \r\n") " " -}}
+  {{- if eq (len $fields) 2 -}}
+    {{- if hasPrefix (index $fields 0) "v" -}}
+      {{- $ref = index $fields 0 -}}
+      {{- $refLabel = $ref -}}
+    {{- else -}}
+      {{- $ref = index $fields 1 -}}
+      {{- $refLabel = printf "commit %s" (substr $ref 0 7) -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $body := replaceRE `\]\(#` (printf "](%s#" $guideUrl) $found.body -}}
+{{- /*
+  why: the guide shows shortcode syntax escaped, with slash-star markers
+  just inside the delimiters, which Hugo prints without the markers on the
+  guide's own page. RenderString keeps them, so they're taken off the
+  rendered HTML (where the angle brackets are entities), and each example
+  reads as it does on the guide's own page. Taking them off before rendering
+  would run the example as a live shortcode instead.
+*/ -}}
+{{- $html := string (.Page.RenderString (dict "display" "block") $body) -}}
+{{- $html = replaceRE `\{\{(&lt;|%)/\*` "{{$1" $html -}}
+{{- $html = replaceRE `\*/(&gt;|%)\}\}` "$1}}" $html -}}
+<div class="included-section" data-ewiki-guide>
+  <p class="included-from"><span class="included-label">Linked section</span> This section is linked from the ewiki theme's guide: <a href="{{ printf "%s#%s" $guideUrl $sectionId | safeURL }}">{{ $title }} › {{ .Page.RenderString $found.heading }}</a> (<a href="{{ printf "%s/blob/%s/%s" $themeRepo $ref $guidePath | safeURL }}"><code>{{ $guidePath }}</code></a>{{ with $refLabel }}, {{ . }}{{ end }}). Edit it in the theme repo; this wiki picks up the change when it upgrades the theme.</p>
+  {{ $html | safeHTML }}
+</div>
+{{- end -}}
+{{- end -}}

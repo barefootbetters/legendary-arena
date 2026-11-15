@@ -24,6 +24,8 @@ source:
   - ../apps/wiki-viewer/layouts/shortcodes/motif-table.html
   - ../apps/wiki-viewer/themes/ewiki/layouts/shortcodes/swatch.html
   - ../apps/wiki-viewer/themes/ewiki/layouts/shortcodes/include-section.html
+  - ../apps/wiki-viewer/themes/ewiki/layouts/shortcodes/ewiki-guide.html
+  - ../apps/wiki-viewer/themes/ewiki/assets/ewiki-guide/ewiki-authoring.md
   - ../apps/wiki-viewer/layouts/shortcodes/service-impact.html
   - ../apps/wiki-viewer/layouts/shortcodes/video.html
   - ../apps/wiki-viewer/themes/ewiki/layouts/partials/ewiki/editing-this-page.html
@@ -32,7 +34,7 @@ source:
   - ../apps/wiki-viewer/scripts/check-links.mjs
   - ../docs/ai/DECISIONS.md
   - ../.github/workflows/wiki-viewer.yml
-last-reviewed: 2026-10-29
+last-reviewed: 2026-11-14
 ---
 
 # Ewiki Authoring
@@ -46,6 +48,10 @@ tables, code blocks, inline code, and the metadata panel. The
 [Wiki Viewer](wiki-viewer.md) page covers page creation, commit
 prefixes, build pipeline, and publishing; this page covers what
 formatting tools are available once you're writing content.
+The parts every ewiki shares are **Linked section** blocks from the shared
+theme's own [Ewiki Authoring guide](https://ewiki-theme.barefootbetters.com/ewiki-authoring/),
+shown with the `ewiki-guide` shortcode: edit those in the theme repo,
+`barefootbetters/bb-studio-ewiki-theme`, and everything else on this page here.
 
 > ℹ️ **Just fixing a typo?** You don't need a local checkout. Edit the
 > page's `wiki/<slug>.md` file directly on GitHub — the ✏️ pencil on
@@ -99,135 +105,56 @@ The wiki viewer's stylesheet (the shared theme's core
 `apps/wiki-viewer/assets/css/ewiki-brand.css` and `ewiki-site.css`)
 provides the following visual elements. Raw HTML is disabled
 (`unsafe = false` in Hugo config), so all styling must be achieved
-through standard markdown.
+through standard markdown. Each element below is a linked section of the
+theme's guide; the colours it names are this wiki's
+[Theme CSS Variables](#theme-css-variables).
 
 #### Blockquotes
 
-Blockquotes render with a light background, thin border, and blue
-left accent stripe. Use them for callout boxes, warnings, and
-important notices.
-
-**Markdown:**
-
-```
-> **Note**
->
-> Blockquotes make good callout boxes — warnings, tips, and important
-> notices. Keep them to a sentence or two; avoid nesting.
-```
-
-**Rendered style:**
-
-- Background: `#f8fafc` (light gray-blue)
-- Border: 1px solid `#e5e7eb` (theme border color)
-- Left accent: 4px solid `#1d4ed8` (theme blue)
-- Border radius: 4px
-- Padding: 0.75rem 1rem
-
-Blockquotes can contain bold text, lists, inline code, and links.
-Nested blockquotes are not styled differently — avoid nesting.
+{{< ewiki-guide section="blockquotes" >}}
 
 #### Tables
 
-Tables render with collapsed borders and a light header row.
+{{< ewiki-guide section="tables" >}}
 
-**Markdown:**
+#### Code Blocks and Inline Code
 
-```
-| Column A | Column B | Column C |
-|----------|----------|----------|
-| row 1    | data     | data     |
-| row 2    | data     | data     |
-```
+{{< ewiki-guide section="code-blocks-and-inline-code" >}}
 
-**Rendered style:**
-
-- Header row background: `#f9fafb`
-- Cell border: 1px solid `#e5e7eb`
-- Cell padding: 0.4rem 0.7rem
-- Alignment: `:---` left, `:---:` center, `---:` right
-
-Tables must be inside the `.body` container (all wiki page content
-is) to receive styling.
-
-#### Code Blocks
-
-Fenced code blocks render as monospace text on a gray background.
-Syntax highlighting is disabled for deterministic builds.
-
-**Markdown:**
-
-````
-```
-const x = 42;
-```
-````
-
-**Rendered style:**
-
-- Background: `#f3f4f6`
-- Font: SFMono-Regular, Menlo, Monaco, Consolas (monospace stack)
-- Font size: 0.92em
-- Padding: 0.75rem 1rem
-- Border radius: 4px
-- Horizontal scroll on overflow
-
-#### Inline Code
-
-Inline code renders with a subtle background to distinguish it from
-surrounding text.
-
-**Markdown:**
-
-```
-Use the `SPEC:` prefix for governance docs.
-```
-
-**Rendered style:**
-
-- Background: `#f3f4f6`
-- Padding: 0.1rem 0.3rem
-- Border radius: 3px
-- Font size: 0.92em
+This wiki has highlighting off (`codeFences = false` in
+`apps/wiki-viewer/hugo.toml`).
 
 #### Links
 
-Links use the theme accent color with no underline by default.
-Underline appears on hover.
-
-**Rendered style:**
-
-- Color: `#1d4ed8` (blue)
-- Text decoration: none (underline on hover)
+{{< ewiki-guide section="how-links-look" >}}
 
 #### Emoji
 
-Unicode emoji (✅, ❌, ⚠️) render natively in all browsers and can
-be used in tables, lists, and body text for visual scanning. No
-special syntax needed — paste the emoji directly.
-
-```
-| Dimension | Physical | Digital |
-|-----------|----------|---------|
-| Rules     | ❌ Manual | ✅ Automatic |
-```
+{{< ewiki-guide section="emoji" >}}
 
 ### Theme CSS Variables
 
-The theme defines these CSS custom properties on `:root`. All
-styled elements use these variables, so they change consistently
-if the palette is updated.
+The engine's brand file, `apps/wiki-viewer/assets/css/ewiki-brand.css`,
+sets these CSS custom properties, light and dark; the dark values apply when
+the reader's system is in dark mode. All styled elements use these
+variables, so they change consistently if the palette is updated. The light
+values are the theme's defaults; the dark ones are the engine's own gray and
+blue, not the theme default's green, which is why this table isn't the
+theme guide's.
 
-| Variable | Value | Used For |
-|----------|-------|----------|
-| `--color-bg` | `#ffffff` | Page background |
-| `--color-fg` | `#1f2933` | Body text |
-| `--color-muted` | `#6b7280` | Secondary text, labels |
-| `--color-accent` | `#1d4ed8` | Links, blockquote accent |
-| `--color-border` | `#e5e7eb` | Table borders, dividers, blockquote border |
-| `--color-status-canonical` | `#047857` | Green status badge |
-| `--color-status-draft` | `#a16207` | Amber status badge |
-| `--color-status-deprecated` | `#b91c1c` | Red status badge |
+| Variable | Light | Dark | Used For |
+|----------|-------|------|----------|
+| `--color-bg` | `#ffffff` | `#111827` | Page background |
+| `--color-fg` | `#1f2933` | `#e5e7eb` | Body text |
+| `--color-muted` | `#6b7280` | `#9ca3af` | Secondary text, labels |
+| `--color-accent` | `#1d4ed8` | `#60a5fa` | Links, blockquote accent |
+| `--color-border` | `#e5e7eb` | `#374151` | Table borders, dividers, blockquote border |
+| `--color-surface` | `#f3f4f6` | `#1f2937` | Code, blockquote and table-header backgrounds |
+| `--color-tag-bg` | `#eef2ff` | `#1e1b4b` | Tag pill background |
+| `--color-tag-fg` | `#3730a3` | `#c7d2fe` | Tag pill text |
+| `--color-status-canonical` | `#047857` | `#6ee7b7` | Green status badge |
+| `--color-status-draft` | `#a16207` | `#fcd34d` | Amber status badge |
+| `--color-status-deprecated` | `#b91c1c` | `#fca5a5` | Red status badge |
 
 ### What You Cannot Use
 
@@ -237,12 +164,13 @@ The wiki viewer intentionally restricts certain features:
   You cannot embed `<div>`, `<span>`, `<style>`, or any HTML tags.
 - **No syntax highlighting.** Fenced code blocks render as plain
   monospace. Language hints (` ```js `) are accepted but ignored.
-- **Custom shortcodes: seven.** The viewer defines seven custom
+- **Custom shortcodes: eight.** The viewer defines eight custom
   shortcodes — `audio` and `audio-inline` (see *Embedding audio*),
   `video` (see *Embedding video*),
   `swatch` and `motif-table` (see *Colour swatches and motif tables*),
-  `include-section` (see *Including a section from another page*), and
-  `service-impact` (see *Tables rendered from ops data*).
+  `include-section` (see *Including a section from another page*),
+  `ewiki-guide` (shows a section of the theme's guide, as this page does),
+  and `service-impact` (see *Tables rendered from ops data*).
   Hugo's built-in shortcodes still run, so long as their output is static
   and JS-free — `youtube` renders an `<iframe>` and is fine
   ([Hugo Web System](hugo-web-system.md)). The `highlight` shortcode is
@@ -260,35 +188,18 @@ The wiki viewer intentionally restricts certain features:
 
 ### Embedding audio
 
-The `audio` shortcode embeds a playable clip (rules narration, card
-commentary, sound-effect previews). It emits a native `<audio controls>`
-element — the browser paints the controls, so **no JavaScript** is
-involved and the JS-free invariant holds. `unsafe = false` strips raw
-HTML from markdown *source*, but not shortcode *output*, so this is the
-sanctioned way to embed a player.
+{{< ewiki-guide section="audio" >}}
 
-Host the audio on R2 (the `legendary-images` bucket, served at
-`images.legendary-arena.com`) rather than committing the bytes into the
-repo, and reference it by absolute URL:
+On this wiki the clips are rules narration, card commentary and
+sound-effect previews. Host the audio on R2 (the `legendary-images` bucket,
+served at `images.legendary-arena.com`) rather than committing the bytes
+into the repo, and reference it by absolute URL:
 
 ```
 {{</* audio src="https://images.legendary-arena.com/audio/sound-effects/master-strike.mp3" caption="Master Strike stinger" */>}}
 ```
 
-- `src` (required) — absolute URL to an MP3 (`audio/mpeg`).
-- `caption` (optional) — a short label rendered under the player.
-
-Use **MP3**: it plays in the native `<audio>` element across every
-browser with no JavaScript, which is exactly what the JS-free constraint
-wants. Implementation lives in
-`apps/wiki-viewer/themes/ewiki/layouts/shortcodes/audio.html` (the shared
-theme's shortcode), styled by the `.wiki-audio` rule in the theme stylesheet.
-
-For a player **inside a markdown table cell**, use `audio-inline`
-instead. The `audio` shortcode wraps its player in a `<figure>` with
-newlines, which breaks goldmark's pipe-table row parsing; `audio-inline`
-emits a single compact `<audio>` element with no wrapper and no newlines,
-so it drops cleanly into a cell:
+In a table cell, `audio-inline` takes the same URL:
 
 ```
 | Cue | Preview |
@@ -296,8 +207,10 @@ so it drops cleanly into a cell:
 | Master Strike | {{</* audio-inline src="https://images.legendary-arena.com/audio/sound-effects/master-strike.mp3" */>}} |
 ```
 
-- `src` (required) — absolute URL to an MP3, same as `audio`. (There is
-  no `caption` — a table cell supplies its own label.)
+Both are the shared theme's shortcodes
+(`apps/wiki-viewer/themes/ewiki/layouts/shortcodes/audio.html` and
+`audio-inline.html`). The bucket's key prefixes are in
+[Data & File Locations](data-file-locations.md).
 
 ### Embedding video
 
@@ -324,14 +237,10 @@ Two more shortcodes emit static, JS-free HTML that markdown alone cannot.
 Both rely on the same rule as `audio`: `unsafe = false` strips raw HTML
 from markdown *source* but never from shortcode *output*.
 
-**`swatch`** renders an inline coloured box — use it beside a named
-colour so a reader sees the actual hue, not just its hex string (e.g. the
-game-log outcome legend on [Visual Effects](visual-effects.md)). One
-required positional parameter, a CSS colour:
+{{< ewiki-guide section="colour-swatches" >}}
 
-```
-The `applied` outcome renders green {{</* swatch "#15803d" */>}} (`rgb(21,128,61)`).
-```
+On this wiki, the game-log outcome legend on
+[Visual Effects](visual-effects.md) uses `swatch`.
 
 **`motif-table`** emits a whole `<table>` of playable team motifs from
 pipe-delimited inner content — one team per line as `Team|team-slug|Side|Key`,
@@ -348,67 +257,20 @@ X-Men|x-men|Hero|D major
 
 ### Including a section from another page
 
-**Write a fact once, on the page that owns it.** When another page needs the
-same text (a hub that gathers every backup fact, say), include the owner's
-section instead of copying it. Copied prose drifts: one copy gets updated and
-the other doesn't. An included section is rendered from the owner page on
-every build, so it can't go stale (D-24709).
+{{< ewiki-guide section="including-a-section-from-another-page" >}}
+
+On this wiki every page sits directly in `wiki/`, so `page=` is just the
+owner page's slug, its filename without `.md` (D-24709):
 
 ```
 {{</* include-section page="disaster-recovery" section="the-backup-layers" */>}}
 ```
 
-- `page` (required): the owner page's slug, its filename without `.md`.
-- `section` (required): the owner heading's anchor, the same id a
-  `page.md#anchor` link uses (GitHub-style: lowercase, spaces become hyphens,
-  punctuation dropped). `### Offsite backups (R2 + pCloud)` is
-  `offsite-backups-r2--pcloud`. A heading with an explicit `{#custom-id}`
-  uses that id.
-
-The shortcode
+To find who includes a page, search `wiki/` for `page="<slug>"`. The
+shortcode is the shared theme's
 (`C:\dev\legendary-arena\apps\wiki-viewer\themes\ewiki\layouts\shortcodes\include-section.html`,
-[on GitHub](../apps/wiki-viewer/themes/ewiki/layouts/shortcodes/include-section.html))
-looks up the page, cuts the Markdown from that heading to the next heading of
-the same level, and renders it in place. The heading itself is left out, so
-the including page writes its own.
-
-**Every included block looks the same.** It is set off by a left rule and
-opens with a standard caption bar: a **Linked section** label, then *This
-section is linked from another document:* followed by the reference — the
-owner page › section (linked to the exact heading) and the owner's source
-file (`wiki/<slug>.md`, linked on GitHub) — and *Edit it there; this page
-picks up the change on the next build.* The shortcode always emits this
-caption; you don't write it, and you shouldn't add your own. The "Editing
-this page" footer on an including page repeats that the text is edited on
-the owner page.
-
-What it handles for you:
-
-- **A renamed or removed heading fails the build**, with an error naming the
-  including page and the missing anchor. It never renders an empty block.
-  When you rename a heading that another page includes, fix the `section=`
-  value in the same PR. To find who includes a page, search the wiki for
-  `page="<slug>"`.
-- **Headings inside code fences don't count.** A `# comment` line in a
-  ```` ```bash ```` block doesn't end the section.
-- **In-page links keep working.** A `(#anchor)` link in the included text is
-  rewritten to point at the owner page. Cross-page `slug.md` links and `../`
-  repo links need no rewrite.
-- **Search indexes the text once**, on the owner page. Included blocks carry
-  `data-pagefind-ignore`.
-
-Limits: no nesting (an included section that itself contains an
-`include-section` fails the build), and a section that's empty because the
-next heading follows it directly fails too. The raw Markdown of the including
-page shows the shortcode lines, not the text, so on GitHub or to an agent
-reading `wiki/*.md` directly, follow the `page=` / `section=` values to the
-owner. Live example: [System Backup](system-backup.md).
-
-The Herbs vs. Ailments design wiki runs a port of this shortcode. The one
-difference is that its `page=` takes a relative path to the owner note,
-written the way a link is (`page="../hubs/project-home.md"`), not a slug;
-its authoring guide documents that version under
-[Including a section from another page](https://ewiki.herbsvsailments.com/guides/ewiki-authoring/#including-a-section-from-another-page).
+[on GitHub](../apps/wiki-viewer/themes/ewiki/layouts/shortcodes/include-section.html)).
+Live example: [System Backup](system-backup.md).
 
 ### Tables rendered from ops data
 
@@ -483,19 +345,9 @@ Live examples: the auth-stack flowchart in
 
 ### Showing shortcode or template syntax
 
-To document a Hugo shortcode in a wiki page you have to stop Hugo from
-executing it: Hugo expands `{{</* … */>}}` **before** Markdown runs, *even
-inside a code fence*. Wrap the inner delimiters in `/* */` so the tag
-prints as literal text instead of running:
+{{< ewiki-guide section="showing-shortcode-syntax" >}}
 
-```
-{{</* youtube dQw4w9WgXcQ */>}}
-```
-
-That renders the line as literal text rather than embedding a video. Plain
-template actions like `{{ .Title }}` only execute inside `layouts/`, never
-in wiki content, so they are already literal and need no escaping. See the
-*Code blocks & syntax highlighting* section of
+See the *Code blocks & syntax highlighting* section of
 [Hugo Web System](hugo-web-system.md) for the full treatment.
 
 ### "Editing this page" — automatic footer block
@@ -564,7 +416,9 @@ connector change updates the partial in the same PR.
 On a page that includes sections from other pages, the footer adds one more
 paragraph, whichever variant it is: the **Linked section** blocks are edited
 on their owner pages, and this page's file holds only the `include-section`
-lines. Every footer also carries a short *Write it once* note pointing to
+lines. A page that shows sections of the theme's guide (this one) gets a
+paragraph saying those are edited in the theme repo. Every footer also
+carries a short *Write it once* note pointing to
 [Including a section from another page](#including-a-section-from-another-page).
 
 > **Superseded pattern.** Earlier mirror pages hand-authored a
@@ -738,6 +592,10 @@ prefixes.
 - **[Hugo Web System](hugo-web-system.md)** — the marketing site at
   `www.legendary-arena.com` is a separate Hugo site with its own
   theme (PaperMod). Styles documented here apply only to the ewiki.
+- **[The theme's Ewiki Authoring guide](https://ewiki-theme.barefootbetters.com/ewiki-authoring/)**
+  — owns every **Linked section** block on this page. It ships inside the
+  vendored theme, so this page shows the copy of the release in
+  `apps/wiki-viewer/themes/ewiki/THEME-VERSION`.
 - **SCHEMA.md** — defines the required sections, front-matter
   fields, and entity types. This page documents how to *format*
   content within those sections.
@@ -748,17 +606,11 @@ prefixes.
 
 ## Edge Cases
 
-- **Blockquote nesting.** Nested blockquotes (`> > text`) are not
-  styled differently from top-level blockquotes. Avoid nesting —
-  use lists inside a single blockquote instead.
-- **Table width.** Tables expand to fit content but do not scroll
-  horizontally. Very wide tables (many columns or long cell text)
-  may cause layout issues on narrow screens.
-- **Emoji rendering.** Unicode emoji render using the browser's
-  native emoji font. Appearance varies slightly across platforms
-  (Windows, macOS, Linux) but is functionally equivalent.
-- **No dark mode.** The theme has no dark mode variant. All colors
-  are hardcoded light-mode values.
+- **A linked guide section changes with a theme upgrade, not with an
+  edit here.** The `ewiki-guide` blocks show the guide at the theme
+  release vendored in `apps/wiki-viewer/themes/ewiki/`. A release that
+  renames a guide heading fails this page's build in the upgrade PR,
+  which is where the `section=` value gets fixed.
 - **Editing a projected copy loses the work silently.** The three
   copies of a page are near-identical, and `apps/wiki-viewer/content/`
   is the one a file search is most likely to surface. Edits there
@@ -780,7 +632,8 @@ prefixes.
   — Hugo config (confirms `unsafe = false`, syntax highlighting off)
 - [Wiki Viewer](wiki-viewer.md) — page creation and publishing
 - [SCHEMA.md](SCHEMA.md) — entity-page contract
-- [Herbs vs. Ailments ewiki — Ewiki Authoring](https://ewiki.herbsvsailments.com/guides/ewiki-authoring/)
-  — context only; nothing in Legendary Arena depends on it. A separate game
-  repo whose Hugo wiki was adapted from this page and runs a port of
-  `include-section` (behind its own Cloudflare Access login).
+- [The ewiki theme's Ewiki Authoring guide](https://ewiki-theme.barefootbetters.com/ewiki-authoring/)
+  — the shared guide this page's linked sections come from (behind its own
+  Cloudflare Access login); its source is
+  `apps/wiki-viewer/themes/ewiki/assets/ewiki-guide/ewiki-authoring.md`,
+  edited in `barefootbetters/bb-studio-ewiki-theme`

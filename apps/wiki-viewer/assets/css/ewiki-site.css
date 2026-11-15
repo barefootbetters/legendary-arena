@@ -1,5 +1,5 @@
 /* The engine ewiki's own selectors (D-24782), the theme's site extension
-   point (bb-studio-ewiki-theme v1.3.0, themes/ewiki/assets/css/ewiki-site.css).
+   point (bb-studio-ewiki-theme v1.4.1, themes/ewiki/assets/css/ewiki-site.css).
 
    why: it carries only the rules for markup the theme's core doesn't produce:
    the Related and Sources sections (layouts/partials/related.html and
