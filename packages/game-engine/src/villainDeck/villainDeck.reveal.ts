@@ -46,6 +46,7 @@ import {
 } from '../hero/heroConditions.evaluate.js';
 import {
   executeVillainAbilities,
+  executeVillainAbilitiesWithNarrative,
   resolveEffectResultNames,
   villainCardEscapeTriggersSchemeTwist,
   villainCardPlaysVillainDeckCards,
@@ -81,8 +82,6 @@ import { hasPendingSplitFaceChoice } from '../moves/splitFaceChoice.resolve.js';
 import { hasPendingCountScaledChoice } from '../moves/countScaledChoice.resolve.js';
 import { hasPendingUndercoverChoice } from '../moves/undercover.resolve.js';
 import { hasPendingSeatChoice } from '../moves/seatChoice.resolve.js';
-// why: WP-889 / D-24841 — the Ambush overlay's Hunt for Victims clause reads the card's hooks.
-import { villainAmbushHuntsForVictims } from '../moves/huntForVictims.logic.js';
 import { hasPendingReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostDiscard.js';
 import {
   composeAmbushNarrative,
@@ -385,7 +384,11 @@ export function performVillainReveal(
       // the Fight/Escape fire sites) so a future Ambush-timed scry could reshuffle.
       // why: WP-489 / D-24295 — the Ambush fire site has no fought City space, so
       // cityIndex is undefined; the location gate FAILS CLOSED (no Tier-B card ambushes).
-      const appliedAmbushResults = executeVillainAbilities(G, ctx, cardId, 'onAmbush', { random: context.random }, undefined);
+      // why: WP-897 / D-24854 — the narrative variant also returns the clauses of the keyword-less
+      // Ambush descriptors that ran (`results` is exactly what executeVillainAbilities returns), so
+      // the overlay names them instead of "entered the city with no Ambush effect".
+      const ambushExecution = executeVillainAbilitiesWithNarrative(G, ctx, cardId, 'onAmbush', { random: context.random }, undefined);
+      const appliedAmbushResults = ambushExecution.results;
       // why: WP-316 — map results→keywords so the ambushResolved `appliedEffects`
       // field and the composeAmbushNarrative string stay byte-identical to main;
       // the hashed notableEvents surface (and the arena-client) never observe the
@@ -454,14 +457,6 @@ export function performVillainReveal(
           );
         }
       }
-      // why: WP-889 / D-24841 — the Lilin Hunt for Victims is keyword-less, so it never reaches
-      // `resolvedAmbushResults`; read BEFORE the ambushResolved push (D-24703) whether the card's
-      // Ambush carries an UNCONDITIONAL hunt descriptor, so the overlay never claims a hunt a gate
-      // could skip. Absent for every other card (byte-identical narrative).
-      let ambushHuntForVictimsClause: string | undefined;
-      if (villainAmbushHuntsForVictims(G, cardId)) {
-        ambushHuntForVictimsClause = 'it Hunts for Victims';
-      }
       G.notableEvents.push({
         type: 'ambushResolved',
         revealedCardId: cardId,
@@ -475,7 +470,7 @@ export function performVillainReveal(
           resolvedAmbushResults,
           ambushPlayCount,
           ambushStackVillainClause,
-          ambushHuntForVictimsClause,
+          ambushExecution.narrativeClauses,
         ),
       });
 

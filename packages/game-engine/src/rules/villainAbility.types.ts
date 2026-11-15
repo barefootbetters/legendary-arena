@@ -981,8 +981,9 @@ export const DESCRIPTOR_TO_LEGACY_VILLAIN_KEYWORD: ReadonlyMap<string, VillainEf
 
 /**
  * Returns the legacy keyword for a dispatched descriptor, or undefined for a
- * descriptor that did not originate from a legacy marker (no card uses such a
- * marker in this WP — descriptor-keyed narrative labels are deferred to WP-253).
+ * descriptor that did not originate from a legacy marker. Such a keyword-less
+ * descriptor narrates through its handler's `narrativeClause`, which the
+ * executor returns beside `results` (WP-897 / D-24854).
  *
  * @param descriptor - A dispatched VillainEffectDescriptor.
  * @returns The legacy keyword, or undefined.

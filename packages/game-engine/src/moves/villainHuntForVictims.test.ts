@@ -508,7 +508,8 @@ describe('Blackout\'s Moonlight repeat (RS-2 / RS-3b / AC-6)', () => {
     const captureIndex = lines.indexOf(`applied: ${BLACKOUT_REF} Hunted for Victims: no Bystander to KO, so it captured a Bystander.`);
     const koIndex = lines.indexOf(`applied: ${BLACKOUT_REF} Hunted for Victims: a Bystander held by Blackout (Sewers) was KO'd.`);
     assert.ok(captureIndex >= 0 && koIndex > captureIndex, 'capture, then the KO of the captured Bystander');
-    assert.equal(lastAmbush(G).narrative, '"Blackout" ambushed: it Hunts for Victims.');
+    // why: WP-897 / D-24854 — an intended product change: the Moonlight repeat now names itself.
+    assert.equal(lastAmbush(G).narrative, '"Blackout" ambushed: it Hunts for Victims; it Hunts for Victims again.');
   });
 
   for (const light of ['sunlight', 'neither'] as const) {

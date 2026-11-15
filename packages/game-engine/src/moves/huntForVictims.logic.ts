@@ -47,7 +47,6 @@ import { buildKoEligibleTargets } from '../villain/villainEffects.execute.js';
 import { recordOwnedCardKoed } from '../hero/deferredConditionalGrants.js';
 import { pushLog } from '../log/logPush.js';
 import { describeKoSourceZone, formatCardRef, resolveCardName } from '../log/logDisplay.js';
-import { getVillainHooksForCard } from '../rules/villainAbility.types.js';
 
 // why: WP-884 / D-24835 — the seat-choice kind of the hunt choice (KO / rescue / capture / decline),
 // a string literal so the import cycle with seatChoice.resolve never reads it before it is defined.
@@ -864,28 +863,4 @@ export function chainVillainHuntRepeats(G: LegendaryGameState, seat: string, sou
     }
     return;
   }
-}
-
-/**
- * Whether a Villain's Ambush carries an UNCONDITIONAL villain-hunt descriptor (no condition, no
- * City-space gate), so the overlay names the hunt only when no gate could skip it.
- *
- * @param G - The game state to inspect (not mutated).
- * @param cardId - The revealed Villain.
- * @returns true when its onAmbush hook has an unconditional `villain-hunt-for-victims` descriptor.
- */
-export function villainAmbushHuntsForVictims(G: LegendaryGameState, cardId: CardExtId): boolean {
-  // why: WP-889 / D-24841 RS-6 — narrow test states may omit the hook table; read it defensively.
-  for (const hook of getVillainHooksForCard(G.villainAbilityHooks ?? [], cardId, 'onAmbush')) {
-    for (const descriptor of hook.effects) {
-      if (
-        descriptor.primitive === 'villain-hunt-for-victims' &&
-        descriptor.requireCondition === undefined &&
-        descriptor.requireCitySpaces === undefined
-      ) {
-        return true;
-      }
-    }
-  }
-  return false;
 }

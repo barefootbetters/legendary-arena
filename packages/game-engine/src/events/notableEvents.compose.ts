@@ -438,8 +438,9 @@ export function composeVillainDeckPlayClause(playCount: number): string {
  * @param villainDeckPlayCount - Top villain-deck cards the Ambush plays (0 = none).
  * @param stackVillainClause - Optional clause naming the stack cards the Ambush sends into the
  *   City (WP-869 / D-24814). Absent → byte-identical.
- * @param huntForVictimsClause - Optional clause for an unconditional Lilin Hunt for Victims
- *   (WP-889 / D-24841): "it Hunts for Victims". Absent → byte-identical.
+ * @param descriptorClauses - The narrative clauses of the keyword-less Ambush descriptors that
+ *   ran, in dispatch order (WP-897 / D-24854): each is the clause its handler logged, or the
+ *   "its Ambush effect resolved (see the log)" fallback. Empty → byte-identical.
  * @returns Single English sentence describing the resolved ambush.
  */
 export function composeAmbushNarrative(
@@ -447,7 +448,7 @@ export function composeAmbushNarrative(
   effectResults: ResolvedEffectResult[],
   villainDeckPlayCount: number = 0,
   stackVillainClause?: string,
-  huntForVictimsClause?: string,
+  descriptorClauses: readonly string[] = [],
 ): string {
   // why: D-24703 — The Leader's "Ambush: Play the top card of the Villain Deck" is
   // played by the reveal fire site, not the executor (its handler is a deliberate
@@ -461,6 +462,13 @@ export function composeAmbushNarrative(
     // composeEffectResultLogLine; supersedes the WP-316 keyword-granular narrative.
     clauses.push(composeEffectResultLogLine(effectResults));
   }
+  // why: WP-897 / D-24854 — keyword-less Ambush effects never reach `effectResults` (the legacy
+  // keyword array is frozen, D-24023), so each reports the clause it logged through the executor's
+  // narrative channel; without them the overlay read "entered the city with no Ambush effect"
+  // while the log narrated the outcome. They follow the keyword clause, in dispatch order.
+  for (const descriptorClause of descriptorClauses) {
+    clauses.push(descriptorClause);
+  }
   if (villainDeckPlayCount > 0) {
     clauses.push(composeVillainDeckPlayClause(villainDeckPlayCount));
   }
@@ -468,12 +476,6 @@ export function composeAmbushNarrative(
   // fire site (the executor handler is a deliberate no-op), the D-24703 precedent above.
   if (stackVillainClause !== undefined) {
     clauses.push(stackVillainClause);
-  }
-  // why: WP-889 / D-24841 — the Lilin Hunt for Victims is keyword-less and self-narrates its
-  // outcome in the log, so `effectResults` is empty for it; without this clause the overlay read
-  // "entered the city with no Ambush effect" while the hunt resolved (the D-24703 precedent).
-  if (huntForVictimsClause !== undefined) {
-    clauses.push(huntForVictimsClause);
   }
   if (clauses.length === 0) {
     return `"${cardName}" entered the city with no Ambush effect.`;
