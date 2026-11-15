@@ -3,7 +3,7 @@ Generate animated-SVG mocks for the Surface-3 player action-move cues
 (Visual Effects Framework) — local tactile feedback on the move the client
 just dispatched. Four moves, each matching that row's suggested visual:
 
-  recruitHero  HQ-slot glow that pulls the card toward the hand
+  recruitHero  HQ-slot glow, then the card flies onto the discard pile
   drawCards    a quick deal / fan of cards into the hand
   fightVillain a directional slash / impact streak toward the target
   dodgeCard    a fast card flick out and a replacement slide in
@@ -61,7 +61,8 @@ def card(grad):
 
 
 # ---------------------------------------------------------------------------
-# recruitHero — HQ-slot glow that pulls the card to the hand
+# recruitHero — HQ-slot glow, then the card flies onto the discard pile
+# (a recruited Hero goes to its owner's discard pile, not the hand)
 # ---------------------------------------------------------------------------
 def build_recruit():
     dur = 2.4
@@ -72,9 +73,9 @@ def build_recruit():
     recruit = [
         (0, "opacity: 1; transform: translate(250px,52px) scale(0.96);"),
         (14, "transform: translate(250px,52px) scale(1.08);"),
-        (44, "opacity: 1; transform: translate(300px,208px) scale(1.0);"),
-        (82, "opacity: 1; transform: translate(300px,208px) scale(1.0);"),
-        (90, "opacity: 0; transform: translate(300px,208px) scale(1.0);"),
+        (44, "opacity: 1; transform: translate(370px,196px) scale(1.0);"),
+        (82, "opacity: 1; transform: translate(370px,196px) scale(1.0);"),
+        (90, "opacity: 0; transform: translate(370px,196px) scale(1.0);"),
         (91, "opacity: 0; transform: translate(250px,52px) scale(0.96);"),
         (100, "opacity: 1; transform: translate(250px,52px) scale(0.96);"),
     ]
@@ -93,17 +94,26 @@ def build_recruit():
         keyframes("recruit", recruit),
         keyframes("rglow", glow),
         "@media (prefers-reduced-motion: reduce) {\n"
-        "  .recruit { animation: none; transform: translate(300px,208px) scale(1); }\n"
+        "  .recruit { animation: none; transform: translate(370px,196px) scale(1); }\n"
         "  .rglow { animation: none; opacity: 0.15; }\n}",
     ])
     defs = ('%s%s<radialGradient id="gl" cx="50%%" cy="50%%" r="50%%">'
             '<stop offset="0%%" stop-color="#ffe6a0" stop-opacity="0.95"/>'
             '<stop offset="100%%" stop-color="#ffb020" stop-opacity="0"/></radialGradient>' % (BG, GRADS))
-    body = ('%s<g class="recruit"><circle class="rglow" r="58" fill="url(#gl)"/>%s</g>'
-            % (slots, card("hero")))
-    return scene("surface3-recruit", "Surface-3 recruitHero — HQ-slot glow pulls to hand",
-                 "Animated mock: a hero card in an HQ slot glows gold, then is pulled down into the "
-                 "hand, and the cycle repeats. Loops.", defs, style, body)
+    # why: the static discard pile the recruited card lands on (two offset
+    # outlines read as a stack), labelled so the destination is unambiguous.
+    discard = (
+        '<rect x="345" y="159" width="58" height="82" rx="6" fill="#ffffff" fill-opacity="0.03" '
+        'stroke="#3a3d4c" stroke-opacity="0.45" stroke-width="1.5"/>'
+        '<rect x="339" y="153" width="58" height="82" rx="6" fill="#ffffff" fill-opacity="0.05" '
+        'stroke="#3a3d4c" stroke-opacity="0.6" stroke-width="1.5"/>'
+        '<text x="370" y="254" text-anchor="middle" font-family="sans-serif" font-size="11" '
+        'letter-spacing="1.5" fill="#9aa0b8">DISCARD</text>')
+    body = ('%s%s<g class="recruit"><circle class="rglow" r="58" fill="url(#gl)"/>%s</g>'
+            % (slots, discard, card("hero")))
+    return scene("surface3-recruit", "Surface-3 recruitHero — HQ-slot glow, card flies to the discard pile",
+                 "Animated mock: a hero card in an HQ slot glows gold, then flies down onto the "
+                 "discard pile, and the cycle repeats. Loops.", defs, style, body)
 
 
 # ---------------------------------------------------------------------------

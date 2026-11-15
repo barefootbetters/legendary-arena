@@ -11,7 +11,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { discardFromHand } from '../moves/discardFromHand.js';
-import { executeHeroEffects, fireExcessiveViolencePlays, resolveDeferredHeroGrants, selectDefaultOptionalKoTarget, selectDefaultSmashDiscardTarget, selectDefaultPutHandOnDeckTopTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, CLASS_GRANT_KEYWORDS, DISCARD_TIME_EXECUTED_KEYWORDS, WOUND_TIME_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
+import { executeHeroEffects, fireExcessiveViolencePlays, resolveDeferredHeroGrants, selectDefaultOptionalKoTarget, selectDefaultSmashDiscardTarget, selectDefaultPutHandOnDeckTopTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, SIZE_CHANGING_RECRUIT_KEYWORDS, DISCARD_TIME_EXECUTED_KEYWORDS, WOUND_TIME_EXECUTED_KEYWORDS, RITUAL_ARTIFACT_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import type { LegendaryGameState, PendingHeroChoice } from '../types.js';
@@ -143,7 +143,20 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // WP-828 / D-24761 added the grant-out-of-time handler (Winter Soldier's 2>4) (64 → 65).
     // WP-843 / D-24777 added the reveal-or-gain-wound-each handler (co2e Crazed Rampage) (65 → 66).
     // WP-844 / D-24778 added the gain-sidekick handler ("Gain a [rule:Sidekick]") (66 → 67).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 67);
+    // WP-850 / D-24786 added the discard-top-printed-attack and ko-discarded-this-way handlers
+    // (Bishop's Firepower from the Future) (67 → 69).
+    // WP-860 / D-24796 added the discard-artifact-or-three-then-ko handler (Commune with the
+    // Spirit World) (69 → 70).
+    // WP-857 / D-24793 added the feast handler (hero Feast reuses heroEffectRevealTopMayKo) (70 → 71).
+    // WP-862 / D-24804 added the hq-hero-gains-size-changing-tech handler (Pym Particles) (71 → 72).
+    // WP-865 / D-24808 added the heist handler (heroEffectHeist readies a Heist card) (72 → 73).
+    // WP-866 / D-24809 added the next-hand-extra-draw handler (the additive next-hand write) (73 → 74).
+    // WP-876 / D-24823 added the heist-master-strike-ko, heist-scheme-twist-bonus and
+    // heist-move-villain-ko-hero handlers (The Big Score, Revolutionary Anthem, X-Con Security Van) (74 → 77).
+    // WP-883 / D-24834 added the gain-wound-reward handler (Hulk Smash!, Scalded by Sunlight) (77 → 78).
+    // WP-884 / D-24835 added the hunt-for-victims and hunt-for-victims-rescue handlers (Stalk the
+    // Night Stalkers) (78 → 80).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 80);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -169,7 +182,7 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // why: D-24074 — size-changing executes as a class-grant realized at class-read time
     // (the heroClassMatch / distinctHeroClassesAtLeast reads consult cardSizeChangingClasses),
     // so it has no handler / reveal translation / move executor — its own reachability category.
-    const classGrantExecuted = new Set<string>(CLASS_GRANT_KEYWORDS);
+    const classGrantExecuted = new Set<string>(SIZE_CHANGING_RECRUIT_KEYWORDS);
     // why: WP-498 / D-24301 — return-on-discard executes reactively at the discardFromHand
     // chokepoint (checkReturnOnDiscard parks a pending choice), so it has no handler / reveal
     // translation / move executor / class-grant — its own reachability category.
@@ -179,6 +192,9 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // return-on-discard — it has no handler / reveal translation / move executor /
     // class-grant; its own reachability category.
     const woundTimeExecuted = new Set<string>(WOUND_TIME_EXECUTED_KEYWORDS);
+    // why: WP-858 / D-24794 — the Ritual Artifact keywords execute from the useRitualArtifact
+    // move (moves/ritualArtifact.ts), so they have no handler — their own reachability category.
+    const ritualExecuted = new Set<string>(RITUAL_ARTIFACT_EXECUTED_KEYWORDS);
     for (const keyword of MVP_KEYWORDS) {
       const hasHandler = HERO_EFFECT_HANDLERS[keyword as HeroKeyword] !== undefined;
       const translates = revealRulesForLegacyKeyword(keyword as HeroKeyword, 1).length > 0;
@@ -187,9 +203,10 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
       const executesAsClassGrant = classGrantExecuted.has(keyword);
       const executesAtDiscardTime = discardTimeExecuted.has(keyword);
       const executesAtWoundTime = woundTimeExecuted.has(keyword);
+      const executesAsRitual = ritualExecuted.has(keyword);
       assert.ok(
-        hasHandler || translates || executesAtRecruit || executesAtHandAction || executesAsClassGrant || executesAtDiscardTime || executesAtWoundTime,
-        `MVP keyword "${keyword}" must be handled directly, via reveal translation, at recruit time, via a hand-action move, as a class-grant, at discard time, or at wound time`,
+        hasHandler || translates || executesAtRecruit || executesAtHandAction || executesAsClassGrant || executesAtDiscardTime || executesAtWoundTime || executesAsRitual,
+        `MVP keyword "${keyword}" must be handled directly, via reveal translation, at recruit time, via a hand-action move, as a class-grant, at discard time, at wound time, or as a Ritual Artifact`,
       );
     }
   });
@@ -4034,6 +4051,214 @@ describe('executeHeroEffects kidnap-per-count tech-heroes-played-this-turn (WP-7
 });
 
 // ---------------------------------------------------------------------------
+// WP-716 — count-scaled zero-count log wording (D-24539)
+// ---------------------------------------------------------------------------
+
+describe('count-scaled zero-scale log wording (WP-716 / D-24539)', () => {
+  const mockCtx = makeMockCtx();
+
+  // why: the exact generated lines (printed text + the marker the markers pass appends), so
+  // these tests run the real parse shape: one count-scaled effect behind a same-class gate.
+  const ICE_SLIDE =
+    '[hc:ranged]: You get +1[icon:attack] for each other [hc:ranged] Hero you played this turn. [keyword:attack-per-count:ranged-heroes-played-this-turn:1]';
+  const ABSORB_ENERGIES =
+    '[hc:ranged]: For each other [hc:ranged] Hero you have played this turn, you get+1[icon:recruit]. [keyword:recruit-per-count:ranged-heroes-played-this-turn:1]';
+  const X_MEN_UNITED =
+    '[team:x-men]: You get +2[icon:attack] for each other [team:x-men] Hero you played this turn. [keyword:attack-per-count:x-men-played-this-turn:2]';
+
+  /** Parses one card's lines into its hooks (the WP-765 day/night helper's registry stub). */
+  function buildCardHooks(setAbbr: string, heroSlug: string, cardSlug: string, abilities: string[]): HeroAbilityHook[] {
+    const setData = {
+      abbr: setAbbr,
+      heroes: [{ slug: heroSlug, cards: [{ slug: cardSlug, abilities }], physicalCards: [{ id: 'p0', count: 1, sides: [cardSlug] }] }],
+      villains: [], henchmen: [], schemes: [], masterminds: [], bystanders: [], wounds: [], other: [],
+    };
+    const registry = {
+      listCards: () => [],
+      listSets: () => [{ abbr: setAbbr }],
+      getSet: (abbr: string) => (abbr === setAbbr ? setData : undefined),
+    };
+    return buildHeroAbilityHooks(registry, {
+      schemeId: 'test/test-scheme',
+      mastermindId: 'test/test-mastermind',
+      villainGroupIds: ['test/villain-001'],
+      henchmanGroupIds: ['test/henchman-001'],
+      heroDeckIds: [`${setAbbr}/${heroSlug}`],
+      bystandersCount: 10,
+      woundsCount: 15,
+      officersCount: 20,
+      sidekicksCount: 5,
+    });
+  }
+
+  /** Plays the hooks' card with the given allies already in play; returns the state. */
+  function playWithAllies(
+    hooks: HeroAbilityHook[],
+    allies: Record<string, { heroClass: string | null; team: string | null }>,
+  ): { gameState: LegendaryGameState; cardId: string } {
+    const cardId = hooks[0]!.cardId;
+    const gameState = makeTestState({
+      inPlay: [...Object.keys(allies), cardId],
+      heroAbilityHooks: hooks,
+      cardTraits: allies,
+    });
+    executeHeroEffects(gameState, mockCtx, '0', cardId);
+    return { gameState, cardId };
+  }
+
+  /** The log entries that name the played card. */
+  function entriesFor(gameState: LegendaryGameState, cardId: string) {
+    return gameState.messages.filter((entry) => entry.card === cardId);
+  }
+
+  it('Ice Slide played with no other Ranged Hero logs "+0 Attack", not "did not activate"', () => {
+    const hooks = buildCardHooks('dkcy', 'iceman', 'ice-slide', [ICE_SLIDE]);
+    const { gameState, cardId } = playWithAllies(hooks, {});
+    const cardRef = formatCardRef(gameState.cardDisplayData, cardId);
+
+    assert.equal(gameState.turnEconomy.attack, 0, 'the grant is still 0: behavior unchanged');
+    assert.deepEqual(entriesFor(gameState, cardId), [{
+      text: `Player 0's ${cardRef} scaled to +0 Attack — no other Ranged Hero played yet this turn.`,
+      outcome: 'blocked',
+      card: cardId,
+    }], 'one zero-scale line, still `blocked` and still naming the card (the WP-438 diagnostic read)');
+    assert.ok(
+      !gameState.messages.some((entry) => entry.text.includes('did not activate')),
+      'the gated-failure wording is gone for a count-scaled line at count 0',
+    );
+  });
+
+  it('Absorb Energies (recruit-per-count) logs "+0 Recruit"', () => {
+    const hooks = buildCardHooks('ssw1', 'captain-marvel', 'absorb-energies', [ABSORB_ENERGIES]);
+    const { gameState, cardId } = playWithAllies(hooks, {});
+    const cardRef = formatCardRef(gameState.cardDisplayData, cardId);
+
+    assert.equal(gameState.turnEconomy.recruit, 0);
+    assert.deepEqual(entriesFor(gameState, cardId).map((entry) => entry.text), [
+      `Player 0's ${cardRef} scaled to +0 Recruit — no other Ranged Hero played yet this turn.`,
+    ]);
+  });
+
+  it('a team gate names the team: X-Men United logs "no other X-Men Hero"', () => {
+    const hooks = buildCardHooks('core', 'cyclops', 'x-men-united', [X_MEN_UNITED]);
+    const { gameState, cardId } = playWithAllies(hooks, {});
+    const cardRef = formatCardRef(gameState.cardDisplayData, cardId);
+
+    assert.deepEqual(entriesFor(gameState, cardId).map((entry) => entry.text), [
+      `Player 0's ${cardRef} scaled to +0 Attack — no other X-Men Hero played yet this turn.`,
+    ]);
+  });
+
+  it('kidnap-per-count logs "0 Bystander captures" and captures nothing', () => {
+    const cardId = 'genetic-experimentation';
+    const hooks: HeroAbilityHook[] = [{
+      cardId,
+      timing: 'onPlay',
+      keywords: ['kidnap-per-count'],
+      effects: [{ type: 'kidnap-per-count', magnitude: 1, countSource: 'tech-heroes-played-this-turn' }],
+      conditions: [{ type: 'heroClassMatch', value: 'tech' }],
+    }];
+    const gameState = makeTestState({ inPlay: [cardId], bystanders: ['bys-1'], heroAbilityHooks: hooks });
+    gameState.city = ['villain-1', null, null, null, null];
+    executeHeroEffects(gameState, mockCtx, '0', cardId);
+    const cardRef = formatCardRef(gameState.cardDisplayData, cardId);
+
+    assert.equal(gameState.piles.bystanders.length, 1, 'no capture');
+    assert.deepEqual(entriesFor(gameState, cardId).map((entry) => entry.text), [
+      `Player 0's ${cardRef} scaled to 0 Bystander captures — no other Tech Hero played yet this turn.`,
+    ]);
+  });
+
+  it('a card with more than one ability says "scaled one of its abilities to"', () => {
+    const hooks = buildCardHooks('dkcy', 'iceman', 'ice-slide', [ICE_SLIDE]);
+    const cardId = hooks[0]!.cardId;
+    // why: a second, unconditional hook on the same card (the WP-702 multi-hook case).
+    const drawHook: HeroAbilityHook = { cardId, timing: 'onPlay', keywords: ['draw'], effects: [{ type: 'draw', magnitude: 1 }] };
+    const gameState = makeTestState({ deck: ['deck-1'], inPlay: [cardId], heroAbilityHooks: [drawHook, ...hooks] });
+    executeHeroEffects(gameState, mockCtx, '0', cardId);
+    const cardRef = formatCardRef(gameState.cardDisplayData, cardId);
+
+    // why: the unconditional draw hook logs its own line naming the card first.
+    const texts = entriesFor(gameState, cardId).map((entry) => entry.text);
+    assert.equal(texts.length, 2, `expected the draw line then the zero-scale line, got: ${JSON.stringify(texts)}`);
+    assert.equal(
+      texts[1],
+      `Player 0's ${cardRef} scaled one of its abilities to +0 Attack — no other Ranged Hero played yet this turn.`,
+    );
+  });
+
+  it('count >= 1 is unchanged: Ice Slide with another Ranged Hero logs the "Count-scaled attack" line', () => {
+    const hooks = buildCardHooks('dkcy', 'iceman', 'ice-slide', [ICE_SLIDE]);
+    const { gameState, cardId } = playWithAllies(hooks, { 'ranged-ally': { heroClass: 'ranged', team: null } });
+
+    assert.equal(gameState.turnEconomy.attack, 1);
+    const texts = gameState.messages.map((entry) => entry.text);
+    assert.ok(
+      texts.includes('Count-scaled attack: +1 (1 per other Ranged Hero played this turn; count 1).'),
+      `expected the unchanged count-scaled line, got: ${JSON.stringify(texts)}`,
+    );
+    assert.equal(entriesFor(gameState, cardId).length, 0, 'no gated line of either wording');
+  });
+
+  it('regression: a flat-gated line keeps "ability did not activate"', () => {
+    const cardId = 'repulsor-rays';
+    const hooks: HeroAbilityHook[] = [{
+      cardId,
+      timing: 'onPlay',
+      keywords: ['attack'],
+      effects: [{ type: 'attack', magnitude: 1 }],
+      conditions: [{ type: 'heroClassMatch', value: 'ranged' }],
+    }];
+    const { gameState } = playWithAllies(hooks, {});
+    const cardRef = formatCardRef(gameState.cardDisplayData, cardId);
+
+    assert.deepEqual(entriesFor(gameState, cardId), [{
+      text: `Player 0's ${cardRef} ability did not activate — it needs another Ranged Hero played this turn.`,
+      outcome: 'blocked',
+      card: cardId,
+    }]);
+  });
+
+  it('regression: a gate on a different axis than the count keeps "ability did not activate"', () => {
+    // why: "[hc:instinct]: +1 for each extra card you've drawn this turn" — the Instinct gate
+    // really blocked the line; it is not a count of Instinct Heroes, so "+0" would mislead.
+    const cardId = 'instinct-draw-card';
+    const hooks: HeroAbilityHook[] = [{
+      cardId,
+      timing: 'onPlay',
+      keywords: ['attack-per-count'],
+      effects: [{ type: 'attack-per-count', magnitude: 1, countSource: 'extra-cards-drawn-this-turn' }],
+      conditions: [{ type: 'heroClassMatch', value: 'instinct' }],
+    }];
+    const { gameState } = playWithAllies(hooks, {});
+    const cardRef = formatCardRef(gameState.cardDisplayData, cardId);
+
+    assert.deepEqual(entriesFor(gameState, cardId).map((entry) => entry.text), [
+      `Player 0's ${cardRef} ability did not activate — it needs another Instinct Hero played this turn.`,
+    ]);
+  });
+
+  it('regression: a doubled gate whose count is above 0 keeps "did not activate" (the +0 claim would be false)', () => {
+    // why: "[hc:tech][hc:tech]" needs two other Tech Heroes; with one, the gate fails but the
+    // count is 1, so the line was blocked rather than scaled to 0.
+    const cardId = 'doubled-tech-card';
+    const hooks: HeroAbilityHook[] = [{
+      cardId,
+      timing: 'onPlay',
+      keywords: ['attack-per-count'],
+      effects: [{ type: 'attack-per-count', magnitude: 1, countSource: 'tech-heroes-played-this-turn' }],
+      conditions: [{ type: 'heroClassMatch', value: 'tech', requiredMatches: 2 }],
+    }];
+    const { gameState } = playWithAllies(hooks, { 'tech-ally': { heroClass: 'tech', team: null } });
+    const cardRef = formatCardRef(gameState.cardDisplayData, cardId);
+
+    assert.deepEqual(entriesFor(gameState, cardId).map((entry) => entry.text), [
+      `Player 0's ${cardRef} ability did not activate — it needs 2 other Tech Heroes played this turn.`,
+    ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // D-24017 — hero-ability rescue observability (game-log feedback)
 // ---------------------------------------------------------------------------
 
@@ -5604,7 +5829,7 @@ describe('executeHeroEffects — Wall-Crawl onRecruit keyword at play time (WP-2
 // time (the heroClassMatch / distinctHeroClassesAtLeast reads consult cardSizeChangingClasses),
 // not an onPlay action. The play-time hook visit must be a benign, not-hollow no-op: the
 // auto-emitted { type: 'size-changing' } effect no-ops on its missing magnitude, and
-// MVP_KEYWORDS membership (via CLASS_GRANT_KEYWORDS) classifies the hook `applied`
+// MVP_KEYWORDS membership (via SIZE_CHANGING_RECRUIT_KEYWORDS) classifies the hook `applied`
 // (preventing a no-handler hollow regression). The real effect is exercised in
 // heroConditions.evaluate.test.ts (the class reads honoring the grant).
 // ---------------------------------------------------------------------------
@@ -5648,7 +5873,7 @@ describe('executeHeroEffects — Size-Changing class-grant keyword at play time 
     const gameState = sizeChangingState();
     executeHeroEffects(gameState, mockCtx, '0', 'sc-hero' as string);
     // why: D-24074 — the recognized keyword leaves no unresolvedMarkers (so no
-    // parse-unrecognized) and MVP_KEYWORDS membership (CLASS_GRANT_KEYWORDS) classifies the
+    // parse-unrecognized) and MVP_KEYWORDS membership (SIZE_CHANGING_RECRUIT_KEYWORDS) classifies the
     // play-time-visited hook `applied` (so no no-handler) — clearing the live hollow that
     // motivated WP-290 without trading it for a fresh no-handler one.
     assert.equal(records(gameState).length, 0, 'no hollow recorded for the class-grant keyword');
@@ -5818,6 +6043,20 @@ describe('executeHeroEffects — Phasing keyword at play time (WP-783 / D-24629)
     assert.equal(HANDLED_KEYWORDS.has('phasing' as HeroKeyword), false, 'phasing ∉ HANDLED_KEYWORDS');
     assert.equal(HERO_EFFECT_HANDLERS['phasing' as HeroKeyword], undefined, 'phasing ∉ HERO_EFFECT_HANDLERS');
     assert.equal(revealRulesForLegacyKeyword('phasing' as HeroKeyword, 1).length, 0, 'not reveal-translated');
+  });
+});
+
+describe('Ritual Artifact keywords are move-executed MVP keywords (WP-858 / D-24794)', () => {
+  it('ritual-recruited-hero and ritual-hero-classes have no play-time handler / reveal translation', () => {
+    // why: WP-858 / D-24794 — membership marks them ledger-executable and keeps the play-time
+    // hook not-hollow; the useRitualArtifact move is the executor, so they must not gain a handler.
+    for (const keyword of ['ritual-recruited-hero', 'ritual-hero-classes'] as const) {
+      assert.ok(RITUAL_ARTIFACT_EXECUTED_KEYWORDS.includes(keyword), `${keyword} ∈ RITUAL_ARTIFACT_EXECUTED_KEYWORDS`);
+      assert.ok(MVP_KEYWORDS.has(keyword), `${keyword} ∈ MVP_KEYWORDS`);
+      assert.equal(HANDLED_KEYWORDS.has(keyword), false, `${keyword} ∉ HANDLED_KEYWORDS`);
+      assert.equal(HERO_EFFECT_HANDLERS[keyword], undefined, `${keyword} ∉ HERO_EFFECT_HANDLERS`);
+      assert.equal(revealRulesForLegacyKeyword(keyword, 1).length, 0, `${keyword} is not reveal-translated`);
+    }
   });
 });
 
@@ -7881,8 +8120,16 @@ describe('executeHeroEffects X-Gene discard-pile gate (WP-723 / D-24544)', () =>
     // WP-803's out-of-time handler, D-24692, and WP-826's three optional-KO S.H.I.E.L.D. handlers,
     // D-24759, and WP-828's grant-out-of-time handler, D-24761, and WP-843's
     // reveal-or-gain-wound-each handler, D-24777 — 66).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 67,
-      'HERO_EFFECT_HANDLERS stays 67 (X-Gene is not an effect handler; WP-844 / D-24778 gain-sidekick added)');
+    // why: WP-860 / D-24796 — discard-artifact-or-three-then-ko added (69 → 70).
+    // why: WP-857 / D-24793 — feast added (70 → 71).
+    // why: WP-862 / D-24804 — hq-hero-gains-size-changing-tech added (71 → 72).
+    // why: WP-865 / D-24808 — heist added (72 → 73).
+    // why: WP-866 / D-24809 — next-hand-extra-draw added (73 → 74).
+    // why: WP-876 / D-24823 — the three Heist payload handlers added (74 → 77).
+    // why: WP-883 / D-24834 — the gain-wound-reward handler added (77 → 78).
+    // why: WP-884 / D-24835 — the hunt-for-victims and hunt-for-victims-rescue handlers added (78 → 80).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 80,
+      'HERO_EFFECT_HANDLERS stays 80 (WP-884 / D-24835 hunt-for-victims + hunt-for-victims-rescue; WP-883 / D-24834 gain-wound-reward; WP-876 / D-24823 the three Heist payload handlers; WP-866 / D-24809 next-hand-extra-draw; WP-865 / D-24808 heist; X-Gene is not an effect handler; WP-844 / D-24778 gain-sidekick, WP-850 / D-24786 discard-top-printed-attack + ko-discarded-this-way WP-860 / D-24796 discard-artifact-or-three-then-ko, WP-857 / D-24793 feast and WP-862 / D-24804 hq-hero-gains-size-changing-tech added)');
   });
 });
 

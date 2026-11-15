@@ -77,6 +77,7 @@ All randomness uses `ctx.random.*` exclusively — never `Math.random()`.
 - Clients submit **intents**, not outcomes
 - UI consumes **read‑only projections** of engine state, never `G` or `ctx` directly
 - Invalid or out-of-order actions are rejected deterministically engine-side
+- A single-seat solo match may run the unchanged engine on a boardgame.io `Local()` master on the player's device (D-24844, D-24851). The engine still owns truth there: the UI submits intents and reads only `playerView`; no UI code runs rules.
 
 ### 3. Data Outlives Code
 
@@ -904,7 +905,10 @@ validation-phase silent return (no throw), it runs before the `G` mutation, and
 it exists precisely so the base power is not granted on a play the player cannot
 afford. The same precondition MAY apply to the specific villain being fought,
 whose cost is named by a validated move argument (`fightVillain.discardCardId`,
-WP-817 / D-24750). A pre-commit precondition is distinct from the pending-choice pattern
+WP-817 / D-24750). A fight MAY also be refused on a state-only precondition of the
+fought villain read from a setup-built table — its defeat requirement (D-24076) or its
+fight restriction (WP-871 / D-24816) — mirrored in `getLegalMoves`. A pre-commit
+precondition is distinct from the pending-choice pattern
 (which fires AFTER the card commits); use it only when the outcome must be
 withheld unless the cost is payable.
 

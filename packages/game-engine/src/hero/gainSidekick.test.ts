@@ -361,3 +361,45 @@ describe('gainSidekickToDiscard + the magnitude pre-gate (WP-844 / D-24778)', ()
     assert.equal(JSON.stringify(G), before, 'no zone change, no log line');
   });
 });
+
+describe('WP-873 gaining a Sidekick while the Stack is fortified (D-24818)', () => {
+  const SQUIRREL_GIRL = 'cvwr-villain-great-lakes-avengers-squirrel-girl-00' as CardExtId;
+
+  /**
+   * A gain state whose Sidekick Stack Squirrel Girl fortifies.
+   *
+   * @returns The game state.
+   */
+  function makeFortifiedGainState(): LegendaryGameState {
+    const G = makeGainState(MARKED_STACK);
+    G.fortifications = { 'sidekick-stack': { villainCardId: SQUIRREL_GIRL, lock: 'no-recruit-or-gain' } };
+    G.cardDisplayData = {
+      ...(G.cardDisplayData ?? {}),
+      [SQUIRREL_GIRL]: { extId: SQUIRREL_GIRL, name: 'Squirrel Girl', imageUrl: '', cost: 3 },
+    };
+    return G;
+  }
+
+  it('T20: the gain-sidekick effect gains nothing and logs the blocked line naming the fortifier; it works once cleared', () => {
+    const G = makeFortifiedGainState();
+    executeSingleEffect(G, mockCtx, '0', INSPIRE_A_NATION, GAIN_ONE);
+    assert.deepStrictEqual(G.piles.sidekicks, MARKED_STACK, 'the Stack is untouched');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, ['starting-shield-agent']);
+    const lastEntry = G.messages[G.messages.length - 1]!;
+    assert.equal(
+      lastEntry.text,
+      `Player 0 could not gain a Sidekick — Squirrel Girl fortifies the Sidekick Stack. Fight Squirrel Girl first. (${formatCardRef(G.cardDisplayData, INSPIRE_A_NATION)})`,
+    );
+    assert.equal(lastEntry.outcome, 'blocked');
+    delete G.fortifications;
+    executeSingleEffect(G, mockCtx, '0', INSPIRE_A_NATION, GAIN_ONE);
+    assert.deepStrictEqual(G.playerZones['0']!.discard, ['starting-shield-agent', 'sidekick-a'], 'the normal gain');
+  });
+
+  it('T20b: gainSidekickToDiscard itself refuses while the Stack is fortified', () => {
+    const G = makeFortifiedGainState();
+    assert.equal(gainSidekickToDiscard(G, '0'), false);
+    assert.deepStrictEqual(G.piles.sidekicks, MARKED_STACK);
+    assert.deepStrictEqual(G.playerZones['0']!.discard, ['starting-shield-agent']);
+  });
+});

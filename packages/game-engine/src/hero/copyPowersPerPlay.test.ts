@@ -216,13 +216,16 @@ describe('Copy Powers copies last for one play of the card (D-24730, live L3yPdf
     assert.equal(evaluateCondition(G, '0', cheapOrSizeChanging), true, 'control: a real Size-Changing grant counts');
   });
 
-  it('a Size-Changing card’s setup grant applies on every play, across cleanups', () => {
+  // why: D-24801 — Size-Changing is a recruit discount (rules v23 p.33), so its printed
+  // classes survive cleanup (a setup map) but never make the played card that class.
+  it('a Size-Changing card’s printed classes survive cleanups and never make it that class', () => {
     const G = makeG([SIZE_CHANGER]);
     G.cardSizeChangingClasses = { [SIZE_CHANGER]: ['strength'] };
-    assert.equal(cardHasClassWhenPlayed(G, SIZE_CHANGER, 'strength'), true, 'first play');
+    assert.equal(cardHasClassWhenPlayed(G, SIZE_CHANGER, 'strength'), false, 'first play: not Strength');
     applyEndOfTurnCleanup(G, '0', SHUFFLE);
+    assert.deepStrictEqual(G.cardSizeChangingClasses, { [SIZE_CHANGER]: ['strength'] }, 'the setup map stays');
     startNextTurn(G, [SIZE_CHANGER, BORROWED_BRAWN]);
-    assert.equal(cardHasClassWhenPlayed(G, SIZE_CHANGER, 'strength'), true, 'second play');
-    assert.equal(evaluateCondition(G, '0', STRENGTH_GATE, BORROWED_BRAWN), true, 'still a Strength Hero for Borrowed Brawn');
+    assert.equal(cardHasClassWhenPlayed(G, SIZE_CHANGER, 'tech'), true, 'second play: still its printed Tech');
+    assert.equal(evaluateCondition(G, '0', STRENGTH_GATE, BORROWED_BRAWN), false, 'not a Strength Hero for Borrowed Brawn');
   });
 });

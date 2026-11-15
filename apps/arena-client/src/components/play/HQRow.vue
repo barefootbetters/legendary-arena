@@ -1,22 +1,39 @@
 <script lang="ts">
-import { defineComponent, type PropType } from 'vue';
+import { defineComponent, nextTick, ref, watch, type PropType } from 'vue';
 import type {
   UICardDisplay,
   UIDecksState,
   UIHQState,
+  UIPlayerState,
   UITurnEconomyState,
 } from '@legendary-arena/game-engine';
 import { useHqRow, type HqCell } from '../../composables/useHqRow';
 import { useCardCostGating, type GatingResult } from '../../composables/useCardCostGating';
 import { useTurnActions, healLockGate } from '../../composables/useTurnActions';
+import { useRowFit } from '../../composables/useRowFit';
 import CardTile from './CardTile.vue';
+import HauntedExorciseChooser, { type ExorciseChoice } from './HauntedExorciseChooser.vue';
 import type { SubmitMove } from './uiMoveName.types';
+import CardImage from './CardImage.vue';
+
+// why: WP-759 / D-24587 — the engine's recruitHero refuses a Haunted slot at any budget,
+// so the Recruit button says why instead of reading as a dead click.
+const HAUNTED_RECRUIT_REASON = 'Haunted — exorcise it first';
+// why: WP-759 — exorciseHauntedHero carries the D-24180 heal lock, but the shared
+// healLockGate reason names only recruit and fight (exorcise is neither, rulebook v23
+// p.27), so Exorcise gets its own wording.
+const EXORCISE_HEAL_LOCK_REASON = "You healed this turn — you can't exorcise";
 
 /**
  * HQ row — 6-cell visual rewrite per `DESIGN-BOARD-LAYOUT.md §7.1`
  * column order: `Hero1 | Hero2 | Hero3 | Hero4 | Hero5 | Hero Deck`.
  * Per D-12903 the count gracefully extends to 7 cells when a 6-slot
  * scenario projects.
+ *
+ * Haunt (WP-759 / D-24587): a Haunted slot shows its haunter, disables Recruit, and
+ * offers Exorcise (a sibling button under the card) that opens the in-flow
+ * `HauntedExorciseChooser` below the slot list. A match with no haunt projects no
+ * `hq.haunters`, so none of it renders.
  *
  * Cost gating: heroes in HQ render disabled when
  * `economy.availableRecruit < hero.cost` per WP-128 economy projection.
@@ -39,7 +56,7 @@ import type { SubmitMove } from './uiMoveName.types';
  */
 export default defineComponent({
   name: 'HQRow',
-  components: { CardTile },
+  components: { CardImage, CardTile, HauntedExorciseChooser },
   props: {
     hq: {
       type: Object as PropType<UIHQState>,
@@ -89,6 +106,35 @@ export default defineComponent({
       required: false,
       default: false,
     },
+    // why: WP-852 / D-24788 — the desktop board's straighten-on-hover. Only
+    // PlayDesktop sets it (from useBoardTilt's lift gate); every other use,
+    // PlayMobile included, keeps it false and renders the row exactly as before.
+    isTiltLiftEnabled: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    // why: WP-759 — the seats an exorcised Hero can be given to (UIState.players).
+    // Optional so every existing mount and test renders unchanged.
+    players: {
+      type: Array as PropType<UIPlayerState[]>,
+      required: false,
+      default: () => [],
+    },
+    // why: WP-759 — the viewing seat, listed first ("You") in the exorcise chooser.
+    // Null (a spectator, or a mount that does not pass it) renders no Exorcise button.
+    viewerPlayerId: {
+      type: String as PropType<string | null>,
+      required: false,
+      default: null,
+    },
+    // why: WP-759 — names a Mastermind haunter on the slot's haunter strip
+    // (UIState.mastermind.display.name); a Mastermind haunter projects no display.
+    mastermindName: {
+      type: String,
+      required: false,
+      default: '',
+    },
   },
   setup(props) {
     function buildCells(): HqCell[] {
@@ -111,10 +157,217 @@ export default defineComponent({
       if (!healLock.allowed) {
         return healLock;
       }
+      // why: WP-759 / D-24587 — Haunted outranks the resource gate because recruiting a
+      // Haunted Hero is impossible at any budget. It sits before the display-null
+      // fallback so a Haunted slot with no projected display is still locked.
+      if (cell.haunter !== null) {
+        return { allowed: false, reason: HAUNTED_RECRUIT_REASON };
+      }
       if (cell.display === null) {
         return stage;
       }
-      return useCardCostGating(props.economy).canRecruit(cell.display);
+      // why: D-24801 — the engine's Size-Changing price for this slot, when projected.
+      return useCardCostGating(props.economy).canRecruit(cell.display, props.hq.recruitCosts?.[cell.hqIndex]);
+    }
+
+    /**
+     * Whether a cell offers Exorcise: a Haunted, occupied slot, seen by a seated viewer.
+     *
+     * @param cell - The HQ cell.
+     * @returns True when the Exorcise button renders.
+     */
+    function isExorciseOffered(cell: HqCell): boolean {
+      // why: the engine refuses an empty slot (nothing to exorcise), so a haunter left
+      // on a dry slot shows its strip with no button; a spectator never acts.
+      return cell.kind === 'hero' && cell.haunter !== null && cell.cardId !== null && props.viewerPlayerId !== null;
+    }
+
+    /**
+     * The Exorcise button gate. It mirrors the engine's exorciseHauntedHero guard so the
+     * button never offers a move the engine will no-op (the WP-750 dead-button lesson):
+     * turn + stage, then the heal lock, then the Hero's printed cost.
+     *
+     * // why: like Recruit, this does not read the pending-choice flags: while a choice
+     * is open the engine's block-all guards no-op both moves. Making every board button
+     * pending-aware is a separate change (accepted residual, WP-759 copilot #11).
+     *
+     * @param cell - A cell for which `isExorciseOffered` is true.
+     * @returns The gate result, with a full-sentence reason when blocked.
+     */
+    function gateForExorcise(cell: HqCell): GatingResult {
+      if (cell.kind !== 'hero') {
+        return { allowed: false, reason: null };
+      }
+      const stage = useTurnActions(props.currentStage, props.isViewerTurn).canExorciseHauntedHero();
+      if (!stage.allowed) {
+        return stage;
+      }
+      if (props.hasHealedThisTurn) {
+        return { allowed: false, reason: EXORCISE_HEAL_LOCK_REASON };
+      }
+      if (cell.display === null) {
+        return stage;
+      }
+      // why: D-24587 — exorcise pays the Hero's PRINTED cost (the engine reads
+      // G.cardStats and treats a missing cost as 0), never the D-24801 Size-Changing
+      // price, so no recruitCosts argument is passed here.
+      const printedCost = cell.display.cost ?? 0;
+      return useCardCostGating(props.economy).canRecruit({ ...cell.display, cost: printedCost });
+    }
+
+    /**
+     * The Exorcise button label: the printed price when the display is projected.
+     *
+     * @param cell - The HQ cell.
+     * @returns "Exorcise (6)", or "Exorcise" when the display is missing.
+     */
+    function exorciseLabelForCell(cell: HqCell): string {
+      if (cell.kind !== 'hero' || cell.display === null) {
+        return 'Exorcise';
+      }
+      return `Exorcise (${String(cell.display.cost ?? 0)})`;
+    }
+
+    /**
+     * The haunter strip's name: the Villain's embedded display name, or the Mastermind.
+     *
+     * @param cell - The HQ cell.
+     * @returns The haunter's name, or an empty string for an unhaunted cell.
+     */
+    function haunterNameForCell(cell: HqCell): string {
+      if (cell.kind !== 'hero' || cell.haunter === null) {
+        return '';
+      }
+      if (cell.haunter.kind === 'villain') {
+        return cell.haunter.display.name;
+      }
+      if (props.mastermindName !== '') {
+        return props.mastermindName;
+      }
+      return 'the Mastermind';
+    }
+
+    /**
+     * The haunter Villain's card art URL, or an empty string (a Mastermind haunter or
+     * a Villain without art shows its name only).
+     *
+     * @param cell - The HQ cell.
+     * @returns The image URL, or an empty string.
+     */
+    function haunterImageForCell(cell: HqCell): string {
+      if (cell.kind !== 'hero' || cell.haunter === null || cell.haunter.kind !== 'villain') {
+        return '';
+      }
+      return cell.haunter.display.imageUrl;
+    }
+
+    // why: WP-759 — which slot's exorcise chooser is open (null = closed); one at a time.
+    const openExorciseIndex = ref<number | null>(null);
+    const rootElement = ref<HTMLElement | null>(null);
+
+    /**
+     * Opens (or, on a second click, closes) the exorcise chooser for a slot.
+     *
+     * @param hqIndex - The Haunted slot.
+     */
+    function onExorcise(hqIndex: number): void {
+      if (openExorciseIndex.value === hqIndex) {
+        openExorciseIndex.value = null;
+        return;
+      }
+      openExorciseIndex.value = hqIndex;
+    }
+
+    /**
+     * The cell whose chooser is open, while it can still be exorcised; null otherwise,
+     * so a stale chooser (the turn moved on, the slot refilled) never renders.
+     *
+     * @returns The open cell, or null.
+     */
+    function chooserCell(): HqCell | null {
+      const openIndex = openExorciseIndex.value;
+      if (openIndex === null) {
+        return null;
+      }
+      for (const cell of buildCells()) {
+        if (cell.kind === 'hero' && cell.hqIndex === openIndex) {
+          if (isExorciseOffered(cell) && gateForExorcise(cell).allowed) {
+            return cell;
+          }
+          return null;
+        }
+      }
+      return null;
+    }
+
+    /**
+     * The open chooser's Hero name and printed price, or null while it is closed.
+     *
+     * @returns The Hero's name and cost (null when no display is projected), or null.
+     */
+    function chooserHero(): { name: string; cost: number | null } | null {
+      const cell = chooserCell();
+      if (cell === null || cell.kind !== 'hero') {
+        return null;
+      }
+      if (cell.display === null) {
+        return { name: displayForCell(cell).name, cost: null };
+      }
+      return { name: cell.display.name, cost: cell.display.cost ?? 0 };
+    }
+
+    /**
+     * Submits the chosen exorcise outcome and closes the chooser. The engine decides.
+     *
+     * @param choice - The payload the chooser built.
+     */
+    function onExorciseChoose(choice: ExorciseChoice): void {
+      openExorciseIndex.value = null;
+      props.submitMove('exorciseHauntedHero', choice);
+    }
+
+    /** Closes the chooser and returns focus to the Exorcise button that opened it. */
+    function onExorciseClose(): void {
+      const closedIndex = openExorciseIndex.value;
+      openExorciseIndex.value = null;
+      if (closedIndex === null) {
+        return;
+      }
+      void nextTick(() => {
+        const opener = rootElement.value?.querySelector<HTMLButtonElement>(
+          `[data-testid="play-hq-exorcise"][data-hq-index="${String(closedIndex)}"]`,
+        );
+        opener?.focus();
+      });
+    }
+
+    // why: a new snapshot (a move resolved, the turn passed) can make an open choice
+    // stale; closing on any HQ change keeps the chooser tied to the board it opened on.
+    watch(
+      () => props.hq,
+      () => {
+        openExorciseIndex.value = null;
+      },
+    );
+
+    /**
+     * The Size-Changing price label for a slot, or null when the slot costs its printed cost.
+     *
+     * @param cell - The HQ cell.
+     * @returns A short label such as "Costs 0 now", or null.
+     */
+    function sizeChangingLabelForCell(cell: HqCell): string | null {
+      if (cell.kind !== 'hero' || cell.display === null || cell.display.cost === null) {
+        return null;
+      }
+      const recruitCost = props.hq.recruitCosts?.[cell.hqIndex];
+      if (typeof recruitCost !== 'number' || recruitCost === cell.display.cost) {
+        return null;
+      }
+      if (recruitCost < 0) {
+        return `Costs 0 now, +${String(-recruitCost)} recruit`;
+      }
+      return `Costs ${String(recruitCost)} now`;
     }
 
     function onRecruit(hqIndex: number): void {
@@ -134,19 +387,49 @@ export default defineComponent({
       };
     }
 
-    return { buildCells, gateForCell, onRecruit, displayForCell };
+    // why: WP-852 — the hover lift needs `overflow: visible` on the list, and a
+    // scroll container forces its subtree flat and clips it, so the lift is on
+    // only while the row fits without sideways scroll. The extra spacer columns
+    // a bigger City adds change the row's width, so they re-measure too.
+    const hqSlotsElement = ref<HTMLElement | null>(null);
+    const isRowFitting = useRowFit(hqSlotsElement, () => [props.hq, props.extraCitySpaces]);
+
+    return {
+      buildCells,
+      gateForCell,
+      onRecruit,
+      displayForCell,
+      sizeChangingLabelForCell,
+      hqSlotsElement,
+      isRowFitting,
+      isExorciseOffered,
+      gateForExorcise,
+      exorciseLabelForCell,
+      haunterNameForCell,
+      haunterImageForCell,
+      openExorciseIndex,
+      rootElement,
+      onExorcise,
+      chooserHero,
+      onExorciseChoose,
+      onExorciseClose,
+    };
   },
 });
 </script>
 
 <template>
   <section
+    ref="rootElement"
     class="hq-row"
-    :class="{ 'hq-row--column-aligned': isColumnAligned }"
+    :class="{
+      'hq-row--column-aligned': isColumnAligned,
+      'hq-row--tilt-lift': isTiltLiftEnabled && isRowFitting,
+    }"
     data-testid="play-hq-row"
     aria-label="HQ"
   >
-    <ol class="hq-slots">
+    <ol ref="hqSlotsElement" class="hq-slots">
       <!-- why: D-24747 — the blank cell under the City's Escaped Pile, as on the
            physical board, so Hero 1 lands under the Bridge. Decorative only. -->
       <li
@@ -169,12 +452,16 @@ export default defineComponent({
         v-for="(cell, position) in buildCells()"
         :key="position"
         class="hq-slot"
-        :class="cell.kind === 'hero' ? 'hq-slot--space-column' : 'hq-slot--edge-column'"
+        :class="[
+          cell.kind === 'hero' ? 'hq-slot--space-column' : 'hq-slot--edge-column',
+          { 'hq-slot--haunted': cell.kind === 'hero' && cell.haunter !== null },
+        ]"
       >
         <template v-if="cell.kind === 'hero'">
           <button
             v-if="cell.cardId !== null"
             type="button"
+            class="hq-slot__hero"
             data-testid="play-hq-hero"
             :data-hq-index="cell.hqIndex"
             :data-card-id="cell.cardId"
@@ -194,6 +481,12 @@ export default defineComponent({
               :tooltip="gateForCell(cell).reason"
               :show-label="true"
             />
+            <!-- why: D-24801 — the Size-Changing price when it differs from the printed cost. -->
+            <span
+              v-if="sizeChangingLabelForCell(cell) !== null"
+              class="hq-slot__size-changing"
+              data-testid="play-hq-size-changing-cost"
+            >{{ sizeChangingLabelForCell(cell) }}</span>
           </button>
           <div
             v-else
@@ -203,6 +496,40 @@ export default defineComponent({
           >
             Empty slot
           </div>
+          <!-- why: WP-759 / D-24587 — the haunter, tucked face-up beneath the Hero
+               (rulebook v23 p.27). A sibling of the card button, never inside it. -->
+          <div
+            v-if="cell.haunter !== null"
+            class="hq-slot__haunter"
+            data-testid="play-hq-haunter"
+            :data-haunter-kind="cell.haunter.kind"
+            :data-haunter-ext-id="cell.haunter.kind === 'villain' ? cell.haunter.extId : undefined"
+            :title="`Haunted by ${haunterNameForCell(cell)}`"
+          >
+            <CardImage
+              v-if="haunterImageForCell(cell) !== ''"
+              class="hq-slot__haunter-art"
+              :image-url="haunterImageForCell(cell)"
+              alt=""
+            />
+            <span class="hq-slot__haunter-name">Haunted by {{ haunterNameForCell(cell) }}</span>
+          </div>
+          <!-- why: WP-759 — Exorcise is a sibling of the card button (a button cannot hold
+               a button), gated exactly like the engine's exorciseHauntedHero guard. -->
+          <button
+            v-if="isExorciseOffered(cell)"
+            type="button"
+            class="hq-slot__exorcise"
+            data-testid="play-hq-exorcise"
+            :data-hq-index="cell.hqIndex"
+            :disabled="!gateForExorcise(cell).allowed"
+            :aria-disabled="!gateForExorcise(cell).allowed ? 'true' : undefined"
+            :aria-expanded="openExorciseIndex === cell.hqIndex ? 'true' : 'false'"
+            :title="gateForExorcise(cell).reason ?? undefined"
+            @click="onExorcise(cell.hqIndex)"
+          >
+            {{ exorciseLabelForCell(cell) }}
+          </button>
         </template>
         <template v-else>
           <div class="hq-slot-deck" data-testid="play-hq-hero-deck">
@@ -212,6 +539,21 @@ export default defineComponent({
         </template>
       </li>
     </ol>
+    <!-- why: WP-759 — the chooser renders in normal flow below the slot list, never
+         absolute or fixed: the list scrolls sideways (overflow-x would clip anything
+         positioned out of it), and the mobile scroll band and the desktop fit-stage
+         scale transform would offset a fixed panel from its slot. -->
+    <HauntedExorciseChooser
+      v-if="chooserHero() !== null && openExorciseIndex !== null && viewerPlayerId !== null"
+      :key="openExorciseIndex"
+      :hq-index="openExorciseIndex"
+      :hero-name="chooserHero()!.name"
+      :cost="chooserHero()!.cost"
+      :players="players"
+      :viewer-player-id="viewerPlayerId"
+      @choose="onExorciseChoose"
+      @close="onExorciseClose"
+    />
   </section>
 </template>
 
@@ -274,8 +616,97 @@ export default defineComponent({
   font-variant-numeric: tabular-nums;
 }
 
+.hq-slot__size-changing {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
 .hq-slot__name {
   display: block;
   font-weight: 600;
+}
+
+/* why: WP-759 — a Haunted slot stacks the card, its haunter strip and the Exorcise
+   button vertically (a column-aligned slot is otherwise a centring row). */
+.hq-slot--haunted,
+.hq-row--column-aligned .hq-slot--space-column.hq-slot--haunted {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.hq-slot__haunter {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 100%;
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.3rem;
+  background: var(--color-haunt, #5b21b6);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.hq-slot__haunter-art {
+  width: 1.1rem;
+  height: 1.1rem;
+  object-fit: cover;
+  border-radius: 0.15rem;
+}
+
+.hq-slot__haunter-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.hq-slot__exorcise {
+  padding: 0.1rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+/* why: WP-852 / D-24788 — the board-card straighten-on-hover. Pointer devices
+   only, and only under --tilt-lift (the lift gate AND a row that fits: a scroll
+   container forces its subtree flat and clips, so the list's overflow turns
+   visible here and nowhere else). Every link from the tilted plane down to the
+   button preserves 3D, or the card would rise but stay tilted. The links are on
+   only while a liftable card is hovered: at rest, coplanar preserve-3d layers
+   z-fight in Chrome's hit test and steal clicks from resting cards (WP-852 EC
+   amendment A). */
+@media (hover: hover) {
+  .hq-row--tilt-lift:has(.hq-slot:hover > .hq-slot__hero),
+  .hq-row--tilt-lift:has(.hq-slot:hover > .hq-slot__hero) .hq-slots,
+  .hq-row--tilt-lift:has(.hq-slot:hover > .hq-slot__hero) .hq-slot,
+  .hq-row--tilt-lift:has(.hq-slot:hover > .hq-slot__hero) .hq-slot__hero {
+    transform-style: preserve-3d;
+  }
+  .hq-row--tilt-lift .hq-slots {
+    overflow: visible;
+  }
+  /* why: the bottom-edge origin makes the card rise off the table rather than
+     into it, and keeps that edge put, so every point of the resting card stays
+     under the lifted one (no dead click strip; hence no translateY). */
+  .hq-row--tilt-lift .hq-slot__hero {
+    transform-origin: 50% 100%;
+    transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+  }
+  /* why: the hover sits on the li, which keeps its box, while the transform
+     moves the button; hovering the button itself would flicker as it moves out
+     from under the pointer. */
+  .hq-row--tilt-lift .hq-slot:hover > .hq-slot__hero {
+    transform: rotateX(calc(-1 * var(--board-tilt-angle))) scale(1.06);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  }
+  /* why: the tile's own 1.05 hover scale would compound with the lift; inside a
+     lifting row the lifted card is exactly 1.06. */
+  .hq-row--tilt-lift .card-tile--interactive:hover {
+    transform: none;
+  }
 }
 </style>

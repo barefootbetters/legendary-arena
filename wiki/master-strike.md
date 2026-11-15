@@ -103,8 +103,20 @@ been superseded. A fire now does two things in order:
    | `co2e/magneto` | `resolveCo2eMagnetoStrike` | discards an `[team:x-men]` Hero **or** gains a Wound | — (discard-to-avoid) |
    | `co2e/doctor-octopus` | `resolveDoctorOctopusStrike` | may discard a `[team:spider-friends]` Hero; otherwise reveals the top 8 and discards non-grey Heroes | — (discard / reveal-deck) |
 
-   A mastermind **not** in this table takes no branch — the strike is
-   the generic counter only, and its printed text is **not** applied. Of
+   A mastermind with no arm in the dispatcher reaches its terminal `else`,
+   which **flags the strike as a hollow effect** (WP-867 / D-24810): it
+   records a `HollowEffectRecord` (`cardType: 'mastermind'`, `mechanic:
+   'master-strike'`, `reason: 'no-handler'`, the reveal's turn) through
+   `recordHollowEffect`, which also writes the red "Unhandled effect
+   observed: … master-strike …" line just before the generic "strike count
+   incremented" line. The printed text is still **not** applied; the strike
+   is no longer silent, and the Play Diagnostics hollow panel shows a
+   `mastermind` row. An arm that resolves partially (General Ross) or does
+   nothing on this board is not flagged. The full set of resolved
+   Masterminds is the curated
+   [`strike-provenance.json`](../scripts/coverage/strike-provenance.json)
+   overlay, which `/debug/effects` renders as one Master Strike row per
+   Mastermind ([Debug Effects](debug-effects.md)). Of
    the columns, only **`strikeBlocked`** is a live engine claim
    (source-verified against the resolvers); the printed-effect column
    paraphrases each card's text.

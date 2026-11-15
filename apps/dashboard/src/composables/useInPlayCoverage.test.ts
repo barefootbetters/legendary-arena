@@ -132,6 +132,34 @@ test('computeInPlayCoverage sorts remaining by peakObs desc, then mechanic key a
   );
 });
 
+test('computeInPlayCoverage resolves a folded family variant by its LEDGER key status', () => {
+  // why: the runtime sweep records the pre-fold slug (`patrol-the-bridge`); the hero
+  // ledger folds the printed family to one row (`patrol`). The fold map routes the
+  // status lookup; the obs stay per raw key, so the denominator is unchanged.
+  const baseline = makeBaseline({ 'patrol-the-bridge': 4, 'patrol-the-sewers': 6, other: 10 });
+  const statuses = makeStatuses({ patrol: 'condition', other: 'unsupported' });
+  const fold = { 'patrol-the-bridge': 'patrol', 'patrol-the-sewers': 'patrol' };
+
+  const unfolded = computeInPlayCoverage(baseline, makeLive({}), statuses);
+  assert.equal(unfolded.resolvedObs, 0, 'without the fold no variant can match the `patrol` row');
+
+  const folded = computeInPlayCoverage(baseline, makeLive({}), statuses, fold);
+  assert.equal(folded.totalObs, 20, 'the denominator is the same summed per-key peaks');
+  assert.equal(folded.resolvedObs, 10, 'both patrol variants resolve through the `patrol` row');
+  assert.deepEqual(folded.remaining, [{ mechanic: 'other', peakObs: 10 }]);
+});
+
+test('computeInPlayCoverage keeps an unresolved folded variant on the worklist under its raw key', () => {
+  const metric = computeInPlayCoverage(
+    makeBaseline({ 'bridge-conqueror': 3 }),
+    makeLive({}),
+    makeStatuses({ conqueror: 'unsupported' }),
+    { 'bridge-conqueror': 'conqueror' },
+  );
+  assert.equal(metric.resolvedObs, 0);
+  assert.deepEqual(metric.remaining, [{ mechanic: 'bridge-conqueror', peakObs: 3 }]);
+});
+
 function makeRow(overrides: Partial<LedgerRow>): LedgerRow {
   return {
     extId: 'set/card',
@@ -214,15 +242,27 @@ test('useInPlayCoverage credits a fixed mechanic from the committed seed', () =>
   // 1.6 -> 1.2 purely because the denominator caught up. The large snapshot test below
   // (real live sweep) passes UNCHANGED at 2965 — the confirmation the runtime
   // max(baseline, live) denominator held (D-24050 / D-24370).
+  // 2026-11-10 (baseline-refresh hygiene after WP-878, re-pin): the seed had fallen
+  // behind the live sweep again, across every WP since the 2026-09-16 refresh (the
+  // D-24623 / D-24624 parse-only hollows, D-24649's magnitude-less icons, Focus, the
+  // Patrol and Artifact families, and WP-878's amwp peaks). Re-running the monotonic
+  // writer (`build:in-play-baseline`) on the current feed: 37 -> 86 mechanics (49
+  // added, e.g. `attack-no-magnitude`, `astral-plane`, `cheering-crowds`,
+  // `"when-recruited"-abilities`), 12 peaks raised (e.g. `undercover` 488 -> 521),
+  // none lowered. Summed peaks 2965 -> 8702, so this empty-live test's totalObs moves
+  // 2965 -> 8702. resolvedObs holds at 37 (dodge's peak did not move); percentResolved
+  // falls 1.2 -> 0.4 purely because the denominator caught up. The real-live snapshot
+  // test below passes UNCHANGED at 8702 / 1141 / 13.1, because the runtime
+  // max(baseline, live) already read every one of these higher live values.
   const baseline = baselineSeed as unknown as InPlayHollowBaseline;
   const view = useInPlayCoverage({
     baseline,
     ledger: makeLedger([makeRow({ mechanic: 'dodge', status: 'executable' })]),
     runtimeObserved: makeRuntimeObserved({}),
   });
-  assert.equal(view.totalObs.value, 2965);
+  assert.equal(view.totalObs.value, 8702);
   assert.equal(view.resolvedObs.value, 37);
-  assert.equal(view.percentResolved.value, 1.2);
+  assert.equal(view.percentResolved.value, 0.4);
 });
 
 test('useInPlayCoverage reads the real committed seed + ledger and computes the in-play coverage snapshot', () => {
@@ -602,11 +642,135 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // (feed regenerated: 7766 -> 7765 raw observations, 78 mechanics, 0 dropped; rule:sidekick
   // 42 -> 41). totalObs 8687 -> 8686 (-1, equal to the raw feed fall); resolvedObs stays 1091, so
   // percentResolved stays 12.6 (1091 / 8686). A denominator re-pin; no mechanic changed status.
+  // 2026-10-28 (WP-850 / D-24786, re-pin): Bishop's Firepower from the Future now grants its
+  // discarded cards' printed Attack, so its 4 `attack-no-magnitude` hollow observations leave the
+  // sweep (feed regenerated: 7765 -> 7761 raw observations, 78 mechanics, 0 dropped;
+  // attack-no-magnitude 413 -> 409). totalObs 8686 -> 8682 (-4, equal to the raw feed fall);
+  // resolvedObs stays 1091, so percentResolved stays 12.6 (1091 / 8682). A denominator re-pin; no
+  // mechanic changed status.
+  // 2026-10-28 (WP-851 / D-24787, re-pin): 11 bare "You may KO a card from your hand or discard
+  // pile." hero lines now carry optional-ko-hand-discard, so their gate-only hollow observations
+  // leave the sweep (feed regenerated: 7761 -> 7739 raw observations, 78 mechanics, 0 dropped;
+  // gate-only 439 -> 411, with +/-1-2 trajectory ripples elsewhere). totalObs 8682 -> 8658 (-24,
+  // not the raw -22: totalObs sums each mechanic's max(baseline, live) peak, so a mechanic that
+  // rose by 1-2 in the sweep but sits under its baseline peak adds nothing back). resolvedObs stays
+  // 1091, so percentResolved stays 12.6 (1091 / 8658). A denominator re-pin; no mechanic changed status.
+  // 2026-10-29 (WP-853 / D-24789, re-pin): Bishop's Absorb Energies no longer grants +2 Recruit on
+  // play, so the dkcy sweep board recruits differently and plays two fewer copies each of an
+  // attack-no-magnitude and a teleport line (feed regenerated: 7739 -> 7735 raw observations, 78
+  // mechanics, 0 dropped; attack-no-magnitude 410 -> 408, teleport 207 -> 205). totalObs 8658 -> 8654
+  // (-4, equal to the raw feed fall); resolvedObs stays 1091, so percentResolved stays 12.6
+  // (1091 / 8654). A trajectory re-pin; no mechanic changed status.
+  // 2026-10-29 (WP-856 / D-24792, re-pin): Doctor Voodoo's Possessed by Brother's Spirit no longer
+  // grants +4 Recruit and +4 Attack on play, so the dstr sweep board plays out differently (feed
+  // regenerated: 7735 -> 7734 raw observations, 78 mechanics, 0 dropped; artifact 173 -> 172,
+  // recruit-no-magnitude 415 -> 414, astral-plane 46 -> 47). totalObs 8654 -> 8653 (-1: the
+  // astral-plane rise sits under its baseline peak, so it adds nothing back); resolvedObs stays 1091,
+  // so percentResolved stays 12.6 (1091 / 8653). A trajectory re-pin; no mechanic changed status.
+  // 2026-10-31 (WP-858 / D-24794, re-pin): Staff of Legba and Medallion of Many Loas become Ritual
+  // Artifacts (no grant at play; kept in front of the player), so the dstr sweep board plays out
+  // differently (feed regenerated: 7734 -> 7720 raw observations; attack-no-magnitude 408 -> 375 as
+  // the Staff hollow leaves, recruit-no-magnitude 414 -> 422, astral-plane 47 -> 51, demonic-bargain
+  // 16 -> 20, artifact 172 -> 173, ritual-artifact 4 -> 6). totalObs 8653 -> 8639 (-14, equal to the
+  // raw feed fall); resolvedObs stays 1091, so percentResolved stays 12.6 (1091 / 8639). A
+  // trajectory re-pin; no mechanic changed status.
+  // 2026-10-31 (WP-860 / D-24796, re-pin): Commune with the Spirit World now parses to the
+  // discard-artifact-or-three-then-ko keyword, so its "artifact" hollow leaves the sweep (feed
+  // regenerated: 7720 -> 7672 raw observations; artifact 173 -> 125). totalObs 8639 -> 8635 (-4, not
+  // the raw -48: totalObs sums each mechanic's max(baseline, live) peak, and artifact's baseline peak
+  // still holds most of it); resolvedObs stays 1091, so percentResolved stays 12.6 (1091 / 8635). A
+  // denominator re-pin; no mechanic changed status (artifact is still unsupported on other cards).
+  // 2026-11-04 (INFRA, amwp Size-Changing marker parity, re-pin): five Wasp / Janet van Dyne
+  // "Size-Changing [hc:X]" lines now carry [keyword:Size-Changing] and three Microscopic lines carry
+  // [keyword:Microscopic Size-Changing], so their bare [hc:X] no longer parses as a gate-only class
+  // gate (feed regenerated: 7672 -> 7668 raw observations; gate-only 411 -> 404,
+  // microscopic-size-changing 29 -> 31, recruit-no-magnitude 422 -> 423). totalObs 8635 -> 8631 (-4,
+  // equal to the raw feed fall); resolvedObs stays 1091, so percentResolved stays 12.6
+  // (1091 / 8631). A trajectory re-pin; no mechanic changed status.
+  // 2026-11-05 (INFRA, D-24801, re-pin): Size-Changing became a recruit discount and Microscopic
+  // Size-Changing a recognized keyword, so the bots recruit Size-Changing cards cheaper and the
+  // sweep plays out differently (feed regenerated: 7668 -> 7725 raw observations, 78 -> 77
+  // mechanics; microscopic-size-changing 31 -> gone, cheering-crowds 52 -> 90, gate-only 404 -> 418,
+  // with smaller ripples elsewhere). totalObs 8631 -> 8686 (+55; microscopic-size-changing is not in
+  // the frozen baseline seed, so its vanished obs leave the denominator rather than move into
+  // resolvedObs). resolvedObs stays 1091, so percentResolved stays 12.6 (1091 / 8686).
+  // 2026-11-05 (INFRA, D-24806, re-pin): Look Out for the Little Guy's reveal line now reveals and
+  // draws instead of parsing as a second Size-Changing, so the amwp sweep board plays out a little
+  // differently (feed regenerated: 7725 -> 7724 raw observations; attack-no-magnitude 378 -> 376,
+  // gate-only 418 -> 421, heist 51 -> 48, recruit-no-magnitude 416 -> 417). totalObs 8686 -> 8687
+  // (+1: totalObs sums each mechanic's max(baseline, live) peak, so the gate-only / recruit rises
+  // count and the falls under their baseline peaks do not). resolvedObs stays 1091, so
+  // percentResolved stays 12.6 (1091 / 8687). A trajectory re-pin; no mechanic changed status.
+  // 2026-11-06 (WP-865 / D-24808, re-pin): Heist is implemented. Six allowlisted amwp Heist lines
+  // fuse into an executable `heist` hook, so the hero ledger's heist rows flip to executable and the
+  // sweep's heist hollow falls 48 -> 1 (only Revolutionary Anthem's deferred line is left; feed
+  // regenerated: 7724 -> 7677 raw observations). The denominator holds at 8687 (heist's baseline
+  // peak keeps it), and heist's obs MOVE into resolvedObs: 1091 -> 1141, so percentResolved
+  // 12.6 -> 13.1 (1141 / 8687). A mechanic-status re-pin, the invariant the next test asserts.
+  // 2026-11-06 (WP-866 / D-24809, re-pin): twelve "When you draw a new hand … draw an extra card"
+  // hero lines now raise the next hand, so their gate-only hollows leave the sweep and the bigger
+  // hands shift the fixed-seed trajectory (feed regenerated: 7677 -> 7662 raw observations, 77
+  // mechanics, 0 dropped). totalObs 8687 -> 8686 (-1); resolvedObs stays 1141, so percentResolved
+  // stays 13.1 (1141 / 8686). A trajectory re-pin; no mechanic changed status.
+  // 2026-11-09 (WP-878 / D-24826, re-pin): bots now attempt a Heist when the card-count odds favor
+  // it, which only the sweep's amwp board (Ant Army, Ant-Man) can do, so its fixed-seed trajectory
+  // shifts (feed regenerated: 7660 -> 7676 raw observations; attack-no-magnitude 376 -> 379,
+  // gate-only 361 -> 366, recruit-no-magnitude 426 -> 434, all amwp examples). totalObs
+  // 8686 -> 8702 (+16); resolvedObs stays 1141, so percentResolved stays 13.1 (1141 / 8702). A
+  // trajectory re-pin; no mechanic changed status.
+  // 2026-11-11 (WP-881 / D-24832, re-pin): hero Patrol lines now gate each printed branch on their
+  // City space, so the mdns / ssw2 Patrol heroes stop over-granting and the sweep plays out
+  // differently (feed regenerated: 7676 -> 7510 raw observations; patrol-the-bridge 36,
+  // patrol-the-rooftops 80 and patrol-the-streets 7 leave the live sweep, patrol-the-sewers
+  // 57 -> 16, patrol-any-city-space 36 -> 38, patrol-two-adjacent-city-spaces 0 -> 8,
+  // recruit-no-magnitude 434 -> 437). totalObs 8702 -> 8715 (+13: totalObs sums each key's
+  // max(baseline, live) peak, so only the three rises above their baseline peaks count). The
+  // folded `patrol` family stays unresolved because Corvus Glaive and Beast keep `unsupported`
+  // ledger rows (least-done), so resolvedObs stays 1141 and percentResolved stays 13.1
+  // (1141 / 8715). A trajectory re-pin.
+  // 2026-11-11 (WP-884 / D-24835, re-pin): Stalk the Night Stalkers' Hunt for Victims is
+  // implemented, so the hero ledger's `hunt-for-victims` row flips to executable and the sweep's
+  // `hunt-for-victims` hollow leaves the feed (9 -> 0; gate-only 357 -> 352 as its Tech line stops
+  // being gate-only; feed regenerated: 7510 -> 7496 raw observations). totalObs holds at 8715 (each
+  // key's baseline peak keeps it), and hunt-for-victims' baseline peak of 13 MOVES into resolvedObs:
+  // 1141 -> 1154, so percentResolved 13.1 -> 13.2 (1154 / 8715). A mechanic-status re-pin.
+  // 2026-11-11 (WP-886 / D-24837, re-pin): hero Conqueror lines grant their Attack and the 13
+  // damaged Conqueror card lines are restored, so the hero ledger's `conqueror` rows flip to
+  // `condition` for all six heroes and the phantom `bridge` / `streets` / `rooftops` rows go. The
+  // sweep's conqueror hollows leave the feed (conqueror 45, bridge-conqueror 14, bridge 13,
+  // streets 65, rooftops 9 -> 0) and Put to the Torch's Wound line now records rooftops-conqueror
+  // (0 -> 7); focus 926 -> 927, thrown-artifact 255 -> 256 (feed regenerated: 7496 -> 7357 raw
+  // observations). totalObs 8715 -> 8724 (+9: rooftops-conqueror 7, focus 1, thrown-artifact 1
+  // above their baseline peaks). The folded `conqueror` family now reads `condition`, so its
+  // baseline peaks (conqueror 45 + bridge-conqueror 14) and rooftops-conqueror's 7 MOVE into
+  // resolvedObs: 1154 -> 1220, so percentResolved 13.2 -> 14 (1220 / 8724). The bare bridge /
+  // streets / rooftops keys keep their baseline peaks unresolved. A mechanic-status re-pin.
+  // why: WP-893 / D-24850 (2026-11-13) — Put to the Torch's Wound line now resolves to the
+  // gain-wound-reward prompt, so rooftops-conqueror (7) leaves the regenerated feed (7352 -> 7345
+  // raw observations): totalObs 8724 -> 8717 and resolvedObs 1220 -> 1213, so percentResolved
+  // 14 -> 13.9 (1213 / 8717). A feed re-pin, not a behavior change.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8686);
-  assert.equal(view.resolvedObs.value, 1091);
-  assert.equal(view.percentResolved.value, 12.6);
+  assert.equal(view.totalObs.value, 8717);
+  assert.equal(view.resolvedObs.value, 1213);
+  assert.equal(view.percentResolved.value, 13.9);
   assert.ok(view.remaining.value.length > 0);
+});
+
+test('useInPlayCoverage credits a patrol-the-bridge obs once the ledger reads patrol = condition', () => {
+  // why: end-to-end through the BUNDLED fold map (src/data/mechanic-key-fold.json),
+  // which `build-coverage-ledger.mjs` writes with the hero ledger's own
+  // `foldMechanicFamily`. If the map stops folding `patrol-the-bridge` -> `patrol`
+  // (rules drift, or the build step drops it), this fails: the gauge could then
+  // never credit hero Patrol (WP-881) however the ledger reads.
+  const view = useInPlayCoverage({
+    baseline: { schemaVersion: 1, generatedAt: 'test', byMechanic: {} },
+    ledger: makeLedger([makeRow({ mechanic: 'patrol', status: 'condition' })]),
+    runtimeObserved: makeRuntimeObserved(makeLive({ 'patrol-the-bridge': 5 })),
+  });
+  assert.equal(view.totalObs.value, 5);
+  assert.equal(view.resolvedObs.value, 5);
+  assert.equal(view.percentResolved.value, 100);
+  assert.deepEqual(view.remaining.value, []);
 });
 
 test('a mechanic flipped to executable MOVES its obs into resolvedObs, denominator held', () => {

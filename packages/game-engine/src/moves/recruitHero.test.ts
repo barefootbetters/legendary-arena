@@ -589,3 +589,112 @@ describe('recruitHero — Haunt (WP-757 / D-24587)', () => {
     assert.equal(JSON.stringify(moveContext.G), snapshotBefore, 'the refill Hero is haunted, so recruit is refused');
   });
 });
+
+describe('recruitHero — Size-Changing recruit discount (D-24801)', () => {
+  /**
+   * Builds a recruit state with one Size-Changing card in HQ slot 0 and the given cards in play.
+   *
+   * @param inPlay - The cards player 0 played this turn.
+   * @param recruit - The recruit player 0 has.
+   * @returns A state ready for recruitHero({ hqIndex: 0 }).
+   */
+  function makeSizeChangingState(inPlay: string[], recruit: number): LegendaryGameState {
+    const gameState = createMockGameState({ hq: ['amwp/wasp/follow-my-lead#0', null, null, null, null] });
+    gameState.cardStats = {
+      'amwp/wasp/follow-my-lead#0': makeCardStatEntry({ cost: 2 }),
+      'amwp/wasp/infiltrate#0': makeCardStatEntry({ cost: 2 }),
+    };
+    gameState.cardTraits = {
+      'amwp/wasp/follow-my-lead#0': { heroClass: 'ranged', team: 'avengers' },
+      'core/storm/lightning-bolt#0': { heroClass: 'ranged', team: 'x-men' },
+      'core/iron-man/arc-reactor#0': { heroClass: 'tech', team: 'avengers' },
+      'core/iron-man/arc-reactor#1': { heroClass: 'tech', team: 'avengers' },
+    } as LegendaryGameState['cardTraits'];
+    gameState.cardSizeChangingClasses = { 'amwp/wasp/follow-my-lead#0': ['ranged'] };
+    gameState.playerZones['0']!.inPlay = inPlay;
+    gameState.turnEconomy = { ...gameState.turnEconomy, recruit };
+    return gameState;
+  }
+
+  it('recruits a Size-Changing Ranged Hero for 2 less after a Ranged card was played', () => {
+    const gameState = makeSizeChangingState(['core/storm/lightning-bolt#0'], 0);
+    const moveContext = createMockMoveContext(gameState);
+    recruitHero(moveContext, { hqIndex: 0 });
+    assert.deepEqual(moveContext.G.playerZones['0']!.discard, ['amwp/wasp/follow-my-lead#0'], 'recruited for 0');
+    assert.equal(moveContext.G.turnEconomy.spentRecruit, 0);
+    assert.match(moveContext.G.messages.at(-1)!.text, / \(Size-Changing: cost 2, paid 0\)$/);
+  });
+
+  it('charges the printed cost when no Ranged card was played', () => {
+    const blocked = makeSizeChangingState(['core/iron-man/arc-reactor#0'], 1);
+    const blockedContext = createMockMoveContext(blocked);
+    recruitHero(blockedContext, { hqIndex: 0 });
+    assert.equal(blockedContext.G.hq[0], 'amwp/wasp/follow-my-lead#0', '1 recruit cannot pay the printed 2');
+
+    const paid = makeSizeChangingState(['core/iron-man/arc-reactor#0'], 2);
+    const paidContext = createMockMoveContext(paid);
+    recruitHero(paidContext, { hqIndex: 0 });
+    assert.equal(paidContext.G.turnEconomy.spentRecruit, 2);
+    assert.doesNotMatch(paidContext.G.messages.at(-1)!.text, /Size-Changing/, 'a full-price recruit keeps the WP-135 line');
+  });
+
+  it('a Microscopic Hero whose price goes below 0 costs nothing and gives the difference as Recruit', () => {
+    const gameState = makeSizeChangingState(['core/iron-man/arc-reactor#0', 'core/iron-man/arc-reactor#1'], 0);
+    gameState.hq = ['amwp/wasp/infiltrate#0', null, null, null, null];
+    gameState.cardMicroscopicSizeChangingClasses = { 'amwp/wasp/infiltrate#0': ['tech', 'tech', 'tech'] };
+    const moveContext = createMockMoveContext(gameState);
+    recruitHero(moveContext, { hqIndex: 0 });
+    assert.deepEqual(moveContext.G.playerZones['0']!.discard, ['amwp/wasp/infiltrate#0']);
+    assert.equal(moveContext.G.turnEconomy.spentRecruit, 0, 'nothing paid');
+    assert.equal(moveContext.G.turnEconomy.recruit, 2, 'cost 2, two Tech cards: price -2, so +2 Recruit');
+    assert.match(moveContext.G.messages.at(-1)!.text, / \(Size-Changing: cost 2, paid 0 and gained 2 recruit\)$/);
+  });
+});
+
+describe('recruitHero — HQ cost change price note (D-24811)', () => {
+  /**
+   * Builds a recruit state with one HQ Hero carrying a "this turn" HQ cost change.
+   *
+   * @param printedCost - The Hero's printed cost.
+   * @param amount - The signed HQ cost change on the Hero.
+   * @param recruit - The recruit player 0 has.
+   * @returns A state ready for recruitHero({ hqIndex: 0 }).
+   */
+  function makeCostChangeState(printedCost: number, amount: number, recruit: number): LegendaryGameState {
+    const gameState = createMockGameState({ hq: ['core/hulk/crazed-rampage#1', null, null, null, null] });
+    gameState.cardStats = { 'core/hulk/crazed-rampage#1': makeCardStatEntry({ cost: printedCost }) };
+    gameState.cardTraits = {
+      'core/hulk/crazed-rampage#1': { heroClass: 'strength', team: 'avengers' },
+      'core/hulk/hulk-smash#0': { heroClass: 'strength', team: 'avengers' },
+    } as LegendaryGameState['cardTraits'];
+    gameState.hqCostChanges = [{ cardId: 'core/hulk/crazed-rampage#1', amount }];
+    gameState.turnEconomy = { ...gameState.turnEconomy, recruit };
+    return gameState;
+  }
+
+  it('names a Tim Boo Ba discount "HQ cost change", not Size-Changing (live match sU1EWDfnPVj 4.2.8)', () => {
+    const moveContext = createMockMoveContext(makeCostChangeState(5, -1, 4));
+    recruitHero(moveContext, { hqIndex: 0 });
+    assert.equal(moveContext.G.turnEconomy.spentRecruit, 4);
+    const text = moveContext.G.messages.at(-1)!.text;
+    assert.match(text, / \(HQ cost change: cost 5, paid 4\)$/);
+    assert.doesNotMatch(text, /Size-Changing/);
+  });
+
+  it('names a Mind Stone increase "HQ cost change" too', () => {
+    const moveContext = createMockMoveContext(makeCostChangeState(3, 2, 5));
+    recruitHero(moveContext, { hqIndex: 0 });
+    assert.equal(moveContext.G.turnEconomy.spentRecruit, 5);
+    assert.match(moveContext.G.messages.at(-1)!.text, / \(HQ cost change: cost 3, paid 5\)$/);
+  });
+
+  it('names both when Size-Changing also discounted the changed price', () => {
+    const gameState = makeCostChangeState(5, -1, 2);
+    gameState.cardSizeChangingClasses = { 'core/hulk/crazed-rampage#1': ['strength'] };
+    gameState.playerZones['0']!.inPlay = ['core/hulk/hulk-smash#0'];
+    const moveContext = createMockMoveContext(gameState);
+    recruitHero(moveContext, { hqIndex: 0 });
+    assert.equal(moveContext.G.turnEconomy.spentRecruit, 2, 'printed 5, 1 less, then 2 less');
+    assert.match(moveContext.G.messages.at(-1)!.text, / \(HQ cost change and Size-Changing: cost 5, paid 2\)$/);
+  });
+});

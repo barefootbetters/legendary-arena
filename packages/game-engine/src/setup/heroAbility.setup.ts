@@ -43,6 +43,14 @@ import { heroCardInstanceExtIds } from './buildHeroDeck.js';
 import {
   MASTER_STRIKE_THIS_TURN_CONDITION_TYPE,
   MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE,
+  OWNED_CARD_KOED_CONDITION_TYPE,
+  OWNED_HERO_KOED_CONDITION_TYPE,
+  DECK_CARD_KOED_CONDITION_TYPE,
+  ATTACK_ICON_DECK_KO_CONDITION_TYPE,
+  NON_GREY_HERO_DECK_KO_CONDITION_TYPE,
+  PATROL_SPACE_EMPTY_CONDITION_TYPE,
+  PATROL_SPACE_OCCUPIED_CONDITION_TYPE,
+  CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE,
 } from '../hero/heroConditions.evaluate.js';
 
 // ---------------------------------------------------------------------------
@@ -314,6 +322,13 @@ const OPTIONAL_KO_REWARD_PATTERN = /\[keyword:optional-ko-reward:([a-z][a-z-]*):
 /** Regex for [keyword:ko-wound-reward:<reward>:<n>] KO-a-Wound-then-reward markup. */
 const KO_WOUND_REWARD_PATTERN = /\[keyword:ko-wound-reward:([a-z][a-z-]*):(\d+)\]/g;
 
+// why: WP-883 / D-24834 — the gain-wound-reward token mirrors ko-wound-reward's three-segment
+// shape ([keyword:gain-wound-reward:<reward>:<n>]), so KEYWORD_PATTERN cannot match it and it
+// never reaches the unresolved-marker scan. The (\d+) capture follows the same precedent; the
+// strict [1-9]\d* gate is the apply-script's job and n >= 1 is checked in Step 2g.
+/** Regex for [keyword:gain-wound-reward:<reward>:<n>] gain-a-Wound-then-reward markup. */
+const GAIN_WOUND_REWARD_PATTERN = /\[keyword:gain-wound-reward:([a-z][a-z-]*):(\d+)\]/g;
+
 // why: [keyword:optional-put-bottom-hq:<n>] token for "You may put a card from the
 // HQ on the bottom of the Hero Deck". Simple 2-segment token carrying just the
 // magnitude (always 1 for this MVP form). Follows the COUNT_SCALED_PATTERN precedent.
@@ -421,6 +436,20 @@ export const HERO_PARSER_RECOGNIZED_MARKER_NAMES: readonly string[] = [
   'savior',
   'antics',
   'defeated-villain-or-mastermind',
+  // why: WP-853 / D-24789 — Absorb Energies' owned-card KO trigger marker; its
+  // parseAbilityText arm pushes the ownedCardKoedThisTurn wait-and-see condition.
+  'owned-card-koed',
+  // why: WP-856 / D-24792 — Possessed by Brother's Spirit's Hero-KO trigger marker; its
+  // parseAbilityText arm pushes the one-shot ownedHeroKoedThisTurn wait-and-see condition.
+  'owned-hero-koed',
+  // why: WP-855 / D-24791 — Endless Appetite's deck-KO trigger marker; its parseAbilityText
+  // arm pushes the per-KO deckCardKoedThisTurn wait-and-see condition.
+  'deck-card-koed',
+  // why: WP-859 / D-24795 — Metamorphosis / Bursting with Life's deck-KO turn-record markers; their
+  // parseAbilityText arms push the one-shot attackIconCardKoedFromDeckThisTurn /
+  // nonGreyHeroKoedFromDeckThisTurn wait-and-see conditions.
+  'deck-koed-attack-icon',
+  'deck-koed-non-grey-hero',
   'first-hero-condition',
   // why: WP-743 / D-24566 — Grief / Spring the Trap condition markers; each has a
   // parseAbilityText arm that pushes its whole-turn wait-and-see condition.
@@ -462,6 +491,32 @@ const KO_WOUND_REWARD_SEEDED_REWARDS: ReadonlySet<HeroKeyword> = new Set<HeroKey
   'recruit',
 ]);
 
+// why: WP-883 / D-24834, WP-885 / D-24836 — the seeded HeroKeyword reward vocabulary for
+// gain-wound-reward: `attack` (co2e Hulk Smash!, mdns Scalded by Sunlight),
+// `optional-ko-hand-discard` (msis Hulk Gets Smashed) and `transform` (wwhk Mood Swings). An
+// unseeded reward emits no descriptor (Honest-Partial). Mirrors the same constant in
+// hero/gainWoundReward.logic.ts (two copies, per duplicate-first).
+const GAIN_WOUND_REWARD_SEEDED_REWARDS: ReadonlySet<HeroKeyword> = new Set<HeroKeyword>([
+  'attack',
+  'optional-ko-hand-discard',
+  'transform',
+]);
+
+// why: WP-885 / D-24836 — the seeded composition-marker rewards for gain-wound-reward (wpnx
+// Violent Conditioning's "If you do, Berserk, Berserk"). Each member is a HERO_COMPOSITION_MARKERS
+// key; Berserk is not a HeroKeyword (D-24031), so it travels in the descriptor's
+// rewardComposition, not rewardType. Mirrors the same constant in hero/gainWoundReward.logic.ts.
+const GAIN_WOUND_REWARD_SEEDED_COMPOSITIONS: ReadonlySet<string> = new Set<string>([
+  'berserk',
+]);
+
+// why: WP-893 / D-24850 — the seeded Conqueror-bonus rewards for gain-wound-reward (anni
+// Super-Skrull's Put to the Torch: "If you do, you get Rooftops Conqueror 4"). The City space
+// lives in the member, never a field (D-24834 §11). Not a HeroKeyword, so it travels in the
+// descriptor's rewardComposition like Berserk. Mirrors the same constant in
+// hero/gainWoundReward.logic.ts (two copies, per duplicate-first).
+const GAIN_WOUND_REWARD_SEEDED_CONQUEROR_REWARDS: ReadonlySet<string> = new Set<string>(['rooftops-conqueror']);
+
 // why: D-24148 — the shuffle-discard-empty-reward token has three segments
 // ([keyword:shuffle-discard-empty-reward:<reward>:<n>]); KEYWORD_PATTERN cannot
 // match it (it stops at the second colon), so it needs a dedicated pattern like
@@ -487,10 +542,13 @@ const ICON_MAGNITUDE_PATTERN = /\+?(\d+)\s*\[icon:(attack|recruit)\]/g;
 
 // why: WP-790 / D-24652 — the printed "usable only against …" clause that follows a
 // `+N[icon:attack]` grant (rules v23, the Liberate entry: a bonus spendable only on the named
-// targets). Matched on the text AFTER the attack icon-magnitude. "usable only to fight …"
-// (mdns Wong Seal the Rift) deliberately does not match.
+// targets). Matched on the text AFTER the attack icon-magnitude.
+// why: WP-881 / D-24832 (amends D-24652 §4) — also "usable only to fight …", the wording mdns
+// Wong's Seal the Rift prints ("+5[icon:attack] usable only to fight Villains on the Bridge"),
+// the only data line that uses it. It used to fail closed while its +5 fired ungated; it is now
+// a Bridge-restricted grant gated on its Patrol condition.
 /** Regex for the restriction clause, e.g. ", usable only against Villains on the Rooftops." */
-const ATTACK_RESTRICTION_CLAUSE_PATTERN = /,?\s*usable only against (.+?)\.?$/i;
+const ATTACK_RESTRICTION_CLAUSE_PATTERN = /,?\s*usable only (?:against|to fight) (.+?)\.?$/i;
 /** Regex for a Mastermind target word inside the clause ("Commander" is fear/vill wording). */
 const ATTACK_RESTRICTION_MASTERMIND_PATTERN = /\b(mastermind|commander)\b/i;
 /** Regex for an exclusion clause ("other Villains", nmut Karma) — left unmodeled (fails closed). */
@@ -675,11 +733,14 @@ const SPECTRUM_CLASS_THRESHOLD = 3;
 // recruit-threshold condition (D-24354), authored on the card as `[keyword:recruit-threshold:6]`,
 // and its destination is a plain in-play swap. Every OTHER wwhk transform card carries a
 // condition the engine does NOT yet model (drew-2, discarded-≥2, KO-pile counts, combat
-// outcomes, reveal-cost, feast+KO, gain-a-Wound, …); resolving those would fire an
+// outcomes, reveal-cost, feast+KO, …); resolving those would fire an
 // UNCONDITIONAL — and therefore unfaithful — swap, so they stay unresolved markers (an
 // honest parse-unrecognized hollow, unchanged from today). Each future WP that models a
 // card's transform condition adds that card here + its condition marker. Honest-Partial
 // Invariant — mirrors the investigate resolver's static-criterion subset.
+// why: WP-885 / D-24836 — Mood Swings' gain-a-Wound condition is modelled by gain-wound-reward
+// (its Transform is the reward of a Wound gained and kept), NOT by this allowlist, which means an
+// unconditional swap. Its [keyword:Transform] is consumed by the reward pre-scan instead.
 const SUPPORTED_TRANSFORM_BASES: ReadonlySet<string> = new Set<string>([
   'wwhk/she-hulk/hurl-legal-objections',
   // why: WP-665 / D-24476 — Amadeus Cho's Gamma-Draining Nanites. Its transform gates on
@@ -687,6 +748,56 @@ const SUPPORTED_TRANSFORM_BASES: ReadonlySet<string> = new Set<string>([
   // condition (a [keyword:draw-threshold:2] marker on its transform ability line). The
   // card's ability is two hooks (draw / transform), so the draw stays unconditional.
   'wwhk/amadeus-cho/gamma-draining-nanites',
+  // why: WP-859 / D-24795 — Miek's Metamorphosis. Its transform gates on "a card with an
+  // [icon:attack] icon was KO'd from your deck this turn", modeled by the
+  // attackIconCardKoedFromDeckThisTurn wait-and-see condition ([keyword:deck-koed-attack-icon]).
+  // FEAST_THEN_TRANSFORM_CARDS splits its one line so the Feast stays unconditional.
+  'wwhk/miek-the-unhived/metamorphosis',
+  // why: WP-859 / D-24795 — No-Name's Bursting with Life. Its transform gates on "a non-grey Hero
+  // was KO'd from your deck this turn", modeled by the nonGreyHeroKoedFromDeckThisTurn
+  // wait-and-see condition ([keyword:deck-koed-non-grey-hero]); split like Metamorphosis.
+  'wwhk/no-name-brood-queen/bursting-with-life',
+]);
+
+// why: WP-857 / D-24793 — cards whose printed "You may [keyword:Feast]" (KO the top card of your
+// deck) resolves to the executable `feast` keyword. Keyed by canonical `{setAbbr}/{heroSlug}/
+// {cardSlug}`. Each listed line is fully covered by the shipped KO-or-keep reveal (RS-1: the card
+// is shown before the choice); Hive King Miek is Metamorphosis's Transform face, reachable once
+// that Transform is modeled. World-Spanning Hunger ("Feast up to three times", +2 per non-grey Hero)
+// and The Void Unchained (cost-0 check, Transform branch) are deliberately NOT here: their other
+// text is unmodeled, so resolving Feast on them would be unfaithful and silence their hollow signal.
+// Honest-Partial Invariant — the SUPPORTED_TRANSFORM_BASES / X_GENE_CARDS precedent.
+const FEAST_CARDS: ReadonlySet<string> = new Set<string>([
+  'wwhk/miek-the-unhived/devouring-frenzy',
+  'wwhk/miek-the-unhived/metamorphosis',
+  'wwhk/miek-the-unhived/hive-king-miek',
+  'wwhk/no-name-brood-queen/appetite-for-destruction',
+  'wwhk/no-name-brood-queen/bursting-with-life',
+  // why: WP-859 / D-24795 — World-Spanning Hunger's "Feast up to three times" (FEAST_REPEAT_COUNTS)
+  // and its "+2 for each non-grey Hero that was KO'd from your deck this turn" (the
+  // non-grey-heroes-koed-from-deck-this-turn count source plus the per-Feast reward) are now
+  // modeled, so its Feast resolves.
+  'wwhk/no-name-brood-queen/world-spanning-hunger',
+]);
+
+// why: WP-859 / D-24795 — "Feast up to three times" is three KO-or-keep prompts (keeping a card is
+// choosing not to Feast that time). The parser is text-only and de-duplicates keywords, so the
+// count cannot come from the text: the caller reads it here and threads it in as feastRepeatCount.
+// Every other FEAST_CARDS card Feasts once.
+const FEAST_REPEAT_COUNTS: ReadonlyMap<string, number> = new Map<string, number>([
+  ['wwhk/no-name-brood-queen/world-spanning-hunger', 3],
+]);
+
+// why: WP-859 / D-24795 — a condition gates its whole line's hook, and these two cards print
+// "You may [keyword:Feast]. Then, if …, [keyword:Transform] this …" on ONE line, so a condition
+// marker would also gate the Feast (the very KO that satisfies it). A parse-only pre-pass
+// (splitFeastThenTransformLine, the coalesceCountScaledChooseOne precedent; display text untouched)
+// splits the line at its " Then, " into a Feast hook and a Transform hook. The condition marker is
+// appended to the end of the printed line, so it lands on the Transform half. Allowlisted, so no
+// other card's hooks change (Gamma-Draining Nanites' data already prints two lines).
+const FEAST_THEN_TRANSFORM_CARDS: ReadonlySet<string> = new Set<string>([
+  'wwhk/miek-the-unhived/metamorphosis',
+  'wwhk/no-name-brood-queen/bursting-with-life',
 ]);
 
 // why: WP-705 / D-24526 — cards whose bare [keyword:Teleport] display token resolves to
@@ -782,6 +893,79 @@ const EXCESSIVE_VIOLENCE_CARDS: ReadonlySet<string> = new Set<string>([
   'mgtg/drax/remove-his-spine',
 ]);
 
+// why: WP-865 / D-24808 — identifies a printed Heist line. The cards print it two ways: plain
+// "Heist:" text (Scott Lang, Wasp) and the "[keyword:Heist]:" display token (Ant-Man, Ant Army),
+// so both forms match. Anchored to the line start (the Heist ability always leads its line) and
+// non-global so `.test` / `.replace` are stateless. The matched prefix is STRIPPED before the
+// line body is parsed: unlike the spaced Excessive Violence token, `[keyword:Heist]` matches
+// KEYWORD_PATTERN, and left in place it would become a nested 'heist' inner effect that readies
+// the card again when the Heist fires.
+const HEIST_LINE_PATTERN = /^\s*(?:\[keyword:Heist\]|Heist):/i;
+
+// why: WP-865 / D-24808 — the Honest-Partial allowlist of Heist cards whose WHOLE Heist ability
+// maps to a shipped executor, so their Heist line fuses into an EXECUTABLE heist hook. Keyed by
+// the canonical `{setAbbr}/{heroSlug}/{cardSlug}` key (the EXCESSIVE_VIOLENCE_CARDS precedent).
+// why: WP-876 / D-24823 — now all ten Ant-Man and the Wasp Heist lines: The Big Score, Revolutionary
+// Anthem, Putting a Crew Together and X-Con Security Van joined once their curated markers
+// (heist-master-strike-ko, heist-scheme-twist-bonus, attack-per-count:distinct-costs-you-have,
+// heist-move-villain-ko-hero) had executors. buildHeistHollow and the non-allowlisted branch stay
+// for any future set's Heist line, which stays an honest 'heist' hollow until it is listed here.
+const HEIST_CARDS: ReadonlySet<string> = new Set<string>([
+  'amwp/scott-lang-cat-burglar/petty-larceny',
+  'amwp/scott-lang-cat-burglar/anything-for-cassie',
+  'amwp/scott-lang-cat-burglar/shocking-support',
+  'amwp/wasp/infiltrate',
+  'amwp/ant-man/tiny-little-risk',
+  'amwp/ant-army/up-the-ante',
+  'amwp/scott-lang-cat-burglar/the-big-score',
+  'amwp/scott-lang-cat-burglar/putting-a-crew-together',
+  'amwp/scott-lang-cat-burglar/x-con-security-van',
+  'amwp/ant-army/revolutionary-anthem',
+]);
+
+// why: WP-881 / D-24832 — identifies a hero Patrol line: an optional leading [hc:X] / [team:X]
+// gate prefix (group 1, ssw2 Change History's "[team:x-men]:"), then a leading
+// "[keyword:Patrol <target>]" token (group 2 = the target), then the line body (group 3). The
+// token has spaces, so KEYWORD_PATTERN never matches it and nothing gated the line before this.
+// Non-global, so `.exec` is stateless. Not the D-2502 villain board keyword Patrol.
+const PATROL_LINE_PATTERN =
+  /^\s*((?:\[(?:hc|team):[^\]]+\]\s*)*:?\s*)\[keyword:Patrol\s+([^\]]+)\]\s*:?\s*(.*)$/i;
+
+// why: WP-881 / D-24832 — a Patrol target that names exactly one City space. Any other target
+// (any / two adjacent / every city space, the Escape Pile, your discard pile, your Victory Pile)
+// is an honest hollow until its own WP models it.
+const PATROL_NAMED_SPACE_PATTERN = /^the\s+(sewers|bank|rooftops|streets|bridge)$/i;
+
+// why: WP-886 / D-24837 — identifies a pure hero Conqueror line: an optional [hc:X] / [team:X]
+// gate prefix (group 1), an optional "Instead," (group 2), then one
+// "[keyword:<Space> Conqueror N]" token (group 3 = the space, group 4 = N) and nothing else. A
+// line with any other text (Stardust's Focus line, Dragonfang's Thrown Artifact line) is not a
+// Conqueror line and keeps its generic-parse honest hollow; Put to the Torch's Wound line is not
+// one either and parses as a gain-wound-reward with the `rooftops-conqueror` reward (WP-893 /
+// D-24850). The ^…$ anchors are load-bearing: without them Put to the Torch's line 2 would grant
+// +4 on every play. Non-global, so `.exec` is stateless.
+const CONQUEROR_LINE_PATTERN =
+  /^\s*((?:\[(?:hc|team):[^\]]+\]\s*)*:?)\s*(Instead,\s*)?\[keyword:(Sewers|Bank|Rooftops|Streets|Bridge)\s+Conqueror\s+(\d+)\]\.?\s*$/i;
+
+// why: WP-881 / D-24832 — the "If it's empty," / "If it's not," branch heads (straight or curly
+// apostrophe). Case-insensitive, non-global.
+const PATROL_EMPTY_HEAD_PATTERN = /^\s*If it[’']s empty,\s*/i;
+const PATROL_NOT_SPLIT_PATTERN = /\s*If it[’']s not,\s*/i;
+
+// why: WP-881 / D-24832 — the curated [keyword:…] marker tokens apply-hero-ability-markers.mjs
+// appends at line end. They are stripped from the line BEFORE the "If it's not," split and given
+// to the EMPTY branch: left in place they would land on the occupied branch, where Seal the Rift's
+// $-anchored "usable only to fight …" restriction clause would swallow them.
+const PATROL_TRAILING_MARKERS_PATTERN = /((?:\s*\[keyword:[^\]]+\])+)\s*$/;
+
+// why: WP-881 / D-24832 — cards whose "[gate]: Instead, you get both." line upgrades a two-branch
+// Patrol line. The line becomes two cross hooks, each gated on the gate AND one Patrol state, that
+// grant the OTHER branch's body: with the gate met, the base branch hook plus its cross hook give
+// both branches whichever state the City space is in (HeroCondition lists are AND-only).
+const PATROL_BOTH_CARDS: ReadonlySet<string> = new Set<string>([
+  'mdns/elsa-bloodstone/axe-of-the-slayer',
+]);
+
 // why: WP-668 / D-24481, D-24670 — keywords whose handler computes the line's own
 // "+[icon:attack] equal to …" amount. The printed icon on such a line is that grant, not
 // a separate flat attack, so the icon-suppression in the keyword pass drops the plain
@@ -792,6 +976,15 @@ const SELF_COMPUTED_ATTACK_KEYWORDS: ReadonlySet<string> = new Set<string>([
   'reveal-cost-attack',
   'reveal-attack-choose',
   'victory-villain-attack',
+  // why: WP-850 / D-24786 — "You get +[icon:attack] equal to those cards' printed [icon:attack]"
+  // (Firepower from the Future): the handler sums the discarded cards' printed Attack, so both
+  // icons on the line are that grant, never a separate magnitude-less flat attack.
+  'discard-top-printed-attack',
+  // why: WP-858 / D-24794 — the two Ritual Artifact lines (Staff of Legba "+[icon:attack] equal to
+  // that Hero's cost", Medallion of Many Loas "+1[icon:attack] for each Hero Class") print the
+  // reward the useRitualArtifact move computes; neither icon is a flat grant at play.
+  'ritual-recruited-hero',
+  'ritual-hero-classes',
 ]);
 
 // why: WP-765 / D-24598 — the cards whose "[keyword:Sunlight]: … / [keyword:Moonlight]: … /
@@ -821,10 +1014,11 @@ const MOONLIGHT_MARKER_PATTERN = /\[keyword:Moonlight\]/i;
 // "+1[icon:attack] for each …" would fire as a flat grant (the D-24570 parsed-grant suppression
 // sibling). They stay visibly hollow (parse-unrecognized) until a named follow-up models them.
 const DAY_NIGHT_UNMODELED_LINES: ReadonlySet<string> = new Set<string>([
-  // why: WP-767 / D-24606 — Snarling Fangs' Moonlight line is now modelled (the per-defeat
-  // trigger + optional-ko-your-hero markers), so it left this list; eight entries remain.
+  // why: WP-767 / D-24600 — Snarling Fangs' Moonlight line is now modelled (the per-defeat
+  // trigger + optional-ko-your-hero markers), so it left this list. WP-883 / D-24834 — Scalded by
+  // Sunlight's Sunlight line is now modelled (the gain-wound-reward marker), so it left too (the
+  // D-24600 precedent, amending D-24598's list); seven entries remain.
   'mdns/werewolf-by-night/track-the-captives:moonlight',
-  'mdns/morbius/scalded-by-sunlight:sunlight',
   'nmut/sunspot/solar-powered:sunlight',
   'nmut/sunspot/thermokinetic-fury:sunlight',
   'nmut/sunspot/empyreal-force:sunlight',
@@ -862,12 +1056,28 @@ const DAY_NIGHT_CONDITION_TYPES: ReadonlySet<string> = new Set<string>([
 // to match the [keyword:X] lowercasing.
 const X_GENE_MARKER_PATTERN = /\[keyword:x-gene\]/i;
 
-// why: D-24074 / WP-290 — detects whether an ability line carries the Size-Changing
-// keyword. On such a line the same-line `[hc:...]` tokens are the GRANTED classes (the
-// card gains them when played), not `heroClassMatch` play-conditions — so Step 1a routes
-// them to the granted-class list instead of conditions. Non-global, stateless `.test`
-// (no lastIndex concern); case-insensitive to match the `[keyword:X]` lowercasing.
+// why: D-24801 (supersedes D-24074's class grant) — detects whether an ability line carries
+// the Size-Changing keyword. On such a line the same-line `[hc:...]` tokens are the classes
+// that discount the card's recruit cost (rules v23 p.33: "recruit this card for 2 less if you
+// played any [class] cards this turn"), not `heroClassMatch` play-conditions — so Step 1a
+// routes them to the Size-Changing class list instead of conditions. Non-global, stateless
+// `.test` (no lastIndex concern); case-insensitive to match the `[keyword:X]` lowercasing.
 const SIZE_CHANGING_MARKER_PATTERN = /\[keyword:size-changing\]/i;
+
+// why: D-24801 — the Microscopic Size-Changing keyword (rules v23 p.30): each same-line
+// `[hc:X]` icon is one "2 less" step, earned by one matching-class card played this turn.
+// SIZE_CHANGING_MARKER_PATTERN never matches it (the token body starts "Microscopic").
+const MICROSCOPIC_SIZE_CHANGING_MARKER_PATTERN = /\[keyword:microscopic size-changing\]/i;
+
+// why: WP-862 / D-24804 — the curated marker on Pym Particles' grant line; its presence makes that
+// line's printed [keyword:Size-Changing] / [hc:tech] descriptive (see lineHasSizeChangingGrant).
+const HQ_SIZE_CHANGING_GRANT_MARKER = '[keyword:hq-hero-gains-size-changing-tech]';
+
+// why: D-24806 — the reveal predicate prefix for "If it's [hc:X] or has [keyword:Size-Changing]";
+// its presence also makes the line's printed Size-Changing token the reveal CRITERION, not this
+// card's own Size-Changing.
+const HERO_CLASS_OR_SIZE_CHANGING_TOKEN_PREFIX = 'hc-or-size-changing-';
+const SIZE_CHANGING_REVEAL_CRITERION_PATTERN = /\[keyword:reveal:hc-or-size-changing-[a-z][a-z0-9-]*:/;
 
 // why: WP-535 fix-forward — Rogue's Copy Powers text carries a MID-SENTENCE [hc:covert]
 // ("This card is both [hc:covert] and the color you copy") that describes the class the
@@ -1098,6 +1308,8 @@ function parseAbilityText(
     xGeneSupported?: boolean;
     dayNightUnmodeled?: boolean;
     conditionalGrantUnmodeled?: boolean;
+    feastSupported?: boolean;
+    feastRepeatCount?: number;
   } = {},
 ): {
   keywords: HeroKeyword[];
@@ -1107,6 +1319,7 @@ function parseAbilityText(
   unresolvedMarkers: string[];
   resolvedMarkers: string[];
   sizeChangingClasses: string[];
+  microscopicSizeChangingClasses: string[];
   timing: HeroAbilityTiming;
 } {
   const transformSupported = options.transformSupported === true;
@@ -1126,17 +1339,48 @@ function parseAbilityText(
   // why: D-24628 — true only for a CONDITIONAL_GRANT_UNMODELED_LINES card, resolved by the caller
   // (see the suppression before the 'conditional' keyword below).
   const conditionalGrantUnmodeled = options.conditionalGrantUnmodeled === true;
+  // why: WP-857 / D-24793 — the caller resolves whether this card is in FEAST_CARDS and threads
+  // it in (parseAbilityText is text-only and never sees the card id). Defaults false so a
+  // [keyword:Feast] on any non-allowlisted card stays an honest unresolved marker.
+  const feastSupported = options.feastSupported === true;
+  // why: WP-859 / D-24795 — resolved by the caller from FEAST_REPEAT_COUNTS ("Feast up to three
+  // times"); 1 for every other card, so a one-Feast line builds one `feast` effect as before.
+  const feastRepeatCount = options.feastRepeatCount ?? 1;
+  // why: WP-859 / D-24795 — set by the deck-koed-attack-icon marker arm: on that line the printed
+  // [icon:attack] is the condition's criterion ("a card with an [icon:attack] icon"), not a grant.
+  let lineReadsAttackIconDeckKo = false;
   const keywords: HeroKeyword[] = [];
   const heroClassConditions: HeroCondition[] = [];
   const teamConditions: HeroCondition[] = [];
-  // why: D-24074 / WP-290 — the granted Hero Classes parsed from a Size-Changing line's
-  // same-line `[hc:...]` tokens (Step 1a). Empty on every non-Size-Changing line and on a
-  // Size-Changing line with no `[hc:X]` (recognized, no grant — graceful empty, no throw).
+  // why: D-24801 — the discount classes parsed from a Size-Changing line's same-line
+  // `[hc:...]` tokens (Step 1a). Empty on every non-Size-Changing line and on a
+  // Size-Changing line with no `[hc:X]` (recognized, no discount — graceful empty, no throw).
   const sizeChangingClasses: string[] = [];
-  // why: D-24074 / WP-290 — when the line carries [keyword:Size-Changing], its [hc:...]
-  // tokens are the GRANTED classes, not heroClassMatch conditions. Computed once up front
-  // so Step 1a routes every same-line [hc:...] to the grant list (guardrail #4: extract ALL).
-  const lineHasSizeChanging = SIZE_CHANGING_MARKER_PATTERN.test(abilityText);
+  // why: D-24801 — when the line carries [keyword:Size-Changing], its [hc:...] tokens are
+  // the discount classes, not heroClassMatch conditions. Computed once up front so Step 1a
+  // routes every same-line [hc:...] to the Size-Changing list (guardrail #4: extract ALL).
+  // why: WP-862 / D-24804 — on a line carrying the HQ grant marker (Pym Particles: "A Hero in the
+  // HQ with no Size-Changing abilities gains [keyword:Size-Changing] [hc:tech] this turn.") the
+  // printed Size-Changing token and its [hc:tech] name what ANOTHER Hero gains: they are
+  // descriptive, not this card's own discount (D-24801 read them as Pym Particles' own Tech step).
+  const lineHasSizeChangingGrant = abilityText.includes(HQ_SIZE_CHANGING_GRANT_MARKER);
+  // why: D-24806 — on a reveal line whose criterion is "[hc:X] or has [keyword:Size-Changing]"
+  // (Look Out for the Little Guy), the Size-Changing token names what the REVEALED card must
+  // have, so it is not this card's Size-Changing; its [hc:X] is the reveal criterion (Step 1a's
+  // lineHasRevealTraitCriterion branch drops it as a gate).
+  const lineHasSizeChangingRevealCriterion = SIZE_CHANGING_REVEAL_CRITERION_PATTERN.test(abilityText);
+  const isSizeChangingTokenDescriptive = lineHasSizeChangingGrant || lineHasSizeChangingRevealCriterion;
+  const lineHasSizeChanging = SIZE_CHANGING_MARKER_PATTERN.test(abilityText) && !isSizeChangingTokenDescriptive;
+  // why: D-24801 — a Microscopic Size-Changing line's [hc:...] icons, one entry per icon
+  // (repeats kept: three [hc:tech] icons are three 2-less steps). Not play-conditions.
+  const microscopicSizeChangingClasses: string[] = [];
+  const lineHasMicroscopicSizeChanging = MICROSCOPIC_SIZE_CHANGING_MARKER_PATTERN.test(abilityText);
+  // why: D-24801 — the multi-word token never matches KEYWORD_PATTERN (Step 2), so the
+  // recognized keyword is recorded here; without it the line would park the unresolved
+  // 'microscopic-size-changing' marker and read as a parse-unrecognized hollow.
+  if (lineHasMicroscopicSizeChanging) {
+    keywords.push('microscopic-size-changing');
+  }
   // why: WP-535 fix-forward — a copy-powers line's [hc:X] is the DESCRIPTIVE class the card
   // gains, not a play gate; suppress its heroClassMatch condition (see Step 1a).
   const lineHasCopyPowers = COPY_POWERS_MARKER_PATTERN.test(abilityText);
@@ -1261,13 +1505,20 @@ function parseAbilityText(
   heroClassMatch = heroClassRegex.exec(abilityText);
   while (heroClassMatch !== null) {
     const normalizedClass = normalizeTraitSlug(heroClassMatch[1]!);
-    if (lineHasSizeChanging) {
-      // why: D-24074 — on a Size-Changing line the [hc:...] tokens are the GRANTED classes
-      // (the card gains them on play), so route them to the grant list and emit NO
+    if (lineHasSizeChangingGrant) {
+      // why: WP-862 / D-24804 — the granted class is descriptive (the chosen HQ Hero gains it);
+      // it is neither this card's discount class nor a play gate, so it emits nothing.
+    } else if (lineHasSizeChanging) {
+      // why: D-24801 — on a Size-Changing line the [hc:...] tokens are the classes that
+      // discount the recruit cost, so route them to the Size-Changing list and emit NO
       // heroClassMatch condition for them (extract ALL on this line — guardrail #4). The
       // [keyword:Size-Changing] token itself is a recognized HeroKeyword (Step 2), so no
       // unresolved marker is recorded either.
       sizeChangingClasses.push(normalizedClass);
+    } else if (lineHasMicroscopicSizeChanging) {
+      // why: D-24801 — on a Microscopic Size-Changing line each [hc:...] icon is one 2-less
+      // step (repeats kept), never a play gate; the keyword is recorded up front.
+      microscopicSizeChangingClasses.push(normalizedClass);
     } else if (lineHasCopyPowers) {
       // why: WP-535 fix-forward — on a copy-powers line the [hc:X] is the DESCRIPTIVE class
       // ("This card is both [hc:covert] and the color you copy"), NOT a play gate. Covert is
@@ -1454,6 +1705,15 @@ function parseAbilityText(
     }
   }
 
+  // why: WP-885 / D-24836 — per-line pre-scan for a seeded gain-wound-reward token (the
+  // xGeneSupported / teleportOnDiscardSupported precedent). On a line whose reward is Berserk or
+  // Transform, the printed [keyword:Berserk] / [keyword:Transform] IS the reward: the Step 2 loop
+  // consumes it (no primitive, no keyword, no unresolved marker) so it never fires unconditionally
+  // and never reads as a hollow — the D-24570 reward-icon suppression's siblings.
+  const gainWoundRewardTokenReward = findSeededGainWoundRewardToken(abilityText);
+  const lineConsumesBerserkReward = gainWoundRewardTokenReward === 'berserk';
+  const lineConsumesTransformReward = gainWoundRewardTokenReward === 'transform';
+
   // Step 2: Extract [keyword:X] or [keyword:X:N] markup
   // Collect magnitudes keyed by keyword — explicit markup wins over icon-derived.
   const magnitudes: Map<string, number> = new Map();
@@ -1461,7 +1721,12 @@ function parseAbilityText(
   let keywordMatch: RegExpExecArray | null = keywordRegex.exec(abilityText);
   while (keywordMatch !== null) {
     const normalizedKeyword = keywordMatch[1]!.toLowerCase();
-    if (normalizedKeyword === 'investigate') {
+    if (normalizedKeyword === 'size-changing' && isSizeChangingTokenDescriptive) {
+      // why: WP-862 / D-24804 — on the HQ grant line the printed [keyword:Size-Changing] names
+      // what another Hero gains, so this card records no `size-changing` keyword (Step 1a drops
+      // its [hc:tech] the same way). D-24806 — likewise on a Size-Changing reveal-criterion line
+      // it names what the revealed card must have.
+    } else if (normalizedKeyword === 'investigate') {
       // why: WP-564 / D-24373 — investigate IS a HeroKeyword, but its keyword + descriptor
       // are recorded ONLY when a static criterion resolves. A deferred form (choose-first,
       // other-zone, name-match, disposition, modifier, compose-with-Teleport) records
@@ -1508,10 +1773,28 @@ function parseAbilityText(
       // before this WP — the Honest-Partial Invariant (mirrors the investigate
       // resolver above). Checked BEFORE isValidHeroKeyword so the generic push
       // does not fire for a held-back card.
-      if (transformSupported) {
+      if (lineConsumesTransformReward) {
+        // why: WP-885 / D-24836 — on a gain-wound-reward Transform line the Transform is the
+        // reward of a Wound kept: no keyword (no unconditional swap), no unresolved marker (not
+        // a hollow); recorded as resolved for the ledger (D-24045).
+        resolvedMarkers.push('transform');
+      } else if (transformSupported) {
         keywords.push('transform');
       } else {
         unresolvedMarkers.push('transform');
+      }
+    } else if (normalizedKeyword === 'feast') {
+      // why: WP-857 / D-24793 — feast IS a HeroKeyword, but its keyword + effect are recorded
+      // ONLY for a FEAST_CARDS card (the allowlist the caller resolved into feastSupported).
+      // World-Spanning Hunger ("Feast up to three times", +2 per non-grey Hero) and The Void
+      // Unchained (cost-0 check, Transform branch) carry other text the engine does not model,
+      // so their Feast stays an unresolved marker — the Honest-Partial Invariant (mirrors the
+      // transform arm above). Checked BEFORE isValidHeroKeyword so the generic push does not
+      // fire for a held-back card. Like transform, the keyword falls through to its plain effect.
+      if (feastSupported) {
+        keywords.push('feast');
+      } else {
+        unresolvedMarkers.push('feast');
       }
     } else if (
       (normalizedKeyword === 'undercover-hand-shield-hero' ||
@@ -1650,7 +1933,12 @@ function parseAbilityText(
       // over the plain-JSON AST) forecloses both aliasing the shared registry const
       // (D-13502) and hand-literal drift. A cousin is a registry row, not an engine edit.
       const composition = HERO_COMPOSITION_MARKERS[normalizedKeyword];
-      if (composition !== undefined) {
+      if (composition !== undefined && lineConsumesBerserkReward && normalizedKeyword === 'berserk') {
+        // why: WP-885 / D-24836 — on a gain-wound-reward Berserk line each printed Berserk is the
+        // reward of a Wound kept, so no primitive is attached (no unconditional Berserk); the
+        // resolved marker is still recorded (one per token) so the ledger keeps Berserk executable.
+        resolvedMarkers.push(normalizedKeyword);
+      } else if (composition !== undefined) {
         primitiveEffects.push(structuredClone(composition));
         // why: D-24045 — record the resolved composition marker (same gate as the
         // primitiveEffects push). A static composition (berserk) always resolves here, so it
@@ -1758,6 +2046,41 @@ function parseAbilityText(
       // on play). A boolean gate — `value` is unused by the evaluator; '1' is a stable
       // placeholder. Placed before the unresolved-marker fallback so it never flags hollow.
       conditions.push({ type: 'defeatedVillainOrMastermindThisTurn', value: '1' });
+    } else if (normalizedKeyword === 'owned-card-koed') {
+      // why: WP-853 / D-24789 — Absorb Energies' "Whenever a card you own is KO'd this
+      // turn, you get +2 Recruit." The Diamond Form marker→condition precedent (D-24467):
+      // push the wait-and-see gate onto the same hook as the line's printed +2[icon:recruit],
+      // so the recruit fires once per KO of the player's own card (not on play). A per-KO
+      // gate — `value` is unused; '1' is a stable placeholder. Placed before the
+      // unresolved-marker fallback so it never flags hollow.
+      conditions.push({ type: OWNED_CARD_KOED_CONDITION_TYPE, value: '1' });
+    } else if (normalizedKeyword === 'owned-hero-koed') {
+      // why: WP-856 / D-24792 — Possessed by Brother's Spirit's "The first time that one of
+      // your Heroes or a Hero from your deck or discard pile is KO'd this turn, you get …".
+      // Push the one-shot wait-and-see gate onto the same hook as the line's choose-one
+      // reward. This arm runs in the per-token loop, AFTER the count-scaled choose-one
+      // pre-pass (whose conditions.splice would otherwise drop it). `value` is unused; '1'
+      // is a stable placeholder. Placed before the unresolved-marker fallback.
+      conditions.push({ type: OWNED_HERO_KOED_CONDITION_TYPE, value: '1' });
+    } else if (normalizedKeyword === 'deck-card-koed') {
+      // why: WP-855 / D-24791 — Endless Appetite's "Whenever a card is KO'd from your deck this
+      // turn, you may draw a card." The owned-card-koed precedent (D-24789): push the per-KO
+      // wait-and-see gate onto the same hook as the line's [keyword:draw:1], so the draw fires
+      // once per KO from the player's deck (not on play; "you may" is auto-applied, pure
+      // upside). `value` is unused; '1' is a stable placeholder. Placed before the
+      // unresolved-marker fallback so it never flags hollow.
+      conditions.push({ type: DECK_CARD_KOED_CONDITION_TYPE, value: '1' });
+    } else if (normalizedKeyword === 'deck-koed-attack-icon') {
+      // why: WP-859 / D-24795 — Metamorphosis' "Then, if a card with an [icon:attack] icon was KO'd
+      // from your deck this turn, [keyword:Transform] …". Push the one-shot wait-and-see gate onto
+      // the Transform half (FEAST_THEN_TRANSFORM_CARDS split the line), and flag the line so its
+      // descriptive attack icon is dropped below. `value` is unused; '1' is a stable placeholder.
+      conditions.push({ type: ATTACK_ICON_DECK_KO_CONDITION_TYPE, value: '1' });
+      lineReadsAttackIconDeckKo = true;
+    } else if (normalizedKeyword === 'deck-koed-non-grey-hero') {
+      // why: WP-859 / D-24795 — Bursting with Life's "Then, if a non-grey Hero was KO'd from your
+      // deck this turn, [keyword:Transform] …". The same shape as the arm above; no icon to drop.
+      conditions.push({ type: NON_GREY_HERO_DECK_KO_CONDITION_TYPE, value: '1' });
     } else if (normalizedKeyword === 'master-strike-this-turn') {
       // why: WP-743 / D-24566 — Grief's "If a Master Strike was completed this turn, you
       // get +2 Recruit." The marker→condition precedent (D-24467): push the whole-turn
@@ -2002,6 +2325,42 @@ function parseAbilityText(
     koWoundRewardMatch = koWoundRewardRegex.exec(abilityText);
   }
 
+  // Step 2g: Extract [keyword:gain-wound-reward:<reward>:<n>] markup (WP-883 / D-24834).
+  // why: mirrors Step 2f — the gain-wound-reward token has three segments; the reward is granted
+  // only for a Wound gained and kept, and the magnitude is the reward magnitude. A descriptor is
+  // emitted ONLY when the reward is seeded AND n >= 1 (an unseeded reward emits nothing).
+  // why: WP-885 / D-24836, WP-893 / D-24850 — a seeded reward that is not a HeroKeyword (the
+  // composition marker Berserk, D-24031; the Conqueror bonus `rooftops-conqueror`) is recorded as
+  // the line's non-keyword reward instead of a rewardType; the descriptor arm emits it as
+  // rewardComposition.
+  let gainWoundRewardComposition: string | undefined;
+  const gainWoundRewardRegex = new RegExp(GAIN_WOUND_REWARD_PATTERN.source, 'g');
+  let gainWoundRewardMatch: RegExpExecArray | null = gainWoundRewardRegex.exec(abilityText);
+  while (gainWoundRewardMatch !== null) {
+    const gainRewardCandidate = gainWoundRewardMatch[1]!;
+    const gainRewardMagnitude = parseInt(gainWoundRewardMatch[2]!, 10);
+    if (isValidHeroKeyword(gainRewardCandidate)
+      && GAIN_WOUND_REWARD_SEEDED_REWARDS.has(gainRewardCandidate)
+      && gainRewardMagnitude >= 1) {
+      keywords.push('gain-wound-reward');
+      magnitudes.set('gain-wound-reward', gainRewardMagnitude);
+      rewardTypes.set('gain-wound-reward', gainRewardCandidate);
+    } else if (GAIN_WOUND_REWARD_SEEDED_COMPOSITIONS.has(gainRewardCandidate)
+      && gainRewardMagnitude >= 1) {
+      keywords.push('gain-wound-reward');
+      magnitudes.set('gain-wound-reward', gainRewardMagnitude);
+      gainWoundRewardComposition = gainRewardCandidate;
+    } else if (GAIN_WOUND_REWARD_SEEDED_CONQUEROR_REWARDS.has(gainRewardCandidate)
+      && gainRewardMagnitude >= 1) {
+      // why: WP-893 / D-24850 — a Conqueror-bonus reward travels in rewardComposition (it is not
+      // a HeroKeyword); the grant reads its City space at grant time.
+      keywords.push('gain-wound-reward');
+      magnitudes.set('gain-wound-reward', gainRewardMagnitude);
+      gainWoundRewardComposition = gainRewardCandidate;
+    }
+    gainWoundRewardMatch = gainWoundRewardRegex.exec(abilityText);
+  }
+
   // Step 2e-bis: Extract [keyword:shuffle-discard-empty-reward:<reward>:<n>]
   // markup (D-24148). Mirrors Step 2e: the reward is stored in rewardTypes and
   // the grant magnitude in magnitudes so the effect builder can attach both. A
@@ -2148,6 +2507,22 @@ function parseAbilityText(
     }
     uniqueKeywords = keywordsWithoutAttackIcon;
     magnitudes.delete('attack');
+  }
+
+  // Icon-suppression (WP-859 / D-24795): on a deck-koed-attack-icon line the printed attack icon
+  // names the condition's criterion ("a card with an [icon:attack] icon was KO'd"), not a grant.
+  // why: drop the `attack` keyword the descriptive icon produced (the D-24016 descriptive-token
+  // shape), so the Transform hook carries no stray attack effect. The criterion icon prints no
+  // number, so it never set an attack magnitude; a numbered "+N[icon:attack]" on the same line
+  // is a real grant and is kept.
+  if (lineReadsAttackIconDeckKo && !magnitudes.has('attack')) {
+    const keywordsWithoutCriterionIcon: HeroKeyword[] = [];
+    for (const keyword of uniqueKeywords) {
+      if (keyword !== 'attack') {
+        keywordsWithoutCriterionIcon.push(keyword);
+      }
+    }
+    uniqueKeywords = keywordsWithoutCriterionIcon;
   }
 
   // Icon-suppression (sibling): a count-scaled RECRUIT effect subsumes the
@@ -2337,6 +2712,25 @@ function parseAbilityText(
     }
     uniqueKeywords = keywordsWithoutRewardIcon;
     magnitudes.delete(koWoundRewardIconType);
+  }
+
+  // Icon-suppression (sibling): a gain-wound-reward effect subsumes the printed reward icon on the
+  // same line. Without this, Hulk Smash!'s "You may gain a Wound. If you do, you get
+  // +5[icon:attack]" also emits a plain 'attack' effect granted UNCONDITIONALLY (no Wound, no
+  // choice) next to the Wound-gated reward. Drop the plain keyword matching the seeded rewardType
+  // and its magnitude so only the Wound-gated reward remains.
+  // why: D-24570 — the Wound-gated reward subsumes the printed reward icon (the gain-wound-reward
+  // sibling of the ko-wound-reward suppression above; WP-883 / D-24834).
+  const gainWoundRewardIconType = rewardTypes.get('gain-wound-reward');
+  if (gainWoundRewardIconType !== undefined) {
+    const keywordsWithoutGainRewardIcon: HeroKeyword[] = [];
+    for (const keyword of uniqueKeywords) {
+      if (keyword !== gainWoundRewardIconType) {
+        keywordsWithoutGainRewardIcon.push(keyword);
+      }
+    }
+    uniqueKeywords = keywordsWithoutGainRewardIcon;
+    magnitudes.delete(gainWoundRewardIconType);
   }
 
   // Icon-suppression (sibling): a put-bottom-hq-icon-reward effect subsumes BOTH
@@ -2547,6 +2941,18 @@ function parseAbilityText(
         if (magnitude !== undefined && koWoundRewardType !== undefined) {
           effects.push({ type: keyword, magnitude, rewardType: koWoundRewardType });
         }
+      } else if (keyword === 'gain-wound-reward') {
+        // why: WP-883 / D-24834 — the gain-wound-reward effect carries its rewardType so the
+        // handler can grant the right resource for a Wound kept; magnitude is the reward
+        // magnitude. Step 2g records both together, so the guard narrows the optional Map reads.
+        const gainWoundRewardType = rewardTypes.get('gain-wound-reward');
+        if (magnitude !== undefined && gainWoundRewardType !== undefined) {
+          effects.push({ type: keyword, magnitude, rewardType: gainWoundRewardType });
+        } else if (magnitude !== undefined && gainWoundRewardComposition !== undefined) {
+          // why: WP-885 / D-24836 — a composition reward (Berserk) carries rewardComposition and
+          // no rewardType (Berserk is not a HeroKeyword, D-24031).
+          effects.push({ type: keyword, magnitude, rewardComposition: gainWoundRewardComposition });
+        }
       } else if (keyword === 'shuffle-discard-empty-reward') {
         // why: D-24148 — the shuffle-discard-empty-reward effect carries its
         // rewardType so the executor's empty-discard branch can grant the right
@@ -2623,10 +3029,37 @@ function parseAbilityText(
         if (revealFromHandCriterion !== undefined) {
           effects.push({ type: 'reveal-or-gain-wound-each', revealCriterion: revealFromHandCriterion });
         }
+      } else if (keyword === 'feast') {
+        // why: WP-859 / D-24795 — "Feast up to three times" builds one `feast` effect per Feast
+        // (three sequential KO-or-keep prompts); keywords stay de-duplicated, so the count comes
+        // from FEAST_REPEAT_COUNTS via feastRepeatCount (1 for every other Feast card).
+        for (let feastIndex = 0; feastIndex < feastRepeatCount; feastIndex++) {
+          effects.push({ type: 'feast' });
+        }
       } else if (magnitude !== undefined) {
         effects.push({ type: keyword, magnitude });
       } else {
         effects.push({ type: keyword });
+      }
+    }
+  }
+
+  // Step 4d: WP-859 / D-24795 — the per-Feast reward stamp.
+  // why: World-Spanning Hunger's "+2 for each non-grey Hero that was KO'd from your deck this turn"
+  // counts its own Feasts' KOs, which land in later moves (RS-2, counted at resolution). The
+  // play-time attack-per-count covers KOs already made; each Feast carries the same per-unit
+  // magnitude to pay on its own non-grey Hero KO. Read from the card's one marker, never a second
+  // literal.
+  let nonGreyHeroKoCountMagnitude: number | undefined;
+  for (const effect of effects) {
+    if (effect.type === 'attack-per-count' && effect.countSource === 'non-grey-heroes-koed-from-deck-this-turn') {
+      nonGreyHeroKoCountMagnitude = effect.magnitude;
+    }
+  }
+  if (nonGreyHeroKoCountMagnitude !== undefined) {
+    for (const effect of effects) {
+      if (effect.type === 'feast') {
+        effect.nonGreyHeroKoAttack = nonGreyHeroKoCountMagnitude;
       }
     }
   }
@@ -2739,6 +3172,7 @@ function parseAbilityText(
     unresolvedMarkers,
     resolvedMarkers,
     sizeChangingClasses,
+    microscopicSizeChangingClasses,
     timing,
   };
 }
@@ -2971,6 +3405,30 @@ function isValidHeroKeyword(value: string): value is HeroKeyword {
     }
   }
   return false;
+}
+
+/**
+ * Finds the reward of the line's first seeded gain-wound-reward token (WP-885 / D-24836).
+ *
+ * @param abilityText - One ability line.
+ * @returns The reward (a seeded HeroKeyword reward or a seeded composition marker) of the first
+ *   token with n >= 1 whose reward is seeded, or undefined when the line has none.
+ */
+function findSeededGainWoundRewardToken(abilityText: string): string | undefined {
+  const tokenRegex = new RegExp(GAIN_WOUND_REWARD_PATTERN.source, 'g');
+  let tokenMatch: RegExpExecArray | null = tokenRegex.exec(abilityText);
+  while (tokenMatch !== null) {
+    const rewardCandidate = tokenMatch[1]!;
+    const rewardMagnitude = parseInt(tokenMatch[2]!, 10);
+    const isSeededKeywordReward = isValidHeroKeyword(rewardCandidate)
+      && GAIN_WOUND_REWARD_SEEDED_REWARDS.has(rewardCandidate);
+    const isSeededCompositionReward = GAIN_WOUND_REWARD_SEEDED_COMPOSITIONS.has(rewardCandidate);
+    if (rewardMagnitude >= 1 && (isSeededKeywordReward || isSeededCompositionReward)) {
+      return rewardCandidate;
+    }
+    tokenMatch = tokenRegex.exec(abilityText);
+  }
+  return undefined;
 }
 
 /**
@@ -3372,6 +3830,18 @@ const UNDERCOVER_OFFICER_MARKER_PATTERN = /\[keyword:undercover-officer-stack\]/
 const GAIN_OFFICER_OPTION_MARKER_PATTERN = /\[keyword:gain-officer\]/;
 const FLAT_ATTACK_OPTION_MARKER_PATTERN = /\[keyword:attack:([1-9]\d*)\]/;
 
+// why: WP-856 / D-24792 — the flat-recruit sibling of the flat attack option (Possessed by
+// Brother's Spirit's "+4[icon:recruit] or +4[icon:attack]"), read only inside
+// tryResolveCountScaledChooseOneLine. `recruit-per-count` never matches (its segment after
+// "recruit" is "-per-count"). No line carried [keyword:recruit:N] before this WP.
+const FLAT_RECRUIT_OPTION_MARKER_PATTERN = /\[keyword:recruit:([1-9]\d*)\]/;
+
+// why: WP-856 / D-24792 — the second entry form of the choose-one: a printed "+N[icon:X] or
+// +N[icon:Y]" reward (no "Choose one:" prefix). Only two hero lines print it (this card and
+// an unmarked cosm line), and the ≥2-option-marker rule still applies, so an unmarked line
+// parses exactly as before.
+const FLAT_RESOURCE_OR_PATTERN = /\+[1-9]\d*\[icon:(?:recruit|attack)\] or \+[1-9]\d*\[icon:(?:recruit|attack)\]/;
+
 // why: WP-675 / D-24490 — a standalone "Choose one:" header entry (the multi-line choose-one form).
 const STANDALONE_CHOOSE_ONE_HEADER_PATTERN = /^\s*Choose one\s*:\s*$/i;
 // why: WP-675 / D-24490 — an option bullet line under a standalone "Choose one:" header.
@@ -3424,6 +3894,40 @@ function coalesceCountScaledChooseOne(abilities: string[]): string[] {
   return [...abilities.slice(0, headerIndex), joined, ...abilities.slice(nextIndex)];
 }
 
+// why: WP-859 / D-24795 — the separator FEAST_THEN_TRANSFORM_CARDS lines print between their Feast
+// and their conditional Transform ("You may [keyword:Feast]. Then, if …").
+const FEAST_THEN_TRANSFORM_SEPARATOR = ' Then, ';
+
+/**
+ * Splits a "Feast. Then, if …, Transform" line into a Feast line and a Transform line (WP-859 /
+ * D-24795).
+ *
+ * A condition gates its whole line's hook, so on one line the Transform's condition would also
+ * gate the Feast whose KO satisfies it. Each line holding both `[keyword:Feast]` and
+ * `[keyword:Transform]` is replaced by `"<text before>"` and `"Then, <text after>"`, split at
+ * the first " Then, "; the condition marker appended to the printed line lands on the Transform
+ * half. A line without the separator is kept whole. Parse-only (the coalesceCountScaledChooseOne
+ * precedent): the card's display text is untouched. Called only for FEAST_THEN_TRANSFORM_CARDS.
+ *
+ * @param abilityLines - The card's ability lines (with markers already applied).
+ * @returns The ability lines with each Feast-then-Transform line split in two.
+ */
+function splitFeastThenTransformLine(abilityLines: string[]): string[] {
+  const splitLines: string[] = [];
+  for (const abilityLine of abilityLines) {
+    const isFeastThenTransform =
+      abilityLine.includes('[keyword:Feast]') && abilityLine.includes('[keyword:Transform]');
+    const separatorIndex = abilityLine.indexOf(FEAST_THEN_TRANSFORM_SEPARATOR);
+    if (!isFeastThenTransform || separatorIndex === -1) {
+      splitLines.push(abilityLine);
+      continue;
+    }
+    splitLines.push(abilityLine.slice(0, separatorIndex));
+    splitLines.push(`Then, ${abilityLine.slice(separatorIndex + FEAST_THEN_TRANSFORM_SEPARATOR.length)}`);
+  }
+  return splitLines;
+}
+
 /**
  * Resolves the multi-line "Choose one:" form to a heterogeneous option list (WP-675 /
  * D-24490; generalized WP-679 / D-24495).
@@ -3446,8 +3950,12 @@ function coalesceCountScaledChooseOne(abilities: string[]): string[] {
 function tryResolveCountScaledChooseOneLine(
   abilityText: string,
 ): { options: ChooseOneOption[] } | undefined {
-  // why: gate #1 — the "Choose one:" prefix (reuses the choose-one prefix const).
-  if (!EMPOWERED_CHOOSE_ONE_PREFIX_PATTERN.test(abilityText)) {
+  // why: gate #1 — the "Choose one:" prefix (reuses the choose-one prefix const), or the
+  // printed "+N[icon:X] or +N[icon:Y]" form (WP-856 / D-24792).
+  if (
+    !EMPOWERED_CHOOSE_ONE_PREFIX_PATTERN.test(abilityText) &&
+    !FLAT_RESOURCE_OR_PATTERN.test(abilityText)
+  ) {
     return undefined;
   }
   const candidates: Array<{ index: number; option: ChooseOneOption }> = [];
@@ -3491,6 +3999,14 @@ function tryResolveCountScaledChooseOneLine(
     candidates.push({
       index: flatAttackMatch.index,
       option: { kind: 'flat-attack', magnitude: parseInt(flatAttackMatch[1]!, 10) },
+    });
+  }
+  // why: WP-856 / D-24792 — the flat recruit option ("+4[icon:recruit] or …").
+  const flatRecruitMatch = FLAT_RECRUIT_OPTION_MARKER_PATTERN.exec(abilityText);
+  if (flatRecruitMatch !== null) {
+    candidates.push({
+      index: flatRecruitMatch.index,
+      option: { kind: 'flat-recruit', magnitude: parseInt(flatRecruitMatch[1]!, 10) },
     });
   }
   // why: require ≥2 options — a single recognized marker is a plain effect line, not a choose-one.
@@ -3808,6 +4324,13 @@ function parseRevealPredicateToken(token: string): RevealPredicate | null {
   if (token.startsWith('team-')) {
     const traitValue = normalizeTraitSlug(token.slice('team-'.length));
     return traitValue.length === 0 ? null : { kind: 'team', traitValue };
+  }
+  // why: D-24806 — `hc-or-size-changing-<slug>` (Look Out for the Little Guy: "If it's
+  // [hc:strength] or has [keyword:Size-Changing] draw it"). Checked BEFORE the `hc-` prefix,
+  // which would otherwise read "or-size-changing-strength" as the class slug.
+  if (token.startsWith(HERO_CLASS_OR_SIZE_CHANGING_TOKEN_PREFIX)) {
+    const traitValue = normalizeTraitSlug(token.slice(HERO_CLASS_OR_SIZE_CHANGING_TOKEN_PREFIX.length));
+    return traitValue.length === 0 ? null : { kind: 'hero-class-or-size-changing', traitValue };
   }
   if (token.startsWith('hc-')) {
     const traitValue = normalizeTraitSlug(token.slice('hc-'.length));
@@ -4182,6 +4705,52 @@ function buildExcessiveViolenceFusion(
 }
 
 /**
+ * Fuses one allowlisted card's Heist line into a single heist hook (WP-865 / D-24808).
+ *
+ * Strips the HEIST_LINE_PATTERN prefix ("Heist:" or "[keyword:Heist]:"), parses the rest of the
+ * line through the shared parseAbilityText (its +recruit / +attack icon or its draw / rescue
+ * marker becomes the Heist ability's inner effects), and returns ONE hook whose wrapper descriptor
+ * carries those effects in `heistEffects`. Because the prefix is stripped first, `heistEffects`
+ * never holds a 'heist' descriptor. Non-mutating.
+ *
+ * @param cardId - The hero card copy's CardExtId (the hook's cardId).
+ * @param abilityLine - The card's Heist ability line.
+ * @returns The fused heist hook.
+ */
+function buildHeistFusion(cardId: CardExtId, abilityLine: string): HeroAbilityHook {
+  const heistBody = abilityLine.replace(HEIST_LINE_PATTERN, '');
+  const heistEffects = parseAbilityText(heistBody).effects;
+  const effect: HeroEffectDescriptor = { type: 'heist', heistEffects };
+  return {
+    cardId,
+    // why: WP-865 / D-24808 — onPlay is the true readying moment: the hook fires at play, where
+    // its handler only readies the card. The inner effects fire later from attemptHeist.
+    timing: 'onPlay',
+    keywords: ['heist'],
+    effects: [effect],
+  };
+}
+
+/**
+ * Builds the honest hollow hook for a Heist line that is not on the HEIST_CARDS allowlist
+ * (WP-865 / D-24808).
+ *
+ * The hook carries no keyword and no effect, only a 'heist' unresolved marker, so the card grants
+ * nothing at play, never readies a Heist, and still reads as hollow in the runtime ledger.
+ *
+ * @param cardId - The hero card copy's CardExtId (the hook's cardId).
+ * @returns The hollow hook.
+ */
+function buildHeistHollow(cardId: CardExtId): HeroAbilityHook {
+  return {
+    cardId,
+    timing: 'onPlay',
+    keywords: [],
+    unresolvedMarkers: ['heist'],
+  };
+}
+
+/**
  * Fuses an allowlisted card's "[keyword:Sunlight]: … / [keyword:Moonlight]: … / [X]: Instead,
  * you get both." lines into one day-night-both hook (WP-765 / D-24598).
  *
@@ -4255,6 +4824,283 @@ function isDayNightUnmodeledLine(cardKey: string, abilityText: string): boolean 
     return true;
   }
   return false;
+}
+
+/** The parts of one hero Patrol line (WP-881 / D-24832). */
+interface PatrolLineParts {
+  /** The leading [hc:X] / [team:X] gate prefix, trimmed ('' when ungated). */
+  gatePrefix: string;
+  /** The lower-case City space name, or undefined for any other Patrol target. */
+  spaceName: string | undefined;
+  /** The line's honest-hollow slug, e.g. 'patrol-the-rooftops' (D-24623 normalization). */
+  hollowSlug: string;
+  /** The "If it's empty," branch body (curated trailing markers appended). */
+  emptyBody: string;
+  /** The "If it's not," branch body, or undefined when the line prints none. */
+  occupiedBody: string | undefined;
+}
+
+/**
+ * Splits one hero Patrol line into its gate prefix, target and branch bodies (WP-881 / D-24832).
+ *
+ * @param abilityText - One hero ability line.
+ * @returns The line's parts, or undefined when the line is not a Patrol line.
+ */
+function matchPatrolLine(abilityText: string): PatrolLineParts | undefined {
+  const lineMatch = PATROL_LINE_PATTERN.exec(abilityText);
+  if (lineMatch === null) {
+    return undefined;
+  }
+  const target = lineMatch[2]!.trim();
+  const hollowSlug = collectUnmatchedKeywordSlugs(`[keyword:Patrol ${target}]`)[0] ?? 'patrol';
+  const spaceMatch = PATROL_NAMED_SPACE_PATTERN.exec(target);
+  // why: WP-881 / D-24832 — trailing curated markers go to the EMPTY branch, stripped before the
+  // split (see PATROL_TRAILING_MARKERS_PATTERN).
+  let body = lineMatch[3]!;
+  let trailingMarkers = '';
+  const markersMatch = PATROL_TRAILING_MARKERS_PATTERN.exec(body);
+  if (markersMatch !== null) {
+    trailingMarkers = markersMatch[1]!.trim();
+    body = body.slice(0, markersMatch.index);
+  }
+  const notMatch = PATROL_NOT_SPLIT_PATTERN.exec(body);
+  const emptyPart = notMatch === null ? body : body.slice(0, notMatch.index);
+  const occupiedBody = notMatch === null ? undefined : body.slice(notMatch.index + notMatch[0].length).trim();
+  const emptyText = emptyPart.replace(PATROL_EMPTY_HEAD_PATTERN, '').trim();
+  return {
+    gatePrefix: lineMatch[1]!.trim(),
+    spaceName: spaceMatch === null ? undefined : spaceMatch[1]!.toLowerCase(),
+    hollowSlug,
+    emptyBody: trailingMarkers === '' ? emptyText : `${emptyText} ${trailingMarkers}`,
+    occupiedBody,
+  };
+}
+
+/**
+ * Builds one hook from a parseAbilityText result with the per-line loop's omit-when-empty
+ * construction (WP-881 / D-24832). Every array on the hook is the parse result's own array, so a
+ * hook built from its own parseAbilityText call never aliases another hook (D-13502).
+ *
+ * @param cardId - The hero card copy's CardExtId (the hook's cardId).
+ * @param parsedAbility - A fresh parseAbilityText result.
+ * @returns The hook.
+ */
+function buildHookFromParsedAbility(
+  cardId: CardExtId,
+  parsedAbility: ReturnType<typeof parseAbilityText>,
+): HeroAbilityHook {
+  const hook: HeroAbilityHook = { cardId, timing: 'onPlay', keywords: parsedAbility.keywords };
+  if (parsedAbility.conditions.length > 0) {
+    hook.conditions = parsedAbility.conditions;
+  }
+  if (parsedAbility.effects.length > 0) {
+    hook.effects = parsedAbility.effects;
+  }
+  if (parsedAbility.primitiveEffects.length > 0) {
+    hook.primitiveEffects = parsedAbility.primitiveEffects;
+  }
+  if (parsedAbility.unresolvedMarkers.length > 0) {
+    hook.unresolvedMarkers = parsedAbility.unresolvedMarkers;
+  }
+  if (parsedAbility.resolvedMarkers.length > 0) {
+    hook.resolvedMarkers = parsedAbility.resolvedMarkers;
+  }
+  if (parsedAbility.sizeChangingClasses.length > 0) {
+    hook.sizeChangingClasses = parsedAbility.sizeChangingClasses;
+  }
+  if (parsedAbility.microscopicSizeChangingClasses.length > 0) {
+    hook.microscopicSizeChangingClasses = parsedAbility.microscopicSizeChangingClasses;
+  }
+  return hook;
+}
+
+/**
+ * Builds one Patrol branch hook: the gate prefix plus the branch body, parsed by its own
+ * parseAbilityText call, gated on its Patrol condition (WP-881 / D-24832).
+ *
+ * // why: HeroCondition lists are AND-only, so each printed branch is its own hook (the WP-859
+ * split shape). The Patrol condition is appended after the gate conditions; the hook carries the
+ * 'conditional' keyword exactly once. A branch that resolves nothing records the line's
+ * `patrol-*` slug as an honest hollow instead of granting its printed effect (D-24570 sibling).
+ *
+ * @param cardId - The hero card copy's CardExtId.
+ * @param gatePrefix - The line's [hc:X] / [team:X] gate prefix ('' when ungated).
+ * @param branchBody - The branch's effect text.
+ * @param patrolConditionType - PATROL_SPACE_EMPTY_CONDITION_TYPE or PATROL_SPACE_OCCUPIED_CONDITION_TYPE.
+ * @param spaceName - The patrolled City space name.
+ * @param hollowSlug - The line's `patrol-*` honest-hollow slug.
+ * @returns The branch hook.
+ */
+function buildPatrolBranchHook(
+  cardId: CardExtId,
+  gatePrefix: string,
+  branchBody: string,
+  patrolConditionType: string,
+  spaceName: string,
+  hollowSlug: string,
+): HeroAbilityHook {
+  const parsedAbility = parseAbilityText(gatePrefix === '' ? branchBody : `${gatePrefix} ${branchBody}`);
+  parsedAbility.conditions.push({ type: patrolConditionType, value: spaceName });
+  if (!parsedAbility.keywords.includes('conditional')) {
+    parsedAbility.keywords.push('conditional');
+  }
+  const resolvesNothing =
+    parsedAbility.effects.length === 0 &&
+    parsedAbility.primitiveEffects.length === 0 &&
+    parsedAbility.unresolvedMarkers.length === 0;
+  if (resolvesNothing) {
+    parsedAbility.unresolvedMarkers.push(hollowSlug);
+  }
+  return buildHookFromParsedAbility(cardId, parsedAbility);
+}
+
+/**
+ * Builds the hooks for one hero Patrol line (WP-881 / D-24832).
+ *
+ * A line naming one City space becomes one hook per printed branch ("If it's empty" under
+ * patrolSpaceEmpty, "If it's not" under patrolSpaceOccupied). Any other target becomes one honest
+ * hollow hook: the gate prefix's conditions only, no effects, the line's `patrol-*` slug.
+ *
+ * @param cardId - The hero card copy's CardExtId.
+ * @param patrolLine - The line's parts from matchPatrolLine.
+ * @returns The line's hooks, in branch order.
+ */
+function buildPatrolLineHooks(cardId: CardExtId, patrolLine: PatrolLineParts): HeroAbilityHook[] {
+  if (patrolLine.spaceName === undefined) {
+    // why: WP-881 / D-24832 — an other-target Patrol line is an honest hollow: its printed grants
+    // are dropped (the D-24570 / D-24598 suppression sibling) and only its gate prefix is kept.
+    const parsedGate = parseAbilityText(patrolLine.gatePrefix);
+    const hollowHook: HeroAbilityHook = { cardId, timing: 'onPlay', keywords: [] };
+    if (parsedGate.conditions.length > 0) {
+      hollowHook.conditions = parsedGate.conditions;
+      hollowHook.keywords = ['conditional'];
+    }
+    hollowHook.unresolvedMarkers = [patrolLine.hollowSlug];
+    return [hollowHook];
+  }
+  const hooks: HeroAbilityHook[] = [
+    buildPatrolBranchHook(cardId, patrolLine.gatePrefix, patrolLine.emptyBody,
+      PATROL_SPACE_EMPTY_CONDITION_TYPE, patrolLine.spaceName, patrolLine.hollowSlug),
+  ];
+  if (patrolLine.occupiedBody !== undefined) {
+    hooks.push(buildPatrolBranchHook(cardId, patrolLine.gatePrefix, patrolLine.occupiedBody,
+      PATROL_SPACE_OCCUPIED_CONDITION_TYPE, patrolLine.spaceName, patrolLine.hollowSlug));
+  }
+  return hooks;
+}
+
+/**
+ * Builds the two cross hooks for a PATROL_BOTH_CARDS "[gate]: Instead, you get both." line
+ * (WP-881 / D-24832): (gate AND patrolSpaceOccupied) grants the EMPTY branch's body, and (gate
+ * AND patrolSpaceEmpty) grants the OCCUPIED branch's body. Both read the card's own two-branch
+ * Patrol line.
+ *
+ * @param cardId - The hero card copy's CardExtId.
+ * @param bothLine - The "Instead, you get both." line.
+ * @param abilityLines - The card's ability lines.
+ * @returns The two cross hooks, or undefined when the card has no two-branch named Patrol line.
+ */
+function buildPatrolBothHooks(
+  cardId: CardExtId,
+  bothLine: string,
+  abilityLines: string[],
+): HeroAbilityHook[] | undefined {
+  let patrolLine: PatrolLineParts | undefined;
+  for (const line of abilityLines) {
+    const candidate = typeof line === 'string' ? matchPatrolLine(line) : undefined;
+    if (candidate !== undefined && candidate.spaceName !== undefined && candidate.occupiedBody !== undefined) {
+      patrolLine = candidate;
+      break;
+    }
+  }
+  if (patrolLine === undefined || patrolLine.spaceName === undefined || patrolLine.occupiedBody === undefined) {
+    return undefined;
+  }
+  const gatePrefix = bothLine.slice(0, bothLine.search(/\bInstead\b/i)).trim();
+  return [
+    buildPatrolBranchHook(cardId, gatePrefix, patrolLine.emptyBody,
+      PATROL_SPACE_OCCUPIED_CONDITION_TYPE, patrolLine.spaceName, patrolLine.hollowSlug),
+    buildPatrolBranchHook(cardId, gatePrefix, patrolLine.occupiedBody,
+      PATROL_SPACE_EMPTY_CONDITION_TYPE, patrolLine.spaceName, patrolLine.hollowSlug),
+  ];
+}
+
+/**
+ * Finds the printed amount of a card's base Conqueror line for one City space (WP-886 / D-24837):
+ * the first line that is a pure Conqueror line with no gate prefix, no "Instead," and the same
+ * space.
+ *
+ * @param abilityLines - The card's ability lines.
+ * @param spaceName - The lower-cased City space name.
+ * @returns The base line's N, or undefined when the card has no such line.
+ */
+function findBaseConquerorAmount(abilityLines: string[], spaceName: string): number | undefined {
+  for (const line of abilityLines) {
+    if (typeof line !== 'string') {
+      continue;
+    }
+    const lineMatch = CONQUEROR_LINE_PATTERN.exec(line);
+    if (lineMatch === null) {
+      continue;
+    }
+    const isUngated = lineMatch[1]!.trim() === '';
+    const isInstead = lineMatch[2] !== undefined;
+    if (isUngated && !isInstead && lineMatch[3]!.toLowerCase() === spaceName) {
+      return Number(lineMatch[4]);
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Builds the one hook for a pure hero Conqueror line (WP-886 / D-24837).
+ *
+ * A base line "[gate] [keyword:<Space> Conqueror N]" grants +N Attack under the gate plus
+ * conquerorSpaceHasVillain. An "[gate]: Instead, [keyword:<Space> Conqueror N]" line grants the
+ * delta over the card's base line for the same space (Volstagg: 3 - 1 = +2), on top of the base
+ * hook; with no such base line, or no positive delta, it is an honest hollow.
+ *
+ * @param cardId - The hero card copy's CardExtId.
+ * @param conquerorMatch - The line's CONQUEROR_LINE_PATTERN match.
+ * @param abilityLines - The card's ability lines (for the Instead base lookup).
+ * @returns The line's hook.
+ */
+function buildConquerorLineHook(
+  cardId: CardExtId,
+  conquerorMatch: RegExpExecArray,
+  abilityLines: string[],
+): HeroAbilityHook {
+  const gatePrefix = conquerorMatch[1]!.trim();
+  const isInstead = conquerorMatch[2] !== undefined;
+  // why: the condition value is a CITY_SPACE_NAMES member ('bridge'); the captured "Bridge"
+  // would make patrolSpaceIndex return -1 and the hook would never fire.
+  const spaceName = conquerorMatch[3]!.toLowerCase();
+  const printedAmount = Number(conquerorMatch[4]);
+  const hollowSlug = `${spaceName}-conqueror`;
+  let grantedAmount = printedAmount;
+  if (isInstead) {
+    // why: "Instead, Bridge Conqueror 3" upgrades the card's base "Bridge Conqueror 1"; Attack
+    // adds, so the upgrade is the delta on its own hook (no fusion needed).
+    const baseAmount = findBaseConquerorAmount(abilityLines, spaceName);
+    grantedAmount = baseAmount === undefined ? 0 : printedAmount - baseAmount;
+  }
+  if (grantedAmount <= 0) {
+    // why: an "Instead" line with no same-space base line to upgrade is an honest hollow in the
+    // other-target Patrol hollow shape: the gate prefix's conditions only, no effects.
+    const parsedGate = parseAbilityText(gatePrefix);
+    const hollowHook: HeroAbilityHook = { cardId, timing: 'onPlay', keywords: [] };
+    if (parsedGate.conditions.length > 0) {
+      hollowHook.conditions = parsedGate.conditions;
+      hollowHook.keywords = ['conditional'];
+    }
+    hollowHook.unresolvedMarkers = [hollowSlug];
+    return hollowHook;
+  }
+  // why: buildPatrolBranchHook (WP-881 / D-24832) already builds "<gate> <body>" plus one appended
+  // City-space condition and the 'conditional' keyword, each from its own parseAbilityText call
+  // (no shared arrays, D-13502); it is reused unchanged with the Conqueror condition type.
+  return buildPatrolBranchHook(cardId, gatePrefix, `You get +${grantedAmount}[icon:attack].`,
+    CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, spaceName, hollowSlug);
 }
 
 /**
@@ -4333,7 +5179,13 @@ export function buildHeroAbilityHooks(
       // synthetic line BEFORE the per-line parse, so the count-scaled-choose pre-pass folds the
       // two option markers into a single choice. Gated on count-scaled markers → non-count-scaled
       // multi-line choose-ones (S.H.I.E.L.D. undercover/levels) pass through unchanged.
-      const abilityLines = coalesceCountScaledChooseOne(cardEntry.abilities);
+      const coalescedLines = coalesceCountScaledChooseOne(cardEntry.abilities);
+      // why: WP-859 / D-24795 — split Metamorphosis' / Bursting with Life's one "Feast. Then, if …,
+      // Transform" line into a Feast line and a Transform line, so the Transform's condition does
+      // not gate the Feast (FEAST_THEN_TRANSFORM_CARDS). Every other card's lines pass through.
+      const abilityLines = FEAST_THEN_TRANSFORM_CARDS.has(`${parsed.setAbbr}/${parsed.slug}/${instance.cardSlug}`)
+        ? splitFeastThenTransformLine(coalescedLines)
+        : coalescedLines;
       // why: WP-735 / D-24555 — for an allowlisted Venomverse "Digest N / Indigestion" card, fuse
       // its Digest / Indigestion / "Instead … both" lines into ONE digest-indigestion hook up
       // front, and record which line indices that consumed so the per-line loop below SKIPS them
@@ -4403,6 +5255,66 @@ export function buildHeroAbilityHooks(
           continue;
         }
 
+        // why: WP-865 / D-24808 — a Heist line is consumed here, at its own line index (never
+        // prepended like the fusions above), so hook order still follows line order. An
+        // allowlisted card's line becomes ONE heist hook that readies the card at play; every
+        // other Heist line becomes an honest 'heist' hollow, which stops the play-time payout
+        // its body would otherwise parse to (The Big Score's +4, Putting a Crew Together's +1,
+        // Revolutionary Anthem's +2). Resetting previousLineHook keeps a later line from
+        // widen-fusing into either hook (WP-790).
+        if (HEIST_LINE_PATTERN.test(abilityText)) {
+          const heistHook = HEIST_CARDS.has(`${parsed.setAbbr}/${parsed.slug}/${instance.cardSlug}`)
+            ? buildHeistFusion(instance.extId, abilityText)
+            : buildHeistHollow(instance.extId);
+          hooks.push(heistHook);
+          previousLineHook = null;
+          continue;
+        }
+
+        // why: WP-881 / D-24832 — a hero Patrol line is consumed here, at its own line index (the
+        // Heist precedent above, D-24808), so hook order still follows line order. HeroCondition
+        // lists are AND-only, so a two-branch line becomes two hooks with complementary Patrol
+        // conditions (the WP-859 / D-24795 split shape); an other-target line becomes one honest
+        // hollow. Without this the [keyword:Patrol the X] token gated nothing and every printed
+        // icon on the line fired on every play. Resetting previousLineHook keeps a later line from
+        // widen-fusing into a Patrol hook (WP-790).
+        const patrolLine = matchPatrolLine(abilityText);
+        if (patrolLine !== undefined) {
+          for (const patrolHook of buildPatrolLineHooks(instance.extId, patrolLine)) {
+            hooks.push(patrolHook);
+          }
+          previousLineHook = null;
+          continue;
+        }
+        // why: WP-881 / D-24832 — on a PATROL_BOTH_CARDS card, the "[gate]: Instead, you get
+        // both." line becomes two cross hooks that give the other branch under the gate.
+        if (
+          PATROL_BOTH_CARDS.has(`${parsed.setAbbr}/${parsed.slug}/${instance.cardSlug}`) &&
+          DIGEST_BOTH_LINE_PATTERN.test(abilityText)
+        ) {
+          const patrolBothHooks = buildPatrolBothHooks(instance.extId, abilityText, abilityLines);
+          if (patrolBothHooks !== undefined) {
+            for (const patrolHook of patrolBothHooks) {
+              hooks.push(patrolHook);
+            }
+            previousLineHook = null;
+            continue;
+          }
+        }
+
+        // why: WP-886 / D-24837 — a pure hero Conqueror line ("[gate] [keyword:<Space> Conqueror
+        // N]", rules v23 L1157-1159) is consumed here, at its own line index (the Patrol / Heist
+        // precedent above), so hook order still follows line order. Without this the multi-word
+        // token resolved nothing and every Conqueror line was hollow. The base line grants +N under
+        // conquerorSpaceHasVillain; an "Instead," line grants its delta over the base line.
+        // Resetting previousLineHook keeps a later line from widen-fusing into it (WP-790).
+        const conquerorMatch = CONQUEROR_LINE_PATTERN.exec(abilityText);
+        if (conquerorMatch !== null) {
+          hooks.push(buildConquerorLineHook(instance.extId, conquerorMatch, abilityLines));
+          previousLineHook = null;
+          continue;
+        }
+
         // why: WP-658 / D-24469 — resolve whether this base card's transform is
         // fully modeled (SUPPORTED_TRANSFORM_BASES) from its canonical key
         // `{setAbbr}/{heroSlug}/{cardSlug}`, and pass it so parseAbilityText resolves
@@ -4442,6 +5354,13 @@ export function buildHeroAbilityHooks(
           conditionalGrantUnmodeled:
             CONDITIONAL_GRANT_UNMODELED_LINES.has(`${parsed.setAbbr}/${parsed.slug}/${instance.cardSlug}`) &&
             RESOURCE_ICON_PATTERN.test(abilityText),
+          // why: WP-857 / D-24793 — resolve whether this card's [keyword:Feast] is recognized
+          // (FEAST_CARDS), from the same canonical key, so parseAbilityText resolves the token only
+          // for allowlisted cards (all others keep an honest unresolved marker).
+          feastSupported: FEAST_CARDS.has(`${parsed.setAbbr}/${parsed.slug}/${instance.cardSlug}`),
+          // why: WP-859 / D-24795 — how many Feasts this card's line prints ("Feast up to three
+          // times"), from FEAST_REPEAT_COUNTS by the same canonical key; 1 for every other card.
+          feastRepeatCount: FEAST_REPEAT_COUNTS.get(`${parsed.setAbbr}/${parsed.slug}/${instance.cardSlug}`) ?? 1,
         });
 
         // why: freshly-constructed hook per instance — copies never alias a
@@ -4484,12 +5403,16 @@ export function buildHeroAbilityHooks(
           hook.resolvedMarkers = parsedAbility.resolvedMarkers;
         }
 
-        // why: D-24074 / WP-290 — assign the granted-class list only when non-empty (same
+        // why: D-24801 — assign the Size-Changing class list only when non-empty (same
         // exactOptionalPropertyTypes conditional-construction pattern as the fields above).
-        // Absent means "no Size-Changing grant" — both non-Size-Changing lines and a
-        // Size-Changing line with no [hc:X] omit it; getGrantedClasses treats absent as [].
+        // Absent means "no Size-Changing discount" — both non-Size-Changing lines and a
+        // Size-Changing line with no [hc:X] omit it; getSizeChangingClasses treats absent as [].
         if (parsedAbility.sizeChangingClasses.length > 0) {
           hook.sizeChangingClasses = parsedAbility.sizeChangingClasses;
+        }
+        // why: D-24801 — the Microscopic icons, same omit-when-empty construction.
+        if (parsedAbility.microscopicSizeChangingClasses.length > 0) {
+          hook.microscopicSizeChangingClasses = parsedAbility.microscopicSizeChangingClasses;
         }
 
         // why: WP-790 / D-24652 — a Ranged "… against the Mastermind instead" line widens the

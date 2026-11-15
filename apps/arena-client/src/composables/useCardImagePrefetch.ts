@@ -16,7 +16,8 @@
  * the desktop and mobile play surfaces). The warm is fire-and-forget: it never
  * throws, never blocks rendering, is idempotent across the per-frame re-sends of
  * the manifest, and a failed image is simply skipped (the card falls back to its
- * lazy `<img>` in CardTile.vue at reveal).
+ * lazy `CardImage.vue` element at reveal). Each warm requests the WP-888 size
+ * tier the board renders (WP-891 / D-24848), not the full original.
  *
  * Layer-boundary: imports no engine/server runtime — it reads the projected
  * manifest from the uiState store and uses the browser Image API only.
@@ -24,6 +25,7 @@
 
 import { watch } from 'vue';
 
+import { cardImageSources } from '../lib/cardImageTiers';
 import { useUiStateStore } from '../stores/uiState';
 
 // why: at most this many warms are in flight at once. Bounded so the prefetch
@@ -32,22 +34,52 @@ import { useUiStateStore } from '../stores/uiState';
 const PREFETCH_CONCURRENCY = 6;
 
 /**
- * Warms a single image URL into the browser image cache. Resolves on both load
- * and error and never rejects — a prefetch must never throw or block gameplay.
+ * Warms the original card-face image on a fresh element after its size tier
+ * failed. Resolves on both load and error and never rejects.
  *
- * why: `new Image()` warms the SAME image cache that the `<img>` in CardTile.vue
- * reads, so the card paints from cache on reveal with no network request. A
- * failed warm resolves quietly; the card falls back to its lazy `<img>`.
+ * @param imageUrl - The original card-face image URL.
+ * @returns A promise that resolves once the original has loaded or failed.
+ */
+function warmOriginalImage(imageUrl: string): Promise<void> {
+  return new Promise<void>((resolve) => {
+    const fallbackImage = new Image();
+    fallbackImage.onload = () => resolve();
+    fallbackImage.onerror = () => resolve();
+    fallbackImage.src = imageUrl;
+  });
+}
+
+/**
+ * Warms a single card-face image into the browser image cache. Resolves on both
+ * load and error and never rejects — a prefetch must never throw or block
+ * gameplay.
  *
- * @param imageUrl - The card-face image URL to warm.
+ * why: `new Image()` warms the SAME image cache that the card-face image
+ * (`CardImage.vue`, WP-891 / D-24848) reads, and the warm uses the same `src` /
+ * `srcset` pair, so the browser picks the same candidate the board will request
+ * and the card paints from cache on reveal with no network request. When a tier
+ * fails, the original is warmed once on a fresh image, matching the board's
+ * fallback; an untiered URL that fails resolves quietly with no second warm.
+ *
+ * @param imageUrl - The original card-face image URL to warm.
  * @returns A promise that resolves once the image has loaded or failed.
  */
 function warmOneImage(imageUrl: string): Promise<void> {
   return new Promise<void>((resolve) => {
+    const sources = cardImageSources(imageUrl);
     const image = new Image();
     image.onload = () => resolve();
-    image.onerror = () => resolve();
-    image.src = imageUrl;
+    image.onerror = () => {
+      if (sources.srcset === null) {
+        resolve();
+        return;
+      }
+      void warmOriginalImage(imageUrl).then(resolve);
+    };
+    if (sources.srcset !== null) {
+      image.srcset = sources.srcset;
+    }
+    image.src = sources.src;
   });
 }
 
@@ -92,6 +124,8 @@ export function useCardImagePrefetch(): void {
   // why: the manifest is re-sent on every server frame (the transport ships the
   // full filtered playerView per update). This set records which URLs are already
   // warmed so repeated frames — and a reconnect — never refetch (idempotency).
+  // It stays keyed by the ORIGINAL manifest URL (WP-891 / D-24848), not the tier
+  // URL, so a re-sent manifest is a no-op whichever candidate the browser chose.
   const warmedImageUrls = new Set<string>();
 
   watch(

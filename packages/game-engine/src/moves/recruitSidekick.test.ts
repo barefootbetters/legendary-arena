@@ -352,9 +352,11 @@ describe('playing a Sidekick (WP-842 / D-24776)', () => {
 // ---------------------------------------------------------------------------
 
 describe('recruitSidekick wiring (WP-842 / D-24776)', () => {
-  it('T15: registered on LegendaryGame (54 moves), not a core move, not a simulation move', () => {
+  it('T15: registered on LegendaryGame (56 moves), not a core move, not a simulation move', () => {
     const moveNames = Object.keys(LegendaryGame.moves ?? {});
-    assert.equal(moveNames.length, 54, 'LegendaryGame defines 54 moves');
+    // why: WP-858 / D-24794 added useRitualArtifact (54 → 55).
+    // why: WP-865 / D-24808 added attemptHeist (55 → 56).
+    assert.equal(moveNames.length, 56, 'LegendaryGame defines 56 moves');
     assert.equal(moveNames.includes('recruitSidekick'), true, 'recruitSidekick is registered');
     assert.equal((CORE_MOVE_NAMES as readonly string[]).includes('recruitSidekick'), false, 'not a CORE_MOVE_NAME');
     assert.equal((SIMULATION_MOVE_NAMES as readonly string[]).includes('recruitSidekick'), false, 'not a simulation move');
@@ -367,5 +369,17 @@ describe('recruitSidekick wiring (WP-842 / D-24776)', () => {
 
     assert.equal(gameState.piles.sidekicks.length, 2, 'one token popped from the Stack');
     assert.deepStrictEqual(gameState.playerZones['0']!.discard, [SIDEKICK_EXT_ID]);
+  });
+});
+
+describe('WP-873 recruitSidekick — the Sidekick Stack fortified (D-24818)', () => {
+  it('T19: a fortified Stack refuses the recruit silently and leaves G deep-equal', () => {
+    const gameState = createMockGameState({ recruit: 2 });
+    gameState.fortifications = {
+      'sidekick-stack': { villainCardId: 'cvwr-villain-great-lakes-avengers-squirrel-girl-00', lock: 'no-recruit-or-gain' },
+    };
+    const before = JSON.parse(JSON.stringify(gameState)) as unknown;
+    recruitSidekick(makeMockMoveContext(gameState));
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(gameState)), before);
   });
 });

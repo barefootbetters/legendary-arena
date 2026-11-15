@@ -11,7 +11,7 @@ import {
 } from 'vue';
 import type { LogEntry } from '@legendary-arena/game-engine';
 import { isPinnedToBottom } from './gameLogScroll';
-import { buildGameLogText, GAME_LOG_EXPORT_FILE_NAME } from './gameLogExport';
+import { buildGameLogFileName, buildGameLogText } from './gameLogExport';
 import { logOutcomeDisplay } from './logOutcomeDisplay';
 
 // why: GameLogPanel renders the engine log verbatim in chronological (append)
@@ -139,7 +139,11 @@ export default defineComponent({
       const objectUrl = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = objectUrl;
-      anchor.download = GAME_LOG_EXPORT_FILE_NAME;
+      const matchId = new URLSearchParams(window.location.search).get('match');
+      // why: Date.now() is a client-layer file-name stamp for the export moment,
+      // outside the engine determinism boundary; it keeps two Saves of the same
+      // match (or of two matches with the same setup) from overwriting each other.
+      anchor.download = buildGameLogFileName(matchId, Date.now());
       document.body.appendChild(anchor);
       anchor.click();
       document.body.removeChild(anchor);

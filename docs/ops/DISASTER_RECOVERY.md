@@ -116,7 +116,7 @@ Assets are tiered by what their loss *means* for recovery:
 | **1** | **Application host** | The DigitalOcean droplet (`sfo3`, 2 vCPU / 4 GB + 2 GB swap) | Reprovision with the lab provisioners (§5 DR-02) |
 | **1** | **DNS + CDN + Access** | Cloudflare (DNS, Pages, Workers, R2, Access, the `Origin TLS strict — api hosts` Configuration Rule) | Cloudflare dashboard |
 | **1** | **TLS certificates** | Cloudflare edge (managed); a Cloudflare Origin Certificate on the droplet's Nginx (covers `api.` and `api-next.`, valid to 2041) | Edge: automatic. Origin: the operator's copy, or re-issue in the Cloudflare dashboard |
-| **1** | **Card images** | Cloudflare R2 (`images.legendary-arena.com`) | R2; the uploaded bytes also live in the operator's pCloud-synced `card-images-staging/original/` |
+| **1** | **Card images** | Cloudflare R2 (`images.legendary-arena.com`) | R2 is the source of truth (originals, plus the `thumb` / `phone` / `large` tiers, WP-888). A local copy of the originals is re-pulled with `pnpm images:sizes:pull` into the work root, and the tiers regenerate from it. **No off-Cloudflare copy of the current originals exists** unless the operator keeps a work-root pull; the pCloud staging tree is stale (883 of 3,104 names missing, D-24840) |
 | **2** | **Operator workstations** | local machines | reinstall + `git clone` |
 | **2** | **CI/CD runners** | GitHub Actions (hosted) | provider-managed |
 | **2** | **Monitoring** | healthchecks.io (`la-droplet-monitor`, `la-droplet-backup`, `la-droplet-pcloud`) and UptimeRobot (`api./health/db`); dashboards are derived views | Re-create the checks; ping URLs come from the secrets in §4 |
@@ -139,7 +139,7 @@ secrets.** The server is replaceable; those three are not.
 | Database (external) | the same dump | Uploaded by the same run | Cloudflare R2, private bucket `legendary-arena-db-backups`, `db-backups/YYYY/MM/DD/` | GFS: 35 daily · 12 weekly · 12 monthly | **Drilled 2026-08-09; restored onto the droplet 2026-10-12 (§7)** |
 | Database (2nd offsite) | the same dump | `rclone` mirror in the same run | pCloud (US region), `db-backups/` — independent of Cloudflare | Same GFS policy, pruned separately | **Drilled 2026-08-10 (§7)**; first droplet mirror byte-identical to R2, 2026-10-12 |
 | Droplet disk image | the whole `la-rehearsal-01` disk | DigitalOcean usage-based Droplet backup, plan `custom_daily`, enabled 2026-10-20 (API action 3485061489; the control panel shows it under the **Usage-Based** tab at $0.03/GiB); a crash-consistent image, not a database backup ([Provider-native options](#provider-native-options-digitalocean)) | DigitalOcean, same account as the droplet | 7 days | Daily, 08:00–12:00 UTC window; first image due 2026-10-21. Image restore not yet drilled |
-| Card images | R2 upload pipeline | manual/scripted | Cloudflare R2; source bytes in pCloud `card-images-staging/original/` | indefinite | image loads |
+| Card images | R2 upload pipeline | manual/scripted | Cloudflare R2 only (originals and size tiers). `pnpm images:sizes:pull` re-pulls the originals into a local work root; **no off-Cloudflare copy is kept** unless the operator keeps that pull (the pCloud staging tree is stale, D-24840) | indefinite | image loads |
 | Source code | GitHub | git | GitHub + local clones | full history | every clone |
 | Secrets | operator | manual | droplet `/etc/la/*.env` + operator secret store | operator-managed | §4 completeness |
 
@@ -219,7 +219,7 @@ somewhere else, or not at all:
 | Data | Where it lives | If it is lost |
 |---|---|---|
 | Player avatars | R2 `legendary-images`, `avatars/` | **No second copy.** The database keeps each URL; players re-upload. |
-| Card images | R2 `legendary-images` | Re-upload from the operator's pCloud `card-images-staging/original/`. |
+| Card images | R2 `legendary-images` | **No second copy of the current originals** unless the operator keeps a work-root pull (`pnpm images:sizes:pull`); the pCloud staging tree is stale (D-24840). Restore the originals from that pull, then regenerate the tiers with `pnpm images:sizes` and `pnpm images:sizes:push`. |
 | Card metadata, themes | R2 `legendary-images` (`metadata/`, `themes/`) | Regenerated from the repo (`pnpm metadata:upload`, `scripts/upload-themes-to-r2.mjs`). |
 | Legends snapshots | R2 `legends/v1/*` | Derived: the publisher rewrites them from the database within 5 minutes. |
 | Other R2 media (audio) | R2 `legendary-images`, `audio/` | No second copy documented. |
@@ -501,8 +501,10 @@ downstream — so each step has what the next one needs:
   restoring from R2.
 - **Procedure (Cloudflare lost):** restore from the pCloud copy. Cloudflare
   also hosts DNS, the front-ends, the ewiki, R2 card images and the TLS edge,
-  so those must be reconstituted elsewhere first; the card-image bytes are in
-  pCloud `card-images-staging/original/`.
+  so those must be reconstituted elsewhere first. The card-image originals
+  have **no off-Cloudflare copy** unless the operator keeps a work-root pull
+  (`pnpm images:sizes:pull`, WP-888); the pCloud staging tree is stale
+  (D-24840). The size tiers regenerate from the originals.
 
 ---
 

@@ -7,3 +7,4 @@ src/data/wiki-lint.json
 src/data/coach-eval.json
 src/data/live-verify.json
 src/data/coverage-set-names.json
+src/data/mechanic-key-fold.json

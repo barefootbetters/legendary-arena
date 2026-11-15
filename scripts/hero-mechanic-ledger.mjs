@@ -59,6 +59,14 @@ import { createRegistryFromLocalFiles } from '../packages/registry/dist/index.js
 import { buildHeroAbilityHooks } from '../packages/game-engine/dist/setup/heroAbility.setup.js';
 import { HERO_KEYWORDS } from '../packages/game-engine/dist/rules/heroKeywords.js';
 import { MVP_KEYWORDS } from '../packages/game-engine/dist/hero/heroEffects.execute.js';
+// why: WP-881 / D-24832 — the two hero Patrol condition literals, read from the engine dist so
+// the ledger never re-types them.
+// why: WP-886 / D-24837 — the hero Conqueror condition literal, read from the same dist module.
+import {
+  PATROL_SPACE_EMPTY_CONDITION_TYPE,
+  PATROL_SPACE_OCCUPIED_CONDITION_TYPE,
+  CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE,
+} from '../packages/game-engine/dist/hero/heroConditions.evaluate.js';
 // why: D-24031 — composition markers (berserk) are executable via the primitive
 // interpreter (not a HeroKeyword/handler); sourced from the engine dist so the ledger
 // recognizes them without duplicating the vocabulary. D-24045 — the PARAMETERIZED subset
@@ -68,6 +76,9 @@ import {
   HERO_COMPOSITION_MARKER_NAMES,
   PARAMETERIZED_COMPOSITION_MARKER_NAMES,
 } from '../packages/game-engine/dist/rules/heroCompositions.js';
+// why: the family fold is shared with the dashboard build so the /coverage in-play
+// gauge folds runtime-observed keys with the SAME rules (see the module header).
+import { foldMechanicFamily } from './coverage/mechanic-family-fold.mjs';
 
 const SCRIPT_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = dirname(SCRIPT_DIRECTORY);
@@ -102,6 +113,9 @@ const MOVE_EXECUTED_HANDLER_MODULES = {
   'dodge': 'packages/game-engine/src/moves/dodgeCard.ts',
   // why: WP-783 / D-24629 — phasing executes via the phaseCard hand-swap move.
   'phasing': 'packages/game-engine/src/moves/phaseCard.ts',
+  // why: WP-858 / D-24794 — the two Ritual Artifact keywords execute via the useRitualArtifact move.
+  'ritual-recruited-hero': 'packages/game-engine/src/moves/ritualArtifact.ts',
+  'ritual-hero-classes': 'packages/game-engine/src/moves/ritualArtifact.ts',
 };
 const UNMARKED_MECHANIC = '(unmarked)';
 
@@ -163,7 +177,16 @@ const PARAMETERIZED_COMPOSITION_MARKERS = new Set(PARAMETERIZED_COMPOSITION_MARK
 // Man / Woman Out of Time token (behind an optional gate). A by-name check would over-claim any card
 // that merely prints the token. Winter Soldier's "2>4" grant lines resolve `grant-out-of-time`
 // (WP-828 / D-24761), which MECHANIC_FAMILY_RULES folds into this same `out-of-time` row.
-const BY_HOOK_KEYWORDS = new Set(['transform', 'excessive-violence', 'blood-frenzy', 'day-night-both', 'out-of-time']);
+// why: WP-857 / D-24793 — feast is by-hook too. Every World War Hulk hero line that prints
+// `[keyword:Feast]` normalizes to `feast`, but only the five FEAST_CARDS lines resolve it (Devouring
+// Frenzy, Metamorphosis, Hive King Miek, Appetite for Destruction, Bursting with Life); World-Spanning
+// Hunger and The Void Unchained keep an unresolved `feast` marker, so a by-name check would over-claim
+// Sentry's row executable.
+// why: WP-865 / D-24808 — heist is by-hook too. Every Heist line normalizes to `heist`, but only the
+// HEIST_CARDS lines resolve it to a fused `heist` hook. Since WP-876 / D-24823 that is all ten Ant-Man
+// and the Wasp Heist lines; a future set's Heist line keeps an unresolved `heist` marker until it is
+// listed, so a by-name check would over-claim its row executable.
+const BY_HOOK_KEYWORDS = new Set(['transform', 'excessive-violence', 'blood-frenzy', 'day-night-both', 'out-of-time', 'feast', 'heist']);
 // why: D-24055 — condition-gate mechanics (spectrum) are recognized by the parser
 // as conditions, not keywords. They gate effects but are themselves distinct
 // mechanics that should be tracked in the ledger. Mapping from normalized keyword
@@ -183,6 +206,11 @@ const KNOWN_CONDITIONS = {
   // drag on two implemented mechanics.
   'recruit-threshold': 'recruitMadeThisTurnAtLeast',              // Thor "Surge of Power" (WP-545 / D-24354): ≥N Recruit this turn
   'defeated-villain-or-mastermind': 'defeatedVillainOrMastermindThisTurn', // Emma Frost "Diamond Form" (WP-656 / D-24467): a Villain/Mastermind defeated this turn
+  'owned-card-koed': 'ownedCardKoedThisTurn', // Bishop "Absorb Energies" (WP-853 / D-24789): a card you own KO'd this turn
+  'owned-hero-koed': 'ownedHeroKoedThisTurn', // Doctor Voodoo "Possessed by Brother's Spirit" (WP-856 / D-24792): the first time one of your Heroes is KO'd this turn
+  'deck-card-koed': 'deckCardKoedThisTurn', // Miek "Endless Appetite" (WP-855 / D-24791): a card KO'd from your deck this turn
+  'deck-koed-attack-icon': 'attackIconCardKoedFromDeckThisTurn', // Miek "Metamorphosis" (WP-859 / D-24795): a card with an Attack icon KO'd from your deck this turn
+  'deck-koed-non-grey-hero': 'nonGreyHeroKoedFromDeckThisTurn', // No-Name "Bursting with Life" (WP-859 / D-24795): a non-grey Hero KO'd from your deck this turn
   // why: WP-665 / D-24476 — Amadeus Cho "Gamma-Draining Nanites": the transform gates on
   // ≥N cards drawn this turn (a shipped wait-and-see condition), so the row reads `condition`.
   'draw-threshold': 'cardsDrawnThisTurnAtLeast',                  // ≥N cards drawn this turn
@@ -202,6 +230,16 @@ const KNOWN_CONDITIONS = {
   // Villain) played this turn: shipped wait-and-see conditions, so the rows read `condition`.
   'master-strike-this-turn': 'masterStrikePlayedThisTurn',                     // Wanda & Vision "Grief"
   'master-strike-or-ambush-this-turn': 'masterStrikeOrAmbushPlayedThisTurn',   // Venom Rocket "Spring the Trap"
+  // why: WP-881 / D-24832 — hero Patrol gates a named-City-space line on patrolSpaceEmpty /
+  // patrolSpaceOccupied. Unlike the entries above it is classified BY HOOK in buildLedger
+  // (patrolStatusForHooks), before this by-name entry is read: a hero whose only Patrol lines
+  // are other-target hollows (Corvus Glaive, Beast) stays `unsupported`.
+  'patrol': PATROL_SPACE_EMPTY_CONDITION_TYPE,                     // "Patrol the <space>: If it's empty, …"
+  // why: WP-886 / D-24837 — hero Conqueror gates a "[keyword:<Space> Conqueror N]" line on
+  // conquerorSpaceHasVillain. Classified BY HOOK like `patrol` (conquerorStatusForHooks): a hero
+  // whose only Conqueror lines are inside another mechanic's line (honest hollows) stays
+  // `unsupported`.
+  'conqueror': CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE,         // "Bridge Conqueror 1"
 };
 
 /** Error type signalling a probe failure (exit code 2). */
@@ -265,78 +303,6 @@ function reduceParameterizedKeyword(name) {
   return name;
 }
 
-// why: printed-keyword FAMILIES appear on cards as one distinct English phrase per
-// parameter value — "Patrol the Rooftops" / "Patrol the Sewers" / "Patrol your Victory
-// Pile", "Bridge Conqueror 2" / "Sewers Conqueror", "Cross-Dimensional Hulk Rampage" /
-// "…Wolverine Rampage", "Burn 2 Shards" / "Burn 4 Shards" — so `normalizeMechanicToken`
-// slugifies each phrase into a SEPARATE unsupported mechanic (25 distinct across these four
-// families). That inflates the worklist: the engine implements the FAMILY once (one Patrol
-// executor clears every location variant), not one mechanic per printed phrase. These rules
-// fold each family to a single canonical slug for the coverage worklist ONLY — the card data
-// keeps the faithful printed phrase (`[keyword:Patrol the Rooftops]` is rendered verbatim to
-// players via useRules.parseAbilityText, so it must NOT be rewritten). The families fold to
-// UNRECOGNIZED heads (there is no `patrol` HeroKeyword), so they correctly stay `unsupported`
-// — just as one row per family instead of one per phrase. Ordered, first-match-wins.
-//
-// why (out-of-time): "Man Out of Time" / "Woman Out of Time" / "Man/Woman Out of Time" /
-// "Man or Woman Out of Time" are the SAME keyword printed with the character-appropriate
-// gender — one mechanic, so they fold to `out-of-time`. Contrast the Artifact family
-// (`artifact` / `ritual-artifact` / `thrown-artifact` / `triggered-artifact`), which is
-// DELIBERATELY NOT folded: the printed text shows four genuinely distinct mechanics
-// (base once-per-turn passive vs reactive discard-for-effect vs a throw action vs a
-// triggered ability), so implementing one does NOT clear the others — they are four
-// separate worklist targets, not a parameterized family (verified 2026-07-13).
-//
-// why (cyber-mod, soulbind — verified 2026-07-13): both are ONE keyword parameterized by
-// an axis. Cyber-Mod is an adaptive tiered ability — `[keyword:Cyber-Mod] [hc:X]: effect`,
-// `Cyber-Mod Wound: +1 attack per Wound`, `Cyber-Mod 4 Wounds: instead +2 attack` — the
-// parameter is the scaling source (classes / wounds / threshold). Soulbind is `Soulbind
-// <target>: <effect>` (a Bystander / a Villain / six Villains / another Villain / Arnim
-// Zola…), the parameter is the bound target — the same shape as Patrol, NOT the Artifact
-// case. Implementing each keyword once clears every variant, so they fold by prefix.
-const MECHANIC_FAMILY_RULES = [
-  { pattern: /^patrol(-|$)/, canonical: 'patrol' },
-  { pattern: /(^|-)conqueror$/, canonical: 'conqueror' },
-  { pattern: /cross-dimensional.*rampage/, canonical: 'cross-dimensional-rampage' },
-  { pattern: /^burn-.+-shards$/, canonical: 'burn-shards' },
-  { pattern: /out-of-time$/, canonical: 'out-of-time' },
-  { pattern: /^cyber-mod(-|$)/, canonical: 'cyber-mod' },
-  { pattern: /^soulbind(-|$)/, canonical: 'soulbind' },
-];
-
-/**
- * Canonicalizes a normalized mechanic slug: strips leading/trailing punctuation artifacts
- * (a stray `:`, trailing `.`, `artifact--`), then folds a printed-keyword family to its single
- * canonical slug (see MECHANIC_FAMILY_RULES).
- *
- * why: complements the source-side typo fix (ssw1/ssw2/wwhk, 2026-07-13) — the punctuation
- * strip de-dupes any residual artifact twin on the coverage surface even before a re-convert,
- * and the family fold right-sizes the worklist so "implement Patrol once" reads as one row, not
- * twelve. Applied only in the ledger; the card data and its player-facing display are untouched.
- *
- * why (quote strip): a marker that QUOTES a referenced term — `[keyword:"When Recruited"
- * Abilities]`, `[keyword:Revenge for Deadpool's "Friends"]` — leaves stray delimiter quotes
- * MID-slug that the leading/trailing punctuation strip cannot reach (`when-recruited"-abilities`).
- * Strip double-quote characters (straight and curly) anywhere in the slug. Apostrophes are
- * DELIBERATELY spared — they are part of the word (`don't-speak`, `killmonger's-wounds`), and
- * stripping them would read as a typo.
- *
- * @param {string} name - a normalized, keyword-reduced mechanic name.
- * @returns {string} the canonical family slug, or the cleaned name when no family matches.
- */
-function foldMechanicFamily(name) {
-  const stripped = name
-    .replace(/["“”]/g, '')
-    .replace(/^[^a-z0-9]+/, '')
-    .replace(/[^a-z0-9]+$/, '');
-  for (const rule of MECHANIC_FAMILY_RULES) {
-    if (rule.pattern.test(stripped)) {
-      return rule.canonical;
-    }
-  }
-  return stripped;
-}
-
 /**
  * Returns the distinct, normalized `[keyword:X]` mechanic tokens across a hero's
  * ability lines.
@@ -357,6 +323,44 @@ function extractMechanics(abilities) {
     }
   }
   return found;
+}
+
+/**
+ * Classifies the folded `patrol` mechanic for one hero BY HOOK (WP-881 / D-24832).
+ *
+ * `condition` only when some hook of the hero carries a Patrol condition (a named-City-space
+ * Patrol line, including a named-space honest hollow such as Raise the Union Jack, which still
+ * carries patrolSpaceEmpty); otherwise `unsupported` (a hero whose only Patrol lines target
+ * something other than one City space: Corvus Glaive, Beast).
+ *
+ * @param {Set<string>} cardConditionTypes - the condition types THIS hero's hooks carry.
+ * @returns {'condition'|'unsupported'} the status.
+ */
+function patrolStatusForHooks(cardConditionTypes) {
+  if (
+    cardConditionTypes.has(PATROL_SPACE_EMPTY_CONDITION_TYPE) ||
+    cardConditionTypes.has(PATROL_SPACE_OCCUPIED_CONDITION_TYPE)
+  ) {
+    return 'condition';
+  }
+  return 'unsupported';
+}
+
+/**
+ * Classifies the folded `conqueror` mechanic for one hero BY HOOK (WP-886 / D-24837).
+ *
+ * `condition` only when some hook of the hero carries a conquerorSpaceHasVillain condition (a
+ * pure "[gate] [keyword:<Space> Conqueror N]" line); otherwise `unsupported` (a hero whose only
+ * Conqueror tokens sit inside another mechanic's line, which stay honest hollows).
+ *
+ * @param {Set<string>} cardConditionTypes - the condition types THIS hero's hooks carry.
+ * @returns {'condition'|'unsupported'} the status.
+ */
+function conquerorStatusForHooks(cardConditionTypes) {
+  if (cardConditionTypes.has(CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE)) {
+    return 'condition';
+  }
+  return 'unsupported';
 }
 
 /**
@@ -590,9 +594,15 @@ function buildLedger(registry, provenance) {
     // (transform) is classified per-card: resolved for She-Hulk, an unresolved marker for
     // the other transform heroes.
     const cardResolvedKeywords = new Set();
+    // why: WP-881 / D-24832 — the condition types this hero's hooks carry, so `patrol` is
+    // classified by hook (patrolStatusForHooks) rather than by name.
+    const cardConditionTypes = new Set();
     for (const hook of buildHeroAbilityHooks(registry, { heroDeckIds: [extId] })) {
       for (const marker of hook.resolvedMarkers ?? []) {
         cardResolvedMarkers.add(marker);
+      }
+      for (const condition of hook.conditions ?? []) {
+        cardConditionTypes.add(condition.type);
       }
       for (const keyword of hook.keywords ?? []) {
         cardResolvedKeywords.add(keyword);
@@ -604,12 +614,28 @@ function buildLedger(registry, provenance) {
         for (const branchEffect of [...(effect.sunlightEffects ?? []), ...(effect.moonlightEffects ?? [])]) {
           cardResolvedKeywords.add(branchEffect.type);
         }
+        // why: WP-885 / D-24836 — a Wound-gated reward resolves its keyword inside the descriptor
+        // (Mood Swings' Transform rides a gain-wound-reward rewardType), like the day-night branches.
+        if (effect.type === 'gain-wound-reward' && effect.rewardType !== undefined) {
+          cardResolvedKeywords.add(effect.rewardType);
+        }
       }
     }
     for (const mechanic of [...designNamesByMechanic.keys()].sort()) {
       const designs = toSortedDesigns(designNamesByMechanic.get(mechanic));
       const subsystemEntry = subsystemEntryFor(extId, mechanic);
-      const status = statusForMechanic(mechanic, cardResolvedMarkers, cardResolvedKeywords, subsystemEntry);
+      // why: WP-881 / D-24832 — the per-hook `patrol` check runs BEFORE statusForMechanic's
+      // by-name KNOWN_CONDITIONS return, which would otherwise answer `condition` first.
+      let status;
+      if (mechanic === 'patrol' && subsystemEntry === undefined) {
+        status = patrolStatusForHooks(cardConditionTypes);
+      } else if (mechanic === 'conqueror' && subsystemEntry === undefined) {
+        // why: WP-886 / D-24837 — the same per-hook check for `conqueror`, before the by-name
+        // KNOWN_CONDITIONS entry.
+        status = conquerorStatusForHooks(cardConditionTypes);
+      } else {
+        status = statusForMechanic(mechanic, cardResolvedMarkers, cardResolvedKeywords, subsystemEntry);
+      }
       rows.push(buildRow(extId, info, mechanic, status, provenance, designs, subsystemEntry));
     }
   }

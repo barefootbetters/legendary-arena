@@ -419,7 +419,7 @@
   {
     "key": "microscopicsizechanging",
     "label": "Microscopic Size-Changing",
-    "description": "“Microscopic Size-Changing” means “You can recruit this card for 2 Recruit less for each matching-class card you played this turn, up to three.” It can reduce the cost to zero or below — a negative cost gives you that many Recruit points. It is a type of Size-Changing.",
+    "description": "“Microscopic Size-Changing” means “You can recruit this card for 2 Recruit less for each card of the shown Hero Class you played this turn, counting up to the number of icons shown.” With three Tech icons, playing three or more Tech Heroes takes 6 off. It can reduce the cost to zero or below, and a negative cost gives you that many Recruit points. On a Villain, it works the same way for Attack, and a negative value gives you that many Attack points when you fight it. It is a type of Size-Changing.",
     "pdfPage": 30
   },
   {
@@ -539,7 +539,7 @@
   {
     "key": "sizechanging",
     "label": "Size-Changing",
-    "description": "“Size-Changing” means “You can recruit this Hero for 2 Recruit less if you played any cards this turn” (or, on a Villain, fight it for 2 Attack less). The reduced cost applies only at the moment you recruit or fight the card.",
+    "description": "“Size-Changing: Covert” means “You can recruit this card for 2 Recruit less if you played any Covert cards this turn.” On a Villain, it means you can fight it for 2 Attack less. A card that lists several Hero Classes costs 2 less for each listed class you played this turn: playing both a Strength and a Covert Hero takes 4 off “Size-Changing: Strength, Covert”. The reduced cost applies only at the moment you recruit or fight the card.",
     "pdfPage": 33
   },
   {

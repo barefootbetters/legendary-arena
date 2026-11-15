@@ -229,7 +229,7 @@ function isHorizontalScroller(element: Element): boolean {
  * itself, every horizontally scrolling ancestor up to the root, and the
  * viewport width. Horizontal-only and independent of vertical scroll position.
  */
-function measureRowFits(row: HTMLElement): boolean {
+export function measureRowFits(row: HTMLElement): boolean {
   if (overflowsHorizontally(row)) return false;
   let ancestor = row.parentElement;
   while (ancestor !== null) {

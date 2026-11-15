@@ -79,6 +79,12 @@ export type SchemeResourceLossCondition =
       cardTypes: readonly RevealedCardType[];
       /** The count at which the scheme is lost (evil wins). */
       threshold: number;
+      /**
+       * WP-863 / D-24805 — the printed count is PER PLAYER ("3 Villains per player have
+       * escaped"): the loss count is `threshold` × the number of seats in `G.playerZones`.
+       * Omitted means the threshold is a flat count.
+       */
+      isThresholdPerPlayer?: true;
     }
   | {
       /** A named pile running out (reaching zero cards) is the loss. */
@@ -199,6 +205,15 @@ export interface SchemeTwistConfig {
    * means D-24315 suppression applies unchanged.
    */
   twistFallbackWithResourceLoss?: true;
+  /**
+   * WP-863 / D-24805 — the escape half of a printed "N Villains escape OR a pile runs out"
+   * Evil Wins, held beside a `pile-depleted` `resourceLossCondition`. The scheme loses when
+   * EITHER is met; the danger meter measures both. Valid ONLY beside a `pile-depleted` primary
+   * (the loss and the meter both ignore it otherwise; schemeTwistConfigs.test.ts pins that no
+   * entry pairs it with another kind). A config that models both halves this way drops
+   * `twistFallbackWithResourceLoss` (nothing is left unmodelled). Data-only.
+   */
+  additionalEscapeLossCondition?: Extract<SchemeResourceLossCondition, { kind: 'escaped-pile-count' }>;
 }
 
 /**

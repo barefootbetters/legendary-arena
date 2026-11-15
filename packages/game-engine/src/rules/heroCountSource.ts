@@ -47,7 +47,7 @@ export type HeroCountSource =
   // why: WP-711 / D-24534 — the per-hero-CLASS-played family, the class analogue of the
   // avengers/shield-heroes-played-this-turn team sources above. Each counts the OTHER cards
   // played this turn whose hero class matches (cardHasClassWhenPlayed: printed hc OR hc2 OR a
-  // Size-Changing granted class), self-EXCLUSIVE, play-area "played this turn" (NOT the hand+play
+  // Copy Powers copied class), self-EXCLUSIVE, play-area "played this turn" (NOT the hand+play
   // "Heroes you have" reading of distinct-hero-classes-played-this-turn). Four classes only —
   // instinct has no card in this shape (taxonomy discipline). Backfills six flat-parsing lines:
   // Marvelous Strength/Absorb Energies (ssw1), the dkcy ranged pair, bkwd covert, co2e tech.
@@ -57,7 +57,9 @@ export type HeroCountSource =
   | 'covert-heroes-played-this-turn'
   | 'x-men-played-this-turn' // why: D-24655 — the count of OTHER cards played this turn on the X-Men team (cardHasTeamWhenPlayed, honors Copy-Powers teams per D-24391), the X-Men analogue of avengers-played-this-turn; Cyclops' X-Men United "+2 attack for each other X-Men Hero you played this turn" (core) and its co2e "+1" twin. Self-exclusive. Before this, the line parsed as a flat +2 and under-granted with two or more other X-Men
   | 'extra-cards-drawn-this-turn' // why: D-24732 — the cards the current player has drawn this turn OTHER than the hand drawn at end of turn: reads G.turnEconomy.cardsDrawn, which every effect draw the current player makes increments (draw:N, reveal-rule draws, Psychic Link, Investigate, Dodge, Diving Block, Stack the Deck, HYDRA Conspiracy, Enchantress, ...) and the start-of-turn fill / end-of-turn hand / next-hand bonuses never do. Self-INCLUSIVE of the resolving card's own draws (Berserker Rage counts its own three). Wolverine's Berserker Rage (core) + the antm Giant Ego / chmp 7th Smartest Man twins, "+1 attack for each extra card you've drawn this turn". Not a card list — a counter
-  | 'shield-heroes-cost-one-plus-played-this-turn'; // why: WP-824 / D-24757 — the count of OTHER cards played this turn on the S.H.I.E.L.D. team (cardCountsAsTeamMember, so the basic Officer counts) whose printed cost is 1 or more; Agent X-13's Paramilitary Ops (ca75) "+1 attack for each other S.H.I.E.L.D. Hero you played this turn that costs 1 or more". The cost-filtered sibling of shield-heroes-played-this-turn: the cost-0 S.H.I.E.L.D. Agent / Trooper starters never count. Self-exclusive. The slug spells "one" because a count-source slug can't contain a digit (the cost-four-plus precedent)
+  | 'shield-heroes-cost-one-plus-played-this-turn' // why: WP-824 / D-24757 — the count of OTHER cards played this turn on the S.H.I.E.L.D. team (cardCountsAsTeamMember, so the basic Officer counts) whose printed cost is 1 or more; Agent X-13's Paramilitary Ops (ca75) "+1 attack for each other S.H.I.E.L.D. Hero you played this turn that costs 1 or more". The cost-filtered sibling of shield-heroes-played-this-turn: the cost-0 S.H.I.E.L.D. Agent / Trooper starters never count. Self-exclusive. The slug spells "one" because a count-source slug can't contain a digit (the cost-four-plus precedent)
+  | 'non-grey-heroes-koed-from-deck-this-turn' // why: WP-859 / D-24795 — the non-grey Heroes (matchesGreyHeroFilter 'non-grey': Wounds, Bystanders and grey Heroes never count) among the cards KO'd from the player's deck this turn (G.cardsKoedFromDeckThisTurn); World-Spanning Hunger's "+2 for each non-grey Hero that was KO'd from your deck this turn" (wwhk), counted at play. Not a played-this-turn source: deck KOs, whoever made them
+  | 'distinct-costs-you-have'; // why: WP-876 / D-24823 — the number of DISTINCT printed costs among the "cards you have" (rules v23 ~l.2164-2167: the cards in your hand plus the cards you played this turn; ~l.3443-3447: a played card that moved elsewhere still counts as played this turn), plus the Hero Artifacts you control (~l.930), 0 included (the Weapon X Sequence note), Wounds and Bystanders skipped. Putting a Crew Together's Heist ability "+1 Attack for each different cost card you have" (amwp). Deliberately WIDER than the "Heroes you have" pool of the Heist Count and Outwit (still in play only). Counted when it fires
 
 // why: canonical array for drift-detection. Must match HeroCountSource union
 // exactly. Drift-detection test in hero/heroCountSource.resolve.test.ts asserts
@@ -84,6 +86,8 @@ export const HERO_COUNT_SOURCES: readonly HeroCountSource[] = [
   'x-men-played-this-turn', // why: D-24655 — OTHER X-Men-team cards played this turn (self-exclusive); X-Men United (core + co2e)
   'extra-cards-drawn-this-turn', // why: D-24732 — G.turnEconomy.cardsDrawn, the effect draws this turn (never the start/end-of-turn hand); Berserker Rage + antm/chmp twins
   'shield-heroes-cost-one-plus-played-this-turn', // why: WP-824 / D-24757 — OTHER S.H.I.E.L.D.-team cards played this turn costing 1 or more (self-exclusive; starters excluded); Paramilitary Ops (ca75)
+  'non-grey-heroes-koed-from-deck-this-turn', // why: WP-859 / D-24795 — non-grey Heroes in G.cardsKoedFromDeckThisTurn for the player (matchesGreyHeroFilter 'non-grey'); World-Spanning Hunger (wwhk)
+  'distinct-costs-you-have', // why: WP-876 / D-24823 — distinct printed costs over hand + playedCardIdsThisTurn + controlled Hero Artifacts, 0 included, Wounds / Bystanders skipped (countDistinctCostsOfCardsYouHave); Putting a Crew Together (amwp)
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -159,7 +163,23 @@ export interface FlatAttackChoiceOption {
 }
 
 /**
- * One option of a "Choose one:" hero ability (WP-679 / D-24495; extended D-24696).
+ * A flat "+N recruit" option of a choose-one (WP-856 / D-24792).
+ *
+ * The recruit half of Possessed by Brother's Spirit ("…you get +4[icon:recruit] or
+ * +4[icon:attack]."). Resolved through the shipped `recruit` hero-effect executor with
+ * `magnitude`.
+ */
+export interface FlatRecruitChoiceOption {
+  // why: WP-856 / D-24792 — the D-24696 `flat-attack` sibling for a printed "+N Recruit or
+  // +N Attack" reward.
+  /** Discriminant — this option grants a flat recruit amount (D-24792). */
+  kind: 'flat-recruit';
+  /** The recruit granted when this option is chosen. */
+  magnitude: number;
+}
+
+/**
+ * One option of a "Choose one:" hero ability (WP-679 / D-24495; extended D-24696, D-24792).
  *
  * A tagged union so a single choose-one can mix a count-scaled resource grant with an
  * Undercover send (the two shld cards) — not only the two-count-scaled shape (vnom) —
@@ -170,4 +190,5 @@ export type ChooseOneOption =
   | CountScaledChoiceOption
   | UndercoverChoiceOption
   | GainOfficerChoiceOption
-  | FlatAttackChoiceOption;
+  | FlatAttackChoiceOption
+  | FlatRecruitChoiceOption;

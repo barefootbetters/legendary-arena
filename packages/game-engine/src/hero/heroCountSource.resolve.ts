@@ -15,11 +15,11 @@
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { HeroCountSource } from '../rules/heroCountSource.js';
-import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
+import { BYSTANDER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 // why: WP-680 / D-24497, corrected D-24529 — the distinct-class source counts the
 // colors of Heroes you HAVE (hand + play, self-inclusive, order-independent — the
 // rulebook "Heroes you have" term of art), reusing the D-24055 in-play counting for
-// the play-area half (incl. getGrantedClasses for Size-Changing) plus the hand.
+// the play-area half (incl. a Copy Powers copied class) plus the hand.
 import { countDistinctHeroClassesYouHave } from './heroConditions.evaluate.js';
 // why: WP-680 / D-24391 — the team sources count membership the same way the
 // requiresTeam gate does: printed team OR a Copy-Powers-granted team. why (Jeff
@@ -29,13 +29,18 @@ import { countDistinctHeroClassesYouHave } from './heroConditions.evaluate.js';
 import { cardCountsAsTeamMember } from './effectiveTeams.logic.js';
 // why: WP-706 / D-24528 — the diagnostics-only explain for the distinct-class source
 // mirrors countDistinctHeroClassesYouHave's play-area Set (printed heroClass/heroClass2 plus
-// the Size-Changing granted classes), so it imports getGrantedClasses to gather the same
-// granted classes. It does NOT call cardHasClassWhenPlayed (the boolean class-match gate).
+// a Copy Powers copied class), so it imports getCopiedClasses to gather the same copied
+// classes. It does NOT call cardHasClassWhenPlayed (the boolean class-match gate).
 // why: WP-711 / D-24534 — the per-hero-class-played count sources match a played card's
-// class via cardHasClassWhenPlayed (printed hc OR hc2 OR a Size-Changing granted class),
+// class via cardHasClassWhenPlayed (printed hc OR hc2 OR a Copy Powers copied class),
 // the class analogue of cardCountsAsTeamMember used by the team sources.
-import { cardHasClassWhenPlayed, getGrantedClasses, getCopiedClasses } from './sizeChanging.logic.js';
-import { offPlayCardTraits, playedCardIdsStillInPlay, playedCardIdsThisTurn } from './splitCard.logic.js';
+import { cardHasClassWhenPlayed, getCopiedClasses } from './sizeChanging.logic.js';
+import {
+  matchesGreyHeroFilter,
+  offPlayCardTraits,
+  playedCardIdsStillInPlay,
+  playedCardIdsThisTurn,
+} from './splitCard.logic.js';
 
 // why: villain-deck bystanders carry the `bystander-villain-deck-NN` ext_id
 // form (villainDeck.setup.ts), distinct from the global-pile `pile-bystander`
@@ -336,8 +341,8 @@ function countShieldHeroesCostOnePlusPlayedThisTurn(
  * excludes the triggering card itself — each card's text is "+N for each OTHER
  * [class] Hero you played this turn" (Marvelous Strength, Absorb Energies, the
  * dkcy/bkwd/co2e lines). Membership uses cardHasClassWhenPlayed, so a card counts
- * by its printed heroClass, its heroClass2 (D-24523 dual-class), OR a Size-Changing
- * granted class (D-24074) — exactly as the heroClassMatch gate reads it. A card
+ * by its printed heroClass, its heroClass2 (D-24523 dual-class), OR a Copy Powers
+ * copied class (D-24730) — exactly as the heroClassMatch gate reads it. A card
  * with no matching class never counts.
  *
  * @param G - Game state (read-only).
@@ -407,6 +412,66 @@ function countOddCostCardsPlayedThisTurn(
     }
   }
   return oddCostCount;
+}
+
+/**
+ * Collects the "cards you have" for the distinct-costs-you-have source (WP-876 / D-24823):
+ * the cards played this turn, then the hand, then the Hero Artifacts the player controls.
+ *
+ * // why: WP-876 / D-24823 — rules v23 ~l.2164-2167 define "cards you have" as the cards in your
+ * hand plus the cards you played this turn, and ~l.3443-3447 keep a played card that moved
+ * elsewhere as "a card you played this turn", so the played half is playedCardIdsThisTurn (Out
+ * of Time cards, returned Sidekicks and used Ritual Artifacts included), NOT the still-in-play
+ * "Heroes you have" pool. A controlled Hero Artifact joins (rules ~l.930, the distinct-classes
+ * collector precedent), skipped when it is already in the pool so it is listed once. Wounds and
+ * Bystanders print no cost, so they are skipped.
+ *
+ * @param G - Game state (read-only).
+ * @param playerID - The player whose cards to collect.
+ * @returns The pool's ext_ids in that order, or [] when the player has no zones.
+ */
+function collectCardsYouHave(G: LegendaryGameState, playerID: string): CardExtId[] {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) {
+    return [];
+  }
+  const pool: CardExtId[] = [];
+  for (const cardId of [...playedCardIdsThisTurn(G, playerZones.inPlay), ...playerZones.hand]) {
+    if (cardId === WOUND_EXT_ID || cardId === BYSTANDER_EXT_ID) {
+      continue;
+    }
+    pool.push(cardId as CardExtId);
+  }
+  for (const artifactCardId of G.controlledArtifacts?.[playerID] ?? []) {
+    if (pool.includes(artifactCardId)) {
+      continue;
+    }
+    pool.push(artifactCardId);
+  }
+  return pool;
+}
+
+/**
+ * Counts the distinct printed costs among the "cards you have" (WP-876 / D-24823), Putting a
+ * Crew Together's "+1 Attack for each different cost card you have".
+ *
+ * // why: WP-876 / D-24823 — the Weapon X Sequence note (rules v23 ~l.2184-2193) counts 0 as a
+ * cost, so a 0-cost card adds the cost 0 once. An id with no cardStats row reads as cost 0. This
+ * is NOT the Heist Count, which drops 0.
+ *
+ * @param G - Game state (read-only).
+ * @param playerID - The player whose cards to count.
+ * @returns The number of distinct printed costs, 0 included.
+ */
+function countDistinctCostsOfCardsYouHave(G: LegendaryGameState, playerID: string): number {
+  const distinctCosts: number[] = [];
+  for (const cardId of collectCardsYouHave(G, playerID)) {
+    const cost = G.cardStats?.[cardId]?.cost ?? 0;
+    if (!distinctCosts.includes(cost)) {
+      distinctCosts.push(cost);
+    }
+  }
+  return distinctCosts.length;
 }
 
 /**
@@ -501,6 +566,25 @@ export function resolveCountSource(
       // playerID / triggeringCardId are unused because turnEconomy is the current
       // player's alone; the ?? 0 guards narrow test mocks that omit the field.
       return G.turnEconomy?.cardsDrawn ?? 0;
+    }
+    case 'non-grey-heroes-koed-from-deck-this-turn': {
+      // why: WP-859 / D-24795 — World-Spanning Hunger's "+2 for each non-grey Hero that was KO'd
+      // from your deck this turn": the non-grey Heroes in this player's deck-KO turn record.
+      // Wounds, Bystanders and grey Heroes fail the filter. triggeringCardId is unused (the record
+      // holds KO'd cards, never the resolving card). An absent record counts 0.
+      let nonGreyHeroCount = 0;
+      for (const koedCardId of G.cardsKoedFromDeckThisTurn?.[playerID] ?? []) {
+        if (matchesGreyHeroFilter(G, koedCardId, 'non-grey')) {
+          nonGreyHeroCount += 1;
+        }
+      }
+      return nonGreyHeroCount;
+    }
+    case 'distinct-costs-you-have': {
+      // why: WP-876 / D-24823 — Putting a Crew Together's "each different cost card you have":
+      // distinct printed costs over hand + cards played this turn + controlled Hero Artifacts, 0
+      // included, counted when the Heist fires. Self-inclusive; triggeringCardId is unused.
+      return countDistinctCostsOfCardsYouHave(G, playerID);
     }
     default: {
       // why: defensive — the union is closed, but an unrecognized source must
@@ -710,7 +794,7 @@ function collectOddCostCardsPlayedThisTurn(
  * Collects the OTHER played-this-turn cards of a given hero class (WP-711 / D-24534).
  *
  * Mirrors countHeroClassCardsPlayedThisTurn in ext-id-collecting form, reusing the SAME
- * cardHasClassWhenPlayed predicate (printed hc OR hc2 OR a Size-Changing granted class).
+ * cardHasClassWhenPlayed predicate (printed hc OR hc2 OR a Copy Powers copied class).
  * Self-EXCLUSIVE (skips the triggering card), so count === length.
  *
  * @param G - Game state (read-only).
@@ -748,7 +832,7 @@ function collectHeroClassCardsPlayedThisTurn(
  *
  * Mirrors countDistinctHeroClassesYouHave's gathering in ext-id-collecting form: the HAND
  * half by printed `heroClass` / `heroClass2` only, and the PLAY half by those plus the
- * Size-Changing granted classes (an in-play-only grant). It is SELF-INCLUSIVE — the count
+ * Copy Powers copied classes (an in-play-only copy). It is SELF-INCLUSIVE — the count
  * source counts distinct COLOURS over all Heroes you have including the trigger, so this
  * takes no `triggeringCardId` and lists every card that carries any class. The resolved
  * count is a distinct-colour rollup, so it is NOT bounded by `collected.length` in either
@@ -774,7 +858,7 @@ function collectDistinctHeroClassCards(
   }
 
   const matchedCardIds: CardExtId[] = [];
-  // why: HAND half — printed colours only (no Size-Changing grant, an in-play effect).
+  // why: HAND half — printed colours only (no copied class, an in-play effect).
   for (const handCardId of playerZones.hand) {
     // why: WP-772 / D-24604 — consistency with countDistinctHeroClassesYouHave: a split card in
     // hand reads the off-play view (both halves' classes) through the split-face map. Face a
@@ -789,7 +873,7 @@ function collectDistinctHeroClassCards(
       matchedCardIds.push(handCardId as CardExtId);
     }
   }
-  // why: PLAY half — printed colours plus Size-Changing granted classes.
+  // why: PLAY half — printed colours plus Copy Powers copied classes.
   // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
   // why: WP-803 / D-24692 — a "Heroes you have" read (hand + still in play), so a card that went Out of Time is excluded: rules v23 L3443-3447 (a played card that moved elsewhere doesn't count as "Your Heroes" or "Heroes you Have") + L3457-3470 ("Reveal a Hero" / "KO one of your Heroes" can't pick it).
   for (const playedCardId of playedCardIdsStillInPlay(G, playerZones.inPlay)) {
@@ -801,13 +885,23 @@ function collectDistinctHeroClassCards(
     // must still appear in the counted inputs).
     const hasSecondClass =
       traitEntry !== undefined && typeof traitEntry.heroClass2 === 'string' && traitEntry.heroClass2.length > 0;
-    // why: D-24074 — a Size-Changing card contributes each granted class too.
-    // why: D-24730 — and Copy Powers contributes the class it copied this play.
-    const hasGrantedClass =
-      getGrantedClasses(G, playedCardId as CardExtId).length > 0 ||
-      getCopiedClasses(G, playedCardId as CardExtId).length > 0;
+    // why: D-24730 — Copy Powers contributes the class it copied this play. Size-Changing
+    // contributes none (D-24801: a recruit discount, not a class grant).
+    const hasGrantedClass = getCopiedClasses(G, playedCardId as CardExtId).length > 0;
     if (hasPrintedClass || hasSecondClass || hasGrantedClass) {
       matchedCardIds.push(playedCardId as CardExtId);
+    }
+  }
+  // why: WP-858 / D-24794 — CONTROLLED-ARTIFACT half, mirroring countDistinctHeroClassesYouHave
+  // (printed classes only), so the counted inputs stay consistent with the count.
+  for (const artifactCardId of G.controlledArtifacts?.[playerID] ?? []) {
+    const traitEntry = G.cardTraits[artifactCardId];
+    const hasPrintedClass =
+      traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0;
+    const hasSecondClass =
+      traitEntry !== undefined && typeof traitEntry.heroClass2 === 'string' && traitEntry.heroClass2.length > 0;
+    if (hasPrintedClass || hasSecondClass) {
+      matchedCardIds.push(artifactCardId);
     }
   }
   return matchedCardIds;
@@ -903,6 +997,21 @@ export function explainCountSourceInputs(
       // how many cards were drawn, not which, so there are no inputs to name (like the
       // victory-pile sources, countedInputs is omitted for it).
       return [];
+    }
+    case 'non-grey-heroes-koed-from-deck-this-turn': {
+      // why: WP-859 / D-24795 — the ids resolveCountSource counts, in KO order (count === length).
+      const nonGreyHeroIds: CardExtId[] = [];
+      for (const koedCardId of G.cardsKoedFromDeckThisTurn?.[playerID] ?? []) {
+        if (matchesGreyHeroFilter(G, koedCardId, 'non-grey')) {
+          nonGreyHeroIds.push(koedCardId);
+        }
+      }
+      return nonGreyHeroIds;
+    }
+    case 'distinct-costs-you-have': {
+      // why: WP-876 / D-24823 — the pool the count reads (a distinct-cost rollup, so the count may
+      // be below the returned length when cards share a cost).
+      return collectCardsYouHave(G, playerID);
     }
     default: {
       // why: defensive — the union is closed, but an unrecognized source explains to no

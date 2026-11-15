@@ -11,6 +11,9 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { buildVillainAbilityHooks } from './villainAbility.setup.js';
 import { buildCardKeywords } from './buildCardKeywords.js';
 import { hasAmbush } from '../board/boardKeywords.logic.js';
@@ -2338,5 +2341,71 @@ describe('buildVillainAbilityHooks — WP-837 each-player discard and reveal-gat
     for (const hook of co2eHooks) {
       assert.deepStrictEqual(hook.unresolvedMarkers ?? [], [], `${hook.cardId} must have no unresolved markers`);
     }
+  });
+});
+describe('WP-873 fortify grammar (D-24818)', () => {
+  /**
+   * Builds the onEscape hook for one Escape line on a mock cvwr villain.
+   *
+   * @param escapeLine - The full Escape ability line.
+   * @returns The single onEscape hook.
+   */
+  function escapeHookFor(escapeLine: string) {
+    const registry = makeRegistry('cvwr', [{ slug: 'great-lakes-avengers', cards: [{ slug: 'squirrel-girl', abilities: [escapeLine] }] }], []);
+    const hooks = buildVillainAbilityHooks(registry, makeConfig(['cvwr/great-lakes-avengers'], []));
+    const escapeHooks = hooks.filter((hook) => hook.timing === 'onEscape');
+    assert.equal(escapeHooks.length >= 1, true, 'an onEscape hook is built');
+    return escapeHooks[0]!;
+  }
+
+  it('T6: the two well-formed markers parse to their descriptors', () => {
+    assert.deepStrictEqual(escapeHookFor('Escape: Fortify. [effect:fortify:sidekick-stack:no-recruit-or-gain]').effects, [
+      { primitive: 'fortify', fortifyPlace: 'sidekick-stack', fortifyLock: 'no-recruit-or-gain' },
+    ]);
+    assert.deepStrictEqual(escapeHookFor('Escape: Fortify. [effect:fortify:mastermind:no-fight]').effects, [
+      { primitive: 'fortify', fortifyPlace: 'mastermind', fortifyLock: 'no-fight' },
+    ]);
+    assert.deepStrictEqual(escapeHookFor('Escape: Fortify. [effect:fortify:mastermind:no-fight]').keywords, []);
+  });
+
+  it('T7: malformed fortify markers go to unresolvedMarkers, never a partial descriptor', () => {
+    const malformed = [
+      'fortify',
+      'fortify:sidekick-stack',
+      'fortify:mastermind:no-recruit-or-gain',
+      'fortify:wound-stack:no-fight',
+      'fortify:mastermind:no-fight:1',
+    ];
+    for (const marker of malformed) {
+      const hook = escapeHookFor(`Escape: Fortify. [effect:${marker}]`);
+      assert.deepStrictEqual(hook.effects, [], `${marker} builds no descriptor`);
+      assert.deepStrictEqual(hook.unresolvedMarkers, [marker], `${marker} is unresolved`);
+    }
+  });
+
+  it('T8: the two regenerated cvwr Escape lines, verbatim, build their onEscape hooks', () => {
+    // why: read the shipped lines rather than retyping them, so the pin follows the overlay.
+    const cardsDirectory = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..', 'data', 'cards');
+    const setData = JSON.parse(readFileSync(join(cardsDirectory, 'cvwr.json'), 'utf8')) as {
+      villains: { slug: string; cards: { slug: string; abilities: string[] }[] }[];
+    };
+    const expected: Record<string, unknown> = {
+      'squirrel-girl': { primitive: 'fortify', fortifyPlace: 'sidekick-stack', fortifyLock: 'no-recruit-or-gain' },
+      'colleen-wing': { primitive: 'fortify', fortifyPlace: 'mastermind', fortifyLock: 'no-fight' },
+    };
+    let checked = 0;
+    for (const group of setData.villains) {
+      for (const card of group.cards) {
+        const descriptor = expected[card.slug];
+        if (descriptor === undefined) {
+          continue;
+        }
+        const escapeLine = card.abilities.find((ability) => ability.startsWith('Escape:'));
+        assert.ok(escapeLine !== undefined && escapeLine.includes('[effect:fortify:'), `${card.slug} carries the marker`);
+        assert.deepStrictEqual(escapeHookFor(escapeLine).effects, [descriptor]);
+        checked += 1;
+      }
+    }
+    assert.equal(checked, 2, 'both cards were found in cvwr.json');
   });
 });

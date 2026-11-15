@@ -43,10 +43,13 @@ import { resolveSeatChoice, hasPendingSeatChoice, SEAT_CHOICE_STAGE } from './mo
 import { openDivingBlockSeatChoiceIfNeeded } from './moves/divingBlock.logic.js';
 import { openFlyingShieldBlockSeatChoiceIfNeeded } from './moves/flyingShieldBlock.logic.js';
 import { openOutOfTimeGrantSeatChoiceIfNeeded } from './moves/outOfTimeGrant.logic.js';
+import { openNextHandFromPlaySeatChoiceIfNeeded } from './moves/nextHandFromPlay.logic.js';
 import { openEscapeProcedureSeatChoiceIfNeeded } from './villainDeck/villainEscapeProcedure.js';
 import { openTimestreamPurgeSeatChoiceIfNeeded, sweepPurgedHeroesFromHq } from './rules/timestreamPurge.logic.js';
 import { openEnigmaPeekSeatChoiceIfNeeded } from './rules/enigmaCode.logic.js';
 import { openRevealOrWoundSeatChoiceIfNeeded } from './moves/revealOrWoundChoice.logic.js';
+import { openMandarinRingEntriesIfNeeded } from './moves/mandarinRingEntry.logic.js';
+import { openVillainFightPickSeatChoiceIfNeeded } from './moves/villainFightPick.logic.js';
 import { executeRuleHooks } from './rules/ruleRuntime.execute.js';
 import { applyRuleEffects } from './rules/ruleRuntime.effects.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from './rules/ruleRuntime.impl.js';
@@ -73,6 +76,8 @@ import { healWounds } from './moves/healWounds.js';
 import { endMatchEarly } from './moves/endMatchEarly.js';
 import { dodgeCard } from './moves/dodgeCard.js';
 import { phaseCard } from './moves/phaseCard.js';
+import { useRitualArtifact } from './moves/ritualArtifact.js';
+import { attemptHeist } from './moves/attemptHeist.js';
 import {
   operatorSetSupplyCount,
   operatorMoveToDeckTop,
@@ -594,6 +599,19 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // per D-10008 — it mutates real G (playerZones), absent on UIState. Not emitted by
     // getLegalMoves, so bots never phase.
     phaseCard: { move: phaseCard, client: false },
+    // why: WP-858 / D-24794 — useRitualArtifact is a non-core, internally-stage-gated move (the
+    // phaseCard pattern): the player discards a Ritual Artifact they played this turn or control
+    // for its reward once its condition held. Server-only (client: false) per D-10008 — it mutates
+    // real G (playerZones, controlledArtifacts, turnEconomy). Not emitted by getLegalMoves, so
+    // bots never use a Ritual.
+    useRitualArtifact: { move: useRitualArtifact, client: false },
+    // why: WP-865 / D-24808 — attemptHeist is a non-core, internally-stage-gated move (the
+    // useRitualArtifact pattern): once per turn the player attempts a Heist, comparing the Heist
+    // Count with the Villain Deck top card's printed VP. Server-only (client: false) per D-10008 —
+    // it mutates real G (turnEconomy, and the readied abilities' or the Wound's zones). Not in
+    // CORE_MOVE_NAMES. WP-878 / D-24826 — getLegalMoves step 4c emits it for a bot when the
+    // card-count odds favor a Heist, and both simulation MOVE_MAPs dispatch it.
+    attemptHeist: { move: attemptHeist, client: false },
     // why: WP-502 / D-24306 — endMatchEarly is the player-initiated "End Game"
     // control: it latches the MATCH_ENDED_EARLY endgame counter so the match ends
     // (endedEarly tie) for every seat via the top-level endIf. Server-only
@@ -730,9 +748,10 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // why: WP-806 / D-24713 §7 — the six operator setters run ONLY in an operator match
     // (each gates on G.isDebugMatch, the operator's own turn, the main stage and no open
     // choice, and returns silently otherwise). They are deliberately absent from
-    // getLegalMoves, SIMULATION_MOVE_NAMES, both MOVE_MAPs, the determinism-only replay
-    // and the fixture runner, so no bot, simulation, PAR run or fixture ever makes one
-    // (the phaseCard / endMatchEarly precedent). Server-only (client: false) per D-10008.
+    // getLegalMoves, SIMULATION_MOVE_NAMES, both sim MOVE_MAPs and the fixture runner, so
+    // no bot, simulation, PAR run or fixture ever makes one (the phaseCard / endMatchEarly
+    // precedent). The determinism-only replay dispatches them like every registered move
+    // (D-24830 amends §7). Server-only (client: false) per D-10008.
     operatorSetSupplyCount: { move: operatorSetSupplyCount, client: false },
     operatorMoveToDeckTop: { move: operatorMoveToDeckTop, client: false },
     operatorRevealNow: { move: operatorRevealNow, client: false },
@@ -928,6 +947,29 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // with no prompt (declining is not an option then, L3199-3200). Early no-op when
           // nothing is queued.
           openRevealOrWoundSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
+          // why: WP-875 / D-24822 — The Mandarin's Master Strike queued one Ring entry per player
+          // with an available Ring (a strike has no events). Settle them here: a lone Ring enters
+          // with no prompt, players with two or more answer one 'mandarin-ring-entry' seat choice,
+          // and the chosen Rings enter the Sewers current player first. An entry can push a Villain
+          // off the Bridge, so the escape opener, the D-24599 latch + pile-depletion pair and the
+          // reveal-or-wound opener re-run (each idempotent, each waits on an open choice) so that
+          // escape's steps and any loss it causes land on this move. BEFORE Diving Block, so a Wave
+          // from a strike Wound waits until the Ring choices are answered. Only with a live ctx
+          // (the unit-test `{ G }` call shape has none); no Purge-sweep re-run (it catches up on
+          // the next move).
+          if (ctx !== undefined) {
+            openMandarinRingEntriesIfNeeded(
+              G,
+              events,
+              ctx.currentPlayer,
+              { random, ctx: { currentPlayer: ctx.currentPlayer, turn: ctx.turn } },
+              DEFAULT_IMPLEMENTATION_MAP,
+            );
+            openEscapeProcedureSeatChoiceIfNeeded(G, events, ctx.currentPlayer);
+            latchFinalTurnIfDeckExhausted(G);
+            applyPileDepletionResourceLoss(G);
+            openRevealOrWoundSeatChoiceIfNeeded(G, events, ctx.currentPlayer);
+          }
           // why: WP-682 / D-24499 — after every move, open (or re-open) the next
           // Diving-Block reveal/decline WAVE for any Wounds parked at the
           // gainWoundForPlayer chokepoint this move. Runs here (not in each
@@ -951,6 +993,19 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // after the move that played the card: auto for one eligible hand Hero, else the
           // active player's seat choice. No-op while another seat choice is open.
           openOutOfTimeGrantSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
+          // why: WP-870 / D-24815 — resolve owed Mandarin's Rings Zero picks ("Choose a card you
+          // played this turn that costs 0 … add that card to your hand as an extra card") after
+          // the fight that queued them: a no-op with no eligible card, auto for one distinct card,
+          // else the active player's seat choice. The villain executor has no events, so the pick
+          // opens here (the D-24779 shape). No-op while another choice is open.
+          openNextHandFromPlaySeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
+          // why: WP-872 / D-24817 — open the next owed Mandarin's Rings Liar / Nightbringer / Remaker
+          // pick after the fight that queued it (the villain executor has no events, the D-24779
+          // shape). Here, immediately before the Enigma peek: after WP-875's Ring-entry opener (which
+          // sits before Diving Block), so a Ring entry a Nightbringer-driven Villain Deck play queued
+          // settles first, and after WP-870's Zero opener; the pick's later steps chain from
+          // resolveSeatChoice. No-op while another choice is open.
+          openVillainFightPickSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
           // why: WP-830 / D-24763 — The Unbreakable Enigma Code: open the next owed pay-1-Recruit
           // peek offer from a Villain fight (the fighter's own choice). LAST, so every reaction the
           // fight caused (an escape's steps, a Diving Block wave) resolves first: the peek is
@@ -980,6 +1035,35 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // set it is byte-unchanged (a no-op when unset).
           if (G.villainOrMastermindDefeatedSinceResolve !== undefined) {
             delete G.villainOrMastermindDefeatedSinceResolve;
+          }
+
+          // why: WP-853 / D-24789 — the same defensive turn-boundary clear for the
+          // owned-KO count (Absorb Energies). The resolve consumes it every move; this
+          // makes the reset explicit. Guarded, so a game that never set it is unchanged.
+          if (G.ownedCardsKoedSinceResolve !== undefined) {
+            delete G.ownedCardsKoedSinceResolve;
+          }
+
+          // why: WP-856 / D-24792 — the same defensive turn-boundary clear for the
+          // per-owner Hero-KO count (Possessed by Brother's Spirit). Guarded, so a game
+          // that never set it is unchanged.
+          if (G.ownedHeroesKoedSinceResolve !== undefined) {
+            delete G.ownedHeroesKoedSinceResolve;
+          }
+
+          // why: WP-855 / D-24791 — the same turn-boundary clear for the per-owner deck-KO
+          // count (Endless Appetite). The resolve keeps it while a choice is parked, so this is
+          // the clear that drops a count held to the end of the turn. Guarded, so a game that
+          // never set it is unchanged.
+          if (G.deckCardsKoedSinceResolve !== undefined) {
+            delete G.deckCardsKoedSinceResolve;
+          }
+
+          // why: WP-859 / D-24795 — the turn record of cards KO'd from each deck ("KO'd from
+          // your deck this turn") lives for the whole turn and is cleared only here, never per
+          // resolve. Guarded, so a game that never wrote it (no reader hook) is unchanged.
+          if (G.cardsKoedFromDeckThisTurn !== undefined) {
+            delete G.cardsKoedFromDeckThisTurn;
           }
 
           // why: WP-777 / D-24616 — "If you discarded any cards this turn" reads a per-turn
@@ -1012,6 +1096,24 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           }
           if (G.pendingOutOfTimeGrants !== undefined) {
             delete G.pendingOutOfTimeGrants;
+          }
+          // why: WP-870 / D-24815 — an owed Zero pick belongs to the turn that defeated Zero.
+          // Guarded delete, so a match that never fought Zero is byte-unchanged; applyOnBeginParity
+          // mirrors it.
+          if (G.pendingNextHandFromPlayPicks !== undefined) {
+            delete G.pendingNextHandFromPlayPicks;
+          }
+          // why: WP-875 / D-24822 — owed Mandarin's Ring entries belong to the turn whose strike
+          // queued them. Guarded delete, so a match without The Mandarin is byte-unchanged;
+          // applyOnBeginParity mirrors it.
+          if (G.pendingMandarinRingEntries !== undefined) {
+            delete G.pendingMandarinRingEntries;
+          }
+          // why: WP-872 / D-24817 — an owed Liar / Nightbringer / Remaker pick belongs to the turn
+          // that defeated the Ring. Guarded delete, so a match without these cards is byte-unchanged;
+          // applyOnBeginParity mirrors it.
+          if (G.pendingVillainFightPicks !== undefined) {
+            delete G.pendingVillainFightPicks;
           }
 
           // why: WP-328 — stamp the turn number into G (ctx.turn lives only in ctx, and

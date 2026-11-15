@@ -24,10 +24,11 @@
  */
 
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { argv, cwd, exit, stdout } from 'node:process';
+import { argv, cwd, exit, stderr, stdout } from 'node:process';
 
 // ---------------------------------------------------------------------------
 // Configuration — workspace layout, scan roots, ignore set
@@ -81,9 +82,15 @@ const SKIP_DIRECTORIES = new Set([
 // Vite apps' apps/*/public/ hold _headers, robots.txt, brand tokens, og images.
 // So they are skipped by exact repo-relative path suffix: only the ewiki build
 // output is excluded, and every tracked apps/*/public/ asset still counts.
+// why: apps/wiki-viewer/data/ops/ is the gitignored projection of
+// docs/ops/*.json written by `pnpm wiki-viewer:project` (D-24710). Same leak as
+// content/: a local regen after a wiki build listed its service-dependencies.json
+// copy as a brevo file (2026-10-27). Skipped by path, not by the bare name
+// `data`, because the repo-root data/cards/ is tracked source.
 const SKIP_DIRECTORY_PATH_SUFFIXES = [
   'apps/wiki-viewer/public',
   'apps/wiki-viewer/resources',
+  'apps/wiki-viewer/data/ops',
 ];
 
 /**
@@ -97,6 +104,9 @@ const SKIP_DIRECTORY_PATH_SUFFIXES = [
  */
 function isSkippedDirectory(entryName, directoryPath) {
   if (SKIP_DIRECTORIES.has(entryName)) {
+    return true;
+  }
+  if (isGitignoredPath(directoryPath)) {
     return true;
   }
   // why: normalize Windows backslashes so the POSIX-style suffix match works on
@@ -171,19 +181,22 @@ const LANGUAGE_MARKER_PROBES = [
 // (2026-07-21): setting immutable Cache-Control on R2 card-image objects per
 // docs/ops/RUNBOOK-r2-image-cache-control.md, done with boto3's S3 CopyObject
 // (MetadataDirective=REPLACE) against the Cloudflare R2 S3 endpoint. Trap worth
-// recording: the `python` on the operator PATH is Inkscape's bundled interpreter
-// (no boto3); the pip-installed boto3 lives under the Python 3.12 install, which
-// must be invoked by its full path.
+// recording: bare `python` on the operator PATH is Inkscape's bundled interpreter
+// (no pip, no boto3) in any shell that doesn't load the operator's pwsh profile
+// (Bash tool, cmd, CI-style runs). Invoke Python 3.12 with the Windows launcher
+// instead — `py -3 -m pip install boto3`, `py -3 script.py` — which resolves to
+// 3.12 in every shell. Inkscape stays on PATH because
+// ewiki/branding/build-lockup-svg.py calls the `inkscape` CLI.
 const OPERATOR_OPS_TOOLCHAIN = [
   {
     tool: 'Python',
     version: '3.12 (Programs\\Python\\Python312)',
-    role: 'Interpreter for out-of-band ops scripts (R2 object-metadata via boto3). Invoke by full path — the `python` on PATH is Inkscape\'s and lacks boto3.',
+    role: 'Interpreter for out-of-band ops scripts (R2 object-metadata via boto3). Invoke with the Windows launcher, `py -3 script.py` — bare `python` on the operator PATH is Inkscape\'s and lacks boto3.',
   },
   {
     tool: 'pip',
     version: 'bundled with Python 3.12',
-    role: 'Installs boto3 into the Python 3.12 site-packages.',
+    role: 'Installs boto3 into the Python 3.12 site-packages via `py -3 -m pip install boto3`.',
   },
   {
     tool: 'boto3',
@@ -192,8 +205,8 @@ const OPERATOR_OPS_TOOLCHAIN = [
   },
 ];
 
-// why: some vendor accounts appear in no manifest — render.yaml and
-// domains.json can't see them — so the Infrastructure-services table would
+// why: some vendor accounts appear in no manifest — domains.json can't
+// see them — so the Infrastructure-services table would
 // silently omit them. List them here. Never put ping URLs, IPs, hostnames, or
 // resource IDs in this block: the generated page is public, and a ping URL is a
 // credential.
@@ -288,6 +301,62 @@ const LANGUAGE_SCAN_ROOTS = ['apps', 'packages', 'scripts', 'wiki'];
 // an editor terminal that started elsewhere.
 const SCRIPT_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(SCRIPT_DIRECTORY, '..');
+
+// why: the cron regenerates from a clean checkout, so a local regen must
+// count only what a clean checkout holds. The hand-written skip lists above
+// keep missing gitignored build output: content/, static/, public/,
+// data/ops/, and (2026-11-14) nine generated apps/dashboard/src/data/*.json
+// files that sit beside tracked ones in the same folder, so no path skip can
+// separate them. A local regen committed JSON 125 where the cron saw 116.
+// Asking git which paths it ignores makes local and cron runs agree. The
+// static lists stay as the fallback when git is unavailable.
+const GITIGNORED_PATHS = loadGitignoredPaths();
+
+/**
+ * List the repo's gitignored paths, repo-relative with forward slashes. A
+ * fully ignored directory appears once (`--directory`), without its trailing
+ * slash. Untracked-but-not-ignored paths (the CI website clone) are not
+ * included; `scanForSaas` handles those.
+ *
+ * @returns {Set<string>} The ignored paths, or an empty set when git fails.
+ */
+function loadGitignoredPaths() {
+  const ignoredPaths = new Set();
+  let output;
+  try {
+    output = execFileSync(
+      'git',
+      ['ls-files', '--others', '--ignored', '--exclude-standard', '--directory', '-z'],
+      { cwd: REPO_ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
+    );
+  } catch (gitError) {
+    stderr.write(
+      `architecture-inventory: could not list gitignored paths (${gitError.message}). ` +
+        'Falling back to the static skip lists, so gitignored build output may be counted. ' +
+        'Run this script from inside a git checkout with git on PATH.\n',
+    );
+    return ignoredPaths;
+  }
+  for (const entry of output.split('\0')) {
+    if (entry.length === 0) {
+      continue;
+    }
+    ignoredPaths.add(entry.endsWith('/') ? entry.slice(0, -1) : entry);
+  }
+  return ignoredPaths;
+}
+
+/**
+ * Decide whether a path is gitignored in this repo. Paths outside the repo
+ * (external scan roots) never match.
+ *
+ * @param {string} absolutePath - The file or directory path as walked.
+ * @returns {boolean} true when git ignores the path.
+ */
+function isGitignoredPath(absolutePath) {
+  const relativePath = relative(REPO_ROOT, absolutePath).split(sep).join('/');
+  return GITIGNORED_PATHS.has(relativePath);
+}
 
 // why: keep the date-stamped header reproducible regardless of the host
 // timezone — the user runs this from Windows (Pacific) but reports may
@@ -1191,9 +1260,13 @@ async function collectSourceFiles(directory, accumulator) {
         continue;
       }
       const extension = entry.name.slice(dotIndex);
-      if (SOURCE_EXTENSIONS.includes(extension)) {
-        accumulator.push(join(current, entry.name));
+      if (!SOURCE_EXTENSIONS.includes(extension)) {
+        continue;
       }
+      if (isGitignoredPath(join(current, entry.name))) {
+        continue;
+      }
+      accumulator.push(join(current, entry.name));
     }
   }
 }
@@ -1202,6 +1275,27 @@ async function collectSourceFiles(directory, accumulator) {
 // SaaS / embedded services scan — detect non-package tool usage via
 // string-pattern matching across source, HTML, and config files.
 // ---------------------------------------------------------------------------
+
+/**
+ * Decide whether a file lies inside one of the labelled (external) scan
+ * targets' roots, so the home-repo SaaS walk does not count it a second time.
+ *
+ * @param {string} filePath - The file's path as walked.
+ * @param {Array<{ root: string, label: string | null }>} scanTargets
+ * @returns {boolean} true when the file belongs to an external target.
+ */
+function isInsideExternalRoot(filePath, scanTargets) {
+  const resolvedFilePath = resolve(filePath);
+  for (const { root, label } of scanTargets) {
+    if (label === null) {
+      continue;
+    }
+    if (resolvedFilePath.startsWith(resolve(root) + sep)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 /**
  * Scan one or more directory trees for SaaS tool usage defined by
@@ -1230,8 +1324,20 @@ async function scanForSaas(scanTargets) {
     if (!existsSync(root)) {
       continue;
     }
-    const allFiles = [];
-    await collectAllFiles(root, allFiles);
+    const collectedFiles = [];
+    await collectAllFiles(root, collectedFiles);
+
+    // why: the architecture-inventory workflow clones the website repo INSIDE
+    // the workspace (actions/checkout cannot check out above it) and passes it
+    // as `--external`. The home-repo walk from REPO_ROOT then reaches the same
+    // clone, so every website file was listed twice — once as
+    // `[legendary-arena-website] x`, once as `legendary-arena-website/x`
+    // (cron PR #2584, 2026-10-26: brevo 22 files for 14 + 4). An external root
+    // belongs to its labelled target only, so the unlabelled home walk drops
+    // anything inside one.
+    const allFiles = label === null
+      ? collectedFiles.filter((filePath) => !isInsideExternalRoot(filePath, scanTargets))
+      : collectedFiles;
 
     // why: filter to text-readable extensions up front rather than
     // attempting to read binary blobs (images, fonts, compiled assets).
@@ -1327,6 +1433,9 @@ async function collectAllFiles(directory, accumulator) {
       }
       if (entry.isFile()) {
         if (SKIP_FILE_NAMES.has(entry.name)) {
+          continue;
+        }
+        if (isGitignoredPath(join(current, entry.name))) {
           continue;
         }
         accumulator.push(join(current, entry.name));
@@ -2144,9 +2253,8 @@ async function renderReport({
 
   // why: infrastructure services is the "where does it run" companion to
   // deployment topology's "what domain points where." Derived from
-  // docs/ops/domains.json (Cloudflare services), render.yaml (the retired
-  // Render blueprint), and curated vendor rows (the production droplet,
-  // monitors). Answers the question a new engineer asks:
+  // docs/ops/domains.json (Cloudflare services) and curated vendor rows (the
+  // production droplet, monitors). Answers the question a new engineer asks:
   // "what vendor accounts and managed services does this project depend on?"
   lines.push(`## Infrastructure services`);
   lines.push('');
@@ -2943,9 +3051,9 @@ async function renderDeploymentTopologySection() {
 /**
  * Render the "Infrastructure services" section: managed services the
  * project depends on, derived from `docs/ops/domains.json` (Cloudflare
- * services), `render.yaml` (the retired Render blueprint: what is still
- * on Render through the rollback window), and the curated
- * `CURATED_INFRASTRUCTURE_SERVICES` (the production droplet and monitors).
+ * services) and the curated `CURATED_INFRASTRUCTURE_SERVICES` (the
+ * production droplet and monitors). Render was listed here from render.yaml
+ * until it was deleted in Phase 7 (2026-10-22).
  *
  * This is the "where does it run" companion to Deployment topology's
  * "what domain points where." The two tables share source data but cut
@@ -2958,88 +3066,6 @@ async function renderDeploymentTopologySection() {
 async function renderInfrastructureServicesSection() {
   const lines = [];
   const services = [];
-
-  // ── Render services (from render.yaml) ──────────────────────────────
-  // why: render.yaml no longer governs production (D-24707 §3) but stays in
-  // the repo, and its services still exist on Render through the rollback
-  // window. Keep listing them, labelled as retired, so the table never
-  // presents Render as the production host; drop this when Render is deleted.
-  const renderRetiredLabel = 'retired from production 2026-10-12 (D-24707), kept for rollback until ~2026-10-20';
-  const renderYamlPath = join(REPO_ROOT, 'render.yaml');
-  if (existsSync(renderYamlPath)) {
-    const renderRaw = await readFile(renderYamlPath, 'utf8');
-
-    // why: full YAML parsing without a dependency would be its own
-    // project. render.yaml has a stable, shallow structure — regex
-    // extraction of service names, types, and database names is
-    // reliable for this file and avoids adding a YAML parser dep.
-    // If render.yaml ever becomes complex enough to defeat this,
-    // switch to a proper parser.
-
-    // Extract web/worker services: `- type: web` or `- type: worker`
-    // followed by `name: <value>`.
-    const servicePattern = /- type:\s*(web|worker|static)\s*\n\s*name:\s*(.+)/g;
-    let match;
-    while ((match = servicePattern.exec(renderRaw)) !== null) {
-      const serviceType = match[1].trim();
-      const serviceName = match[2].trim();
-
-      // why: derive the public URL from the service name. Render's
-      // convention is `<name>.onrender.com` for web/worker services.
-      // Static sites follow the same pattern but may have a custom
-      // domain (handled by the domains.json cross-reference).
-      // why: a service with `renderSubdomainPolicy: disabled` 404s on its
-      // onrender.com host (it serves only via its custom domain), so listing
-      // that URL would advertise a dead — and, for a gated service, formerly
-      // bypassing — origin. Scope the check to this service's own block
-      // (up to the next `- type:` entry or the `databases:` section).
-      const blockStart = match.index + match[0].length;
-      const boundaryPattern = /\n\s*- type:|\ndatabases:/g;
-      boundaryPattern.lastIndex = blockStart;
-      const boundary = boundaryPattern.exec(renderRaw);
-      const serviceBlock = renderRaw.slice(blockStart, boundary ? boundary.index : renderRaw.length);
-      const isRenderSubdomainDisabled = /^\s*renderSubdomainPolicy:\s*disabled\b/m.test(serviceBlock);
-      const renderUrl = isRenderSubdomainDisabled
-        ? `_onrender.com subdomain disabled (custom domain only)_`
-        : `https://${serviceName}.onrender.com`;
-
-      // why: detect the runtime from the YAML to label the service
-      // accurately. Node web services, static sites, and worker
-      // services have different operational profiles.
-      const runtimeLabel = serviceType === 'static'
-        ? `Render Static Site — ${renderRetiredLabel}`
-        : `Render Web Service — ${renderRetiredLabel}`;
-
-      services.push({
-        name: serviceName,
-        provider: 'Render',
-        kind: runtimeLabel,
-        url: renderUrl,
-      });
-    }
-
-    // Extract databases: `- name: <value>` under `databases:` block,
-    // followed by `plan: <value>` (possibly separated by comment lines).
-    // why: normalise line endings first — pCloud-synced repos on Windows
-    // store CRLF, and the regex anchors depend on `\n`-only endings.
-    const renderNormalised = renderRaw.replace(/\r\n/g, '\n');
-    const dbBlockIndex = renderNormalised.indexOf('\ndatabases:');
-    if (dbBlockIndex !== -1) {
-      const dbBlock = renderNormalised.slice(dbBlockIndex);
-      const dbPattern = /-\s*name:\s*(.+)\n(?:\s*(?:#[^\n]*)?\n)*\s*plan:\s*(.+)/g;
-      let dbMatch;
-      while ((dbMatch = dbPattern.exec(dbBlock)) !== null) {
-        const dbName = dbMatch[1].trim();
-        const dbPlan = dbMatch[2].trim();
-        services.push({
-          name: dbName,
-          provider: 'Render',
-          kind: `Managed PostgreSQL (${dbPlan}) — ${renderRetiredLabel}`,
-          url: '_internal (connection string via env)_',
-        });
-      }
-    }
-  }
 
   // ── Cloudflare services (from domains.json) ─────────────────────────
   // why: domains.json is the canonical record of which subdomains map
@@ -3119,8 +3145,7 @@ async function renderInfrastructureServicesSection() {
 
   // ── Render table ────────────────────────────────────────────────────
   lines.push(`Managed services the project depends on, derived from`);
-  lines.push(`\`docs/ops/domains.json\` and \`render.yaml\` (the retired Render blueprint,`);
-  lines.push(`listed until Render is deleted), plus vendor accounts no manifest`);
+  lines.push(`\`docs/ops/domains.json\`, plus vendor accounts no manifest`);
   lines.push(`declares (curated in \`CURATED_INFRASTRUCTURE_SERVICES\`), including the`);
   lines.push(`DigitalOcean droplet that runs production. Answers "what`);
   lines.push(`vendor accounts and managed services does this project`);

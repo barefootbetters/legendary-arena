@@ -30,6 +30,12 @@ import {
   markExcessiveViolenceUsed,
   markSidekickRecruited,
   recordSidekickReturned,
+  recordRecruitedHeroCost,
+  recordRitualUsedPlayed,
+  enrollHeistCard,
+  markHeistAttempted,
+  recordVillainDefeated,
+  spendFightCostForTarget,
 } from './economy.logic.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 
@@ -891,5 +897,108 @@ describe('markSidekickRecruited / recordSidekickReturned (WP-842 / D-24776)', ()
     const roundTripped = JSON.parse(JSON.stringify(spendRecruit(addResources(reset, 1, 1), 1))) as Record<string, unknown>;
     assert.strictEqual(Object.keys(roundTripped).includes('hasRecruitedSidekickThisTurn'), false);
     assert.strictEqual(Object.keys(roundTripped).includes('sidekicksReturnedThisTurn'), false);
+  });
+});
+
+describe('recordRecruitedHeroCost / recordRitualUsedPlayed (WP-858 / D-24794)', () => {
+  it('keeps the highest recruited cost and appends used Rituals', () => {
+    let economy = recordRecruitedHeroCost(resetTurnEconomy(), 5);
+    economy = recordRecruitedHeroCost(economy, 3);
+    assert.strictEqual(economy.highestRecruitedHeroCost, 5, 'a cheaper later recruit keeps the highest');
+    assert.strictEqual(recordRecruitedHeroCost(economy, 7).highestRecruitedHeroCost, 7, 'a dearer one raises it');
+    economy = recordRitualUsedPlayed(economy, 'dstr/doctor-voodoo/staff-of-legba#0');
+    economy = recordRitualUsedPlayed(economy, 'dstr/doctor-voodoo/medallion-of-many-loas#1');
+    assert.deepStrictEqual(economy.ritualUsedPlayedCardIds, [
+      'dstr/doctor-voodoo/staff-of-legba#0',
+      'dstr/doctor-voodoo/medallion-of-many-loas#1',
+    ]);
+  });
+
+  it('both fields survive addResources / spendAttack / spendRecruit and coexist with other lazy fields', () => {
+    let economy = enableDrawLock(resetTurnEconomy());
+    economy = recordRecruitedHeroCost(economy, 4);
+    economy = recordRitualUsedPlayed(economy, 'dstr/doctor-voodoo/staff-of-legba#0');
+    economy = addResources(economy, 3, 2);
+    economy = spendAttack(economy, 1);
+    economy = spendRecruit(economy, 1);
+    assert.strictEqual(economy.highestRecruitedHeroCost, 4);
+    assert.deepStrictEqual(economy.ritualUsedPlayedCardIds, ['dstr/doctor-voodoo/staff-of-legba#0']);
+    assert.strictEqual(economy.drawsLocked, true, 'the earlier lazy field is not dropped');
+  });
+
+  it('the setters never mutate their input, and a reset or round-tripped base carries neither key', () => {
+    const base = resetTurnEconomy();
+    recordRecruitedHeroCost(base, 2);
+    recordRitualUsedPlayed(base, 'x#0');
+    assert.strictEqual('highestRecruitedHeroCost' in base, false);
+    assert.strictEqual('ritualUsedPlayedCardIds' in base, false);
+    const roundTripped = JSON.parse(JSON.stringify(spendRecruit(addResources(base, 1, 1), 1))) as Record<string, unknown>;
+    assert.strictEqual(Object.keys(roundTripped).includes('highestRecruitedHeroCost'), false);
+    assert.strictEqual(Object.keys(roundTripped).includes('ritualUsedPlayedCardIds'), false);
+  });
+});
+
+describe('enrollHeistCard / markHeistAttempted (WP-865 / D-24808)', () => {
+  it('readies Heist cards in play order, keeping duplicates, and latches the attempt', () => {
+    let economy = enrollHeistCard(resetTurnEconomy(), 'amwp/wasp/infiltrate#0');
+    economy = enrollHeistCard(economy, 'amwp/wasp/infiltrate#1');
+    economy = enrollHeistCard(economy, 'amwp/wasp/infiltrate#0');
+    assert.deepStrictEqual(economy.heistCrewCards, [
+      'amwp/wasp/infiltrate#0',
+      'amwp/wasp/infiltrate#1',
+      'amwp/wasp/infiltrate#0',
+    ]);
+    const attempted = markHeistAttempted(economy, 'test/villain-group/thug#0');
+    assert.strictEqual(attempted.hasAttemptedHeistThisTurn, true);
+    // why: WP-876 / D-24823 — the revealed card is recorded with the latch.
+    assert.strictEqual(attempted.heistRevealedCardId, 'test/villain-group/thug#0');
+  });
+
+  it('the crew and the latch survive addResources / spendAttack / spendRecruit and coexist with other lazy fields', () => {
+    let economy = enrollExcessiveViolenceCard(resetTurnEconomy(), 'vnom/carnage/rending-claws#0');
+    economy = enrollHeistCard(economy, 'amwp/wasp/infiltrate#0');
+    economy = markHeistAttempted(economy, 'scheme-twist#0');
+    economy = addResources(economy, 3, 2);
+    economy = spendAttack(economy, 1);
+    economy = spendRecruit(economy, 1);
+    assert.deepStrictEqual(economy.heistCrewCards, ['amwp/wasp/infiltrate#0']);
+    assert.strictEqual(economy.hasAttemptedHeistThisTurn, true);
+    assert.strictEqual(economy.heistRevealedCardId, 'scheme-twist#0', 'the recorded revealed card survives every rebuild');
+    assert.deepStrictEqual(economy.excessiveViolencePlayedCards, ['vnom/carnage/rending-claws#0'], 'the EV ledger is not dropped');
+  });
+
+  it('the setters never mutate their input, and a reset or round-tripped base carries neither key', () => {
+    const base = resetTurnEconomy();
+    enrollHeistCard(base, 'x#0');
+    markHeistAttempted(base, 'x#1');
+    assert.strictEqual('heistCrewCards' in base, false);
+    assert.strictEqual('hasAttemptedHeistThisTurn' in base, false);
+    // why: WP-876 / D-24823 — a fresh economy carries no recorded revealed card.
+    assert.strictEqual('heistRevealedCardId' in base, false);
+    const roundTripped = JSON.parse(JSON.stringify(spendRecruit(addResources(base, 1, 1), 1))) as Record<string, unknown>;
+    assert.strictEqual(Object.keys(roundTripped).includes('heistCrewCards'), false);
+    assert.strictEqual(Object.keys(roundTripped).includes('hasAttemptedHeistThisTurn'), false);
+    assert.strictEqual(Object.keys(roundTripped).includes('heistRevealedCardId'), false);
+  });
+});
+
+describe('WP-871 recordVillainDefeated (D-24816)', () => {
+  it('T5: the flag is set, other lazy fields are kept, it survives the fight-cost spend, and reset drops it', () => {
+    const before = {
+      ...addResources(resetTurnEconomy(), 5, 0),
+      sidekicksReturnedThisTurn: 1,
+      restrictedAttack: [{ remaining: 2, targets: ['bridge' as const], sourceCardId: 'hero-a' }],
+    };
+    const recorded = recordVillainDefeated(before);
+    assert.strictEqual(recorded.hasDefeatedVillainThisTurn, true);
+    assert.strictEqual(recorded.sidekicksReturnedThisTurn, 1, 'the returned-Sidekick count is carried');
+    assert.deepStrictEqual(recorded.restrictedAttack, before.restrictedAttack, 'the restricted ledger is carried');
+    assert.strictEqual('hasDefeatedVillainThisTurn' in before, false, 'the input is not mutated');
+    // why: fightVillain rebuilds the economy with spendFightCostForTarget AFTER the defeat
+    // core records the flag; the carry chokepoint is what keeps it.
+    const afterSpend = spendFightCostForTarget(recorded, 2, 'sewers');
+    assert.strictEqual(afterSpend.hasDefeatedVillainThisTurn, true, 'the flag survives the fight-cost spend');
+    const reset = resetTurnEconomy();
+    assert.strictEqual('hasDefeatedVillainThisTurn' in reset, false, 'resetTurnEconomy drops the flag');
   });
 });

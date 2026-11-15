@@ -68,14 +68,18 @@ function attackForTarget(economy: UITurnEconomyState, target: AttackTargetName |
 export function canRecruit(
   hero: UICardDisplay,
   economy: UITurnEconomyState,
+  recruitCost?: number | null,
 ): GatingResult {
-  const cost = hero.cost;
-  if (cost === null) {
+  if (hero.cost === null) {
     return {
       allowed: false,
       reason: 'This card is not recruitable.',
     };
   }
+  // why: D-24801 — when the engine projects the Size-Changing price (UIHQState.recruitCosts),
+  // gate on it, floored at 0 (a Microscopic price below 0 still costs nothing to pay), exactly
+  // as the recruitHero guard does; otherwise the printed cost.
+  const cost = typeof recruitCost === 'number' ? Math.max(0, recruitCost) : hero.cost;
   if (economy.availableRecruit < cost) {
     return {
       allowed: false,
@@ -194,13 +198,13 @@ export function canFightAndRescue(
 export function useCardCostGating(
   economy: UITurnEconomyState,
 ): {
-  canRecruit: (hero: UICardDisplay) => GatingResult;
+  canRecruit: (hero: UICardDisplay, recruitCost?: number | null) => GatingResult;
   canFight: (cost: number | null, target?: AttackTargetName) => GatingResult;
   canFightWithExcessiveViolence: (cost: number | null, target?: AttackTargetName) => boolean;
   canFightAndRescue: (cost: number | null, target?: AttackTargetName) => boolean;
 } {
   return {
-    canRecruit: (hero) => canRecruit(hero, economy),
+    canRecruit: (hero, recruitCost) => canRecruit(hero, economy, recruitCost),
     canFight: (cost, target) => canFight(cost, economy, target),
     canFightWithExcessiveViolence: (cost, target) =>
       canFightWithExcessiveViolence(cost, economy, target),

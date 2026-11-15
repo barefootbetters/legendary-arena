@@ -87,10 +87,11 @@
       "label": "Attack",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 2,
+      "cardCount": 3,
       "cardIds": [
         "ca75/agent-x-13",
-        "core/nick-fury"
+        "core/nick-fury",
+        "dstr/doctor-voodoo"
       ],
       "hidden": true
     },
@@ -99,8 +100,9 @@
       "label": "Attack Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 35,
+      "cardCount": 38,
       "cardIds": [
+        "amwp/scott-lang-cat-burglar",
         "antm/ant-man",
         "asrd/thor",
         "bkwd/falcon-winter-soldier",
@@ -132,10 +134,12 @@
         "shld/mockingbird",
         "ssw1/captain-marvel",
         "ssw2/beast",
+        "ssw2/spider-gwen",
         "vill/juggernaut",
         "vill/ultron",
         "vnom/venom",
-        "vnom/venompool"
+        "vnom/venompool",
+        "wwhk/no-name-brood-queen"
       ],
       "hidden": true
     },
@@ -197,19 +201,6 @@
       "hidden": true
     },
     {
-      "slug": "bridge",
-      "label": "Bridge",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 3,
-      "cardIds": [
-        "anni/super-skrull",
-        "asrd/valkyrie",
-        "asrd/warriors-three-the"
-      ],
-      "hidden": true
-    },
-    {
       "slug": "burn-shards",
       "label": "Burn Shards",
       "scope": "hero",
@@ -257,8 +248,9 @@
       "label": "Conqueror",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 5,
+      "cardCount": 6,
       "cardIds": [
+        "amwp/freedom-fighters",
         "amwp/jentorra",
         "anni/heralds-of-galactus",
         "anni/super-skrull",
@@ -388,6 +380,39 @@
       "hidden": true
     },
     {
+      "slug": "deck-card-koed",
+      "label": "Deck Card Koed",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 1,
+      "cardIds": [
+        "wwhk/miek-the-unhived"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "deck-koed-attack-icon",
+      "label": "Deck Koed Attack Icon",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 1,
+      "cardIds": [
+        "wwhk/miek-the-unhived"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "deck-koed-non-grey-hero",
+      "label": "Deck Koed Non Grey Hero",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 1,
+      "cardIds": [
+        "wwhk/no-name-brood-queen"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "defeat-with-bystander",
       "label": "Defeat With Bystander",
       "scope": "hero",
@@ -455,6 +480,17 @@
       "hidden": true
     },
     {
+      "slug": "discard-artifact-or-three-then-ko",
+      "label": "Discard Artifact Or Three Then Ko",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "dstr/doctor-voodoo"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "discard-threshold",
       "label": "Discard Threshold",
       "scope": "hero",
@@ -484,6 +520,17 @@
         "ssw2/ruby-summers",
         "vill/juggernaut",
         "xmen/havok"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "discard-top-printed-attack",
+      "label": "Discard Top Printed Attack",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "dkcy/bishop"
       ],
       "hidden": true
     },
@@ -558,10 +605,11 @@
       "label": "Draw",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 101,
+      "cardCount": 107,
       "cardIds": [
         "3dtc/black-widow",
         "amwp/ant-army",
+        "amwp/ant-man",
         "amwp/freedom-fighters",
         "amwp/janet-van-dyne",
         "anni/fantastic-four-united",
@@ -609,7 +657,9 @@
         "dkcy/wolverine",
         "dstr/ancient-one-the",
         "ff04/mr-fantastic",
+        "mdns/blade-daywalker",
         "mdns/werewolf-by-night",
+        "mdns/wong-master-of-the-mystic-arts",
         "mgtg/gamora",
         "mgtg/mantis",
         "msis/black-panther",
@@ -634,7 +684,9 @@
         "ssw1/black-panther",
         "ssw1/captain-marvel",
         "ssw1/superior-iron-man",
+        "ssw2/agent-venom",
         "ssw2/arkon-the-magnificent",
+        "ssw2/dr-punisher-soldier-supreme",
         "ssw2/silk",
         "vill/bullseye",
         "vill/dr-octopus",
@@ -651,6 +703,7 @@
         "wwhk/hiroim",
         "wwhk/hulkbuster-iron-man",
         "wwhk/korg",
+        "wwhk/miek-the-unhived",
         "wwhk/namora",
         "wwhk/no-name-brood-queen",
         "wwhk/she-hulk",
@@ -669,8 +722,9 @@
       "label": "Draw Threshold",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 1,
+      "cardCount": 2,
       "cardIds": [
+        "mgtg/gamora",
         "wwhk/amadeus-cho"
       ],
       "hidden": true
@@ -766,7 +820,7 @@
       "slug": "feast",
       "label": "Feast",
       "scope": "hero",
-      "source": "free-text",
+      "source": "keyword",
       "cardCount": 3,
       "cardIds": [
         "wwhk/miek-the-unhived",
@@ -780,9 +834,12 @@
       "label": "First Hero Condition",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 1,
+      "cardCount": 4,
       "cardIds": [
-        "core/deadpool"
+        "amwp/wasp",
+        "core/deadpool",
+        "dkcy/elektra",
+        "wwhk/no-name-brood-queen"
       ],
       "hidden": true
     },
@@ -871,6 +928,22 @@
       "hidden": true
     },
     {
+      "slug": "gain-wound-reward",
+      "label": "Gain Wound Reward",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 6,
+      "cardIds": [
+        "anni/super-skrull",
+        "co2e/hulk",
+        "mdns/morbius",
+        "msis/bruce-banner",
+        "wpnx/weapon-x-wolverine",
+        "wwhk/skaar-son-of-hulk"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "gain-wound-self",
       "label": "Gain Wound Self",
       "scope": "hero",
@@ -888,11 +961,44 @@
       "slug": "heist",
       "label": "Heist",
       "scope": "hero",
-      "source": "free-text",
+      "source": "keyword",
       "cardCount": 2,
       "cardIds": [
         "amwp/ant-army",
         "amwp/ant-man"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "heist-master-strike-ko",
+      "label": "Heist Master Strike Ko",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "amwp/scott-lang-cat-burglar"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "heist-move-villain-ko-hero",
+      "label": "Heist Move Villain Ko Hero",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "amwp/scott-lang-cat-burglar"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "heist-scheme-twist-bonus",
+      "label": "Heist Scheme Twist Bonus",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "amwp/ant-army"
       ],
       "hidden": true
     },
@@ -919,10 +1025,32 @@
       "hidden": true
     },
     {
+      "slug": "hq-hero-gains-size-changing-tech",
+      "label": "Hq Hero Gains Size Changing Tech",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "antm/ant-man"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "hunt-for-victims",
       "label": "Hunt For Victims",
       "scope": "hero",
-      "source": "free-text",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "mdns/elsa-bloodstone"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "hunt-for-victims-rescue",
+      "label": "Hunt For Victims Rescue",
+      "scope": "hero",
+      "source": "keyword",
       "cardCount": 1,
       "cardIds": [
         "mdns/elsa-bloodstone"
@@ -991,6 +1119,17 @@
       "cardCount": 1,
       "cardIds": [
         "vill/ultron"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "ko-discarded-this-way",
+      "label": "Ko Discarded This Way",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "dkcy/bishop"
       ],
       "hidden": true
     },
@@ -1104,12 +1243,14 @@
       "slug": "microscopic-size-changing",
       "label": "Microscopic Size Changing",
       "scope": "hero",
-      "source": "free-text",
-      "cardCount": 5,
+      "source": "keyword",
+      "cardCount": 7,
       "cardIds": [
         "amwp/ant-army",
         "amwp/ant-man",
         "amwp/cassie-lang",
+        "amwp/janet-van-dyne",
+        "amwp/wasp",
         "antm/ant-man",
         "antm/wasp"
       ],
@@ -1129,6 +1270,29 @@
         "nmut/sunspot",
         "nmut/warlock",
         "nmut/wolfsbane"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "next-hand-extra-draw",
+      "label": "Next Hand Extra Draw",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 13,
+      "cardIds": [
+        "amwp/freedom-fighters",
+        "amwp/wasp",
+        "chmp/viv-vision",
+        "co2e/spider-man-miles-morales",
+        "cosm/adam-warlock",
+        "gotg/groot",
+        "msmc/warpath",
+        "rlmk/karnak",
+        "ssw2/captain-britain",
+        "ssw2/time-traveling-jean-grey",
+        "vill/dr-octopus",
+        "wwhk/bruce-banner",
+        "xmen/polaris"
       ],
       "hidden": true
     },
@@ -1164,10 +1328,22 @@
       "label": "Optional Ko Hand Discard",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 3,
+      "cardCount": 15,
       "cardIds": [
+        "amwp/ant-man",
+        "asrd/warriors-three-the",
+        "chmp/ms-marvel",
+        "cvwr/storm-black-panther",
+        "dead/stingray",
+        "dkcy/bishop",
+        "dkcy/professor-x",
+        "dkcy/wolverine",
+        "mgtg/gamora",
+        "ssw2/captain-and-the-devil-the",
         "vnom/venom-rocket",
+        "wwhk/caiera",
         "wwhk/she-hulk",
+        "xmen/phoenix",
         "xmen/x-23"
       ],
       "hidden": true
@@ -1279,6 +1455,28 @@
         "wwhk/hulkbuster-iron-man",
         "wwhk/korg",
         "wwhk/she-hulk"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "owned-card-koed",
+      "label": "Owned Card Koed",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 1,
+      "cardIds": [
+        "dkcy/bishop"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "owned-hero-koed",
+      "label": "Owned Hero Koed",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 1,
+      "cardIds": [
+        "dstr/doctor-voodoo"
       ],
       "hidden": true
     },
@@ -1413,6 +1611,17 @@
       "hidden": true
     },
     {
+      "slug": "recruit",
+      "label": "Recruit",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "dstr/doctor-voodoo"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "recruit-as-attack",
       "label": "Recruit As Attack",
       "scope": "hero",
@@ -1463,9 +1672,10 @@
       "label": "Rescue",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 17,
+      "cardCount": 20,
       "cardIds": [
         "3dtc/black-widow",
+        "amwp/scott-lang-cat-burglar",
         "ca75/captain-america-1941",
         "ca75/captain-america-falcon",
         "ca75/steve-rogers-director-of-shield",
@@ -1481,6 +1691,8 @@
         "msp1/black-widow",
         "msp1/hawkeye",
         "rvlt/war-machine",
+        "ssw2/elsa-bloodstone",
+        "ssw2/spider-gwen",
         "vnom/venompool"
       ],
       "hidden": false
@@ -1514,8 +1726,9 @@
       "label": "Reveal",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 13,
+      "cardCount": 15,
       "cardIds": [
+        "amwp/ant-man",
         "co2e/gambit",
         "co2e/spider-man",
         "core/gambit",
@@ -1528,6 +1741,7 @@
         "ssw1/ultimate-spider-man",
         "ssw2/beast",
         "ssw2/silk",
+        "ssw2/spider-gwen",
         "vnom/venomized-dr-strange"
       ],
       "hidden": false
@@ -1755,8 +1969,9 @@
       "label": "Reveal Top May Ko",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 4,
+      "cardCount": 5,
       "cardIds": [
+        "mdns/blade-daywalker",
         "mgtg/drax",
         "nmut/wolfsbane",
         "vill/electro",
@@ -1780,13 +1995,24 @@
       "hidden": true
     },
     {
-      "slug": "rooftops",
-      "label": "Rooftops",
+      "slug": "ritual-hero-classes",
+      "label": "Ritual Hero Classes",
       "scope": "hero",
-      "source": "free-text",
+      "source": "keyword",
       "cardCount": 1,
       "cardIds": [
-        "anni/super-skrull"
+        "dstr/doctor-voodoo"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "ritual-recruited-hero",
+      "label": "Ritual Recruited Hero",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "dstr/doctor-voodoo"
       ],
       "hidden": true
     },
@@ -1884,11 +2110,13 @@
       "label": "Size Changing",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 16,
+      "cardCount": 18,
       "cardIds": [
         "amwp/ant-army",
         "amwp/ant-man",
         "amwp/cassie-lang",
+        "amwp/janet-van-dyne",
+        "amwp/wasp",
         "antm/ant-man",
         "antm/jocasta",
         "antm/wasp",
@@ -2002,18 +2230,6 @@
       "cardCount": 1,
       "cardIds": [
         "core/rogue"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "streets",
-      "label": "Streets",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 2,
-      "cardIds": [
-        "anni/super-skrull",
-        "asrd/valkyrie"
       ],
       "hidden": true
     },
@@ -2254,14 +2470,11 @@
       "label": "Unmarked",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 27,
+      "cardCount": 22,
       "cardIds": [
         "3dtc/deadpool",
         "3dtc/man-thing",
-        "amwp/scott-lang-cat-burglar",
-        "amwp/wasp",
         "co2e/nick-fury",
-        "co2e/spider-man-miles-morales",
         "co2e/storm",
         "cosm/nebula",
         "cvwr/daredevil",
@@ -2269,8 +2482,6 @@
         "dkcy/angel",
         "dkcy/blade",
         "dkcy/daredevil",
-        "dkcy/professor-x",
-        "gotg/groot",
         "nmut/karma",
         "rvlt/hellcat",
         "shld/leo-fitz-and-jemma-simmons",
@@ -2567,6 +2778,7 @@
         "antics",
         "draw",
         "heist",
+        "heist-scheme-twist-bonus",
         "microscopic-size-changing",
         "size-changing"
       ]
@@ -2574,8 +2786,11 @@
     "amwp/ant-man": {
       "mechanics": [
         "antics",
+        "draw",
         "heist",
         "microscopic-size-changing",
+        "optional-ko-hand-discard",
+        "reveal",
         "size-changing"
       ]
     },
@@ -2588,12 +2803,16 @@
     },
     "amwp/freedom-fighters": {
       "mechanics": [
-        "draw"
+        "conqueror",
+        "draw",
+        "next-hand-extra-draw"
       ]
     },
     "amwp/janet-van-dyne": {
       "mechanics": [
-        "draw"
+        "draw",
+        "microscopic-size-changing",
+        "size-changing"
       ]
     },
     "amwp/jentorra": {
@@ -2604,12 +2823,18 @@
     },
     "amwp/scott-lang-cat-burglar": {
       "mechanics": [
-        "unmarked"
+        "attack-per-count",
+        "heist-master-strike-ko",
+        "heist-move-villain-ko-hero",
+        "rescue"
       ]
     },
     "amwp/wasp": {
       "mechanics": [
-        "unmarked"
+        "first-hero-condition",
+        "microscopic-size-changing",
+        "next-hand-extra-draw",
+        "size-changing"
       ]
     },
     "anni/brainstorm": {
@@ -2638,17 +2863,16 @@
     },
     "anni/super-skrull": {
       "mechanics": [
-        "bridge",
         "conqueror",
         "focus",
-        "rooftops",
-        "streets"
+        "gain-wound-reward"
       ]
     },
     "antm/ant-man": {
       "mechanics": [
         "attack-per-count",
         "draw",
+        "hq-hero-gains-size-changing-tech",
         "microscopic-size-changing",
         "optional-discard-draw",
         "size-changing"
@@ -2708,17 +2932,15 @@
     },
     "asrd/valkyrie": {
       "mechanics": [
-        "bridge",
         "conqueror",
-        "streets",
         "thrown-artifact"
       ]
     },
     "asrd/warriors-three-the": {
       "mechanics": [
-        "bridge",
         "conqueror",
-        "draw"
+        "draw",
+        "optional-ko-hand-discard"
       ]
     },
     "bkpt/general-okoye": {
@@ -2854,6 +3076,7 @@
       "mechanics": [
         "cheering-crowds",
         "draw",
+        "optional-ko-hand-discard",
         "rescue",
         "size-changing",
         "versatile"
@@ -2878,6 +3101,7 @@
     "chmp/viv-vision": {
       "mechanics": [
         "cheering-crowds",
+        "next-hand-extra-draw",
         "size-changing",
         "versatile"
       ]
@@ -2925,6 +3149,7 @@
     },
     "co2e/hulk": {
       "mechanics": [
+        "gain-wound-reward",
         "ko-wound-reward",
         "reveal-or-gain-wound-each"
       ]
@@ -2954,7 +3179,7 @@
     },
     "co2e/spider-man-miles-morales": {
       "mechanics": [
-        "unmarked"
+        "next-hand-extra-draw"
       ]
     },
     "co2e/storm": {
@@ -3087,7 +3312,8 @@
     "cosm/adam-warlock": {
       "mechanics": [
         "burn-shards",
-        "discard-to-play"
+        "discard-to-play",
+        "next-hand-extra-draw"
       ]
     },
     "cosm/captain-mar-vell": {
@@ -3211,7 +3437,8 @@
     },
     "cvwr/storm-black-panther": {
       "mechanics": [
-        "draw"
+        "draw",
+        "optional-ko-hand-discard"
       ]
     },
     "cvwr/tigra": {
@@ -3257,7 +3484,8 @@
     "dead/stingray": {
       "mechanics": [
         "draw",
-        "excessive-violence"
+        "excessive-violence",
+        "optional-ko-hand-discard"
       ]
     },
     "dims/howard-the-duck": {
@@ -3295,7 +3523,11 @@
     },
     "dkcy/bishop": {
       "mechanics": [
-        "draw"
+        "discard-top-printed-attack",
+        "draw",
+        "ko-discarded-this-way",
+        "optional-ko-hand-discard",
+        "owned-card-koed"
       ]
     },
     "dkcy/blade": {
@@ -3326,7 +3558,8 @@
     },
     "dkcy/elektra": {
       "mechanics": [
-        "draw"
+        "draw",
+        "first-hero-condition"
       ]
     },
     "dkcy/forge": {
@@ -3364,7 +3597,7 @@
     },
     "dkcy/professor-x": {
       "mechanics": [
-        "unmarked"
+        "optional-ko-hand-discard"
       ]
     },
     "dkcy/punisher": {
@@ -3375,7 +3608,8 @@
     },
     "dkcy/wolverine": {
       "mechanics": [
-        "draw"
+        "draw",
+        "optional-ko-hand-discard"
       ]
     },
     "dstr/ancient-one-the": {
@@ -3401,7 +3635,13 @@
     "dstr/doctor-voodoo": {
       "mechanics": [
         "artifact",
-        "ritual-artifact"
+        "attack",
+        "discard-artifact-or-three-then-ko",
+        "owned-hero-koed",
+        "recruit",
+        "ritual-artifact",
+        "ritual-hero-classes",
+        "ritual-recruited-hero"
       ]
     },
     "dstr/vishanti-the": {
@@ -3487,7 +3727,7 @@
     },
     "gotg/groot": {
       "mechanics": [
-        "unmarked"
+        "next-hand-extra-draw"
       ]
     },
     "gotg/rocket-raccoon": {
@@ -3504,9 +3744,11 @@
     "mdns/blade-daywalker": {
       "mechanics": [
         "blood-frenzy",
+        "draw",
         "moonlight",
         "optional-put-bottom-hq",
         "patrol",
+        "reveal-top-may-ko",
         "sunlight"
       ]
     },
@@ -3514,6 +3756,7 @@
       "mechanics": [
         "blood-frenzy",
         "hunt-for-victims",
+        "hunt-for-victims-rescue",
         "patrol"
       ]
     },
@@ -3521,6 +3764,7 @@
       "mechanics": [
         "blood-frenzy",
         "blood-frenzy-recruit",
+        "gain-wound-reward",
         "ko-wound-reward",
         "moonlight",
         "sunlight"
@@ -3539,6 +3783,7 @@
     },
     "mdns/wong-master-of-the-mystic-arts": {
       "mechanics": [
+        "draw",
         "patrol",
         "sunlight"
       ]
@@ -3554,6 +3799,8 @@
       "mechanics": [
         "artifact",
         "draw",
+        "draw-threshold",
+        "optional-ko-hand-discard",
         "triggered-artifact"
       ]
     },
@@ -3585,6 +3832,7 @@
     },
     "msis/bruce-banner": {
       "mechanics": [
+        "gain-wound-reward",
         "ko-wound-reward",
         "sacrifice"
       ]
@@ -3663,6 +3911,7 @@
     "msmc/warpath": {
       "mechanics": [
         "investigate",
+        "next-hand-extra-draw",
         "tactical-formation"
       ]
     },
@@ -3827,6 +4076,7 @@
     },
     "rlmk/karnak": {
       "mechanics": [
+        "next-hand-extra-draw",
         "when-recruited-abilities"
       ]
     },
@@ -4080,6 +4330,7 @@
     },
     "ssw2/agent-venom": {
       "mechanics": [
+        "draw",
         "patrol",
         "spectrum",
         "wall-crawl"
@@ -4108,12 +4359,14 @@
     },
     "ssw2/captain-and-the-devil-the": {
       "mechanics": [
+        "optional-ko-hand-discard",
         "patrol",
         "spectrum"
       ]
     },
     "ssw2/captain-britain": {
       "mechanics": [
+        "next-hand-extra-draw",
         "patrol"
       ]
     },
@@ -4124,6 +4377,7 @@
     },
     "ssw2/dr-punisher-soldier-supreme": {
       "mechanics": [
+        "draw",
         "patrol",
         "reveal-ko-attack"
       ]
@@ -4132,6 +4386,7 @@
       "mechanics": [
         "optional-ko-reward",
         "patrol",
+        "rescue",
         "spectrum",
         "wall-crawl"
       ]
@@ -4170,12 +4425,16 @@
     },
     "ssw2/spider-gwen": {
       "mechanics": [
+        "attack-per-count",
         "patrol",
+        "rescue",
+        "reveal",
         "wall-crawl"
       ]
     },
     "ssw2/time-traveling-jean-grey": {
       "mechanics": [
+        "next-hand-extra-draw",
         "patrol"
       ]
     },
@@ -4187,7 +4446,8 @@
     },
     "vill/dr-octopus": {
       "mechanics": [
-        "draw"
+        "draw",
+        "next-hand-extra-draw"
       ]
     },
     "vill/electro": {
@@ -4329,6 +4589,7 @@
     "wpnx/weapon-x-wolverine": {
       "mechanics": [
         "berserk",
+        "gain-wound-reward",
         "weapon-x-sequence"
       ]
     },
@@ -4397,6 +4658,7 @@
     },
     "wwhk/bruce-banner": {
       "mechanics": [
+        "next-hand-extra-draw",
         "outwit",
         "reveal-ko",
         "smash",
@@ -4406,6 +4668,7 @@
     "wwhk/caiera": {
       "mechanics": [
         "draw",
+        "optional-ko-hand-discard",
         "outwit",
         "smash",
         "transform"
@@ -4451,6 +4714,9 @@
     },
     "wwhk/miek-the-unhived": {
       "mechanics": [
+        "deck-card-koed",
+        "deck-koed-attack-icon",
+        "draw",
         "feast",
         "smash",
         "transform"
@@ -4465,8 +4731,11 @@
     },
     "wwhk/no-name-brood-queen": {
       "mechanics": [
+        "attack-per-count",
+        "deck-koed-non-grey-hero",
         "draw",
         "feast",
+        "first-hero-condition",
         "reveal-top-dispose",
         "transform"
       ]
@@ -4498,6 +4767,7 @@
     },
     "wwhk/skaar-son-of-hulk": {
       "mechanics": [
+        "gain-wound-reward",
         "smash",
         "transform",
         "wounded-fury"
@@ -4583,6 +4853,7 @@
       "mechanics": [
         "berserk",
         "draw",
+        "optional-ko-hand-discard",
         "piercing-energy",
         "soaring-flight"
       ]
@@ -4590,6 +4861,7 @@
     "xmen/polaris": {
       "mechanics": [
         "draw",
+        "next-hand-extra-draw",
         "piercing-energy",
         "soaring-flight",
         "x-gene"

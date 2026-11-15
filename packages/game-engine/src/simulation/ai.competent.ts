@@ -158,6 +158,18 @@ const FIRST_HERO_CONDITION_MARKER = '[keyword:first-hero-condition]';
  */
 const SCORE_PLAY_WOUND = -1;
 
+/**
+ * Score for attempting a Heist (WP-878 / D-24826).
+ *
+ * // why: D-24826 §4 — after every playable card (200), so every Heist card in hand is readied
+ * first (a Heist card played after the attempt is too late, rules v23 ~l.1516-1519), and before
+ * plain spends: a plain fight (100), an exorcise (75), a recruit (50) and advancing (10), so cards
+ * a Heist draws can still be played. Bonus fights (600 and up) and the Mastermind fight (1500)
+ * still go first; that is harmless, because the Heist stays available until the bot advances out
+ * of `main`. getLegalMoves offers the move only when the card-count odds favor it.
+ */
+const SCORE_ATTEMPT_HEIST = 175;
+
 /** Base score for drawing a card at start or main stage. */
 const SCORE_DRAW_CARDS_BASE = 150;
 
@@ -381,6 +393,9 @@ function scoreOneMove(move: LegalMove, view: UIState): number {
   if (move.name === 'exorciseHauntedHero') {
     return SCORE_EXORCISE_BASE;
   }
+  if (move.name === 'attemptHeist') {
+    return SCORE_ATTEMPT_HEIST;
+  }
   if (move.name === 'playCard') {
     return scorePlayCard(move, view);
   }
@@ -532,6 +547,10 @@ function selectBestMove(
  *   - Retaining state between calls beyond the mulberry32 closure.
  *   - Reading or writing any external resource (filesystem, network, clock).
  *   - Exact card counting or hidden-state inference.
+ *     // why: WP-878 / D-24826 §5 — the one exception is the Heist gate's set count, which lives
+ *     in getLegalMoves (simulation/ai.heist.ts), not here: it tallies the remaining Villain Deck
+ *     as a set and never reads its order or top card. This policy still never reads raw G and
+ *     counts cards for no other decision.
  *   - Adapting behaviour based on "knowing it is a simulation".
  *
  * @param seed - Non-empty seed string; hashed to 32 bits via djb2.

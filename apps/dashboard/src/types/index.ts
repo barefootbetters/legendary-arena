@@ -168,13 +168,15 @@ export interface StatusEntry {
 }
 
 // why: D-19908 — every field is a required non-optional `number`; numeric `0`
-// is the meaningful zero-value (zero WPs done this week is a real, surface-
+// is the meaningful zero-value (zero WPs done in the last 7 days is a real, surface-
 // able operator state, not a missing-data state). The composable accessor
 // returns the whole object as `null` only for the whole-snapshot-error case;
 // when it returns a non-null value, every individual field is a concrete
 // number. UI branching collapses to one null-check at the call site instead
 // of per-field null-coalescing in every widget.
 export interface GovernanceKpis {
+  // why: D-24799 — counts Done flips in the rolling 7 days ending on the HEAD
+  // commit's day; the field keeps its D-19908 name so the snapshot shape holds.
   readonly wpsDoneThisWeek: number;
   readonly daysSinceLastDoneFlip: number;
   readonly openDrafts: number;
@@ -328,8 +330,8 @@ export interface RetentionCohort {
 // `PublicSurfaceKey` is a closed union of the four externally-reachable
 // operator-owned domains: `marketing` (www.legendary-arena.com, player
 // on-ramp), `play` (play.legendary-arena.com, the game itself), `cards`
-// (cards.legendary-arena.com, registry-viewer reference), `api` (api /
-// legendary-arena-server.onrender.com, game server). Other entries in
+// (cards.legendary-arena.com, registry-viewer reference), `api`
+// (api.legendary-arena.com, game server). Other entries in
 // `docs/ops/DOMAINS.md` (`ewiki`, `wiki`, `legends`, `dashboard`,
 // `images`) are operator-internal or vendor-hosted and remain out of
 // scope in v1. Adding a fifth surface WITHOUT updating both this union
@@ -368,14 +370,17 @@ export type UptimeStatus = 'up' | 'degraded' | 'down';
 export const UPTIME_STATUSES: readonly UptimeStatus[] = ['up', 'degraded', 'down'];
 
 // why: WP-204 §Locked contract values — `InfraCostVendor` is a closed union
-// of the four currently-billed operator vendors (Render game server,
-// Cloudflare CDN/R2, Postgres database, Hanko identity). Future vendor
+// of the operator's billed vendors (DigitalOcean droplet, Render game server,
+// Cloudflare CDN/R2, Postgres database, Hanko identity). `digitalocean` was
+// added for the 2026-10-12 cutover off Render: the droplet now hosts the game
+// server and its Postgres, and `render` / `postgres` stay until a full month
+// bills them $0 (their last bills are October 2026). Future vendor
 // additions (e.g., R2 split out from `cloudflare`, separate
 // observability tooling) get added by extending both this union AND
 // `INFRA_COST_VENDORS` in the same edit; the drift test in
 // `utils/opsTaxonomy.test.ts` catches asymmetric updates loudly
 // (D-20401 forward-locked envelope).
-export type InfraCostVendor = 'render' | 'cloudflare' | 'postgres' | 'hanko';
+export type InfraCostVendor = 'digitalocean' | 'render' | 'cloudflare' | 'postgres' | 'hanko';
 
 // why: WP-204 §Determinism scope + WP-198 KPI_STATUSES drift precedent —
 // canonical readonly array drift-pinned to `InfraCostVendor`. Order is
@@ -386,6 +391,7 @@ export type InfraCostVendor = 'render' | 'cloudflare' | 'postgres' | 'hanko';
 // both this array AND the union fails the drift test in
 // `utils/opsTaxonomy.test.ts`.
 export const INFRA_COST_VENDORS: readonly InfraCostVendor[] = [
+  'digitalocean',
   'render',
   'cloudflare',
   'postgres',

@@ -4,7 +4,8 @@
  * Proves EffectImplementationIndexSchema (a) accepts the committed, generated index
  * at data/metadata/effect-implementation-index.json and (b) rejects each malformed
  * payload the published contract forbids: missing/wrong version, a non-"all"
- * top-level scope, an entry scope/status outside the closed unions, a summary count
+ * top-level scope, an entry scope/status outside the closed unions (the scope union is
+ * hero / villain / mastermind / scheme since WP-879 / D-24828), a summary count
  * mismatch (totalEntries, byScope, byStatus), both directions of the entry/card
  * join, and a card/entry scope disagreement. This is the producer-side guarantee
  * that the future /debug/effects viewer can trust the index it reads.
@@ -39,12 +40,13 @@ function validIndex() {
     scope: "all",
     generatedAt: "1970-01-01T00:00:00.000Z",
     summary: {
-      totalEntries: 3,
+      totalEntries: 4,
       // why: WP-507 — the fixture carries one hero + one villain + one mastermind
       // entry so the byScope.mastermind tally (and the mastermind entry/card join)
-      // is exercised, not just declared.
-      byScope: { hero: 1, villain: 1, mastermind: 1 },
-      byStatus: { executable: 2, deferred: 0, condition: 0, unsupported: 0, unmarked: 1, subsystem: 0 },
+      // is exercised, not just declared. WP-879 / D-24828 adds one scheme entry for
+      // the same reason (byScope.scheme is a required key).
+      byScope: { hero: 1, villain: 1, mastermind: 1, scheme: 1 },
+      byStatus: { executable: 3, deferred: 0, condition: 0, unsupported: 0, unmarked: 1, subsystem: 0 },
     },
     entries: [
       {
@@ -80,11 +82,23 @@ function validIndex() {
         wp: "WP-506",
         decision: "D-24312",
       },
+      {
+        extId: "ca75-scheme-brainwash-the-military",
+        name: "Brainwash the Military",
+        set: "ca75",
+        scope: "scheme",
+        mechanic: "twist",
+        status: "executable",
+        handler: "packages/game-engine/src/rules/schemeTwistResolvers.ts#brainwash-the-military",
+        wp: "WP-823",
+        decision: "D-24756",
+      },
     ],
     cards: {
       "core/hulk": { scope: "hero", mechanics: ["draw"] },
       "core-villain-hydra-viper": { scope: "villain", mechanics: ["(unmarked)"] },
       "core-mastermind-magneto-crushing-shockwave": { scope: "mastermind", mechanics: ["crushing-shockwave"] },
+      "ca75-scheme-brainwash-the-military": { scope: "scheme", mechanics: ["twist"] },
     },
   };
 }
@@ -167,6 +181,20 @@ describe("EffectImplementationIndexSchema — rejects malformed indexes (WP-484 
     // a wrong mastermind count must fail exactly like a wrong hero count.
     const index = validIndex();
     index.summary.byScope.mastermind = 99;
+    assert.equal(EffectImplementationIndexSchema.safeParse(index).success, false);
+  });
+
+  it("rejects a byScope.scheme count that disagrees with the entry tally (WP-879 / D-24828)", () => {
+    // why: the scheme scope is tallied by the same superRefine loop; without its
+    // `scheme: 0` scopeTally seed the tally is NaN and every index fails.
+    const index = validIndex();
+    index.summary.byScope.scheme = 99;
+    assert.equal(EffectImplementationIndexSchema.safeParse(index).success, false);
+  });
+
+  it("rejects a summary.byScope missing the required scheme key (WP-879 / D-24828)", () => {
+    const index = validIndex();
+    delete index.summary.byScope.scheme;
     assert.equal(EffectImplementationIndexSchema.safeParse(index).success, false);
   });
 

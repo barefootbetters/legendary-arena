@@ -2,6 +2,7 @@
 import { defineComponent, ref, watch, type PropType } from "vue";
 import type { UIPendingReturnOnDiscard } from "@legendary-arena/game-engine";
 import type { SubmitMove } from "./uiMoveName.types";
+import CardImage from "./CardImage.vue";
 
 /**
  * Inline prompt for resolving a pending OPTIONAL return-on-discard choice
@@ -26,6 +27,7 @@ import type { SubmitMove } from "./uiMoveName.types";
  */
 export default defineComponent({
   name: "ReturnOnDiscardPrompt",
+  components: { CardImage },
   props: {
     pendingReturnOnDiscard: {
       type: Object as PropType<UIPendingReturnOnDiscard | undefined>,
@@ -111,9 +113,9 @@ export default defineComponent({
         @click="onReturn(card.cardId)"
       >
         <span class="return-on-discard-prompt__card-name">Return {{ card.display.name }}</span>
-        <img
+        <CardImage
           v-if="card.display.imageUrl"
-          :src="card.display.imageUrl"
+          :image-url="card.display.imageUrl"
           :alt="card.display.name"
           class="return-on-discard-prompt__card-image"
         />

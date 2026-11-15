@@ -448,7 +448,9 @@ hand:
   handler during play. It is a handler-reachability detector, not a
   state-diff detector.
 - **The `/coverage` dashboard** — [`CoveragePage.vue`](../apps/dashboard/src/pages/coverage/CoveragePage.vue)
-  renders the ledger as a by-mechanic worklist plus a by-card index. Its
+  renders the effect-implementation index as an all-card-types headline and
+  by-card index (Heroes, Villains & Henchmen, Masterminds, Schemes; D-24829),
+  plus the hero ledger's by-mechanic worklist. Its
   in-play headline is obs-weighted and its denominator is a monotonic
   high-water-mark, so fixing a mechanic cannot shrink the denominator and
   inflate the percentage — the metric is a floor, not a census.
@@ -581,7 +583,7 @@ handler reads as *applied* while the real Scheme Twist fires elsewhere.
   Avengers Assemble! is played first. This is a *different* scan from the on-play
   class-synergy gates above (`[hc:X]:`, which read `inPlay` only at play time), and
   the engine uses a dedicated `countDistinctHeroClassesYouHave` (hand printed
-  `heroClass`/`heroClass2` + play those plus Size-Changing granted classes) rather
+  `heroClass`/`heroClass2` + play those plus a Copy Powers copied class) rather
   than the play-only `countDistinctHeroClassesInPlay`. **Grey cards contribute no
   color:** the grey S.H.I.E.L.D. Agent / Trooper / Officer, Sidekicks, New Recruits,
   and HYDRA Allies have *no Hero Class* (rulebook Grey Heroes: *"grey-colored cards

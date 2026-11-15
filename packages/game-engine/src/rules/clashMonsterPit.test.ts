@@ -178,6 +178,16 @@ describe('Clash of the Monsters Unleashed setup (D-24736)', () => {
     assert.equal(twistCount, 10, 'Clash prints 10 Twists (D-24735)');
   });
 
+  it('T25b (WP-871 / D-24816): the Monster Pit Orrgo carries its fight restriction (the effective villain groups)', () => {
+    // why: the loadout picked only chmp/wrecking-crew; resolveEffectiveVillainGroupIds adds
+    // chmp/monsters-unleashed for the Clash scheme, so the restriction table must be built
+    // from villainBuildConfig, not the raw config, for a Monster Pit Orrgo to be restricted.
+    const gameState = buildClashState(2);
+    assert.deepEqual(gameState.villainFightRestrictions?.['chmp-villain-monsters-unleashed-orrgo-00'], {
+      kind: 'requires-villain-defeated-this-turn',
+    });
+  });
+
   it('does not add the group twice when the loadout already picked Monsters Unleashed', () => {
     assert.deepEqual(
       resolveEffectiveVillainGroupIds(CLASH_SCHEME_ID, ['chmp/monsters-unleashed']),

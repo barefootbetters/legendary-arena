@@ -29,8 +29,8 @@ const INDEX_SOURCE_PATH = join(REPO_ROOT, 'data/metadata/effect-implementation-i
 const INDEX_OUTPUT_PATH = join(DASHBOARD_DIR, 'src/data/effect-implementation-index.json');
 
 // why: the empty-index stub mirrors the EffectImplementationIndexSchema shape
-// (version + scope + generatedAt + a full summary with both byScope keys and all
-// five byStatus keys + empty entries/cards) so the Debug Effects page renders its
+// (version + scope + generatedAt + a full summary with all four byScope keys and all
+// six byStatus keys + empty entries/cards) so the Debug Effects page renders its
 // empty state rather than failing the build when the artifact is missing (e.g. a
 // clean tree before WP-484's transform has run). The `error` field is off the
 // strict schema on purpose — the composable reads it from the raw import and shows
@@ -41,8 +41,10 @@ const EMPTY_INDEX_STUB = {
   generatedAt: '1970-01-01T00:00:00.000Z',
   summary: {
     totalEntries: 0,
-    byScope: { hero: 0, villain: 0 },
-    byStatus: { executable: 0, deferred: 0, condition: 0, unsupported: 0, unmarked: 0 },
+    // why: WP-879 — the stub's safeParse fails by design (its off-schema `error` key), so
+    // the mastermind / scheme / subsystem keys are for consistency with the schema shape only.
+    byScope: { hero: 0, villain: 0, mastermind: 0, scheme: 0 },
+    byStatus: { executable: 0, deferred: 0, condition: 0, unsupported: 0, unmarked: 0, subsystem: 0 },
   },
   entries: [],
   cards: {},

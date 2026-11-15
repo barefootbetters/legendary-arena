@@ -53,6 +53,13 @@ export function describeCountSource(countSource: string): string {
       return 'extra card drawn this turn';
     case 'shield-heroes-cost-one-plus-played-this-turn':
       return 'other S.H.I.E.L.D. Hero costing 1 or more played this turn';
+    case 'non-grey-heroes-koed-from-deck-this-turn':
+      // why: World-Spanning Hunger counts at play, before its own Feasts resolve; each Feast's
+      // reward is logged later, so "so far" keeps a +0 line from reading as the card's total.
+      return 'non-grey Hero KO\'d from your deck so far this turn';
+    case 'distinct-costs-you-have':
+      // why: WP-876 / D-24823 — Putting a Crew Together counts distinct costs over hand + played.
+      return 'different cost among the cards you have (hand + played)';
     default:
       return countSource.replace(/-/g, ' ');
   }

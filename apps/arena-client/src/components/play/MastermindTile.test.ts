@@ -2,9 +2,12 @@ import '../../testing/jsdom-setup';
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { mount } from '@vue/test-utils';
 import MastermindTile from './MastermindTile.vue';
+import EnigmaGuessPicker from './EnigmaGuessPicker.vue';
 import type {
+  UIFortifier,
   UIMastermindState,
   UITurnEconomyState,
 } from '@legendary-arena/game-engine';
@@ -699,6 +702,14 @@ describe('MastermindTile — restricted "usable only against" attack (WP-790 / D
   });
 });
 
+/**
+ * The open Enigma guess picker. It is teleported to document.body, so the tile's own
+ * wrapper.find cannot see its markup; findComponent follows the component tree instead.
+ */
+function guessPicker(wrapper: ReturnType<typeof mount>): ReturnType<ReturnType<typeof mount>['findComponent']> {
+  return wrapper.findComponent(EnigmaGuessPicker);
+}
+
 describe('MastermindTile — WP-830 Enigma Code guess (D-24763)', () => {
   const enigmaCode = {
     isRevealed: false,
@@ -715,7 +726,7 @@ describe('MastermindTile — WP-830 Enigma Code guess (D-24763)', () => {
     });
     await wrapper.find('[data-testid="play-mastermind-button"]').trigger('click');
     assert.equal(calls.length, 0, 'no fight yet');
-    assert.ok(wrapper.find('[data-testid="play-enigma-guess"]').exists());
+    assert.ok(guessPicker(wrapper).find('[data-testid="play-enigma-guess"]').exists());
   });
 
   test('the guess is submitted with the fight, a seen card starting on its color', async () => {
@@ -724,13 +735,13 @@ describe('MastermindTile — WP-830 Enigma Code guess (D-24763)', () => {
       props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy({ attack: 6, availableAttack: 6 }), submitMove, enigmaCode },
     });
     await wrapper.find('[data-testid="play-mastermind-button"]').trigger('click');
-    assert.equal(wrapper.find('[data-testid="play-enigma-guess-submit"]').attributes('disabled'), '', 'card 2 has no guess yet');
-    await wrapper.find('[data-testid="play-enigma-guess-1-grey"]').trigger('click');
-    await wrapper.find('[data-testid="play-enigma-guess-submit"]').trigger('click');
+    assert.equal(guessPicker(wrapper).find('[data-testid="play-enigma-guess-submit"]').attributes('disabled'), '', 'card 2 has no guess yet');
+    await guessPicker(wrapper).find('[data-testid="play-enigma-guess-1-grey"]').trigger('click');
+    await guessPicker(wrapper).find('[data-testid="play-enigma-guess-submit"]').trigger('click');
     assert.equal(calls.length, 1);
     assert.equal(calls[0]!.name, 'fightMastermind');
     assert.deepEqual(calls[0]!.args, { enigmaGuess: ['tech', 'grey'] });
-    assert.ok(!wrapper.find('[data-testid="play-enigma-guess"]').exists(), 'the picker closes');
+    assert.ok(!guessPicker(wrapper).exists(), 'the picker closes');
   });
 
   test('the picker starts over when the code changes under it (a mid-turn mix)', async () => {
@@ -739,11 +750,11 @@ describe('MastermindTile — WP-830 Enigma Code guess (D-24763)', () => {
       props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy({ attack: 6, availableAttack: 6 }), submitMove, enigmaCode },
     });
     await wrapper.find('[data-testid="play-mastermind-button"]').trigger('click');
-    await wrapper.find('[data-testid="play-enigma-guess-1-grey"]').trigger('click');
+    await guessPicker(wrapper).find('[data-testid="play-enigma-guess-1-grey"]').trigger('click');
     await wrapper.setProps({ enigmaCode: { isRevealed: false, cards: [enigmaCode.cards[1]!, enigmaCode.cards[0]!] } });
-    assert.equal(wrapper.find('[data-testid="play-enigma-guess-submit"]').attributes('disabled'), '', 'the old pick is gone');
-    await wrapper.find('[data-testid="play-enigma-guess-0-grey"]').trigger('click');
-    await wrapper.find('[data-testid="play-enigma-guess-submit"]').trigger('click');
+    assert.equal(guessPicker(wrapper).find('[data-testid="play-enigma-guess-submit"]').attributes('disabled'), '', 'the old pick is gone');
+    await guessPicker(wrapper).find('[data-testid="play-enigma-guess-0-grey"]').trigger('click');
+    await guessPicker(wrapper).find('[data-testid="play-enigma-guess-submit"]').trigger('click');
     assert.deepEqual(calls[0]!.args, { enigmaGuess: ['grey', 'tech'] }, 'the seen card keeps its color at its new position');
   });
 
@@ -753,9 +764,9 @@ describe('MastermindTile — WP-830 Enigma Code guess (D-24763)', () => {
       props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy({ attack: 6, availableAttack: 6 }), submitMove, enigmaCode },
     });
     await wrapper.find('[data-testid="play-mastermind-button"]').trigger('click');
-    assert.ok(wrapper.find('[data-testid="play-enigma-guess"]').exists());
+    assert.ok(guessPicker(wrapper).find('[data-testid="play-enigma-guess"]').exists());
     await wrapper.setProps({ isGameOver: true });
-    assert.ok(!wrapper.find('[data-testid="play-enigma-guess"]').exists());
+    assert.ok(!guessPicker(wrapper).exists());
   });
 
   test('the picker closes when the turn passes (End Turn pressed with it open)', async () => {
@@ -765,7 +776,7 @@ describe('MastermindTile — WP-830 Enigma Code guess (D-24763)', () => {
     });
     await wrapper.find('[data-testid="play-mastermind-button"]').trigger('click');
     await wrapper.setProps({ isViewerTurn: false });
-    assert.ok(!wrapper.find('[data-testid="play-enigma-guess"]').exists());
+    assert.ok(!guessPicker(wrapper).exists());
   });
 
   test('cancel closes the picker without fighting', async () => {
@@ -774,8 +785,296 @@ describe('MastermindTile — WP-830 Enigma Code guess (D-24763)', () => {
       props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy({ attack: 6, availableAttack: 6 }), submitMove, enigmaCode },
     });
     await wrapper.find('[data-testid="play-mastermind-button"]').trigger('click');
-    await wrapper.find('[data-testid="play-enigma-guess-cancel"]').trigger('click');
+    await guessPicker(wrapper).find('[data-testid="play-enigma-guess-cancel"]').trigger('click');
     assert.equal(calls.length, 0);
-    assert.ok(!wrapper.find('[data-testid="play-enigma-guess"]').exists());
+    assert.ok(!guessPicker(wrapper).exists());
+  });
+
+  // why: Jeff feedback (Loki / Enigma Code 2p, 2026-10-31) — inside the tile the picker was
+  // ~125×112 px on the scaled, tilted board and a click read as one card's landed on the next.
+  test('the picker is a dialog under document.body, not inside the tile', async () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy({ attack: 6, availableAttack: 6 }), submitMove, enigmaCode },
+    });
+    await wrapper.find('[data-testid="play-mastermind-button"]').trigger('click');
+    const dialog = guessPicker(wrapper).find('[data-testid="play-enigma-guess"]');
+    assert.equal(dialog.attributes('role'), 'dialog');
+    assert.equal(dialog.attributes('aria-modal'), 'true');
+    assert.ok(document.body.contains(dialog.element), 'mounted in the document');
+    assert.equal(dialog.element.closest('[data-testid="play-mastermind-tile"]'), null, 'outside the tile');
+    assert.ok(!wrapper.find('[data-testid="play-enigma-guess"]').exists(), 'the tile itself holds no picker markup');
+    wrapper.unmount();
+  });
+
+  test('each row names its card: what you saw, or face down', async () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy({ attack: 6, availableAttack: 6 }), submitMove, enigmaCode },
+    });
+    await wrapper.find('[data-testid="play-mastermind-button"]').trigger('click');
+    assert.equal(guessPicker(wrapper).find('[data-testid="play-enigma-guess-known-0"]').text(), 'Seen Card — you saw Tech');
+    assert.equal(guessPicker(wrapper).find('[data-testid="play-enigma-guess-known-1"]').text(), 'Face down');
+    wrapper.unmount();
+  });
+
+  test('Escape and a backdrop click cancel without fighting; a click inside the dialog does not', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy({ attack: 6, availableAttack: 6 }), submitMove, enigmaCode },
+    });
+    await wrapper.find('[data-testid="play-mastermind-button"]').trigger('click');
+    await guessPicker(wrapper).find('[data-testid="play-enigma-guess"]').trigger('click');
+    assert.ok(guessPicker(wrapper).exists(), 'a click inside the dialog keeps it open');
+    await guessPicker(wrapper).find('[data-testid="play-enigma-guess-backdrop"]').trigger('click');
+    assert.ok(!guessPicker(wrapper).exists(), 'the backdrop click cancels');
+
+    await wrapper.find('[data-testid="play-mastermind-button"]').trigger('click');
+    assert.ok(guessPicker(wrapper).exists(), 'reopened');
+    document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape' }));
+    await wrapper.vm.$nextTick();
+    assert.ok(!guessPicker(wrapper).exists(), 'Escape cancels');
+    assert.equal(calls.length, 0, 'no fight');
+    wrapper.unmount();
+  });
+});
+
+describe('MastermindTile — band stand-up (WP-854 / D-24790)', () => {
+  const enigmaCode = {
+    isRevealed: false,
+    cards: [
+      { peekedBy: ['0'], display: { extId: 'ca75/winter-soldier/x#1', name: 'Seen Card', imageUrl: '', cost: 3 }, colors: ['tech'] },
+      { peekedBy: [] },
+    ],
+  };
+
+  test('without isTiltLiftEnabled the root has no mastermind-tile--tilt-lift class', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy(), submitMove },
+    });
+    assert.equal(wrapper.find('[data-testid="play-mastermind-tile"]').classes('mastermind-tile--tilt-lift'), false);
+  });
+
+  test('with isTiltLiftEnabled the root has the mastermind-tile--tilt-lift class', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy(), submitMove, isTiltLiftEnabled: true },
+    });
+    assert.equal(wrapper.find('[data-testid="play-mastermind-tile"]').classes('mastermind-tile--tilt-lift'), true);
+  });
+
+  test('the root gains mastermind-tile--guessing exactly when the Enigma guess picker opens', async () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy({ attack: 6, availableAttack: 6 }), submitMove, enigmaCode, isTiltLiftEnabled: true },
+    });
+    const root = wrapper.find('[data-testid="play-mastermind-tile"]');
+    assert.equal(root.classes('mastermind-tile--guessing'), false, 'no guess before the Fight click');
+    await wrapper.find('[data-testid="play-mastermind-button"]').trigger('click');
+    assert.equal(root.classes('mastermind-tile--guessing'), true, 'the guess is open after the Fight click');
+    assert.ok(guessPicker(wrapper).exists(), 'the picker is present');
+  });
+});
+
+describe('MastermindTile — Haunt blocks the Fight (WP-757 / D-24587)', () => {
+  // why: the engine's fightMastermind refuses the fight while the Mastermind haunts an
+  // HQ Hero (isMastermindHaunting); the tile must not offer a dead button on any path.
+  const hauntReason = /The Mastermind is haunting a Hero in the HQ\. Exorcise that Hero first\./;
+
+  test('while haunting, Fight is disabled with the haunt tooltip and a click submits nothing', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive({ isHaunting: true }),
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    const button = wrapper.find('[data-testid="play-mastermind-button"]');
+    assert.equal(button.attributes('disabled'), '');
+    assert.match(button.attributes('title')!, hauntReason);
+    assert.match(button.find('[data-testid="card-tile"]').attributes('title')!, hauntReason);
+    await button.trigger('click');
+    assert.equal(calls.length, 0);
+  });
+
+  test('while haunting, the Excessive Violence button is not offered', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive({ isHaunting: true }),
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9, excessiveViolenceAvailable: true }),
+        submitMove,
+      },
+    });
+    assert.equal(wrapper.find('[data-testid="play-mastermind-ev"]').exists(), false);
+  });
+
+  test('while haunting, Fight does not open the Enigma guess picker', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive({ isHaunting: true }),
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+        enigmaCode: { isRevealed: false, cards: [{ peekedBy: [] }] },
+      },
+    });
+    await wrapper.find('[data-testid="play-mastermind-button"]').trigger('click');
+    assert.equal(calls.length, 0);
+    assert.ok(!guessPicker(wrapper).exists(), 'no picker while haunting');
+  });
+
+  test('precedence: an unaffordable fight shows the cost reason, not the haunt reason', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive({ isHaunting: true }),
+        currentStage: 'main',
+        economy: economy({ attack: 4, availableAttack: 4 }),
+        submitMove,
+      },
+    });
+    assert.match(wrapper.find('[data-testid="play-mastermind-button"]').attributes('title')!, /Needs 6 attack, you have 4\./);
+  });
+
+  test('a picker opened before the haunt closes once the Mastermind starts haunting', async () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive(),
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+        enigmaCode: { isRevealed: false, cards: [{ peekedBy: [] }] },
+      },
+    });
+    await wrapper.find('[data-testid="play-mastermind-button"]').trigger('click');
+    assert.ok(guessPicker(wrapper).exists(), 'precondition: the picker is open');
+    await wrapper.setProps({ mastermind: mastermindLive({ isHaunting: true }) });
+    assert.ok(!guessPicker(wrapper).exists(), 'the picker closes');
+  });
+});
+
+describe('MastermindTile — Fortify blocks the Fight (WP-873 / D-24818)', () => {
+  const fortifiedReason = 'Colleen Wing fortifies the Mastermind. Fight Colleen Wing first.';
+
+  test('T30: with fortifiedReason set and enough attack, Fight is disabled with that reason and submits nothing', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive({ fortifiedReason }),
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    const button = wrapper.find('[data-testid="play-mastermind-button"]');
+    assert.equal(button.attributes('disabled'), '');
+    assert.equal(button.attributes('title'), fortifiedReason);
+    await button.trigger('click');
+    assert.equal(calls.length, 0);
+  });
+
+  test('D-24819: the Mastermind fortifier is drawn on the tile, outside the Fight button, and fighting it sends its place', async () => {
+    const colleenWing: UIFortifier = {
+      place: 'mastermind',
+      placeLabel: 'the Mastermind',
+      extId: 'cvwr-villain-heroes-for-hire-colleen-wing-00',
+      display: { extId: 'cvwr-villain-heroes-for-hire-colleen-wing-00', name: 'Colleen Wing', imageUrl: '', cost: 9 },
+      fightCost: 9,
+      lockText: "the Mastermind can't be fought",
+    };
+    const squirrelGirl: UIFortifier = {
+      place: 'sidekick-stack',
+      placeLabel: 'the Sidekick Stack',
+      extId: 'cvwr-villain-great-lakes-avengers-squirrel-girl-00',
+      display: { extId: 'cvwr-villain-great-lakes-avengers-squirrel-girl-00', name: 'Squirrel Girl', imageUrl: '', cost: 3 },
+      fightCost: 3,
+      lockText: "Sidekicks can't be recruited or gained",
+    };
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive({ fortifiedReason }),
+        fortifiers: [squirrelGirl, colleenWing],
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    const chips = wrapper.findAll('[data-testid="play-fortifier"]');
+    assert.equal(chips.length, 1, 'only the Mastermind fortifier is drawn on the Mastermind');
+    assert.match(chips[0]!.text(), /Colleen Wing/);
+    const fightButton = wrapper.find('[data-testid="play-mastermind-button"]');
+    assert.equal(fightButton.element.contains(chips[0]!.element), false, 'not nested inside the Fight button');
+    await wrapper.find('[data-testid="play-fortifier-fight"]').trigger('click');
+    assert.deepStrictEqual(calls, [{ name: 'fightVillain', args: { fortifiedPlace: 'mastermind' } }]);
+    const unfortified = mount(MastermindTile, {
+      props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy(), submitMove },
+    });
+    assert.equal(unfortified.find('[data-testid="play-fortifier"]').exists(), false);
+  });
+
+  // why: D-24819 — the stand-up lift (WP-854 / D-24790) must never raise the Mastermind card over
+  // the fortifier chip. jsdom cannot hit-test 3D, so the class and its selectors are pinned here.
+  test('D-24819: the tile is --fortified exactly while the Mastermind is fortified, and no stand-up selector lifts it', () => {
+    const { submitMove } = recorder();
+    const fortified = mount(MastermindTile, {
+      props: { mastermind: mastermindLive({ fortifiedReason }), currentStage: 'main', economy: economy(), submitMove },
+    });
+    assert.equal(fortified.find('[data-testid="play-mastermind-tile"]').classes().includes('mastermind-tile--fortified'), true);
+    const open = mount(MastermindTile, {
+      props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy(), submitMove },
+    });
+    assert.equal(open.find('[data-testid="play-mastermind-tile"]').classes().includes('mastermind-tile--fortified'), false);
+
+    const sources = [
+      readFileSync(new URL('./MastermindTile.vue', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../pages/PlayDesktop.vue', import.meta.url), 'utf8'),
+    ];
+    for (const source of sources) {
+      const liftSelectors = source.match(/\.mastermind-tile--tilt-lift:not\(\.mastermind-tile--guessing\)[^ ,{]*/g) ?? [];
+      assert.ok(liftSelectors.length > 0, 'the stand-up selectors are present');
+      for (const selector of liftSelectors) {
+        assert.ok(selector.includes(':not(.mastermind-tile--fortified)'), `${selector} must skip a fortified Mastermind`);
+      }
+    }
+  });
+});
+
+describe('MastermindTile — Haunting badge (WP-759 / D-24587)', () => {
+  test('while haunting, the Haunting badge shows outside the Fight button', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive({ isHaunting: true }),
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    const badge = wrapper.find('[data-testid="play-mastermind-haunting"]');
+    assert.equal(badge.exists(), true);
+    assert.equal(badge.attributes('role'), 'status');
+    assert.match(badge.text(), /exorcise it to fight/);
+    assert.equal(badge.element.closest('[data-testid="play-mastermind-button"]'), null);
+  });
+
+  test('with no isHaunting there is no badge', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive(),
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    assert.equal(wrapper.find('[data-testid="play-mastermind-haunting"]').exists(), false);
   });
 });

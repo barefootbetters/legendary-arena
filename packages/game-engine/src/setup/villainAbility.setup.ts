@@ -32,6 +32,14 @@ import {
 // against the canonical CITY_SPACE_NAMES; CitySpaceName is the lifted field type.
 import type { CitySpaceName } from '../board/citySpaceNames.js';
 import { CITY_SPACE_NAMES } from '../board/citySpaceNames.js';
+// why: WP-873 / D-24818 — the Fortify grammar validates the place and lock against the
+// contract's closed sets (types and constants only; no runtime cycle).
+import type { FortifyLock } from '../board/fortify.types.js';
+import { FORTIFY_ALLOWED_LOCKS } from '../board/fortify.types.js';
+import { isFortifyPlace } from '../board/fortify.logic.js';
+// why: WP-869 / D-24814 — the stack-villain grammar validates its optional name token against
+// the one exported pattern (the marker script carries the same source, pinned by a test).
+import { STACK_VILLAIN_NAME_PATTERN } from '../rules/stackVillain.logic.js';
 // why: D-24281 — reveal-or-wound stores its `requireValue` normalized to the
 // `cardTraits` slug space so the executor's `===` trait comparison is
 // casing/whitespace-safe. normalizeTraitSlug is the SINGLE canonical normalizer
@@ -45,7 +53,10 @@ import type { HeroClass } from '../content/content.schemas.js';
 // instance ext_id (matching the Fight/Ambush fire sites that pass a zone id),
 // fanning out exactly like the henchman path already does. The shared emitter
 // is imported, not re-implemented (D-13702 RS-4).
-import { villainCardInstanceExtIds } from '../villainDeck/villainDeck.setup.js';
+import {
+  henchmanCopyVariant,
+  villainCardInstanceExtIds,
+} from '../villainDeck/villainDeck.setup.js';
 
 // ---------------------------------------------------------------------------
 // VillainAbilityRegistryReader — local structural interface
@@ -79,7 +90,8 @@ interface VillainAbilityVillainGroup {
  * Minimal structural type for a henchman group entry in set data.
  *
  * Henchman ability text is stored at the group level (`abilities[]`), shared
- * by every virtual copy in the group — the registry has no per-copy entry.
+ * by every virtual copy, unless the group is printed as variant `cards[]`
+ * (D-24803), which henchmanCopyVariant maps onto the copies.
  */
 interface VillainAbilityHenchmanGroup {
   slug: string;
@@ -506,6 +518,19 @@ function parseLocationGatedEffect(
  *   - `gain-recruit-current-count-by-trait:<kind>:<value>` and
  *     `draw-cards-current-count-by-trait:<kind>:<value>`  (count-sized; D-24769)
  *   - `reveal-top-ko-grey-or-draw-by-class:<c>[+<c>…]`  (Hero Classes that draw; D-24769)
+ *   - `hq-hero-gains-size-changing:<if-none|add|replace>:<c>[+<c>…]`  (a chosen HQ Hero gains
+ *     Size-Changing for the classes this turn; D-24804)
+ *   - `hq-heroes-cost-change:<less|more>:<N>[:<c>[+<c>…]]`  (the Heroes in the HQ cost N less or
+ *     more this turn, optionally only the listed classes; D-24811)
+ *   - `ko-from-discard-current:<N>`  (the mandatory KO of N cards from your discard; D-24811)
+ *   - `reveal-top-discard-zero-cost-current:<N>`  (reveal the top N, discard the cost-0 ones,
+ *     reorder the rest; D-24815)
+ *   - `reenter-sewers-if-villain-deck-top:<villain|bystander|villain+bystander>`  (the defeated
+ *     card reenters the Sewers on a matching Villain Deck top; D-24811)
+ *   - `fortify:<place>:<lock>`  (the escaped Villain fortifies the place; the lock must be one
+ *     FORTIFY_ALLOWED_LOCKS lists for it; D-24818)
+ *   - `stack-cards-enter-city-as-villains:<bystander|officer>:<N>[:<name>]`  (N stack cards enter
+ *     the City as Villains, optionally displayed under the name token; D-24814)
  *   - `discard-hero-each-player-by-trait:<kind>:<value>` and
  *     `discard-hero-or-wound-each-player-by-trait:<kind>:<value>`  (each player discards a
  *     matching Hero, or may gain a Wound instead; D-24770)
@@ -521,7 +546,8 @@ function parseLocationGatedEffect(
  *     `ko-bystander-each-victory-pile` (D-24749) |
  *     `gain-recruit-current-per-hero-class` (D-24750) |
  *     `discard-hand-matching-hq-card-names-each-player` |
- *     `hq-heroes-to-hero-deck-bottom` (D-24770)  (no params)
+ *     `hq-heroes-to-hero-deck-bottom` (D-24770) |
+ *     `reveal-top-may-ko-current` | `next-hand-from-play-zero-cost-current` (D-24815)  (no params)
  *
  * @param value - The ungated marker value (the text inside `[effect:…]` minus
  *   any `@<space>` suffix).
@@ -794,6 +820,102 @@ function parseUngatedEffect(
       return null;
     }
     return { primitive: 'reveal-top-ko-grey-or-draw-by-class', drawHeroClasses };
+  }
+  if (primitiveToken === 'hq-hero-gains-size-changing') {
+    // why: WP-862 / D-24804 — grammar `hq-hero-gains-size-changing:<mode>:<c>[+<c>…]` (Ultron-Pym
+    // `:if-none:tech`, Shrinksperiments `:replace:tech`, Sporr `:add:tech+ranged`). Exactly 3
+    // colon-parts; the mode is one of three words and the class list reuses parseHeroClassList.
+    // Anything else returns null (→ unresolvedMarkers), never a partial descriptor.
+    if (parts.length !== 3) {
+      return null;
+    }
+    const mode = parts[1]!;
+    if (mode !== 'if-none' && mode !== 'add' && mode !== 'replace') {
+      return null;
+    }
+    const sizeChangingGrantClasses = parseHeroClassList(parts[2]!);
+    if (sizeChangingGrantClasses === null) {
+      return null;
+    }
+    return { primitive: 'hq-hero-gains-size-changing', sizeChangingGrantMode: mode, sizeChangingGrantClasses };
+  }
+  if (primitiveToken === 'hq-heroes-cost-change') {
+    // why: WP-868 / D-24811 — grammar `hq-heroes-cost-change:<less|more>:<N>[:<c>[+<c>…]]` (Tim
+    // Boo Ba `:less:1`, The Mind Stone `:more:2`, Dr. Carlton Drake `:less:1:instinct+tech`). 3 or 4
+    // colon-parts; N is a positive integer carried as `magnitude`; the optional class list reuses
+    // parseHeroClassList. Anything else returns null (→ unresolvedMarkers), never a partial descriptor.
+    if (parts.length !== 3 && parts.length !== 4) {
+      return null;
+    }
+    const direction = parts[1]!;
+    if (direction !== 'less' && direction !== 'more') {
+      return null;
+    }
+    const magnitude = parsePositiveInteger(parts[2]!);
+    if (magnitude === null) {
+      return null;
+    }
+    if (parts.length === 3) {
+      return { primitive: 'hq-heroes-cost-change', costChangeDirection: direction, magnitude };
+    }
+    const costChangeClasses = parseHeroClassList(parts[3]!);
+    if (costChangeClasses === null) {
+      return null;
+    }
+    return { primitive: 'hq-heroes-cost-change', costChangeDirection: direction, magnitude, costChangeClasses };
+  }
+  if (primitiveToken === 'ko-from-discard-current') {
+    // why: WP-868 / D-24811 — grammar `ko-from-discard-current:<N>` (exactly 2 colon-parts; Flatman
+    // `:1`), the mandatory "KO a card from your discard pile". N is a positive integer carried as
+    // `magnitude`; a missing or non-positive count returns null (→ unresolvedMarkers).
+    if (parts.length !== 2) {
+      return null;
+    }
+    const magnitude = parsePositiveInteger(parts[1]!);
+    if (magnitude === null) {
+      return null;
+    }
+    return { primitive: 'ko-from-discard-current', magnitude };
+  }
+  if (primitiveToken === 'reveal-top-discard-zero-cost-current') {
+    // why: WP-870 / D-24815 — grammar `reveal-top-discard-zero-cost-current:<N>` (exactly 2
+    // colon-parts; Mandarin's Rings Spin `:6`), N the count of deck-top cards revealed, a positive
+    // integer carried as `magnitude`. A bare token, a non-positive or non-integer count, or a third
+    // token returns null (→ unresolvedMarkers): the count has no meaningful default, so the bare
+    // token must NOT fall through to the terminal no-param branch below.
+    if (parts.length !== 2) {
+      return null;
+    }
+    const magnitude = parsePositiveInteger(parts[1]!);
+    if (magnitude === null) {
+      return null;
+    }
+    return { primitive: 'reveal-top-discard-zero-cost-current', magnitude };
+  }
+  if (primitiveToken === 'reenter-sewers-if-villain-deck-top') {
+    // why: WP-868 / D-24811 — grammar `reenter-sewers-if-villain-deck-top:<kinds>` (exactly 2
+    // colon-parts; Mr. Immortal `:villain+bystander`), kinds `villain`, `bystander` or
+    // `villain+bystander`. Anything else (a Scheme Twist kind, a repeat, the wrong order) returns null.
+    if (parts.length !== 2) {
+      return null;
+    }
+    const kindsToken = parts[1]!;
+    if (kindsToken === 'villain') {
+      return { primitive: 'reenter-sewers-if-villain-deck-top', reenterRevealKinds: ['villain'] };
+    }
+    if (kindsToken === 'bystander') {
+      return { primitive: 'reenter-sewers-if-villain-deck-top', reenterRevealKinds: ['bystander'] };
+    }
+    if (kindsToken === 'villain+bystander') {
+      return { primitive: 'reenter-sewers-if-villain-deck-top', reenterRevealKinds: ['villain', 'bystander'] };
+    }
+    return null;
+  }
+  if (primitiveToken === 'fortify') {
+    return parseFortifyEffect(parts);
+  }
+  if (primitiveToken === 'stack-cards-enter-city-as-villains') {
+    return parseStackVillainEffect(parts);
   }
   if (primitiveToken === 'play-villain-deck-cards') {
     // why: D-24351 — grammar `play-villain-deck-cards:<N>` (exactly 2 tokens); N is the
@@ -1094,16 +1216,16 @@ function findVillainGroupCards(
 }
 
 /**
- * Finds a henchman group's ability text within a set's henchmen[].
+ * Finds a henchman group entry within a set's henchmen[].
  *
  * @param setData - Raw set data from getSet().
  * @param groupSlug - The henchman group slug to match.
- * @returns The group's ability lines, or null when absent/malformed.
+ * @returns The raw group entry, or null when absent/malformed.
  */
-function findHenchmanGroupAbilities(
+function findHenchmanGroupEntry(
   setData: unknown,
   groupSlug: string,
-): string[] | null {
+): Partial<VillainAbilityHenchmanGroup> | null {
   if (!setData || typeof setData !== 'object') return null;
   const candidate = setData as { henchmen?: unknown };
   if (!Array.isArray(candidate.henchmen)) return null;
@@ -1112,10 +1234,31 @@ function findHenchmanGroupAbilities(
     if (!rawGroup || typeof rawGroup !== 'object') continue;
     const group = rawGroup as Partial<VillainAbilityHenchmanGroup>;
     if (group.slug !== groupSlug) continue;
-    if (!Array.isArray(group.abilities)) return null;
-    return group.abilities as string[];
+    return group;
   }
   return null;
+}
+
+/**
+ * Reads the ability lines one henchman copy prints.
+ *
+ * // why: D-24803 — a copy of a variant group (Tardigrade, Ultron Sentries,
+ * Mandarin's Rings) prints its own variant card's lines; every other copy
+ * prints the group-level lines, exactly as before.
+ *
+ * @param henchmanGroup - The raw henchman group entry.
+ * @param copyIndex - The copy index, 0 to 9.
+ * @returns The copy's ability lines, or null when none are present.
+ */
+function readHenchmanCopyAbilities(
+  henchmanGroup: Partial<VillainAbilityHenchmanGroup>,
+  copyIndex: number,
+): unknown[] | null {
+  const variantCard = henchmanCopyVariant(henchmanGroup, copyIndex);
+  if (variantCard !== null) {
+    return Array.isArray(variantCard.abilities) ? variantCard.abilities : null;
+  }
+  return Array.isArray(henchmanGroup.abilities) ? henchmanGroup.abilities : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -1189,8 +1332,9 @@ function collectVillainHookEntries(
 /**
  * Collects hook entries for the selected henchman groups.
  *
- * Henchman ability text is group-level, so one hook is fanned out per virtual
- * copy ext_id `henchman-{groupSlug}-{NN}` (00-09).
+ * One hook is fanned out per virtual copy ext_id `henchman-{groupSlug}-{NN}`
+ * (00-09). A group of identical copies shares its group-level text; a group
+ * printed as variant cards gives each copy its own variant's text (D-24803).
  *
  * @param registry - Setup-time registry reader.
  * @param matchConfig - Validated match config providing henchmanGroupIds.
@@ -1205,47 +1349,63 @@ function collectHenchmanHookEntries(
     const parsed = parseQualifiedId(henchmanGroupId);
     if (parsed === null) continue;
     const setData = registry.getSet(parsed.setAbbr);
-    const abilities = findHenchmanGroupAbilities(setData, parsed.slug);
-    if (abilities === null) continue;
+    const henchmanGroup = findHenchmanGroupEntry(setData, parsed.slug);
+    if (henchmanGroup === null) continue;
 
-    for (let lineIndex = 0; lineIndex < abilities.length; lineIndex++) {
-      const abilityLine = abilities[lineIndex];
-      if (typeof abilityLine !== 'string') continue;
-      const timing = detectTiming(abilityLine);
-      // why: henchman onAmbush hooks are intentionally NOT emitted in v1
-      // (D-18507). buildCardKeywords never tags henchmen with the `ambush`
-      // board keyword, so the reveal-site hasAmbush gate can never fire a
-      // henchman onAmbush hook — emitting one would be unreachable and would
-      // violate the gate-consistency invariant. Henchman Ambush effects are
-      // deferred to a future WP that adds henchman keyword detection. The
-      // same filter also defers henchman onEscape hooks (WP-186): no real
-      // henchman card in the v1 data carries an `Escape:` line with an
-      // `[effect:]` marker, so emitting henchman onEscape hooks would have
-      // no consumer; the escape fire site still calls executeVillainAbilities
-      // on a henchman escape, which safely no-ops via per-card hook lookup.
-      if (timing !== 'onFight') continue;
-
-      const extracted = extractEffects(abilityLine);
-      // why: fan out one freshly-constructed hook per virtual copy ext_id so
-      // copies never alias a shared keywords/effects array (D-13502).
-      for (
-        let copyIndex = 0;
-        copyIndex < HENCHMAN_COPIES_PER_GROUP;
-        copyIndex++
-      ) {
-        const paddedIndex = String(copyIndex).padStart(2, '0');
-        const cardId =
-          `henchman-${parsed.slug}-${paddedIndex}` as CardExtId;
-        entries.push({
-          cardId,
-          timing,
-          lineIndex,
-          keywords: [...extracted.keywords],
-          effects: [...extracted.effects],
-          unresolvedMarkers: [...extracted.unresolvedMarkers],
-        });
-      }
+    // why: one freshly-constructed hook per virtual copy ext_id so copies
+    // never alias a shared keywords/effects array (D-13502). Each copy reads
+    // its own lines (D-24803); the deterministic sort in
+    // buildVillainAbilityHooks restores the locked total order (cardId
+    // lexical, timing, lineIndex), so a group of identical copies emits
+    // exactly the entries it did before.
+    for (let copyIndex = 0; copyIndex < HENCHMAN_COPIES_PER_GROUP; copyIndex++) {
+      const abilities = readHenchmanCopyAbilities(henchmanGroup, copyIndex);
+      if (abilities === null) continue;
+      const paddedIndex = String(copyIndex).padStart(2, '0');
+      const cardId = `henchman-${parsed.slug}-${paddedIndex}` as CardExtId;
+      collectHenchmanCopyHooks(cardId, abilities, entries);
     }
+  }
+}
+
+/**
+ * Appends the onFight hook entries for one henchman copy's ability lines.
+ *
+ * @param cardId - The copy's instance ext_id `henchman-{groupSlug}-{NN}`.
+ * @param abilities - The copy's ability lines.
+ * @param entries - Accumulator appended in place.
+ */
+function collectHenchmanCopyHooks(
+  cardId: CardExtId,
+  abilities: unknown[],
+  entries: HookEntry[],
+): void {
+  for (let lineIndex = 0; lineIndex < abilities.length; lineIndex++) {
+    const abilityLine = abilities[lineIndex];
+    if (typeof abilityLine !== 'string') continue;
+    const timing = detectTiming(abilityLine);
+    // why: henchman onAmbush hooks are intentionally NOT emitted in v1
+    // (D-18507). buildCardKeywords never tags henchmen with the `ambush`
+    // board keyword, so the reveal-site hasAmbush gate can never fire a
+    // henchman onAmbush hook — emitting one would be unreachable and would
+    // violate the gate-consistency invariant. Henchman Ambush effects are
+    // deferred to a future WP that adds henchman keyword detection. The
+    // same filter also defers henchman onEscape hooks (WP-186): no real
+    // henchman card in the v1 data carries an `Escape:` line with an
+    // `[effect:]` marker, so emitting henchman onEscape hooks would have
+    // no consumer; the escape fire site still calls executeVillainAbilities
+    // on a henchman escape, which safely no-ops via per-card hook lookup.
+    if (timing !== 'onFight') continue;
+
+    const extracted = extractEffects(abilityLine);
+    entries.push({
+      cardId,
+      timing,
+      lineIndex,
+      keywords: [...extracted.keywords],
+      effects: [...extracted.effects],
+      unresolvedMarkers: [...extracted.unresolvedMarkers],
+    });
   }
 }
 
@@ -1328,4 +1488,74 @@ export function buildVillainAbilityHooks(
   }
 
   return hooks;
+}
+
+/**
+ * Parses `stack-cards-enter-city-as-villains:<bystander|officer>:<N>[:<name>]` (WP-869 / D-24814).
+ *
+ * // why: 3 or 4 colon-parts with the primitive. N is a positive integer carried as `magnitude`;
+ * the kind becomes `stackVillainKind`; the optional name token must match
+ * STACK_VILLAIN_NAME_PATTERN and becomes `stackVillainName`, written only when present (never
+ * `undefined`, `exactOptionalPropertyTypes`). Anything else returns null (→ unresolvedMarkers).
+ *
+ * @param parts - The colon-split marker value, the primitive first.
+ * @returns The descriptor, or null.
+ */
+function parseStackVillainEffect(parts: readonly string[]): VillainEffectDescriptor | null {
+  if (parts.length !== 3 && parts.length !== 4) {
+    return null;
+  }
+  const kind = parts[1];
+  if (kind !== 'bystander' && kind !== 'officer') {
+    return null;
+  }
+  const magnitude = parsePositiveInteger(parts[2]!);
+  if (magnitude === null) {
+    return null;
+  }
+  if (parts.length === 3) {
+    return { primitive: 'stack-cards-enter-city-as-villains', stackVillainKind: kind, magnitude };
+  }
+  const nameToken = parts[3]!;
+  if (!STACK_VILLAIN_NAME_PATTERN.test(nameToken)) {
+    return null;
+  }
+  return {
+    primitive: 'stack-cards-enter-city-as-villains',
+    stackVillainKind: kind,
+    magnitude,
+    stackVillainName: nameToken,
+  };
+}
+
+/**
+ * Parses the parts of a `fortify:<place>:<lock>` marker (WP-873 / D-24818).
+ *
+ * Exactly 3 colon-parts; `<place>` must be one of FORTIFY_PLACES and `<lock>` one of the
+ * locks FORTIFY_ALLOWED_LOCKS lists for that place (Squirrel Girl:
+ * `fortify:sidekick-stack:no-recruit-or-gain`; Colleen Wing: `fortify:mastermind:no-fight`).
+ * Anything else returns null (→ unresolvedMarkers), never a partial descriptor.
+ *
+ * @param parts - The marker value split on ':' (parts[0] is `fortify`).
+ * @returns The fortify descriptor, or null.
+ */
+function parseFortifyEffect(parts: readonly string[]): VillainEffectDescriptor | null {
+  if (parts.length !== 3) {
+    return null;
+  }
+  const placeToken = parts[1];
+  if (!isFortifyPlace(placeToken)) {
+    return null;
+  }
+  const lockToken = parts[2];
+  let fortifyLock: FortifyLock | null = null;
+  for (const allowedLock of FORTIFY_ALLOWED_LOCKS[placeToken]) {
+    if (allowedLock === lockToken) {
+      fortifyLock = allowedLock;
+    }
+  }
+  if (fortifyLock === null) {
+    return null;
+  }
+  return { primitive: 'fortify', fortifyPlace: placeToken, fortifyLock };
 }

@@ -616,7 +616,7 @@ describe('simulateOneGameAndCaptureMoves (WP-193)', () => {
 });
 
 describe('simulateOneGameAndCaptureMoves — hollow-effect diagnostics (WP-263)', () => {
-  test('surfaces the finished game hollow diagnostics; empty under the mock registry', () => {
+  test('surfaces the finished game hollow diagnostics; only unresolved Master Strike records under the mock registry (WP-867)', () => {
     const setupConfig = createTestConfig();
     const registry = createMockRegistry();
     const seed = 'wp263-capture-hollow-seed';
@@ -633,10 +633,26 @@ describe('simulateOneGameAndCaptureMoves — hollow-effect diagnostics (WP-263)'
       0,
     );
 
-    // why (WP-263): the mock registry has no real cards, so no hollow effect
-    // is recorded — the additive fields exist and default to []/0. The
-    // populated path is proven by the captureGameDiagnostics unit tests below.
-    assert.deepEqual(captured.hollowEffects, []);
+    // why (WP-263, WP-867 / D-24810): the mock registry has no real cards, so no
+    // hero or villain hollow is recorded. Its Mastermind has no strike arm in
+    // mastermindStrikeHandler, so every Master Strike the game reveals now records
+    // a master-strike / mastermind / no-handler hollow (the scaffold observed
+    // records for this seed). Every captured record must be one of those, and no
+    // other kind may appear. The populated path is also proven by the
+    // captureGameDiagnostics unit tests below.
+    assert.ok(
+      captured.hollowEffects.length >= 1,
+      'the mock Mastermind has no strike arm, so its Master Strikes are flagged hollow',
+    );
+    for (const record of captured.hollowEffects) {
+      assert.equal(record.mechanic, 'master-strike');
+      assert.equal(record.cardType, 'mastermind');
+      assert.equal(record.reason, 'no-handler');
+    }
+    assert.deepEqual(
+      captured.hollowEffects.filter((record) => record.mechanic !== 'master-strike'),
+      [],
+    );
     assert.equal(captured.hollowEffectsDropped, 0);
   });
 

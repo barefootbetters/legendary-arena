@@ -14,6 +14,7 @@ import type {
   LogEntry,
   MenaceTier,
   SchemeLossKind,
+  UIHQHaunter,
   UIProgressCounters,
   UIState,
 } from '@legendary-arena/game-engine';
@@ -22,6 +23,7 @@ import endgameWinJson from './endgame-win.json';
 import endgameLossJson from './endgame-loss.json';
 import finalTurnJson from './final-turn.json';
 import divingBlockWoundJson from './diving-block-wound.json';
+import hauntedHqJson from './haunted-hq.json';
 
 // why: WP-434 — a JSON import widens the `log[].outcome` string literal to `string`,
 // which no longer satisfies `LogEntry['outcome']` (the LogOutcome union). Re-narrow the
@@ -69,6 +71,30 @@ function narrowProgress(progress: {
   };
 }
 
+// why: WP-759 — the same JSON-widening problem one field along: a JSON import widens each
+// haunter's `kind` to `string`, which no longer satisfies the UIHQHaunter union. Rebuild
+// every entry field by field (a villain keeps its extId + display) so the fixture still
+// `satisfies UIState`.
+function narrowHqHaunters(
+  haunters: ReadonlyArray<{
+    kind: string;
+    extId?: string;
+    display?: { extId: string; name: string; imageUrl: string; cost: number | null };
+  } | null>,
+): (UIHQHaunter | null)[] {
+  const narrowed: (UIHQHaunter | null)[] = [];
+  for (const haunter of haunters) {
+    if (haunter === null) {
+      narrowed.push(null);
+    } else if (haunter.kind === 'villain' && haunter.extId !== undefined && haunter.display !== undefined) {
+      narrowed.push({ kind: 'villain', extId: haunter.extId, display: haunter.display });
+    } else {
+      narrowed.push({ kind: 'mastermind' });
+    }
+  }
+  return narrowed;
+}
+
 export const midTurn = {
   ...midTurnJson,
   log: narrowLog(midTurnJson.log),
@@ -101,4 +127,14 @@ export const divingBlockWound = {
   ...divingBlockWoundJson,
   log: narrowLog(divingBlockWoundJson.log),
   progress: narrowProgress(divingBlockWoundJson.progress),
+} satisfies UIState;
+// why: WP-759 — two Haunted HQ slots (a Villain haunter and the Mastermind) and a
+// haunting Mastermind, so `?fixture=haunted-hq&play=1` renders the haunter strips, the
+// Haunted Recruit lock, both Exorcise states and the Haunting badge for UX verification.
+export const hauntedHq = {
+  ...hauntedHqJson,
+  hq: { ...hauntedHqJson.hq, haunters: narrowHqHaunters(hauntedHqJson.hq.haunters) },
+  mastermind: { ...hauntedHqJson.mastermind, isHaunting: true as const },
+  log: narrowLog(hauntedHqJson.log),
+  progress: narrowProgress(hauntedHqJson.progress),
 } satisfies UIState;

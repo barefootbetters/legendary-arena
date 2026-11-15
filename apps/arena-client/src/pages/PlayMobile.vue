@@ -586,6 +586,7 @@ export default defineComponent({
                marker stays hidden. -->
           <MastermindTile
             :mastermind="snapshot.mastermind"
+            :fortifiers="snapshot.city.fortifiers ?? []"
             :current-stage="snapshot.game.currentStage"
             :is-viewer-turn="isViewerTurn"
             :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
@@ -637,6 +638,9 @@ export default defineComponent({
             :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
             :economy="snapshot.economy"
             :submit-move="submitMove"
+            :players="snapshot.players"
+            :viewer-player-id="viewer?.playerId ?? null"
+            :mastermind-name="snapshot.mastermind.display.name"
           />
           <!-- why: WP-664 / D-24475 — face-up Transform side deck beside the hero
                row; hidden when empty (inert for non-transform games). -->
@@ -650,6 +654,7 @@ export default defineComponent({
         <section class="play-mobile__band play-mobile__band--scroll-x">
           <SharedDecks
             :piles="snapshot.piles"
+            :fortifiers="snapshot.city.fortifiers ?? []"
             :current-stage="snapshot.game.currentStage"
             :is-viewer-turn="isViewerTurn"
             :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
@@ -679,6 +684,8 @@ export default defineComponent({
         <YourVictoryPile
           :victory-cards="viewer.victoryCards ?? []"
           :victory-vp="viewer.victoryVP ?? 0"
+          :conditional-clauses-played="viewer.conditionalClauses?.played ?? 0"
+          :conditional-clauses-assembled="viewer.conditionalClauses?.assembled ?? 0"
           @open="onPileOpen"
         />
         <!-- why: the mat labels the card lifecycle explicitly — played
@@ -691,6 +698,9 @@ export default defineComponent({
             :in-play-cards="viewer.inPlayCards ?? []"
             :in-play-display="viewer.inPlayDisplay"
             :out-of-time-cards="viewer.outOfTimeCards ?? []"
+            :controlled-artifacts="viewer.controlledArtifacts ?? []"
+            :ritual-card-ids="snapshot.economy.ritualArtifactOptions ?? []"
+            :submit-move="submitMove"
           />
         </section>
         <section class="play-mobile__band play-mobile__band--scroll-x">
@@ -1027,6 +1037,8 @@ export default defineComponent({
             :has-acted-this-turn="snapshot.game.hasActedThisTurn"
             :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
             :has-revealed-villain="snapshot.game.villainRevealedThisTurn"
+            :heist-available="snapshot.economy.heistAvailable === true"
+            :heist-count="snapshot.economy.heistCount"
             :submit-move="submitMove"
           />
         </template>

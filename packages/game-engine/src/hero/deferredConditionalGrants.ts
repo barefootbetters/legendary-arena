@@ -48,9 +48,18 @@
 
 import type { LegendaryGameState, DeferredConditionalGrant } from '../types.js';
 import type { HeroCondition } from '../rules/heroAbility.types.js';
+import type { HeroCountSource } from '../rules/heroCountSource.js';
+import type { CardExtId } from '../state/zones.types.js';
+import { BYSTANDER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 import {
   MASTER_STRIKE_THIS_TURN_CONDITION_TYPE,
   MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE,
+  OWNED_CARD_KOED_CONDITION_TYPE,
+  OWNED_HERO_KOED_CONDITION_TYPE,
+  DECK_CARD_KOED_CONDITION_TYPE,
+  ATTACK_ICON_DECK_KO_CONDITION_TYPE,
+  NON_GREY_HERO_DECK_KO_CONDITION_TYPE,
+  matchReadsConditionType,
 } from './heroConditions.evaluate.js';
 
 // why: WP-656 / D-24467 — the single EDGE-TRIGGERED wait-and-see condition type.
@@ -90,7 +99,39 @@ export const WAIT_AND_SEE_CONDITION_TYPES: readonly string[] = [
   // Both have evaluateCondition cases (the lockstep the drift pin enforces).
   MASTER_STRIKE_THIS_TURN_CONDITION_TYPE,
   MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE,
+  // why: WP-853 / D-24789 — "Whenever a card you own is KO'd this turn" (Absorb
+  // Energies) is shape #2 with a per-owner COUNT: the grant fires once per counted KO and
+  // re-arms. Has an evaluateCondition case (the lockstep the drift pin enforces).
+  OWNED_CARD_KOED_CONDITION_TYPE,
+  // why: WP-856 / D-24792 — "The first time that one of your Heroes [or a Hero from your
+  // deck or discard pile] is KO'd this turn" (Possessed by Brother's Spirit) reads the
+  // per-owner Hero-KO count but is shape #1: it fires once and is NOT re-armed, which is
+  // what "the first time" means. Has an evaluateCondition case (the lockstep pin).
+  OWNED_HERO_KOED_CONDITION_TYPE,
+  // why: WP-855 / D-24791 — "Whenever a card is KO'd from your deck this turn" (Endless
+  // Appetite) is shape #2 with a per-owner DECK count: fires once per counted KO and re-arms,
+  // like the owned-KO entry. Has an evaluateCondition case (the lockstep the drift pin enforces).
+  DECK_CARD_KOED_CONDITION_TYPE,
+  // why: WP-859 / D-24795 — "Then, if a card with an [icon:attack] icon / a non-grey Hero was
+  // KO'd from your deck this turn, Transform" (Metamorphosis, Bursting with Life) reads the
+  // sticky turn record, so it is shape #1: fire once, not re-armed. RS-1 — the whole-turn
+  // window (D-24476 parity with Gamma-Draining Nanites): the Transform fires the first time the
+  // condition holds this turn. Both have evaluateCondition cases (the lockstep the pin enforces).
+  ATTACK_ICON_DECK_KO_CONDITION_TYPE,
+  NON_GREY_HERO_DECK_KO_CONDITION_TYPE,
 ];
+
+// why: WP-859 / D-24795 — the one count source that reads the deck-KO turn record (World-Spanning
+// Hunger). Typed against the HeroCountSource union, so a renamed source fails to compile.
+const NON_GREY_HEROES_KOED_FROM_DECK_COUNT_SOURCE: HeroCountSource = 'non-grey-heroes-koed-from-deck-this-turn';
+
+/**
+ * The zone an owned KO'd card left: a player's hand, deck, discard pile or cards in play.
+ *
+ * why: WP-855 / D-24791 — every owned KO site states it, so the recorder can tell a KO from
+ * the deck ("KO'd from your deck") from the rest of "a card you own".
+ */
+export type OwnedKoSourceZone = 'hand' | 'deck' | 'discard' | 'inPlay';
 
 /**
  * Reports whether a failed condition earns the whole-turn wait-and-see window.
@@ -128,6 +169,135 @@ export function recordDeferredConditionalGrant(
     G.deferredConditionalGrants = [];
   }
   G.deferredConditionalGrants.push({ playerId, cardId, hookIndex });
+}
+
+/**
+ * Counts one KO of a card the given player owns, for a waiting owned-KO or Hero-KO grant.
+ *
+ * why: WP-853 / D-24789 — called by every KO site that takes a card from a player's
+ * hand, deck, discard pile or cards in play, once per KO'd card. GATED: each count is
+ * written only while a waiting grant's hook reads its condition type, so a game with no
+ * waiting Absorb Energies / Possessed by Brother's Spirit never gains either key, and the
+ * resolve deletes both after every move, so they never reach a hash. Keyed PER OWNER
+ * because a Villain or Mastermind can KO another player's cards, and only the owner's
+ * grant may fire.
+ * why: WP-856 / D-24792 — the KO'd card's id lets the Hero count skip Wounds and
+ * Bystanders (the WP-828 isHeroCard rule: anything else in a player's zones is a Hero).
+ *
+ * why: WP-855 / D-24791 — `fromZone` is the zone the card left, required at every owned site
+ * so the compiler makes a new site state it; a KO from the deck also counts for a waiting
+ * "KO'd from your deck" grant.
+ *
+ * @param G - The game state, mutated in place.
+ * @param ownerPlayerID - The player whose zone the KO'd card left.
+ * @param cardId - The card that was KO'd.
+ * @param fromZone - The owner's zone the card left.
+ */
+export function recordOwnedCardKoed(
+  G: LegendaryGameState,
+  ownerPlayerID: string,
+  cardId: CardExtId,
+  fromZone: OwnedKoSourceZone,
+): void {
+  if (hasWaitingGrantWithCondition(G, OWNED_CARD_KOED_CONDITION_TYPE)) {
+    if (G.ownedCardsKoedSinceResolve === undefined) {
+      G.ownedCardsKoedSinceResolve = {};
+    }
+    const previousCount = G.ownedCardsKoedSinceResolve[ownerPlayerID] ?? 0;
+    G.ownedCardsKoedSinceResolve[ownerPlayerID] = previousCount + 1;
+  }
+  const isHero = cardId !== WOUND_EXT_ID && cardId !== BYSTANDER_EXT_ID;
+  if (isHero && hasWaitingGrantWithCondition(G, OWNED_HERO_KOED_CONDITION_TYPE)) {
+    if (G.ownedHeroesKoedSinceResolve === undefined) {
+      G.ownedHeroesKoedSinceResolve = {};
+    }
+    const previousHeroCount = G.ownedHeroesKoedSinceResolve[ownerPlayerID] ?? 0;
+    G.ownedHeroesKoedSinceResolve[ownerPlayerID] = previousHeroCount + 1;
+  }
+  // why: WP-855 / D-24791 — the deck count, its own gate: written only while a waiting grant
+  // reads `deckCardKoedThisTurn`, so a game with no waiting Endless Appetite never gains the
+  // key and no hash moves. Keyed per owner like the counts above (a Villain can KO from
+  // another player's deck, and only the owner's grant may fire).
+  if (fromZone === 'deck' && hasWaitingGrantWithCondition(G, DECK_CARD_KOED_CONDITION_TYPE)) {
+    if (G.deckCardsKoedSinceResolve === undefined) {
+      G.deckCardsKoedSinceResolve = {};
+    }
+    const previousDeckCount = G.deckCardsKoedSinceResolve[ownerPlayerID] ?? 0;
+    G.deckCardsKoedSinceResolve[ownerPlayerID] = previousDeckCount + 1;
+  }
+  // why: WP-859 / D-24795 — the deck-KO turn record ("KO'd from your deck this turn"). TURN-scoped
+  // because a KO before the reader is played counts, so it cannot wait for a deferred grant like
+  // the counts above; it is gated instead on a reader hook, so a game without Metamorphosis,
+  // Bursting with Life or World-Spanning Hunger never gains the key and no hash moves. The zone
+  // test runs first, so the hook scan runs only at deck sites. Keyed per owner, in KO order.
+  if (fromZone === 'deck' && hasDeckKoRecordReader(G)) {
+    if (G.cardsKoedFromDeckThisTurn === undefined) {
+      G.cardsKoedFromDeckThisTurn = {};
+    }
+    const ownerRecord = G.cardsKoedFromDeckThisTurn[ownerPlayerID];
+    if (ownerRecord === undefined) {
+      G.cardsKoedFromDeckThisTurn[ownerPlayerID] = [cardId];
+    } else {
+      ownerRecord.push(cardId);
+    }
+  }
+}
+
+/**
+ * Reports whether any hook in this match reads the deck-KO turn record.
+ *
+ * why: WP-859 / D-24795 — not the waiting-grant gate the counts use: a KO made before the reader
+ * card is played must be in the record, and at that moment nothing waits. Hooks are built once at
+ * setup, so the answer is constant for the match (the D-24616 posture). The condition half reuses
+ * matchReadsConditionType; the count half scans the effects for World-Spanning Hunger's source.
+ *
+ * @param G - The game state (read-only).
+ * @returns True when a hook carries either deck-KO condition or the deck-KO count source.
+ */
+function hasDeckKoRecordReader(G: LegendaryGameState): boolean {
+  if (matchReadsConditionType(G, ATTACK_ICON_DECK_KO_CONDITION_TYPE)) {
+    return true;
+  }
+  if (matchReadsConditionType(G, NON_GREY_HERO_DECK_KO_CONDITION_TYPE)) {
+    return true;
+  }
+  if (!Array.isArray(G.heroAbilityHooks)) {
+    return false;
+  }
+  for (const hook of G.heroAbilityHooks) {
+    for (const effect of hook.effects ?? []) {
+      if (effect.countSource === NON_GREY_HEROES_KOED_FROM_DECK_COUNT_SOURCE) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Reports whether any waiting deferred grant's hook reads the given condition type.
+ *
+ * @param G - The game state (read-only).
+ * @param conditionType - The condition type to look for.
+ * @returns True when a grant reading that condition is waiting.
+ */
+function hasWaitingGrantWithCondition(G: LegendaryGameState, conditionType: string): boolean {
+  const entries = G.deferredConditionalGrants;
+  if (entries === undefined || !G.heroAbilityHooks) {
+    return false;
+  }
+  for (const entry of entries) {
+    const hook = G.heroAbilityHooks[entry.hookIndex];
+    if (hook === undefined || hook.conditions === undefined) {
+      continue;
+    }
+    for (const condition of hook.conditions) {
+      if (condition.type === conditionType) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**

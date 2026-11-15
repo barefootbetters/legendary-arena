@@ -6,14 +6,21 @@
  */
 
 import type { UIState } from '@legendary-arena/game-engine';
-import { midTurn, endgameWin, endgameLoss, finalTurn, divingBlockWound } from './typed';
+import { midTurn, endgameWin, endgameLoss, finalTurn, divingBlockWound, hauntedHq } from './typed';
 
 /**
  * The committed fixture names. Inhabited by `'mid-turn'`, `'endgame-win'`,
  * `'endgame-loss'`, and `'final-turn'` (WP-654 — an in-progress snapshot
- * carrying the WP-367 `finalTurn` projection for the final-turn banner).
+ * carrying the WP-367 `finalTurn` projection for the final-turn banner), and
+ * `'haunted-hq'` (WP-759 — two Haunted HQ slots and a haunting Mastermind).
  */
-export type FixtureName = 'mid-turn' | 'endgame-win' | 'endgame-loss' | 'final-turn' | 'diving-block-wound';
+export type FixtureName =
+  | 'mid-turn'
+  | 'endgame-win'
+  | 'endgame-loss'
+  | 'final-turn'
+  | 'diving-block-wound'
+  | 'haunted-hq';
 
 const KNOWN_FIXTURE_NAMES: readonly FixtureName[] = [
   'mid-turn',
@@ -21,6 +28,7 @@ const KNOWN_FIXTURE_NAMES: readonly FixtureName[] = [
   'endgame-loss',
   'final-turn',
   'diving-block-wound',
+  'haunted-hq',
 ];
 
 /**
@@ -63,5 +71,7 @@ export function loadUiStateFixture(name: FixtureName): UIState {
       return finalTurn;
     case 'diving-block-wound':
       return divingBlockWound;
+    case 'haunted-hq':
+      return hauntedHq;
   }
 }

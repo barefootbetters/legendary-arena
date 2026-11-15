@@ -597,7 +597,7 @@ describe('teleport-on-discard resolver (WP-705 / D-24526)', () => {
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
-  it('contains exactly the 61 canonical keyword values', () => {
+  it('contains exactly the canonical keyword values', () => {
     const expectedKeywords = [
       'draw',
       'attack',
@@ -629,7 +629,8 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'victory-villain-attack', // why: D-24068 / WP-285 — victory-pile villain-pick mechanic
       'draw-or-empowered', // why: D-24069 / WP-286 — draw-or-empowered choose-one mechanic
       'count-scaled-choose', // why: WP-675 / D-24490 — count-scaled choose-one (vnom Symbiotic Adaptation)
-      'size-changing', // why: D-24074 / WP-290 — class-grant-on-play keyword
+      'size-changing', // why: D-24801 — recruit discount (supersedes D-24074 class grant)
+      'microscopic-size-changing', // why: D-24801 — per-icon recruit discount
       'optional-put-bottom-hq', // why: Ionic Energy — optional put-a-HQ-card-on-bottom-of-Hero-Deck mechanic
       'put-any-number-bottom-hq', // why: D-24132 — multi-select put-any-number-of-HQ-cards-on-bottom-of-Hero-Deck mechanic
       'put-bottom-hq-icon-reward', // why: D-24133 — mandatory single-card put-bottom + recruit/attack icon reward (Absorb Ambient Power)
@@ -684,12 +685,27 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'grant-out-of-time', // why: WP-828 / D-24761 — Winter Soldier 2>4 "A Hero in your hand gains Man Out of Time this turn": queues one owed grant; the granted card goes Out of Time when played this turn
     'reveal-or-gain-wound-each', // why: WP-843 / D-24777 — co2e Crazed Rampage "Each player reveals another [hc:strength] Hero or gains a Wound": each player who cannot reveal another matching Hero gains a Wound
     'gain-sidekick', // why: WP-844 / D-24778 — "Gain a [rule:Sidekick]" / "Gain three [rule:Sidekicks]": up to N Sidekicks from the top of the Sidekick Stack into the playing player's discard, outside the once-per-turn recruit
+    'discard-top-printed-attack', // why: WP-850 / D-24786 — Bishop's Firepower from the Future "Discard the top four cards of your deck. You get +Attack equal to those cards' printed Attack": one card at a time, D-24285 reshuffle, summed printed Attack, hands the ids to ko-discarded-this-way
+    'ko-discarded-this-way', // why: WP-850 / D-24786 — Firepower from the Future "[team:x-men]: KO any number of those cards": the KO-from-discard choice limited to the cards the same play discarded
+    'ritual-recruited-hero', // why: WP-858 / D-24794 — Staff of Legba's Ritual Artifact: discarded through useRitualArtifact for +Attack equal to the highest Hero cost recruited this turn (move-executed)
+    'ritual-hero-classes', // why: WP-858 / D-24794 — Medallion of Many Loas's Ritual Artifact: discarded through useRitualArtifact for +1 Attack per Hero Class you have, at a class threshold (move-executed)
+    'discard-artifact-or-three-then-ko', // why: WP-860 / D-24796 — Commune with the Spirit World: discard an Artifact you control or three cards from your hand, then KO a card from your hand or discard pile (chained seat choices; handler-bearing)
+    'feast', // why: WP-857 / D-24793 — hero Feast "KO the top card of your deck": reuses the KO-or-keep reveal of the deck top (heroEffectRevealTopMayKo), resolved only on FEAST_CARDS
+    'hq-hero-gains-size-changing-tech', // why: WP-862 / D-24804 — Pym Particles: a chosen HQ Hero with no Size-Changing gains Size-Changing [Tech] this turn (handler-bearing)
+    'heist', // why: WP-865 / D-24808 — the Ant-Man and the Wasp Heist keyword: heroEffectHeist readies an allowlisted Heist card at play; a successful attemptHeist fires its heistEffects (fireHeistPlays). Appended last.
+    'next-hand-extra-draw', // why: WP-866 / D-24809 — "When you draw a new hand … this turn, draw N extra card(s)": the additive handSizeOverrides write consumed by the end-of-turn cleanup. Appended last.
+    'heist-master-strike-ko', // why: WP-876 / D-24823 — The Big Score's Master Strike KO (Heist-only, rides heistEffects)
+    'heist-scheme-twist-bonus', // why: WP-876 / D-24823 — Revolutionary Anthem's Scheme Twist +N and optional shuffle (Heist-only)
+    'heist-move-villain-ko-hero', // why: WP-876 / D-24823 — X-Con Security Van's move to an empty space, then KO one of your Heroes (Heist-only)
+    'gain-wound-reward', // why: WP-883 / D-24834 — "You may gain a Wound. If you do, you get +N Attack": an active-scoped gain / don't seat choice; +N only for a Wound kept.
+    'hunt-for-victims', // why: WP-884 / D-24835 — Stalk the Night Stalkers: have a Villain or Mastermind Hunt for Victims, then an optional KO of a Hero (two chained seat choices).
+    'hunt-for-victims-rescue', // why: WP-884 / D-24835 — Stalk the Night Stalkers' [hc:tech] line: the rescue twins on the hunt choice. Appended last.
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      85,
-      'HERO_KEYWORDS must have exactly 85 entries (gain-sidekick, WP-844 / D-24778, appended last)',
+      101,
+      'HERO_KEYWORDS must have exactly 101 entries (WP-884 / D-24835 hunt-for-victims + hunt-for-victims-rescue appended last; WP-883 / D-24834 gain-wound-reward; WP-876 / D-24823 the three Heist payload keywords appended last; WP-866 / D-24809 next-hand-extra-draw; WP-865 / D-24808 heist; D-24801 microscopic-size-changing after size-changing; feast, WP-857 / D-24793, after WP-860 / D-24796 discard-artifact-or-three-then-ko; hq-hero-gains-size-changing-tech, WP-862 / D-24804, appended last)',
     );
 
     assert.deepStrictEqual(

@@ -28,6 +28,16 @@ import { exorciseHauntedHero } from '../moves/exorciseHauntedHero.js';
 import type { ExorciseHauntedHeroArgs } from '../moves/exorciseHauntedHero.js';
 import { recruitHero } from '../moves/recruitHero.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { buildHeroAbilityHooks } from '../setup/heroAbility.setup.js';
+import { attemptHeist } from '../moves/attemptHeist.js';
+import { resolveMoveVillainChoice } from '../moves/moveVillainChoice.resolve.js';
+import type { ResolveMoveVillainChoiceArgs } from '../moves/moveVillainChoice.resolve.js';
+import type { MatchConfiguration } from '../types.js';
+import type { RevealedCardType } from '../villainDeck/villainDeck.types.js';
+import { makeGlobalPiles, makeMastermindState, makePlayerZones } from '../test/fixtureBuilders.js';
 
 const CONTEXT = { phase: 'play', turn: 1, currentPlayer: '0', numPlayers: 1 };
 
@@ -1478,6 +1488,24 @@ describe('getLegalMoves — Spinning Cyclone move-a-Villain short-circuit (WP-79
     assert.equal(legalMoves.length, 1, 'exactly one legal move while pending');
     assert.deepEqual(legalMoves, [{ name: 'resolveMoveVillainChoice', args: { decline: true } }]);
   });
+
+  test('declines an X-Con Security Van entry even when a Bystander holder could move (WP-876 / D-24823)', () => {
+    // why: the Spinning Cyclone answer would name space 0, which is occupied here; the X-Con
+    // variant rejects an occupied space, so only a decline can resolve the entry.
+    const gameState = makeMoveVillainG(
+      ['villain-a' as CardExtId, 'villain-b' as CardExtId, null, null, null],
+      { 'villain-b': ['bystander-1' as CardExtId] },
+    );
+    gameState.pendingMoveVillainChoices = [
+      {
+        playerID: '0',
+        sourceCardId: 'amwp/scott-lang-cat-burglar/x-con-security-van#0' as CardExtId,
+        variant: 'x-con-security-van',
+      },
+    ];
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+    assert.deepEqual(legalMoves, [{ name: 'resolveMoveVillainChoice', args: { decline: true } }]);
+  });
 });
 
 describe('getLegalMoves — fight-cost reduction reads the same resolvers (WP-794 / D-24663)', () => {
@@ -1732,5 +1760,344 @@ describe('getLegalMoves — WP-836 grey-filtered KO defaults (D-24769)', () => {
     assert.deepStrictEqual(getLegalMoves(makeGreyKoDiscardG(discard, false), CONTEXT), [
       { name: 'resolveKoDiscardChoice', args: { cardIds: [WOUND_EXT_ID, SHIELD_AGENT_EXT_ID] } },
     ]);
+  });
+});
+describe('getLegalMoves — Size-Changing fight price matches the move guard (D-24802)', () => {
+  // why: the bot must enumerate the fights fightVillain / fightMastermind accept at the
+  // Size-Changing price, or it would skip a fight the move allows (or offer one it refuses).
+
+  /** A printed-5 Size-Changing [Tech] villain and a printed-20 Size-Changing [Tech] mastermind. */
+  function makeSizeChangingG(availableAttack: number, inPlay: string[]): LegendaryGameState {
+    const gameState = makeG({ hand: [], currentStage: 'main' });
+    gameState.turnEconomy = { ...makeTurnEconomy(), attack: availableAttack } as LegendaryGameState['turnEconomy'];
+    gameState.city = ['sc-villain' as CardExtId, null, null, null, null];
+    gameState.cardStats = {
+      'sc-villain': { attack: 0, recruit: 0, cost: 0, fightCost: 5, fightCostMode: 'static', fightCostBase: 0 },
+      [gameState.mastermind.baseCardId]: { attack: 0, recruit: 0, cost: 0, fightCost: 4, fightCostMode: 'static', fightCostBase: 0 },
+    } as unknown as LegendaryGameState['cardStats'];
+    gameState.fightSizeChanging = {
+      ['sc-villain' as CardExtId]: { classes: ['tech'], microscopicIcons: [] },
+      [gameState.mastermind.baseCardId]: { classes: ['tech'], microscopicIcons: [] },
+    };
+    gameState.cardTraits = { 'tech-hero': { heroClass: 'tech', team: null } } as LegendaryGameState['cardTraits'];
+    gameState.playerZones['0']!.inPlay = inPlay as LegendaryGameState['playerZones']['0']['inPlay'];
+    (gameState.mastermind as { tacticsDeck: CardExtId[] }).tacticsDeck = ['tactic-0' as CardExtId];
+    (gameState.mastermind as { tacticsDefeated?: CardExtId[] }).tacticsDefeated = [];
+    return gameState;
+  }
+
+  test('does NOT offer either fight at the discounted price when no Tech card was played', () => {
+    const legalMoves = getLegalMoves(makeSizeChangingG(3, []), CONTEXT);
+    assert.equal(legalMoves.filter((move) => move.name === 'fightVillain').length, 0);
+    assert.equal(legalMoves.filter((move) => move.name === 'fightMastermind').length, 0);
+  });
+
+  test('offers both fights at the price once a Tech card was played (villain 5 - 2, mastermind 4 - 2)', () => {
+    const legalMoves = getLegalMoves(makeSizeChangingG(3, ['tech-hero']), CONTEXT);
+    assert.equal(legalMoves.filter((move) => move.name === 'fightVillain').length, 1);
+    assert.equal(legalMoves.filter((move) => move.name === 'fightMastermind').length, 1);
+  });
+});
+
+describe('WP-871 getLegalMoves — villain fight restrictions mirror the move guard (D-24816)', () => {
+  const ORRGO = 'chmp-villain-monsters-unleashed-orrgo-00' as CardExtId;
+  const SQUIRREL_GIRL = 'cvwr-villain-great-lakes-avengers-squirrel-girl-00' as CardExtId;
+  const DOOP = 'ssw2-villain-deadpools-secret-secret-wars-doop-00' as CardExtId;
+  const PLAIN = 'core-villain-hydra-hydra-kidnappers-00' as CardExtId;
+
+  /** A main-stage state with the given City, cards in play and attack; all three restrictions in the table. */
+  function makeRestrictedG(options: {
+    city: (CardExtId | null)[];
+    inPlay?: CardExtId[];
+    attack?: number;
+    hasDefeatedVillainThisTurn?: boolean;
+  }): LegendaryGameState {
+    const gameState = makeG({ inPlay: options.inPlay ?? [], currentStage: 'main' });
+    gameState.turnEconomy = makeTurnEconomy({ attack: options.attack ?? 9 });
+    if (options.hasDefeatedVillainThisTurn === true) {
+      gameState.turnEconomy.hasDefeatedVillainThisTurn = true;
+    }
+    gameState.city = options.city;
+    gameState.cardStats = {
+      [ORRGO]: makeCardStatEntry({ fightCost: 2 }),
+      [SQUIRREL_GIRL]: makeCardStatEntry({ fightCost: 3 }),
+      [DOOP]: makeCardStatEntry({ fightCost: 2 }),
+      [PLAIN]: makeCardStatEntry({ fightCost: 1 }),
+    } as LegendaryGameState['cardStats'];
+    gameState.villainFightRestrictions = {
+      [ORRGO]: { kind: 'requires-villain-defeated-this-turn' },
+      [SQUIRREL_GIRL]: { kind: 'at-most-one-card-played' },
+      [DOOP]: { kind: 'no-adjacent-villain' },
+    };
+    return gameState;
+  }
+
+  /** Returns the fightVillain intents only. */
+  function fightIntents(gameState: LegendaryGameState) {
+    return getLegalMoves(gameState, CONTEXT).filter((move) => move.name === 'fightVillain');
+  }
+
+  test('T18: no fight is offered for a blocked Orrgo, Squirrel Girl or Doop; other spaces are unchanged', () => {
+    const orrgoBlocked = makeRestrictedG({ city: [null, ORRGO, null, null, null] });
+    assert.deepStrictEqual(fightIntents(orrgoBlocked), []);
+    const squirrelGirlBlocked = makeRestrictedG({
+      city: [SQUIRREL_GIRL, null, null, null, null],
+      inPlay: ['hero-a', 'hero-b'] as CardExtId[],
+    });
+    assert.deepStrictEqual(fightIntents(squirrelGirlBlocked), []);
+    const doopBlocked = makeRestrictedG({ city: [null, null, DOOP, PLAIN, null] });
+    assert.deepStrictEqual(fightIntents(doopBlocked), [{ name: 'fightVillain', args: { cityIndex: 3 } }]);
+  });
+
+  test('T19: each satisfied restriction and an unrestricted villain offer { cityIndex } exactly', () => {
+    const orrgoSatisfied = makeRestrictedG({ city: [null, ORRGO, null, null, null], hasDefeatedVillainThisTurn: true });
+    assert.deepStrictEqual(fightIntents(orrgoSatisfied), [{ name: 'fightVillain', args: { cityIndex: 1 } }]);
+    const squirrelGirlSatisfied = makeRestrictedG({
+      city: [SQUIRREL_GIRL, null, null, null, null],
+      inPlay: ['hero-a'] as CardExtId[],
+    });
+    assert.deepStrictEqual(fightIntents(squirrelGirlSatisfied), [{ name: 'fightVillain', args: { cityIndex: 0 } }]);
+    const doopSatisfied = makeRestrictedG({ city: [null, null, DOOP, null, PLAIN] });
+    assert.deepStrictEqual(fightIntents(doopSatisfied), [
+      { name: 'fightVillain', args: { cityIndex: 2 } },
+      { name: 'fightVillain', args: { cityIndex: 4 } },
+    ]);
+  });
+});
+
+describe('WP-873 getLegalMoves — Fortify mirrors the fortifier fight and the Mastermind lock (D-24818)', () => {
+  const SQUIRREL_GIRL = 'cvwr-villain-great-lakes-avengers-squirrel-girl-00' as CardExtId;
+  const COLLEEN_WING = 'cvwr-villain-heroes-for-hire-colleen-wing-00' as CardExtId;
+  const PLAIN = 'core-villain-hydra-hydra-kidnappers-00' as CardExtId;
+
+  /** A state with Squirrel Girl fortifying the Sidekick Stack, her restriction, and a fightable Mastermind. */
+  function makeFortifiedG(options: { inPlay?: CardExtId[]; attack?: number; currentStage?: LegendaryGameState['currentStage'] }): LegendaryGameState {
+    const gameState = makeG({ inPlay: options.inPlay ?? [], currentStage: options.currentStage ?? 'main' });
+    gameState.turnEconomy = makeTurnEconomy({ attack: options.attack ?? 3 });
+    gameState.cardStats = {
+      [SQUIRREL_GIRL]: makeCardStatEntry({ fightCost: 3 }),
+      [COLLEEN_WING]: makeCardStatEntry({ fightCost: 9 }),
+      [PLAIN]: makeCardStatEntry({ fightCost: 1 }),
+      'm-base': makeCardStatEntry({ fightCost: 3 }),
+    } as LegendaryGameState['cardStats'];
+    gameState.villainFightRestrictions = { [SQUIRREL_GIRL]: { kind: 'at-most-one-card-played' } };
+    gameState.mastermind = { baseCardId: 'm-base', tacticsDeck: ['tactic-1'] } as unknown as LegendaryGameState['mastermind'];
+    gameState.fortifications = { 'sidekick-stack': { villainCardId: SQUIRREL_GIRL, lock: 'no-recruit-or-gain' } };
+    return gameState;
+  }
+
+  /** Returns whether the fortifier intent for a place is offered. */
+  function hasFortifierIntent(gameState: LegendaryGameState, place: string): boolean {
+    return getLegalMoves(gameState, CONTEXT).some(
+      (move) => move.name === 'fightVillain' && JSON.stringify(move.args) === JSON.stringify({ fortifiedPlace: place }),
+    );
+  }
+
+  test('T22: the fortifier intent is offered only when the move would commit', () => {
+    assert.equal(hasFortifierIntent(makeFortifiedG({ inPlay: ['hero-a'] as CardExtId[] }), 'sidekick-stack'), true, 'one card played');
+    assert.equal(
+      hasFortifierIntent(makeFortifiedG({ inPlay: ['hero-a', 'hero-b'] as CardExtId[] }), 'sidekick-stack'),
+      false,
+      'two cards played: her restriction blocks',
+    );
+    assert.equal(hasFortifierIntent(makeFortifiedG({ currentStage: 'start' }), 'sidekick-stack'), false, 'start stage');
+    assert.equal(hasFortifierIntent(makeFortifiedG({ attack: 2 }), 'sidekick-stack'), false, 'attack 2');
+  });
+
+  test('T22: a fortified Mastermind offers no fightMastermind intent; unfortified it does', () => {
+    const fortified = makeFortifiedG({ attack: 20 });
+    fortified.fortifications = { mastermind: { villainCardId: COLLEEN_WING, lock: 'no-fight' } };
+    const names = getLegalMoves(fortified, CONTEXT).map((move) => move.name);
+    assert.equal(names.includes('fightMastermind'), false);
+    assert.equal(hasFortifierIntent(fortified, 'mastermind'), true, 'Colleen Wing herself is offered at 9');
+    const open = makeFortifiedG({ attack: 20 });
+    delete open.fortifications;
+    assert.equal(getLegalMoves(open, CONTEXT).some((move) => move.name === 'fightMastermind'), true);
+  });
+
+  test('T23: with no fortification the intents equal the pre-WP output exactly', () => {
+    const gameState = makeFortifiedG({ attack: 5, inPlay: ['hero-a'] as CardExtId[] });
+    delete gameState.fortifications;
+    gameState.city = [PLAIN, null, null, null, null];
+    gameState.playerZones['0']!.hand = ['hand-card-1'] as CardExtId[];
+    assert.deepStrictEqual(getLegalMoves(gameState, CONTEXT), [
+      { name: 'playCard', args: { cardId: 'hand-card-1' } },
+      { name: 'fightVillain', args: { cityIndex: 0 } },
+      { name: 'fightMastermind', args: {} },
+      { name: 'advanceStage', args: {} },
+    ]);
+  });
+});
+
+describe('WP-878 getLegalMoves — step 4c attemptHeist when the card-count odds favor it (D-24826)', () => {
+  const CARDS_DIRECTORY = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..', 'data', 'cards');
+  const PETTY_LARCENY = 'amwp/scott-lang-cat-burglar/petty-larceny#0' as CardExtId;
+  const X_CON_SECURITY_VAN = 'amwp/scott-lang-cat-burglar/x-con-security-van#0' as CardExtId;
+  const HAND_TWO = 'test/hand-hero/two-cost#0' as CardExtId;
+  const HAUNTED_HERO = 'test/hq-hero/haunted#0' as CardExtId;
+  const HAUNTER = 'test/villain-group/haunter#0' as CardExtId;
+  const CITY_VILLAIN = 'test/villain-group/brute#0' as CardExtId;
+  const SCHEME_TWIST = 'scheme-twist#0' as CardExtId;
+  const BYSTANDER = 'bystander#0' as CardExtId;
+  const HENCHMAN = 'test/henchman-group/goon#0' as CardExtId;
+  const VILLAIN_FOUR = 'test/villain-group/thug#0' as CardExtId;
+  const VILLAIN_FOUR_SECOND = 'test/villain-group/thug#1' as CardExtId;
+  const WOUND = 'pile-wound#0' as CardExtId;
+
+  /** The real hooks for the Scott Lang, Cat Burglar Hero deck, from the committed card data. */
+  function buildHooks(): LegendaryGameState['heroAbilityHooks'] {
+    const setData = JSON.parse(readFileSync(join(CARDS_DIRECTORY, 'amwp.json'), 'utf8'));
+    const registry = { listCards: () => [], getSet: (abbr: string) => (abbr === 'amwp' ? setData : undefined) };
+    const config = { heroDeckIds: ['amwp/scott-lang-cat-burglar'] } as unknown as MatchConfiguration;
+    return buildHeroAbilityHooks(registry, config);
+  }
+
+  const HOOKS = buildHooks();
+
+  /**
+   * A one-seat main-stage state with the given crew played and readied and a 2-cost Hero in hand.
+   * With Petty Larceny alone the Heist Count is 2 ({1, 2}); every card of the default Villain Deck
+   * (Scheme Twist 0, Bystander 1, henchman 1) would lose to it, so the odds favor a Heist.
+   *
+   * @param crew - The Heist cards played and readied this turn.
+   * @returns A LegendaryGameState wide enough for getLegalMoves and the attemptHeist move.
+   */
+  function makeHeistG(crew: CardExtId[]): LegendaryGameState {
+    const villainDeckCardTypes: Record<CardExtId, RevealedCardType> = {
+      [SCHEME_TWIST]: 'scheme-twist',
+      [BYSTANDER]: 'bystander',
+      [HENCHMAN]: 'henchman',
+      [VILLAIN_FOUR]: 'villain',
+      [VILLAIN_FOUR_SECOND]: 'villain',
+    };
+    return {
+      currentStage: 'main',
+      villainRevealedThisTurn: true,
+      messages: [],
+      counters: {},
+      hookRegistry: [],
+      turnEconomy: { ...makeTurnEconomy(), heistCrewCards: [...crew] },
+      playerZones: { '0': { ...makePlayerZones(), hand: [HAND_TWO], inPlay: [...crew] } },
+      piles: makeGlobalPiles({ wounds: [WOUND] }),
+      mastermind: makeMastermindState(),
+      villainDeck: { deck: [SCHEME_TWIST, BYSTANDER, HENCHMAN], discard: [] },
+      villainDeckCardTypes,
+      cardVictoryPoints: { [HENCHMAN]: 1, [VILLAIN_FOUR]: 4, [VILLAIN_FOUR_SECOND]: 4 },
+      city: [null, null, null, null, null],
+      hq: [null, null, null, null, null],
+      heroDeck: [],
+      escapedPile: [],
+      ko: [],
+      attachedBystanders: {},
+      scheme: { twistPile: [] },
+      heroAbilityHooks: HOOKS,
+      villainAbilityHooks: [],
+      cardStats: {
+        [PETTY_LARCENY]: makeCardStatEntry({ cost: 1 }),
+        [X_CON_SECURITY_VAN]: makeCardStatEntry({ cost: 5 }),
+        [HAND_TWO]: makeCardStatEntry({ cost: 2 }),
+        [HAUNTED_HERO]: makeCardStatEntry({ cost: 2 }),
+      },
+      cardTraits: {},
+      cardKeywords: {},
+      cardDisplayData: {},
+      notableEvents: [],
+    } as unknown as LegendaryGameState;
+  }
+
+  /**
+   * The SimulationMoveContext shape the simulation runner dispatches moves with
+   * (simulation.runner.ts); its MOVE_MAP is module-private, so the test builds the same shape.
+   *
+   * @param gameState - The game state the move mutates.
+   * @returns A runner-shaped move context for player 0.
+   */
+  function runnerContext(gameState: LegendaryGameState): never {
+    return {
+      G: gameState,
+      playerID: '0',
+      ctx: { phase: 'play', turn: 1, currentPlayer: '0', numPlayers: 1 },
+      events: { setPhase: () => {}, endTurn: () => {} },
+      random: { Shuffle: <T>(deck: T[]): T[] => [...deck].reverse() },
+    } as never;
+  }
+
+  /**
+   * The names of the moves getLegalMoves emits, in order.
+   *
+   * @param gameState - The game state to enumerate.
+   * @returns The emitted move names.
+   */
+  function moveNames(gameState: LegendaryGameState): string[] {
+    const names: string[] = [];
+    for (const move of getLegalMoves(gameState, CONTEXT)) {
+      names.push(move.name);
+    }
+    return names;
+  }
+
+  test('emits attemptHeist exactly once, after every step-4b entry and before advanceStage', () => {
+    const gameState = makeHeistG([PETTY_LARCENY]);
+    gameState.hq = [null, HAUNTED_HERO, null, null, null] as LegendaryGameState['hq'];
+    gameState.hqHaunters = [null, { kind: 'villain', cardId: HAUNTER }, null, null, null];
+    gameState.turnEconomy.recruit = 3;
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+    const names = moveNames(gameState);
+    const heistIndices: number[] = [];
+    for (let moveIndex = 0; moveIndex < names.length; moveIndex++) {
+      if (names[moveIndex] === 'attemptHeist') {
+        heistIndices.push(moveIndex);
+      }
+    }
+    assert.equal(heistIndices.length, 1, 'exactly one attemptHeist');
+    const heistIndex = heistIndices[0]!;
+    assert.deepEqual(legalMoves[heistIndex], { name: 'attemptHeist', args: {} });
+    assert.notEqual(names.lastIndexOf('exorciseHauntedHero'), -1, 'the board has a step-4b entry');
+    assert.ok(heistIndex > names.lastIndexOf('exorciseHauntedHero'), 'after every step-4b entry');
+    assert.ok(heistIndex > names.lastIndexOf('playCard'), 'after every playCard entry');
+    assert.equal(names[heistIndex + 1], 'advanceStage', 'immediately before advanceStage');
+  });
+
+  test('omits attemptHeist when the odds do not favor it', () => {
+    const gameState = makeHeistG([PETTY_LARCENY]);
+    gameState.villainDeck.deck = [SCHEME_TWIST, VILLAIN_FOUR, VILLAIN_FOUR_SECOND];
+    assert.ok(!moveNames(gameState).includes('attemptHeist'));
+  });
+
+  test('omits attemptHeist outside the main stage', () => {
+    const gameState = makeHeistG([PETTY_LARCENY]);
+    gameState.currentStage = 'start';
+    assert.ok(!moveNames(gameState).includes('attemptHeist'));
+    gameState.currentStage = 'cleanup';
+    assert.ok(!moveNames(gameState).includes('attemptHeist'));
+  });
+
+  test('omits attemptHeist for an X-Con Security Van crew alone', () => {
+    const gameState = makeHeistG([X_CON_SECURITY_VAN]);
+    assert.ok(!moveNames(gameState).includes('attemptHeist'));
+  });
+
+  test('guard parity: the emitted move commits (the latch is set) and is not emitted again', () => {
+    const gameState = makeHeistG([PETTY_LARCENY]);
+    assert.ok(moveNames(gameState).includes('attemptHeist'));
+    attemptHeist(runnerContext(gameState));
+    assert.equal(gameState.turnEconomy.hasAttemptedHeistThisTurn, true, 'the move committed');
+    assert.equal(gameState.turnEconomy.recruit, 2, 'the won Heist fired Petty Larceny (+2 Recruit)');
+    assert.ok(!moveNames(gameState).includes('attemptHeist'), 'once per turn');
+  });
+
+  test('a won Heist with X-Con Security Van parks its choice, and the bot decline clears it', () => {
+    const gameState = makeHeistG([X_CON_SECURITY_VAN, PETTY_LARCENY]);
+    gameState.city = [CITY_VILLAIN, null, null, null, null] as LegendaryGameState['city'];
+    assert.ok(moveNames(gameState).includes('attemptHeist'), 'X-Con plus Petty Larceny has a payoff');
+    attemptHeist(runnerContext(gameState));
+    assert.equal(gameState.pendingMoveVillainChoices?.length, 1, 'the X-Con choice is parked');
+    assert.equal(gameState.pendingMoveVillainChoices?.[0]?.variant, 'x-con-security-van');
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+    assert.deepEqual(legalMoves, [{ name: 'resolveMoveVillainChoice', args: { decline: true } }]);
+    resolveMoveVillainChoice(runnerContext(gameState), legalMoves[0]!.args as ResolveMoveVillainChoiceArgs);
+    assert.equal(gameState.pendingMoveVillainChoices?.length ?? 0, 0, 'the queue is empty');
+    assert.deepEqual(gameState.city, [CITY_VILLAIN, null, null, null, null], 'a decline moves nothing');
   });
 });

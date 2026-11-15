@@ -136,7 +136,7 @@
           "recruit": null,
           "abilities": [
             "Draw a card. [keyword:draw:1]",
-            "[hc:covert]: You may KO a card from your hand or discard pile."
+            "[hc:covert]: You may KO a card from your hand or discard pile. [keyword:optional-ko-hand-discard]"
           ]
         },
         {
@@ -151,7 +151,7 @@
           "attack": "2",
           "recruit": "0+",
           "abilities": [
-            "Whenever a card you own is KO'd this turn, you get +2[icon:recruit]."
+            "Whenever a card you own is KO'd this turn, you get +2[icon:recruit]. [keyword:owned-card-koed]"
           ]
         },
         {
@@ -181,8 +181,8 @@
           "attack": "4+",
           "recruit": null,
           "abilities": [
-            "Discard the top four cards of your deck. You get +[icon:attack] equal to those cards' printed [icon:attack].",
-            "[team:x-men]: KO any number of those cards."
+            "Discard the top four cards of your deck. You get +[icon:attack] equal to those cards' printed [icon:attack]. [keyword:discard-top-printed-attack:4]",
+            "[team:x-men]: KO any number of those cards. [keyword:ko-discarded-this-way]"
           ]
         }
       ],
@@ -788,7 +788,7 @@
           "attack": "1+",
           "recruit": null,
           "abilities": [
-            "If this is the first card you played this turn, you get +1[icon:attack]."
+            "If this is the first card you played this turn, you get +1[icon:attack]. [keyword:first-hero-condition]"
           ]
         },
         {
@@ -1568,7 +1568,7 @@
           "recruit": "2",
           "abilities": [
             "You may put a Hero from the HQ on the bottom of the Hero Deck.",
-            "[hc:instinct]: You may KO a card from your hand or discard pile."
+            "[hc:instinct]: You may KO a card from your hand or discard pile. [keyword:optional-ko-hand-discard]"
           ]
         },
         {
@@ -1803,7 +1803,7 @@
           "recruit": null,
           "abilities": [
             "Draw a card. [keyword:draw:1]",
-            "You may KO a card from your hand or discard pile."
+            "You may KO a card from your hand or discard pile. [keyword:optional-ko-hand-discard]"
           ]
         },
         {
@@ -2454,7 +2454,7 @@
           "imageUrl": "https://images.legendary-arena.com/dkcy/dkcy-vi-streets-of-new-york-tombstone.webp",
           "abilities": [
             "[keyword:Bribe]",
-            "Escape: Each player reveals a [hc:strength] Hero or gains a Wound."
+            "Escape: Each player reveals a [hc:strength] Hero or gains a Wound. [effect:reveal-or-wound:hc:strength]"
           ],
           "copies": 2
         }

@@ -60,8 +60,11 @@
     "workindex:rows:test":  "node --import tsx --test scripts/check-workindex-rows.test.ts",
     "workindex:executed:check": "node scripts/check-workindex-executed-open.mjs",
     "workindex:executed:test":  "node --import tsx --test scripts/check-workindex-executed-open.test.ts",
+    "workindex:liveverify:check": "node scripts/check-workindex-liveverify-pending.mjs",
+    "workindex:liveverify:test":  "node --import tsx --test scripts/check-workindex-liveverify-pending.test.ts",
     "guard:test":           "node --import tsx --test scripts/commit-reward-integrity-guard.test.ts scripts/commit-msg-merge-exemption.test.ts scripts/ensure-worktree-hooks-path.test.ts",
 
+    "spike:local-bundle":   "node scripts/build-local-spike-bundle.mjs",
     "sim:coverage":         "node scripts/hero-effect-coverage.mjs",
     "sim:coop-winrate":     "node scripts/coop-winrate.mjs",
     "sim:runtime-observed": "node scripts/runtime-observed-hollows.mjs",
@@ -91,6 +94,10 @@
 
     "metadata:upload":      "node scripts/upload-metadata-to-r2.mjs",
     "metadata:upload:test": "node --import tsx --test scripts/upload-metadata-to-r2.test.ts",
+    "images:sizes":         "node scripts/build-card-image-sizes.mjs",
+    "images:sizes:pull":    "node scripts/card-image-sizes-r2.mjs pull",
+    "images:sizes:push":    "node scripts/card-image-sizes-r2.mjs push",
+    "images:sizes:test":    "node --import tsx --test scripts/build-card-image-sizes.test.ts scripts/card-image-sizes-r2.test.ts",
     "themes:check-slugs":   "node scripts/check-theme-slug-resolution.mjs",
     "themes:check-slugs:check": "node scripts/check-theme-slug-resolution.mjs --check"
   },
@@ -102,6 +109,7 @@
     "@legendary-arena/game-engine": "workspace:*",
     "@legendary-arena/registry": "workspace:*",
     "pagefind": "1.5.2",
+    "sharp": "^0.33.5",
     "tsx": "^4.15.7",
     "typescript": "^5.4.5"
   },

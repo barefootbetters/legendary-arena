@@ -133,7 +133,14 @@ describe('gate-only hero lines record an unresolved marker (D-24623)', () => {
 
   it('a space-magnitude keyword drops its magnitude like the coverage probe', () => {
     assert.deepEqual(buildHook(DANGER_SENSE_ABILITY).unresolvedMarkers, ['danger-sense']);
-    assert.deepEqual(buildHook(MICROSCOPIC_ABILITY).unresolvedMarkers, ['microscopic-size-changing']);
+  });
+
+  // why: D-24801 — Microscopic Size-Changing became a recognized keyword (a recruit discount),
+  // so its line no longer records the unmatched-keyword marker this file used to pin.
+  it('a Microscopic Size-Changing line is recognized, so it records no marker', () => {
+    const hook = buildHook(MICROSCOPIC_ABILITY);
+    assert.equal(hook.unresolvedMarkers, undefined);
+    assert.ok(hook.keywords.includes('microscopic-size-changing'));
   });
 
   it('a gated [rule:X] line records the rule concept, not gate-only', () => {

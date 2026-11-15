@@ -247,3 +247,95 @@ describe('PlayMobile — Out of Time group (WP-803 / D-24692)', () => {
     assert.equal(wrapper.findAll('[data-testid="play-out-of-time"]').length, 0);
   });
 });
+
+describe('PlayMobile — controlled Artifacts and the Ritual Use button (WP-858 / D-24794)', () => {
+  test('the viewer controlledArtifacts render one Artifacts group and a listed card gets a Use button', async () => {
+    // why: a mis-bound prop silently falls back to [] (no group, no button), so the page-level
+    // mount is what proves the two bindings and the submitMove pass-through.
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    const frame = snapshot();
+    const staff = 'dstr/doctor-voodoo/staff-of-legba#0';
+    frame.players[0]!.controlledArtifacts = [
+      { extId: staff, display: { extId: staff, name: 'Staff of Legba', imageUrl: '', cost: 5 } },
+    ];
+    frame.economy.ritualArtifactOptions = [staff];
+    store.setSnapshot(frame);
+    const calls: Array<{ name: string; args: unknown }> = [];
+    const wrapper = mount(PlayMobile, {
+      props: { submitMove: (name: string, args?: unknown) => { calls.push({ name, args }); } },
+    });
+    assert.equal(wrapper.findAll('[data-testid="play-controlled-artifacts"]').length, 1);
+    const useButtons = wrapper.findAll('[data-testid="use-ritual-artifact"]');
+    assert.equal(useButtons.length, 1);
+    await useButtons[0]!.trigger('click');
+    assert.deepEqual(calls, [{ name: 'useRitualArtifact', args: { cardId: staff } }]);
+  });
+
+  test('a snapshot without controlledArtifacts renders no Artifacts group and no Use button', () => {
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    store.setSnapshot(snapshot());
+    const wrapper = mount(PlayMobile, { props: { submitMove: noopSubmitMove } });
+    assert.equal(wrapper.findAll('[data-testid="play-controlled-artifacts"]').length, 0);
+    assert.equal(wrapper.findAll('[data-testid="use-ritual-artifact"]').length, 0);
+  });
+});
+
+describe('PlayMobile — the Attempt Heist button in the turn bar (WP-865 / D-24812)', () => {
+  test('economy.heistAvailable renders Attempt Heist with the Heist Count and dispatches attemptHeist', async () => {
+    // why: a mis-bound prop silently falls back to false (no button), so the page-level mount is
+    // what proves the two bindings and the submitMove pass-through.
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    const frame = snapshot();
+    frame.players[0]!.inPlayCards = ['amwp/wasp/infiltrate#0'];
+    frame.economy.heistAvailable = true;
+    frame.economy.heistCount = 2;
+    store.setSnapshot(frame);
+    const calls: Array<{ name: string; args: unknown }> = [];
+    const wrapper = mount(PlayMobile, {
+      props: { submitMove: (name: string, args?: unknown) => { calls.push({ name, args }); } },
+    });
+    const buttons = wrapper.findAll('[data-testid="attempt-heist"]');
+    assert.equal(buttons.length, 1);
+    // why: D-24812 — the button lives in the always-visible TurnActionBar, never the played-cards heading.
+    assert.equal(wrapper.find('[data-testid="play-turn-action-bar"] [data-testid="attempt-heist"]').exists(), true);
+    assert.equal(wrapper.find('[data-testid="play-played-row"] [data-testid="attempt-heist"]').exists(), false);
+    assert.equal(buttons[0]!.text(), 'Attempt Heist (Heist Count 2)');
+    await buttons[0]!.trigger('click');
+    assert.deepEqual(calls, [{ name: 'attemptHeist', args: {} }]);
+  });
+
+  test('a snapshot without heistAvailable renders no Attempt Heist button', () => {
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    store.setSnapshot(snapshot());
+    const wrapper = mount(PlayMobile, { props: { submitMove: noopSubmitMove } });
+    assert.equal(wrapper.findAll('[data-testid="attempt-heist"]').length, 0);
+  });
+});
+
+describe('PlayMobile — Effects triggered line (WP-848 / D-24784)', () => {
+  test('a viewer with conditionalClauses renders the bound Effects triggered line', () => {
+    // why: a mis-bound prop silently falls back to 0 / 0 (the `victoryVp` precedent), so the
+    // page-level mount is what proves the binding.
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    const frame = snapshot();
+    frame.players[0]!.conditionalClauses = { played: 5, assembled: 3 };
+    store.setSnapshot(frame);
+    const wrapper = mount(PlayMobile, { props: { submitMove: noopSubmitMove } });
+    assert.equal(wrapper.find('[data-testid="play-your-victory-effects"]').text(), 'Effects triggered: 3 / 5 (60%)');
+  });
+});
+
+describe('PlayMobile — recruit piles keep their visible label', () => {
+  test('the mobile board does not render the card-face-only piles (no hover on touch)', () => {
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    store.setSnapshot(snapshot());
+    const wrapper = mount(PlayMobile, { props: { submitMove: noopSubmitMove } });
+    assert.equal(wrapper.find('.shared-decks').classes('shared-decks--card-face'), false);
+  });
+});

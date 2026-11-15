@@ -2,6 +2,7 @@
 import { defineComponent, ref, watch, computed, type PropType } from "vue";
 import type { UIPendingPutCardsOnDeckChoice } from "@legendary-arena/game-engine";
 import type { SubmitMove } from "./uiMoveName.types";
+import CardImage from "./CardImage.vue";
 
 /**
  * Inline prompt for resolving a pending put-cards-on-deck choice (WP-538 / D-24347).
@@ -27,6 +28,7 @@ import type { SubmitMove } from "./uiMoveName.types";
  */
 export default defineComponent({
   name: "PendingPutCardsOnDeckChoicePrompt",
+  components: { CardImage },
   props: {
     pendingPutCardsOnDeckChoice: {
       type: Object as PropType<UIPendingPutCardsOnDeckChoice | undefined>,
@@ -162,9 +164,9 @@ export default defineComponent({
           :aria-label="`Position ${selectionPosition(handIndex)} from top`"
         >{{ selectionPosition(handIndex) }}</span>
         <span class="pending-put-cards-on-deck-choice-prompt__card-name">{{ entry.display.name }}</span>
-        <img
+        <CardImage
           v-if="entry.display.imageUrl"
-          :src="entry.display.imageUrl"
+          :image-url="entry.display.imageUrl"
           :alt="entry.display.name"
           class="pending-put-cards-on-deck-choice-prompt__card-image"
         />

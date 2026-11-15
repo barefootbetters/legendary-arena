@@ -290,6 +290,11 @@ export {
 } from "./mastermind/mastermind.logic.js";
 export { fightMastermind } from "./moves/fightMastermind.js";
 export type { TurnEconomy, CardStatEntry, AttackTargetName, RestrictedAttackGrant, FightCostReduction } from "./economy/economy.types.js";
+// why: WP-873 / D-24818 — the arena-client fortifier Fight gate checks the spendable Attack at
+// the same unnamed target the engine's fortifier fight uses (a string literal value export).
+export { UNNAMED_CITY_SPACE_TARGET } from "./economy/economy.types.js";
+// why: WP-873 / D-24818 — the place a fortifier fight names (`fightVillain({ fortifiedPlace })`).
+export type { FortifyPlace } from "./board/fortify.types.js";
 // why: WP-790 / D-24652 — the arena-client Fight gates map an engine City index to its
 // restricted-attack target name with the same helper the fightVillain move uses.
 export { citySpaceNameForIndex } from "./board/citySpaceNames.js";
@@ -391,6 +396,7 @@ export type {
   UIPlayerState,
   UICityCard,
   UICityState,
+  UIFortifier,
   UIHQState,
   UIMastermindState,
   UISchemeState,

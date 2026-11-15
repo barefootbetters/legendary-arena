@@ -137,6 +137,40 @@ export default defineComponent({
         // decline and take the Wound (rules v23 L3196-3200); the options name the Hero needed.
         case 'reveal-or-wound':
           return 'Reveal a Hero or gain a Wound?';
+        // why: WP-876 / D-24823 — Revolutionary Anthem's optional Villain Deck shuffle after a
+        // Heist that revealed a Scheme Twist (options: Shuffle / Leave).
+        case 'heist-shuffle-villain-deck':
+          return 'Revolutionary Anthem: shuffle the Villain Deck?';
+        // why: WP-882 / D-24833 — Zarathos's tactic choices (WP-758 / D-24588) name their tactic
+        // and what is asked; the discard-down kind is asked once per card owed.
+        case 'zarathos-corrupted-spirit-discard-down':
+          return 'Corrupted Spirit of Vengeance — discard down to 3 cards: choose a card to discard';
+        case 'zarathos-eruption':
+          return 'Eruption of Hellfire — discard a Covert or Ranged Hero, or gain a Wound';
+        case 'zarathos-corrupted-spirit':
+          return 'Corrupted Spirit of Vengeance — discard an Instinct or Covert Hero, or discard down to 3 cards';
+        case 'zarathos-imprison':
+          return 'Imprison in the Soul Crystal — KO a Villain from your Victory Pile and draw cards equal to its VP?';
+        case 'zarathos-demonic-essence-first':
+        case 'zarathos-demonic-essence-last':
+          return 'Demonic Essence of Ghost Rider — KO one of your Heroes?';
+        // why: WP-883 / D-24834 — "You may gain a Wound. If you do, <reward>" (Hulk Smash!, Scalded
+        // by Sunlight; WP-885 / D-24836 adds Violent Conditioning, Hulk Gets Smashed, Mood Swings).
+        // One heading for every reward (amends D-24834 §5); the two options name the reward.
+        case 'gain-wound-reward':
+          return 'Gain a Wound?';
+        // why: WP-884 / D-24835 — Stalk the Night Stalkers' Hunt for Victims: the options name each
+        // Bystander holder (or, with none, each hunter) and the decline.
+        case 'hunt-for-victims':
+          return 'Have a Villain or Mastermind Hunt for Victims?';
+        // why: WP-884 / D-24835 — the optional KO that follows a Bystander KO or rescue; the options
+        // name each Hero and its zone.
+        case 'hunt-for-victims-ko-hero':
+          return 'KO a Hero from your hand or discard pile?';
+        // why: WP-889 / D-24841 — a Lilin Villain's mandatory Hunt for Victims: the options name each
+        // Bystander holder; no decline (the rules text has no "may").
+        case 'villain-hunt-for-victims':
+          return "Hunt for Victims: choose which Bystander is KO'd";
         default:
           return 'Your choice';
       }

@@ -284,3 +284,31 @@ describe('TopHudBar — Day/Night badge (WP-766 / D-24598)', () => {
     }
   });
 });
+
+describe('TopHudBar — operator-match badge (WP-804 / D-24689 §3)', () => {
+  test('renders no badge when the match is not an operator match', () => {
+    setActivePinia(createPinia());
+    const wrapper = mount(TopHudBar, {
+      props: { snapshot: fixture(), mastermindTacticsTotal: 4 },
+    });
+    assert.equal(wrapper.find('[data-testid="operator-match-badge"]').exists(), false);
+  });
+
+  test('renders the badge in the strip flow, in row 2 with the counters, for an operator match', () => {
+    setActivePinia(createPinia());
+    const snapshot = fixture();
+    snapshot.isDebugMatch = true;
+    const wrapper = mount(TopHudBar, {
+      props: { snapshot, mastermindTacticsTotal: 4 },
+    });
+    const badge = wrapper.find('[data-testid="operator-match-badge"]');
+    assert.ok(badge.exists());
+    assert.equal(badge.text(), 'Operator match — not scored');
+    const twists = wrapper.find('[data-testid="play-hud-twists"]');
+    assert.equal(
+      badge.element.parentElement,
+      twists.element.parentElement,
+      'the badge is in-flow in row 2, not a fixed overlay on the Mastermind row',
+    );
+  });
+});

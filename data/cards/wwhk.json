@@ -166,7 +166,7 @@
           "attack": "1",
           "recruit": null,
           "abilities": [
-            "[keyword:Outwit]: When you draw a new hand of cards at the end of this turn, draw an extra card."
+            "[keyword:Outwit]: When you draw a new hand of cards at the end of this turn, draw an extra card. [keyword:next-hand-extra-draw:1]"
           ]
         },
         {
@@ -331,7 +331,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "[keyword:Outwit]: You may KO a card from your hand or discard pile."
+            "[keyword:Outwit]: You may KO a card from your hand or discard pile. [keyword:optional-ko-hand-discard]"
           ]
         },
         {
@@ -1152,7 +1152,7 @@
           "attack": "3",
           "recruit": null,
           "abilities": [
-            "Whenever a card is KO'd from your deck this turn, you may draw a card."
+            "Whenever a card is KO'd from your deck this turn, you may draw a card. [keyword:deck-card-koed] [keyword:draw:1]"
           ]
         },
         {
@@ -1167,7 +1167,7 @@
           "attack": null,
           "recruit": "5",
           "abilities": [
-            "You may [keyword:Feast]. Then, if a card with an[icon:attack] icon was KO'd from your deck this turn, [keyword:Transform] this into Hive King Miek."
+            "You may [keyword:Feast]. Then, if a card with an[icon:attack] icon was KO'd from your deck this turn, [keyword:Transform] this into Hive King Miek. [keyword:deck-koed-attack-icon]"
           ],
           "transform": "hive-king-miek"
         },
@@ -1394,7 +1394,7 @@
           "attack": "1",
           "recruit": null,
           "abilities": [
-            "If this is the first card you played this turn, draw a card."
+            "If this is the first card you played this turn, draw a card. [keyword:first-hero-condition] [keyword:draw:1]"
           ]
         },
         {
@@ -1425,7 +1425,7 @@
           "attack": null,
           "recruit": "2",
           "abilities": [
-            "You may [keyword:Feast]. Then, if a non-grey Hero was KO'd from your deck this turn, [keyword:Transform] this into Torrent of Broodlings."
+            "You may [keyword:Feast]. Then, if a non-grey Hero was KO'd from your deck this turn, [keyword:Transform] this into Torrent of Broodlings. [keyword:deck-koed-non-grey-hero]"
           ],
           "transform": "torrent-of-broodlings"
         },
@@ -1458,7 +1458,7 @@
           "attack": "4+",
           "recruit": null,
           "abilities": [
-            "Look at the top card of your deck. Then [keyword:Feast] up to three times. You get +2[icon:attack] for each non-grey Hero that was KO'd from your deck this turn."
+            "Look at the top card of your deck. Then [keyword:Feast] up to three times. You get +2[icon:attack] for each non-grey Hero that was KO'd from your deck this turn. [keyword:attack-per-count:non-grey-heroes-koed-from-deck-this-turn:2]"
           ]
         }
       ],
@@ -2047,7 +2047,7 @@
           "attack": null,
           "recruit": "3",
           "abilities": [
-            "[hc:instinct]: You may gain a Wound. If you do, [keyword:Transform] this into Raging Savage."
+            "[hc:instinct]: You may gain a Wound. If you do, [keyword:Transform] this into Raging Savage. [keyword:gain-wound-reward:transform:1]"
           ],
           "transform": "raging-savage"
         },
@@ -2736,8 +2736,8 @@
           "imageUrl": "https://images.legendary-arena.com/wwhk/wwhk-vi-code-red-red-she-hulk.webp",
           "abilities": [
             "[keyword:Wounded Fury]",
-            "Fight: Each player reveals a [hc:covert] Hero or gains a Wound.",
-            "Escape: Same effect."
+            "Fight: Each player reveals a [hc:covert] Hero or gains a Wound. [effect:reveal-or-wound:hc:covert]",
+            "Escape: Same effect. [effect:reveal-or-wound:hc:covert]"
           ],
           "copies": 1
         },
@@ -2976,8 +2976,8 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/wwhk/wwhk-vi-u-foes-vapor.webp",
           "abilities": [
-            "Fight: Each player reveals a [hc:covert] Hero or gains a Wound.",
-            "Escape: Same effect."
+            "Fight: Each player reveals a [hc:covert] Hero or gains a Wound. [effect:reveal-or-wound:hc:covert]",
+            "Escape: Same effect. [effect:reveal-or-wound:hc:covert]"
           ],
           "copies": 2
         },

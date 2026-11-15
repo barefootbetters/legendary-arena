@@ -6,14 +6,15 @@
  * Sustainability covenant ("No margin, no mission").
  *
  * Curated condensed string sourced from `docs/01-VISION.md` §Business Survival
- * (Sales & Product), Primary Vision Goals (Non-Negotiable) §1–5, and
- * §Financial Sustainability ("No Margin, No Mission"), at the following PS-3
- * baseline:
+ * (Sales & Product), §North Star ("How we know it's working"), Primary Vision
+ * Goals (Non-Negotiable) §1–5 with the §19 AI line, and §Financial
+ * Sustainability ("No Margin, No Mission"), at the following PS-3 baseline:
  *
  *   Source file:   docs/01-VISION.md
- *   Source SHA:    51aec9e3c251040f36ee2a177fd607117d2bc121
- *   Capture date:  2026-06-03
+ *   Source SHA:    3b9629c5219fbeccc91072e3e7996701d9b42f7f (blob)
+ *   Capture date:  2026-11-12
  *   Restructured:  2026-06-04 — 80/20 revenue focus per operator directive
+ *   Resynced:      2026-11-12 — D-24843 success proxies + §19 AI line
  *
  * why: D-19803 — the card renders a curated condensed STATIC string in the
  * component. No runtime file read (browser-impossible), no build-time
@@ -64,6 +65,30 @@
       </ol>
     </section>
 
+    <section class="vision-proxies" aria-labelledby="vision-proxies-title">
+      <h4 id="vision-proxies-title" class="column-heading">How We Know It's Working</h4>
+      <p class="quality-tagline">
+        What we measure, never a target &mdash; the figures live on this dashboard.
+      </p>
+      <ul class="vision-list">
+        <li>
+          <strong>High-quality play</strong> &mdash; completed-match rate; returning players with
+          verified runs across distinct scenarios.
+        </li>
+        <li>
+          <strong>Content keeping pace</strong> &mdash; lag from a physical set's release to its
+          cards being playable.
+        </li>
+        <li>
+          <strong>Competitive ecosystem</strong> &mdash; replay-verified submissions, verification
+          failures and disputes, organized-play events.
+        </li>
+        <li>
+          <strong>Revenue</strong> &mdash; contribution margin after royalties; operating runway.
+        </li>
+      </ul>
+    </section>
+
     <div class="vision-body">
       <section class="vision-column" aria-labelledby="vision-quality-title">
         <h4 id="vision-quality-title" class="column-heading">Quality Standards</h4>
@@ -80,6 +105,7 @@
           <li>
             <strong>Player Trust &amp; Fairness.</strong>
             No hidden modifiers; verifiably fair randomness; no decisions made on behalf of players.
+            No AI assistance during a match &mdash; post-match AI coaching is open commercial space.
           </li>
           <li>
             <strong>Faithful Multiplayer.</strong>
@@ -229,6 +255,13 @@
 .revenue-list strong {
   color: var(--p-primary-color);
   font-weight: 700;
+}
+
+.vision-proxies {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .quality-tagline {

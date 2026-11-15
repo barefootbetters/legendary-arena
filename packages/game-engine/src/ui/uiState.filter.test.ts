@@ -1151,6 +1151,53 @@ describe('filterUIStateForAudience — pendingKoDiscardChoice redaction (D-24510
     const plainChoice = filterUIStateForAudience(createKoDiscardChoiceUIState(), PLAYER_0).pendingKoDiscardChoice!;
     assert.equal(Object.keys(plainChoice).includes('greyFilter'), false, 'no greyFilter key on an unfiltered entry');
   });
+
+  it('WP-850 / D-24786: isLimitedToDiscardedThisWay survives for the chooser only; absent on other entries', () => {
+    const config = createTestConfig();
+    const gameState = buildInitialGameState(config, createMockRegistry(), makeMockCtx());
+    gameState.playerZones['0']!.discard = ['firepower-discard-a' as CardExtId, 'unrelated-b' as CardExtId];
+    gameState.pendingKoDiscardChoices = [{
+      choiceType: 'ko-from-discard', playerID: '0', maxCount: 1,
+      sourceCardId: 'dkcy/bishop/firepower-from-the-future#0' as CardExtId,
+      eligibleCardIds: ['firepower-discard-a' as CardExtId],
+    }];
+    const limitedUIState = buildUIState(gameState, mockCtx);
+    const chooserChoice = filterUIStateForAudience(limitedUIState, PLAYER_0).pendingKoDiscardChoice!;
+    assert.equal(chooserChoice.isLimitedToDiscardedThisWay, true);
+    assert.deepStrictEqual(chooserChoice.discard.map((entry) => entry.cardId), ['firepower-discard-a'],
+      'the chooser sees only the eligible card');
+    assert.equal(Object.hasOwn(filterUIStateForAudience(limitedUIState, PLAYER_1), 'pendingKoDiscardChoice'), false);
+    assert.equal(Object.hasOwn(filterUIStateForAudience(limitedUIState, SPECTATOR), 'pendingKoDiscardChoice'), false);
+
+    const plainChoice = filterUIStateForAudience(createKoDiscardChoiceUIState(), PLAYER_0).pendingKoDiscardChoice!;
+    assert.equal(Object.hasOwn(plainChoice, 'isLimitedToDiscardedThisWay'), false,
+      'no isLimitedToDiscardedThisWay key on a Loki / Salomé / grey entry');
+  });
+
+  it('WP-868 / D-24811: minCount survives for the chooser only; absent on an "up to" entry', () => {
+    const config = createTestConfig();
+    const gameState = buildInitialGameState(config, createMockRegistry(), makeMockCtx());
+    gameState.playerZones['0']!.discard = ['flatman-discard-a' as CardExtId, 'flatman-discard-b' as CardExtId];
+    gameState.pendingKoDiscardChoices = [{
+      choiceType: 'ko-from-discard', playerID: '0', maxCount: 1, minCount: 1,
+      sourceCardId: 'cvwr-villain-great-lakes-avengers-flatman-00' as CardExtId,
+    }];
+    const mandatoryUIState = buildUIState(gameState, mockCtx);
+    assert.equal(mandatoryUIState.pendingKoDiscardChoice!.minCount, 1, 'buildUIState projects minCount');
+    const chooserChoice = filterUIStateForAudience(mandatoryUIState, PLAYER_0).pendingKoDiscardChoice!;
+    assert.equal(chooserChoice.minCount, 1, 'the filter passes minCount through to the chooser');
+    assert.equal(chooserChoice.maxCount, 1);
+    assert.equal(Object.hasOwn(filterUIStateForAudience(mandatoryUIState, PLAYER_1), 'pendingKoDiscardChoice'), false);
+    assert.equal(Object.hasOwn(filterUIStateForAudience(mandatoryUIState, SPECTATOR), 'pendingKoDiscardChoice'), false);
+
+    // why: the WP-850 omit-when-absent precedent — a Salomé "up to" entry carries no minCount key.
+    gameState.pendingKoDiscardChoices = [{
+      choiceType: 'ko-from-discard', playerID: '0', maxCount: 2,
+      sourceCardId: 'mdns-villain-fallen-salom-sorceress-supreme-00' as CardExtId,
+    }];
+    const salomeChoice = filterUIStateForAudience(buildUIState(gameState, mockCtx), PLAYER_0).pendingKoDiscardChoice!;
+    assert.equal(Object.hasOwn(salomeChoice, 'minCount'), false, 'no minCount key on an "up to" entry');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -1313,6 +1360,36 @@ describe('filterUIStateForAudience — Spy Network gain-officer / flat-attack op
 
   it('an opponent and a spectator do NOT see the choice', () => {
     const uiState = createSpyNetworkChoiceUIState();
+    assert.equal(filterUIStateForAudience(uiState, PLAYER_1).pendingCountScaledChoice, undefined);
+    assert.equal(filterUIStateForAudience(uiState, SPECTATOR).pendingCountScaledChoice, undefined);
+  });
+});
+
+describe("filterUIStateForAudience — Possessed by Brother's Spirit flat-recruit option (WP-856 / D-24792)", () => {
+  /** Builds a UIState where player '0' owes Possessed by Brother's Spirit's choose-one. */
+  function createPossessedChoiceUIState(): UIState {
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    gameState.pendingCountScaledChoice = [{
+      playerID: '0',
+      cardId: 'dstr/doctor-voodoo/posessed-by-brothers-spirit#0',
+      options: [{ kind: 'flat-recruit', magnitude: 4 }, { kind: 'flat-attack', magnitude: 4 }],
+    }];
+    return buildUIState(gameState, mockCtx);
+  }
+
+  it('the chooser sees the flat-recruit option with its resource, total and label', () => {
+    const result = filterUIStateForAudience(createPossessedChoiceUIState(), PLAYER_0);
+    assert.deepEqual(result.pendingCountScaledChoice, {
+      playerID: '0',
+      options: [
+        { kind: 'flat-recruit', label: '+4 Recruit', resource: 'recruit', total: 4 },
+        { kind: 'flat-attack', label: '+4 Attack', resource: 'attack', total: 4 },
+      ],
+    });
+  });
+
+  it('an opponent and a spectator do NOT see the choice', () => {
+    const uiState = createPossessedChoiceUIState();
     assert.equal(filterUIStateForAudience(uiState, PLAYER_1).pendingCountScaledChoice, undefined);
     assert.equal(filterUIStateForAudience(uiState, SPECTATOR).pendingCountScaledChoice, undefined);
   });
@@ -2082,6 +2159,32 @@ describe('filterUIStateForAudience — hollowEffects public pass-through (D-1280
       'mutated',
       'source UIState hollowEffects untouched by mutating the filtered copy',
     );
+  });
+
+  it('passes a mastermind master-strike record through for a player and a spectator (WP-867 / D-24810)', () => {
+    // why: WP-867 — an unresolved Master Strike records cardType 'mastermind'; the
+    // existing value-preserving pass-through must carry it with no filter change.
+    const config = createTestConfig();
+    const registry = createMockRegistry();
+    const setupContext = makeMockCtx();
+    const gameState = buildInitialGameState(config, registry, setupContext);
+    const strikeRecord: HollowEffectRecord = {
+      cardId: 'test-mastermind-base',
+      cardType: 'mastermind',
+      timing: 'onMastermindStrikeRevealed',
+      mechanic: 'master-strike',
+      reason: 'no-handler',
+      turn: 4,
+    };
+    gameState.diagnostics = { hollowEffects: [strikeRecord], hollowEffectsDropped: 0 };
+    const uiState = buildUIState(gameState, mockCtx);
+
+    for (const audience of [PLAYER_0, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.ok(result.hollowEffects !== undefined, `${audience.kind} must see hollowEffects`);
+      assert.deepStrictEqual(result.hollowEffects, [strikeRecord]);
+      assert.equal(result.hollowEffects[0]!.cardType, 'mastermind');
+    }
   });
 
   it('omits hollowEffects for all audiences when the source has none', () => {
@@ -3614,6 +3717,46 @@ describe('filterUIStateForAudience — pendingMoveVillainChoice redaction (WP-79
   });
 });
 
+describe('filterUIStateForAudience — the x-con-security-van variant (WP-876 / D-24823)', () => {
+  /**
+   * Builds the full UIState with player '0' owing an X-Con Security Van move (Villains at 1 and 3).
+   *
+   * @returns The unfiltered UIState.
+   */
+  function createXConUIState(): UIState {
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    gameState.city = [null, 'villain-a' as CardExtId, null, 'villain-b' as CardExtId, null];
+    gameState.pendingMoveVillainChoices = [
+      {
+        playerID: '0',
+        sourceCardId: 'amwp/scott-lang-cat-burglar/x-con-security-van#0' as CardExtId,
+        variant: 'x-con-security-van',
+      },
+    ];
+    return buildUIState(gameState, mockCtx);
+  }
+
+  it('the chooser sees the variant', () => {
+    const result = filterUIStateForAudience(createXConUIState(), PLAYER_0);
+    assert.deepEqual(result.pendingMoveVillainChoice, {
+      playerID: '0',
+      villainCityIndices: [1, 3],
+      variant: 'x-con-security-van',
+    });
+  });
+
+  it('an opponent and a spectator get no prompt', () => {
+    const full = createXConUIState();
+    assert.equal('pendingMoveVillainChoice' in filterUIStateForAudience(full, PLAYER_1), false);
+    assert.equal('pendingMoveVillainChoice' in filterUIStateForAudience(full, SPECTATOR), false);
+  });
+
+  it('a Spinning Cyclone entry carries no variant key', () => {
+    const result = filterUIStateForAudience(createMoveVillainChoiceUIState(), PLAYER_0);
+    assert.equal('variant' in result.pendingMoveVillainChoice!, false);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // WP-802 / D-24689 §1 — isDebugMatch public pass-through (five-step rule step 4)
 // ---------------------------------------------------------------------------
@@ -3758,5 +3901,320 @@ describe('WP-842 filterUIStateForAudience — Sidekick recruit cue and card face
       const serialized = JSON.parse(JSON.stringify(filtered)) as UIState;
       assert.deepStrictEqual(serialized.piles.sidekickDisplay, sidekickFace, 'survives the JSON round-trip');
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-848 / D-24784 — conditionalClauses public pass-through (five-step rule step 4)
+// ---------------------------------------------------------------------------
+
+describe('filterUIStateForAudience — conditionalClauses public pass-through (WP-848 / D-24784)', () => {
+  /**
+   * Builds a UIState where seat 0 has a live conditional-clause tally and seat 1 has none.
+   */
+  function createConditionalClausesUIState(): UIState {
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    gameState.diagnostics = {
+      hollowEffects: [],
+      hollowEffectsDropped: 0,
+      conditionalClauses: { '0': { played: 5, assembled: 3, potentialValue: 7, realizedValue: 4 } },
+    };
+    return buildUIState(gameState, mockCtx);
+  }
+
+  it('the tally is visible to its owner, the other player and a spectator', () => {
+    // why: every outcome the tally counts is already in the public game log, so every audience
+    // sees it — through BOTH filter helpers (redactHandCards for the other player / spectator,
+    // preserveHandCards for the owner).
+    const full = createConditionalClausesUIState();
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const player0 = filterUIStateForAudience(full, audience).players.find((player) => player.playerId === '0')!;
+      assert.deepStrictEqual(
+        player0.conditionalClauses,
+        { played: 5, assembled: 3 },
+        `conditionalClauses must be present for player 0 in ${audience.kind} view`,
+      );
+    }
+  });
+
+  it('each filtered tally is a fresh object, never the built reference', () => {
+    const full = createConditionalClausesUIState();
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const player0 = filterUIStateForAudience(full, audience).players.find((player) => player.playerId === '0')!;
+      assert.notStrictEqual(player0.conditionalClauses, full.players[0]!.conditionalClauses);
+    }
+  });
+
+  it('a seat with no tally entry has no conditionalClauses key in any audience', () => {
+    const full = createConditionalClausesUIState();
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const player1 = filterUIStateForAudience(full, audience).players.find((player) => player.playerId === '1')!;
+      assert.equal(Object.keys(player1).includes('conditionalClauses'), false, `omitted in ${audience.kind} view`);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-858 / D-24794 — controlledArtifacts (public) + ritualArtifactOptions (active only)
+// ---------------------------------------------------------------------------
+
+describe('filterUIStateForAudience — controlledArtifacts public pass-through (WP-858 / D-24794)', () => {
+  it('the controlled Artifacts survive for the owner, another player and a spectator', () => {
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    gameState.controlledArtifacts = { '0': ['artifact-0-001'] };
+    const full = buildUIState(gameState, mockCtx);
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const filtered = filterUIStateForAudience(full, audience);
+      const player0 = filtered.players.find((player) => player.playerId === '0')!;
+      const player1 = filtered.players.find((player) => player.playerId === '1')!;
+      assert.deepStrictEqual(
+        player0.controlledArtifacts?.map((entry) => entry.extId),
+        ['artifact-0-001'],
+        `controlledArtifacts must be present for player 0 in ${audience.kind} view`,
+      );
+      assert.notStrictEqual(player0.controlledArtifacts, full.players[0]!.controlledArtifacts);
+      assert.equal(Object.keys(player1).includes('controlledArtifacts'), false, 'none controlled ⇒ omitted');
+    }
+  });
+});
+
+describe('filterUIStateForAudience — Ritual Artifact options (WP-858 / D-24794)', () => {
+  it('passes ritualArtifactOptions through for the active player as a copied array', () => {
+    const uiState = createTestUIState();
+    uiState.economy.ritualArtifactOptions = ['ritual-a'];
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.deepStrictEqual(result.economy.ritualArtifactOptions, ['ritual-a']);
+    assert.notEqual(result.economy.ritualArtifactOptions, uiState.economy.ritualArtifactOptions);
+  });
+
+  it('never exposes ritualArtifactOptions to a non-active player or a spectator', () => {
+    const uiState = createTestUIState();
+    uiState.economy.ritualArtifactOptions = ['ritual-a'];
+    for (const audience of [PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.ok(!('ritualArtifactOptions' in result.economy), 'REDACTED_ECONOMY carries no Ritual options');
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-865 / D-24808 — heistAvailable + heistCount (active player only)
+// ---------------------------------------------------------------------------
+
+describe('filterUIStateForAudience — Heist availability and Heist Count (WP-865 / D-24808)', () => {
+  it('passes heistAvailable and heistCount through for the active player', () => {
+    const uiState = createTestUIState();
+    uiState.economy.heistAvailable = true;
+    uiState.economy.heistCount = 3;
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.equal(result.economy.heistAvailable, true);
+    assert.equal(result.economy.heistCount, 3);
+  });
+
+  it('omits both fields for the active player when no Heist is available (omit-when-absent)', () => {
+    const uiState = createTestUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.ok(!('heistAvailable' in result.economy));
+    assert.ok(!('heistCount' in result.economy));
+  });
+
+  it('never exposes heistAvailable or heistCount to a non-active player or a spectator', () => {
+    const uiState = createTestUIState();
+    uiState.economy.heistAvailable = true;
+    uiState.economy.heistCount = 3;
+    for (const audience of [PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.ok(!('heistAvailable' in result.economy), `${audience.kind} sees no Heist availability`);
+      assert.ok(!('heistCount' in result.economy), `${audience.kind} never sees the Heist Count`);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// D-24801 — `hq.recruitCosts` (the Size-Changing recruit prices) is PUBLIC shared-board
+// information. It is optional, so a missed filter pass-through would silently drop it (the
+// EC-206 failure mode). Five-step Board-Visible Field contract: declared, built, passed
+// through for every audience, tested here, and carried by the diagnostics uiStateSnapshot.
+// ---------------------------------------------------------------------------
+
+describe('filterUIStateForAudience — Size-Changing hq.recruitCosts (D-24801)', () => {
+  const ALL_AUDIENCES: UIAudience[] = [PLAYER_0, PLAYER_1, SPECTATOR];
+  const RANGED_PLAYED = 'test/ranged-hero#0';
+
+  /** Builds a G whose HQ slot 0 holds a Size-Changing Ranged Hero, and player 0 played a Ranged card. */
+  function createSizeChangingGameState(hasSizeChangingCard: boolean): LegendaryGameState {
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    const sizeChangingHero = gameState.playerZones['0']!.deck[0]!;
+    gameState.hq = [sizeChangingHero, null, null, null, null] as LegendaryGameState['hq'];
+    gameState.cardStats = { ...gameState.cardStats, [sizeChangingHero]: makeCardStatEntry({ cost: 4 }) };
+    gameState.cardTraits = { ...gameState.cardTraits, [RANGED_PLAYED]: { heroClass: 'ranged', team: null } };
+    gameState.playerZones['0']!.inPlay = [RANGED_PLAYED];
+    if (hasSizeChangingCard) {
+      gameState.cardSizeChangingClasses = { [sizeChangingHero]: ['ranged'] };
+    } else {
+      delete gameState.cardSizeChangingClasses;
+      delete gameState.cardMicroscopicSizeChangingClasses;
+    }
+    return gameState;
+  }
+
+  it('hq.recruitCosts survives for every audience, index-aligned, with the discounted price', () => {
+    const uiState = buildUIState(createSizeChangingGameState(true), mockCtx);
+    assert.deepStrictEqual(uiState.hq.recruitCosts, [2, null, null, null, null], 'precondition: 4 less 2');
+    for (const audience of ALL_AUDIENCES) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.deepStrictEqual(result.hq.recruitCosts, [2, null, null, null, null], `survives for ${JSON.stringify(audience)}`);
+      assert.notEqual(result.hq.recruitCosts, uiState.hq.recruitCosts, 'a fresh copy, not an alias');
+    }
+  });
+
+  it('omit-when-absent: a match with no Size-Changing card projects no recruitCosts key', () => {
+    const uiState = buildUIState(createSizeChangingGameState(false), mockCtx);
+    assert.equal('recruitCosts' in uiState.hq, false, 'buildUIState omits recruitCosts');
+    for (const audience of ALL_AUDIENCES) {
+      assert.equal('recruitCosts' in filterUIStateForAudience(uiState, audience).hq, false);
+    }
+  });
+
+  it('recruitCosts survives the diagnostics JSON round-trip (uiStateSnapshot)', () => {
+    const uiState = buildUIState(createSizeChangingGameState(true), mockCtx);
+    const snapshot = JSON.parse(JSON.stringify(filterUIStateForAudience(uiState, PLAYER_0))) as UIState;
+    assert.deepStrictEqual(snapshot.hq.recruitCosts, [2, null, null, null, null]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-871 / D-24816 — fightRestrictionReason public pass-through (five-step rule)
+// ---------------------------------------------------------------------------
+
+describe('WP-871 fightRestrictionReason projection (D-24816)', () => {
+  const DOOP = 'ssw2-villain-deadpools-secret-secret-wars-doop-00' as CardExtId;
+  const SQUIRREL_GIRL = 'cvwr-villain-great-lakes-avengers-squirrel-girl-00' as CardExtId;
+  const PLAIN = 'plain-villain-01' as CardExtId;
+  const DOOP_REASON = 'A Villain is in an adjacent city space';
+
+  /** Squirrel Girl (not blocked: no card played) at City 0; Doop at City 2, blocked by a villain at City 3. */
+  function createRestrictionUIState(): UIState {
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    gameState.city = [SQUIRREL_GIRL, null, DOOP, PLAIN, null] as LegendaryGameState['city'];
+    for (const cardId of [SQUIRREL_GIRL, DOOP, PLAIN]) {
+      gameState.villainDeckCardTypes[cardId] = 'villain';
+    }
+    gameState.villainFightRestrictions = {
+      [SQUIRREL_GIRL]: { kind: 'at-most-one-card-played' },
+      [DOOP]: { kind: 'no-adjacent-villain' },
+    };
+    return buildUIState(gameState, mockCtx);
+  }
+
+  it('T20: a card with fightRestrictionReason keeps it for every audience; a card without it has no key', () => {
+    const uiState = createTestUIState();
+    uiState.city.spaces[0] = {
+      extId: DOOP,
+      type: 'villain',
+      keywords: [],
+      display: { extId: DOOP, name: 'Doop', imageUrl: 'https://images.legendary-arena.com/doop.png', cost: null },
+      attachedHeroes: [],
+      attachedHeroDisplay: [],
+      attachedBystanderCount: 0,
+      fightCost: 2,
+      fightRestrictionReason: DOOP_REASON,
+    };
+    uiState.city.spaces[1] = {
+      extId: PLAIN,
+      type: 'villain',
+      keywords: [],
+      display: { extId: PLAIN, name: 'Plain', imageUrl: 'https://images.legendary-arena.com/plain.png', cost: null },
+      attachedHeroes: [],
+      attachedHeroDisplay: [],
+      attachedBystanderCount: 0,
+      fightCost: 1,
+    };
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.equal(result.city.spaces[0]!.fightRestrictionReason, DOOP_REASON, `${JSON.stringify(audience)} sees the reason`);
+      assert.equal('fightRestrictionReason' in result.city.spaces[1]!, false, 'no key on an unrestricted card');
+      const serialized = JSON.parse(JSON.stringify(result)) as UIState;
+      assert.equal(serialized.city.spaces[0]!.fightRestrictionReason, DOOP_REASON, 'survives the JSON round-trip');
+    }
+  });
+
+  it('T21: buildUIState writes the reason on blocked Doop only; Squirrel Girl (not blocked) carries no key', () => {
+    const uiState = createRestrictionUIState();
+    const doopCard = uiState.city.spaces[2]!;
+    assert.equal(doopCard.fightRestrictionReason, DOOP_REASON);
+    assert.ok(Object.keys(doopCard).includes('fightRestrictionReason'), 'keyset pin on the built projection');
+    assert.equal('fightRestrictionReason' in uiState.city.spaces[0]!, false, 'Squirrel Girl is not blocked');
+    assert.equal('fightRestrictionReason' in uiState.city.spaces[3]!, false, 'an unrestricted villain');
+    const filtered = filterUIStateForAudience(uiState, SPECTATOR);
+    assert.equal(filtered.city.spaces[2]!.fightRestrictionReason, DOOP_REASON, 'build → filter end to end');
+  });
+});
+
+describe('WP-873 Fortify projection (D-24818)', () => {
+  const SQUIRREL_GIRL = 'cvwr-villain-great-lakes-avengers-squirrel-girl-00' as CardExtId;
+  const COLLEEN_WING = 'cvwr-villain-heroes-for-hire-colleen-wing-00' as CardExtId;
+  const SIDEKICK_REASON = 'Squirrel Girl fortifies the Sidekick Stack. Fight Squirrel Girl first.';
+  const MASTERMIND_REASON = 'Colleen Wing fortifies the Mastermind. Fight Colleen Wing first.';
+
+  /** Squirrel Girl fortifies the Sidekick Stack (two cards played) and Colleen Wing the Mastermind. */
+  function createFortifiedUIState(): UIState {
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    gameState.cardStats[SQUIRREL_GIRL] = makeCardStatEntry({ fightCost: 3 });
+    gameState.cardStats[COLLEEN_WING] = makeCardStatEntry({ fightCost: 9 });
+    gameState.cardDisplayData = {
+      ...gameState.cardDisplayData,
+      [SQUIRREL_GIRL]: { extId: SQUIRREL_GIRL, name: 'Squirrel Girl', imageUrl: '', cost: 3 },
+      [COLLEEN_WING]: { extId: COLLEEN_WING, name: 'Colleen Wing', imageUrl: '', cost: 9 },
+    };
+    gameState.villainFightRestrictions = { [SQUIRREL_GIRL]: { kind: 'at-most-one-card-played' } };
+    gameState.playerZones['0']!.inPlay = ['hero-played-1', 'hero-played-2'] as CardExtId[];
+    gameState.fortifications = {
+      'sidekick-stack': { villainCardId: SQUIRREL_GIRL, lock: 'no-recruit-or-gain' },
+      mastermind: { villainCardId: COLLEEN_WING, lock: 'no-fight' },
+    };
+    return buildUIState(gameState, mockCtx);
+  }
+
+  it('T25: the three fields survive the filter for both players and a spectator; absent stays absent', () => {
+    const uiState = createFortifiedUIState();
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const result = JSON.parse(JSON.stringify(filterUIStateForAudience(uiState, audience))) as UIState;
+      const label = JSON.stringify(audience);
+      assert.deepStrictEqual(result.city.fortifiers, uiState.city.fortifiers, `${label}: city.fortifiers`);
+      assert.equal(result.mastermind.fortifiedReason, MASTERMIND_REASON, `${label}: mastermind.fortifiedReason`);
+      assert.equal(result.piles.sidekickStackFortifiedReason, SIDEKICK_REASON, `${label}: piles.sidekickStackFortifiedReason`);
+    }
+    const filtered = filterUIStateForAudience(uiState, SPECTATOR);
+    assert.notEqual(filtered.city.fortifiers![0]!.display, uiState.city.fortifiers![0]!.display, 'display is a fresh copy');
+    const plain = buildUIState(buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx()), mockCtx);
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(plain, audience);
+      assert.equal('fortifiers' in result.city, false);
+      assert.equal('fortifiedReason' in result.mastermind, false);
+      assert.equal('sidekickStackFortifiedReason' in result.piles, false);
+    }
+    assert.equal('fortifiers' in plain.city, false, 'buildUIState omits the key without a fortification');
+  });
+
+  it('T26: buildUIState projects the fortifier tiles and both reasons verbatim', () => {
+    const uiState = createFortifiedUIState();
+    const fortifiers = uiState.city.fortifiers!;
+    assert.equal(fortifiers.length, 2);
+    const squirrelGirlTile = fortifiers[0]!;
+    assert.deepStrictEqual(Object.keys(squirrelGirlTile).sort(), [
+      'display', 'extId', 'fightCost', 'fightRestrictionReason', 'lockText', 'place', 'placeLabel',
+    ]);
+    assert.equal(squirrelGirlTile.place, 'sidekick-stack');
+    assert.equal(squirrelGirlTile.extId, SQUIRREL_GIRL);
+    assert.equal(squirrelGirlTile.fightCost, 3);
+    assert.equal(squirrelGirlTile.placeLabel, 'the Sidekick Stack');
+    assert.equal(squirrelGirlTile.lockText, "Sidekicks can't be recruited or gained");
+    assert.equal(squirrelGirlTile.fightRestrictionReason, 'You played more than one card this turn');
+    assert.equal(fortifiers[1]!.place, 'mastermind');
+    assert.equal(fortifiers[1]!.fightCost, 9);
+    assert.equal('fightRestrictionReason' in fortifiers[1]!, false, 'Colleen Wing has no restriction');
+    assert.equal(uiState.mastermind.fortifiedReason, MASTERMIND_REASON);
+    assert.equal(uiState.piles.sidekickStackFortifiedReason, SIDEKICK_REASON);
   });
 });

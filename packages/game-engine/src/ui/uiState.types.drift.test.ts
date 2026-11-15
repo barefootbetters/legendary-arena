@@ -949,6 +949,73 @@ describe('UIState type drift (WP-128 / EC-131) — type pinning', () => {
     );
   });
 
+  it('WP-865 UITurnEconomyState.heistAvailable / heistCount are pinned on a BUILT projection (D-24808)', () => {
+    // why: both OPTIONAL fields are omit-when-absent, so only a runtime keyset assertion on a REAL
+    // built and filtered projection catches buildUIState or the filter dropping them
+    // (WP-563 / D-24372, the WP-739 precedent above).
+    const setData = {
+      abbr: 'core',
+      schemes: [{ slug: 's' }],
+      masterminds: [{ slug: 'mm', cards: [{ slug: 'mm-base', tactic: false }] }],
+      henchmen: [{ slug: 'h' }],
+      villains: [{ slug: 'v', cards: [{ slug: 'v1', vAttack: '4' }] }],
+      heroes: [
+        {
+          slug: 'hero-x',
+          cards: [
+            { slug: 'card-c1', rarityLabel: 'Common 1' },
+            { slug: 'card-c2', rarityLabel: 'Common 2' },
+            { slug: 'card-uncommon', rarityLabel: 'Uncommon' },
+            { slug: 'card-rare', rarityLabel: 'Rare' },
+          ],
+        },
+      ],
+    };
+    const registry = {
+      listCards: () => [],
+      listSets: () => [{ abbr: 'core' }],
+      getSet: (abbr: string) => (abbr === 'core' ? setData : undefined),
+    };
+    const config: MatchSetupConfig = {
+      schemeId: 'core/s',
+      mastermindId: 'core/mm',
+      villainGroupIds: ['core/v'],
+      henchmanGroupIds: ['core/h'],
+      heroDeckIds: ['core/hero-x'],
+      bystandersCount: 1,
+      woundsCount: 1,
+      officersCount: 1,
+      sidekicksCount: 1,
+    };
+    const gameState = buildInitialGameState(config, registry, makeMockCtx({ numPlayers: 1 }));
+    const uiCtx = { phase: 'play' as string | null, turn: 1, currentPlayer: '0' };
+
+    // why: a readied Heist card in the main stage with a Villain Deck to reveal makes the Heist
+    // available, so both fields project (they are lazily absent otherwise).
+    gameState.currentStage = 'main';
+    gameState.turnEconomy.heistCrewCards = ['core/hero-x/card-c1'];
+    assert.ok(gameState.villainDeck.deck.length > 0, 'the setup Villain Deck has a card to reveal');
+    const present = buildUIState(gameState, uiCtx);
+    assert.deepStrictEqual(Object.keys(present.economy).sort(), [
+      'attack',
+      'availableAttack',
+      'availableRecruit',
+      'heistAvailable',
+      'heistCount',
+      'piercing',
+      'recruit',
+      'woundsDrawn',
+    ]);
+    const filtered = filterUIStateForAudience(present, { kind: 'player', playerId: '0' });
+    assert.deepStrictEqual(Object.keys(filtered.economy).sort(), Object.keys(present.economy).sort());
+
+    // why: once the turn's Heist is attempted the fields must be ABSENT, not false.
+    gameState.turnEconomy.hasAttemptedHeistThisTurn = true;
+    const absent = buildUIState(gameState, uiCtx);
+    assert.ok(!('heistAvailable' in absent.economy), 'no Heist available ⇒ heistAvailable omitted');
+    assert.ok(!('heistCount' in absent.economy), 'no Heist available ⇒ heistCount omitted');
+  });
+
   it('WP-819 UITurnEconomyState.rescueOnFightAvailable is pinned on a BUILT projection (D-24753)', () => {
     // why: the OPTIONAL rescueOnFightAvailable is omit-when-absent, so only a runtime keyset
     // assertion on a REAL built projection catches buildUIState dropping it (WP-563 / D-24372).
@@ -1878,6 +1945,19 @@ describe('UIState type drift (WP-795 / D-24664) — pendingMoveVillainChoice', (
 
     const filtered = filterUIStateForAudience(present, { kind: 'player', playerId: '0' });
     assert.deepStrictEqual(Object.keys(filtered.pendingMoveVillainChoice!).sort(), expectedKeys);
+
+    // why: WP-876 / D-24823 — the OPTIONAL variant key (X-Con Security Van) is pinned the same way:
+    // a runtime keyset on the BUILT and the chooser's FILTERED projection (D-24372), so a build or
+    // whitelist that drops it fails here (the D-12803 five-step contract, steps 2-4).
+    gameState.pendingMoveVillainChoices = [
+      { playerID: '0', sourceCardId: 'amwp/scott-lang-cat-burglar/x-con-security-van#0', variant: 'x-con-security-van' },
+    ];
+    const xConKeys = ['playerID', 'variant', 'villainCityIndices'];
+    const xConBuilt = buildUIState(gameState, uiCtx);
+    assert.deepStrictEqual(Object.keys(xConBuilt.pendingMoveVillainChoice!).sort(), xConKeys);
+    assert.equal(xConBuilt.pendingMoveVillainChoice!.variant, 'x-con-security-van');
+    const xConFiltered = filterUIStateForAudience(xConBuilt, { kind: 'player', playerId: '0' });
+    assert.deepStrictEqual(Object.keys(xConFiltered.pendingMoveVillainChoice!).sort(), xConKeys);
   });
 });
 
@@ -1914,5 +1994,50 @@ describe('UIState type drift (WP-803 / D-24692) — outOfTimeCards', () => {
       ['ca75/captain-america-1941/devoted-patriot#0'],
     );
     assert.deepStrictEqual(Object.keys(player.outOfTimeCards![0]!).sort(), ['display', 'extId']);
+  });
+});
+
+describe('UIState type drift (WP-858 / D-24794) — controlledArtifacts + ritualArtifactOptions', () => {
+  it('both optional fields are pinned on a BUILT projection and omitted when empty', () => {
+    // why: WP-858 / D-24794 — both fields are OPTIONAL and omit-when-empty, so only a keyset
+    // assertion on a REAL built projection catches buildUIState / the filter dropping them
+    // (WP-563 / D-24372; the outOfTimeCards / phasingOptions pins).
+    const config: MatchSetupConfig = {
+      schemeId: 'core/s',
+      mastermindId: 'core/mm',
+      villainGroupIds: ['core/v'],
+      henchmanGroupIds: ['core/h'],
+      heroDeckIds: ['core/hero-x'],
+      bystandersCount: 1,
+      woundsCount: 1,
+      officersCount: 1,
+      sidekicksCount: 1,
+    };
+    const registry: CardRegistryReader = { ...makeCardRegistryReader(), listCards: () => [] };
+    const gameState = buildInitialGameState(config, registry, makeMockCtx({ numPlayers: 1 }));
+    const uiCtx = { phase: 'play' as string | null, turn: 1, currentPlayer: '0' };
+
+    assert.ok(!('controlledArtifacts' in gameState), 'setup never creates the lazy record');
+    const absent = buildUIState(gameState, uiCtx);
+    assert.equal(Object.keys(absent.players[0]!).includes('controlledArtifacts'), false, 'none controlled ⇒ key absent');
+    assert.equal('ritualArtifactOptions' in absent.economy, false, 'none usable ⇒ key absent');
+
+    const medallion = 'dstr/doctor-voodoo/medallion-of-many-loas#0';
+    gameState.currentStage = 'main';
+    gameState.controlledArtifacts = { '0': [medallion] };
+    gameState.heroAbilityHooks = [
+      { cardId: medallion, timing: 'onPlay', keywords: ['ritual-hero-classes'], effects: [{ type: 'ritual-hero-classes', magnitude: 1 }] },
+    ];
+    gameState.cardTraits = { ...gameState.cardTraits, [medallion]: { heroClass: 'tech', team: null } };
+    const present = buildUIState(gameState, uiCtx);
+    const player = present.players.find((candidate) => candidate.playerId === '0')!;
+    assert.ok(Object.keys(player).includes('controlledArtifacts'), 'built player projection includes controlledArtifacts');
+    assert.deepStrictEqual(player.controlledArtifacts!.map((entry) => entry.extId), [medallion]);
+    assert.deepStrictEqual(Object.keys(player.controlledArtifacts![0]!).sort(), ['display', 'extId']);
+    assert.deepStrictEqual(present.economy.ritualArtifactOptions, [medallion]);
+
+    const owner = filterUIStateForAudience(present, { kind: 'player', playerId: '0' });
+    assert.deepStrictEqual(owner.economy.ritualArtifactOptions, [medallion], 'the active owner keeps the options');
+    assert.deepStrictEqual(owner.players[0]!.controlledArtifacts!.map((entry) => entry.extId), [medallion]);
   });
 });

@@ -19,19 +19,28 @@
  * Atomicity: a failed validation (bad args shape, a bad index, an empty source, an empty queue,
  * a wrong player) returns before any mutation and leaves the queue intact.
  *
+ * WP-876 / D-24823: an entry with `variant: 'x-con-security-van'` (X-Con Security Van's Heist
+ * ability) resolves through resolveXConSecurityVanMove instead: empty destinations only, no
+ * rescue, then KO one of your Heroes after a move.
+ *
  * No registry imports. No .reduce(). Moves never throw.
  */
 
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
+import type { CardExtId } from '../state/zones.types.js';
 import type { CitySpaceName } from '../board/citySpaceNames.js';
+// why: WP-876 / D-24823 — X-Con Security Van's "KO one of your Heroes" after a move. The binding
+// is read only inside a function body, so any import cycle through villainEffects is runtime-safe.
+import { koOneOfYourHeroes } from '../villain/villainEffects.execute.js';
+import type { KoOneOfYourHeroesResult } from '../villain/villainEffects.execute.js';
 import { citySpaceNameForIndex } from '../board/citySpaceNames.js';
 import { awardAttachedBystanders } from '../board/bystanders.logic.js';
 import { formatAttackTargets } from '../economy/economy.logic.js';
 import { UNNAMED_CITY_SPACE_TARGET } from '../economy/economy.types.js';
 import { CITY_MAX_SIZE } from '../board/city.types.js';
 import { pushLog } from '../log/logPush.js';
-import { formatCardRef } from '../log/logDisplay.js';
+import { describeKoSourceZone, formatCardRef } from '../log/logDisplay.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -157,6 +166,13 @@ export function resolveMoveVillainChoice(
     return;
   }
 
+  // why: WP-876 / D-24823 — an X-Con Security Van entry resolves by its own rules (empty space
+  // only, no rescue, then KO one of your Heroes); every other entry is Spinning Cyclone, unchanged.
+  if (front.variant === 'x-con-security-van') {
+    resolveXConSecurityVanMove(G, playerID, answer, front.sourceCardId);
+    return;
+  }
+
   // Step 3a: Decline — "You may": nothing moves and nothing is rescued.
   if (answer.kind === 'decline') {
     pushLog(G, `Player ${playerID} chose not to move a Villain (Spinning Cyclone).`, 'neutral');
@@ -218,4 +234,92 @@ export function resolveMoveVillainChoice(
 
   // Step 4: Front-pop LAST (front-pop = Array.shift), mirroring WP-248.
   queue.shift();
+}
+
+/**
+ * Resolves the FRONT pending move-a-Villain entry when it is an X-Con Security Van entry
+ * (WP-876 / D-24823): "You may move a Villain to an empty city space. If you do, KO one of your
+ * Heroes."
+ *
+ * The caller has already validated the answer shape, the non-empty queue and the chooser.
+ *   - Decline: log, pop, nothing moves and nothing is KO'd.
+ *   - Move: the source must hold a Villain and the destination must be an EMPTY space
+ *     (`G.city[i] === null`); anything else is a silent invalid answer that leaves the entry
+ *     open. The Villain moves, NOTHING is rescued, the entry pops, then the player KOs one of
+ *     their Heroes through koOneOfYourHeroes.
+ *
+ * // why: WP-876 / D-24823 — X-Con prints "an empty city space" (no swap) and no rescue, and its
+ * KO happens only "If you do", so it follows a move, never a decline. The entry pops BEFORE the
+ * KO so a parked `ko-hero` choice and any still-queued move entry stay independently resolvable.
+ *
+ * @param G - Game state (mutated).
+ * @param playerID - The chooser (already matched to the front entry).
+ * @param answer - The validated decline or move.
+ * @param sourceCardId - The X-Con Security Van card, for log attribution.
+ */
+function resolveXConSecurityVanMove(
+  G: LegendaryGameState,
+  playerID: string,
+  answer: MoveVillainAnswer,
+  sourceCardId: CardExtId,
+): void {
+  const queue = G.pendingMoveVillainChoices!;
+  if (answer.kind === 'decline') {
+    pushLog(G, `Player ${playerID} chose not to move a Villain (X-Con Security Van), so no Hero is KO'd.`, 'neutral', sourceCardId);
+    queue.shift();
+    return;
+  }
+  const { fromCityIndex, toCityIndex } = answer;
+  if (fromCityIndex >= G.city.length || toCityIndex >= G.city.length) {
+    return;
+  }
+  const movedId = G.city[fromCityIndex];
+  if (movedId === null || movedId === undefined) {
+    return;
+  }
+  // why: WP-876 / D-24823 — "an EMPTY city space": an occupied destination (including the
+  // Villain's own space) is an invalid answer, so the entry stays open for a valid one.
+  if (G.city[toCityIndex] !== null) {
+    return;
+  }
+  // why: WP-876 / D-24823 — the Spinning Cyclone index-assignment move, minus the swap and
+  // minus the rescue (X-Con prints none). Bystanders and captured Heroes travel with the Villain.
+  G.city[fromCityIndex] = null;
+  G.city[toCityIndex] = movedId;
+  const fromLabel = formatAttackTargets([citySpaceNameForIndex(fromCityIndex) ?? UNNAMED_CITY_SPACE_TARGET]);
+  const toLabel = formatAttackTargets([citySpaceNameForIndex(toCityIndex) ?? UNNAMED_CITY_SPACE_TARGET]);
+  pushLog(G,
+    `Player ${playerID} moved ${formatCardRef(G.cardDisplayData, movedId)} from the ${fromLabel} to the empty ${toLabel} (X-Con Security Van).`,
+    'applied',
+    sourceCardId,
+  );
+  queue.shift();
+  logXConKoResult(G, playerID, koOneOfYourHeroes(G, playerID), sourceCardId);
+}
+
+/**
+ * Logs the "KO one of your Heroes" half of X-Con Security Van from koOneOfYourHeroes' result.
+ *
+ * @param G - Game state (the log is appended).
+ * @param playerID - The player who KOs one of their Heroes.
+ * @param result - What koOneOfYourHeroes did.
+ * @param sourceCardId - The X-Con Security Van card, for log attribution.
+ */
+function logXConKoResult(
+  G: LegendaryGameState,
+  playerID: string,
+  result: KoOneOfYourHeroesResult,
+  sourceCardId: CardExtId,
+): void {
+  if (result.outcome === 'koed') {
+    pushLog(G,
+      `Player ${playerID} KO'd ${formatCardRef(G.cardDisplayData, result.koedCardId)} from ${describeKoSourceZone(result.zone)} (X-Con Security Van).`,
+      'applied',
+      sourceCardId,
+    );
+  } else if (result.outcome === 'parked') {
+    pushLog(G, `Player ${playerID} must choose one of their Heroes to KO (X-Con Security Van).`, 'neutral', sourceCardId);
+  } else {
+    pushLog(G, `Player ${playerID} has no Hero to KO (X-Con Security Van).`, 'blocked', sourceCardId);
+  }
 }

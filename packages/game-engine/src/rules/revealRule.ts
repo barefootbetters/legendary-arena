@@ -36,7 +36,11 @@ export type RevealPredicateKind =
   // sends a non-match to the BOTTOM. `team` / `hero-class` match the peeked card's
   // projected traits, not its cost.
   | 'team'
-  | 'hero-class';
+  | 'hero-class'
+  // why: D-24806 — amwp Ant-Man's Look Out for the Little Guy: "Reveal the top card of your
+  // deck. If it's [hc:strength] or has [keyword:Size-Changing] draw it." Matches the
+  // `hero-class` rule OR a card with printed Size-Changing (Microscopic counts, rules v23 p.30).
+  | 'hero-class-or-size-changing';
 
 // why: canonical drift array (D-24024) — adding a predicate kind requires updating
 // THIS array, the RevealPredicateKind union, the revealRule.test.ts drift assertion,
@@ -50,6 +54,7 @@ export const REVEAL_PREDICATE_KINDS: readonly RevealPredicateKind[] = [
   'cost-odd',
   'team',
   'hero-class',
+  'hero-class-or-size-changing',
 ] as const;
 
 /**
@@ -85,7 +90,8 @@ export const REVEAL_ACTION_KINDS: readonly RevealActionKind[] = [
 /**
  * A predicate evaluated against the revealed deck-top card. `threshold` applies to
  * `cost-lte` / `cost-gte` only; `traitValue` (a `normalizeTraitSlug` slug) applies to
- * the `team` / `hero-class` kinds only (WP-729 / D-24550).
+ * the `team` / `hero-class` kinds only (WP-729 / D-24550), and to
+ * `hero-class-or-size-changing` (D-24806).
  */
 export interface RevealPredicate {
   kind: RevealPredicateKind;

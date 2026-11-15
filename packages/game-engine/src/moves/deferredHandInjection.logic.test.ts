@@ -12,7 +12,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { consumeDeferredHandInjections } from './deferredHandInjection.logic.js';
+import { consumeDeferredHandInjections, setAsideDeferredHandInjections } from './deferredHandInjection.logic.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 
@@ -74,6 +74,39 @@ describe('consumeDeferredHandInjections (WP-695 / D-24512)', () => {
     const { G, zones } = makeState({ hand: [OTHER] });
     consumeDeferredHandInjections(G, '0', zones);
     assert.deepStrictEqual(zones.hand, [OTHER]);
+    assert.equal(G.deferredHandInjections, undefined, 'field stays absent');
+  });
+
+  it('adds a set-aside card to the hand without searching the zones (D-24797)', () => {
+    const { G, zones } = makeState({ hand: [OTHER], deck: [CARD] }, { '0': [CARD] });
+    consumeDeferredHandInjections(G, '0', zones, [CARD]);
+    assert.deepStrictEqual(zones.hand, [OTHER, CARD], 'the set-aside card is the extra card');
+    assert.deepStrictEqual(zones.deck, [CARD], 'the deck copy was not pulled — the set-aside card was used');
+    assert.equal(G.deferredHandInjections?.['0'], undefined, 'key cleared');
+  });
+});
+
+describe('setAsideDeferredHandInjections (D-24797)', () => {
+  it('lifts the recorded card out of the discard and leaves the key for the consume', () => {
+    const { G, zones } = makeState({ discard: [OTHER, CARD] }, { '0': [CARD] });
+    const setAside = setAsideDeferredHandInjections(G, '0', zones);
+    assert.deepStrictEqual(setAside, [CARD]);
+    assert.deepStrictEqual(zones.discard, [OTHER], 'removed from the discard before the fill');
+    assert.deepStrictEqual(G.deferredHandInjections?.['0'], [CARD], 'key kept; the consume clears it');
+  });
+
+  it('leaves a card that is not in the discard where it is', () => {
+    const { G, zones } = makeState({ discard: [OTHER], deck: [CARD] }, { '0': [CARD] });
+    const setAside = setAsideDeferredHandInjections(G, '0', zones);
+    assert.deepStrictEqual(setAside, []);
+    assert.deepStrictEqual(zones.deck, [CARD], 'deck untouched');
+    assert.deepStrictEqual(zones.discard, [OTHER], 'discard untouched');
+  });
+
+  it('returns [] and touches nothing when no injection is recorded', () => {
+    const { G, zones } = makeState({ discard: [CARD] });
+    assert.deepStrictEqual(setAsideDeferredHandInjections(G, '0', zones), []);
+    assert.deepStrictEqual(zones.discard, [CARD]);
     assert.equal(G.deferredHandInjections, undefined, 'field stays absent');
   });
 });

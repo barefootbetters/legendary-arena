@@ -45,6 +45,7 @@ import {
   applyBrainwashedOfficerDisplay,
   countBrainwashedOfficers,
 } from '../rules/brainwashTheMilitary.logic.js';
+import { applyStackVillainDisplay } from '../rules/stackVillain.logic.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
 import {
   resolveSchemeLossPileSetupSize,
@@ -58,6 +59,16 @@ import { initializeCity, fillHqFromDeck } from '../board/city.logic.js';
 import { buildCardStats, resetTurnEconomy } from '../economy/economy.logic.js';
 import { buildHeroDeck, buildTransformSideDeck, buildTransformTargets, buildSplitFaces, buildSplitFaceAlternateOnLeft } from './buildHeroDeck.js';
 import { convertHeroesToSkrulls } from './convertHeroesToSkrulls.js';
+// why: WP-863 / D-24805 — Trap Heroes in the Microverse's setup pieces (the trapped Hero, its
+// Villain Deck conversion, its color Size-Changing entries, the setup message).
+import {
+  splitTrappedHeroDeckId,
+  listTrappedHeroCards,
+  readTrappedHeroName,
+  describeTrappedHero,
+  addMicroSizedHeroesToVillainDeck,
+  buildMicroSizedFightSizeChanging,
+} from '../rules/trapHeroesInTheMicroverse.logic.js';
 import {
   buildMastermindState,
   isMastermindRegistryReader,
@@ -70,10 +81,12 @@ import { buildVillainAbilityHooks } from './villainAbility.setup.js';
 import {
   buildVillainDefeatRequirements,
   buildVillainFightDiscardCosts,
+  buildVillainFightRestrictions,
   buildVillainVariableAttack,
 } from './villainDefeatRequirement.setup.js';
 import { buildVillainBloodFrenzy } from './buildVillainBloodFrenzy.js';
 import { buildCardAbomination } from './buildCardAbomination.js';
+import { buildFightSizeChanging } from './buildFightSizeChanging.js';
 import { buildCardKeywords } from './buildCardKeywords.js';
 import { buildCardTraits } from './buildCardTraits.js';
 import { buildCardVictoryPoints } from './buildCardVictoryPoints.js';
@@ -147,11 +160,11 @@ function buildStartingDeckCards(): CardExtId[] {
 }
 
 /**
- * Collapses per-hook Size-Changing grants into a card-keyed lookup for
+ * Collapses per-hook Size-Changing classes into a card-keyed lookup for
  * G.cardSizeChangingClasses.
  *
  * Only hooks carrying a non-empty sizeChangingClasses list contribute; a card with no
- * Size-Changing grant gets no entry (the helper treats an absent key as []). Classes are
+ * Size-Changing line gets no entry (the helper treats an absent key as []). Classes are
  * deduplicated per card via a Set — a card that printed and granted the same class, or two
  * Size-Changing lines naming the same class, collapses to one entry.
  *
@@ -176,6 +189,34 @@ function buildCardSizeChangingClasses(
     grantedByCard[hook.cardId] = [...classSet];
   }
   return grantedByCard;
+}
+
+/**
+ * Collapses per-hook Microscopic Size-Changing icons into a card-keyed lookup for
+ * G.cardMicroscopicSizeChangingClasses.
+ *
+ * Only hooks carrying a non-empty microscopicSizeChangingClasses list contribute. Icons
+ * are NOT deduplicated: three printed [hc:tech] icons are three 2-less steps.
+ *
+ * @param hooks - The hero ability hooks built at setup.
+ * @returns Per-card icon lookup keyed by CardExtId.
+ */
+// why: D-24801 — the Microscopic sibling of buildCardSizeChangingClasses. for...of, no .reduce().
+function buildCardMicroscopicSizeChangingClasses(
+  hooks: HeroAbilityHook[],
+): Record<CardExtId, string[]> {
+  const iconsByCard: Record<CardExtId, string[]> = {};
+  for (const hook of hooks) {
+    if (hook.microscopicSizeChangingClasses === undefined || hook.microscopicSizeChangingClasses.length === 0) {
+      continue;
+    }
+    const icons = [...(iconsByCard[hook.cardId] ?? [])];
+    for (const classSlug of hook.microscopicSizeChangingClasses) {
+      icons.push(classSlug);
+    }
+    iconsByCard[hook.cardId] = icons;
+  }
+  return iconsByCard;
 }
 
 /**
@@ -419,15 +460,16 @@ export function buildInitialGameState(
   // registry. Same sibling-snapshot pattern as cardStats/cardKeywords/cardDisplayData.
   const cardTraits = buildCardTraits(registry as unknown, villainBuildConfig);
 
-  // why: D-24074 / WP-290 — hero ability hooks are hoisted to a local so the
-  // Size-Changing granted-class snapshot can be derived from them (the parser parked the
-  // grant on hook.sizeChangingClasses). Built once at setup, immutable during gameplay.
+  // why: D-24801 — hero ability hooks are hoisted to a local so the Size-Changing
+  // snapshots can be derived from them (the parser parked the classes on
+  // hook.sizeChangingClasses / microscopicSizeChangingClasses). Built once at setup.
   const heroAbilityHooks = buildHeroAbilityHooks(registry, config);
 
-  // why: D-24074 / WP-290 — collapse the per-hook Size-Changing grants into a card-keyed
-  // snapshot (sibling to cardTraits). The grant is an additive second class source read by
-  // the sizeChanging.logic.ts helper at class-read time; cardTraits is never mutated.
+  // why: D-24801 — collapse the per-hook Size-Changing classes and Microscopic icons into
+  // card-keyed snapshots (siblings to cardTraits), read by the sizeChanging.logic.ts recruit-
+  // cost helper at recruit time; cardTraits is never mutated.
   const cardSizeChangingClasses = buildCardSizeChangingClasses(heroAbilityHooks);
+  const cardMicroscopicSizeChangingClasses = buildCardMicroscopicSizeChangingClasses(heroAbilityHooks);
 
   // why: WP-292 / D-24076 — per-villain defeat requirements built from registry at
   // setup, keyed by copy-indexed instance ext_id. A fight precondition read by the
@@ -442,6 +484,16 @@ export function buildInitialGameState(
   // table of villainDefeatRequirements, built from the same registry read. Narrow
   // test mocks → empty record (omitted below).
   const villainFightDiscardCosts = buildVillainFightDiscardCosts(
+    registry as unknown,
+    villainBuildConfig,
+  );
+
+  // why: WP-871 / D-24816 — per-villain fight restrictions (Orrgo, Squirrel Girl, Doop),
+  // the third sibling table, built from the same registry read. villainBuildConfig (not
+  // the raw config) so the chmp/monsters-unleashed group the Clash of the Monsters
+  // Unleashed Monster Pit adds is covered and a Monster Pit Orrgo is restricted. Narrow
+  // test mocks → empty record (omitted below).
+  const villainFightRestrictions = buildVillainFightRestrictions(
     registry as unknown,
     villainBuildConfig,
   );
@@ -489,6 +541,20 @@ export function buildInitialGameState(
     mastermindState.baseCardId,
   );
 
+  // why: D-24802 — Size-Changing fight discounts for the selected villain copies and the
+  // mastermind's fightable faces (base, plus the alternate face of an allowlisted
+  // transforming mastermind), read only by the two fight-price resolvers. Placed after
+  // buildMastermindState for the face ids (the Abomination precedent). Narrow test mocks
+  // → empty record (omitted below).
+  const fightSizeChanging = buildFightSizeChanging(
+    registry as unknown,
+    villainBuildConfig,
+    config.mastermindId,
+    mastermindState.alternateFaceId === undefined
+      ? [mastermindState.baseCardId]
+      : [mastermindState.baseCardId, mastermindState.alternateFaceId],
+  );
+
   // why: D-24157 — printed victory points for VP-bearing cards (villains,
   // henchmen, the mastermind) resolved at setup so computeFinalScores awards
   // printed VP without runtime registry access — sibling snapshot to cardStats.
@@ -521,6 +587,12 @@ export function buildInitialGameState(
   // why: WP-823 / D-24756 — each Brainwash the Military Officer displays as a
   // S.H.I.E.L.D. Officer (name and art). A no-op for every scheme without Officers.
   applyBrainwashedOfficerDisplay(cardDisplayData, villainDeckResult.convertedOrigins);
+  // why: WP-869 / D-24814 — the villain ability hooks are built once here, before the display
+  // calls, so the stack-villain ids a marked card owns get their display entries at setup (the
+  // display data is read-only at runtime). The same const goes into G below. A no-op for every
+  // match without a marked card.
+  const villainAbilityHooks = buildVillainAbilityHooks(registry, villainBuildConfig);
+  applyStackVillainDisplay(cardDisplayData, villainAbilityHooks);
 
   // why: WP-111 / EC-118 / PS-8 — setup-time diagnostic surface for missing
   // display entries. Preserves WP-028 D-2801 projection-purity contract:
@@ -586,8 +658,13 @@ export function buildInitialGameState(
     numPlayers,
     [...config.heroDeckIds],
   );
+  // why: WP-863 / D-24805 — Trap Heroes in the Microverse traps the LAST listed Hero (the loadout
+  // supplied one extra; playerCountSetup.ts). Only the Hero Deck build loses it: the transform,
+  // split and display builders keep the full list, so a trapped card gained later plays as printed.
+  // Every other scheme gets the same list back, so its Hero Deck shuffle input is unchanged.
+  const trappedHeroSplit = splitTrappedHeroDeckId(config.schemeId, effectiveHeroDeckIds, registry);
   const shuffledHeroDeck = buildHeroDeck(
-    effectiveHeroDeckIds,
+    trappedHeroSplit.heroDeckIds,
     registry,
     context,
   );
@@ -660,13 +737,36 @@ export function buildInitialGameState(
     villainDeckResult.convertedOrigins,
     context,
   );
-  const convertedVillainOrigins = skrullConversion.convertedOrigins;
+  // why: WP-863 / D-24805 — the trapped Hero's cards join the Villain Deck as Micro-Sized Villains,
+  // re-shuffled once AFTER the Skrull step (the WP-514 placement: the last random draw in setup).
+  // A passthrough with no draw for every other scheme. Everything below reads this result.
+  const trappedCardIds = listTrappedHeroCards(trappedHeroSplit.trappedHeroDeckId, registry);
+  const microSizedConversion = addMicroSizedHeroesToVillainDeck(
+    trappedCardIds,
+    skrullConversion.villainDeckState,
+    skrullConversion.villainDeckCardTypes,
+    skrullConversion.convertedOrigins,
+    context,
+  );
+  if (trappedHeroSplit.trappedHeroDeckId !== undefined && trappedCardIds.length > 0) {
+    setupMessages.push(
+      describeTrappedHero(readTrappedHeroName(registry, trappedHeroSplit.trappedHeroDeckId), trappedCardIds.length),
+    );
+  }
+  // why: D-24805 — each trapped card's "Size-Changing for its card color" is a setup-time fight
+  // discount merged into the D-24802 map (Hero ids never collide with villain or mastermind ids),
+  // so the omit-when-empty spread below still omits it for every other scheme.
+  const combinedFightSizeChanging = {
+    ...fightSizeChanging,
+    ...buildMicroSizedFightSizeChanging(trappedCardIds, cardTraits),
+  };
+  const convertedVillainOrigins = microSizedConversion.convertedOrigins;
   // why: D-24736 — lift the Monster Pit out of the shuffled villain deck (Clash only;
   // a passthrough with monsterPit undefined for every other scheme). Keeping the
   // Monsters' relative deck order gives a shuffled Pit with no extra random draw.
   const monsterPitSplit = splitMonsterPitFromVillainDeck(
     config.schemeId,
-    skrullConversion.villainDeckState,
+    microSizedConversion.villainDeckState,
   );
   const hasConvertedVillains = Object.keys(convertedVillainOrigins).length > 0;
   const filledHqResult = fillHqFromDeck(skrullConversion.heroReservoir, HQ_SLOT_COUNT);
@@ -760,7 +860,7 @@ export function buildInitialGameState(
     // (12 Heroes injected as 'villain'-typed Skrulls); passthrough for every other
     // scheme (byte-identical to villainDeckResult.state / .cardTypes).
     villainDeck: monsterPitSplit.villainDeckState,
-    villainDeckCardTypes: skrullConversion.villainDeckCardTypes,
+    villainDeckCardTypes: microSizedConversion.villainDeckCardTypes,
     // why: D-24736 — omit-when-absent: only a Clash game carries a Monster Pit, so
     // every other game's state hash is unchanged (the convertedVillainOrigins pattern).
     ...(monsterPitSplit.monsterPit !== undefined ? { monsterPit: monsterPitSplit.monsterPit } : {}),
@@ -849,8 +949,9 @@ export function buildInitialGameState(
     heroAbilityHooks,
     // why: villain/henchman ability hooks built from registry at setup — same
     // pattern as heroAbilityHooks. Immutable during gameplay; executed at the
-    // Fight/Ambush fire sites (WP-185). Narrow test mocks → empty table.
-    villainAbilityHooks: buildVillainAbilityHooks(registry, villainBuildConfig),
+    // Fight/Ambush fire sites (WP-185). Narrow test mocks → empty table. Built above the
+    // display calls (WP-869 / D-24814).
+    villainAbilityHooks,
     // why: WP-200 — append-only structured event log initialised empty.
     // Populated at runtime by the four fire-site emissions
     // (fightVillain.ts / villainDeck.reveal.ts ambush branch /
@@ -888,12 +989,14 @@ export function buildInitialGameState(
     ...(scoringConfig !== undefined ? { activeScoringConfig: scoringConfig } : {}),
     // why: D-24074 / WP-290 — conditional spread, same hash-stability discipline as
     // G.diagnostics / activeScoringConfig above: include cardSizeChangingClasses ONLY when
-    // some selected card grants a class. hashGameState serializes the whole G, so an
+    // some selected card has Size-Changing. hashGameState serializes the whole G, so an
     // always-present empty `{}` would shift the finalStateHash of every game — including
     // fixtures with no Size-Changing hero, which AC-10 forbids (a shape-only shift is not a
-    // grant-attributable class-condition change). Absent ≡ empty (getGrantedClasses returns
+    // Size-Changing-attributable change). Absent ≡ empty (getSizeChangingClasses returns
     // [] either way), so games without a Size-Changing card stay byte-identical.
     ...(Object.keys(cardSizeChangingClasses).length > 0 ? { cardSizeChangingClasses } : {}),
+    // why: D-24801 — same omit-when-empty hash discipline for the Microscopic icons.
+    ...(Object.keys(cardMicroscopicSizeChangingClasses).length > 0 ? { cardMicroscopicSizeChangingClasses } : {}),
     // why: D-24157 / WP-365 — conditional spread, same hash-stability discipline as
     // cardSizeChangingClasses above: include cardVictoryPoints ONLY when some VP-bearing
     // card carries a printed vp. hashGameState serializes the whole G, so an always-present
@@ -912,6 +1015,10 @@ export function buildInitialGameState(
     // on G ONLY when a selected villain carries a [discard-to-fight:...] marker, so every
     // match without Primus keeps a byte-identical finalStateHash.
     ...(Object.keys(villainFightDiscardCosts).length > 0 ? { villainFightDiscardCosts } : {}),
+    // why: WP-871 / D-24816 — same hash-stability discipline: villainFightRestrictions is
+    // on G ONLY when a selected villain carries a [fight-restriction:...] marker, so every
+    // match without Orrgo / Squirrel Girl / Doop keeps a byte-identical finalStateHash.
+    ...(Object.keys(villainFightRestrictions).length > 0 ? { villainFightRestrictions } : {}),
     // why: WP-841 / D-24774 — same hash-stability discipline: villainVariableAttack is
     // on G ONLY when a selected villain carries a [variable-attack:...] marker, so every
     // match without those four co2e villains keeps a byte-identical finalStateHash.
@@ -924,6 +1031,12 @@ export function buildInitialGameState(
     // precedent): cardAbomination is on G ONLY when a selected villain or the mastermind
     // prints Abomination, so every other match keeps a byte-identical finalStateHash.
     ...(Object.keys(cardAbomination).length > 0 ? { cardAbomination } : {}),
+    // why: D-24802 — same hash-stability discipline (the cardAbomination precedent):
+    // fightSizeChanging is on G ONLY when a selected villain, a selected henchman copy
+    // (D-24803) or a fightable mastermind face
+    // prints Size-Changing, or (WP-863 / D-24805) a Trap Heroes in the Microverse Micro-Sized
+    // Villain has a card color, so every other match keeps a byte-identical finalStateHash.
+    ...(Object.keys(combinedFightSizeChanging).length > 0 ? { fightSizeChanging: combinedFightSizeChanging } : {}),
   };
 
   return executeSchemeSetup(baseState, schemeSetupInstructions);

@@ -10,6 +10,7 @@ import PlayDesktop from './PlayDesktop.vue';
 import { useUiStateStore } from '../stores/uiState';
 import type { SubmitMove } from '../components/play/uiMoveName.types';
 import type { NotableGameEvent } from '../composables/useNotableEventStream';
+import { useEffectIntensity } from '../vfx/effectIntensity';
 
 const noopSubmitMove: SubmitMove = () => undefined;
 
@@ -669,5 +670,181 @@ describe('PlayDesktop — Out of Time group (WP-803 / D-24692)', () => {
     const wrapper = mount(PlayDesktop, { props: { submitMove: noopSubmitMove } });
     assert.equal(wrapper.find('[data-testid="play-played-row"]').exists(), true, 'the played row is mounted');
     assert.equal(wrapper.findAll('[data-testid="play-out-of-time"]').length, 0);
+  });
+});
+
+describe('PlayDesktop — controlled Artifacts and the Ritual Use button (WP-858 / D-24794)', () => {
+  test('the viewer controlledArtifacts render one Artifacts group and a listed card gets a Use button', async () => {
+    // why: a mis-bound prop silently falls back to [] (no group, no button), so the page-level
+    // mount is what proves the two bindings and the submitMove pass-through.
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    const frame = snapshot();
+    const staff = 'dstr/doctor-voodoo/staff-of-legba#0';
+    frame.players[0]!.controlledArtifacts = [
+      { extId: staff, display: { extId: staff, name: 'Staff of Legba', imageUrl: '', cost: 5 } },
+    ];
+    frame.economy.ritualArtifactOptions = [staff];
+    store.setSnapshot(frame);
+    const calls: Array<{ name: string; args: unknown }> = [];
+    const wrapper = mount(PlayDesktop, {
+      props: { submitMove: (name: string, args?: unknown) => { calls.push({ name, args }); } },
+    });
+    assert.equal(wrapper.findAll('[data-testid="play-controlled-artifacts"]').length, 1);
+    const useButtons = wrapper.findAll('[data-testid="use-ritual-artifact"]');
+    assert.equal(useButtons.length, 1);
+    await useButtons[0]!.trigger('click');
+    assert.deepEqual(calls, [{ name: 'useRitualArtifact', args: { cardId: staff } }]);
+  });
+
+  test('a snapshot without controlledArtifacts renders no Artifacts group and no Use button', () => {
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    store.setSnapshot(snapshot());
+    const wrapper = mount(PlayDesktop, { props: { submitMove: noopSubmitMove } });
+    assert.equal(wrapper.findAll('[data-testid="play-controlled-artifacts"]').length, 0);
+    assert.equal(wrapper.findAll('[data-testid="use-ritual-artifact"]').length, 0);
+  });
+});
+
+describe('PlayDesktop — the Attempt Heist button in the turn bar (WP-865 / D-24812)', () => {
+  test('economy.heistAvailable renders Attempt Heist with the Heist Count and dispatches attemptHeist', async () => {
+    // why: a mis-bound prop silently falls back to false (no button), so the page-level mount is
+    // what proves the two bindings and the submitMove pass-through.
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    const frame = snapshot();
+    frame.players[0]!.inPlayCards = ['amwp/wasp/infiltrate#0'];
+    frame.economy.heistAvailable = true;
+    frame.economy.heistCount = 2;
+    store.setSnapshot(frame);
+    const calls: Array<{ name: string; args: unknown }> = [];
+    const wrapper = mount(PlayDesktop, {
+      props: { submitMove: (name: string, args?: unknown) => { calls.push({ name, args }); } },
+    });
+    const buttons = wrapper.findAll('[data-testid="attempt-heist"]');
+    assert.equal(buttons.length, 1);
+    // why: D-24812 — the button lives in the always-visible TurnActionBar, never the played-cards heading.
+    assert.equal(wrapper.find('[data-testid="play-turn-action-bar"] [data-testid="attempt-heist"]').exists(), true);
+    assert.equal(wrapper.find('[data-testid="play-played-row"] [data-testid="attempt-heist"]').exists(), false);
+    assert.equal(buttons[0]!.text(), 'Attempt Heist (Heist Count 2)');
+    await buttons[0]!.trigger('click');
+    assert.deepEqual(calls, [{ name: 'attemptHeist', args: {} }]);
+  });
+
+  test('a snapshot without heistAvailable renders no Attempt Heist button', () => {
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    store.setSnapshot(snapshot());
+    const wrapper = mount(PlayDesktop, { props: { submitMove: noopSubmitMove } });
+    assert.equal(wrapper.findAll('[data-testid="attempt-heist"]').length, 0);
+  });
+});
+
+describe('PlayDesktop — Effects triggered line (WP-848 / D-24784)', () => {
+  test('a viewer with conditionalClauses renders the bound Effects triggered line', () => {
+    // why: a mis-bound prop silently falls back to 0 / 0 (the `victoryVp` precedent), so the
+    // page-level mount is what proves the binding.
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    const frame = snapshot();
+    frame.players[0]!.conditionalClauses = { played: 5, assembled: 3 };
+    store.setSnapshot(frame);
+    const wrapper = mount(PlayDesktop, { props: { submitMove: noopSubmitMove } });
+    assert.equal(wrapper.find('[data-testid="play-your-victory-effects"]').text(), 'Effects triggered: 3 / 5 (60%)');
+  });
+});
+
+describe('PlayDesktop — table perspective (WP-852 / D-24788)', () => {
+  /** Mounts the board on the shared play-phase snapshot. */
+  function mountBoard() {
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    store.setSnapshot(snapshot());
+    return mount(PlayDesktop, { props: { submitMove: noopSubmitMove } });
+  }
+
+  test('the tilted plane holds the adversary band, the City and the HQ zone, never the cockpit', () => {
+    const wrapper = mountBoard();
+    const plane = wrapper.find('.play-desktop__board-plane');
+    assert.equal(plane.exists(), true, 'the board plane renders');
+    assert.equal(plane.find('.play-desktop__adversary-band').exists(), true);
+    assert.equal(plane.find('[data-testid="play-city-row"]').exists(), true);
+    assert.equal(plane.find('.play-desktop__hq-zone').exists(), true);
+    assert.equal(wrapper.find('.play-desktop__player-zone').exists(), true, 'the cockpit renders');
+    assert.equal(plane.find('.play-desktop__player-zone').exists(), false, 'the cockpit stays flat');
+  });
+
+  test('at full intensity the scene binds a 14deg tilt and the plane carries the lift class', () => {
+    try {
+      useEffectIntensity().setIntensity('full');
+      const wrapper = mountBoard();
+      const scene = wrapper.find('.play-desktop__board-scene').element as HTMLElement;
+      assert.equal(scene.style.getPropertyValue('--board-tilt-angle'), '14deg');
+      assert.equal(scene.style.getPropertyValue('--board-tilt-perspective'), '900px');
+      assert.equal(
+        wrapper.find('.play-desktop__board-plane').classes().includes('play-desktop__board-plane--lift'),
+        true,
+      );
+    } finally {
+      useEffectIntensity().setIntensity('full');
+    }
+  });
+
+  test('at Effect Intensity off the scene binds 0deg and the plane drops the lift class', () => {
+    try {
+      useEffectIntensity().setIntensity('off');
+      const wrapper = mountBoard();
+      const scene = wrapper.find('.play-desktop__board-scene').element as HTMLElement;
+      assert.equal(scene.style.getPropertyValue('--board-tilt-angle'), '0deg');
+      assert.equal(
+        wrapper.find('.play-desktop__board-plane').classes().includes('play-desktop__board-plane--lift'),
+        false,
+      );
+    } finally {
+      useEffectIntensity().setIntensity('full');
+    }
+  });
+});
+
+describe('PlayDesktop — band stand-up (WP-854 / D-24790)', () => {
+  /** Mounts the board on the shared play-phase snapshot. */
+  function mountBand() {
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    store.setSnapshot(snapshot());
+    return mount(PlayDesktop, { props: { submitMove: noopSubmitMove } });
+  }
+
+  test('at full intensity the Mastermind tile and the shared decks carry their tilt-lift classes', () => {
+    try {
+      useEffectIntensity().setIntensity('full');
+      const wrapper = mountBand();
+      assert.equal(wrapper.find('.mastermind-tile').classes('mastermind-tile--tilt-lift'), true);
+      assert.equal(wrapper.find('.shared-decks').classes('shared-decks--tilt-lift'), true);
+    } finally {
+      useEffectIntensity().setIntensity('full');
+    }
+  });
+
+  test('at Effect Intensity off neither the Mastermind tile nor the shared decks carries a tilt-lift class', () => {
+    try {
+      useEffectIntensity().setIntensity('off');
+      const wrapper = mountBand();
+      assert.equal(wrapper.find('.mastermind-tile').classes('mastermind-tile--tilt-lift'), false);
+      assert.equal(wrapper.find('.shared-decks').classes('shared-decks--tilt-lift'), false);
+    } finally {
+      useEffectIntensity().setIntensity('full');
+    }
+  });
+});
+
+describe('PlayDesktop — card-face-only recruit piles', () => {
+  test('the desktop board renders the Officers and Sidekicks as card-face-only piles', () => {
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    store.setSnapshot(snapshot());
+    const wrapper = mount(PlayDesktop, { props: { submitMove: noopSubmitMove } });
+    assert.equal(wrapper.find('.shared-decks').classes('shared-decks--card-face'), true);
   });
 });

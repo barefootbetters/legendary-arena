@@ -19,6 +19,7 @@ import {
   SIDEKICK_EXT_ID,
 } from '../setup/buildInitialGameState.js';
 import { assertInvariant } from './assertInvariant.js';
+import { listFortifications } from '../board/fortify.logic.js';
 
 // why: D-3103 fungible token exclusion set. CardExtIds are card-type
 // identifiers, not per-instance identifiers. The MVP engine reuses
@@ -118,6 +119,13 @@ export function checkNoCardInMultipleZones(G: LegendaryGameState): void {
     const haunter = hqHaunters[hqIndex];
     if (haunter === null || haunter === undefined || haunter.kind !== 'villain') continue;
     visitCardId(haunter.cardId, `hqHaunters[${hqIndex}]`, firstSeenZone);
+  }
+  // why: WP-873 / D-24818 — a fortifying Villain lives ONLY in G.fortifications (it left the
+  // Escape Pile), so it is a card container too: visiting it, in FORTIFY_PLACES order, catches
+  // a fortifier also left in a scanned zone (a fight that skipped removeFortification). The
+  // Escape Pile itself stays unscanned, as before.
+  for (const entry of listFortifications(G)) {
+    visitCardId(entry.fortification.villainCardId, `fortifications.${entry.place}`, firstSeenZone);
   }
 
   scanZone(G.ko, 'ko', firstSeenZone);

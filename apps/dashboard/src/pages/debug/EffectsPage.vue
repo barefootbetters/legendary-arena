@@ -26,7 +26,7 @@ const STATUS_ORDER: readonly EffectIndexStatus[] = [
   'subsystem',
 ];
 
-const SCOPE_FILTERS: readonly ScopeFilter[] = ['all', 'hero', 'villain', 'mastermind'];
+const SCOPE_FILTERS: readonly ScopeFilter[] = ['all', 'hero', 'villain', 'mastermind', 'scheme'];
 const STATUS_FILTERS: readonly StatusFilter[] = ['all', ...STATUS_ORDER];
 
 const search = ref('');
@@ -75,11 +75,12 @@ function designLabel(designs: readonly EffectDesign[] | undefined): string {
     <header class="page-header">
       <h1>Debug Effects</h1>
       <p class="subtitle">
-        Every card × mechanic across hero, villain, and mastermind scopes — the "which handler runs
-        this card's effect, and under which decision?" index. Source:
+        Every card × mechanic across hero, villain, mastermind, and scheme scopes — the "which
+        handler runs this card's effect, and under which decision?" index. Source:
         <code>data/metadata/effect-implementation-index.json</code> (a verbatim join of the hero +
-        villain mechanic ledgers and the mastermind-tactic feed by <code>pnpm effect-index</code>;
-        CI-gated). Read-only.
+        villain mechanic ledgers and the mastermind-tactic, Master Strike, and Scheme feeds by
+        <code>pnpm effect-index</code>; CI-gated). Each Scheme gets one row per printed line kind
+        (setup, special rules, twist, evil wins, good wins). Read-only.
       </p>
     </header>
 
@@ -91,7 +92,7 @@ function designLabel(designs: readonly EffectDesign[] | undefined): string {
         <span class="headline-label">card × mechanic rows</span>
         <span class="headline-sub"
           >{{ summary.byScope.hero }} hero · {{ summary.byScope.villain }} villain ·
-          {{ summary.byScope.mastermind }} mastermind</span
+          {{ summary.byScope.mastermind }} mastermind · {{ summary.byScope.scheme }} scheme</span
         >
       </div>
       <div class="summary-chips">
@@ -468,5 +469,8 @@ function designLabel(designs: readonly EffectDesign[] | undefined): string {
 }
 .fx-scope-mastermind {
   color: var(--p-amber-500, #f59e0b);
+}
+.fx-scope-scheme {
+  color: var(--p-rose-500, #f43f5e);
 }
 </style>

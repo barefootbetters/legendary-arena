@@ -1,13 +1,14 @@
 // why: jsdom globals must be installed before Vue's mount() is called.
 import '../../testing/jsdom-setup';
 
-import { describe, test } from 'node:test';
+import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { nextTick, ref } from 'vue';
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import Header from './Header.vue';
 import { useAuthStore } from '../../stores/auth';
+import { resetBrowserOnline, setBrowserOnline } from '../../testing/browserOnline';
 
 /**
  * Mount Header.vue with the specified auth context.
@@ -200,5 +201,58 @@ describe('BrandHeader auth nav (WP-175)', () => {
       assert.equal(signOutButton.element.tagName, 'BUTTON');
       assert.equal(signOutButton.attributes('type'), 'button');
     });
+  });
+});
+
+describe('BrandHeader with no network (D-24851 follow-up)', () => {
+  afterEach(() => {
+    resetBrowserOnline();
+  });
+
+  test('online: the wordmark links out and Play / Home / Cards are shown', () => {
+    const wrapper = mountHeader();
+    assert.equal(wrapper.find('[data-testid="brand-wordmark"]').element.tagName, 'A');
+    assert.equal(wrapper.find('[data-testid="brand-nav-play"]').exists(), true);
+    assert.equal(wrapper.find('[data-testid="brand-nav-home"]').exists(), true);
+    assert.equal(wrapper.find('[data-testid="brand-nav-cards"]').exists(), true);
+    assert.equal(wrapper.find('[data-testid="brand-nav-offline"]').exists(), false);
+    wrapper.unmount();
+  });
+
+  test('offline: no link leaves the app, and the header says Offline', async () => {
+    const wrapper = mountHeader();
+    setBrowserOnline(false);
+    await nextTick();
+    const wordmark = wrapper.find('[data-testid="brand-wordmark"]');
+    assert.equal(wordmark.element.tagName, 'SPAN', 'the wordmark is plain text');
+    assert.equal(wordmark.attributes('href'), undefined);
+    assert.equal(wrapper.find('[data-testid="brand-nav-play"]').exists(), false);
+    assert.equal(wrapper.find('[data-testid="brand-nav-home"]').exists(), false);
+    assert.equal(wrapper.find('[data-testid="brand-nav-cards"]').exists(), false);
+    assert.equal(wrapper.find('[data-testid="brand-nav-offline"]').text(), 'Offline');
+    assert.equal(wrapper.findAll('a').length, 0, 'no link remains in the header');
+    assert.equal(wrapper.find('[data-testid="auth-nav-sign-in"]').exists(), false);
+    wrapper.unmount();
+  });
+
+  test('offline while signed in: the profile link and Sign out are hidden too', async () => {
+    const wrapper = mountHeader({ token: 'tok-abc' });
+    setBrowserOnline(false);
+    await nextTick();
+    assert.equal(wrapper.find('[data-testid="auth-nav-display"]').exists(), false);
+    assert.equal(wrapper.find('[data-testid="auth-nav-sign-out"]').exists(), false);
+    wrapper.unmount();
+  });
+
+  test('the links come back when the network returns', async () => {
+    const wrapper = mountHeader();
+    setBrowserOnline(false);
+    await nextTick();
+    setBrowserOnline(true);
+    await nextTick();
+    assert.equal(wrapper.find('[data-testid="brand-nav-play"]').exists(), true);
+    assert.equal(wrapper.find('[data-testid="auth-nav-sign-in"]').exists(), true);
+    assert.equal(wrapper.find('[data-testid="brand-nav-offline"]').exists(), false);
+    wrapper.unmount();
   });
 });

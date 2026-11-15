@@ -30,6 +30,36 @@ import {
   applyDivingBlockResolvedSeatChoice,
   DIVING_BLOCK_SEAT_CHOICE_KIND,
 } from './divingBlock.logic.js';
+// why: WP-860 / D-24796 — Commune with the Spirit World's three kinds: applies, pre-apply readers and
+// chain builders (same runtime-safe cycle; bindings are read only inside function bodies).
+import {
+  applyCommuneCostResolvedSeatChoice,
+  applyCommuneDiscardResolvedSeatChoice,
+  applyCommuneKoResolvedSeatChoice,
+  chainCommuneAfterCost,
+  chainCommuneAfterDiscard,
+  readCommuneCostBranch,
+  readCommuneDiscardsLeft,
+  COMMUNE_COST_SEAT_CHOICE_KIND,
+  COMMUNE_DISCARD_SEAT_CHOICE_KIND,
+  COMMUNE_KO_SEAT_CHOICE_KIND,
+} from './communeSpiritWorld.logic.js';
+// why: WP-884 / D-24835 — Hunt for Victims' two kinds: applies, the pre-apply reader and the
+// KO-a-Hero chain (same runtime-safe cycle; bindings are read only inside function bodies).
+import {
+  applyHuntForVictimsKoHeroResolvedSeatChoice,
+  applyHuntForVictimsResolvedSeatChoice,
+  chainHuntForVictimsKoHero,
+  readHuntForVictimsWillKoBystander,
+  HUNT_FOR_VICTIMS_KO_HERO_SEAT_CHOICE_KIND,
+  HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND,
+  // why: WP-889 / D-24841 — the Lilin villain hunt's apply, its repeat reader and chain (same
+  // runtime-safe cycle).
+  applyVillainHuntForVictimsResolvedSeatChoice,
+  chainVillainHuntRepeats,
+  readVillainHuntRepeats,
+  VILLAIN_HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND,
+} from './huntForVictims.logic.js';
 // why: WP-827 / D-24760 — Flying Shield Block's kind-specific apply (same runtime-safe cycle).
 import {
   applyFlyingShieldBlockResolvedSeatChoice,
@@ -40,6 +70,31 @@ import {
   applyOutOfTimeGrantResolvedSeatChoice,
   OUT_OF_TIME_GRANT_SEAT_CHOICE_KIND,
 } from './outOfTimeGrant.logic.js';
+// why: WP-870 / D-24815 — Mandarin's Rings Zero's next-hand pick apply (same runtime-safe cycle).
+import {
+  applyNextHandFromPlayResolvedSeatChoice,
+  NEXT_HAND_FROM_PLAY_SEAT_CHOICE_KIND,
+} from './nextHandFromPlay.logic.js';
+// why: WP-875 / D-24822 — The Mandarin's Ring-entry apply and kind. mandarin.logic.ts imports no
+// boardgame.io, no registry and nothing under villainDeck/, so this edge adds no module cycle.
+import {
+  applyMandarinRingEntryResolvedSeatChoice,
+  MANDARIN_RING_ENTRY_SEAT_CHOICE_KIND,
+} from '../mastermind/mandarin.logic.js';
+// why: WP-872 / D-24817 — the Mandarin's Rings Liar / Nightbringer / Remaker pick apply, chain and
+// kind guard (same runtime-safe cycle: that module imports parkSeatChoice back, and every binding
+// is read only inside a function body).
+import {
+  applyVillainFightPickResolvedSeatChoice,
+  chainVillainFightPick,
+  isVillainFightPickKind,
+} from './villainFightPick.logic.js';
+// why: WP-863 / D-24805 — Trap Heroes in the Microverse's "choose any player to gain it" apply (same
+// runtime-safe cycle: the binding is read only inside a function body).
+import {
+  applyMicroSizedGainResolvedSeatChoice,
+  MICRO_SIZED_GAIN_SEAT_CHOICE_KIND,
+} from '../rules/trapHeroesInTheMicroverse.logic.js';
 // why: WP-683 / D-24500 — the two Deadpool consumers' kind-specific applies + the
 // Random-Acts wound→pass chain builder.
 import {
@@ -72,6 +127,24 @@ import {
   DOMINATE_THE_WEAK_GAIN_KIND,
   CRUSH_PACIFIST_RESISTANCE_KO_KIND,
   CRUSH_PACIFIST_RESISTANCE_LAST_KO_KIND,
+  // why: WP-758 / D-24588 — Zarathos's five tactic kinds, their appliers, and the Demonic
+  // Essence second-pick builder.
+  applyZarathosEruption,
+  applyZarathosCorruptedSpirit,
+  applyZarathosImprison,
+  applyZarathosDemonicEssence,
+  buildZarathosDemonicEssenceChoice,
+  // why: WP-882 / D-24833 — the Corrupted Spirit discard-down rounds: the apply, the
+  // round builder and the reader of the seats that owe it.
+  applyZarathosDiscardDown,
+  buildZarathosDiscardDownChoice,
+  readZarathosDiscardDownSeats,
+  ZARATHOS_CORRUPTED_SPIRIT_DISCARD_DOWN_KIND,
+  ZARATHOS_ERUPTION_KIND,
+  ZARATHOS_CORRUPTED_SPIRIT_KIND,
+  ZARATHOS_IMPRISON_KIND,
+  ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND,
+  ZARATHOS_DEMONIC_ESSENCE_LAST_KIND,
 } from './seatChoiceTactics.js';
 // why: WP-793 / D-24656 — the rulebook escape procedure's two kind-specific applies (HQ KO,
 // Bystander discard). villainEscapeProcedure imports parkSeatChoice from this module, so the
@@ -94,6 +167,13 @@ import {
   RETURN_ON_DISCARD_SEAT_CHOICE_KIND,
 } from './resolveReturnOnDiscard.js';
 import { pushLog } from '../log/logPush.js';
+// why: WP-758 / D-24588 — the Demonic Essence chain re-reads "you have a Strength Hero".
+// zarathos.logic imports wounds.logic, which reaches this module through divingBlock.logic:
+// the same runtime-safe cycle as the imports above (function bodies only).
+import { playerHasHeroOfClasses } from '../mastermind/zarathos.logic.js';
+
+// why: WP-758 / D-24588 — Demonic Essence's second sentence: "If you have a [strength] Hero".
+const ZARATHOS_DEMONIC_ESSENCE_LAST_CLASS = 'strength';
 // why: WP-829 / D-24762 — the Purge apply (a runtime-safe cycle: function-body references only).
 import {
   applyTimestreamPurgeResolvedSeatChoice,
@@ -110,6 +190,30 @@ import {
   applyRevealOrWoundSeatChoice,
   REVEAL_OR_WOUND_SEAT_CHOICE_KIND,
 } from './revealOrWoundChoice.logic.js';
+// why: WP-862 / D-24804 — the Size-Changing grant pick and Shrinking Research Budget's class pick.
+// sizeChangingGrant.logic imports parkSeatChoice from this module: the same runtime-safe cycle.
+import {
+  applySizeChangingClassPickResolvedSeatChoice,
+  applySizeChangingGrantResolvedSeatChoice,
+  chainSizeChangingClassPick,
+  readSizeChangingClassPickSeat,
+  SHRINKING_RESEARCH_BUDGET_TACTIC_ID,
+  SIZE_CHANGING_CLASS_PICK_SEAT_CHOICE_KIND,
+  SIZE_CHANGING_GRANT_SEAT_CHOICE_KIND,
+} from '../hero/sizeChangingGrant.logic.js';
+// why: WP-876 / D-24823 — Revolutionary Anthem's shuffle apply and kind. heistPayloads.logic
+// imports parkSeatChoice from this module: the same runtime-safe cycle (function bodies only).
+import {
+  applyHeistShuffleResolvedSeatChoice,
+  HEIST_SHUFFLE_SEAT_CHOICE_KIND,
+} from '../hero/heistPayloads.logic.js';
+// why: WP-883 / D-24834 — the gain-wound-reward apply and kind. gainWoundReward.logic imports
+// wounds.logic, which reaches this module through divingBlock.logic: the same runtime-safe cycle
+// as the imports above (function-body references only).
+import {
+  applyGainWoundRewardSeatChoice,
+  GAIN_WOUND_REWARD_SEAT_CHOICE_KIND,
+} from '../hero/gainWoundReward.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -422,6 +526,48 @@ export function resolveSeatChoice(
       appliedKind === CRUSH_PACIFIST_RESISTANCE_KO_KIND ? choice.addressedSeats[0] : undefined;
     const crushChoseKo =
       appliedKind === CRUSH_PACIFIST_RESISTANCE_KO_KIND && didCrushChooseKo(choice);
+    // why: WP-758 / D-24588 — capture the Demonic Essence seat before the apply clears the
+    // choice; the Strength line's KO chains below after an accept OR a decline of the Ranged
+    // line's (each "if you have" sentence is its own optional KO), unlike Crush, which
+    // chains only after a KO.
+    const demonicEssenceSeat =
+      appliedKind === ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND ? choice.addressedSeats[0] : undefined;
+    // why: WP-860 / D-24796 — capture Commune with the Spirit World's seat, source card, chosen cost
+    // branch and discards left BEFORE the apply clears the choice (the Crush capture above); the
+    // readers re-check the card, so a stale option chains nothing (no KO without payment).
+    const isCommuneCost = appliedKind === COMMUNE_COST_SEAT_CHOICE_KIND;
+    const isCommuneDiscard = appliedKind === COMMUNE_DISCARD_SEAT_CHOICE_KIND;
+    const communeSeat = isCommuneCost || isCommuneDiscard ? choice.addressedSeats[0] : undefined;
+    const communeSourceCardId = choice.communeSpiritWorld?.sourceCardId;
+    const communeCostBranch = isCommuneCost ? readCommuneCostBranch(G, choice) : undefined;
+    const communeDiscardsLeft = isCommuneDiscard ? readCommuneDiscardsLeft(G, choice) : undefined;
+    // why: WP-884 / D-24835 — capture the Hunt for Victims seat and source card, and whether the
+    // chosen option will KO (or rescue) a Bystander, BEFORE the apply moves it and the delete clears
+    // the choice (the Commune capture above). The reader re-checks the holder, so a capture, a
+    // decline or a stale option chains no Hero pick.
+    const isHuntForVictims = appliedKind === HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND;
+    const huntSeat = isHuntForVictims ? choice.addressedSeats[0] : undefined;
+    const huntSourceCardId = choice.huntForVictims?.sourceCardId;
+    const huntWillKoBystander = isHuntForVictims && readHuntForVictimsWillKoBystander(G, choice);
+    // why: WP-889 / D-24841 RS-3b — capture the hunts a villain hunt choice still owes (Blackout's
+    // Moonlight repeat) BEFORE the apply and the delete clear the choice, beside the hero reader.
+    const villainHuntRepeats = readVillainHuntRepeats(choice);
+    // why: WP-862 / D-24804 — capture a Shrinking Research Budget class pick's seat BEFORE the
+    // apply clears the choice, so the next dual-class Hero's pick chains below (the Commune shape).
+    const sizeChangingClassPickSeat = readSizeChangingClassPickSeat(choice);
+    // why: WP-872 / D-24817 — capture a Mandarin's Rings pick choice BEFORE the apply (which
+    // writes the step's result onto its payload) and the delete, so its next step chains below.
+    const villainFightPickChoice = isVillainFightPickKind(appliedKind) ? choice : undefined;
+    // why: WP-882 / D-24833 — capture the seats that owe Corrupted Spirit's discard-down BEFORE
+    // the apply and the delete clear the choice: after a Corrupted Spirit choice, the forced seats
+    // plus the seats that chose it; after a discard-down round, the round's own seats. The chain
+    // below re-reads their CURRENT hands, so a seat that reached 3 drops out.
+    let zarathosDiscardDownSeats: string[] | undefined;
+    if (appliedKind === ZARATHOS_CORRUPTED_SPIRIT_KIND) {
+      zarathosDiscardDownSeats = readZarathosDiscardDownSeats(choice);
+    } else if (appliedKind === ZARATHOS_CORRUPTED_SPIRIT_DISCARD_DOWN_KIND) {
+      zarathosDiscardDownSeats = [...choice.addressedSeats];
+    }
     // why: WP-682 / WP-683 — dispatch by kind (diving-block via its own apply; the Deadpool
     // kinds via applySeatChoiceCard; the 'generic' kind via the foundational per-seat log).
     // why: D-24732 — ctx?. because narrow test contexts omit ctx; moves never throw.
@@ -449,6 +595,53 @@ export function resolveSeatChoice(
     // last-ko kind never chains, so at most two KOs.
     if (crushChoseKo && crushActiveSeat !== undefined) {
       chainCrushPacifistResistanceLastKo(G, crushActiveSeat, events);
+    }
+    // why: WP-758 / D-24588 — Demonic Essence's Strength line, built fresh from the seat's
+    // current zones and re-checked there. The timeout path does not chain (D-24501), so a
+    // defaulted first pick is a decline of both.
+    if (demonicEssenceSeat !== undefined) {
+      chainZarathosDemonicEssenceLast(G, demonicEssenceSeat, events);
+    }
+    // why: WP-860 / D-24796 — Commune chains its next step (discard picks, then the KO pick) here in
+    // the live move context, exactly where Crush chains its second KO (D-24754).
+    if (communeSeat !== undefined && communeSourceCardId !== undefined) {
+      if (communeCostBranch !== undefined) {
+        chainCommuneAfterCost(G, communeSeat, communeCostBranch, communeSourceCardId, events);
+      } else if (communeDiscardsLeft !== undefined) {
+        chainCommuneAfterDiscard(G, communeSeat, communeDiscardsLeft, communeSourceCardId, events);
+      }
+    }
+    // why: WP-884 / D-24835 — "If it KOs a Bystander this way, you may KO a Hero": the optional Hero
+    // pick chains here in the live move context, exactly where Commune chains its next step, and
+    // only after a KO or rescue. The timeout path does not chain (its default is decline anyway).
+    if (huntWillKoBystander && huntSeat !== undefined && huntSourceCardId !== undefined) {
+      chainHuntForVictimsKoHero(G, huntSeat, huntSourceCardId);
+    }
+    // why: WP-889 / D-24841 RS-3b — Blackout hunts again here, after its first hunt resolved, in the
+    // live move context beside the hero hunt's chain, so the second hunt sees the post-choice board
+    // and may park again. The timeout path does not chain (the D-24501 residual).
+    if (villainHuntRepeats !== undefined) {
+      chainVillainHuntRepeats(G, villainHuntRepeats.seat, villainHuntRepeats.sourceCardId, villainHuntRepeats.repeats);
+    }
+    // why: WP-862 / D-24804 — Shrinking Research Budget chains its next dual-class Hero's class
+    // pick here in the live move context, exactly where Commune chains its next step.
+    if (sizeChangingClassPickSeat !== undefined) {
+      // why: the class-pick kind carries no source field; its only source is the tactic (D-24804).
+      chainSizeChangingClassPick(G, sizeChangingClassPickSeat, SHRINKING_RESEARCH_BUDGET_TACTIC_ID);
+    }
+    // why: WP-872 / D-24817 — Liar, Nightbringer and Remaker chain their next step here in the
+    // live move context: parking Liar's decide for the NON-ACTIVE target needs the move's
+    // events.setActivePlayers, and Nightbringer's Fight effect needs the turn and random. The
+    // timeout path (applySeatChoiceTimeoutDefault) does not chain: the shared D-24500 / D-24501
+    // residual, since that path is not wired live.
+    if (villainFightPickChoice !== undefined) {
+      chainVillainFightPick(G, villainFightPickChoice, ctx, events, random);
+    }
+    // why: WP-882 / D-24833 — Corrupted Spirit's discard-down chains its next one-card round here
+    // in the live move context (the Monarch's / Crush shape): admitting the NON-ACTIVE owing
+    // seats needs the move's events.setActivePlayers. The timeout path does not chain (D-24501).
+    if (zarathosDiscardDownSeats !== undefined) {
+      chainZarathosDiscardDown(G, zarathosDiscardDownSeats, events);
     }
   }
 }
@@ -489,9 +682,49 @@ function applySeatChoiceByKind(
     applyFlyingShieldBlockResolvedSeatChoice(G, choice);
     return;
   }
+  // why: WP-860 / D-24796 — Commune with the Spirit World: the cost, a hand-discard pick, the KO
+  // pick. None draws, so none needs the shuffle context; the chain runs from resolveSeatChoice.
+  if (choice.kind === COMMUNE_COST_SEAT_CHOICE_KIND) {
+    applyCommuneCostResolvedSeatChoice(G, choice);
+    return;
+  }
+  if (choice.kind === COMMUNE_DISCARD_SEAT_CHOICE_KIND) {
+    applyCommuneDiscardResolvedSeatChoice(G, choice);
+    return;
+  }
+  if (choice.kind === COMMUNE_KO_SEAT_CHOICE_KIND) {
+    applyCommuneKoResolvedSeatChoice(G, choice);
+    return;
+  }
+  // why: WP-863 / D-24805 — the chosen player gains the defeated Micro-Sized Villain as a Hero.
+  if (choice.kind === MICRO_SIZED_GAIN_SEAT_CHOICE_KIND) {
+    applyMicroSizedGainResolvedSeatChoice(G, choice);
+    return;
+  }
   // why: WP-828 / D-24761 — the chosen hand Hero gains Man Out of Time this turn.
   if (choice.kind === OUT_OF_TIME_GRANT_SEAT_CHOICE_KIND) {
     applyOutOfTimeGrantResolvedSeatChoice(G, choice);
+    return;
+  }
+  // why: WP-870 / D-24815 — the chosen played 0-cost card is recorded for the next hand (Zero).
+  // Required: without this arm the owed pick never leaves G.pendingNextHandFromPlayPicks.
+  if (choice.kind === NEXT_HAND_FROM_PLAY_SEAT_CHOICE_KIND) {
+    applyNextHandFromPlayResolvedSeatChoice(G, choice);
+    return;
+  }
+  // why: WP-875 / D-24822 — The Mandarin's Master Strike: each answering seat's chosen Ring is
+  // recorded on its first unchosen G.pendingMandarinRingEntries entry. The apply never moves a
+  // card; the next onMove opener enters it (the escape it may cause needs the turn and the map).
+  if (choice.kind === MANDARIN_RING_ENTRY_SEAT_CHOICE_KIND) {
+    applyMandarinRingEntryResolvedSeatChoice(G, choice);
+    return;
+  }
+  // why: WP-872 / D-24817 — the six Mandarin's Rings pick kinds apply their step here, ctx-free
+  // (so a defaulted choice still moves the card). Required BEFORE the applySeatChoiceCard /
+  // generic applyResolvedSeatChoice fall-through: its public "Seat N resolved <kind> choice:
+  // <label>" line would leak Liar's looked-at card from a 'liar-claim' label.
+  if (isVillainFightPickKind(choice.kind)) {
+    applyVillainFightPickResolvedSeatChoice(G, choice, shuffleContext);
     return;
   }
   // why: WP-694 / D-24511 — Monarch's Decree mode apply: the "draw" branch draws for each
@@ -533,6 +766,33 @@ function applySeatChoiceByKind(
     choice.kind === CRUSH_PACIFIST_RESISTANCE_LAST_KO_KIND
   ) {
     applyCrushPacifistResistanceKo(G, choice);
+    return;
+  }
+  // why: WP-758 / D-24588 — Zarathos's tactic choices. The two multi-seat kinds apply in
+  // ascending seat order (no draw); Imprison draws its Villain's VP, so it takes the shuffle
+  // context and the current player (cardsDrawn, D-24732); both Demonic kinds share one apply.
+  if (choice.kind === ZARATHOS_ERUPTION_KIND) {
+    applyZarathosEruption(G, choice);
+    return;
+  }
+  if (choice.kind === ZARATHOS_CORRUPTED_SPIRIT_KIND) {
+    applyZarathosCorruptedSpirit(G, choice);
+    return;
+  }
+  // why: WP-882 / D-24833 — one discard-down round: each owing seat's chosen card, ascending.
+  if (choice.kind === ZARATHOS_CORRUPTED_SPIRIT_DISCARD_DOWN_KIND) {
+    applyZarathosDiscardDown(G, choice);
+    return;
+  }
+  if (choice.kind === ZARATHOS_IMPRISON_KIND) {
+    applyZarathosImprison(G, choice, shuffleContext, currentPlayer);
+    return;
+  }
+  if (
+    choice.kind === ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND ||
+    choice.kind === ZARATHOS_DEMONIC_ESSENCE_LAST_KIND
+  ) {
+    applyZarathosDemonicEssence(G, choice);
     return;
   }
   // why: WP-793 / D-24656 — the escape procedure's HQ KO (the current player's pick) and
@@ -579,6 +839,48 @@ function applySeatChoiceByKind(
   // woundsDrawn only for the entry's current player. No draw, so no shuffle context.
   if (choice.kind === REVEAL_OR_WOUND_SEAT_CHOICE_KIND) {
     applyRevealOrWoundSeatChoice(G, choice);
+    return;
+  }
+  // why: WP-862 / D-24804 — the chosen HQ Hero gains Size-Changing this turn; a Shrinking
+  // Research Budget class pick records that Hero's lasting grant. No draw, no shuffle context.
+  if (choice.kind === SIZE_CHANGING_GRANT_SEAT_CHOICE_KIND) {
+    applySizeChangingGrantResolvedSeatChoice(G, choice);
+    return;
+  }
+  if (choice.kind === SIZE_CHANGING_CLASS_PICK_SEAT_CHOICE_KIND) {
+    applySizeChangingClassPickResolvedSeatChoice(G, choice);
+    return;
+  }
+  // why: WP-876 / D-24823 — Revolutionary Anthem's optional Villain Deck shuffle: Shuffle through
+  // the shuffle context (ctx.random), or Leave (the default). Placed before the generic
+  // fall-through so the "Seat N resolved <kind> choice" line does not also print.
+  if (choice.kind === HEIST_SHUFFLE_SEAT_CHOICE_KIND) {
+    applyHeistShuffleResolvedSeatChoice(G, choice, shuffleContext);
+    return;
+  }
+  // why: WP-883 / D-24834 — "You may gain a Wound. If you do, you get +N Attack": gain through the
+  // Wound chokepoint (Diving Block / Flying Shield Block then hold the reward) or decline (the
+  // default, so the timeout path declines with no Wound). Placed before the generic fall-through.
+  if (choice.kind === GAIN_WOUND_REWARD_SEAT_CHOICE_KIND) {
+    applyGainWoundRewardSeatChoice(G, choice);
+    return;
+  }
+  // why: WP-884 / D-24835 — Hunt for Victims: KO / rescue / capture a Bystander or decline, then the
+  // optional KO-a-Hero pick. Neither draws, so neither needs the shuffle context; placed before the
+  // generic fall-through so the "Seat N resolved <kind> choice" line does not also print.
+  if (choice.kind === HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND) {
+    applyHuntForVictimsResolvedSeatChoice(G, choice);
+    return;
+  }
+  if (choice.kind === HUNT_FOR_VICTIMS_KO_HERO_SEAT_CHOICE_KIND) {
+    applyHuntForVictimsKoHeroResolvedSeatChoice(G, choice);
+    return;
+  }
+  // why: WP-889 / D-24841 — the Lilin villain hunt: KO the chosen holder's last Bystander (a stale
+  // pick re-resolves at the default). No draw, so no shuffle context; placed before the generic
+  // fall-through so the "Seat N resolved <kind> choice" line does not also print.
+  if (choice.kind === VILLAIN_HUNT_FOR_VICTIMS_SEAT_CHOICE_KIND) {
+    applyVillainHuntForVictimsResolvedSeatChoice(G, choice);
     return;
   }
   // why: D-24678 — the shuffle context reaches Random Acts' Diving Block draw.
@@ -695,6 +997,76 @@ function chainCrushPacifistResistanceLastKo(
 }
 
 /**
+ * Chains Demonic Essence of Ghost Rider's second owed KO after the first pick resolved:
+ * builds the last pick from the seat's current hand and played cards and parks it for
+ * that seat alone.
+ *
+ * // why: WP-758 / D-24588 — parked from the live move context, like
+ * chainCrushPacifistResistanceLastKo (D-24754). A seat with no Hero left logs the no-op.
+ *
+ * @param G - Game state (mutated: may set G.pendingSeatChoice for the second pick).
+ * @param activeSeat - The defeating player who made the first pick.
+ * @param events - The move's boardgame.io events (unused for an active-seat-only park).
+ */
+function chainZarathosDemonicEssenceLast(
+  G: LegendaryGameState,
+  activeSeat: string,
+  events: SeatChoiceEvents | undefined,
+): void {
+  // why: D-24588 — "If you have a [strength] Hero" is read now, when the sentence resolves
+  // (rules v23 L3443-3447): KOing the only Strength Hero with the first pick ends it here.
+  if (!playerHasHeroOfClasses(G, activeSeat, [ZARATHOS_DEMONIC_ESSENCE_LAST_CLASS])) {
+    pushLog(G,
+      `Fight effect: Player ${activeSeat} no longer has a Strength Hero, so there is no second KO (Demonic Essence of Ghost Rider).`,
+      'neutral',
+    );
+    return;
+  }
+  const lastChoice = buildZarathosDemonicEssenceChoice(
+    G,
+    activeSeat,
+    ZARATHOS_DEMONIC_ESSENCE_LAST_KIND,
+  );
+  if (lastChoice === undefined) {
+    pushLog(G,
+      `Fight effect: Player ${activeSeat} has no other Hero to KO (Demonic Essence of Ghost Rider).`,
+      'neutral',
+    );
+    return;
+  }
+  parkSeatChoice(G, events, lastChoice, activeSeat);
+  pushLog(G,
+    `Fight effect: Player ${activeSeat} may KO one more of their Heroes (Demonic Essence of Ghost Rider).`,
+    'neutral',
+  );
+}
+
+/**
+ * Chains Corrupted Spirit of Vengeance's next discard-down round: builds it from the
+ * owing seats' CURRENT hands and parks it for the seats still above 3 cards.
+ *
+ * // why: WP-882 / D-24833 — parked from the live move context, exactly where Crush chains
+ * its second KO (D-24754), so parkSeatChoice stage-rides the owing NON-ACTIVE seats. No
+ * active-seat skip: the defeating player is never addressed. No log line on a re-chain;
+ * when every seat holds 3 the builder returns undefined and the chain ends.
+ *
+ * @param G - Game state (mutated: may set G.pendingSeatChoice for the next round).
+ * @param seats - The seats that owe the discard-down (any order).
+ * @param events - The move's boardgame.io events (for the stage ride).
+ */
+function chainZarathosDiscardDown(
+  G: LegendaryGameState,
+  seats: readonly string[],
+  events: SeatChoiceEvents | undefined,
+): void {
+  const nextRound = buildZarathosDiscardDownChoice(G, seats);
+  if (nextRound === undefined) {
+    return;
+  }
+  parkSeatChoice(G, events, nextRound);
+}
+
+/**
  * Applies the deterministic disconnect/timeout default for the named addressed
  * seats that have not (or cannot) submit.
  *
@@ -746,6 +1118,9 @@ export function applySeatChoiceTimeoutDefault(
     // Random Acts pass after a defaulted wound choice — it has no events to admit the seats;
     // per D-24501 a play-phase disconnect PAUSES the match (this default is the not-yet-wired
     // WP-116 governing-policy path), so the live pass-left is never reached via a timeout here.
+    // why: WP-883 / D-24834 — a defaulted 'gain-wound-reward' declines (no Wound, L3); a defaulted
+    // Diving Block / Flying Shield Block decline on a Wound holding a gain-wound reward keeps the
+    // Wound, so the reward is granted (L7) by the same dispatch.
     applySeatChoiceByKind(G, choice, undefined);
     delete G.pendingSeatChoice;
   }

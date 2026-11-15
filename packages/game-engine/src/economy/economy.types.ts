@@ -140,6 +140,18 @@ export interface TurnEconomy {
    */
   sidekicksReturnedThisTurn?: number;
   /**
+   * WP-871 / D-24816 — the current player defeated a City Villain (fought or
+   * effect-defeated) this turn. Read by the Orrgo fight restriction
+   * (`requires-villain-defeated-this-turn`); a Mastermind defeat does not set it.
+   *
+   * ACTIVE-PLAYER-SCOPED. LAZILY MATERIALIZED: written only in a match with a
+   * `requires-villain-defeated-this-turn` restriction (`recordVillainDefeated`, from
+   * `defeatCityVillainCore`), only ever written `true`, dropped by `resetTurnEconomy`
+   * at turn start, carried by `carryConversionFlag`. Absent ≡ false; omitted by
+   * `JSON.stringify`, so every other match serializes byte-identically.
+   */
+  hasDefeatedVillainThisTurn?: boolean;
+  /**
    * WP-736 / D-24556 — the ordered ledger of "Excessive Violence" cards the current
    * player has played this turn (Venomverse's Excessive Violence, keywords-full id 30).
    * Playing an allowlisted EV card appends its CardExtId here (via
@@ -242,6 +254,68 @@ export interface TurnEconomy {
    * Strings only (CardExtId), never card objects.
    */
   outOfTimePlayedCardIds?: CardExtId[];
+  /**
+   * WP-858 / D-24794 — the highest printed cost among the Heroes (incl. S.H.I.E.L.D.
+   * Officers and Sidekicks) the current player recruited this turn. Staff of Legba's Ritual
+   * ("If you recruited a Hero, you may discard Staff of Legba to get +Attack equal to that
+   * Hero's cost") is usable once this is set and grants this amount (the highest — the
+   * player would always pick it, D-24470).
+   *
+   * Written by `recordRecruitedHeroCost` from the three recruit moves ONLY in a match whose
+   * hooks carry the `ritual-recruited-hero` keyword. LAZILY MATERIALIZED: absent otherwise,
+   * dropped by `resetTurnEconomy` at turn start, carried by `carryConversionFlag`, so every
+   * other match serializes byte-identically and neither state-hash oracle moves.
+   */
+  highestRecruitedHeroCost?: number;
+  /**
+   * WP-858 / D-24794 — Ritual Artifacts the current player played and then used (discarded)
+   * this turn. The card left `inPlay`, but rules v23 L3441-3453 say it still counts as
+   * "played this turn", so `playedCardIdsThisTurn` appends every entry here (the
+   * `outOfTimePlayedCardIds` precedent). A Ritual used from the controlled Artifacts was not
+   * played this turn and is never recorded.
+   *
+   * ACTIVE-PLAYER-SCOPED. LAZILY MATERIALIZED: absent until the first record
+   * (`recordRitualUsedPlayed`), dropped by `resetTurnEconomy`, carried by
+   * `carryConversionFlag`. Strings only (CardExtId).
+   */
+  ritualUsedPlayedCardIds?: CardExtId[];
+  /**
+   * WP-865 / D-24808 — the Heist crew: the allowlisted Heist cards the current player readied
+   * this turn, in play order. Playing a Heist card appends its CardExtId here (via
+   * `enrollHeistCard`) instead of firing its Heist ability; a successful `attemptHeist` then
+   * fires every readied card's ability in this order (`fireHeistPlays`). Duplicates are kept
+   * (two copies each fire). Strings only (CardExtId).
+   *
+   * ACTIVE-PLAYER-SCOPED. LAZILY MATERIALIZED: absent until the first Heist card is readied,
+   * dropped by `resetTurnEconomy` at turn start, carried by `carryConversionFlag`, so a turn
+   * that never readies a Heist serializes byte-identically and neither state-hash oracle moves.
+   */
+  heistCrewCards?: CardExtId[];
+  /**
+   * WP-865 / D-24808 — whether the current player already attempted this turn's one Heist
+   * (rules v23 p.27: one attempt per turn, whatever the outcome). Set by `attemptHeist` BEFORE
+   * the outcome resolves (via `markHeistAttempted`). While set, a newly played Heist card is too
+   * late and is not readied.
+   *
+   * LAZILY MATERIALIZED: absent until set, dropped by `resetTurnEconomy` at turn start, carried
+   * by `carryConversionFlag`. Absent ≡ not yet attempted this turn.
+   */
+  hasAttemptedHeistThisTurn?: boolean;
+  /**
+   * WP-876 / D-24823 — the Villain Deck card this turn's Heist revealed. Set by `attemptHeist`
+   * together with `hasAttemptedHeistThisTurn` (via `markHeistAttempted`).
+   *
+   * why: two Heist lines key on "the card revealed from the Villain Deck" (The Big Score's
+   * Master Strike, Revolutionary Anthem's Scheme Twist). An earlier Heist ability in the same
+   * Heist can change the Villain Deck top (The Big Score replaces a Master Strike with a
+   * Bystander), so the revealed card is RECORDED here when the attempt latches and the handlers
+   * read that id's type, never the live top.
+   *
+   * ACTIVE-PLAYER-SCOPED. LAZILY MATERIALIZED: absent until a Heist is attempted, dropped by
+   * `resetTurnEconomy` at turn start, carried by `carryConversionFlag`. String only (CardExtId).
+   * Not projected to the client.
+   */
+  heistRevealedCardId?: CardExtId;
 }
 
 // why: stats resolved at setup time from registry so moves never query

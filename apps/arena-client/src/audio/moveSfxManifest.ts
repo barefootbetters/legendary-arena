@@ -54,6 +54,11 @@ export const moveSfxManifest: Partial<Record<UiMoveName, string>> = {
   playCard: `${MOVE_SFX_BASE_URL}play-card.mp3`,
   // why: a hero is recruited from HQ — a positive "purchase" chime.
   recruitHero: `${MOVE_SFX_BASE_URL}recruit-hero.mp3`,
+  // why: Jeff feedback 2026-10-29 — recruiting a S.H.I.E.L.D. Officer (WP-648)
+  // or a Sidekick (WP-842) is the same felt "purchase" as an HQ recruit, so it
+  // reuses the recruit chime; both moves shipped after WP-421 and were silent.
+  recruitOfficer: `${MOVE_SFX_BASE_URL}recruit-hero.mp3`,
+  recruitSidekick: `${MOVE_SFX_BASE_URL}recruit-hero.mp3`,
   // why: a City villain is attacked — a sword / impact swing. The filename is
   // `attack-villain.mp3` (not `fight-villain.mp3`) per the locked ewiki table.
   fightVillain: `${MOVE_SFX_BASE_URL}attack-villain.mp3`,

@@ -70,7 +70,20 @@ import {
   gainDominateTheWeakHero,
   buildCrushPacifistResistanceChoice,
   CRUSH_PACIFIST_RESISTANCE_KO_KIND,
+  // why: WP-758 / D-24588 — Zarathos's tactic builders and the shared auto-resolve steps.
+  buildZarathosEruptionChoice,
+  buildZarathosCorruptedSpiritChoice,
+  buildZarathosImprisonChoice,
+  buildZarathosDemonicEssenceChoice,
+  buildZarathosDiscardDownChoice,
+  gainZarathosEruptionWound,
+  listZarathosHandHeroesByCost,
+  ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT,
+  ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND,
+  ZARATHOS_DEMONIC_ESSENCE_LAST_KIND,
 } from '../moves/seatChoiceTactics.js';
+// why: WP-758 / D-24588 — the Zarathos haunt call and the "you have a Hero of class X" read.
+import { playerHasHeroOfClasses, zarathosHauntHighestCost } from '../mastermind/zarathos.logic.js';
 // why: WP-821 / D-24754 — the one "less than 2 printed Attack" HQ read.
 import { listZolaWeakHqSlots } from '../mastermind/arnimZola.logic.js';
 // why: WP-818 / D-24752 — Baron Zemo's tactics read Savior status and the first
@@ -80,6 +93,42 @@ import {
   countVictoryPileBystanders,
   findFirstVictoryPileBystander,
 } from '../board/bystanders.logic.js';
+// why: WP-862 / D-24804 — the two Size-Changing grant tactics share the HQ grant module; its
+// Shrinking Research Budget id lives there (one copy, no import cycle back into this file).
+import {
+  grantSizeChangingToHqHero,
+  resolveShrinkingResearchBudgetGrants,
+  SHRINKING_RESEARCH_BUDGET_TACTIC_ID,
+} from '../hero/sizeChangingGrant.logic.js';
+
+// why: WP-862 / D-24804 — chmp Fin Fang Foom's Alien Dragon Technology tactic ext_id
+// (`${setAbbr}-mastermind-${slug}-${tacticSlug}`): "A Hero in the HQ gets Size-Changing
+// [Strength], [Instinct], [Covert], [Tech], [Ranged] this turn."
+const ALIEN_DRAGON_TECHNOLOGY_TACTIC_ID: CardExtId =
+  'chmp-mastermind-fin-fang-foom-alien-dragon-technology';
+const ALIEN_DRAGON_TECHNOLOGY_CLASSES: readonly string[] = ['strength', 'instinct', 'covert', 'tech', 'ranged'];
+
+// why: WP-758 / D-24588 — mdns Zarathos's four tactic ext_ids
+// (`${setAbbr}-mastermind-${slug}-${tacticSlug}`, data/cards/mdns.json). Each Fight first
+// has Zarathos Haunt the highest-cost unhaunted Hero of its class pair ("[A] and/or [B]"
+// = class A or class B), then resolves its second clause.
+const ZARATHOS_ERUPTION_OF_HELLFIRE_TACTIC_ID: CardExtId =
+  'mdns-mastermind-zarathos-eruption-of-hellfire';
+const ZARATHOS_CORRUPTED_SPIRIT_TACTIC_ID: CardExtId =
+  'mdns-mastermind-zarathos-corrupted-spirit-of-vengeance';
+const ZARATHOS_IMPRISON_TACTIC_ID: CardExtId =
+  'mdns-mastermind-zarathos-imprison-in-the-soul-crystal';
+const ZARATHOS_DEMONIC_ESSENCE_TACTIC_ID: CardExtId =
+  'mdns-mastermind-zarathos-demonic-essence-of-ghost-rider';
+const ZARATHOS_ERUPTION_CLASSES: readonly string[] = ['covert', 'ranged'];
+const ZARATHOS_CORRUPTED_SPIRIT_CLASSES: readonly string[] = ['instinct', 'covert'];
+const ZARATHOS_IMPRISON_CLASSES: readonly string[] = ['strength', 'instinct'];
+const ZARATHOS_DEMONIC_ESSENCE_RANGED_CLASS = 'ranged';
+const ZARATHOS_DEMONIC_ESSENCE_STRENGTH_CLASS = 'strength';
+const ZARATHOS_DEMONIC_ESSENCE_CLASSES: readonly string[] = [
+  ZARATHOS_DEMONIC_ESSENCE_RANGED_CLASS,
+  ZARATHOS_DEMONIC_ESSENCE_STRENGTH_CLASS,
+];
 
 // why: OCTET_HAND_SIZE = 8 is the printed draw count of Doctor Octopus's "Octet
 // of Valence Electrons" tactic (co2e, corrected 9→8 in #1214) — distinct from
@@ -167,6 +216,33 @@ const LOKI_WHISPERS_AND_LIES_TACTIC_ID: CardExtId =
 // Savage Land Mutates D-24352 precedent), so two next-hand bonuses in one turn
 // stack rather than clobber. Named, not inlined, so an audit can grep the number.
 export const TREASURES_EXTRA_CARDS = 3;
+
+// why: D-24813 — four more tactics print the same next-hand Fight line as core
+// Treasures of Latveria, under their own ext_ids (same
+// `${setAbbr}-mastermind-${mastermindSlug}-${tacticSlug}` grammar), so the core id
+// never matched them and their Fight resolved to nothing. Printed text
+// (data/cards/<set>.json):
+//   cvwr Baron Helmut Zemo "Cursed Dynasty", mgtg Ego "I'm a Celestial, Sweetheart",
+//   msis Ebony Maw "Hear Me and Rejoice":
+//     "Fight: When you draw a new hand of cards at the end of this turn, draw two
+//      extra cards."
+//   co2e Doctor Doom "Treasures of Latveria": the same line with "three extra cards".
+// Ego's second line (destroy the leftmost city space, shuffle the tactic back) and
+// Ebony Maw's "[keyword:Endgame]: ... three cards instead." are NOT modelled: the
+// engine has no destructible city spaces and no Endgame state, so those lines stay
+// deferred (D-24813). Outside the Endgame, Hear Me and Rejoice's printed result is +2.
+const ZEMO_CURSED_DYNASTY_TACTIC_ID: CardExtId =
+  'cvwr-mastermind-baron-helmut-zemo-cursed-dynasty';
+const EGO_CELESTIAL_SWEETHEART_TACTIC_ID: CardExtId =
+  'mgtg-mastermind-ego-the-living-planet-im-a-celestial-sweetheart';
+const EBONY_MAW_HEAR_ME_AND_REJOICE_TACTIC_ID: CardExtId =
+  'msis-mastermind-ebony-maw-hear-me-and-rejoice';
+const CO2E_DOCTOR_DOOM_TREASURES_OF_LATVERIA_TACTIC_ID: CardExtId =
+  'co2e-mastermind-doctor-doom-treasures-of-latveria';
+
+// why: D-24813 — the printed "draw two extra cards" of Cursed Dynasty, I'm a
+// Celestial, Sweetheart and Hear Me and Rejoice. Named so an audit can grep it.
+export const TWO_EXTRA_CARDS = 2;
 
 // why: WP-691 / D-24508 — Whispers and Lies makes each OTHER player KO exactly two
 // Bystanders from their Victory Pile; a player with fewer than two KOs all they
@@ -645,6 +721,31 @@ export function resolveTreasuresOfLatveria(
   G: LegendaryGameState,
   currentPlayer: string,
 ): void {
+  resolveNextHandExtraCardsTactic(G, currentPlayer, TREASURES_EXTRA_CARDS, 'Treasures of Latveria');
+}
+
+/**
+ * Resolves a tactic whose printed Fight is "When you draw a new hand of cards at
+ * the end of this turn, draw N extra cards.": the defeating player's next-hand
+ * fill grows by `extraCards`.
+ *
+ * The shared body of core Treasures of Latveria (WP-691 / D-24508) and the four
+ * D-24813 tactics. ADDITIVE via the `(override ?? HAND_SIZE) + delta` writer on the
+ * WP-497 `G.handSizeOverrides` field, so stacked next-hand bonuses add up. No new
+ * `G` field and no second consumption site — game.ts's play-phase `onBegin` fill
+ * consumes and clears the override.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The player who defeated the tactic (the beneficiary).
+ * @param extraCards - The printed number of extra cards.
+ * @param tacticName - The tactic's printed name, for the log line.
+ */
+export function resolveNextHandExtraCardsTactic(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  extraCards: number,
+  tacticName: string,
+): void {
   // why: "draw a new hand of cards at the end of this turn" ≡ this player's NEXT
   // play-phase `onBegin` fill (this engine has no end-of-turn cleanup draw). Lazy-
   // create the WP-497 container before the first per-player write — it is absent by
@@ -653,10 +754,10 @@ export function resolveTreasuresOfLatveria(
     G.handSizeOverrides = {};
   }
   const nextHandSize =
-    (G.handSizeOverrides[currentPlayer] ?? HAND_SIZE) + TREASURES_EXTRA_CARDS;
+    (G.handSizeOverrides[currentPlayer] ?? HAND_SIZE) + extraCards;
   G.handSizeOverrides[currentPlayer] = nextHandSize;
   pushLog(G,
-    `Fight effect: Player ${currentPlayer} will draw ${String(nextHandSize)} cards on their next hand (+${String(TREASURES_EXTRA_CARDS)} extra, Treasures of Latveria).`,
+    `Fight effect: Player ${currentPlayer} will draw ${String(nextHandSize)} cards on their next hand (+${String(extraCards)} extra, ${tacticName}).`,
     'applied',
   );
 }
@@ -1500,6 +1601,24 @@ export function dispatchTacticOnFight(
     resolveTreasuresOfLatveria(G, currentPlayer);
     return;
   }
+  // why: D-24813 — the co2e reprint of Treasures of Latveria (+3) and the three
+  // "draw two extra cards" tactics share the core resolver's additive writer.
+  if (defeatedTacticId === CO2E_DOCTOR_DOOM_TREASURES_OF_LATVERIA_TACTIC_ID) {
+    resolveTreasuresOfLatveria(G, currentPlayer);
+    return;
+  }
+  if (defeatedTacticId === ZEMO_CURSED_DYNASTY_TACTIC_ID) {
+    resolveNextHandExtraCardsTactic(G, currentPlayer, TWO_EXTRA_CARDS, 'Cursed Dynasty');
+    return;
+  }
+  if (defeatedTacticId === EGO_CELESTIAL_SWEETHEART_TACTIC_ID) {
+    resolveNextHandExtraCardsTactic(G, currentPlayer, TWO_EXTRA_CARDS, "I'm a Celestial, Sweetheart");
+    return;
+  }
+  if (defeatedTacticId === EBONY_MAW_HEAR_ME_AND_REJOICE_TACTIC_ID) {
+    resolveNextHandExtraCardsTactic(G, currentPlayer, TWO_EXTRA_CARDS, 'Hear Me and Rejoice');
+    return;
+  }
   // why: WP-691 / D-24508 — Magneto's Xavier's Nemesis: rescue one Bystander per
   // X-Men Hero in the defeating player's hand or play (D-24645; no player choice).
   if (defeatedTacticId === MAGNETO_XAVIERS_NEMESIS_TACTIC_ID) {
@@ -1616,6 +1735,287 @@ export function dispatchTacticOnFight(
     resolveCrushPacifistResistance(G, events, currentPlayer);
     return;
   }
+  // why: WP-862 / D-24804 — Fin Fang Foom's Alien Dragon Technology gives a chosen HQ Hero
+  // Size-Changing for all five classes this turn (one eligible → at once; two+ → a pick).
+  if (defeatedTacticId === ALIEN_DRAGON_TECHNOLOGY_TACTIC_ID) {
+    resolveAlienDragonTechnology(G, currentPlayer);
+    return;
+  }
+  // why: WP-862 / D-24804 — Darren Cross's Shrinking Research Budget gives each HQ Hero with no
+  // Size-Changing its own class while it stays in the HQ; its Transform stays unimplemented.
+  if (defeatedTacticId === SHRINKING_RESEARCH_BUDGET_TACTIC_ID) {
+    resolveShrinkingResearchBudget(G, currentPlayer);
+    return;
+  }
+  // why: WP-758 / D-24588 — Zarathos's four tactics: each first Haunts the highest-cost
+  // Hero of its class pair, then resolves its second clause (two multi-seat choices that
+  // thread events for the stage ride, two active-seat optional KOs).
+  if (defeatedTacticId === ZARATHOS_ERUPTION_OF_HELLFIRE_TACTIC_ID) {
+    resolveEruptionOfHellfire(G, events, currentPlayer);
+    return;
+  }
+  if (defeatedTacticId === ZARATHOS_CORRUPTED_SPIRIT_TACTIC_ID) {
+    resolveCorruptedSpiritOfVengeance(G, events, currentPlayer);
+    return;
+  }
+  if (defeatedTacticId === ZARATHOS_IMPRISON_TACTIC_ID) {
+    resolveImprisonInTheSoulCrystal(G, events, currentPlayer);
+    return;
+  }
+  if (defeatedTacticId === ZARATHOS_DEMONIC_ESSENCE_TACTIC_ID) {
+    resolveDemonicEssenceOfGhostRider(G, events, currentPlayer);
+    return;
+  }
+}
+
+/**
+ * Lists every seat except the defeating player, starting after them and going clockwise.
+ *
+ * // why: rules v23 L2247 / D-24780 — an order-sensitive "each other player" pass rotates
+ * to the current player first, then drops them (the helper does not "start after" an
+ * absent player).
+ *
+ * @param G - The game state (read for the seats).
+ * @param currentPlayer - The player who defeated the tactic.
+ * @returns The other seats, clockwise from the defeater.
+ */
+function otherSeatsClockwiseFrom(G: LegendaryGameState, currentPlayer: string): string[] {
+  return seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)
+    .filter((seat) => seat !== currentPlayer);
+}
+
+/**
+ * Logs the "each other player" clause as a no-op when there is no other player (solo).
+ *
+ * // why: D-24659 precedent — a solo match has nobody for the second clause to reach;
+ * the haunt still happened, and the log says the rest did nothing.
+ *
+ * @param G - The game state (G.messages appended).
+ * @param currentPlayer - The player who defeated the tactic.
+ * @param sourceName - The printed tactic name.
+ * @returns true when there is no other player (the caller stops).
+ */
+function logZarathosSoloNoOp(G: LegendaryGameState, currentPlayer: string, sourceName: string): boolean {
+  if (Object.keys(G.playerZones).some((seat) => seat !== currentPlayer)) {
+    return false;
+  }
+  pushLog(G, `Fight effect: there is no other player to discard or be penalized (${sourceName}).`, 'neutral');
+  return true;
+}
+
+/**
+ * Resolves Zarathos's "Eruption of Hellfire" tactic Fight effect (WP-758 / D-24588):
+ * "Zarathos Haunts the highest-cost unhaunted [covert] and/or [ranged] Hero in the HQ.
+ * Each other player discards a [covert] or [ranged] Hero or gains a Wound."
+ *
+ * Pass 1 (clockwise, D-24780): an other player with no such Hero in hand gains a Wound.
+ * Pass 2: the rest choose at once, the Wound offered only while the supply has one.
+ *
+ * @param G - The game state, mutated in place.
+ * @param events - The move's boardgame.io events (for the stage-ride admission).
+ * @param currentPlayer - The player who defeated the tactic (skipped).
+ */
+export function resolveEruptionOfHellfire(
+  G: LegendaryGameState,
+  events: TacticSeatChoiceEvents | undefined,
+  currentPlayer: string,
+): void {
+  zarathosHauntHighestCost(G, 'Eruption of Hellfire', ZARATHOS_ERUPTION_CLASSES);
+  if (logZarathosSoloNoOp(G, currentPlayer, 'Eruption of Hellfire')) {
+    return;
+  }
+  const choosingSeats: string[] = [];
+  for (const seat of otherSeatsClockwiseFrom(G, currentPlayer)) {
+    if (listZarathosHandHeroesByCost(G, seat, ZARATHOS_ERUPTION_CLASSES).length > 0) {
+      choosingSeats.push(seat);
+      continue;
+    }
+    pushLog(G, `Fight effect: Player ${seat} has no Covert or Ranged Hero to discard (Eruption of Hellfire).`, 'neutral');
+    gainZarathosEruptionWound(G, seat);
+  }
+  // why: D-24780 §6 / D-24501 — the simultaneous prompt is built in ascending seat order.
+  const choice = buildZarathosEruptionChoice(G, choosingSeats.sort(), ZARATHOS_ERUPTION_CLASSES);
+  if (choice === undefined) {
+    return;
+  }
+  parkSeatChoice(G, events, choice);
+  pushLog(G,
+    `Fight effect: each other player with a Covert or Ranged Hero must discard one or gain a Wound (Eruption of Hellfire).`,
+    'neutral',
+  );
+}
+
+/**
+ * Sorts the other seats for Corrupted Spirit of Vengeance: a seat with 3 or fewer cards is
+ * logged and left out, a seat with an Instinct / Covert Hero chooses, and every other seat
+ * must discard down (logged; no card moves here).
+ *
+ * @param G - The game state; only G.messages is written (the per-seat log lines).
+ * @param currentPlayer - The player who defeated the tactic (skipped).
+ * @returns The choosing seats and the forced discard-down seats, each in clockwise order.
+ */
+function sortCorruptedSpiritSeats(
+  G: LegendaryGameState,
+  currentPlayer: string,
+): { choosingSeats: string[]; discardDownSeats: string[] } {
+  const choosingSeats: string[] = [];
+  const discardDownSeats: string[] = [];
+  for (const seat of otherSeatsClockwiseFrom(G, currentPlayer)) {
+    const handSize = G.playerZones[seat]?.hand.length ?? 0;
+    // why: D-24588 — with 3 or fewer cards, "discard down to 3" costs nothing, so a player
+    // always takes it; the seat is logged, never asked.
+    if (handSize <= ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT) {
+      pushLog(G, `Fight effect: Player ${seat} already has ${String(ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT)} or fewer cards (Corrupted Spirit of Vengeance).`, 'neutral');
+      continue;
+    }
+    if (listZarathosHandHeroesByCost(G, seat, ZARATHOS_CORRUPTED_SPIRIT_CLASSES).length > 0) {
+      choosingSeats.push(seat);
+      continue;
+    }
+    // why: WP-882 / D-24833 — a seat with no matching Hero must discard down, but it picks its
+    // own cards: no card moves here. It waits for the Hero-holders' answer (carried on their
+    // choice) and joins the first discard-down round.
+    discardDownSeats.push(seat);
+    pushLog(G, `Fight effect: Player ${seat} has no Instinct or Covert Hero, so they must discard down to ${String(ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT)} cards (Corrupted Spirit of Vengeance).`, 'neutral');
+  }
+  return { choosingSeats, discardDownSeats };
+}
+
+/**
+ * Resolves Zarathos's "Corrupted Spirit of Vengeance" tactic Fight effect (WP-758 /
+ * D-24588): "Zarathos Haunts the highest-cost unhaunted [instinct] and/or [covert] Hero
+ * in the HQ. Each other player discards an [instinct] or [covert] Hero or discards down
+ * to 3 cards."
+ *
+ * @param G - The game state, mutated in place.
+ * @param events - The move's boardgame.io events (for the stage-ride admission).
+ * @param currentPlayer - The player who defeated the tactic (skipped).
+ */
+export function resolveCorruptedSpiritOfVengeance(
+  G: LegendaryGameState,
+  events: TacticSeatChoiceEvents | undefined,
+  currentPlayer: string,
+): void {
+  zarathosHauntHighestCost(G, 'Corrupted Spirit of Vengeance', ZARATHOS_CORRUPTED_SPIRIT_CLASSES);
+  if (logZarathosSoloNoOp(G, currentPlayer, 'Corrupted Spirit of Vengeance')) {
+    return;
+  }
+  const { choosingSeats, discardDownSeats } = sortCorruptedSpiritSeats(G, currentPlayer);
+  const choice = buildZarathosCorruptedSpiritChoice(
+    G,
+    choosingSeats.sort(),
+    ZARATHOS_CORRUPTED_SPIRIT_CLASSES,
+    discardDownSeats,
+  );
+  if (choice === undefined) {
+    // why: WP-882 / D-24833 — no seat chooses, so the forced seats' first discard-down round
+    // parks directly (no extra log line; each seat's forced line is above).
+    const discardDownChoice = buildZarathosDiscardDownChoice(G, discardDownSeats);
+    if (discardDownChoice !== undefined) {
+      parkSeatChoice(G, events, discardDownChoice);
+    }
+    return;
+  }
+  parkSeatChoice(G, events, choice);
+  pushLog(G,
+    `Fight effect: each other player with an Instinct or Covert Hero must discard one or discard down to ${String(ZARATHOS_CORRUPTED_SPIRIT_HAND_LIMIT)} cards (Corrupted Spirit of Vengeance).`,
+    'neutral',
+  );
+}
+
+/**
+ * Resolves Zarathos's "Imprison in the Soul Crystal" tactic Fight effect (WP-758 /
+ * D-24588): "Zarathos Haunts the highest-cost unhaunted [strength] and/or [instinct] Hero
+ * in the HQ. If you have a [strength] or [instinct] Hero, you may KO a Villain from your
+ * Victory Pile. If you do, draw cards equal to that Villain's VP."
+ *
+ * @param G - The game state, mutated in place.
+ * @param events - The move's boardgame.io events (unused for an active-seat-only park).
+ * @param currentPlayer - The player who defeated the tactic (the one who may KO).
+ */
+export function resolveImprisonInTheSoulCrystal(
+  G: LegendaryGameState,
+  events: TacticSeatChoiceEvents | undefined,
+  currentPlayer: string,
+): void {
+  zarathosHauntHighestCost(G, 'Imprison in the Soul Crystal', ZARATHOS_IMPRISON_CLASSES);
+  if (!playerHasHeroOfClasses(G, currentPlayer, ZARATHOS_IMPRISON_CLASSES)) {
+    pushLog(G, `Fight effect: Player ${currentPlayer} has no Strength or Instinct Hero, so they may not KO a Villain (Imprison in the Soul Crystal).`, 'neutral');
+    return;
+  }
+  const choice = buildZarathosImprisonChoice(G, currentPlayer);
+  if (choice === undefined) {
+    pushLog(G, `Fight effect: Player ${currentPlayer} has no Villain in their Victory Pile to KO (Imprison in the Soul Crystal).`, 'neutral');
+    return;
+  }
+  // why: D-24648 — the defeating player is the only addressed seat, so no stage ride runs.
+  parkSeatChoice(G, events, choice, currentPlayer);
+  pushLog(G, `Fight effect: Player ${currentPlayer} may KO a Villain from their Victory Pile and draw cards equal to its VP (Imprison in the Soul Crystal).`, 'neutral');
+}
+
+/**
+ * Resolves Zarathos's "Demonic Essence of Ghost Rider" tactic Fight effect (WP-758 /
+ * D-24588): "Zarathos Haunts the highest-cost unhaunted [ranged] and/or [strength] Hero in
+ * the HQ. If you have a [ranged] Hero, you may KO one of your Heroes. If you have a
+ * [strength] Hero, you may KO one of your Heroes."
+ *
+ * // why: D-24588 — the two sentences resolve in printed order, and each "if you have"
+ * is read when its own sentence resolves (rules v23 L3443-3447: a played card that left
+ * play no longer counts). So the Ranged line parks the first pick, and
+ * seatChoice.resolve.ts re-checks for a Strength Hero before it chains the last pick: KO
+ * your only Strength Hero with the first pick and the second KO is gone. With no Ranged
+ * Hero, the Strength line parks the last pick directly.
+ *
+ * @param G - The game state, mutated in place.
+ * @param events - The move's boardgame.io events (unused for an active-seat-only park).
+ * @param currentPlayer - The player who defeated the tactic (the one who may KO).
+ */
+export function resolveDemonicEssenceOfGhostRider(
+  G: LegendaryGameState,
+  events: TacticSeatChoiceEvents | undefined,
+  currentPlayer: string,
+): void {
+  zarathosHauntHighestCost(G, 'Demonic Essence of Ghost Rider', ZARATHOS_DEMONIC_ESSENCE_CLASSES);
+  let kind: string;
+  if (playerHasHeroOfClasses(G, currentPlayer, [ZARATHOS_DEMONIC_ESSENCE_RANGED_CLASS])) {
+    kind = ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND;
+  } else if (playerHasHeroOfClasses(G, currentPlayer, [ZARATHOS_DEMONIC_ESSENCE_STRENGTH_CLASS])) {
+    kind = ZARATHOS_DEMONIC_ESSENCE_LAST_KIND;
+  } else {
+    pushLog(G, `Fight effect: Player ${currentPlayer} has no Ranged or Strength Hero, so they may not KO a Hero (Demonic Essence of Ghost Rider).`, 'neutral');
+    return;
+  }
+  const choice = buildZarathosDemonicEssenceChoice(G, currentPlayer, kind);
+  if (choice === undefined) {
+    pushLog(G, `Fight effect: Player ${currentPlayer} has no Hero to KO (Demonic Essence of Ghost Rider).`, 'neutral');
+    return;
+  }
+  // why: D-24648 — the defeating player is the only addressed seat, so no stage ride runs.
+  parkSeatChoice(G, events, choice, currentPlayer);
+  pushLog(G, `Fight effect: Player ${currentPlayer} may KO one of their Heroes (Demonic Essence of Ghost Rider).`, 'neutral');
+}
+
+/**
+ * Resolves Fin Fang Foom's "Alien Dragon Technology" tactic Fight effect (WP-862 / D-24804):
+ * "A Hero in the HQ gets Size-Changing [Strength], [Instinct], [Covert], [Tech], [Ranged] this turn."
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The player who defeated the tactic (the chooser).
+ */
+export function resolveAlienDragonTechnology(G: LegendaryGameState, currentPlayer: string): void {
+  grantSizeChangingToHqHero(G, currentPlayer, ALIEN_DRAGON_TECHNOLOGY_CLASSES, 'add', ALIEN_DRAGON_TECHNOLOGY_TACTIC_ID);
+}
+
+/**
+ * Resolves Darren Cross's "Shrinking Research Budget" tactic Fight effect (WP-862 / D-24804):
+ * "Each Hero currently in the HQ that has no Size-Changing abilities gains Size-Changing for one
+ * of its Hero Classes."
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The player who defeated the tactic (picks for dual-class Heroes).
+ */
+export function resolveShrinkingResearchBudget(G: LegendaryGameState, currentPlayer: string): void {
+  resolveShrinkingResearchBudgetGrants(G, currentPlayer, SHRINKING_RESEARCH_BUDGET_TACTIC_ID);
 }
 
 /**

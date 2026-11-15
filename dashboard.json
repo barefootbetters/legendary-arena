@@ -189,19 +189,18 @@
     "budget": {
       "tolerance": 0.2,
       "byVendor": [
-        { "vendor": "Render", "monthly": 100 },
+        { "vendor": "DigitalOcean", "monthly": 35 },
         { "vendor": "Cloudflare", "monthly": 50 },
-        { "vendor": "Postgres", "monthly": 30 },
         { "vendor": "Hanko", "monthly": 25 }
       ],
       "placeholder": true
     },
     "actuals": {
-      "asOf": "2026-09-30",
+      "asOf": "2026-10-31",
       "byVendor": [
-        { "vendor": "Render", "monthToDate": 91.05 },
+        { "vendor": "Render", "monthToDate": 71.12 },
+        { "vendor": "DigitalOcean", "monthToDate": 17.65 },
         { "vendor": "Cloudflare", "monthToDate": 0 },
-        { "vendor": "Postgres", "monthToDate": 55.3 },
         { "vendor": "Hanko", "monthToDate": 0 }
       ]
     }

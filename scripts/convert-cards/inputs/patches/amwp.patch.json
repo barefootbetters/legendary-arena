@@ -212,7 +212,7 @@
           "attack": "1+",
           "recruit": null,
           "abilities": [
-            "Size-Changing [hc:ranged]",
+            "[keyword:Size-Changing] [hc:ranged]",
             "If this is the first card you played this turn, you get +1[icon:attack]."
           ]
         },
@@ -227,7 +227,7 @@
           "attack": "1+",
           "recruit": "1+",
           "abilities": [
-            "Size-Changing [hc:ranged]",
+            "[keyword:Size-Changing] [hc:ranged]",
             "[hc:ranged]: You get +1[icon:recruit] and +1[icon:attack]."
           ]
         },
@@ -242,7 +242,7 @@
           "attack": null,
           "recruit": "2+",
           "abilities": [
-            "Size-Changing [hc:tech]",
+            "[keyword:Size-Changing] [hc:tech]",
             "You get +1[icon:recruit] for each other card you have with a \"+\" symbol in its recruit icon."
           ]
         },
@@ -257,7 +257,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "Size-Changing [hc:ranged]",
+            "[keyword:Size-Changing] [hc:ranged]",
             "You get +1[icon:attack] for each other card you have with a \"+\" symbol in its attack icon."
           ]
         },
@@ -272,7 +272,7 @@
           "attack": "1+",
           "recruit": null,
           "abilities": [
-            "Microscopic Size-Changing [hc:tech][hc:tech][hc:tech]",
+            "[keyword:Microscopic Size-Changing] [hc:tech][hc:tech][hc:tech]",
             "When you draw a new hand this turn, draw an extra card.",
             "Heist: You get +3[icon:attack]."
           ]
@@ -288,7 +288,7 @@
           "attack": "4+",
           "recruit": "4+",
           "abilities": [
-            "Microscopic Size-Changing [hc:ranged][hc:ranged][hc:ranged][hc:ranged][hc:ranged]",
+            "[keyword:Microscopic Size-Changing] [hc:ranged][hc:ranged][hc:ranged][hc:ranged][hc:ranged]",
             "You get +1[icon:recruit] for each other card you have with a \"+\" symbol in its recruit icon.",
             "You get +1[icon:attack] for each other card you have with a \"+\" symbol in its attack icon."
           ]
@@ -311,7 +311,7 @@
           "attack": "0+",
           "recruit": null,
           "abilities": [
-            "Microscopic Size-Changing [hc:covert][hc:covert]",
+            "[keyword:Microscopic Size-Changing] [hc:covert][hc:covert]",
             "Draw a card.",
             "[hc:covert][hc:covert]: You get +2[icon:attack]."
           ]
@@ -355,7 +355,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "Size-Changing [hc:covert]",
+            "[keyword:Size-Changing] [hc:covert]",
             "[hc:covert]: Explore. Then you get +1[icon:attack] for each time you explored this turn."
           ]
         },

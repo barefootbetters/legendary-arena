@@ -43,7 +43,7 @@
           "recruit": "1+",
           "abilities": [
             "Whenever you gain a Wound this turn, return that Wound to the Wound Deck.",
-            "Heist: Rescue a Bystander."
+            "Heist: Rescue a Bystander. [keyword:rescue:1]"
           ]
         },
         {
@@ -71,7 +71,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "Heist: You may move a Villain to an empty city space. If you do, KO one of your Heroes."
+            "Heist: You may move a Villain to an empty city space. If you do, KO one of your Heroes. [keyword:heist-move-villain-ko-hero]"
           ]
         },
         {
@@ -85,7 +85,7 @@
           "attack": "3+",
           "recruit": null,
           "abilities": [
-            "Heist: You get +1[icon:attack] for each different cost card you have."
+            "Heist: You get +1[icon:attack] for each different cost card you have. [keyword:attack-per-count:distinct-costs-you-have:1]"
           ]
         },
         {
@@ -99,7 +99,7 @@
           "attack": "4+",
           "recruit": null,
           "abilities": [
-            "Heist: You get +4[icon:attack]. If the card revealed from the Villain Deck is a Master Strike, KO it and put a card from the Bystander Deck on top of the Villain Deck."
+            "Heist: You get +4[icon:attack]. If the card revealed from the Villain Deck is a Master Strike, KO it and put a card from the Bystander Deck on top of the Villain Deck. [keyword:heist-master-strike-ko]"
           ]
         }
       ],
@@ -197,7 +197,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Size-Changing] [hc:strength]",
-            "Reveal the top card of your deck. If it's [hc:strength] or has [keyword:Size-Changing] draw it."
+            "Reveal the top card of your deck. If it's [hc:strength] or has [keyword:Size-Changing] draw it. [keyword:reveal:hc-or-size-changing-strength:draw]"
           ]
         },
         {
@@ -229,7 +229,7 @@
           "recruit": "2",
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:strength][hc:strength][hc:strength]",
-            "[keyword:Antics]: You may KO a card from your hand or discard pile."
+            "[keyword:Antics]: You may KO a card from your hand or discard pile. [keyword:optional-ko-hand-discard]"
           ]
         },
         {
@@ -245,7 +245,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:covert][hc:covert][hc:covert]",
-            "[keyword:Heist]: Draw two cards."
+            "[keyword:Heist]: Draw two cards. [keyword:draw:2]"
           ]
         },
         {
@@ -341,8 +341,8 @@
           "attack": "1+",
           "recruit": null,
           "abilities": [
-            "Size-Changing [hc:ranged]",
-            "If this is the first card you played this turn, you get +1[icon:attack]."
+            "[keyword:Size-Changing] [hc:ranged]",
+            "If this is the first card you played this turn, you get +1[icon:attack]. [keyword:first-hero-condition]"
           ]
         },
         {
@@ -356,7 +356,7 @@
           "attack": "1+",
           "recruit": "1+",
           "abilities": [
-            "Size-Changing [hc:ranged]",
+            "[keyword:Size-Changing] [hc:ranged]",
             "[hc:ranged]: You get +1[icon:recruit] and +1[icon:attack]."
           ]
         },
@@ -371,7 +371,7 @@
           "attack": null,
           "recruit": "2+",
           "abilities": [
-            "Size-Changing [hc:tech]",
+            "[keyword:Size-Changing] [hc:tech]",
             "You get +1[icon:recruit] for each other card you have with a \"+\" symbol in its recruit icon."
           ]
         },
@@ -386,7 +386,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "Size-Changing [hc:ranged]",
+            "[keyword:Size-Changing] [hc:ranged]",
             "You get +1[icon:attack] for each other card you have with a \"+\" symbol in its attack icon."
           ]
         },
@@ -401,8 +401,8 @@
           "attack": "1+",
           "recruit": null,
           "abilities": [
-            "Microscopic Size-Changing [hc:tech][hc:tech][hc:tech]",
-            "When you draw a new hand this turn, draw an extra card.",
+            "[keyword:Microscopic Size-Changing] [hc:tech][hc:tech][hc:tech]",
+            "When you draw a new hand this turn, draw an extra card. [keyword:next-hand-extra-draw:1]",
             "Heist: You get +3[icon:attack]."
           ]
         },
@@ -417,7 +417,7 @@
           "attack": "4+",
           "recruit": "4+",
           "abilities": [
-            "Microscopic Size-Changing [hc:ranged][hc:ranged][hc:ranged][hc:ranged][hc:ranged]",
+            "[keyword:Microscopic Size-Changing] [hc:ranged][hc:ranged][hc:ranged][hc:ranged][hc:ranged]",
             "You get +1[icon:recruit] for each other card you have with a \"+\" symbol in its recruit icon.",
             "You get +1[icon:attack] for each other card you have with a \"+\" symbol in its attack icon."
           ]
@@ -661,7 +661,7 @@
           "attack": "0+",
           "recruit": null,
           "abilities": [
-            "Microscopic Size-Changing [hc:covert][hc:covert]",
+            "[keyword:Microscopic Size-Changing] [hc:covert][hc:covert]",
             "Draw a card. [keyword:draw:1]",
             "[hc:covert][hc:covert]: You get +2[icon:attack]."
           ]
@@ -705,7 +705,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "Size-Changing [hc:covert]",
+            "[keyword:Size-Changing] [hc:covert]",
             "[hc:covert]: Explore. Then you get +1[icon:attack] for each time you explored this turn."
           ]
         },
@@ -830,7 +830,7 @@
           "attack": null,
           "recruit": "1",
           "abilities": [
-            "When you draw a new hand this turn, draw an extra card."
+            "When you draw a new hand this turn, draw an extra card. [keyword:next-hand-extra-draw:1]"
           ]
         },
         {
@@ -844,7 +844,7 @@
           "attack": "1+",
           "recruit": null,
           "abilities": [
-            "Streets Conqueror 1",
+            "[keyword:Streets Conqueror 1]",
             "Draw a card. [keyword:draw:1]"
           ]
         },
@@ -859,7 +859,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "Bridge Conqueror 1",
+            "[keyword:Bridge Conqueror 1]",
             "[hc:ranged]: You get +2[icon:attack]."
           ]
         },
@@ -1129,7 +1129,7 @@
           "attack": "1",
           "recruit": null,
           "abilities": [
-            "[keyword:Heist]: Draw a card."
+            "[keyword:Heist]: Draw a card. [keyword:draw:1]"
           ]
         },
         {
@@ -1210,7 +1210,7 @@
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:tech][hc:tech][hc:tech][hc:tech][hc:tech]",
             "[keyword:Antics]: You get +2[icon:attack].",
-            "[keyword:Heist]: You get +2[icon:attack]. If the card revealed from the Villain Deck is a Scheme Twist, you get another +2[icon:attack], and you may shuffle that deck."
+            "[keyword:Heist]: You get +2[icon:attack]. If the card revealed from the Villain Deck is a Scheme Twist, you get another +2[icon:attack], and you may shuffle that deck. [keyword:heist-scheme-twist-bonus:2]"
           ]
         }
       ],
@@ -1548,7 +1548,7 @@
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-vi-cross-technologies-shrinksperiments.webp",
           "abilities": [
             "[keyword:Size-Changing] [hc:tech]",
-            "Fight: A Hero in the HQ loses all [keyword:Size-Changing] abilities, then gains [keyword:Size-Changing] [hc:tech] this turn."
+            "Fight: A Hero in the HQ loses all [keyword:Size-Changing] abilities, then gains [keyword:Size-Changing] [hc:tech] this turn. [effect:hq-hero-gains-size-changing:replace:tech]"
           ],
           "copies": 2
         },
@@ -1560,8 +1560,8 @@
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-vi-cross-technologies-yellowjacket-prototype.webp",
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:instinct][hc:instinct][hc:instinct][hc:instinct]",
-            "Ambush: Each player reveals a [hc:instinct] Hero or gains a Wound.",
-            "Escape: Same effect."
+            "Ambush: Each player reveals a [hc:instinct] Hero or gains a Wound. [effect:reveal-or-wound:hc:instinct]",
+            "Escape: Same effect. [effect:reveal-or-wound:hc:instinct]"
           ],
           "copies": 1
         },
@@ -1726,8 +1726,8 @@
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-vi-armada-of-kang-city-defense-system.webp",
           "abilities": [
             "[keyword:Streets Conqueror 2]",
-            "Ambush: Each player reveals a [hc:ranged] Hero or gains a Wound.",
-            "Escape: Same effect."
+            "Ambush: Each player reveals a [hc:ranged] Hero or gains a Wound. [effect:reveal-or-wound:hc:ranged]",
+            "Escape: Same effect. [effect:reveal-or-wound:hc:ranged]"
           ],
           "copies": 1
         },
@@ -1942,7 +1942,7 @@
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-covert.webp",
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:covert][hc:covert][hc:covert]",
-            "Fight: KO one of your Heroes."
+            "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ]
         },
         {
@@ -1951,7 +1951,7 @@
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-instinct.webp",
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:instinct][hc:instinct][hc:instinct]",
-            "Fight: KO one of your Heroes."
+            "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ]
         },
         {
@@ -1960,7 +1960,7 @@
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-ranged.webp",
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:ranged][hc:ranged][hc:ranged]",
-            "Fight: KO one of your Heroes."
+            "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ]
         },
         {
@@ -1969,7 +1969,7 @@
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-strength.webp",
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:strength][hc:strength][hc:strength]",
-            "Fight: KO one of your Heroes."
+            "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ]
         },
         {
@@ -1978,7 +1978,7 @@
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-tech.webp",
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:tech][hc:tech][hc:tech]",
-            "Fight: KO one of your Heroes."
+            "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ]
         }
       ],

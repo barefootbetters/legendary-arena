@@ -2,6 +2,7 @@
 import { defineComponent, ref, watch, type PropType } from "vue";
 import type { UIPendingSmashDiscard } from "@legendary-arena/game-engine";
 import type { SubmitMove } from "./uiMoveName.types";
+import CardImage from "./CardImage.vue";
 
 /**
  * Inline prompt for resolving a pending Smash discard-for-attack choice
@@ -33,6 +34,7 @@ import type { SubmitMove } from "./uiMoveName.types";
  */
 export default defineComponent({
   name: "SmashDiscardPrompt",
+  components: { CardImage },
   props: {
     pendingSmashDiscard: {
       type: Object as PropType<UIPendingSmashDiscard | undefined>,
@@ -146,9 +148,9 @@ export default defineComponent({
           @click="onSelectCard(entry.cardId)"
         >
           <span class="smash-discard-prompt__card-name">{{ entry.display.name }}</span>
-          <img
+          <CardImage
             v-if="entry.display.imageUrl"
-            :src="entry.display.imageUrl"
+            :image-url="entry.display.imageUrl"
             :alt="entry.display.name"
             class="smash-discard-prompt__card-image"
           />

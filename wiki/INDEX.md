@@ -413,6 +413,21 @@ Cross-cutting governance, methodology, and readiness assessments.
   (1280×800–1920×1080 / 375×667–414×896), the reference desktop
   resolutions to test against, and the still-open question of fluid
   desktop scaling and an ultra-wide max-width cap.
+- [webOS TV Port](webos-tv-port.md) — *(draft, feasibility research)* what
+  shipping the arena-client as an LG webOS TV app takes, with no engine change:
+  a hosted app as the leading candidate on webOS TV 24+, gated on two Seller
+  Lounge policy questions and a device spike; the 5-way D-pad navigation LG
+  requires and the board lacks; text against LG's 20 px recommendation;
+  device-code sign-in; LG's in-app purchase rule; and non-authoritative
+  sizing.
+- [Airplane Mode](airplane-mode.md) — *(draft, design research)* solo play
+  with no connection after downloading one setup's cards: what the code does
+  today (server-only rules, no PWA, no image size tiers), how YouTube,
+  Netflix, Spotify, Google Maps, Hearthstone, Marvel Snap and digital
+  deck-builders handle offline, a candidate design (in-browser `Local()`
+  master, per-setup image cache, on-device match records verified by server
+  replay on reconnect), the decisions it needs, and non-authoritative build
+  slices.
 - [Visual Effects Framework](visual-effects.md) — *(draft, research)* the
   in-game "juice" layer: the shipped combo flash + synergy call-out off
   `UIState.game.lastPlayEffectsFired` (WP-556), the notable-event beats

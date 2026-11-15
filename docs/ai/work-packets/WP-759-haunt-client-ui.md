@@ -1,6 +1,6 @@
 # WP-759 — Haunt client UI: haunted HQ cards, Exorcise action, and the haunting-Mastermind tile (Arena Client)
 
-**Status:** Draft 2026-09-25 — **BLOCKED on WP-757** (reads its UIState fields and submits its move)
+**Status:** Done 2026-11-10 (EC-796). Drafted 2026-09-25; unblocked once WP-757 ✅ (2026-09-25) and WP-758 ✅ (2026-11-10) landed. Executed with the §Execution Amendments below. D-24026 live-verify operator-pending.
 **Primary Layer:** App (`apps/arena-client`)
 **Dependencies:**
 - **WP-757 / D-24587** — `UIHQState.haunters?`, `UIHQHaunter`, `UIMastermindState.isHaunting?`, and the move `exorciseHauntedHero`.
@@ -12,7 +12,7 @@
 **Lane:** Standard (two-session). It is a single app, but it has more than 4 files and adds a new move affordance. Any ambiguity routes to standard.
 **Arc:** 3 of 3. It runs after WP-757 and is parallel-safe with WP-758 (the two touch disjoint files). No D-entry: it consumes D-24587.
 
-> Baseline: `origin/main` at `02769e98`, plus reserve commit #2356. At execution, re-baseline on the WP-757 merge commit.
+> Baseline: `origin/main` at `02769e98`, plus reserve commit #2356. **Re-baselined at execution on `f609ddff`** (WP-758 merge); see §Execution Amendments.
 
 ---
 
@@ -28,7 +28,7 @@ On a haunted slot:
 - Clicking Exorcise opens an in-flow chooser with **KO the Hero** or **Give it to:**, followed by one button per seat. The viewer comes first, labelled "You".
 - The chooser submits `exorciseHauntedHero`.
 
-`MastermindTile.vue` blocks Fight while `mastermind.isHaunting`, and shows a "Haunting" badge.
+`MastermindTile.vue` shows a "Haunting" badge while `mastermind.isHaunting`. The Fight lock itself already shipped in PR #3207 (2026-11-07); this packet keeps it as is.
 
 ## User-Visible Impact
 
@@ -50,7 +50,7 @@ Players can see which HQ Heroes are possessed and by whom. They cannot mis-click
    - `.hq-slots` is `overflow-x: auto`.
 3. `composables/useHqRow.ts`: `HqCell` hero variant (~29-31). No existing test deep-compares whole cells.
 4. `components/play/MastermindTile.vue`:
-   - `gateForFight` (~87-117) checks stage (92), then cost (96).
+   - `gateForFight` (~191) checks stage, then the heal lock, then cost, then the **haunting lock shipped by PR #3207**, then the all-tactics-defeated check. The lock returns `The Mastermind is haunting a Hero in the HQ. Exorcise that Hero first.` when `mastermind.isHaunting === true`, and `MastermindTile.test.ts` pins it in the `Haunt blocks the Fight (WP-757 / D-24587)` describe block.
    - The Excessive-Violence fight button is **hidden** via `v-if="showEvFight()"` (~248), and `showEvFight` calls `gateForFight` (~155-162).
 5. `components/play/uiMoveName.types.ts`:
    - `UiMoveName` union (~43-144).
@@ -102,7 +102,7 @@ If any item is false, this packet is **BLOCKED**.
   - Order: `canExorciseHauntedHero()` (viewer's turn ∧ `play.main`), then the heal lock (`hasHealedThisTurn === false`, reason `You healed this turn — you can't exorcise`, mirroring WP-757's `hasHealedThisTurn` guard), then `useCardCostGating(economy).canRecruit(display)`. This is the same cost source the engine's recruit path uses.
   - When `display === null`, fall back to stage-only, labelled "Exorcise" with no cost (the ~82 precedent).
   - Haunted null slot (hero deck ran dry): the haunter strip shows in the empty cell with **no** Exorcise button.
-- **Mastermind lock** (locked): inside `gateForFight`, after the stage check and before the cost check, return `{ allowed: false, reason: \`${mastermind.display.name} is haunting a Hero in the HQ — exorcise it to fight\` }` when `isHaunting`. That same gate hides the EV button through `showEvFight`, so the EV button needs no separate gating.
+- **Mastermind lock** (locked, **already shipped by PR #3207**; do not move or reword it): inside `gateForFight`, after the cost check and before the all-tactics-defeated check, return `{ allowed: false, reason: 'The Mastermind is haunting a Hero in the HQ. Exorcise that Hero first.' }` when `isHaunting`. That same gate hides the EV button through `showEvFight` and keeps the Enigma picker closed, so neither needs separate gating. The lock sits **after** cost, unlike the Haunted-before-resource Recruit precedence, because the louder `Fight N` cost badge (`isFightCostUnaffordable`) reads the same cost check: with the haunt first, an unaffordable haunted fight would show a loud cost badge next to a haunt tooltip. Amended 2026-11-07 to match #3207; the original draft placed it before cost with the text `${mastermind.display.name} is haunting a Hero in the HQ — exorcise it to fight`.
 - **DOM placement** (locked):
   - The Exorcise button is a **sibling** of the card `<button>` inside the `<li>`, never nested.
   - The chooser renders **in-flow below `<ol class="hq-slots">`**, never absolute/fixed. Absolute or fixed placement would break on the `overflow-x` clip, the mobile `--scroll-x` band, and the fit-stage scale transform.
@@ -120,7 +120,7 @@ If any item is false, this packet is **BLOCKED**.
 - `HqCell` hero variant gains `haunter: UIHQHaunter | null`, computed as `hq.haunters?.[index] ?? null`.
 - Recruit tooltip: `Haunted — exorcise it first`.
 - Heal-lock tooltip on Exorcise: `You healed this turn — you can't exorcise`.
-- Mastermind tooltip: `` `${name} is haunting a Hero in the HQ — exorcise it to fight` ``.
+- Mastermind tooltip (shipped by PR #3207): `The Mastermind is haunting a Hero in the HQ. Exorcise that Hero first.`.
 - Test ids:
   - `play-hq-haunter` (with `data-haunter-kind`, and `data-haunter-ext-id` when the haunter is a villain);
   - `play-hq-exorcise` (`data-hq-index`);
@@ -141,7 +141,7 @@ If any item is false, this packet is **BLOCKED**.
   - the chooser mount (in-flow);
   - the four optional props.
 - **C) `components/play/HauntedExorciseChooser.vue`** (new, + test): the KO button, Give buttons and Escape handling. It emits `choose(payload)` and `close`.
-- **D) `components/play/MastermindTile.vue`** (+ test): the haunting lock in `gateForFight` and the badge.
+- **D) `components/play/MastermindTile.vue`** (+ test): the `play-mastermind-haunting` badge. The `gateForFight` haunting lock and its tests already exist (PR #3207); leave them unchanged.
 - **E) `components/play/uiMoveName.types.ts`**: add `'exorciseHauntedHero'`.
 - **F) `composables/useTurnActions.ts`** (+ test): `canExorciseHauntedHero()`, added to both the return type and the object.
 - **G) `pages/PlayDesktop.vue`, `pages/PlayMobile.vue`**: pass the four props.
@@ -168,8 +168,8 @@ If any item is false, this packet is **BLOCKED**.
 - `apps/arena-client/src/components/play/HQRow.test.ts` — modified: new cases; existing cases untouched.
 - `apps/arena-client/src/components/play/HauntedExorciseChooser.vue` — **new**.
 - `apps/arena-client/src/components/play/HauntedExorciseChooser.test.ts` — **new**.
-- `apps/arena-client/src/components/play/MastermindTile.vue` — modified: `gateForFight` haunting lock + badge.
-- `apps/arena-client/src/components/play/MastermindTile.test.ts` — modified: new cases.
+- `apps/arena-client/src/components/play/MastermindTile.vue` — modified: the haunting badge (the `gateForFight` lock is already in place from PR #3207).
+- `apps/arena-client/src/components/play/MastermindTile.test.ts` — modified: new badge cases; the existing `Haunt blocks the Fight` cases stay untouched.
 - `apps/arena-client/src/components/play/uiMoveName.types.ts` — modified: union member.
 - `apps/arena-client/src/composables/useTurnActions.ts` — modified: predicate + return type.
 - `apps/arena-client/src/composables/useTurnActions.test.ts` — modified: predicate case.
@@ -222,7 +222,7 @@ That is 17 code/test files against the ~8 guideline. The count is justified: sev
    - Give to X submits `{ hqIndex, outcome: 'gain', recipientPlayerId: X }`.
    - The viewer is listed first as "You".
    - Escape closes the chooser and returns focus.
-5. With `isHaunting`, Mastermind Fight is disabled with the haunting tooltip, the EV button is not rendered, and `play-mastermind-haunting` is visible.
+5. With `isHaunting`, Mastermind Fight is disabled with the PR #3207 haunting tooltip, the EV button is not rendered, and `play-mastermind-haunting` is visible.
 6. `?fixture=haunted-hq&play=1` loads, and the fixture registry test passes.
 7. `pnpm --filter @legendary-arena/arena-client typecheck` and `test` exit 0, and `pnpm -r build && pnpm -r --no-bail test` has 0 failures.
 8. The preview check on `haunted-hq` matches criteria 2–5 at desktop 1280×720 and on mobile, with screenshots.
@@ -238,12 +238,12 @@ That is 17 code/test files against the ~8 guideline. The count is justified: sev
 
 ## Definition of Done
 
-- [ ] Every Acceptance Criterion passes, and the diff is allowlist-only.
-- [ ] `docs/ai/STATUS.md` is updated.
-- [ ] `DECISIONS.md`: no new entry. This packet consumes D-24587, and that is recorded in the STATUS line.
-- [ ] `WORK_INDEX.md` WP-759 is `[x]`, `EC_INDEX.md` EC-796 is Done, the mindmap node is `✅`, and `pnpm roadmap:counts:check` is 0.
-- [ ] Two-commit topology: `EC-796:` implementation, then a `SPEC:` governance close.
-- [ ] **D-24026 live-verify** (post-merge, REQUIRED, shared with WP-757). In a live Zarathos / Fallen match on `play.legendary-arena.com`, with the deployed `/api/version` gitSha checked:
+- [x] Every Acceptance Criterion passes, and the diff is allowlist-only.
+- [x] `docs/ai/STATUS.md` is updated.
+- [x] `DECISIONS.md`: no new entry. This packet consumes D-24587, and that is recorded in the STATUS line.
+- [x] `WORK_INDEX.md` WP-759 is `[x]`, `EC_INDEX.md` EC-796 is Done, the mindmap node is `✅`, and `pnpm roadmap:counts:check` is 0.
+- [x] Two-commit topology: `EC-796:` implementation, then a `SPEC:` governance close.
+- [ ] **D-24026 live-verify** (operator-pending) (post-merge, REQUIRED, shared with WP-757). In a live Zarathos / Fallen match on `play.legendary-arena.com`, with the deployed `/api/version` gitSha checked:
   - a haunted Hero shows its haunter;
   - Exorcise → KO works, and Exorcise → give works;
   - the Villain appears in the City.
@@ -251,6 +251,19 @@ That is 17 code/test files against the ~8 guideline. The count is justified: sev
   This is recorded as operator-pending until it is seen live.
 
 ---
+
+## Execution Amendments (2026-11-10, re-baseline on `f609ddff`)
+
+The 01.4 / 01.7 / 00.3 gate subagents re-ran against `f609ddff` (pre-flight READY after text amendments; copilot RISK, documented; lint FAIL → PASS after these). The draft predates D-24614 (#2442, 2026-09-26) and D-24801 (Size-Changing). These amendments override the locked text above where they differ:
+
+- **A-1: three new HQRow props, not four.** `hasHealedThisTurn` already exists on HQRow (D-24614) and both pages already pass it. New props: `players`, `viewerPlayerId`, `mastermindName`.
+- **A-2: Recruit precedence on a haunted slot is stage → heal lock → Haunted → display-null fallback → resource.** The D-24614 heal tooltip keeps winning (its tests stay untouched), and Haunted sits before the display-null fallback so a Haunted slot with no `slotDisplay` is still locked.
+- **A-3: Exorcise prices at the PRINTED cost.** The engine reads `G.cardStats[heroId]?.cost ?? 0` (`exorciseHauntedHero.ts`), not the D-24801 Size-Changing `recruitCosts` the recruit gate now uses. Exorcise calls `canRecruit(display)` with no `recruitCosts` argument and treats a null cost as 0; `Exorcise (N)` shows the printed cost. The sentence "the same cost source the engine's recruit path uses" above is superseded.
+- **A-4: the exorcise heal lock keeps its locked wording** (`You healed this turn — you can't exorcise`), applied in HQRow. `canExorciseHauntedHero()` is turn + stage only; the shared `healLockGate` reason names recruit and fight, and exorcise is neither (rulebook v23 p.27).
+- **A-5: chooser placement.** It stays in normal flow below `<ol class="hq-slots">` and adds `position: sticky; left` with a viewport-width cap, so on PlayMobile's `--scroll-x` band every choice is reachable without scrolling the band. Sticky stays in flow; it is not absolute or fixed.
+- **Accepted residual (copilot #11).** The client has no board-level pending-choice freeze: Recruit, City Fight and Mastermind Fight are all live while a choice is open, and the engine's block-all guards no-op them. Exorcise matches Recruit. Making every board button pending-aware is a separate follow-up.
+- **Fixture.** `haunted-hq` also sets `mastermind.fightCost: 4`. Without a projected fight cost the cost gate fires first (#3207 places the haunt lock after cost), and the fixture would not show the haunt tooltip.
+- Anchor drift only (no scope change): `useTurnActions` return type at ~325, `gateForFight` at ~200 (stage → heal → cost → haunt → WP-873 fortify → tactics), HQRow mounts at PlayDesktop ~972 / PlayMobile ~632, `hasHealedThisTurn` at `uiState.types.ts:66`.
 
 ## Lint Gate Self-Review (00.3)
 

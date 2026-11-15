@@ -151,6 +151,66 @@
       "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveCrushPacifistResistance",
       "wp": "WP-821",
       "decision": "D-24754"
+    },
+    "chmp-mastermind-fin-fang-foom-alien-dragon-technology": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveAlienDragonTechnology",
+      "wp": "WP-862",
+      "decision": "D-24804"
+    },
+    "amwp-mastermind-darren-cross-shrinking-research-budget": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveShrinkingResearchBudget",
+      "wp": "WP-862",
+      "decision": "D-24804"
+    },
+    "co2e-mastermind-doctor-doom-treasures-of-latveria": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveTreasuresOfLatveria",
+      "wp": "",
+      "decision": "D-24813"
+    },
+    "cvwr-mastermind-baron-helmut-zemo-cursed-dynasty": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveNextHandExtraCardsTactic",
+      "wp": "",
+      "decision": "D-24813"
+    },
+    "msis-mastermind-ebony-maw-hear-me-and-rejoice": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveNextHandExtraCardsTactic",
+      "wp": "",
+      "decision": "D-24813"
+    },
+    "mgtg-mastermind-ego-the-living-planet-im-a-celestial-sweetheart": {
+      "status": "deferred",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveNextHandExtraCardsTactic",
+      "wp": "",
+      "decision": "D-24813"
+    },
+    "mdns-mastermind-zarathos-eruption-of-hellfire": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveEruptionOfHellfire",
+      "wp": "WP-758",
+      "decision": "D-24588"
+    },
+    "mdns-mastermind-zarathos-corrupted-spirit-of-vengeance": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveCorruptedSpiritOfVengeance",
+      "wp": "WP-758",
+      "decision": "D-24588"
+    },
+    "mdns-mastermind-zarathos-imprison-in-the-soul-crystal": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveImprisonInTheSoulCrystal",
+      "wp": "WP-758",
+      "decision": "D-24588"
+    },
+    "mdns-mastermind-zarathos-demonic-essence-of-ghost-rider": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveDemonicEssenceOfGhostRider",
+      "wp": "WP-758",
+      "decision": "D-24588"
     }
   }
 }

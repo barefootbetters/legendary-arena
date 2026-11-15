@@ -713,3 +713,24 @@ describe('computeFinalScores — Undercover VP (WP-678 / D-24494)', () => {
     assert.equal(computeFinalScores(withoutField).players[0]!.undercoverVP, 0);
   });
 });
+
+describe('computeFinalScores — Ultron counts controlled Artifacts (WP-858 / D-24794)', () => {
+  const ULTRON = 'core-villain-masters-of-evil-ultron-01';
+  const MEDALLION = 'dstr/doctor-voodoo/medallion-of-many-loas#0';
+
+  it('a Tech Ritual Artifact the player still controls is among "all your cards"', () => {
+    // why: WP-858 / D-24794 — rules v23 p.17: a controlled Hero Artifact is one of your Heroes;
+    // Medallion of Many Loas is Tech, so Ultron scores 2 + 1 = 3.
+    const gameState = createMockGameState({
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [ULTRON] },
+      },
+      villainDeckCardTypes: { [ULTRON]: 'villain' },
+      cardTraits: { [MEDALLION]: { heroClass: 'tech', team: null } },
+    });
+    gameState.controlledArtifacts = { '0': [MEDALLION] };
+
+    const result = computeFinalScores(gameState);
+    assert.equal(result.players[0]!.villainVP, 3);
+  });
+});

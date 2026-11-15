@@ -62,7 +62,7 @@ source:
   - ../apps/arena-client/src/components/log/gameLogExport.ts
   - ../apps/arena-client/src/components/log/GameLogPanel.vue
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-09-26
+last-reviewed: 2026-10-31
 ---
 
 # Visual Effects Framework
@@ -360,7 +360,7 @@ row by row:
 | `UIState.game.lastPlayEffectsFired` (combo count) | Engine (projected) | ✅ — [Surface 2](#combo-signal) |
 | `UIState` outcome / progress (`EndgameOutcome`, `progress.escapedVillains`, `scheme.twistCount`, `players[].woundCount`) | Engine (projected) | ✅ — [Surface 4](#endgame) |
 | `UIState` captured-card display (`city.spaces[].attachedHeroDisplay` / `attachedBystanderCount`, `mastermind.attachedBystanders`) | Engine (projected, WP-505 / D-24311) | ✅ — a persistent **board anchor** for the capture / rescue sub-effects ([Surface 1b](#surface-1b)); board state, not VFX |
-| Local move dispatch (`playCard` / `recruitHero` / `fightVillain` / `drawCards` / `dodgeCard` / `endTurn`) | Client | ✅ — [Surface 3](#surface-3) |
+| Local move dispatch (`playCard` / `recruitHero` / `recruitOfficer` / `recruitSidekick` / `fightVillain` / `drawCards` / `dodgeCard` / `endTurn`) | Client | ✅ for **intent only** (a press or hover acknowledgement) — [Surface 3](#surface-3). A cue that shows a move's **result** fires on the confirmed `UIState` change, never on dispatch: a refused move returns silently |
 | `G` | Engine-internal | ❌ never |
 | `ctx` | Engine-internal | ❌ never |
 | `G.messages` (raw engine log array) | Engine-internal — not itself a `UIState` field (the log's content IS projected separately, as `UIState.log`) | ❌ — VFX reads the typed `notableEvents`, never the log (flat narration, not a trigger vocabulary) |
@@ -587,10 +587,10 @@ limit below).
 
 | Game moment | Client signal | Suggested visual (proposal) |
 |---|---|---|
-| **Wound gained** | a delta on `UIState.players[id].woundCount` (the universal wound signal — every source increments it) | **Shipped (WP-650 / D-24462):** a full-bleed dull-red **damage vignette** flashing in from the screen edges when the **local** player's `woundCount` increases (`useWoundVfx` → `VfxOverlay`, gated `shouldRender('shake')`; the audio thud rides `useWoundCue`). The thematic inverse of the [shield block](#surface-block). Fires on an increase only (a heal does not flash). v1 is full-screen for the local seat; a per-panel / per-afflicted-player variant is a future WP |
+| **Wound gained** | a delta on `UIState.players[id].woundCount` (the universal wound signal — every source increments it). Not every Wound lands in the discard: Random Acts of Unkindness gains it to the **hand**, and its pass-left step can move that Wound to another seat without touching the supply, so the count rises with no `piles.woundsCount` drop | **Shipped (WP-650 / D-24462):** a full-bleed dull-red **damage vignette** flashing in from the screen edges when the **local** player's `woundCount` increases (`useWoundVfx` → `VfxOverlay`, gated `shouldRender('shake')`; the audio thud rides `useWoundCue`). The thematic inverse of the [shield block](#surface-block). Fires on an increase only (a heal does not flash). v1 is full-screen for the local seat; a per-panel / per-afflicted-player variant is a future WP |
 | **Hero KO'd** | `appliedEffects` contains `koHeroCurrentPlayer` / `koHeroEachPlayer` / `koHeroEachPlayerMag2`; the KO'd heroes are named in `narrative` | A sharp **shatter / dissolve** on the KO'd card as it slides to the KO pile |
 | **Bystander captured** | `appliedEffects` contains `captureBystander` | An ominous **pull-away** — the bystander token yanked toward the villain, **landing on the villain's persistent "N captured" badge** (WP-505) |
-| **Bystander rescued** | `FightResolvedEvent.bystandersRescued > 0` (and `MastermindDefeatedEvent.bystandersRescued`) | A bright **rescue sparkle** / coin arc into the victory pile, **pulling off the villain / mastermind's captured stack** (WP-505) |
+| **Bystander rescued** | `FightResolvedEvent.bystandersRescued > 0` (and `MastermindDefeatedEvent.bystandersRescued`) | A bright **rescue sparkle** / coin arc into the victory pile, **pulling off the villain / mastermind's captured stack** (WP-505). This is the same motion as a card-transfer flight (a card leaving one place and landing on a pile), so it should ship as that beat's Bystander kind rather than as a separate effect — see [Surface 3](#surface-3) |
 
 *Animated mocks of the four Tier-3 sub-effects are in
 [Appendix A.2](#appendix-surface-1b).*
@@ -769,13 +769,23 @@ won, so the *flash* starts at `small` but the *word* starts at `medium`.
 
 #### Surface 3 — Player action moves (tactile local feedback) {#surface-3}
 
-The client dispatches these moves, so it can fire a small effect on the
-local action for immediate tactile feedback, independent of the
-authoritative result.
+The client dispatches these moves, so it knows the player's intent the
+moment they act. It does **not** know the result: under the [Move Validation
+Contract](../docs/ai/ARCHITECTURE.md) a move the engine refuses (can't
+afford it, wrong step, a pending choice) returns silently with no error. So
+a cue that shows the move **succeeding** — a card leaving the HQ, a villain
+falling — fires on the **confirmed `UIState` change** in the next frame, not
+on dispatch; otherwise it plays for a move that never happened. [Slash to
+fight](#slash-to-fight) learned this the same way: the engine confirms every
+fight before the next one goes out. Dispatch is still fine for an
+**intent-only** acknowledgement (a button press, a lift on the card you
+grabbed).
 
 | Action (move) | Priority | Fires when | Suggested visual (proposal) |
 |---|---|---|---|
-| `recruitHero` | T2 | A hero is recruited from HQ | An HQ-slot **glow** that pulls toward the hand/discard |
+| `recruitHero` | T2 | A hero is recruited from HQ — confirmed when that HQ slot's card changes and the player's `discardCount` rises (`deckCount`, for a Wall-Crawl deck-top placement) | An HQ-slot **glow**, then the card flies to the player's **discard pile** (to the top of the deck instead when a Wall-Crawl hero is placed there, D-24049). Same beat as the card-transfer flight below |
+| `recruitOfficer` | T2 | A S.H.I.E.L.D. Officer is recruited — confirmed by `piles.officersCount` dropping and the player's `discardCount` rising | The Officer card flies from the S.H.I.E.L.D. Officers supply to the player's **discard pile** (a card effect that gains an Officer for free can put it in the **hand** instead) |
+| `recruitSidekick` | T2 | A Sidekick is recruited — confirmed by `piles.sidekicksCount` dropping and the player's `discardCount` rising | The Sidekick flies from the Sidekick stack to the player's **discard pile** |
 | `drawCards` | T2 | Start-of-turn draw / any draw | A quick **deal / fan** motion into the hand |
 | `playCard` | T2 | A card is played from hand | A card **trail** + a soft place-ripple where it lands |
 | `fightVillain` | T2 | A player attacks a City villain | A directional **slash / impact streak** toward the target |
@@ -785,11 +795,23 @@ authoritative result.
 *Animated mocks of the action-move cues (abstract card shapes — the cue is
 the motion, not the art) are in [Appendix A.4](#appendix-surface-3).*
 
-> **Recruit has no result event.** `recruitHero` emits no notable event;
-> the only signals are the local move dispatch and the resulting
-> `UIState.hq` slot / `discardCount` deltas. The move-dispatch hook is the
-> simplest place to fire a recruit effect (see
-> [Decisions Pending](#decisions-pending) for the optional result event).
+> **Recruit has no result event, and doesn't need one.** `recruitHero`,
+> `recruitOfficer` and `recruitSidekick` emit no notable event. The confirmed
+> signal is already projected: the `UIState.hq` slot change (or the
+> `piles.officersCount` / `piles.sidekicksCount` drop) paired with the
+> player's `discardCount` rise (`deckCount` for a Wall-Crawl deck-top
+> placement) in the same frame. That pairing names both ends
+> of the motion — where the card came from and which pile it went to — so a
+> recruit cue rides it with no engine work.
+>
+> **One beat for every "a card lands on your pile" moment.** Gaining a Wound
+> (Wounds supply → discard), rescuing a Bystander (→ Victory Pile) and the
+> three recruits above are the same motion: a card lifts off where it was,
+> arcs across the board and settles on the destination pile. WP-849
+> (drafted 2026-10-28, D-24785 reserved) builds that **card-transfer flight**
+> with the Wound as its first kind, on the count-pair trigger above; the
+> Bystander, Officer, Sidekick and recruited-Hero kinds are named follow-ups
+> that reuse it.
 
 #### Surface 4 — Outcome / endgame {#endgame}
 
@@ -1092,6 +1114,7 @@ should not be adopted without a `DECISIONS.md` entry.
 | Feel item | Client signal | Suggested character (proposal) | Priority |
 |---|---|---|---|
 | **Hover lift** | pointer enter / leave on a hand card (`@media (hover: hover)` only) | the card rises 12 px and scales to 1.06 with a shadow and a `z-index` bump; pointer devices only, off at intensity `off` and under reduced motion, and a disabled tile never lifts ([`CardTile.vue`](../apps/arena-client/src/components/play/CardTile.vue)) | **Shipped (WP-699)** |
+| **Table tilt (camera)** | none — a static presentation of the desktop board | the shared board leans back like a table seen from your chair, with the hand and the right rail left flat; a hovered City or HQ card stands up toward you. See [Table perspective](#table-perspective) | shipped (WP-852 / D-24788) |
 | **Grey-out unplayable** | ~~affordability~~ — see the [caveat](#card-interaction-decisions) | The plan's affordability grey-out (dim what you can't afford) **does not apply here**: playing a card from hand is **resource-free** in this game (cost gating is only for recruiting HQ heroes and fighting villains, [`useTurnActions.canPlayCard`](../apps/arena-client/src/composables/useTurnActions.ts) checks turn + stage only). The only in-hand "unplayable" states — not-your-turn / not-main-step / Wound — are already gated (and the Wound is already a disabled tile). The information-bearing hand cue is the superpower-ready rim below. | **dropped** (not applicable) |
 | **Hand arc / fan** | hand size + card index (layout only) | the hand fans along a shallow arc ([`handArc.ts`](../apps/arena-client/src/components/play/handArc.ts): 24° total spread, 0.55 px dip per degree); past six cards the cards overlap (down to -40 px) instead of scrolling; the hovered card straightens to 0° and nudges each neighbour 12 px outward ([`HandRow.vue`](../apps/arena-client/src/components/play/HandRow.vue)) | **Shipped (WP-699)** |
 | **Card-draw motion** | a `UIState` hand-contents delta (a card appeared) | the drawn card sweeps from the deck position into its arc slot (~350 ms spring), existing cards reflow (FLIP-style) rather than snap; stagger multi-card draws ~80 ms. **Blocker found 2026-09-26:** `HandRow.vue` keys each card `${cardId}-${index}`, so playing one card re-keys every card after it and Vue remounts them — there is nothing to animate. Keys by occurrence (`cardId#n`) stay stable when other cards leave, and `<TransitionGroup>` then gives FLIP reflow with no new dependency | recommend (the [Surface-3 `drawCards` mock](#appendix-surface-3) is the audio-paired sibling) |
@@ -1123,6 +1146,282 @@ cards at once.
 > the multiplayer / lobby work, not the feel layer. (An emote's *per-emote
 > sound* would be the only piece that touches
 > [Sound Effects](sound-effects.md).)
+
+#### Shipped — Table perspective (camera and tilt) {#table-perspective}
+
+The desktop board is a **tilted table with a vanishing point** (WP-852 /
+D-24788): the shared board leans away from the player, the way a table looks
+from your chair, while the hand, the cockpit and the right rail stay square to
+the screen, and a City villain or HQ hero stands up to face you when you point
+at it. It is the camera half of the Hearthstone ancestry
+([cards are objects, and the table is readable](visual-effects-design-ancestry.md#hearthstone)).
+It is not the "foil tilt" that page declines, which is a per-card shader.
+
+**Reference games.** Most digital card games stay flat or nearly flat
+because flat is easier to read (*Magic: The Gathering Arena*, *Marvel Snap*).
+The ones that tilt split into two groups:
+
+| Reference | What to take | What to leave |
+|---|---|---|
+| *Hearthstone*, *Legends of Runeterra* | a gentle tilt toward the far side on a busy, clickable board; cards lift and straighten toward you on hover | fully 3D boards with props: a different cost class from one CSS tilt |
+| *Inscryption* (Act 1), *Hand of Fate* | the mood of sitting at a physical table across from the opponent | first-person camera angles. They are far steeper than a board this busy can afford, and their lighting is a separate idea |
+| *Balatro* (Game Developers Choice Awards 2025 Game of the Year) | every hover answers: a card under the pointer wobbles and tilts toward it, the small, constant feedback players call "juicy" | the CRT filter over the whole screen (a post-processing pass, outside the [library posture](#library-posture)) and screen shake on every score (shake is budgeted, see [Performance budget](#performance-budget)) |
+| *Plants vs. Zombies Heroes* | Hearthstone's board language in a lighter, playful tone | little for this board; noted mainly for Herbs vs. Ailments |
+
+![Hearthstone board on an iPad: the two hero portraits face each other across an ornate purple arena, three frozen enemy minions and two of the player's minions in rows between them, the opponent's card backs top-left, and the player's hand fanned in the bottom-right corner.](/visual-effects/hearthstone-board.jpg "width=64%")
+
+*Hearthstone (Blizzard Entertainment). The tilt this proposal is after, and how
+subtle it is: the arena reads as a table seen from slightly above rather than a
+flat sheet, yet every minion, stat and portrait stays upright and readable, and
+the hand fans flat along the bottom edge. Source: the
+[Hearthstone App Store listing](https://apps.apple.com/app/id625257520), iPad
+screenshot. © Blizzard Entertainment; internal design reference only.*
+
+![Legends of Runeterra board: a grass-and-stone arena seen from slightly above, the opponent's row at the top, the player's three cards along the bottom edge, mana gems on the left and the turn button on the right.](/visual-effects/legends-of-runeterra-board.jpg "width=64%")
+
+*Legends of Runeterra (Riot Games). A gentler tilt still: almost top-down, with
+just enough depth that the far row reads as "across the table". The closest
+match in feel to the shipped tilt on our busy board. Source: Riot promo
+screenshot, via the
+[League of Legends Wiki board page](https://wiki.leagueoflegends.com/en-us/LoR:Board).
+© Riot Games; internal design reference only.*
+
+![Inscryption Act 1: a first-person view down a dim, candlelit table, a grid of card slots receding toward the opponent's face in the dark, a brass scale on the left, and the player's hand of cards held upright to the camera in the foreground.](/visual-effects/inscryption-table.jpg "width=64%")
+
+*Inscryption, Act 1 (Daniel Mullins Games / Devolver Digital). The mood
+reference, and the angle we do **not** copy: a first-person view down the table
+is far steeper than a board with five City spaces, the HQ and the Mastermind
+can stay readable at. What it does show well is the hand: the held cards stand
+square to the camera while the board recedes behind them, the "cards straighten
+toward the player" rule in its most literal form. Source: the
+[Inscryption Steam store page](https://store.steampowered.com/app/1092790/Inscryption/).
+© Daniel Mullins Games / Devolver Digital; internal design reference only.*
+
+**How the angle was picked: on the real board, not in a 3D tool.** The three
+board zones were wrapped in a perspective scene on the busy `mid-turn` board
+through the [`?fixture=…&play=1` dev route](play-board.md#preview-fixture) at
+1440×900 (scale 0.81) and measured. The earlier guess here, "6–10°", turned out
+meaningless on its own: an angle needs its perspective distance, and 6–10° at a
+far vanishing point is almost invisible on this board.
+
+| Setting | Far edge narrower | Worst far-corner box slop (City) | Smallest gap between neighbouring City boxes |
+|---|---|---|---|
+| flat | 0% | 0 px | 22.3 px |
+| 8° / 1600 px | ~2% (barely visible) | 2.5 px | 19.3 px |
+| **14° / 900 px (shipped)** | ~6% (reads as a table) | 6.6 px | 13.6 px |
+| 20° / 900 px | ~9% (band text strains) | 9 px | 10.5 px |
+
+"Box slop" is how far `getBoundingClientRect()` (an axis-aligned box) reaches
+past a tilted card's visible trapezoid at its far corners.
+
+- **What tilts.** One scene and plane in
+  [`PlayDesktop.vue`](../apps/arena-client/src/pages/PlayDesktop.vue) wrap the
+  adversary band (Mastermind, Scheme, supply decks, KO pile), the City and the HQ:
+  `rotateX(14deg)` under `perspective: 900px`, set through three CSS variables
+  from [`useBoardTilt`](../apps/arena-client/src/composables/useBoardTilt.ts)
+  (`--board-tilt-angle`, `--board-tilt-perspective`, `--board-lift`). The
+  cockpit (hand, played cards, economy, piles), the turn bar, any pending-choice
+  prompt, the top status bar and the right rail stay flat.
+- **Hinged on the near edge.** `transform-origin: 50% 100%` and a bottom-centre
+  vanishing point, so the bottom of the plane stays at full scale and everything
+  above only shrinks into the distance. The tilted board never grows past the
+  frame [`useScaleToFit`](../apps/arena-client/src/composables/useScaleToFit.ts)
+  fits to the viewport (it measures the untransformed authored size, which a
+  `rotateX` does not change). Leaning back leaves a strip of empty table above
+  the band (about 49 screen px at 1440×900). Translating the plane up only moves
+  that strip down to the cockpit edge, so `--board-lift` stays a knob locked at
+  `0px`.
+- **Board cards straighten on hover.** Hovering an occupied City space or HQ
+  slot, the Mastermind, or the Officers or Sidekicks pile in the adversary band
+  ([band stand-up](#band-standup)) stands its card (with its Fight /
+  discard-cost badges) up square to the player: `rotateX(-14deg) scale(1.06)` around its **bottom edge**, over 150 ms.
+  No `translateY` (unlike the hand lift): the bottom edge stays put, so every
+  point of the resting card stays covered and a click anywhere on it still lands
+  on the button. The hover target is the whole space; the tile's own 1.05 hover
+  is off inside a lifting row, so the lifted card is exactly 1.06. While lifted,
+  a card may hide its Dark Portal marker and overlap the neighbouring label by a
+  few pixels. A space whose WP-817 Primus discard chooser is open never lifts:
+  inside a 3D context depth order beats `z-index`, and the raised card would
+  cover the chooser.
+- **Only while the row fits.** The City and HQ lists scroll sideways when a
+  scheme adds columns, and a scroll container forces its subtree flat and clips
+  it. So the straighten is on only while the row fits without scrolling
+  ([`useRowFit`](../apps/arena-client/src/composables/useRowFit.ts), the slash
+  gesture's own fit measurement); a scrolling row keeps its scroll and its plain
+  hover.
+- **3D only while a card is lifted.** The straighten needs
+  `transform-style: preserve-3d` on every element from the plane down to the
+  button. With that chain on at rest, the coplanar layers z-fought in Chrome's
+  hit test and the plane took up to 60% of a resting card's clicks, so the chain
+  switches on (through `:has(…:hover)`) only while a liftable card is hovered,
+  and the plane steps out of hit testing while it is 3D. A flat board
+  hit-tests exactly.
+- **Rectangles still work.** The slash gesture's
+  [full-crossing rule](#slash-to-fight) and the VFX overlay anchors read
+  `getBoundingClientRect()`. Neighbouring City boxes never touch at the shipped
+  angle, at rest or with a card lifted, so both work unchanged; the
+  [play-surface guard](testing.md) pins that gap, the tilt itself, the hover
+  lift and the resting clicks.
+- **Desktop only.** The `≤767px` mobile composer (`<PlayMobile>`, D-12909) is a
+  separate layout and stays flat.
+- **Accessibility and intensity.** A static tilt is not motion, so
+  `prefers-reduced-motion` keeps it and only drops the hover lift (the same gate
+  as the WP-699 hand lift). Effect Intensity `off` flattens the table and turns
+  the lift off; `low` and `full` keep both.
+- **Cost.** CSS `perspective`, `rotateX` and a hover transform. No new
+  dependency ([library posture](#library-posture)), no engine signal, nothing in
+  the determinism hash.
+
+##### Shipped — the Mastermind, Officers and Sidekicks stand up too (WP-854 / D-24790) {#band-standup}
+
+The Mastermind, the S.H.I.E.L.D. Officers pile and the Sidekicks pile are cards
+you act on (fight, recruit, recruit), and they sit in the adversary band at the
+**far** edge of the plane, where the tilt shrinks them most. Since WP-854 they
+answer the pointer the same way the City and HQ cards do.
+
+- **What stands up.** The same lift as the City and HQ, unchanged:
+  `rotateX(-14deg) scale(1.06)` around the card's bottom edge, over 150 ms, no
+  `translateY`.
+  - **Mastermind:** the card frame inside the fight button in
+    [`MastermindTile.vue`](../apps/arena-client/src/components/play/MastermindTile.vue)
+    (the card and its Fight badge). The "Tactics remaining" and Final Blow lines,
+    the Excessive Violence and Read card buttons, captured Bystanders,
+    Hypno-Thralls and the Master Strike pile beside it stay down.
+  - **Officers and Sidekicks:** the recruit button in
+    [`SharedDecks.vue`](../apps/arena-client/src/components/play/SharedDecks.vue).
+    On the desktop board the button is just the card, filling its panel (the
+    `lg` card size); the name, count and `Recruit: N` are the card's hover text
+    (with the disabled reason on a second line) and stay in the DOM as
+    screen-reader text (Jeff feedback after WP-854). The mobile layout has no
+    hover, so it keeps the visible label.
+  - **Everything else in the band stays flat:** the Scheme, Wounds, Horrors,
+    Bystanders, the KO pile, and the Master Strike and Scheme Twist piles. You
+    read them; you do not buy or fight them.
+- **Hover the holder, lift the child.** As in the City, the hover target holds
+  the lifted element and never moves: the pile's cell (the `li`) holds the
+  Officers or Sidekicks button, and the fight button holds the Mastermind's card
+  frame. A pile or Mastermind you cannot afford still stands up, like a City
+  villain you cannot afford, so you can read it; its dimmed look, disabled state
+  and tooltip do not change.
+- **No lift while the Enigma guess is open.** The WP-830 Enigma guess first
+  opened on top of the Mastermind tile, where a raised Mastermind would have
+  covered it (inside a 3D context depth order beats `z-index`). Since
+  2026-10-31 it is a dialog teleported to the page body, because in the tile it
+  was too small to click reliably, so nothing can cover it. The Mastermind
+  still stays flat while the guess is open. The tile carries a static
+  `mastermind-tile--guessing` class while the picker is open, because the
+  plane's switch already sits inside `:has()`, which cannot nest: a prototype
+  that nested it voided the whole selector list, and every band card rose but
+  stayed tilted (×1.03 instead of ×1.22).
+- **3D only while one of them is hovered.** The plane's `:has(…:hover)` switch
+  (above) gains these three targets, and the `preserve-3d` chain runs from the
+  plane through `.play-desktop__adversary-band` to the lifted element: through
+  the Mastermind zone, tile and fight button, or through `.shared-decks`, its row
+  and the cell. The plane steps out of hit testing meanwhile; at rest the board
+  stays flat for hit testing. No element on either chain may carry `overflow`
+  other than `visible`, `opacity` below 1, or a `filter`: each one forces its
+  subtree flat. (A disabled recruit button's own `opacity: 0.55` fades only its
+  contents, which ride on it; it still stands up.)
+- **No row-fit gate needed.** The band does not wrap and has no scroll
+  container, unlike the City and HQ rows, so it never needs
+  [`useRowFit`](../apps/arena-client/src/composables/useRowFit.ts); the guard's
+  chain walk pins that.
+- **Headroom at the far edge.** Standing up around the bottom edge makes a band
+  card taller on screen, and its top rises into the empty strip the tilt leaves
+  above the band ([candle prototype](#candle-prototype) territory). Measured on
+  the real board (`mid-turn` fixture):
+
+  | | Mastermind | Officers | Sidekicks |
+  |---|---|---|---|
+  | Height on hover, ×resting (1440×900) | 1.22 | 1.22 | 1.22 |
+  | Top rise, px (1280 / 1366 / 1920) | 12 / 13 / 20 | 18 / 20 / 30 | 18 / 20 / 30 |
+  | Clearance below the top status bar, px (1280 / 1366 / 1920) | 35 / 38 / 57 | 24 / 26 / 38 | 24 / 26 / 38 |
+
+  The band stands up more than a City card (×1.17) because it leans furthest.
+  The [play-surface guard](testing.md) asserts the band's resting clicks, the
+  hover lift, the status-bar clearance, an Officers ↔ Sidekicks slide-and-click
+  and the Enigma exclusion at all three widths.
+- **Same gates as the City and HQ.** Pointer devices only
+  (`@media (hover: hover)`); `prefers-reduced-motion` and Effect Intensity
+  `off` drop the lift. Desktop only.
+- **Accepted overlap.** While lifted, the Mastermind card may paint over the
+  Dark Portal marker or the "victory is assured" banner just above it (depth
+  beats `z-index` in 3D), as the City accepts for its marker.
+
+**Beyond the camera: the tactile-table brainstorm (2026-10-28).** The tilt came
+out of a wider brainstorm on making the board feel like a physical table
+(drawers of cards, shuffling, a glowing deck box, candlelight), started by
+Fractal Design Dabbler's wooden desk of art-supply drawers. Its three camera
+bullets are what shipped above. The rest belongs elsewhere; none of it is built:
+
+| Idea | Where it belongs | Note |
+|---|---|---|
+| Dealing: cards flick off the top, slide, land with a soft thud; the opening hand lands face down and flips in a ripple; a messy discard pile; stacks that thicken | [Surface 3 action-move cues](#surface-3), [card-draw motion](#card-interaction-feel), and the drafted card-transfer flight (WP-849) | fire on the confirmed frame, never on dispatch |
+| Riffle and overhand shuffles; a player taps to cut | the `deckReshuffled` beat ([A.1 mock](#appendix-surface-1)) | cosmetic only: the engine has already shuffled with `ctx.random` before the client sees the deck. A player-driven cut would be a new move the rules do not have, so it stays out |
+| Villain-deck reveals in a colour per type: Master Strike purple and black, Scheme Twist sickly orange, Villain blood red, Henchman dull brown | [Surface 1 notable events](#surface-1) | Master Strike and Scheme Twist already have Surface 1 beats ([A.1 mocks](#appendix-surface-1)); a colour for a Villain or Henchman entering the City is new |
+| Hero-class light (Strength green, Instinct yellow, Covert red, Tech grey, Ranged blue, each moving differently), blended in the deck box's glow | no surface yet | the card game calls the class "Ranged", not "Range" |
+| A deck box as the game's bookends: the lid opens and cards rise from the light; at the end they sink back; a win keeps the candle lit, a loss snuffs it | [Surface 4 endgame](#endgame) for the end, beside the shipped heroes-win finale; the start has no surface yet | a once-a-game showpiece |
+| Card drawers to pick Heroes, Villains, Masterminds and Schemes at setup | match setup ([Play Lobby UX](play-lobby-ux-direction.md)), not the play board | |
+| Candlelight, a flickering warm light, a colour-snapping shader, foil shimmer | not adoptable as written | a PixiJS or three.js post-processing pass is a new dependency and a second canvas, both outside the [library posture](#library-posture) (D-24365) without a new `DECISIONS.md` entry; per-card foil is declined on the [ancestry page](visual-effects-design-ancestry.md#hearthstone). A CSS-only version is within the posture; see the [candle prototype](#candle-prototype) below |
+| A Mastermind entrance march: heavy brass, slow minor key, timpani, swelling as the card rises | the [motif matrix](music-authoring.md#motif-matrix) | must be an **original** composition. An arrangement of the Imperial March, in any key or orchestration, is still a derivative of a copyrighted work and needs a licence; writing in the style of a film march is fine |
+| Cards that follow the cursor with drag and weight | out | play is click-to-play (WP-100); the [slash](#slash-to-fight) is the one drag gesture |
+
+The brainstorm's build order matches this page's: the table first (shipped
+here), then dealing and villain reveals because they happen constantly, then the
+once-a-game showpieces (the deck box, the Mastermind entrance). Its game index
+of award winners is mostly about Herbs vs. Ailments and is not tracked here.
+
+##### Candle prototype (2026-10-28, not built) {#candle-prototype}
+
+A CSS-only candle was tried on the real `mid-turn` board through the
+[`?fixture=…&play=1` dev route](play-board.md#preview-fixture) at 1440×900, with
+the shipped tilt:
+
+- **The candle** is a small SVG candle in a brass holder, in the strip of empty
+  table the tilt leaves above the adversary band (about 52 screen px tall). It
+  fits there without moving any zone; a first try that was taller covered the
+  Wounds label.
+- **The light** is two layers that start below the top status bar (a light that
+  covered the bar tinted it orange): a warm radial glow from the candle
+  (`mix-blend-mode: soft-light`) and a gentle darkening toward the edges
+  (`multiply`). An irregular 3.2 s `opacity` flicker on the glow and a sway on
+  the flame stop under `prefers-reduced-motion`. No library, no canvas.
+- **Night theme: it works.** On the dark panels the warm pool reads as
+  candlelight and the City and HQ card names stay clear.
+- **Day theme: it reads as a tint.** The light frosted panels turn orange instead
+  of looking lit, and the small grey labels nearest the candle (Wounds, Horrors,
+  Bystanders and their counts) lose contrast, which breaks the brainstorm's own
+  rule that the cards stay readable. A day version would keep the candle and the
+  edge darkening and drop or greatly weaken the glow.
+- **Not yet tried:** watching the flicker live (the clips were recorded, but the
+  review below is by frames), real card art under the light, and the story beats (the
+  candle gutters on a Master Strike and flares when the Mastermind is defeated,
+  which would hang off [Surface 1](#surface-1)).
+
+**Flame comparison (same day).** Three CSS flames were recorded on the same
+board, night theme, zoomed 3× on the candle:
+
+![Three rows of six frames each, 110 ms apart, of a candle on the warm-lit board strip above the Wounds and Horrors labels. Row A: a small single teardrop flame on a short candle in a brass dish, nearly identical across frames. Row B: a tall thin candle with a narrow flame whose white core is barely visible. Row C: a short candle in a brass holder with a larger orange-edged flame, a yellow body and a white core, leaning a little differently in each frame.](/visual-effects/candle-flame-comparison.png "width=90%")
+
+*Rows A–C top to bottom; each row is six frames 110 ms apart.*
+
+The recording itself, the three flames side by side for five seconds (silent,
+loops; press play):
+
+{{< video src="/visual-effects/candle-flame-comparison.mp4" caption="A first SVG flame, B Grok's flame as written, C Grok's layers retimed (the pick). Night theme, zoomed 3x on the candle." >}}
+
+| Flame | What it is | Verdict |
+|---|---|---|
+| A | the first prototype's SVG teardrop with a gentle sway | reads as a candle, but barely changes frame to frame |
+| B | Grok's three-layer flame as written, scaled from its 160 px to the strip | built for 160 px: shrunk to fit, the white core is about 3 px and mostly disappears, and the tall candle dominates. Each layer swings between two states on a fixed 0.22–0.35 s cycle, which reads as a shimmer rather than a flame, and it has no reduced-motion fallback |
+| C | Grok's outer / body / core layers kept, retimed: slower irregular multi-step cycles (2.3 s, 1.7 s, 1.3 s) swaying from the flame's base, a short candle in the brass holder, still under `prefers-reduced-motion` | **the pick**: orange edge, yellow body, white core, leaning and recovering |
+
+At real board size the candle is about 40 px tall and the flame 8–10 px, so the
+warm light carries the candlelight mood; the flame model is polish on top of it,
+not a replacement for it.
+
+So if the candle is built, it starts as a night-theme feature, with the day
+theme getting the candle alone.
 
 #### Shipped — Slash to fight (the Fruit Ninja input) {#slash-to-fight}
 
@@ -1563,8 +1862,12 @@ right owner.
   D-24459** (extended per producer through WP-651). No *unclaimed* reveal-avoidance
   remains — the discard-to-avoid strikes and forced KOs are a different mechanic,
   out of scope by design.
-- **`heroRecruited` result event** — would replace client-side
-  delta-watching for the recruit effect.
+- **`heroRecruited` result event — likely not needed.** It was proposed to
+  replace client-side delta-watching for the recruit effect. The confirmed
+  delta (HQ slot change + `discardCount` rise in one frame) already names the
+  source and the destination, which is what the card-transfer flight needs
+  (see [Surface 3](#surface-3)). Revisit only if a recruit case turns up that
+  the pairing cannot tell apart.
 
 #### Card-interaction feel — open questions {#card-interaction-decisions}
 
@@ -1783,9 +2086,9 @@ Proposal mocks of the [Surface 3](#surface-3) local tactile cues, drawn with
 **abstract card shapes** since the cue is the *motion* (pull, deal, slash,
 flick), not the art. (`playCard` and `endTurn` aren't mocked.)
 
-![Animated mock of recruitHero: a hero card in an HQ slot glows gold, then is pulled down into the hand, and the cycle repeats. Loops.](/visual-effects/surface3-recruit.svg "width=44%")
+![Animated mock of recruitHero: a hero card in an HQ slot glows gold, then flies down onto the discard pile, and the cycle repeats. Loops.](/visual-effects/surface3-recruit.svg "width=44%")
 
-*`recruitHero` (T2) — an HQ-slot **glow** that pulls the card down into the hand.*
+*`recruitHero` (T2) — an HQ-slot **glow**, then the card flies onto your **discard pile** (where a recruited Hero goes).*
 
 ![Animated mock of drawCards: cards deal one after another off a deck and fan out into a hand at the bottom, then reset. Loops.](/visual-effects/surface3-draw.svg "width=44%")
 
