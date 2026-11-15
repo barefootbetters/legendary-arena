@@ -2355,6 +2355,132 @@
       "date": "2026-11-14",
       "evidence": "2p Operator match 0oZ12g0zNrZ (Red Skull / Midtown Bank Robbery; Monsters Unleashed + Deadpool's Secret Secret Wars; Hand Ninjas; Captain America, Hulk, Thor, Iron Man, Spider-Man; server 62103d8b (contains the #3202 merge 5cbac16a), all matches created 2026-11-14 after boot): Doop staged and revealed beside Orrgo (4.1.1); with +20 Attack his Fight button was disabled with \"A Villain is in an adjacent city space\" and the \"Can't fight yet\" cue showed; after Hand Ninjas was fought he stayed blocked (Orrgo beside him); after Orrgo was fought (4.2.4) the reason cleared and Player 0 fought Doop (4.2.5). 3p autoplay match BhcELKcYA_G (Red Skull / Midtown Bank Robbery; Monsters Unleashed + Great Lakes Avengers + Deadpool's Secret Secret Wars; Hand Ninjas; Captain America, Hulk, Thor, Iron Man, Spider-Man; server 62103d8b (contains the #3202 merge 5cbac16a), all matches created 2026-11-14 after boot): Doop -01 in the City 17.1.1-36.1.2, blocked at every turn start with a Villain beside him in the Sewers, Rooftops or Bridge; the cue rendered on seat 0's board and the Fight button's title read the reason once the seat had enough Attack; he escaped (36.1.2). Solo autoplay 35UugWXZ8SU (Deadpool's Secret Secret Wars): Doop -00 blocked turns 5-14 with Deadpool beside him.",
       "note": "Adjacent means the City space on either side; the end spaces have one neighbour. D-24816."
+    },
+    {
+      "key": "co2e-villain-hydra-hydra-kidnappers|capture-pile-hero",
+      "kind": "villain",
+      "card": "HYDRA Kidnappers",
+      "ability": "Ambush: HYDRA Kidnappers capture a card from the S.H.I.E.L.D. Officer Deck or Sidekick Deck.",
+      "wp": "WP-838",
+      "state": "verified",
+      "date": "2026-11-15",
+      "evidence": "2p autoplay 9L2FBYe3ifK (Doctor Doom / Unleash the Power of the Cosmic Cube; HYDRA + Sinister Spider-Foes; Hand Ninjas; Spider-Man, Spider-Man (Miles Morales), Cyclops, Hawkeye, Nick Fury; server 3cc2c042 (the #3394 merge, built 2026-11-15T06:50:42Z), client 3cc2c04, every match created after the deploy): both copies' Ambush logged \"captured S.H.I.E.L.D. Officer from the S.H.I.E.L.D. Officer Deck.\" (7.1.2, 29.1.2), effect trace capture-pile-hero fired; the City tile read Fight 4 holding the Officer (static cost unchanged)."
+    },
+    {
+      "key": "co2e-villain-hydra-hydra-kidnappers|gain-attached-hero",
+      "kind": "villain",
+      "card": "HYDRA Kidnappers",
+      "ability": "Fight: Choose a player to gain that Hero.",
+      "wp": "WP-838",
+      "state": "verified",
+      "date": "2026-11-15",
+      "evidence": "2p autoplay 9L2FBYe3ifK (Doctor Doom / Unleash the Power of the Cosmic Cube; HYDRA + Sinister Spider-Foes; Hand Ninjas; Spider-Man, Spider-Man (Miles Morales), Cyclops, Hawkeye, Nick Fury; server 3cc2c042 (the #3394 merge, built 2026-11-15T06:50:42Z), client 3cc2c04, every match created after the deploy): Player 1 fought -00 (7.2.16) and \"gained S.H.I.E.L.D. Officer (pile-shield-officer) from HYDRA Kidnappers … into their discard pile\" (7.2.17) through the generic award; no bridge trace.",
+      "note": "The mechanic is WP-450's; this row records the WP-838 marking on the co2e card. \"Choose a player\" is the fighter (D-24771 §5)."
+    },
+    {
+      "key": "co2e-villain-sinister-spider-foes-venom|capture-pile-hero",
+      "kind": "villain",
+      "card": "Venom",
+      "ability": "Ambush: Venom captures a Hero from the Sidekick Deck …",
+      "wp": "WP-838",
+      "state": "verified",
+      "date": "2026-11-15",
+      "evidence": "2p autoplay 9L2FBYe3ifK (Doctor Doom / Unleash the Power of the Cosmic Cube; HYDRA + Sinister Spider-Foes; Hand Ninjas; Spider-Man, Spider-Man (Miles Morales), Cyclops, Hawkeye, Nick Fury; server 3cc2c042 (the #3394 merge, built 2026-11-15T06:50:42Z), client 3cc2c04, every match created after the deploy): \"captured Sidekick from the Sidekick Deck.\" at both copies' Ambush (19.1.2, 31.1.2), traced fired."
+    },
+    {
+      "key": "co2e-villain-sinister-spider-foes-venom|capture-hq-heroes-cost-lte",
+      "kind": "villain",
+      "card": "Venom",
+      "ability": "Ambush: … and each Hero that costs 2 or less from the HQ.",
+      "wp": "WP-838",
+      "state": "verified",
+      "date": "2026-11-15",
+      "evidence": "2p autoplay 9L2FBYe3ifK (Doctor Doom / Unleash the Power of the Cosmic Cube; HYDRA + Sinister Spider-Foes; Hand Ninjas; Spider-Man, Spider-Man (Miles Morales), Cyclops, Hawkeye, Nick Fury; server 3cc2c042 (the #3394 merge, built 2026-11-15T06:50:42Z), client 3cc2c04, every match created after the deploy): \"captured Trick Arrow, Web-Shooters, Web-Shooters from the HQ (cost 2 or less).\" (19.1.3) and \"captured Witty Banter from the HQ (cost 2 or less).\" (31.1.3), traced fired."
+    },
+    {
+      "key": "co2e-villain-sinister-spider-foes-venom|gain-one-attached-hero-rest-to-bottom",
+      "kind": "villain",
+      "card": "Venom",
+      "ability": "Fight: You may gain a Hero captured by Venom. Put the rest on the bottom of the Hero Deck and/or Sidekick Deck as appropriate.",
+      "wp": "WP-838",
+      "state": "verified",
+      "date": "2026-11-15",
+      "evidence": "2p autoplay 9L2FBYe3ifK (Doctor Doom / Unleash the Power of the Cosmic Cube; HYDRA + Sinister Spider-Foes; Hand Ninjas; Spider-Man, Spider-Man (Miles Morales), Cyclops, Hawkeye, Nick Fury; server 3cc2c042 (the #3394 merge, built 2026-11-15T06:50:42Z), client 3cc2c04, every match created after the deploy): Player 1 fought -00 holding Sidekick, Trick Arrow, Web-Shooters, Web-Shooters (19.2.9): gained Trick Arrow (19.2.10, a 2-cost Hero wins the tie with the Sidekick), then \"Sidekick … went to the bottom of the Sidekick Deck.\" and both Web-Shooters \"went to the bottom of the Hero Deck.\" (19.2.11-13). Traces: executor no-op plus secondary-site / villain-fight-bridge / awardOneAttachedHeroRestToBottom (D-24824 §7)."
+    },
+    {
+      "key": "co2e-villain-sinister-spider-foes-venom|setup:attack-per-captured",
+      "kind": "villain",
+      "card": "Venom",
+      "ability": "Venom gets +1[icon:attack] for each Hero he has.",
+      "wp": "WP-838",
+      "state": "verified",
+      "date": "2026-11-15",
+      "evidence": "2p autoplay 9L2FBYe3ifK (Doctor Doom / Unleash the Power of the Cosmic Cube; HYDRA + Sinister Spider-Foes; Hand Ninjas; Spider-Man, Spider-Man (Miles Morales), Cyclops, Hawkeye, Nick Fury; server 3cc2c042 (the #3394 merge, built 2026-11-15T06:50:42Z), client 3cc2c04, every match created after the deploy): Venom -01 in the City holding 2 captured cards (Sidekick, Witty Banter) read Fight 7 (5 + 2), not the captured-cost sum 9.",
+      "note": "No ledger row of its own: the passive builds G.villainAttackPerCaptured, not a hook. D-24771 §3."
+    },
+    {
+      "key": "co2e-villain-hydra-baron-strucker-supreme-hydra|shuffle-bystanders-into-villain-deck",
+      "kind": "villain",
+      "card": "Baron Strucker, Supreme Hydra",
+      "ability": "Fight: Shuffle four cards from the Bystander Deck into the Villain Deck. Then play two cards from the Villain Deck.",
+      "wp": "WP-838",
+      "state": "verified",
+      "date": "2026-11-15",
+      "evidence": "2p autoplay 9L2FBYe3ifK (Doctor Doom / Unleash the Power of the Cosmic Cube; HYDRA + Sinister Spider-Foes; Hand Ninjas; Spider-Man, Spider-Man (Miles Morales), Cyclops, Hawkeye, Nick Fury; server 3cc2c042 (the #3394 merge, built 2026-11-15T06:50:42Z), client 3cc2c04, every match created after the deploy): Player 0 fought -01 (30.2.11): \"shuffled 4 Bystander(s) from the Bystander Deck into the Villain Deck.\" (30.2.12) before \"plays the top 2 card(s) of the Villain Deck.\" (30.2.13); the first played card, \"Bystander (pile-bystander) revealed and captured by Hand Ninjas\" (30.2.14), took the classifier fallback instead of failing closed."
+    },
+    {
+      "key": "co2e-villain-hydra-baron-strucker-supreme-hydra|play-villain-deck-cards",
+      "kind": "villain",
+      "card": "Baron Strucker, Supreme Hydra",
+      "ability": "Fight: … Then play two cards from the Villain Deck.",
+      "wp": "WP-838",
+      "state": "verified",
+      "date": "2026-11-15",
+      "evidence": "2p autoplay 9L2FBYe3ifK (Doctor Doom / Unleash the Power of the Cosmic Cube; HYDRA + Sinister Spider-Foes; Hand Ninjas; Spider-Man, Spider-Man (Miles Morales), Cyclops, Hawkeye, Nick Fury; server 3cc2c042 (the #3394 merge, built 2026-11-15T06:50:42Z), client 3cc2c04, every match created after the deploy): the play bridge ran after the shuffle (30.2.13-15: a supply Bystander captured, then Endless Armies of HYDRA entered the City); traces executor no-op then secondary-site / villain-fight-bridge / playTopVillainDeckCards.",
+      "note": "The mechanic is WP-542's; this row records the WP-838 marking on Strucker."
+    },
+    {
+      "key": "co2e-villain-enemies-of-asgard-enchantress|captureBystander",
+      "kind": "villain",
+      "card": "Enchantress",
+      "ability": "Ambush: Enchantress captures a Bystander from the Bystander Deck …",
+      "wp": "WP-838",
+      "state": "verified",
+      "date": "2026-11-15",
+      "evidence": "2p autoplay NEPNusmBEwM (Doctor Doom / Unleash the Power of the Cosmic Cube; Enemies of Asgard + Masters of Evil; Hand Ninjas; Captain America, Hawkeye, Iron Man, Thor, Spider-Man; server 3cc2c042 (the #3394 merge, built 2026-11-15T06:50:42Z), client 3cc2c04, every match created after the deploy): \"Ambush effect: a bystander was captured.\" (2.1.3); solo autoplay NU-svGELG_A (Doctor Doom / Bank Robbery Hostage Crisis; Enemies of Asgard + Radiation; Hand Ninjas; Captain America, Thor, Hulk; server 3cc2c042 (the #3394 merge, built 2026-11-15T06:50:42Z), client 3cc2c04, every match created after the deploy): the same at 13.1 and 19.1.3. Traced fired.",
+      "note": "The generic captured line prints after the Victory-Pile line, because the legacy keyword narrates after the executor; the state order is the printed one (T10)."
+    },
+    {
+      "key": "co2e-villain-enemies-of-asgard-enchantress|capture-bystander-each-victory-pile",
+      "kind": "villain",
+      "card": "Enchantress",
+      "ability": "Ambush: … and from each player's Victory Pile (of that player's choice).",
+      "wp": "WP-838",
+      "state": "verified",
+      "date": "2026-11-15",
+      "evidence": "solo autoplay NU-svGELG_A (Doctor Doom / Bank Robbery Hostage Crisis; Enemies of Asgard + Radiation; Hand Ninjas; Captain America, Thor, Hulk; server 3cc2c042 (the #3394 merge, built 2026-11-15T06:50:42Z), client 3cc2c04, every match created after the deploy): after Player 0 rescued a Bystander (16.2.6), Enchantress -00's Ambush logged \"captured a Bystander from the Victory Pile of Player 0.\" (19.1.2), traced fired. The blocked branch logged \"no player had a Bystander in their Victory Pile to capture.\" on an empty Victory Pile (2p autoplay NEPNusmBEwM 2.1.2; the solo match 13.1.2)."
+    },
+    {
+      "key": "co2e-villain-enemies-of-asgard-enchantress|setup:attack-per-captured",
+      "kind": "villain",
+      "card": "Enchantress",
+      "ability": "Enchantress gets +1[icon:attack] for each Bystander she has.",
+      "wp": "WP-838",
+      "state": "verified",
+      "date": "2026-11-15",
+      "evidence": "2p autoplay NEPNusmBEwM (Doctor Doom / Unleash the Power of the Cosmic Cube; Enemies of Asgard + Masters of Evil; Hand Ninjas; Captain America, Hawkeye, Iron Man, Thor, Spider-Man; server 3cc2c042 (the #3394 merge, built 2026-11-15T06:50:42Z), client 3cc2c04, every match created after the deploy): Enchantress -01 holding 2 Bystanders read Fight 7 (5 + 2). solo autoplay NU-svGELG_A (Doctor Doom / Bank Robbery Hostage Crisis; Enemies of Asgard + Radiation; Hand Ninjas; Captain America, Thor, Hulk; server 3cc2c042 (the #3394 merge, built 2026-11-15T06:50:42Z), client 3cc2c04, every match created after the deploy): -00 holding 2 read Fight 9 and -01 holding 1 read Fight 7 under the Midtown-family scheme (5 + Bystanders + the D-24572 +1 per Bystander).",
+      "note": "No ledger row of its own (G.villainAttackPerCaptured). D-24771 §3."
+    },
+    {
+      "key": "co2e-villain-masters-of-evil-baron-zemo|setup:attack-per-captured",
+      "kind": "villain",
+      "card": "Baron Zemo",
+      "ability": "Baron Zemo gets +1[icon:attack] for each Bystander he has.",
+      "wp": "WP-838",
+      "state": "verified",
+      "date": "2026-11-15",
+      "evidence": "2p autoplay NEPNusmBEwM (Doctor Doom / Unleash the Power of the Cosmic Cube; Enemies of Asgard + Masters of Evil; Hand Ninjas; Captain America, Hawkeye, Iron Man, Thor, Spider-Man; server 3cc2c042 (the #3394 merge, built 2026-11-15T06:50:42Z), client 3cc2c04, every match created after the deploy): Baron Zemo -00 holding 5 Bystanders (captured by his Ambush, 28.1) read Fight 9 (4 + 5); he had fought for a flat 4 before (D-24333).",
+      "note": "Operator fork F6. D-24771 §3."
     }
   ]
 }
