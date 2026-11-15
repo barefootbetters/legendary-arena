@@ -282,5 +282,3 @@ Calendly-style booking + Stripe step.
   draft this page is derived from; informed in part by Nate Herk's "own the
   booking layer, don't rent Calendly" framing (2026-08-28,
   `https://www.youtube.com/watch?v=PYjbeY8sGLs`)
-</content>
-</invoke>

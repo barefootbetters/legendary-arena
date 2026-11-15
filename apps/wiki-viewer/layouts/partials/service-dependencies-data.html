@@ -20,7 +20,7 @@
       dependencies being recorded.
 */ -}}
 {{- $page := .page -}}
-{{- $ops := site.Data.ops -}}
+{{- $ops := hugo.Data.ops -}}
 {{- $dependencyData := index $ops "service-dependencies" -}}
 {{- $domainData := index $ops "domains" -}}
 {{- if not $dependencyData -}}
