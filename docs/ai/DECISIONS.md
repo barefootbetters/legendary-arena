@@ -51546,3 +51546,38 @@ Protect this file.
 
 ---
 Protect this file.
+
+### D-24853 — Every done WORK_INDEX row ends with exactly one live-verify state token, the row's live-verify status of record; CI checks it against the WP's own live-verify.json entries and the row's prose, and never writes it (Active 2026-11-14 — WP-896 / EC-934)
+
+**Context.** D-24852 and its three follow-ups closed every live-verify drift a prose pattern can close. Its third amendment named the residual: a second entry verified on a date the row already cites, on a row whose "still owed" wording the pattern does not read. Free text cannot be policed further; a structured field on the row can.
+
+**Decision.** Every done row matching `^- \[x\] (WP-\d+[A-Za-z]?(?:\.\d+)?) ` (865 rows at execution, the 16 lettered rows included) ends with ` [live-verify: <state>]` (leading space) as its **last** text, exactly once, with no other `[live-verify:` text on the row. No row matching `^- \[ \] WP-\d` carries `[live-verify:`; the closer appends the token when flipping the row to `[x]`. The row's end is the only position every row shares (229 numeric rows have an irregular status block). The D-24852 rules keep their own numeric done selector.
+
+**States.** `verified` — every check the WP owes is confirmed on its surface. `partial` — some is confirmed, some still owed. `pending` — owed, nothing confirmed. `n/a` — the WP's `User-Visible Surface` is `none — infrastructure`, or the WP predates D-24026 (no `User-Visible Surface` header) and never made a live-verify claim. A **user-facing** WP verified under another WP is `verified` (when that WP's recorded result covers its change) or `pending`, never `n/a`; a `none — infrastructure` WP stays `n/a`. A user-facing WP closes with the aggregate of its live-verify.json entries, or `pending` if it has none; its live-verify `SPEC:` PR (or STATUS-flip commit) updates the token in the same commit as the entry.
+
+**Rules (`scripts/check-workindex-liveverify-pending.mjs`, same CI step as D-24852).**
+- **R1 presence:** the token rule above, on done and open rows.
+- **R2 record agreement:** when ≥1 live-verify.json entry names the WP (the existing whole-token grouping), the token equals their aggregate: all `verified` → `verified`, all `pending` → `pending`, any mix → `partial`; `n/a` with entries fails; no own entries → any state passes R2.
+- **R3 prose agreement:** a `verified` or `n/a` token fails when `findPendingLiveVerifyText(stripLiveVerifyToken(row))` is not null.
+- **Token stripping:** `stripLiveVerifyToken(row) = row.replace(/ \[live-verify: (verified|partial|pending|n\/a)\]$/, '')`. The stale-row rule and R3 read the stripped row, because the token's own "live-verify: pending" matches the prose pattern and its "live-verify" would anchor the operator-pending arm. A malformed or misplaced token is not stripped, so R1 reports it. The date-citation rule reads the whole row: the token holds no date.
+
+**Why R2 reads own entries only.** The stale-row rule also reads the entries of cited direct-fix D-numbers, but a cited fix is often not the WP's own work (WP-863 cites D-24802 without owning it). The one combination this cannot satisfy — own entries all `verified`, a cited direct-fix entry not verified, prose honestly partial — does not occur today; its remedy is to add the WP to that entry's `wp` if the mechanic is the WP's, or rewrite the prose if it is not.
+
+**The honest-partial remedy.** A WP with one mechanic recorded `verified` and others owed with no entry: R2 forces `verified` and R3 then fails the true "partial" prose. The fix is never to reword true prose; it is a `pending` live-verify.json entry per owed mechanic, which makes the aggregate `partial`. The R2 and R3 failure messages say so; the R1 message names the aggregate to append, or, with no own entries, states the rule as a condition (the guard reads no WP files).
+
+**Lettered rows.** R1–R3 key rows by the full id (`WP-207a`), but the entry grouping reads an entry naming `WP-207a` as `WP-207`, so lettered rows have no own entries by construction and R2 never fires for them. No entry names a lettered WP today; widening the grouping was out of scope.
+
+**No writer.** The guard has no `--write` mode and no script writes the token. The forced hand edit is the point: whoever flips a token after a new result is in the row and rereads its prose; a writer would flip the token and leave the stale prose behind it.
+
+**Row prose.** A row's prose never quotes `[live-verify:` and never lists the four states after a live-verify mention; honest phrases such as "D-24026 live-verify pending" stay allowed (`WORK_INDEX.md §Format`).
+
+**Migration (one-time scratch script, not committed; observed on `main` @ `34e1ca682`).** In order: own entries → their aggregate (106 rows: 101 verified, 3 pending, 2 partial); prose pending or partial with no PASS reading → that state (193); a PASS / verified / CONFIRMED reading after a live-verify anchor with no pending reading → `verified` (130); prose N/A → `n/a` (96); no live-verify mention → the WP file's `User-Visible Surface` header, `n/a` when its first word is `none` or there is no header (253); the remaining **87 rows read and decided by hand** (12 reading both pending and PASS, 43 mentioning live-verify with no readable state, 32 user-facing headers with no mention). An audit of the mechanical result against each WP's surface then corrected 10 more by hand: WP-895 `n/a` (its prose describes the guard), WP-414 / WP-415 `partial` (data-level verified, on-screen eyeball owed), and WP-714 / 711 / 680 / 675 / 630 / 281 / 548 `pending` (post-D-24026 user-facing WPs whose surface is stated outside the header). Two `verified` rows had stale pending wording rewritten to the result (WP-349's criterion, WP-746's audio-byte aside). Result: 236 `verified`, 9 `partial`, 275 `pending`, 345 `n/a`; R1–R3 report 0 problems; `main`'s unmigrated index fails with 865 R1 lines. Unit test 16 → 27 / 0; six mutation proofs (R1 on done rows, R1 on open rows, R2 always-verified, R3 off, stripping removed in the stale-row rule, stripping removed in R1–R3) each turn it red.
+
+**Merge discipline.** `main` protection is `strict: false`, so a closing PR branched before this one can land a token-less row and turn `main` red. Before merging: scan open PRs touching `WORK_INDEX.md` or live-verify.json, rebase on current `origin/main`, token any new done rows, re-run the check, merge by hand. If a racing close lands a token-less row, fix it at once in a `SPEC:` follow-up.
+
+**Follow-up (named).** The `.github/workflows/ci.yml` why-comment above the `WORK_INDEX live-verify consistency check` step still describes only the D-24852 stale-row rule; refresh it to name the token rules in an `INFRA:` commit (an `EC-###:` commit may not touch workflows, D-24444).
+
+This closes D-24852's last residual. **Packet:** WP-896 / EC-934 (standard two-session lane, D-24028 criterion 5). **Reserved by:** NUMBER-LEDGER D-24853 (#3386). Related: D-24026, D-24852, D-24485, D-24444.
+
+---
+Protect this file.

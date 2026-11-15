@@ -10,6 +10,17 @@
 
 ## Current State
 
+### Live-verify row token: every checked-off WORK_INDEX row ends with one structured live-verify state, checked by CI against live-verify.json (WP-896 / EC-934, D-24853) (2026-11-14)
+
+**No user-observable change — infrastructure only.** Closes the last D-24852 false negative: row prose could say a check was still owed in words no pattern reads.
+
+- **Token.** Every done row (lettered rows included) now ends with ` [live-verify: <state>]`, its D-24026 status of record: `verified`, `partial`, `pending` or `n/a` (`WORK_INDEX.md §Format`). Open rows carry none; the closer appends it. No tool writes it, so a new result forces a hand edit of the row, where the prose gets fixed too.
+- **Guard.** `scripts/check-workindex-liveverify-pending.mjs` (same Coverage & Ledger Gates step) adds R1 presence, R2 agreement with the WP's own live-verify.json entries (all verified → verified, all pending → pending, any mix → partial), R3 agreement with the row's prose; the stale-row rule and R3 read the row with the token stripped. Test 16 → 27 / 0; six mutation proofs red. `main`'s unmigrated index fails with 865 R1 lines.
+- **Migration.** 865 done rows: 106 from the record, 419 from prose, 253 by the WP's `User-Visible Surface` header, 87 read and decided by hand, plus 10 corrected by hand after a surface audit. Result: 236 verified, 9 partial, 275 pending, 345 n/a. The 275 `pending` rows are user-facing WPs with no recorded live check; each needs a live-verify result (and its token flip) to clear.
+- **Closer docs.** 01.0b Steps 10–11, EC-TEMPLATE, 00.1, 01.0a Lightweight Lane and 01.6 say to append or update the token.
+- **Follow-up.** Refresh the `ci.yml` why-comment above the check step to name the token rules (`INFRA:` commit, D-24444).
+- **Live-verify (D-24026):** N/A, infrastructure only.
+
 ### Live-verify stale-row guard: CI fails a checked WORK_INDEX row that still says its live-verify is pending after live-verify.json records it verified (WP-895 / EC-933, D-24852) (2026-11-14)
 
 **No user-observable change — infrastructure only.** A new Coverage & Ledger Gates step stops the drift the 2026-11-14 reconciliation (#3371 / #3373 / #3374, 91 rows) fixed by hand.

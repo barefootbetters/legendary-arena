@@ -1,6 +1,6 @@
 # WP-896 — Live-Verify Row Token: every checked-off WORK_INDEX row carries one structured live-verify state token, checked against live-verify.json (Shared Tooling / governance docs)
 
-**Status:** Draft 2026-11-14 (standard two-session lane; D-24853 reserved (#3386))
+**Status:** Done 2026-11-14 (EC-934; D-24853 Active; standard two-session lane; drafted 2026-11-14 with D-24853 reserved (#3386))
 **Primary Layer:** Shared Tooling (governance script + governance docs)
 **User-Visible Surface:** none — infrastructure
 **Risk Tier:** LOW — a doc linter plus a one-time mechanical migration of `WORK_INDEX.md`; no runtime, engine, server, persistence or player surface. Standard two-session lane because D-24853 locks a cross-cutting row-format invariant (D-24028 criterion 5).

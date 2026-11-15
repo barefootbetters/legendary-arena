@@ -122,6 +122,11 @@ For each WP, extract:
   MUST include a check that the change is confirmed **live on the named surface**
   (a real match on play.legendary-arena.com, the deployed cards/dashboard page),
   with observable evidence — green tests + a merged PR do not, alone, satisfy it.
+  The item also names the WORK_INDEX row's live-verify token (D-24853): the
+  close appends ` [live-verify: pending]` (or the aggregate of the WP's
+  live-verify.json entries), and the live-verify result updates that token in
+  the same commit as its live-verify.json entry; a `none — infrastructure` WP
+  closes ` [live-verify: n/a]`.
   The drift this prevents: WP-248..253 each marked "done" on tests + merge while
   the operator saw no change on cards/play, because most were behavior-identical
   refactors or tooling (legitimately `none — infrastructure`) — but "done" never
