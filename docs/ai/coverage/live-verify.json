@@ -2032,9 +2032,9 @@
       "card": "The Wrecker",
       "ability": "Ambush: For each Wrecking Crew Villain in the city (including this one), [Demolish] each player.",
       "wp": "WP-874",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-15",
-      "evidence": "",
+      "evidence": "2p autoplay ioZRNBGUeAY (Red Skull / Midtown Bank Robbery; Wrecking Crew + Skrulls; Sentinel; Captain America, Hulk, Thor, Wolverine, Iron Man); server `4c228213` (the #3405 merge, built 2026-11-15T23:32:25Z), both matches created after the deploy: 12.1.3 \"Ambush effect: Demolish each player 3 time(s), once for each wrecking-crew Villain in the City.\" (The Wrecker, Bulldozer and Piledriver in the City; Thunderball had just escaped on entry), then three Demolish reveals (Diving Block 6, Healing Factor 3, Keen Senses 2) with both players' discard lines (current player first); the ambushResolved narrative lists the same header, reveals and discards.",
       "note": "Live check (NEW match with Wrecking Crew after the deploy): when The Wrecker enters the City the log shows \"Ambush effect: Demolish each player N time(s), once for each wrecking-crew Villain in the City.\" (N counts The Wrecker plus the other Wrecking Crew Villains in the City), then N Demolish reveals with each player's discard line; the Ambush overlay names the same Demolishes. D-24820."
     },
     {
@@ -2043,9 +2043,9 @@
       "card": "Bulldozer",
       "ability": "Ambush: Bulldozer moves an extra space forward. If this pushes any Villains forward, [Demolish] each player.",
       "wp": "WP-874",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-15",
-      "evidence": "",
+      "evidence": "2p autoplay ioZRNBGUeAY (Red Skull / Midtown Bank Robbery; Wrecking Crew + Skrulls; Sentinel; Captain America, Hulk, Thor, Wolverine, Iron Man) and solo autoplay VbdFusnz134 (Red Skull / Midtown Bank Robbery; Wrecking Crew; Sentinel; Captain America, Hulk, Thor); server `4c228213` (the #3405 merge, built 2026-11-15T23:32:25Z), both matches created after the deploy: ioZRNBGUeAY 8.1.5 \"Ambush effect: Bulldozer charged forward one space to the Bank, pushing the Villains ahead of it forward.\" then a Demolish with both players' discard lines, overlay \"\"Bulldozer\" ambushed: charged forward one space, pushing Villains forward, then Demolished each player.\" (citySpace 1); VbdFusnz134 17.1.2-3 the no-push branch \"charged forward one space to the Bank.\" / \"pushed no Villains forward, so no one is Demolished.\", overlay \"\"Bulldozer\" ambushed: charged forward one space.\"",
       "note": "Live check (NEW match with Wrecking Crew after the deploy): when Bulldozer enters the City it ends in the Bank (City positions in Play Diagnostics) and the log shows \"Ambush effect: Bulldozer charged forward one space to the Bank.\"; with a Villain in the Sewers the line adds \", pushing the Villains ahead of it forward.\" and a Demolish follows (a Villain pushed off the Bridge escapes), otherwise \"pushed no Villains forward, so no one is Demolished.\" The Ambush overlay names the charge. D-24820."
     },
     {
@@ -2054,9 +2054,9 @@
       "card": "Thunderball",
       "ability": "Fight: If you fight Thunderball in the Sewers or Bank, [Demolish] each other player.",
       "wp": "WP-874",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-15",
-      "evidence": "",
+      "evidence": "solo autoplay VbdFusnz134 (Red Skull / Midtown Bank Robbery; Wrecking Crew; Sentinel; Captain America, Hulk, Thor); server `4c228213` (the #3405 merge, built 2026-11-15T23:32:25Z), both matches created after the deploy: 18.2.11 Thunderball fought at city space 0 (the Sewers), then \"Fight effect: Demolish revealed Perfect Teamwork (cost 4) and put it on the bottom of the Hero Deck.\" and \"Fight effect: there is no other player to discard.\" The 2p match's Thunderball escaped unfought, so the other-player discard is covered by the shared Demolish resolver (live in The Wrecker's 2p discards) and the unit tests.",
       "note": "Live check (NEW match with Wrecking Crew after the deploy): fighting Thunderball in the Sewers or Bank logs \"Fight effect: Demolish revealed <Hero> (cost C) …\" with a discard line for every player except the fighter (solo: \"there is no other player to discard.\"); fought anywhere else it logs \"Fight effect: not fought on the Sewers or Bank; no effect.\" D-24820."
     },
     {
