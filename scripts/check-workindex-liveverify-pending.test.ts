@@ -33,6 +33,22 @@
  *     verified, even with no entry of its own. "not yet seen live" reads as
  *     pending with no anchor.
  *   - Malformed JSON and an unknown schemaVersion fail loudly.
+ *   - Live-verify row token (WP-896 / EC-934 / D-24853):
+ *       R1: a done row with no token, a duplicated token, a token mid-row, or
+ *       a malformed state fails, as does a lettered done row with no token and
+ *       a token on an open row; the §Format template line and a backlog line
+ *       are ignored; the R1 message names the token to append.
+ *       R2: the token must equal the own entries' aggregate (all verified,
+ *       all pending, any mix → partial); `n/a` with entries fails; cited
+ *       direct-fix entries do not count; an entry naming `WP-207a` groups as
+ *       `WP-207`, so the lettered row passes R2 in any state.
+ *       R3: a `verified` / `n/a` token on pending prose fails; `pending` /
+ *       `partial` on pending prose passes. The R2 and R3 messages name the
+ *       add-a-`pending`-entry remedy.
+ *       Stripping, one case per prose-rule consumer: the stale-row rule does
+ *       not read a trailing `pending` token as prose; R3 does not let the
+ *       token serve as the operator-pending arm's live-verify anchor; a
+ *       malformed token is not stripped.
  *
  * Cheat-proof: fixtures are never mutated; each negative keeps a real pending
  * phrase on a real `- [x]` row, so a pass means the guard discriminated on the
@@ -43,13 +59,16 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  aggregateLiveVerifyState,
   findPendingLiveVerifyText,
+  findRowTokenProblems,
   findStaleLiveVerifyPendingRows,
   findUnattributedLiveVerifyEntries,
   findUncitedVerificationDates,
   groupDirectFixEntriesByDecision,
   groupLiveVerifyEntriesByWorkPacket,
   listDirectFixDecisions,
+  stripLiveVerifyToken,
 } from './check-workindex-liveverify-pending.mjs';
 
 /**
@@ -318,4 +337,190 @@ test('malformed or unknown-schema live-verify.json fails with a full-sentence er
     /schemaVersion 2, but this check reads schemaVersion 1/,
   );
   assert.throws(() => groupLiveVerifyEntriesByWorkPacket('[]'), /schemaVersion undefined/);
+});
+
+// ---------------------------------------------------------------------------
+// Live-verify row token (WP-896 / EC-934 / D-24853)
+// ---------------------------------------------------------------------------
+
+const TOKENLESS_ROW = '- [x] WP-901 — **A shipped card ability** — **Done 2026-11-01** (EC-940; engine 100 → 104 / 0).';
+
+/**
+ * A done row for WP-901 with the given prose and trailing text.
+ *
+ * @param {string} prose the row's status prose.
+ * @param {string} ending the text appended after the prose (normally the token).
+ * @returns {string} the row.
+ */
+function buildDoneRow(prose: string, ending: string): string {
+  return `- [x] WP-901 — **A shipped card ability** — **Done 2026-11-01** (${prose}).${ending}`;
+}
+
+/**
+ * The `workPacket:rule` of every problem the token rules report for one text.
+ *
+ * @param {string} workIndexText the WORK_INDEX text.
+ * @param {Array<[string, string]>} pairs the live-verify.json `[wp, state]` pairs.
+ * @returns {string[]} `workPacket:rule` per problem.
+ */
+function listTokenProblemRules(workIndexText: string, pairs: Array<[string, string]>): string[] {
+  const entries = groupLiveVerifyEntriesByWorkPacket(buildLiveVerifyText(pairs));
+  return findRowTokenProblems(workIndexText, entries).map((problem) => `${problem.workPacket}:${problem.rule}`);
+}
+
+test('R1: a done row needs exactly one well-formed token as its last text', () => {
+  const failingRows = [
+    TOKENLESS_ROW,
+    buildDoneRow('EC-940', ' [live-verify: n/a] [live-verify: n/a]'),
+    '- [x] WP-901 — x [live-verify: n/a] — **Done 2026-11-01** (EC-940).',
+    buildDoneRow('EC-940', ' [live-verify: done]'),
+    buildDoneRow('EC-940', ' [live-verify: n/a].'),
+    buildDoneRow('EC-940', '[live-verify: n/a]'),
+    buildDoneRow('EC-940; see the `[live-verify:` field', ' [live-verify: n/a]'),
+  ];
+  for (const row of failingRows) {
+    assert.deepEqual(listTokenProblemRules(row, []), ['WP-901:R1'], row);
+  }
+  for (const state of ['verified', 'partial', 'pending', 'n/a']) {
+    const row = buildDoneRow('EC-940', ` [live-verify: ${state}]`);
+    assert.deepEqual(listTokenProblemRules(row, []), [], `a ${state} token passes with no entries`);
+  }
+});
+
+test('R1: lettered done rows need a token; open rows must not carry one; the template and backlog lines are ignored', () => {
+  const letteredRow = '- [x] WP-207a — **A lettered packet** — **Done 2026-05-01**.';
+  assert.deepEqual(listTokenProblemRules(letteredRow, []), ['WP-207a:R1'], 'the wide selector reads lettered rows');
+  assert.deepEqual(listTokenProblemRules(`${letteredRow} [live-verify: n/a]`, []), []);
+  const openRow = '- [ ] WP-902 — **A drafted packet** — Draft 2026-11-01. [live-verify: pending]';
+  assert.deepEqual(listTokenProblemRules(openRow, []), ['WP-902:R1'], 'an open row carries no token');
+  assert.deepEqual(listTokenProblemRules('- [ ] WP-902 — **A drafted packet** — Draft 2026-11-01.', []), []);
+  const ignoredLines = [
+    '- [x] WP-NNN — Short Title — Completed YYYY-MM-DD',
+    '- [ ] WP-NNN — Short Title — [pending | in-progress | blocked: reason]',
+    '- **(backlog — effect authoring)** a follow-up to be drafted',
+    '- [x] **(deferred — WP-901 follow-up)** a deferred idea',
+  ];
+  assert.deepEqual(listTokenProblemRules(ignoredLines.join('\n'), []), []);
+});
+
+test('R1: the message names the token to append', () => {
+  const ownEntries = groupLiveVerifyEntriesByWorkPacket(
+    buildLiveVerifyText([['WP-901', 'verified'], ['WP-901', 'pending']]),
+  );
+  const [withEntries] = findRowTokenProblems(TOKENLESS_ROW, ownEntries);
+  assert.equal(withEntries.rule, 'R1');
+  assert.match(withEntries.detail, /add up to `partial`, so append ` \[live-verify: partial\]`\./);
+  const [withoutEntries] = findRowTokenProblems(TOKENLESS_ROW, new Map());
+  assert.match(
+    withoutEntries.detail,
+    /append ` \[live-verify: n\/a\]` if the WP is `none — infrastructure`, else ` \[live-verify: pending\]`\./,
+  );
+});
+
+test('R2: the token equals the aggregate of the WP\'s own entries', () => {
+  const cases: Array<[Array<[string, string]>, string]> = [
+    [[['WP-901', 'verified'], ['WP-901', 'verified']], 'verified'],
+    [[['WP-901', 'pending'], ['WP-901', 'pending']], 'pending'],
+    [[['WP-901', 'verified'], ['WP-901', 'pending']], 'partial'],
+    [[['WP-901', 'partial']], 'partial'],
+    [[['WP-901', 'pending'], ['WP-901', 'partial']], 'partial'],
+  ];
+  for (const [pairs, aggregate] of cases) {
+    const entries = groupLiveVerifyEntriesByWorkPacket(buildLiveVerifyText(pairs)).get('WP-901') ?? [];
+    assert.equal(aggregateLiveVerifyState(entries), aggregate);
+    for (const state of ['verified', 'partial', 'pending', 'n/a']) {
+      const row = buildDoneRow('EC-940', ` [live-verify: ${state}]`);
+      let expected: string[] = ['WP-901:R2'];
+      if (state === aggregate) {
+        expected = [];
+      }
+      assert.deepEqual(listTokenProblemRules(row, pairs), expected, `${state} token vs ${aggregate} record`);
+    }
+  }
+});
+
+test('R2: n/a with own entries fails; cited direct-fix entries do not count', () => {
+  const notApplicableRow = buildDoneRow('EC-940', ' [live-verify: n/a]');
+  assert.deepEqual(listTokenProblemRules(notApplicableRow, [['WP-901', 'verified']]), ['WP-901:R2']);
+  const citingRow = buildDoneRow('D-24026 live-verify PASS 2026-11-01; D-24806 ✅', ' [live-verify: verified]');
+  assert.deepEqual(
+    listTokenProblemRules(citingRow, [['WP-901', 'verified'], ['D-24806', 'pending']]),
+    [],
+    'a pending direct-fix entry the row cites is not the WP\'s own and does not change its token',
+  );
+});
+
+test('R2: an entry naming a lettered WP groups as its number, so the lettered row passes R2 in any state', () => {
+  const pairs: Array<[string, string]> = [['WP-207a', 'pending']];
+  assert.deepEqual([...groupLiveVerifyEntriesByWorkPacket(buildLiveVerifyText(pairs)).keys()], ['WP-207']);
+  for (const state of ['verified', 'partial', 'pending', 'n/a']) {
+    const row = `- [x] WP-207a — **A lettered packet** — **Done 2026-05-01**. [live-verify: ${state}]`;
+    assert.deepEqual(listTokenProblemRules(row, pairs), [], `${state} passes on the lettered row`);
+  }
+});
+
+test('R3: a verified or n/a token on prose that still reads pending fails; pending and partial pass', () => {
+  const pendingProse = 'EC-940; **D-24026 live-verify operator-pending** on deploy';
+  for (const state of ['verified', 'n/a']) {
+    const row = buildDoneRow(pendingProse, ` [live-verify: ${state}]`);
+    assert.deepEqual(listTokenProblemRules(row, []), ['WP-901:R3'], state);
+  }
+  for (const state of ['pending', 'partial']) {
+    const row = buildDoneRow(pendingProse, ` [live-verify: ${state}]`);
+    assert.deepEqual(listTokenProblemRules(row, []), [], state);
+  }
+  const passProse = 'EC-940; D-24026 live-verify PASS 2026-11-02 per live-verify.json (match `abc`)';
+  assert.deepEqual(listTokenProblemRules(buildDoneRow(passProse, ' [live-verify: verified]'), []), []);
+});
+
+test('R2 and R3: the messages name the token, the aggregate, the prose and the add-a-pending-entry remedy', () => {
+  const honestPartialRow = buildDoneRow(
+    'live-verify (D-24026) partial: X PASS 2026-11-01 (match `abc`), Y operator-pending',
+    ' [live-verify: partial]',
+  );
+  const problems = findRowTokenProblems(
+    honestPartialRow,
+    groupLiveVerifyEntriesByWorkPacket(buildLiveVerifyText([['WP-901', 'verified']])),
+  );
+  assert.deepEqual(problems.map((problem) => problem.rule), ['R2']);
+  assert.match(problems[0].detail, /token is `\[live-verify: partial\]`/);
+  assert.match(problems[0].detail, /add up to `verified`/);
+  assert.match(problems[0].detail, /prose reads "live-verify \(D-24026\) partial"/);
+  const remedy =
+    /add a `pending` live-verify\.json entry for that mechanic \(the aggregate becomes `partial`\); never reword true prose to pass\./;
+  assert.match(problems[0].detail, remedy);
+  const [proseProblem] = findRowTokenProblems(
+    buildDoneRow('**D-24026 operator-pending**', ' [live-verify: verified]'),
+    new Map(),
+  );
+  assert.equal(proseProblem.rule, 'R3');
+  assert.match(proseProblem.detail, /token is `\[live-verify: verified\]`, but its prose reads "D-24026 operator-pending"/);
+  assert.match(proseProblem.detail, /the aggregate is `pending`/);
+  assert.match(proseProblem.detail, remedy);
+});
+
+test('stripping: the stale-row rule does not read a trailing pending token as pending prose', () => {
+  const entries = groupLiveVerifyEntriesByWorkPacket(buildLiveVerifyText([['WP-901', 'verified']]));
+  const row = buildDoneRow('EC-940; D-24026 live-verify PASS 2026-11-01 (match `abc`)', ' [live-verify: pending]');
+  assert.notEqual(findPendingLiveVerifyText(row), null, 'unstripped, the token itself reads as pending');
+  assert.equal(findPendingLiveVerifyText(stripLiveVerifyToken(row)), null);
+  assert.deepEqual(findStaleLiveVerifyPendingRows(row, entries), [], 'the stale-row rule reads the stripped row');
+});
+
+test('stripping: R3 does not let the token serve as the operator-pending arm\'s live-verify anchor', () => {
+  const row = buildDoneRow('EC-940; migration 026 PROD apply operator-pending', ' [live-verify: n/a]');
+  assert.notEqual(findPendingLiveVerifyText(row), null, 'unstripped, the token is a live-verify anchor');
+  assert.deepEqual(listTokenProblemRules(row, []), [], 'R3 reads the stripped row');
+});
+
+test('stripping: only the end-anchored, well-formed token is removed', () => {
+  assert.equal(stripLiveVerifyToken(buildDoneRow('EC-940', ' [live-verify: partial]')), buildDoneRow('EC-940', ''));
+  const malformedRows = [
+    buildDoneRow('EC-940', ' [live-verify: pending-ish]'),
+    buildDoneRow('EC-940', ' [live-verify: pending].'),
+    buildDoneRow('EC-940', '[live-verify: pending]'),
+  ];
+  for (const row of malformedRows) {
+    assert.equal(stripLiveVerifyToken(row), row, row);
+  }
 });

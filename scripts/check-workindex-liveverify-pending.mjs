@@ -41,17 +41,33 @@
  *     once those entries are all verified the row is stale. If the row is
  *     honest because its own mechanic has no entry, add a `pending` entry for it.
  *
- * What it still cannot see: a second entry verified on a date the row already
- * cites, on a row whose pending wording the pattern does not read. Free text
- * cannot be policed further without a structured row field.
+ * Those rules still could not see a second entry verified on a date the row
+ * already cites, on a row whose pending wording the pattern does not read. The
+ * live-verify row token closes that (WP-896 / EC-934 / D-24853): every done row
+ * ends with exactly one structured token, ` [live-verify: <state>]`, the row's
+ * live-verify status of record, and three more rules check it:
  *
- * DETECT-ONLY: this guard never edits WORK_INDEX or live-verify.json. If it
- * fires, rewrite the row's pending phrase to the recorded result (e.g.
- * "D-24026 live-verify PASS <date> per live-verify.json (match `…`)") — never
- * weaken the pattern to force exit 0.
+ *   - R1 presence: every done row (`WP-NNN`, `WP-NNNa`) ends with exactly one
+ *     well-formed token and carries no other `[live-verify:` text; no open row
+ *     carries any.
+ *   - R2 record agreement: when live-verify.json has entries naming the WP, the
+ *     token equals what they add up to (all verified → verified, all pending →
+ *     pending, any mix → partial; `n/a` with entries always fails).
+ *   - R3 prose agreement: a `verified` or `n/a` token fails when the row's own
+ *     prose (token stripped) still reads as pending.
  *
- * Exit 0 = consistent; exit 1 = at least one stale row, with a full-sentence
- * per-`WP-NNN` report naming the pending text and the verified entries.
+ * The token is a closed vocabulary compared exactly against the record, so it
+ * has no wording problem: any change in the record's aggregate fails CI until a
+ * person edits the token, and that edit is where the prose gets fixed.
+ *
+ * DETECT-ONLY: this guard never edits WORK_INDEX or live-verify.json, and it has
+ * no `--write` mode. If it fires, rewrite the row's pending phrase to the
+ * recorded result (e.g. "D-24026 live-verify PASS <date> per live-verify.json
+ * (match `…`)") and set its token by hand — never weaken the pattern to force
+ * exit 0.
+ *
+ * Exit 0 = consistent; exit 1 = at least one violation, with a full-sentence
+ * per-`WP-NNN` report naming the row, the rule and what to change.
  */
 
 import { readFileSync } from 'node:fs';
@@ -129,6 +145,27 @@ const SUPPORTED_SCHEMA_VERSION = 1;
 const WORK_PACKET_TOKEN_PATTERN = /WP-\d+(?:\.\d+)?/g;
 
 const VERIFIED_STATE = 'verified';
+const PENDING_STATE = 'pending';
+const PARTIAL_STATE = 'partial';
+const NOT_APPLICABLE_STATE = 'n/a';
+
+// why: R1–R3 read a WIDER done selector than the D-24852 rules above: the 16
+// lettered rows (WP-005A, WP-207a, …) are done rows too, so each must carry a
+// token. The D-24852 rules keep their numeric selector unchanged (D-24853). A
+// lettered row is keyed by its full id (`WP-207a`), but the entry grouping
+// reads an entry naming `WP-207a` as `WP-207`, so a lettered row has no own
+// entries by construction and R2 never fires for it; widening the grouping is
+// out of WP-896's scope.
+const TOKEN_DONE_WORK_PACKET_ROW_PATTERN = /^- \[x\] (WP-\d+[A-Za-z]?(?:\.\d+)?) /;
+const OPEN_WORK_PACKET_ROW_PATTERN = /^- \[ \] (WP-\d+[A-Za-z]?(?:\.\d+)?)/;
+
+// why: the token sits at the END of the row. 229 numeric done rows have an
+// irregular status block (`**Done**`, `**Done (code) …`, long parentheticals),
+// so the row's end is the only position every row shares. The leading space is
+// part of the token; anything after it (a trailing space, a period) makes the
+// token misplaced, which R1 reports.
+const LIVE_VERIFY_TOKEN_PATTERN = / \[live-verify: (verified|partial|pending|n\/a)\]$/;
+const LIVE_VERIFY_TOKEN_MARKER = '[live-verify:';
 
 /**
  * Read a UTF-8 text file, raising a full-sentence error (naming the path and the
@@ -325,6 +362,22 @@ export function findPendingLiveVerifyText(row) {
 }
 
 /**
+ * Remove the row's end-anchored, well-formed live-verify token. A malformed or
+ * misplaced token is left in place, so R1 still sees and reports it.
+ *
+ * why: every rule that reads the row's pending WORDING reads it without the
+ * token. The token's own text "live-verify: pending" matches the pending
+ * pattern, and its "live-verify" would serve the operator-pending arm as an
+ * anchor, so an unstripped token would make a structured field read as prose.
+ *
+ * @param {string} row a WORK_INDEX row.
+ * @returns {string} the row without its trailing token.
+ */
+export function stripLiveVerifyToken(row) {
+  return row.replace(LIVE_VERIFY_TOKEN_PATTERN, '');
+}
+
+/**
  * Find every done WORK_INDEX row that still says its live-verify is pending
  * while live-verify.json records every relevant entry as verified. The relevant
  * entries are those naming the WP plus those of every direct-fix D-id the row
@@ -343,7 +396,7 @@ export function findStaleLiveVerifyPendingRows(workIndexText, entriesByWorkPacke
     if (rowMatch === null) {
       continue;
     }
-    const pendingText = findPendingLiveVerifyText(line);
+    const pendingText = findPendingLiveVerifyText(stripLiveVerifyToken(line));
     if (pendingText === null) {
       continue;
     }
@@ -381,6 +434,8 @@ export function findUncitedVerificationDates(workIndexText, entriesByWorkPacket)
       continue;
     }
     const workPacket = rowMatch[1];
+    // why: this rule looks for a date, not for pending wording, and the token
+    // holds no date, so it reads the whole row; stripping could not change it.
     const uncitedEntries = (entriesByWorkPacket.get(workPacket) ?? []).filter(
       // why: an empty date cannot be cited, and `includes('')` is always true,
       // so a dateless verified entry is reported rather than silently passing.
@@ -391,6 +446,162 @@ export function findUncitedVerificationDates(workIndexText, entriesByWorkPacket)
     }
   }
   return uncited;
+}
+
+/**
+ * The live-verify state a WP's own entries add up to.
+ *
+ * why: `partial` means "some of it is confirmed", so any mix of states
+ * (verified + pending, or any `partial` entry) is `partial`; only a record that
+ * is uniformly verified or uniformly pending says more than that.
+ *
+ * @param {{ state: string }[]} entries the WP's own entries (at least one).
+ * @returns {string} `verified`, `pending` or `partial`.
+ */
+export function aggregateLiveVerifyState(entries) {
+  if (entries.every((entry) => entry.state === VERIFIED_STATE)) {
+    return VERIFIED_STATE;
+  }
+  if (entries.every((entry) => entry.state === PENDING_STATE)) {
+    return PENDING_STATE;
+  }
+  return PARTIAL_STATE;
+}
+
+/**
+ * How many times the row contains the token marker `[live-verify:`.
+ *
+ * @param {string} row a WORK_INDEX row.
+ * @returns {number} the marker count.
+ */
+function countTokenMarkers(row) {
+  return row.split(LIVE_VERIFY_TOKEN_MARKER).length - 1;
+}
+
+/**
+ * The R1 sentence telling the closer which token to append.
+ *
+ * why: the guard reads no WP files, so without own entries it cannot know
+ * whether the WP is `none — infrastructure`; it states the rule as a condition.
+ *
+ * @param {string | null} aggregate the own entries' aggregate, or null if none.
+ * @returns {string} the remedy sentence.
+ */
+function describeTokenToAppend(aggregate) {
+  if (aggregate !== null) {
+    return `Its own live-verify.json entries add up to \`${aggregate}\`, so append \` [live-verify: ${aggregate}]\`.`;
+  }
+  return 'It has no live-verify.json entry of its own, so append ` [live-verify: n/a]` if the WP is `none — infrastructure`, else ` [live-verify: pending]`.';
+}
+
+/**
+ * The remedy sentence shared by R2 and R3.
+ *
+ * why: the honest-partial case — one mechanic recorded verified while others
+ * are owed with no entry — makes R2 force `verified` and R3 then fail the true
+ * "partial" prose. The fix is a `pending` entry per owed mechanic (the aggregate
+ * becomes `partial`), never new wording. The same remedy covers a cited direct
+ * fix that is not verified while the WP's own entries are: add the WP to that
+ * entry's `wp` if the mechanic is the WP's, or rewrite the prose if it is not.
+ *
+ * @param {string} aggregateText the aggregate, already formatted for the report.
+ * @returns {string} the remedy sentence.
+ */
+function describeAgreementRemedy(aggregateText) {
+  return `Set the token to the aggregate, ${aggregateText}. If the row honestly says some mechanic is still owed, add a \`pending\` live-verify.json entry for that mechanic (the aggregate becomes \`partial\`); never reword true prose to pass.`;
+}
+
+/**
+ * The aggregate named in an R3 report: the own entries' aggregate if there are
+ * any; with none, a closer records `pending` (or `partial` when some of it is
+ * confirmed), as 01.0b Step 10 says.
+ *
+ * @param {string | null} aggregate the own entries' aggregate, or null if none.
+ * @returns {string} the aggregate, formatted for the report.
+ */
+function describeProseAggregate(aggregate) {
+  if (aggregate !== null) {
+    return `\`${aggregate}\``;
+  }
+  return `\`${PENDING_STATE}\` (or \`${PARTIAL_STATE}\` if some of it is confirmed), since the WP has no live-verify.json entries of its own`;
+}
+
+/**
+ * Check one done row against R1–R3 and return its problems.
+ *
+ * why: R2 reads the WP's OWN entries only. The stale-prose rule also reads the
+ * entries of cited direct-fix D-numbers, but a cited fix is often not the WP's
+ * own work (WP-863 cites D-24802 without owning it), so it cannot set the WP's
+ * token.
+ *
+ * @param {string} row the done row.
+ * @param {string} workPacket the row's WP id.
+ * @param {{ state: string }[]} ownEntries the entries naming the WP.
+ * @returns {{ workPacket: string, rule: string, detail: string }[]} its problems.
+ */
+function checkDoneRowToken(row, workPacket, ownEntries) {
+  let aggregate = null;
+  if (ownEntries.length > 0) {
+    aggregate = aggregateLiveVerifyState(ownEntries);
+  }
+  const tokenMatch = row.match(LIVE_VERIFY_TOKEN_PATTERN);
+  if (tokenMatch === null || countTokenMarkers(row) !== 1) {
+    const detail = `The done row does not end with exactly one well-formed live-verify token and no other \`[live-verify:\` text. ${describeTokenToAppend(aggregate)}`;
+    return [{ workPacket, rule: 'R1', detail }];
+  }
+  const token = tokenMatch[1];
+  const pendingText = findPendingLiveVerifyText(stripLiveVerifyToken(row));
+  let proseSummary = 'its prose has no pending wording';
+  if (pendingText !== null) {
+    proseSummary = `its prose reads "${pendingText}"`;
+  }
+  const problems = [];
+  if (aggregate !== null && token !== aggregate) {
+    const detail = `The row's token is \`[live-verify: ${token}]\`, but its ${ownEntries.length} own live-verify.json entr(ies) add up to \`${aggregate}\`, and ${proseSummary}. ${describeAgreementRemedy(`\`${aggregate}\``)}`;
+    problems.push({ workPacket, rule: 'R2', detail });
+  }
+  const isClaimingNothingOwed = token === VERIFIED_STATE || token === NOT_APPLICABLE_STATE;
+  if (isClaimingNothingOwed && pendingText !== null) {
+    const aggregateText = describeProseAggregate(aggregate);
+    const detail = `The row's token is \`[live-verify: ${token}]\`, but ${proseSummary}, so it is not ${token}; the aggregate is ${aggregateText}. ${describeAgreementRemedy(aggregateText)}`;
+    problems.push({ workPacket, rule: 'R3', detail });
+  }
+  return problems;
+}
+
+/**
+ * Find every WORK_INDEX row that breaks the live-verify token rules (D-24853):
+ * R1 presence on done rows and absence on open rows, R2 agreement with the WP's
+ * own live-verify.json entries, R3 agreement with the row's own prose.
+ *
+ * why: nothing in the repo writes the token — no `--write`, no writer script,
+ * no CI step. The forced hand edit is the point: whoever flips a token after a
+ * new live-verify result is in the row and rereads its prose; a writer would
+ * flip the token and leave stale prose behind it.
+ *
+ * @param {string} workIndexText the WORK_INDEX.md text.
+ * @param {Map<string, { state: string }[]>} entriesByWorkPacket from groupLiveVerifyEntriesByWorkPacket.
+ * @returns {{ workPacket: string, rule: string, detail: string }[]} one per violation.
+ */
+export function findRowTokenProblems(workIndexText, entriesByWorkPacket) {
+  const problems = [];
+  for (const line of stripLeadingBom(workIndexText).split(/\r?\n/)) {
+    const openMatch = line.match(OPEN_WORK_PACKET_ROW_PATTERN);
+    if (openMatch !== null) {
+      if (line.includes(LIVE_VERIFY_TOKEN_MARKER)) {
+        const detail = 'The open (`- [ ]`) row carries `[live-verify:` text, but a WP that is not done has no live-verify state; remove it and append the token when the row is flipped to `[x]`.';
+        problems.push({ workPacket: openMatch[1], rule: 'R1', detail });
+      }
+      continue;
+    }
+    const doneMatch = line.match(TOKEN_DONE_WORK_PACKET_ROW_PATTERN);
+    if (doneMatch === null) {
+      continue;
+    }
+    const workPacket = doneMatch[1];
+    problems.push(...checkDoneRowToken(line, workPacket, entriesByWorkPacket.get(workPacket) ?? []));
+  }
+  return problems;
 }
 
 /**
@@ -425,12 +636,17 @@ function runCheck() {
   const violations = findStaleLiveVerifyPendingRows(workIndexText, entriesByWorkPacket, entriesByDirectFixDecision);
   const unattributed = findUnattributedLiveVerifyEntries(liveVerifyText, directFixDecisions);
   const uncited = findUncitedVerificationDates(workIndexText, entriesByWorkPacket);
+  const tokenProblems = findRowTokenProblems(workIndexText, entriesByWorkPacket);
 
-  if (violations.length === 0 && unattributed.length === 0 && uncited.length === 0) {
+  const problemCount = violations.length + unattributed.length + uncited.length + tokenProblems.length;
+  if (problemCount === 0) {
     process.stdout.write(
-      'WORK_INDEX live-verify consistency check passed: no done (`- [x]`) WP row says its live-verify is pending or partial while live-verify.json records it verified, every verified entry\'s date is cited in its WP row, and every live-verify.json entry names what it verifies.\n',
+      'WORK_INDEX live-verify consistency check passed: no done (`- [x]`) WP row says its live-verify is pending or partial while live-verify.json records it verified, every verified entry\'s date is cited in its WP row, every live-verify.json entry names what it verifies, and every done row ends with one live-verify token that agrees with its own entries and its prose.\n',
     );
     return 0;
+  }
+  if (tokenProblems.length > 0) {
+    reportRowTokenProblems(tokenProblems);
   }
   if (violations.length > 0) {
     reportStaleRows(violations);
@@ -442,6 +658,20 @@ function runCheck() {
     reportUnattributedEntries(unattributed);
   }
   return 1;
+}
+
+/**
+ * Print the live-verify token failure report (D-24853).
+ *
+ * @param {{ workPacket: string, rule: string, detail: string }[]} tokenProblems from findRowTokenProblems.
+ */
+function reportRowTokenProblems(tokenProblems) {
+  process.stderr.write(
+    `WORK_INDEX live-verify consistency check FAILED: ${tokenProblems.length} WP row(s) break the live-verify token rule (D-24853). Every done (\`- [x]\`) row ends with exactly one token, \` [live-verify: verified|partial|pending|n/a]\`, that is its live-verify status of record (R1); where live-verify.json has entries naming the WP, the token equals what they add up to (R2); and a \`verified\` or \`n/a\` token never sits on a row whose prose still reads pending (R3). No tool writes the token: edit each row by hand, and reread its prose while you are there. Row(s):\n`,
+  );
+  for (const problem of tokenProblems) {
+    process.stderr.write(`  ${problem.workPacket} [${problem.rule}] — ${problem.detail}\n`);
+  }
 }
 
 /**
