@@ -53,7 +53,7 @@ jobs:
     # outside the vendored tree, because a pin inside the tree could be edited
     # along with the files it pins. Both theme steps below read it.
     env:
-      EWIKI_THEME_DIGEST: dbe1e93091fa087d96d96f9ae189bc5da57ac06d4dcec20fda8e9f3c71fd2a5b # bb-studio-ewiki-theme v1.4.0 (ab01a7d9)
+      EWIKI_THEME_DIGEST: 258b487d2e61377ddf0538e65a175b11b719272e4868859f31788dbb689fa569 # bb-studio-ewiki-theme v1.4.1 (60fde633)
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5

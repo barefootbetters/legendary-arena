@@ -25,6 +25,10 @@
   the anchor is the guide's, not this page's. Unlike include-section, the
   block is indexed by search: the guide has no page in this wiki to own it.
   Output is static and reads no clock, so two builds match.
+
+  why: a subheading inside the shown section renders as a bold line, not a
+  heading (v1.4.1), so the including page gets no heading or id it doesn't
+  own, and a section with subsections (Images, say) can be shown whole.
 */ -}}
 {{- $sectionId := .Get "section" -}}
 {{- $where := .Page.File.Path -}}
@@ -37,7 +41,7 @@
 {{- else if not $guide -}}
   {{- errorf "ewiki-guide on %s: the theme's guide %s is missing. Re-sync the theme with tools/Sync-EwikiTheme.ps1." $where $guidePath -}}
 {{- else -}}
-{{- $found := partial "ewiki/section-text.html" (dict "raw" $guide.Content "section" $sectionId) -}}
+{{- $found := partial "ewiki/section-text.html" (dict "raw" $guide.Content "section" $sectionId "flatten" true) -}}
 {{- if eq $found.count 0 -}}
   {{- errorf "ewiki-guide on %s: the theme's authoring guide has no heading with anchor %q. A theme release probably renamed it; point section= at its current anchor (the guide's headings are listed at %s)." $where $sectionId $guideUrl -}}
 {{- else if gt $found.count 1 -}}

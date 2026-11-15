@@ -2,8 +2,10 @@
   Section text: the Markdown under one heading of a Markdown source, for
   include-section and ewiki-guide.
 
-  Input: a dict with `raw` (the source's raw Markdown) and `section` (a
-  heading anchor, GitHub-style or an explicit {#custom-id}). Returns a dict:
+  Input: a dict with `raw` (the source's raw Markdown), `section` (a
+  heading anchor, GitHub-style or an explicit {#custom-id}) and, optionally,
+  `flatten`: when true, each subheading inside the section comes back as a
+  bold line instead of a heading (v1.4.1). Returns a dict:
   `count`, how many headings carry that anchor; `heading`, the matched
   heading's text; `body`, the lines from that heading to the next heading of
   the same or higher level, with the heading itself left out and blank lines
@@ -13,10 +15,17 @@
   Headings inside code fences don't count: a `# comment` in a bash fence is
   not a heading. The callers turn a count other than 1, or an empty body,
   into a build error naming the page.
+
+  why: flatten is for ewiki-guide. A subheading shown on another wiki's page
+  would add a heading that page doesn't own: a second id that can clash with
+  the page's own, and a heading anchor for a section that lives elsewhere. A
+  bold line keeps the label without either. include-section doesn't pass it,
+  so its output is unchanged.
 */ -}}
 {{- $headingPattern := `^(#{1,6})[ \t]+(.+?)[ \t#]*$` -}}
 {{- $customIdPattern := `[ \t]*\{#([^}]+)\}$` -}}
 {{- $sectionId := .section -}}
+{{- $flatten := .flatten | default false -}}
 {{- $isInFence := false -}}
 {{- $state := "searching" -}}
 {{- $targetLevel := 0 -}}
@@ -49,6 +58,8 @@
   {{- if eq $state "capturing" -}}
     {{- if and $isHeading (le $level $targetLevel) -}}
       {{- $state = "done" -}}
+    {{- else if and $isHeading $flatten -}}
+      {{- $captured = printf "%s**%s**\n" $captured (strings.TrimSpace $text) -}}
     {{- else -}}
       {{- $captured = printf "%s%s\n" $captured $line -}}
     {{- end -}}

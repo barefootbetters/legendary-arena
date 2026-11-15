@@ -41,11 +41,14 @@ Four rules cover most of it:
 - **Write links for GitHub,** relative to the page's own file:
   `scoring.md`, `../hubs/project-home.md#branches`. The theme turns each one
   into the wiki page it names. Images are relative the same way.
-- **The build is strict.** Under `-PanicOnWarning`, a link to a page that
-  doesn't exist (the case must match), a missing image, raw HTML, or an
-  `include-section` heading that no longer exists fails it. So does any
-  `<script>` the wiki hasn't sanctioned. The PR goes red before anything
-  deploys. Preview before you open the PR.
+- **The build is strict, if your wiki's CI makes it so.** A link to a page
+  that doesn't exist (the case must match), a missing image and raw HTML are
+  Hugo warnings, and a build run with `-PanicOnWarning` (the theme's gates
+  pass it) fails on them. Without it they're only lines in the log, and the
+  page deploys broken: your wiki's own authoring page says which yours runs.
+  A missing `include-section` or `ewiki-guide` heading and a bad shortcode
+  fail every build. The theme's JavaScript-free gate fails any `<script>`
+  the wiki hasn't sanctioned. Preview before you open the PR.
 
 Common tasks:
 
@@ -192,8 +195,8 @@ first match wins:
 Things that follow from that:
 
 - **A broken page link fails the build.** A link to a `.md` file inside the
-  content root that names no page is a warning, and the strict build fails
-  on warnings. The usual cause is case: `Scoring.md` isn't `scoring.md`.
+  content root that names no page is a warning, and a strict build
+  (`-PanicOnWarning`) fails on warnings. The usual cause is case: `Scoring.md` isn't `scoring.md`.
 - **A path that climbs out of the content root goes to GitHub.**
   `../../tools/build.ps1` from a page links to that file in the repo. Use it
   for code, configs and anything else the wiki doesn't render.
@@ -217,8 +220,8 @@ The alt text is the image's description for a screen reader and for search:
 say what the image shows, not "image of".
 
 The theme finds the file under the wiki's image mount, publishes it once and
-loads it lazily. **A missing image fails the build**, just as a broken link
-does. An external image (`https://...`) passes through, and is requested with
+loads it lazily. **A missing image fails a strict build**, just as a broken
+link does. An external image (`https://...`) passes through, and is requested with
 no referrer, so hosts that block hot-linking still serve it. A `/`-rooted
 image passes through unchecked, like a `/`-rooted link.
 
@@ -334,6 +337,10 @@ note.
   Never edit the vendored copy: the theme check fails it.
 - **A heading a release renames fails the build,** with an error naming your
   page and the missing anchor, so the upgrade PR is where you fix it.
+- **Subheadings become bold lines.** A section with subsections, such as
+  [Images](#images), shows whole, and each subheading in it renders as a
+  bold line rather than a heading, so your page gets no heading or id it
+  doesn't own. To link a reader to one of them, link the published guide.
 - **Links keep working.** The guide links the theme by full URL, and its
   in-page `(#anchor)` links point at the published guide.
 - **Search indexes the text on your page,** since the guide has no page of
@@ -383,12 +390,16 @@ The `applied` outcome renders green {{</* swatch "#15803d" */>}} (`#15803d`).
 ### Showing shortcode syntax
 
 Hugo runs a shortcode before Markdown, **even inside a code fence**. To show
-one as text, as this page does, put `/*` and `*/` just inside its delimiters:
-`{{</*` … `*/>}}`. Hugo prints the tag instead of running it, without the
-markers. (On GitHub, which doesn't run Hugo, the markers show.) The
-**Editing this page** footer knows the difference: a page that only shows an
-escaped `include-section` doesn't get the "parts of this page live on other
-pages" note.
+one as text, as this page does, put `/*` just after its opening delimiter and
+`*/` just before its closing one: `{{</*/* name */*/>}}`. Hugo prints the
+tag instead of running it, without the markers. Write the whole call with
+both markers in it: Hugo reads everything from an opening delimiter and `/*`
+to the next `*/` and closing delimiter as one escaped shortcode, so a lone
+marker swallows the text up to the next one. To show the markers themselves,
+as the example in this paragraph does, escape twice. (On GitHub, which
+doesn't run Hugo, the markers show.) The **Editing this page** footer knows
+the difference: a page that only shows an escaped `include-section` doesn't
+get the "parts of this page live on other pages" note.
 
 Template actions such as `{{ .Title }}` only run in layouts, never in page
 content, so they need no escaping.
@@ -422,7 +433,8 @@ Mermaid needs JavaScript, and the theme's pages carry none (see
 ## What you can't use
 
 - **Raw HTML.** `unsafe = false` drops any `<div>`, `<span>`, `<style>` or
-  other tag in the Markdown, and the strict build fails on it. Shortcodes
+  other tag in the Markdown, with a warning that a strict build
+  (`-PanicOnWarning`) turns into a failure. Shortcodes
   are the way to emit HTML.
 - **Scripts.** The theme emits one script, the search loader, and the JS-free
   gate fails the build on any other. A wiki can sanction its own marked

@@ -28,7 +28,7 @@ second, smaller question. Both are decided: converge (D-24725), on
 the current theme extracted into one shared copy (D-24727), after a
 Hextra pilot showed Hextra doesn't fix the drift. The extracted theme is
 released as `barefootbetters/bb-studio-ewiki-theme` (renamed from
-`ewiki-theme` on 2026-10-18; latest `v1.4.0`), vendored
+`ewiki-theme` on 2026-10-18; latest `v1.4.1`), vendored
 into each wiki (D-24728); the wikis move onto it one at a time.
 Corporate memory, Herbs vs. Ailments, the studio ewiki and the engine
 ewiki are on it; the personal wiki comes next (the engine moved ahead of
@@ -44,7 +44,7 @@ joined the list on 2026-10-17 ([bb-studio-dashboard decision 2026-10-17-01](http
 
 | Site | Repo | Theme | Theme source | Hosting |
 |---|---|---|---|---|
-| Engine ewiki (`ewiki.legendary-arena.com`) | `legendary-arena` (`apps/wiki-viewer/`) | The shared theme | `barefootbetters/bb-studio-ewiki-theme` `v1.4.0`, vendored (step 4 on `v1.3.0`, WP-847 / D-24782; moved ahead of the personal wiki by D-24781) | Cloudflare Worker, deployed by GitHub Actions, behind Access |
+| Engine ewiki (`ewiki.legendary-arena.com`) | `legendary-arena` (`apps/wiki-viewer/`) | The shared theme | `barefootbetters/bb-studio-ewiki-theme` `v1.4.1`, vendored (step 4 on `v1.3.0`, WP-847 / D-24782; moved ahead of the personal wiki by D-24781) | Cloudflare Worker, deployed by GitHub Actions, behind Access |
 | Herbs vs. Ailments ewiki (`ewiki.herbsvsailments.com`) | `herbs-vs-ailments` (`apps/ewiki/`) | The shared theme | `barefootbetters/bb-studio-ewiki-theme` `v1.2.0`, vendored (step 2, done 2026-10-20, [herbs-vs-ailments#297](https://github.com/barefootbetters/herbs-vs-ailments/pull/297)) | Cloudflare Worker `herbs-vs-ailments-ewiki`, behind Access |
 | Corporate-memory viewer | `jefferyjjensen-corporate-memory` (`viewer/`) | The shared theme | `barefootbetters/bb-studio-ewiki-theme` `v1.1.1`, vendored (step 1, done 2026-10-16) | Cloudflare Pages |
 | Studio ewiki (`studio-ewiki.barefootbetters.com`) | `bb-studio-dashboard` (`ewiki/`, rendering that repo's `docs/`) | The shared theme | `barefootbetters/bb-studio-ewiki-theme` `v1.2.0`, vendored (step 3, done 2026-10-20, [bb-studio-dashboard#29](https://github.com/barefootbetters/bb-studio-dashboard/pull/29)) | Cloudflare Worker `bb-studio-ewiki`, behind Access |
