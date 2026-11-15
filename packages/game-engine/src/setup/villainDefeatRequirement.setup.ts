@@ -255,6 +255,78 @@ function findVillainGroupCards(
 }
 
 // ---------------------------------------------------------------------------
+// listSelectedVillainCards — the shared setup registry walk (WP-898 / D-24855)
+// ---------------------------------------------------------------------------
+
+/** One selected villain card, as every setup table builder reads it (WP-898 / D-24855). */
+export interface SelectedVillainCard {
+  /** The card's string ability lines, in printed order (non-string entries dropped). */
+  abilityLines: string[];
+  /** Copy-indexed instance ext_ids from villainCardInstanceExtIds. */
+  instanceExtIds: CardExtId[];
+}
+
+/**
+ * Lists every card of the selected villain groups, in config order then card
+ * order, with its string ability lines and its copy-indexed instance ext_ids.
+ *
+ * Malformed group ids, unknown sets or groups, cards with a non-string `slug` and
+ * cards with a non-array `abilities` are skipped. A card with no string lines is
+ * still listed, with `abilityLines: []`. A group listed twice is walked twice.
+ * Every call returns a fresh outer array and fresh inner arrays.
+ *
+ * @param registry - Card registry for resolving ability text. Setup-time only.
+ *   Accepts unknown to support narrow test mocks; returns an empty list when the
+ *   registry does not satisfy the reader interface.
+ * @param matchConfig - Validated match setup config (villainGroupIds).
+ * @returns One record per listed villain card.
+ */
+// why: WP-898 / D-24855 — the one setup registry walk for every per-villain marker
+// table (formerly five copies, D-24774 §9 / D-24771). It returns data, not a callback
+// (code-style: no higher-order functions); first-valid-line-wins stays in each builder
+// because it is per-table semantics.
+export function listSelectedVillainCards(
+  registry: unknown,
+  matchConfig: MatchSetupConfig,
+): SelectedVillainCard[] {
+  if (!isRegistryReader(registry)) {
+    return [];
+  }
+
+  const selectedCards: SelectedVillainCard[] = [];
+  for (const villainGroupId of matchConfig.villainGroupIds) {
+    const parsed = parseQualifiedId(villainGroupId);
+    if (parsed === null) continue;
+    const setData = registry.getSet(parsed.setAbbr);
+    const groupCards = findVillainGroupCards(setData, parsed.slug);
+    if (groupCards === null) continue;
+
+    for (const card of groupCards) {
+      if (typeof card.slug !== 'string') continue;
+      if (!Array.isArray(card.abilities)) continue;
+
+      // why: every builder skipped non-string ability lines, so dropping them here
+      // is identical.
+      const abilityLines: string[] = [];
+      for (const abilityLine of card.abilities) {
+        if (typeof abilityLine === 'string') {
+          abilityLines.push(abilityLine);
+        }
+      }
+      const instanceExtIds = villainCardInstanceExtIds(
+        parsed.setAbbr,
+        parsed.slug,
+        card.slug,
+        card,
+      );
+      selectedCards.push({ abilityLines, instanceExtIds });
+    }
+  }
+
+  return selectedCards;
+}
+
+// ---------------------------------------------------------------------------
 // buildVillainDefeatRequirements — setup-time builder
 // ---------------------------------------------------------------------------
 
@@ -282,44 +354,20 @@ export function buildVillainDefeatRequirements(
   matchConfig: MatchSetupConfig,
 ): Record<CardExtId, VillainDefeatRequirement> {
   const requirements: Record<CardExtId, VillainDefeatRequirement> = {};
-  if (!isRegistryReader(registry)) {
-    return requirements;
-  }
-
-  for (const villainGroupId of matchConfig.villainGroupIds) {
-    const parsed = parseQualifiedId(villainGroupId);
-    if (parsed === null) continue;
-    const setData = registry.getSet(parsed.setAbbr);
-    const groupCards = findVillainGroupCards(setData, parsed.slug);
-    if (groupCards === null) continue;
-
-    for (const card of groupCards) {
-      if (typeof card.slug !== 'string') continue;
-      if (!Array.isArray(card.abilities)) continue;
-
-      let requirement: VillainDefeatRequirement | null = null;
-      for (const abilityLine of card.abilities) {
-        if (typeof abilityLine !== 'string') continue;
-        requirement = parseDefeatRequirementLine(abilityLine);
-        if (requirement !== null) break;
-      }
-      if (requirement === null) continue;
-
-      const instanceExtIds = villainCardInstanceExtIds(
-        parsed.setAbbr,
-        parsed.slug,
-        card.slug,
-        card,
-      );
-      // why: fan out a freshly-constructed requirement per copy instance so
-      // copies never alias one object (D-13502), and so the gate keyed by a
-      // zone-instance ext_id finds its entry.
-      for (const cardId of instanceExtIds) {
-        requirements[cardId] = { kind: requirement.kind, value: requirement.value };
-      }
+  for (const villainCard of listSelectedVillainCards(registry, matchConfig)) {
+    let requirement: VillainDefeatRequirement | null = null;
+    for (const abilityLine of villainCard.abilityLines) {
+      requirement = parseDefeatRequirementLine(abilityLine);
+      if (requirement !== null) break;
+    }
+    if (requirement === null) continue;
+    // why: fan out a freshly-constructed requirement per copy instance so
+    // copies never alias one object (D-13502), and so the gate keyed by a
+    // zone-instance ext_id finds its entry.
+    for (const cardId of villainCard.instanceExtIds) {
+      requirements[cardId] = { kind: requirement.kind, value: requirement.value };
     }
   }
-
   return requirements;
 }
 
@@ -352,44 +400,20 @@ export function buildVillainFightDiscardCosts(
   matchConfig: MatchSetupConfig,
 ): Record<CardExtId, VillainFightDiscardCost> {
   const discardCosts: Record<CardExtId, VillainFightDiscardCost> = {};
-  if (!isRegistryReader(registry)) {
-    return discardCosts;
-  }
-
-  for (const villainGroupId of matchConfig.villainGroupIds) {
-    const parsed = parseQualifiedId(villainGroupId);
-    if (parsed === null) continue;
-    const setData = registry.getSet(parsed.setAbbr);
-    const groupCards = findVillainGroupCards(setData, parsed.slug);
-    if (groupCards === null) continue;
-
-    for (const card of groupCards) {
-      if (typeof card.slug !== 'string') continue;
-      if (!Array.isArray(card.abilities)) continue;
-
-      let discardCost: VillainFightDiscardCost | null = null;
-      for (const abilityLine of card.abilities) {
-        if (typeof abilityLine !== 'string') continue;
-        discardCost = parseFightDiscardCostLine(abilityLine);
-        if (discardCost !== null) break;
-      }
-      if (discardCost === null) continue;
-
-      const instanceExtIds = villainCardInstanceExtIds(
-        parsed.setAbbr,
-        parsed.slug,
-        card.slug,
-        card,
-      );
-      // why: a fresh object and a fresh costs array per copy instance, so copies
-      // never alias one another (D-13502) and the fightVillain gate keyed by a
-      // zone-instance ext_id finds its entry.
-      for (const cardId of instanceExtIds) {
-        discardCosts[cardId] = { eligibleCosts: [...discardCost.eligibleCosts] };
-      }
+  for (const villainCard of listSelectedVillainCards(registry, matchConfig)) {
+    let discardCost: VillainFightDiscardCost | null = null;
+    for (const abilityLine of villainCard.abilityLines) {
+      discardCost = parseFightDiscardCostLine(abilityLine);
+      if (discardCost !== null) break;
+    }
+    if (discardCost === null) continue;
+    // why: a fresh object and a fresh costs array per copy instance, so copies
+    // never alias one another (D-13502) and the fightVillain gate keyed by a
+    // zone-instance ext_id finds its entry.
+    for (const cardId of villainCard.instanceExtIds) {
+      discardCosts[cardId] = { eligibleCosts: [...discardCost.eligibleCosts] };
     }
   }
-
   return discardCosts;
 }
 
@@ -564,53 +588,25 @@ function copyVariableAttackEntry(entry: VillainVariableAttack): VillainVariableA
  * @param matchConfig - Validated match setup config (villainGroupIds).
  * @returns The variable-Attack table; empty when no villain is marked.
  */
-// why: D-24774 — a deliberate third copy of the setup registry walk (beside
-// buildVillainDefeatRequirements and buildVillainFightDiscardCosts). A shared walk
-// would put the two shipped tables at risk for no behavior gain; folding the walks
-// is a STATUS follow-up.
 export function buildVillainVariableAttack(
   registry: unknown,
   matchConfig: MatchSetupConfig,
 ): Record<CardExtId, VillainVariableAttack> {
   const variableAttack: Record<CardExtId, VillainVariableAttack> = {};
-  if (!isRegistryReader(registry)) {
-    return variableAttack;
-  }
-
-  for (const villainGroupId of matchConfig.villainGroupIds) {
-    const parsed = parseQualifiedId(villainGroupId);
-    if (parsed === null) continue;
-    const setData = registry.getSet(parsed.setAbbr);
-    const groupCards = findVillainGroupCards(setData, parsed.slug);
-    if (groupCards === null) continue;
-
-    for (const card of groupCards) {
-      if (typeof card.slug !== 'string') continue;
-      if (!Array.isArray(card.abilities)) continue;
-
-      let entry: VillainVariableAttack | null = null;
-      for (const abilityLine of card.abilities) {
-        if (typeof abilityLine !== 'string') continue;
-        entry = parseVariableAttackLine(abilityLine);
-        if (entry !== null) break;
-      }
-      if (entry === null) continue;
-
-      const instanceExtIds = villainCardInstanceExtIds(
-        parsed.setAbbr,
-        parsed.slug,
-        card.slug,
-        card,
-      );
-      // why: a fresh object and a fresh requireCitySpaces array per copy instance, so
-      // copies never alias one another (D-13502) and resolveFightCost keyed by a
-      // zone-instance ext_id finds its entry.
-      for (const cardId of instanceExtIds) {
-        variableAttack[cardId] = copyVariableAttackEntry(entry);
-      }
+  for (const villainCard of listSelectedVillainCards(registry, matchConfig)) {
+    let entry: VillainVariableAttack | null = null;
+    for (const abilityLine of villainCard.abilityLines) {
+      entry = parseVariableAttackLine(abilityLine);
+      if (entry !== null) break;
+    }
+    if (entry === null) continue;
+    // why: a fresh object and a fresh requireCitySpaces array per copy instance, so
+    // copies never alias one another (D-13502) and resolveFightCost keyed by a
+    // zone-instance ext_id finds its entry.
+    for (const cardId of villainCard.instanceExtIds) {
+      variableAttack[cardId] = copyVariableAttackEntry(entry);
     }
   }
-
   return variableAttack;
 }
 
@@ -690,43 +686,19 @@ export function buildVillainFightRestrictions(
   matchConfig: MatchSetupConfig,
 ): Record<CardExtId, VillainFightRestriction> {
   const restrictions: Record<CardExtId, VillainFightRestriction> = {};
-  if (!isRegistryReader(registry)) {
-    return restrictions;
-  }
-
-  for (const villainGroupId of matchConfig.villainGroupIds) {
-    const parsed = parseQualifiedId(villainGroupId);
-    if (parsed === null) continue;
-    const setData = registry.getSet(parsed.setAbbr);
-    const groupCards = findVillainGroupCards(setData, parsed.slug);
-    if (groupCards === null) continue;
-
-    for (const card of groupCards) {
-      if (typeof card.slug !== 'string') continue;
-      if (!Array.isArray(card.abilities)) continue;
-
-      let restriction: VillainFightRestriction | null = null;
-      for (const abilityLine of card.abilities) {
-        if (typeof abilityLine !== 'string') continue;
-        restriction = parseFightRestrictionLine(abilityLine);
-        if (restriction !== null) break;
-      }
-      if (restriction === null) continue;
-
-      const instanceExtIds = villainCardInstanceExtIds(
-        parsed.setAbbr,
-        parsed.slug,
-        card.slug,
-        card,
-      );
-      // why: a fresh object per copy instance, so copies never alias one another
-      // (D-13502) and the fightVillain gate keyed by a zone-instance ext_id finds its entry.
-      for (const cardId of instanceExtIds) {
-        restrictions[cardId] = { kind: restriction.kind };
-      }
+  for (const villainCard of listSelectedVillainCards(registry, matchConfig)) {
+    let restriction: VillainFightRestriction | null = null;
+    for (const abilityLine of villainCard.abilityLines) {
+      restriction = parseFightRestrictionLine(abilityLine);
+      if (restriction !== null) break;
+    }
+    if (restriction === null) continue;
+    // why: a fresh object per copy instance, so copies never alias one another
+    // (D-13502) and the fightVillain gate keyed by a zone-instance ext_id finds its entry.
+    for (const cardId of villainCard.instanceExtIds) {
+      restrictions[cardId] = { kind: restriction.kind };
     }
   }
-
   return restrictions;
 }
 
@@ -800,50 +772,23 @@ export function parseAttackPerCapturedLine(abilityLine: string): VillainAttackPe
  * @param matchConfig - Validated match setup config (villainGroupIds).
  * @returns The attack-per-captured table; empty when no villain is marked.
  */
-// why: D-24771 — a deliberate fifth copy of the setup registry walk (beside the
-// defeat-requirement, fight-discard-cost, variable-Attack and fight-restriction
-// builders). A shared walk would put four shipped tables at risk for no behavior gain.
 export function buildVillainAttackPerCaptured(
   registry: unknown,
   matchConfig: MatchSetupConfig,
 ): Record<CardExtId, VillainAttackPerCaptured> {
   const attackPerCaptured: Record<CardExtId, VillainAttackPerCaptured> = {};
-  if (!isRegistryReader(registry)) {
-    return attackPerCaptured;
-  }
-
-  for (const villainGroupId of matchConfig.villainGroupIds) {
-    const parsed = parseQualifiedId(villainGroupId);
-    if (parsed === null) continue;
-    const setData = registry.getSet(parsed.setAbbr);
-    const groupCards = findVillainGroupCards(setData, parsed.slug);
-    if (groupCards === null) continue;
-
-    for (const card of groupCards) {
-      if (typeof card.slug !== 'string') continue;
-      if (!Array.isArray(card.abilities)) continue;
-
-      let entry: VillainAttackPerCaptured | null = null;
-      for (const abilityLine of card.abilities) {
-        if (typeof abilityLine !== 'string') continue;
-        entry = parseAttackPerCapturedLine(abilityLine);
-        if (entry !== null) break;
-      }
-      if (entry === null) continue;
-
-      const instanceExtIds = villainCardInstanceExtIds(
-        parsed.setAbbr,
-        parsed.slug,
-        card.slug,
-        card,
-      );
-      // why: a fresh object per copy instance, so copies never alias one another
-      // (D-13502) and resolveFightCost keyed by a zone-instance ext_id finds its entry.
-      for (const cardId of instanceExtIds) {
-        attackPerCaptured[cardId] = { kind: entry.kind, attackPerCard: entry.attackPerCard };
-      }
+  for (const villainCard of listSelectedVillainCards(registry, matchConfig)) {
+    let entry: VillainAttackPerCaptured | null = null;
+    for (const abilityLine of villainCard.abilityLines) {
+      entry = parseAttackPerCapturedLine(abilityLine);
+      if (entry !== null) break;
+    }
+    if (entry === null) continue;
+    // why: a fresh object per copy instance, so copies never alias one another
+    // (D-13502) and resolveFightCost keyed by a zone-instance ext_id finds its entry.
+    for (const cardId of villainCard.instanceExtIds) {
+      attackPerCaptured[cardId] = { kind: entry.kind, attackPerCard: entry.attackPerCard };
     }
   }
-
   return attackPerCaptured;
 }
