@@ -1196,10 +1196,10 @@ function extractEffects(abilityLine: string): {
     } else {
       const descriptor = parseParameterizedEffect(rawValue);
       if (descriptor !== null) {
-        // why: parameterized grammar — descriptor only, no legacy keyword. No
-        // real card uses this yet; the executor's reverse-map yields undefined
-        // for such a descriptor, so it is simply not recorded in appliedEffects
-        // (descriptor-keyed narrative labels are deferred to WP-253).
+        // why: parameterized grammar — descriptor only, no legacy keyword. The
+        // executor's reverse-map yields undefined for such a descriptor, so it is
+        // not recorded in appliedEffects; it narrates through its handler's
+        // `narrativeClause` channel instead (WP-897 / D-24854).
         effects.push(descriptor);
       } else {
         // why: WP-257 / D-24034 — an `[effect:X]` marker that is neither a legacy

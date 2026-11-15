@@ -84,6 +84,7 @@ import {
 // fortify helpers (pure, type-only imports back into the engine; no cycle).
 import { fortifyWithEscapedVillain, getFortification } from '../board/fortify.logic.js';
 import { demolishEachPlayer } from '../board/demolish.logic.js';
+import type { DemolishResult } from '../board/demolish.logic.js';
 import { FORTIFY_LOCK_TEXT, FORTIFY_PLACE_LABELS } from '../board/fortify.types.js';
 import type { CaptureHeroResult } from '../board/heroCapture.logic.js';
 // why: WP-522 / D-24335 — give-hq-hero-by-trait-to-current refills the vacated HQ slot
@@ -101,7 +102,8 @@ import type { ShuffleProvider } from '../setup/shuffle.js';
 // with the fight site's ShuffleProvider (the only randomness this packet adds).
 import { shuffleDeck } from '../setup/shuffle.js';
 import { pushLog } from '../log/logPush.js';
-import { describeKoSourceZone, formatCardRef } from '../log/logDisplay.js';
+import type { LogOutcome } from '../log/logOutcome.types.js';
+import { describeKoSourceZone, formatCardRef, resolveCardName } from '../log/logDisplay.js';
 // why: WP-870 / D-24815 — Zero's handler only queues the owed next-hand pick; that module never
 // imports this executor, and its opener runs from the play-phase onMove.
 import { queueNextHandFromPlayPick } from '../moves/nextHandFromPlay.logic.js';
@@ -171,18 +173,33 @@ export const YOUR_HEROES_KO_ZONES: readonly KoHeroTarget['zone'][] = ['hand', 'i
 // ---------------------------------------------------------------------------
 
 /**
+ * What one villain-ability execution produced (WP-897 / D-24854): the reverse-mapped legacy
+ * keyword results, and the narrative clauses of the keyword-less descriptors that ran.
+ */
+// why: WP-897 / D-24854 — keyword-less descriptors never reach `results` (D-24023 freezes the
+// keyword array), so their clauses travel beside it for the Ambush narrative. `results` and
+// `appliedEffects` are unchanged.
+export interface VillainAbilityExecution {
+  results: VillainEffectResult[];
+  narrativeClauses: string[];
+}
+
+/**
  * Applies villain/henchman ability effects for a card at a given timing.
  *
- * Called from the Fight fire site (fightVillain.ts, 'onFight'), the Ambush
- * fire site (villainDeck.reveal.ts, 'onAmbush'), and the Escape fire site
- * (villainDeck.reveal.ts, 'onEscape' — WP-186). Looks up the card's hooks
- * for the timing and applies each effect in left-to-right array order.
+ * Called from the Fight fire site (fightVillain.ts, 'onFight'), the Escape fire
+ * site (villainDeck.reveal.ts, 'onEscape' — WP-186) and fortifyFight.ts. The
+ * Ambush fire site calls `executeVillainAbilitiesWithNarrative` directly
+ * (WP-897 / D-24854); this wrapper returns only its `results`.
  *
  * @param G - Game state (mutated under Immer draft).
  * @param ctx - framework context passed as unknown to avoid a game-framework
  *   import. Only ctx.currentPlayer is read.
  * @param cardId - The villain/henchman card-instance ext_id that triggered.
  * @param timing - Which timing fired ('onAmbush', 'onFight', or 'onEscape').
+ * @param shuffleContext - The deterministic shuffle source (see
+ *   `executeVillainAbilitiesWithNarrative`).
+ * @param cityIndex - The fought City index (see `executeVillainAbilitiesWithNarrative`).
  * @returns The applied effect results in dispatch order (post-safe-skip).
  *   WP-316 widening (D-24102): each result carries the reverse-mapped legacy
  *   `keyword` plus the card ext_id `targets` the effect touched (and `pending`
@@ -193,6 +210,35 @@ export const YOUR_HEROES_KO_ZONES: readonly KoHeroTarget['zone'][] = ['hand', 'i
  *   safe-skip and are NOT included.
  */
 export function executeVillainAbilities(
+  G: LegendaryGameState,
+  ctx: unknown,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  shuffleContext?: ShuffleProvider,
+  cityIndex?: number,
+): VillainEffectResult[] {
+  return executeVillainAbilitiesWithNarrative(G, ctx, cardId, timing, shuffleContext, cityIndex).results;
+}
+
+/**
+ * Applies villain/henchman ability effects for a card at a given timing, and reports the
+ * narrative clause of every keyword-less descriptor that ran (WP-897 / D-24854).
+ *
+ * Looks up the card's hooks for the timing and applies each effect in left-to-right array
+ * order. Every dispatch records an `EffectTrace`; a dispatch that reached no handler also
+ * records a hollow event.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param ctx - framework context passed as unknown to avoid a game-framework
+ *   import. Only ctx.currentPlayer (and, defensively, ctx.turn) is read.
+ * @param cardId - The villain/henchman card-instance ext_id that triggered.
+ * @param timing - Which timing fired ('onAmbush', 'onFight', or 'onEscape').
+ * @param shuffleContext - The deterministic shuffle source for a deck-reveal handler.
+ * @param cityIndex - The 0-based City index the villain was fought on, or undefined.
+ * @returns The legacy keyword `results` (exactly what `executeVillainAbilities` returns) and
+ *   the keyword-less `narrativeClauses`, both in dispatch order.
+ */
+export function executeVillainAbilitiesWithNarrative(
   G: LegendaryGameState,
   ctx: unknown,
   cardId: CardExtId,
@@ -210,18 +256,18 @@ export function executeVillainAbilities(
   // the Ambush/Escape reveal sites pass undefined, and the gate FAILS CLOSED on
   // undefined so a location-gated effect never fires without a fought space.
   cityIndex?: number,
-): VillainEffectResult[] {
+): VillainAbilityExecution {
   // why: WP-316 — accumulator captures a result per effect whose handler ran,
   // in dispatch order. Each result pairs the reverse-mapped legacy keyword with
   // the ext_ids the effect touched. Out-of-vocab effects (no handler) are NOT
   // appended; the fire sites see only effects whose mutation was attempted.
-  const results: VillainEffectResult[] = [];
+  const execution: VillainAbilityExecution = { results: [], narrativeClauses: [] };
 
   // why: guard against older test mocks (and pre-WP-185 G states) that lack
   // villainAbilityHooks — mirrors the WP-022 heroAbilityHooks guard. No hooks
   // means no effects.
   if (!G.villainAbilityHooks || G.villainAbilityHooks.length === 0) {
-    return results;
+    return execution;
   }
 
   // why: ctx is typed `unknown` and narrowed via `as` to the one field this
@@ -244,70 +290,12 @@ export function executeVillainAbilities(
   const hooks = getVillainHooksForCard(G.villainAbilityHooks, cardId, timing);
   for (const hook of hooks) {
     for (const descriptor of hook.effects) {
-      // why: WP-489 / D-24295 — the universal location gate, checked BEFORE handler
-      // dispatch. A descriptor carrying `requireCitySpaces` fires only when the
-      // villain was fought on a listed space; otherwise skip + self-narrate "no
-      // effect". This is NOT hollow (the handler exists — the location blocked it),
-      // so it records neither a hollow nor an EffectTrace: the descriptor was never
-      // dispatched. Fails CLOSED on an undefined / out-of-range cityIndex (the
-      // Ambush/Escape fire sites, which have no fought space).
-      if (
-        descriptor.requireCitySpaces !== undefined &&
-        !isCityGateSatisfied(descriptor.requireCitySpaces, cityIndex)
-      ) {
-        narrateCityGateBlocked(G, timing, descriptor.requireCitySpaces);
-        continue;
-      }
-      // why: WP-816 / D-24749 — the condition gate (rules v23 L1844-1853 Savior), checked
-      // AFTER the location gate and BEFORE dispatch. It reads the CURRENT player at every
-      // timing and fails closed (missing zones, or an unrecognized condition value).
-      // Like the location gate it is NOT hollow (the handler exists — the condition
-      // blocked it), so it records neither a hollow record nor an EffectTrace (the
-      // D-24295 precedent): the descriptor was never dispatched.
-      if (
-        descriptor.requireCondition !== undefined &&
-        !isConditionGateSatisfied(G, currentPlayer, cardId, timing, descriptor)
-      ) {
+      if (isVillainDescriptorGatedOut(G, currentPlayer, cardId, timing, descriptor, cityIndex)) {
         continue;
       }
       const application = applyVillainEffect(G, currentPlayer, cardId, timing, descriptor, shuffleContext, cityIndex);
       if (application !== null) {
-        // why: D-24023 — each result's `keyword` stays VillainEffectKeyword
-        // (reverse-mapped from the dispatched descriptor) so notableEvents,
-        // EFFECT_KEYWORD_LABELS, the replay state-hash, and the arena-client
-        // projection are byte-identical (WP-316 adds only the hash-excluded
-        // targets). Every dispatched descriptor came from a legacy marker, so
-        // the reverse-map always resolves; an unresolvable descriptor (none in
-        // this WP) is simply not recorded.
-        const legacyKeyword = descriptorToLegacyKeyword(descriptor);
-        if (legacyKeyword !== undefined) {
-          const result: VillainEffectResult = {
-            keyword: legacyKeyword,
-            targets: application.targets,
-          };
-          // why: WP-316 — carry `pending` only when the handler parked an
-          // interactive KO, so the omit-when-absent shape matches the type's
-          // optional field (no `pending: undefined` noise).
-          if (application.pending === true) {
-            result.pending = true;
-          }
-          if (application.targetsByPlayer !== undefined) {
-            result.targetsByPlayer = application.targetsByPlayer;
-          }
-          // why: D-24693 — omit-when-empty, like `pending`: a KO that took nothing has no zones.
-          if (application.targetZones !== undefined && application.targetZones.length > 0) {
-            result.targetZones = application.targetZones;
-          }
-          // why: D-24673 — present only when a Diving Block reveal is pending.
-          if (application.woundOutcomes !== undefined) {
-            result.woundOutcomes = application.woundOutcomes;
-          }
-          // why: D-24783 — present only on a grey-filtered each-player KO (Destroyer).
-          if (application.greyFilter !== undefined) {
-            result.greyFilter = application.greyFilter;
-          }
-          results.push(result);
-        }
+        recordVillainEffectApplication(execution, timing, descriptor, application);
       } else {
         // why: WP-257 / D-24033 — `application === null` is the out-of-vocabulary
         // skip site: applyVillainEffect reached NO handler for this descriptor.
@@ -323,28 +311,178 @@ export function executeVillainAbilities(
       // no-handler dispatch now produces BOTH a hollow record (above, unchanged) and a trace.
       recordEffectTrace(G, buildVillainEffectTrace(cardType, cardId, timing, descriptor, application, turn));
     }
-    // why: WP-257 / D-24034 — an unresolved `[effect:X]` marker the parser saw
-    // but could not turn into a descriptor is `parse-unrecognized` hollow. These
-    // never produced a descriptor, so they are not in hook.effects above.
-    detectVillainUnresolvedMarkers(G, cardId, cardType, hook, turn);
-    // why: D-24266 — the printed-but-unmarked gap. This hook exists ONLY because
-    // its source ability line began with a recognized timing prefix
-    // (Fight:/Ambush:/Escape:), which in Legendary always denotes a mechanical
-    // effect — flavor text never carries those prefixes. A hook with zero
-    // descriptors AND zero unresolved markers therefore means the data pipeline
-    // never annotated the line with any `[effect:]` marker at all, so the printed
-    // mechanic is entirely un-implemented (e.g. Doombot Legion's "Fight: Look at
-    // the top two cards of your deck. KO one of them and put the other back.").
-    // The WP-257 detector only classified markered/descriptored lines, so this
-    // whole class fell through silently. Recording it as `no-handler` hollow gives
-    // the operator log a breadcrumb instead of nothing. This supersedes WP-188's
-    // implicit "marker-free line = silent safe-skip" for villain/henchman timing
-    // lines (the parser still emits the hook; the difference is that we now
-    // observe it rather than dropping it on the floor).
-    detectVillainUnmarkedTimingLine(G, cardId, cardType, hook, turn);
+    detectVillainHookGaps(G, cardId, cardType, hook, turn);
   }
 
-  return results;
+  return execution;
+}
+
+/**
+ * Whether a descriptor is skipped before dispatch by the location gate or the condition gate.
+ * A gated-out descriptor is never dispatched, so it records no hollow, no trace, no result and
+ * no narrative clause.
+ *
+ * @param G - Game state (the location gate's "no effect" line is appended to the log).
+ * @param currentPlayer - The active player (the condition gate reads them).
+ * @param cardId - The triggering card-instance ext_id.
+ * @param timing - The timing that fired.
+ * @param descriptor - The descriptor about to be dispatched.
+ * @param cityIndex - The fought City index, or undefined.
+ * @returns True when a gate blocks the descriptor.
+ */
+function isVillainDescriptorGatedOut(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+  cityIndex: number | undefined,
+): boolean {
+  // why: WP-489 / D-24295 — the universal location gate, checked BEFORE handler
+  // dispatch. A descriptor carrying `requireCitySpaces` fires only when the
+  // villain was fought on a listed space; otherwise skip + self-narrate "no
+  // effect". This is NOT hollow (the handler exists — the location blocked it),
+  // so it records neither a hollow nor an EffectTrace: the descriptor was never
+  // dispatched. Fails CLOSED on an undefined / out-of-range cityIndex (the
+  // Ambush/Escape fire sites, which have no fought space).
+  if (
+    descriptor.requireCitySpaces !== undefined &&
+    !isCityGateSatisfied(descriptor.requireCitySpaces, cityIndex)
+  ) {
+    narrateCityGateBlocked(G, timing, descriptor.requireCitySpaces);
+    return true;
+  }
+  // why: WP-816 / D-24749 — the condition gate (rules v23 L1844-1853 Savior), checked
+  // AFTER the location gate and BEFORE dispatch. It reads the CURRENT player at every
+  // timing and fails closed (missing zones, or an unrecognized condition value).
+  // Like the location gate it is NOT hollow (the handler exists — the condition
+  // blocked it), so it records neither a hollow record nor an EffectTrace (the
+  // D-24295 precedent): the descriptor was never dispatched.
+  if (
+    descriptor.requireCondition !== undefined &&
+    !isConditionGateSatisfied(G, currentPlayer, cardId, timing, descriptor)
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Records one handler application: a legacy-keyword descriptor adds a `VillainEffectResult`;
+ * a keyword-less one adds its narrative clause (WP-897 / D-24854).
+ *
+ * @param execution - The execution accumulator (mutated).
+ * @param timing - The timing that fired (names the fallback clause).
+ * @param descriptor - The dispatched descriptor.
+ * @param application - What the handler reported.
+ */
+function recordVillainEffectApplication(
+  execution: VillainAbilityExecution,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+  application: VillainEffectApplication,
+): void {
+  // why: D-24023 — each result's `keyword` stays VillainEffectKeyword
+  // (reverse-mapped from the dispatched descriptor) so notableEvents,
+  // EFFECT_KEYWORD_LABELS, the replay state-hash, and the arena-client
+  // projection are byte-identical (WP-316 adds only the hash-excluded
+  // targets). A legacy-marker descriptor reverse-maps to its keyword and is
+  // recorded here; a keyword-less descriptor (WP-897 / D-24854) is not, and
+  // reports its narrative clause through the parallel channel instead.
+  const legacyKeyword = descriptorToLegacyKeyword(descriptor);
+  if (legacyKeyword !== undefined) {
+    execution.results.push(buildVillainEffectResult(legacyKeyword, application));
+    return;
+  }
+  // why: WP-897 / D-24854 — the channel branch. A keyword-less handler's clause is exactly the
+  // clause it logged; a handler that ran without one (and is not a deliberate no-op, whose work
+  // a fire site narrates) contributes the honest fallback, never "no Ambush effect".
+  if (application.narrativeClause !== undefined && application.narrativeClause.length > 0) {
+    execution.narrativeClauses.push(application.narrativeClause);
+    return;
+  }
+  if (!DELIBERATE_NO_OP_VILLAIN_PRIMITIVES.has(descriptor.primitive)) {
+    // why: WP-897 / D-24854 — the fallback clause: the effect resolved, and its own log line
+    // says how.
+    execution.narrativeClauses.push(`its ${villainEffectTimingLabel(timing)} effect resolved (see the log)`);
+  }
+}
+
+/**
+ * Builds the `VillainEffectResult` for a legacy-keyword descriptor's application (WP-316).
+ *
+ * @param legacyKeyword - The reverse-mapped legacy keyword.
+ * @param application - What the handler reported.
+ * @returns The result, with each optional field present only when the handler set it.
+ */
+function buildVillainEffectResult(
+  legacyKeyword: VillainEffectKeyword,
+  application: VillainEffectApplication,
+): VillainEffectResult {
+  const result: VillainEffectResult = {
+    keyword: legacyKeyword,
+    targets: application.targets,
+  };
+  // why: WP-316 — carry `pending` only when the handler parked an
+  // interactive KO, so the omit-when-absent shape matches the type's
+  // optional field (no `pending: undefined` noise).
+  if (application.pending === true) {
+    result.pending = true;
+  }
+  if (application.targetsByPlayer !== undefined) {
+    result.targetsByPlayer = application.targetsByPlayer;
+  }
+  // why: D-24693 — omit-when-empty, like `pending`: a KO that took nothing has no zones.
+  if (application.targetZones !== undefined && application.targetZones.length > 0) {
+    result.targetZones = application.targetZones;
+  }
+  // why: D-24673 — present only when a Diving Block reveal is pending.
+  if (application.woundOutcomes !== undefined) {
+    result.woundOutcomes = application.woundOutcomes;
+  }
+  // why: D-24783 — present only on a grey-filtered each-player KO (Destroyer).
+  if (application.greyFilter !== undefined) {
+    result.greyFilter = application.greyFilter;
+  }
+  return result;
+}
+
+/**
+ * Records the per-hook hollow gaps the descriptor loop cannot see: unresolved markers and a
+ * timing line with no marker at all.
+ *
+ * @param G - Game state (hollow records appended).
+ * @param cardId - The triggering card-instance ext_id.
+ * @param cardType - The resolved scope ('villain' | 'henchman').
+ * @param hook - The hook just executed.
+ * @param turn - The framework turn number.
+ */
+function detectVillainHookGaps(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+  cardType: 'villain' | 'henchman',
+  hook: VillainAbilityHook,
+  turn: number,
+): void {
+  // why: WP-257 / D-24034 — an unresolved `[effect:X]` marker the parser saw
+  // but could not turn into a descriptor is `parse-unrecognized` hollow. These
+  // never produced a descriptor, so they are not in hook.effects above.
+  detectVillainUnresolvedMarkers(G, cardId, cardType, hook, turn);
+  // why: D-24266 — the printed-but-unmarked gap. This hook exists ONLY because
+  // its source ability line began with a recognized timing prefix
+  // (Fight:/Ambush:/Escape:), which in Legendary always denotes a mechanical
+  // effect — flavor text never carries those prefixes. A hook with zero
+  // descriptors AND zero unresolved markers therefore means the data pipeline
+  // never annotated the line with any `[effect:]` marker at all, so the printed
+  // mechanic is entirely un-implemented (e.g. Doombot Legion's "Fight: Look at
+  // the top two cards of your deck. KO one of them and put the other back.").
+  // The WP-257 detector only classified markered/descriptored lines, so this
+  // whole class fell through silently. Recording it as `no-handler` hollow gives
+  // the operator log a breadcrumb instead of nothing. This supersedes WP-188's
+  // implicit "marker-free line = silent safe-skip" for villain/henchman timing
+  // lines (the parser still emits the hook; the difference is that we now
+  // observe it rather than dropping it on the floor).
+  detectVillainUnmarkedTimingLine(G, cardId, cardType, hook, turn);
 }
 
 // ---------------------------------------------------------------------------
@@ -1081,6 +1219,11 @@ interface VillainEffectApplication {
   woundOutcomes?: VillainWoundOutcomes;
   // why: D-24783 — a grey-filtered each-player KO reports its filter so the log names it.
   greyFilter?: GreyHeroFilter;
+  // why: WP-897 / D-24854 — a keyword-less handler reports the clause of the `<Timing> effect:`
+  // line(s) it logged for this dispatch (no prefix, no final period, joined with `; ` in log
+  // order), so the Ambush overlay says what the log says. Set only with a non-empty string
+  // (`exactOptionalPropertyTypes`); omitted when the handler logged nothing.
+  narrativeClause?: string;
 }
 
 /**
@@ -2010,11 +2153,12 @@ function villainEffectPlayVillainDeckCards(
   // reveals automatically when able; the same predicate decides the fire site's play count.
   if (currentPlayerRevealsForVillainDeckPlay(G, descriptor, currentPlayer)) {
     const requirement = describeRevealRequirement(descriptor.requireKind!, descriptor.requireValue!);
-    pushLog(
-      G,
-      `${villainEffectTimingLabel(timing)} effect: Player ${currentPlayer} revealed ${articleFor(requirement)} ${requirement} Hero, so no card is played from the Villain Deck.`,
-      'blocked',
-    );
+    const clause = `Player ${currentPlayer} revealed ${articleFor(requirement)} ${requirement} Hero, so no card is played from the Villain Deck`;
+    pushLog(G, `${villainEffectTimingLabel(timing)} effect: ${clause}.`, 'blocked');
+    // why: WP-897 / D-24854 — only the revealed branch narrates here; on the unrevealed branch
+    // the fire site plays and narrates the card (D-24703), so no clause and, as a deliberate
+    // no-op, no fallback.
+    return { targets: [], narrativeClause: clause };
   }
   return { targets: [] };
 }
@@ -2571,51 +2715,89 @@ function villainEffectRevealOrWound(
   // why: self-narrate ONE line with the pinned templates (D-24281). reveal-or-wound
   // is keyword-less so the result-recording path drops it; without this push the
   // effect would land silently. `G.messages` is hash-excluded (D-24081), so this
-  // adds no replay surface. Outcome colour is honest per the WP-434 contract: the
-  // wound landed on ≥1 player → `applied`; every player revealed (the villain
-  // effect touched no one) → `blocked`.
+  // adds no replay surface.
   const label = villainEffectTimingLabel(timing);
   // why: D-24679 — name the trait checked ("had no Ranged Hero"), so a reader can tell
   // from the log alone what the player needed (match BvcATHgYM5k, Ymir's Ambush).
   const requirement = describeRevealRequirement(requireKind, requireValue);
-  const emptySupplyClause = composeEmptyWoundSupplyClause(emptySupplyPlayerIds);
-  if (divingBlockPendingPlayerIds.length > 0) {
+  const loggedClauses: string[] = [];
+  const outcomeLine = composeRevealOrWoundOutcomeLine(requirement, {
+    woundedPlayerIds,
+    gainedPlayerIds,
+    divingBlockPendingPlayerIds,
+    emptySupplyPlayerIds,
+    revealingPlayerIds,
+  });
+  if (outcomeLine !== null) {
+    pushLog(G, `${label} effect: ${outcomeLine.clause}.`, outcomeLine.outcome);
+    loggedClauses.push(outcomeLine.clause);
+  }
+  if (revealingPlayerIds.length > 0) {
+    loggedClauses.push(queueVillainRevealOrWoundChoice(G, currentPlayer, cardId, timing, requirement, revealingPlayerIds));
+  }
+  // why: WP-897 / D-24854 — the outcome line's clause, then the queued choice's clause (a parked
+  // choice says what is owed, not an outcome — the D-24673 wording precedent).
+  if (loggedClauses.length === 0) {
+    return { targets: [] };
+  }
+  return { targets: [], narrativeClause: loggedClauses.join('; ') };
+}
+
+/** The players a reveal-or-wound sorted into each outcome (D-24281 / D-24686 / D-24779). */
+interface RevealOrWoundOutcomeSeats {
+  woundedPlayerIds: readonly string[];
+  gainedPlayerIds: readonly string[];
+  divingBlockPendingPlayerIds: readonly string[];
+  emptySupplyPlayerIds: readonly string[];
+  revealingPlayerIds: readonly string[];
+}
+
+/** One self-narrated log line: its clause (no prefix, no final period) and its colour. */
+interface VillainEffectLogLine {
+  clause: string;
+  outcome: LogOutcome;
+}
+
+/**
+ * Composes reveal-or-wound's one outcome line (D-24281), or null when there is none to log
+ * (every seat that could reveal was queued for a choice).
+ *
+ * Outcome colour is honest per the WP-434 contract: the wound landed on ≥1 player → `applied`;
+ * every player revealed (the villain effect touched no one) → `blocked`.
+ *
+ * @param requirement - The trait label (e.g. `Ranged`).
+ * @param seats - The players in each outcome.
+ * @returns The line's clause and colour, or null.
+ */
+function composeRevealOrWoundOutcomeLine(
+  requirement: string,
+  seats: RevealOrWoundOutcomeSeats,
+): VillainEffectLogLine | null {
+  const woundedCount = String(seats.woundedPlayerIds.length);
+  const emptySupplyClause = composeEmptyWoundSupplyClause(seats.emptySupplyPlayerIds);
+  if (seats.divingBlockPendingPlayerIds.length > 0) {
     // why: D-24673 — a Diving Block reveal is pending, so that Wound is not gained yet;
     // the reveal / decline line that follows gives the outcome.
-    pushLog(
-      G,
-      `${label} effect: ${String(woundedPlayerIds.length)} player(s) had no ${requirement} Hero: ${composeWoundOutcomeClause(gainedPlayerIds, divingBlockPendingPlayerIds)}${emptySupplyClause}.`,
-      'applied',
-    );
-  } else if (woundedPlayerIds.length > 0) {
-    const names = woundedPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
-    pushLog(
-      G,
-      `${label} effect: ${String(woundedPlayerIds.length)} player(s) had no ${requirement} Hero and gained a Wound (${names})${emptySupplyClause}.`,
-      'applied',
-    );
-  } else if (emptySupplyPlayerIds.length > 0) {
+    const woundOutcomeClause = composeWoundOutcomeClause(seats.gainedPlayerIds, seats.divingBlockPendingPlayerIds);
+    return { clause: `${woundedCount} player(s) had no ${requirement} Hero: ${woundOutcomeClause}${emptySupplyClause}`, outcome: 'applied' };
+  }
+  if (seats.woundedPlayerIds.length > 0) {
+    const names = seats.woundedPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
+    return { clause: `${woundedCount} player(s) had no ${requirement} Hero and gained a Wound (${names})${emptySupplyClause}`, outcome: 'applied' };
+  }
+  if (seats.emptySupplyPlayerIds.length > 0) {
     // why: D-24686 — nobody gained a Wound because the supply is empty, not because
     // every player revealed (live match sDBnFxiigDL, Ymir's Ambush at 37.1.2, where no
     // Hero in the pool was Ranged).
-    const names = emptySupplyPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
-    pushLog(
-      G,
-      `${label} effect: the Wound supply is empty, so no Wound was gained (${names} had no ${requirement} Hero).`,
-      'blocked',
-    );
-  } else if (revealingPlayerIds.length === 0) {
+    const names = seats.emptySupplyPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
+    return { clause: `the Wound supply is empty, so no Wound was gained (${names} had no ${requirement} Hero)`, outcome: 'blocked' };
+  }
+  if (seats.revealingPlayerIds.length === 0) {
     // why: WP-845 / D-24779 — reachable only with no seats at all now: a player who could
-    // reveal is queued below and has not chosen yet, so "every player revealed" would be false.
-    // why: "an" before a vowel sound — the vowels plus "X" (read "ex"), as in the printed
-    // "reveals an X-Men Hero".
-    const article = /^[AEIOUX]/.test(requirement) ? 'an' : 'a';
-    pushLog(G, `${label} effect: every player revealed ${article} ${requirement} Hero.`, 'blocked');
+    // reveal is queued and has not chosen yet, so "every player revealed" would be false.
+    return { clause: `every player revealed ${articleFor(requirement)} ${requirement} Hero`, outcome: 'blocked' };
   }
-  if (revealingPlayerIds.length > 0) {
-    queueVillainRevealOrWoundChoice(G, currentPlayer, cardId, timing, requirement, revealingPlayerIds);
-  }
-  return { targets: [] };
+  return null;
 }
 
 /**
@@ -2629,6 +2811,7 @@ function villainEffectRevealOrWound(
  * @param timing - The timing that fired (selects the shield-block class).
  * @param requirement - The trait label (e.g. `X-Men`).
  * @param revealingPlayerIds - The players who can reveal, in seat order.
+ * @returns The clause of the line it logged (WP-897 / D-24854).
  */
 function queueVillainRevealOrWoundChoice(
   G: LegendaryGameState,
@@ -2637,7 +2820,7 @@ function queueVillainRevealOrWoundChoice(
   timing: VillainAbilityTiming,
   requirement: string,
   revealingPlayerIds: readonly string[],
-): void {
+): string {
   enqueueRevealOrWoundChoice(G, {
     sourceCardId: cardId,
     currentPlayerID: currentPlayer,
@@ -2645,11 +2828,11 @@ function queueVillainRevealOrWoundChoice(
     revealingSeats: [...revealingPlayerIds],
     strikeBlockThreatKind: STRIKE_BLOCK_THREAT_KIND_BY_TIMING[timing],
   });
-  pushLog(
-    G,
-    `${villainEffectTimingLabel(timing)} effect: ${formatRevealOrWoundPlayerNames(revealingPlayerIds)} can reveal a matching ${requirement} Hero and will choose whether to reveal it or gain a Wound.`,
-    'neutral',
-  );
+  // why: WP-897 / D-24854 — the clause is built once and logged from the variable, so the
+  // handler's narrative clause equals the logged line by construction.
+  const clause = `${formatRevealOrWoundPlayerNames(revealingPlayerIds)} can reveal a matching ${requirement} Hero and will choose whether to reveal it or gain a Wound`;
+  pushLog(G, `${villainEffectTimingLabel(timing)} effect: ${clause}.`, 'neutral');
+  return clause;
 }
 
 // why: D-24679 — display labels for the team slugs whose printed name is not a simple
@@ -3338,8 +3521,10 @@ function recordOwedTraitDiscard(
   const requireKind = descriptor.requireKind;
   const requireValue = descriptor.requireValue;
   if (requireKind === undefined || requireValue === undefined) {
-    pushLog(G, `${label} effect: no Hero trait was given; no effect.`, 'blocked');
-    return { targets: [] };
+    const blockedClause = 'no Hero trait was given; no effect';
+    pushLog(G, `${label} effect: ${blockedClause}.`, 'blocked');
+    // why: WP-897 / D-24854 — the narrative clause is the logged clause.
+    return { targets: [], narrativeClause: blockedClause };
   }
   const requirementLabel = describeRevealRequirement(requireKind, requireValue);
   // why: D-24770 — the executor has no `events`, so like Primus's Escape (D-24750) the
@@ -3357,12 +3542,10 @@ function recordOwedTraitDiscard(
   if (hasWoundAlternative) {
     woundClause = ' or gain a Wound';
   }
-  pushLog(
-    G,
-    `${label} effect: each player must discard ${articleFor(requirementLabel)} ${requirementLabel} Hero${woundClause}.`,
-    'applied',
-  );
-  return { targets: [] };
+  const clause = `each player must discard ${articleFor(requirementLabel)} ${requirementLabel} Hero${woundClause}`;
+  pushLog(G, `${label} effect: ${clause}.`, 'applied');
+  // why: WP-897 / D-24854 — the narrative clause is the logged clause (what each player owes).
+  return { targets: [], narrativeClause: clause };
 }
 
 /**
@@ -3435,10 +3618,13 @@ function villainEffectDiscardHandMatchingHqCardNamesEachPlayer(
     }
   }
   if (hqKeys.size === 0) {
-    pushLog(G, `${label} effect: the HQ is empty, so no player discards.`, 'blocked');
-    return { targets: [] };
+    const emptyHqClause = 'the HQ is empty, so no player discards';
+    pushLog(G, `${label} effect: ${emptyHqClause}.`, 'blocked');
+    // why: WP-897 / D-24854 — the narrative clause is the logged clause.
+    return { targets: [], narrativeClause: emptyHqClause };
   }
-  let hasAnyDiscard = false;
+  // why: WP-897 / D-24854 — one clause per discarding player, joined in log order.
+  const loggedClauses: string[] = [];
   // why: D-24780 — start with the current player, then clockwise (rules v23 L2247): the
   // discards fire return-on-discard / teleport reactions, whose queues fill in loop order.
   for (const seat of seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)) {
@@ -3453,18 +3639,17 @@ function villainEffectDiscardHandMatchingHqCardNamesEachPlayer(
       }
     }
     if (discardedNames.length > 0) {
-      hasAnyDiscard = true;
-      pushLog(
-        G,
-        `${label} effect: Player ${seat} discarded ${discardedNames.join(', ')} (same card name as a Hero in the HQ).`,
-        'applied',
-      );
+      const seatClause = `Player ${seat} discarded ${discardedNames.join(', ')} (same card name as a Hero in the HQ)`;
+      pushLog(G, `${label} effect: ${seatClause}.`, 'applied');
+      loggedClauses.push(seatClause);
     }
   }
-  if (!hasAnyDiscard) {
-    pushLog(G, `${label} effect: no player had a card with the same card name as a Hero in the HQ.`, 'blocked');
+  if (loggedClauses.length === 0) {
+    const noMatchClause = 'no player had a card with the same card name as a Hero in the HQ';
+    pushLog(G, `${label} effect: ${noMatchClause}.`, 'blocked');
+    loggedClauses.push(noMatchClause);
   }
-  return { targets: [] };
+  return { targets: [], narrativeClause: loggedClauses.join('; ') };
 }
 
 /**
@@ -3530,19 +3715,19 @@ function villainEffectHqHeroesCostChange(
     changedCardIds.push(hqCardId);
   }
   if (changedCardIds.length === 0) {
-    pushLog(G, `${label} effect: no matching Heroes in the HQ (${sourceName}).`, 'blocked');
-    return { targets: [] };
+    const noMatchClause = `no matching Heroes in the HQ (${sourceName})`;
+    pushLog(G, `${label} effect: ${noMatchClause}.`, 'blocked');
+    // why: WP-897 / D-24854 — the narrative clause is the logged clause.
+    return { targets: [], narrativeClause: noMatchClause };
   }
   const changedNames: string[] = [];
   for (const changedCardId of changedCardIds) {
     changedNames.push(resolveCardDisplayName(G, changedCardId));
   }
-  pushLog(
-    G,
-    `${label} effect: Heroes in the HQ cost ${String(amountSize)} ${direction} this turn (${sourceName}): ${changedNames.join(', ')}.`,
-    'applied',
-  );
-  return { targets: changedCardIds };
+  const clause = `Heroes in the HQ cost ${String(amountSize)} ${direction} this turn (${sourceName}): ${changedNames.join(', ')}`;
+  pushLog(G, `${label} effect: ${clause}.`, 'applied');
+  // why: WP-897 / D-24854 — the narrative clause is the logged clause.
+  return { targets: changedCardIds, narrativeClause: clause };
 }
 
 /**
@@ -3747,8 +3932,10 @@ function villainEffectHqHeroesToHeroDeckBottom(
     movedNames.push(resolveCardDisplayName(G, hqCardId));
   }
   if (movedNames.length === 0) {
-    pushLog(G, `${label} effect: the HQ is empty; no Hero was put on the bottom of the Hero Deck.`, 'blocked');
-    return { targets: [] };
+    const emptyHqClause = 'the HQ is empty; no Hero was put on the bottom of the Hero Deck';
+    pushLog(G, `${label} effect: ${emptyHqClause}.`, 'blocked');
+    // why: WP-897 / D-24854 — the narrative clause is the logged clause.
+    return { targets: [], narrativeClause: emptyHqClause };
   }
   for (let hqIndex = 0; hqIndex < G.hq.length; hqIndex++) {
     if (G.hq[hqIndex] !== null && G.hq[hqIndex] !== undefined) {
@@ -3758,12 +3945,10 @@ function villainEffectHqHeroesToHeroDeckBottom(
     G.hq = result.hq;
     G.heroDeck = result.heroDeck;
   }
-  pushLog(
-    G,
-    `${label} effect: put ${String(movedNames.length)} Hero(es) from the HQ on the bottom of the Hero Deck (${movedNames.join(', ')}); the HQ refilled.`,
-    'applied',
-  );
-  return { targets: [] };
+  const clause = `put ${String(movedNames.length)} Hero(es) from the HQ on the bottom of the Hero Deck (${movedNames.join(', ')}); the HQ refilled`;
+  pushLog(G, `${label} effect: ${clause}.`, 'applied');
+  // why: WP-897 / D-24854 — the narrative clause is the logged clause.
+  return { targets: [], narrativeClause: clause };
 }
 
 /**
@@ -4500,12 +4685,10 @@ function villainEffectCaptureBystandersPlusPerHqHeroByTrait(
   // fires). `G.messages` is hash-excluded (D-24081). Zero captured (empty supply at
   // the start) is a reachable no-op → `blocked`; the base 1 makes `applied` the norm.
   const label = villainEffectTimingLabel(timing);
-  pushLog(
-    G,
-    `${label} effect: captured ${String(captured)} Bystander(s) (1 + one per ${requireValue} Hero in the HQ).`,
-    captured > 0 ? 'applied' : 'blocked',
-  );
-  return { targets: [] };
+  const clause = `captured ${String(captured)} Bystander(s) (1 + one per ${requireValue} Hero in the HQ)`;
+  pushLog(G, `${label} effect: ${clause}.`, captured > 0 ? 'applied' : 'blocked');
+  // why: WP-897 / D-24854 — the narrative clause is the logged clause.
+  return { targets: [], narrativeClause: clause };
 }
 
 /**
@@ -4828,8 +5011,10 @@ function villainEffectSwapTwoCityVillains(
   if (villainIndices.length < 2) {
     // why: D-24336 — "Two Villains" needs at least two villain-occupied City spaces; a
     // sparser board is a reachable no-op (never a hollow record).
-    pushLog(G, `${label} effect: fewer than two Villains in the City; no swap.`, 'blocked');
-    return { targets: [] };
+    const noSwapClause = 'fewer than two Villains in the City; no swap';
+    pushLog(G, `${label} effect: ${noSwapClause}.`, 'blocked');
+    // why: WP-897 / D-24854 — the narrative clause is the logged clause.
+    return { targets: [], narrativeClause: noSwapClause };
   }
   // why: D-24336 — Rule B: swap the lowest-index (entrance side) villain-occupied space with
   // the highest-index (escape side) one — the maximum positional displacement. Direct
@@ -4845,12 +5030,10 @@ function villainEffectSwapTwoCityVillains(
   // Villains + their spaces; outcome `applied` (a swap happened).
   const lowSpace = citySpaceNameForIndex(lowIndex) ?? String(lowIndex);
   const highSpace = citySpaceNameForIndex(highIndex) ?? String(highIndex);
-  pushLog(
-    G,
-    `${label} effect: ${resolveCardDisplayName(G, lowOccupant)} (${lowSpace}) and ${resolveCardDisplayName(G, highOccupant)} (${highSpace}) swapped City spaces.`,
-    'applied',
-  );
-  return { targets: [] };
+  const clause = `${resolveCardDisplayName(G, lowOccupant)} (${lowSpace}) and ${resolveCardDisplayName(G, highOccupant)} (${highSpace}) swapped City spaces`;
+  pushLog(G, `${label} effect: ${clause}.`, 'applied');
+  // why: WP-897 / D-24854 — the narrative clause is the logged clause.
+  return { targets: [], narrativeClause: clause };
 }
 
 /**
@@ -4883,38 +5066,47 @@ function villainEffectHauntHqHero(
   const villainName = resolveCardDisplayName(G, cardId);
   const selector = descriptor.selector;
   if (selector !== 'rightmost' && selector !== 'leftmost' && selector !== 'cost-lte-3') {
-    pushLog(G, `${label} effect: ${villainName} has no valid Haunt selector; nothing happens.`, 'blocked');
-    return { targets: [] };
+    return narrateBlockedHaunt(G, label, `${villainName} has no valid Haunt selector; nothing happens`);
   }
   const cityIndex = G.city.indexOf(cardId);
   if (cityIndex < 0) {
     // why: D-24587 — Haunt moves the Villain from the City; a Villain no longer in the
     // City has nothing to tuck beneath a Hero (a reachable no-op, never a hollow record).
-    pushLog(G, `${label} effect: ${villainName} is not in the City; no Hero is haunted.`, 'blocked');
-    return { targets: [] };
+    return narrateBlockedHaunt(G, label, `${villainName} is not in the City; no Hero is haunted`);
   }
   const hqIndex = selectUnhauntedHqIndex(G, selector);
   if (hqIndex === null) {
     // why: D-24587 — no occupied, unhaunted HQ slot matches: the Haunt fizzles and the
     // Villain stays in the City, fightable as normal.
-    pushLog(G, `${label} effect: no unhaunted Hero in the HQ to haunt; ${villainName} stays in the City.`, 'blocked');
-    return { targets: [] };
+    return narrateBlockedHaunt(G, label, `no unhaunted Hero in the HQ to haunt; ${villainName} stays in the City`);
   }
   const heroId = G.hq[hqIndex] as CardExtId;
   if (!hauntHqSlot(G, hqIndex, { kind: 'villain', cardId })) {
-    pushLog(G, `${label} effect: ${villainName} could not haunt HQ slot ${String(hqIndex)}; it stays in the City.`, 'blocked');
-    return { targets: [] };
+    return narrateBlockedHaunt(G, label, `${villainName} could not haunt HQ slot ${String(hqIndex)}; it stays in the City`);
   }
   // why: D-24587 — the haunter is tucked beneath the Hero, OUT of the City. Nulling the
   // space is what makes it unfightable (fightVillain only fights G.city) and keeps the
   // card-uniqueness invariant (it now lives only in G.hqHaunters).
   G.city[cityIndex] = null;
-  pushLog(
-    G,
-    `${label} effect: ${villainName} haunts ${resolveCardDisplayName(G, heroId)} (HQ slot ${String(hqIndex)}); that Hero can't be recruited until exorcised.`,
-    'threat',
-  );
-  return { targets: [heroId] };
+  const clause = `${villainName} haunts ${resolveCardDisplayName(G, heroId)} (HQ slot ${String(hqIndex)}); that Hero can't be recruited until exorcised`;
+  pushLog(G, `${label} effect: ${clause}.`, 'threat');
+  // why: WP-897 / D-24854 — the narrative clause is the logged clause.
+  return { targets: [heroId], narrativeClause: clause };
+}
+
+/**
+ * Logs a Haunt that did not happen and reports the same clause (WP-757 / D-24587, WP-897 /
+ * D-24854).
+ *
+ * @param G - Game state (log appended).
+ * @param label - The timing label (`Ambush`, `Fight`, `Escape`).
+ * @param clause - The blocked clause, without prefix or final period.
+ * @returns No targets, with the logged clause as the narrative clause.
+ */
+function narrateBlockedHaunt(G: LegendaryGameState, label: string, clause: string): VillainEffectApplication {
+  pushLog(G, `${label} effect: ${clause}.`, 'blocked');
+  // why: WP-897 / D-24854 — the narrative clause is the logged clause.
+  return { targets: [], narrativeClause: clause };
 }
 
 /**
@@ -5208,7 +5400,8 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
  * @param currentPlayer - The active player; the discard loop starts with them (D-24780).
  * @param _cardId - Unused.
  * @param timing - The timing that fired (for the "<Ambush|Escape> effect:" label).
- * @returns `{ targets: [] }` always — a keyword-less result is never recorded.
+ * @returns No targets (a keyword-less result is never recorded), with the clause of the
+ *   resolver's lines as the narrative clause (WP-897 / D-24854).
  */
 function villainEffectDemolishEachPlayer(
   G: LegendaryGameState,
@@ -5216,8 +5409,49 @@ function villainEffectDemolishEachPlayer(
   _cardId: CardExtId,
   timing: VillainAbilityTiming,
 ): VillainEffectApplication {
-  demolishEachPlayer(G, currentPlayer, `${villainEffectTimingLabel(timing)} effect:`);
-  return { targets: [] };
+  const demolishResult = demolishEachPlayer(G, currentPlayer, `${villainEffectTimingLabel(timing)} effect:`);
+  // why: WP-897 / D-24854 — the shared resolver logs its own lines and is not edited, so the
+  // clause is re-derived from what it returned; a test pins it to the logged lines.
+  return { targets: [], narrativeClause: composeDemolishNarrativeClause(G, currentPlayer, demolishResult) };
+}
+
+/**
+ * Re-derives the clause of the lines `demolishEachPlayer` logged (WP-897 / D-24854), in the
+ * resolver's three shapes: an empty Hero Deck, a revealed Hero with no cost, or a revealed
+ * Hero followed by one clause per seat in the resolver's seat order.
+ *
+ * @param G - Game state (read-only: display data and seats).
+ * @param currentPlayer - The active player the resolver started its seat walk from.
+ * @param demolishResult - What the resolver returned.
+ * @returns The logged lines' clauses joined with `; `.
+ */
+// why: WP-897 / D-24854 — `DemolishResult.discards` lists only the seats that discarded, so the
+// seat walk repeats the resolver's own `seatsInTurnOrderFrom` order to name the seats that had
+// no card of that cost.
+function composeDemolishNarrativeClause(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  demolishResult: DemolishResult,
+): string {
+  const revealedCardId = demolishResult.revealedCardId;
+  if (revealedCardId === null) {
+    return 'the Hero Deck is empty, so nothing is Demolished';
+  }
+  const revealedName = resolveCardName(G.cardDisplayData, revealedCardId);
+  const cost = demolishResult.cost;
+  if (cost === null) {
+    return `Demolish revealed ${revealedName} and put it on the bottom of the Hero Deck, but it has no cost, so no one discards`;
+  }
+  const clauses: string[] = [`Demolish revealed ${revealedName} (cost ${cost}) and put it on the bottom of the Hero Deck`];
+  for (const playerId of seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)) {
+    const discard = demolishResult.discards.find((entry) => entry.playerId === playerId);
+    if (discard === undefined) {
+      clauses.push(`Player ${playerId} has no card that costs ${cost} to discard`);
+    } else {
+      clauses.push(`Player ${playerId} discarded ${resolveCardName(G.cardDisplayData, discard.cardId)} (cost ${cost})`);
+    }
+  }
+  return clauses.join('; ');
 }
 
 /**
@@ -5504,17 +5738,30 @@ function villainEffectRevealVillainDeckDefeatLowVpCurrent(
  * descriptor never reaches the executor's `results`, so `ambushResolved.appliedEffects` and the
  * hash shape are unchanged.
  *
- * @returns `{ targets: [] }` always.
+ * @param G - Game state (mutated by the hunt module).
+ * @param currentPlayer - The active player (picks the holder when two or more hold a Bystander).
+ * @param cardId - The hunting Villain.
+ * @param _timing - Unused (the hunt module labels its own lines).
+ * @param descriptor - The dispatched descriptor; a `requireCondition` marks a repeat hunt.
+ * @returns No targets, with `it Hunts for Victims` (or `… again`) as the narrative clause.
  */
 function villainEffectHuntForVictims(
   G: LegendaryGameState,
   currentPlayer: string,
   cardId: CardExtId,
+  _timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
 ): VillainEffectApplication {
   // why: WP-889 / D-24841 RS-1 — the hunt is mandatory (no "may"), so the module resolves it now
   // or parks the active player's holder pick; nothing is reported as a target.
   huntForVictimsForVillain(G, currentPlayer, cardId);
-  return { targets: [] };
+  // why: WP-897 / D-24854 — the hunt module's own lines narrate the outcome; the overlay names
+  // the hunt. A conditional hunt always follows an unconditional one in the same hook (Blackout's
+  // Moonlight repeat; the RS-5 data walk asserts it), so it reads "again".
+  if (descriptor.requireCondition !== undefined) {
+    return { targets: [], narrativeClause: 'it Hunts for Victims again' };
+  }
+  return { targets: [], narrativeClause: 'it Hunts for Victims' };
 }
 
 /**
@@ -6149,16 +6396,20 @@ function villainEffectCaptureBystanderEachVictoryPile(
   }
   const label = villainEffectTimingLabel(timing);
   if (capturedBystanders.length === 0) {
-    pushLog(G, `${label} effect: no player had a Bystander in their Victory Pile to capture.`, 'blocked');
-    return { targets: [] };
+    const noneClause = 'no player had a Bystander in their Victory Pile to capture';
+    pushLog(G, `${label} effect: ${noneClause}.`, 'blocked');
+    // why: WP-897 / D-24854 — the narrative clause is the logged clause.
+    return { targets: [], narrativeClause: noneClause };
   }
   // why: a fresh array (never a push onto a shared one), and the entry exists only because a
   // Bystander moved (D-21401: an attachment entry exists only while non-empty).
   const existingBystanders = G.attachedBystanders[cardId] ?? [];
   G.attachedBystanders[cardId] = [...existingBystanders, ...capturedBystanders];
   const names = capturedPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
-  pushLog(G, `${label} effect: captured a Bystander from the Victory Pile of ${names}.`, 'applied');
-  return { targets: [] };
+  const clause = `captured a Bystander from the Victory Pile of ${names}`;
+  pushLog(G, `${label} effect: ${clause}.`, 'applied');
+  // why: WP-897 / D-24854 — the narrative clause is the logged clause.
+  return { targets: [], narrativeClause: clause };
 }
 
 /**
@@ -6225,12 +6476,10 @@ function villainEffectCapturePileHero(
       G.piles.sidekicks = pileCards.slice(1);
     }
     attachCapturedHero(G, cardId, capturedId);
-    pushLog(
-      G,
-      `${label} effect: captured ${resolveCardDisplayName(G, capturedId)} from the ${capturePileLabel(pile)}.`,
-      'applied',
-    );
-    return { targets: [] };
+    const capturedClause = `captured ${resolveCardDisplayName(G, capturedId)} from the ${capturePileLabel(pile)}`;
+    pushLog(G, `${label} effect: ${capturedClause}.`, 'applied');
+    // why: WP-897 / D-24854 — the narrative clause is the logged clause.
+    return { targets: [], narrativeClause: capturedClause };
   }
   const pileLabels = capturePiles.map((pile) => capturePileLabel(pile));
   let emptyClause = 'no capture pile was named';
@@ -6239,8 +6488,10 @@ function villainEffectCapturePileHero(
   } else if (pileLabels.length > 1) {
     emptyClause = `the ${pileLabels.join(' and the ')} are empty`;
   }
-  pushLog(G, `${label} effect: nothing was captured because ${emptyClause}.`, 'blocked');
-  return { targets: [] };
+  const blockedClause = `nothing was captured because ${emptyClause}`;
+  pushLog(G, `${label} effect: ${blockedClause}.`, 'blocked');
+  // why: WP-897 / D-24854 — a blocked line is still what the effect did.
+  return { targets: [], narrativeClause: blockedClause };
 }
 
 /**
@@ -6269,8 +6520,10 @@ function villainEffectCaptureHqHeroesCostLte(
   const label = villainEffectTimingLabel(timing);
   const limit = descriptor.magnitude;
   if (limit === undefined) {
-    pushLog(G, `${label} effect: no Hero in the HQ costs the printed amount or less, so none was captured.`, 'blocked');
-    return { targets: [] };
+    const noLimitClause = 'no Hero in the HQ costs the printed amount or less, so none was captured';
+    pushLog(G, `${label} effect: ${noLimitClause}.`, 'blocked');
+    // why: WP-897 / D-24854 — the narrative clause is the logged clause.
+    return { targets: [], narrativeClause: noLimitClause };
   }
   // why: rules v23 L749-755 refill an empty HQ space immediately, so the printed "each Hero" is
   // the HQ when the effect starts: snapshot the eligible slots first, and never re-check a Hero
@@ -6293,11 +6546,15 @@ function villainEffectCaptureHqHeroesCostLte(
     }
   }
   if (capturedNames.length === 0) {
-    pushLog(G, `${label} effect: no Hero in the HQ costs ${limit} or less, so none was captured.`, 'blocked');
-    return { targets: [] };
+    const noneClause = `no Hero in the HQ costs ${limit} or less, so none was captured`;
+    pushLog(G, `${label} effect: ${noneClause}.`, 'blocked');
+    // why: WP-897 / D-24854 — the narrative clause is the logged clause.
+    return { targets: [], narrativeClause: noneClause };
   }
-  pushLog(G, `${label} effect: captured ${capturedNames.join(', ')} from the HQ (cost ${limit} or less).`, 'applied');
-  return { targets: [] };
+  const clause = `captured ${capturedNames.join(', ')} from the HQ (cost ${limit} or less)`;
+  pushLog(G, `${label} effect: ${clause}.`, 'applied');
+  // why: WP-897 / D-24854 — the narrative clause is the logged clause.
+  return { targets: [], narrativeClause: clause };
 }
 
 /**

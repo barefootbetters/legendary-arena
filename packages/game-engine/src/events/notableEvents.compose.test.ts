@@ -714,12 +714,40 @@ describe('composeStackVillainEntryClause and the stack-villain narrative clause 
 describe('composeAmbushNarrative — WP-889 Hunt for Victims clause (D-24841)', () => {
   it('names the hunt as the clause, and is byte-identical without it', () => {
     assert.equal(
-      composeAmbushNarrative('Skinner', [], 0, undefined, 'it Hunts for Victims'),
+      composeAmbushNarrative('Skinner', [], 0, undefined, ['it Hunts for Victims']),
       '"Skinner" ambushed: it Hunts for Victims.',
     );
     assert.equal(
       composeAmbushNarrative('Magneto', [], 0, undefined, undefined),
       composeAmbushNarrative('Magneto', []),
     );
+  });
+});
+
+describe('composeAmbushNarrative — WP-897 keyword-less descriptor clauses (D-24854)', () => {
+  it('names each descriptor clause in order, joined with "; "', () => {
+    assert.equal(
+      composeAmbushNarrative('Venom', [], 0, undefined, ['captured Sidekick from the Sidekick Deck', 'captured Cheap A from the HQ (cost 2 or less)']),
+      '"Venom" ambushed: captured Sidekick from the Sidekick Deck; captured Cheap A from the HQ (cost 2 or less).',
+    );
+  });
+
+  it('orders keyword results, then descriptor clauses, then the Villain Deck play, then the stack entry', () => {
+    const narrative = composeAmbushNarrative(
+      'Order Test',
+      [{ keyword: 'captureBystander', targetNames: [] }],
+      1,
+      'two Officers enter the City as Villains',
+      ['first descriptor clause', 'second descriptor clause'],
+    );
+    assert.equal(
+      narrative,
+      '"Order Test" ambushed: a bystander was captured; first descriptor clause; second descriptor clause; plays the top card of the Villain Deck; two Officers enter the City as Villains.',
+    );
+  });
+
+  it('an empty clause list is byte-identical to omitting it', () => {
+    assert.equal(composeAmbushNarrative('Outcast', [], 0, undefined, []), '"Outcast" entered the city with no Ambush effect.');
+    assert.equal(composeAmbushNarrative('The Leader', [], 1, undefined, []), composeAmbushNarrative('The Leader', [], 1));
   });
 });
