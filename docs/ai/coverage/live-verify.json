@@ -2403,10 +2403,10 @@
       "card": "HYDRA Kidnappers",
       "ability": "Ambush overlay narrative (ambushResolved.narrative) names the keyword-less Ambush outcome",
       "wp": "WP-897",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-15",
-      "evidence": "",
-      "note": "Live check (NEW match after the deploy): when the card is revealed, the center-screen Ambush overlay names what its Ambush did, matching the log line, and never reads \"entered the city with no Ambush effect\". D-24854."
+      "evidence": "2p autoplay qa_dqkFFAGk and 79QeTkiJmUc (Doctor Doom / Unleash the Power of the Cosmic Cube; HYDRA + Sinister Spider-Foes; Hand Ninjas; Spider-Man, Spider-Man (Miles Morales), Cyclops, Hawkeye, Nick Fury); server `842aeb5f` (the #3402 merge, built 2026-11-15T17:05:57Z), every match created after the deploy: all three reveals (qa_dqkFFAGk 6.1, 14.1; 79QeTkiJmUc -01) read the ambushResolved narrative \"\"HYDRA Kidnappers\" ambushed: captured S.H.I.E.L.D. Officer from the S.H.I.E.L.D. Officer Deck.\", equal to the logged Ambush effect line; appliedEffects [].",
+      "note": "Overlay equals the logged Ambush clause(s); never \"entered the city with no Ambush effect\". D-24854."
     },
     {
       "key": "co2e-villain-sinister-spider-foes-venom|ambush-narrative",
@@ -2414,10 +2414,10 @@
       "card": "Venom",
       "ability": "Ambush overlay narrative (ambushResolved.narrative) names the keyword-less Ambush outcome",
       "wp": "WP-897",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-15",
-      "evidence": "",
-      "note": "Live check (NEW match after the deploy): when the card is revealed, the center-screen Ambush overlay names what its Ambush did, matching the log line, and never reads \"entered the city with no Ambush effect\". D-24854."
+      "evidence": "2p autoplay qa_dqkFFAGk and 79QeTkiJmUc (Doctor Doom / Unleash the Power of the Cosmic Cube; HYDRA + Sinister Spider-Foes; Hand Ninjas; Spider-Man, Spider-Man (Miles Morales), Cyclops, Hawkeye, Nick Fury); server `842aeb5f` (the #3402 merge, built 2026-11-15T17:05:57Z), every match created after the deploy: all four reveals named both captures, equal to the logged lines, e.g. qa_dqkFFAGk 25.1 \"\"Venom\" ambushed: captured Sidekick from the Sidekick Deck; captured Trick Arrow from the HQ (cost 2 or less).\" and the blocked HQ path at 15.1 \"… no Hero in the HQ costs 2 or less, so none was captured.\"; appliedEffects [].",
+      "note": "Overlay equals the logged Ambush clause(s); never \"entered the city with no Ambush effect\". D-24854."
     },
     {
       "key": "co2e-villain-sinister-spider-foes-venom|gain-one-attached-hero-rest-to-bottom",
