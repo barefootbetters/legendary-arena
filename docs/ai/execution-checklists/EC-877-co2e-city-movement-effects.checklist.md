@@ -4,6 +4,7 @@
 **Layer:** Game Engine (+ card-data markers, derived feeds, one arena-client heading)
 
 ## Before Starting
+- [ ] **Charge (2026-11-15, WP-874 RS-6 / D-24820):** this EC's `charge-forward` Locked Values are superseded; Speed Demon reuses `charge`. If WP-874 landed, reuse its `charge` and append `'discard-if-pushed'`; if this EC still locks `charge-forward` at execution, STOP and reconcile WP-839 + EC-877 and re-gate first.
 - [ ] WP-831 is on `main`: `CITY_MAX_SIZE` is exported, `CityZone` is `CitySpace[]`, and `validateCityShape` accepts 1-6. If not, STOP (BLOCKED).
 - [ ] Record `VILLAIN_EFFECT_PRIMITIVES.length` (31 at draft) and its last member; append after any sibling primitives. WP-829 / 830 are merged (`e580d801`). If WP-831 / 832 landed, rebase onto their edits to `seatChoice.resolve.ts`, `ai.seatChoice.ts`, `PendingSeatChoicePrompt.vue`, `fightVillain.ts`, `types.ts` and `villainDeck.reveal.ts` (WP-832's `settleWwiiConquest` tail).
 - [ ] Siblings may be present or absent; both are fine:
@@ -14,6 +15,7 @@
 - [ ] `pnpm -r build` → 0; `pnpm --filter @legendary-arena/arena-client typecheck` → 0; record the engine and arena-client test totals.
 
 ## Locked Values (do not re-derive; every log string is copied verbatim from WP §Locked Values)
+> **Superseded in part 2026-11-15:** every Charge value below (`charge-forward`, `chargeCityCardOneSpace`, the post-event charge, `discard-each`) per WP-874 RS-6 / D-24820; reconcile and re-gate.
 - **Primitives**, appended in this order: `move-self-to-city-space`, `charge-forward`, `reveal-villain-deck-top-swap-self`, `enter-city-from-victory-pile`.
   - New descriptor fields, none in `descriptorKey`: `destinationCitySpace?`, `chargePushConsequence?: 'discard-each'`, `victoryVillainCard?`. `victoryVillainGroup` is reused with its JSDoc widened; the charge count is `magnitude`.
   - Pins in `villainAbility.types.test.ts`: the L360-391 list (append the four), the L393-397 length → 35, the L398-402 last member → `'enter-city-from-victory-pile'` (position 35), and L619 / L652 → 35.
