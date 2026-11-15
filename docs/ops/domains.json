@@ -58,7 +58,7 @@
       "name": "Engineering wiki (private, gated)",
       "url": "https://ewiki.legendary-arena.com",
       "host": "Cloudflare Workers + Cloudflare Access",
-      "source": "apps/wiki-viewer (Hugo build of docs/wiki/); Worker legendary-arena-wiki",
+      "source": "apps/wiki-viewer (Hugo build of wiki/); Worker legendary-arena-wiki",
       "expectedStatus": [302, 401, 403],
       "expectedLocation": "https://legendary-arena.cloudflareaccess.com/",
       "state": "live",
