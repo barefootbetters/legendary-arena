@@ -40,8 +40,9 @@ theme.
 2. **Link check** (`pnpm wiki-viewer:check-links`) — case-sensitive
    validation of every internal `<page>.md` link. A broken link fails
    the build.
-3. **Hugo render** (`hugo --source apps/wiki-viewer --minify`) —
-   generates `apps/wiki-viewer/public/`. External `../path` links are
+3. **Hugo render** (`hugo --source apps/wiki-viewer --minify --panicOnWarning`)
+   — generates `apps/wiki-viewer/public/`; any Hugo warning fails the
+   build. External `../path` links are
    rewritten to GitHub blob URLs by the markdown render hook.
 4. **Gates and search index** — a page-count assert, a determinism
    check, the Pagefind search index, and a JS-free gate. The result is

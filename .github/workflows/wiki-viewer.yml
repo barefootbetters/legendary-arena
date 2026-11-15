@@ -107,8 +107,13 @@ jobs:
       - name: Check internal links
         run: pnpm wiki-viewer:check-links
 
+      # why: --panicOnWarning makes any Hugo warning fail the build. Two
+      # warnings (raw HTML omitted in tournament-calendar.md, the deprecated
+      # .Site.Data) printed on every run for months unnoticed until #3392 fixed
+      # them. A Hugo bump that deprecates something the wiki uses now fails here,
+      # on the bump PR, instead of shipping with a warning nobody reads.
       - name: Build site
-        run: hugo --source apps/wiki-viewer --minify
+        run: hugo --source apps/wiki-viewer --minify --panicOnWarning
 
       # why: turn a silent sub-page drop into a red build. The sibling
       # legendary-arena/legendary-arena-lab site 404'd every wiki sub-page in
@@ -143,7 +148,7 @@ jobs:
           first_hash=$(find apps/wiki-viewer/public -type f \( -name '*.html' -o -name '*.css' \) -print0 | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')
           rm -rf apps/wiki-viewer/public
           pnpm wiki-viewer:project
-          hugo --source apps/wiki-viewer --minify
+          hugo --source apps/wiki-viewer --minify --panicOnWarning
           second_hash=$(find apps/wiki-viewer/public -type f \( -name '*.html' -o -name '*.css' \) -print0 | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')
           if [ "$first_hash" != "$second_hash" ]; then
             echo "Determinism check FAILED: byte-identical output not produced across two consecutive builds." >&2
