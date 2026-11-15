@@ -15,7 +15,9 @@ What every wiki gets from the core:
 - dark mode, from the reader's `prefers-color-scheme`
 - one link resolver that turns GitHub-style relative links into wiki pages
 - an "Editing this page" footer built from params
-- the `include-section`, `audio`, `audio-inline` and `swatch` shortcodes
+- the `include-section`, `ewiki-guide`, `audio`, `audio-inline` and `swatch`
+  shortcodes
+- the authoring guide, one copy every wiki shows sections of
 
 The core emits no JavaScript except the Pagefind loader,
 `<script data-wiki-search>`, and only when search is on (D-24293). It never
@@ -44,7 +46,8 @@ Common tasks:
 |---|---|---|
 | Put the theme in a wiki | `Sync-EwikiTheme.ps1 -Version <tag> -Target themes/ewiki`, set `theme = "ewiki"`, copy the site config, and pin the printed digest in CI | [Install](#install) |
 | Point the wiki at its repo | `repo`, `branch` and `contentRoot` under `[params.ewiki]` in the wiki's `hugo.toml` | [Params](#params) |
-| Write a page | The author's guide to formatting, links, images, shortcodes and what fails the build. A wiki can copy it into its content and fill in its own parts | [Ewiki Authoring](https://github.com/barefootbetters/bb-studio-ewiki-theme/blob/main/docs/ewiki-authoring.md) |
+| Write a page | The author's guide to formatting, links, images, shortcodes and what fails the build. It ships in the theme; a wiki's own authoring page shows its sections with `ewiki-guide` and adds its own parts | [Ewiki Authoring](https://github.com/barefootbetters/bb-studio-ewiki-theme/blob/main/assets/ewiki-guide/ewiki-authoring.md) |
+| Show a section of the authoring guide | `ewiki-guide section="<heading-anchor>"` on the wiki's own authoring page | [Shortcodes](#shortcodes) |
 | Link to a page | `[Status](../ai/STATUS.md)`: a relative path, with the file name's case exact | [How links resolve](#how-links-resolve) |
 | Show another page's section | `include-section page="<path or slug>" section="<heading-anchor>"`; a missing page or heading fails the build | [Shortcodes](#shortcodes) |
 | Show an image | Mount the content root's images at `assets/<contentRoot>`, then `![what it shows](images/file.png)` relative to the note | [Site config the wiki owns](#site-config-the-wiki-owns) |
@@ -206,6 +209,21 @@ required parameter fails the build with an error naming the page.
   level and leaves the heading out. A missing page or heading, a nested
   include, or an empty section fails the build. Search indexes the text once,
   on the owner.
+- **`ewiki-guide`** shows a section of the theme's authoring guide,
+  `assets/ewiki-guide/ewiki-authoring.md`, which ships in the vendored theme,
+  so every wiki shows the one copy at its own release instead of copying it:
+
+  ```
+  {{< ewiki-guide section="audio" >}}
+  ```
+
+  `section` is the guide heading's anchor, cut the way `include-section`
+  cuts one, under the same **Linked section** caption. The caption links the
+  published guide and the guide's file at the release named in
+  `themes/ewiki/THEME-VERSION`. The guide's in-page links point at the
+  published guide, and its shortcode examples show as syntax. A missing or
+  ambiguous anchor, or an empty section, fails the build. The text is
+  indexed on the including page.
 - **`audio`** (`src`, optional `caption`) and **`audio-inline`** (`src`, for a
   table cell) emit a native `<audio controls>` player.
 - **`swatch`** (a CSS colour) draws an inline colour box.

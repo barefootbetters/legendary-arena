@@ -11,7 +11,8 @@
   publishes it (GitHub-style, the id a `page.md#anchor` link uses, or an
   explicit {#custom-id}). The section runs from that heading to the next
   heading of the same or higher level; the heading itself is left out, so the
-  including page writes its own.
+  including page writes its own. The cut is ewiki/section-text.html, shared
+  with ewiki-guide.
 
   why: `page=` resolves in a fixed order, so every existing call site keeps
   working: first relative to the including page's folder (E's same-folder
@@ -20,8 +21,7 @@
   skipped. The algorithm is otherwise the same in E, H and C.
 
   why: every failure is a build error (errorf), never an empty block, so a
-  renamed or removed owner heading fails the PR that made it. Headings inside
-  code fences don't count: a `# comment` in a bash fence is not a heading.
+  renamed or removed owner heading fails the PR that made it.
 
   why: the text renders in the owner page's context, so its relative links
   and images resolve from the owner's folder, and its in-page `(#anchor)`
@@ -49,59 +49,16 @@
 {{- if not $sourcePage -}}
   {{- errorf "include-section on %s names page=%q, which matches no page relative to this page or from the content root. Write page= as the owner's path, the way a link to it is written (.md is optional)." $hubPath $pageArg -}}
 {{- else -}}
-{{- $headingPattern := `^(#{1,6})[ \t]+(.+?)[ \t#]*$` -}}
-{{- $customIdPattern := `[ \t]*\{#([^}]+)\}$` -}}
-{{- $isInFence := false -}}
-{{- $state := "searching" -}}
-{{- $targetLevel := 0 -}}
-{{- $headingText := "" -}}
-{{- $matchCount := 0 -}}
-{{- $captured := "" -}}
-{{- range $rawLine := split $sourcePage.RawContent "\n" -}}
-  {{- $line := strings.TrimRight "\r" $rawLine -}}
-  {{- $isFenceLine := gt (len (findRE "^ {0,3}(```|~~~)" $line 1)) 0 -}}
-  {{- $isHeading := false -}}
-  {{- $level := 0 -}}
-  {{- $text := "" -}}
-  {{- $id := "" -}}
-  {{- if and (not $isInFence) (not $isFenceLine) -}}
-    {{- with findRESubmatch $headingPattern $line 1 -}}
-      {{- $isHeading = true -}}
-      {{- $level = len (index (index . 0) 1) -}}
-      {{- $text = index (index . 0) 2 -}}
-      {{- with findRESubmatch $customIdPattern $text 1 -}}
-        {{- $id = index (index . 0) 1 -}}
-        {{- $text = replaceRE $customIdPattern "" $text -}}
-      {{- else -}}
-        {{- $id = anchorize $text -}}
-      {{- end -}}
-    {{- end -}}
-  {{- end -}}
-  {{- if and $isHeading (eq $id $sectionId) -}}
-    {{- $matchCount = add $matchCount 1 -}}
-  {{- end -}}
-  {{- if eq $state "capturing" -}}
-    {{- if and $isHeading (le $level $targetLevel) -}}
-      {{- $state = "done" -}}
-    {{- else -}}
-      {{- $captured = printf "%s%s\n" $captured $line -}}
-    {{- end -}}
-  {{- else if and (eq $state "searching") $isHeading (eq $id $sectionId) -}}
-    {{- $state = "capturing" -}}
-    {{- $targetLevel = $level -}}
-    {{- $headingText = $text -}}
-  {{- end -}}
-  {{- if $isFenceLine -}}
-    {{- $isInFence = not $isInFence -}}
-  {{- end -}}
-{{- end -}}
+{{- $found := partial "ewiki/section-text.html" (dict "raw" $sourcePage.RawContent "section" $sectionId) -}}
+{{- $matchCount := $found.count -}}
+{{- $headingText := $found.heading -}}
 {{- $ownerPath := $sourcePage.File.Path -}}
 {{- if eq $matchCount 0 -}}
   {{- errorf "include-section on %s: %s has no heading with anchor %q. The owner heading was probably renamed or removed; point section= at its current anchor." $hubPath $ownerPath $sectionId -}}
 {{- else if gt $matchCount 1 -}}
   {{- errorf "include-section on %s: %s has %d headings with anchor %q, so the section is ambiguous. Give the intended heading a unique {#custom-id} and point section= at it." $hubPath $ownerPath $matchCount $sectionId -}}
 {{- else -}}
-{{- $body := trim $captured "\n" -}}
+{{- $body := $found.body -}}
 {{- if not $body -}}
   {{- errorf "include-section on %s: section %q of %s is empty (the next heading follows it directly). Point section= at a heading with text under it." $hubPath $sectionId $ownerPath -}}
 {{- else if findRE `\{\{[<%][ \t]*include-section` $body 1 -}}

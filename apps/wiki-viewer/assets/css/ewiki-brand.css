@@ -1,5 +1,5 @@
 /* The engine ewiki's brand tokens (D-24782), the theme's brand extension
-   point (bb-studio-ewiki-theme v1.3.0, themes/ewiki/assets/css/ewiki-brand.css).
+   point (bb-studio-ewiki-theme v1.4.0, themes/ewiki/assets/css/ewiki-brand.css).
 
    why: this file owns every custom property in the bundle, so it declares
    every token the theme's default brand file declares: the 13 color and font
