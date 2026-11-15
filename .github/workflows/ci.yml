@@ -362,7 +362,17 @@ jobs:
       # Live-verify results land in live-verify.json or a SPEC PR without touching
       # the row, so 91 rows drifted until the 2026-11-14 reconciliation (#3371 /
       # #3373 / #3374). A pending row with no entry, or any non-verified entry,
-      # passes. Detect-only; reads markdown + JSON only — no build dependency.
+      # passes. It also checks that every verified entry's date is cited in its
+      # WP row and that every live-verify.json entry names what it verifies.
+      # why (WP-896 / D-24853): every done row also ends with exactly one
+      # ` [live-verify: verified|partial|pending|n/a]` token, its D-24026 status
+      # of record. R1: the token is present on every done row (lettered rows
+      # included) and on no open row. R2: it equals the aggregate of the WP's own
+      # live-verify.json entries (all verified → verified, all pending → pending,
+      # else partial; `n/a` only with no entries). R3: a `verified` or `n/a`
+      # token fails when the row's own prose still reads pending. The token is
+      # stripped before the wording rules run. Hand-maintained: no tool writes it.
+      # Detect-only; reads markdown + JSON only — no build dependency.
       # The guard's own unit test runs first so a broken matcher cannot pass
       # vacuously on a clean index.
       - name: WORK_INDEX live-verify consistency check
