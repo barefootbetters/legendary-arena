@@ -51583,7 +51583,7 @@ This closes D-24852's last residual. **Packet:** WP-896 / EC-934 (standard two-s
 
 ### D-24771 — co2e capture family: five villain primitives, a setup-built attack-per-captured table for Venom / Enchantress / co2e Baron Zemo, Venom's split award at the fight site, and a supply-Bystander fallback for the Villain Deck reveal (Active 2026-11-14 — WP-838 / EC-876)
 
-**Status:** Active 2026-11-14. Live-verify (D-24026) operator-pending: needs a match created after the deploy (`/api/version` showing the merge).
+**Status:** Active 2026-11-14. Live-verify (D-24026) PASS 2026-11-15 on server `3cc2c042` (the #3394 merge): autoplay matches `9L2FBYe3ifK`, `NEPNusmBEwM` and `NU-svGELG_A`, all created after the deploy; every capture-family Ambush and Fight logged and traced as decided, Venom / Enchantress / Zemo City costs read base + captures, and Strucker's shuffled-in Bystander revealed and was captured (STATUS.md WP-838 entry; `docs/ai/coverage/live-verify.json`).
 
 **User-Visible Surface:** `play.legendary-arena.com` (after deploy). Seven Core 2nd-edition lines did nothing or charged the wrong cost: Enchantress's and HYDRA Kidnappers' and Venom's Ambush, Kidnappers', Venom's and Baron Strucker's Fight, and the "+1 for each Bystander / Hero he has" passives of Enchantress, Venom and co2e Baron Zemo. They now do what they print, log it, and the City tile's fight cost counts the captured cards.
 
