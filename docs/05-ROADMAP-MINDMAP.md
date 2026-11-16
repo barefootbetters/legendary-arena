@@ -879,7 +879,7 @@ mindmap
         ["WP-836 ✅ co2e grey-Hero and Hero-count effects Destroyer Frost Giant Warrior Ymir Abomination Beetle Savage Land Mutates game engine plus card data EC-874 D-24769 Active DONE 2026-10-26. co2e villain fidelity epic 2 of 6"]
         ["WP-837 ✅ co2e each-player discard and reveal-gated Ambushes Mystique Frost Giant Warrior Juggernaut Scorpion The Leader game engine plus card data EC-875 D-24770 Active DONE 2026-10-27. co2e villain fidelity epic 3 of 6"]
         ["WP-838 ✅ co2e capture family Enchantress HYDRA Kidnappers Venom Baron Strucker game engine plus card data EC-876 D-24771 Active DONE 2026-11-14. co2e villain fidelity epic 4 of 6"]
-        ["WP-839 📝 co2e City movement Green Goblin Speed Demon Boomerang Ymir Ambush game engine plus card data DRAFTED 2026-10-25 EC-877 D-24772 reserved. co2e villain fidelity epic 5 of 6"]
+        ["WP-839 ✅ co2e City movement Green Goblin moves to the Bridge, Speed Demon charges two spaces and owes an every-player discard on the one Charge primitive, Boomerang takes a revealed Villain place, Ymir returns a Victory Pile Frost Giant Warrior, EC-877 D-24772. co2e villain fidelity epic 5 of 6"]
         ["WP-840 📝 co2e The Blob guards the Mastermind game engine plus arena-client DRAFTED 2026-10-25 EC-878 D-24773 reserved. co2e villain fidelity epic 6 of 6"]
         ["WP-841 ✅ co2e variable-Attack passives Baron Strucker plus 1 per other HYDRA Villain Paibok and Super-Skrull plus 1 per Hero Class in the HQ Hydro-Man plus 2 in the Sewers and Bridge game engine plus card data EC-879 D-24774 Active DONE 2026-10-25. co2e villain fidelity follow-up"]
         ["WP-898 ✅ Villain setup walk fold one shared enumerator for the five per-villain setup tables defeat requirements fight discard costs variable Attack fight restrictions attack per captured byte-identical tables the attack-per-captured table fold declined game engine EC-936 D-24855 Active DONE 2026-11-15. co2e villain fidelity follow-up"]
@@ -1082,15 +1082,15 @@ mindmap
 | Hero/Villain Effects & Diagnostics (2026-07) | 6/6 | — |
 | Live-Play HUD & Pending-Choice UX (2026-07) | 20/21 | 1 open |
 | Competitive Score Submission & Verification (2026-07) | 10/10 | — |
-| Gauntlet Leaderboards (Legends) (2026-07) | 198/202 | 4 open |
+| Gauntlet Leaderboards (Legends) (2026-07) | 199/202 | 3 open |
 | Friends & Ranked Trust (2026-07) | 18/19 | 1 open |
 | Play Lobby Entrance (2026-09) | 4/4 | — |
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 4/4 | — |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **874/895 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 20 open |
+| **Total** | **875/895 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 19 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 21):** WP-849 open; WP-840 open; WP-839 open; WP-822 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-745 open; WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 20):** WP-849 open; WP-840 open; WP-822 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-745 open; WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
