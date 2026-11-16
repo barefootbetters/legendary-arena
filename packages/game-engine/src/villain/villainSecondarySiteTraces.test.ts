@@ -336,7 +336,7 @@ describe('WP-877 secondary-site traces (D-24824)', () => {
     assert.equal(secondary[0]!.fireSite, 'villain-fight-bridge');
   });
 
-  it('AC 8: an ordinary Fight records no secondary trace, and the executor keeps all five deliberate no-ops', () => {
+  it('AC 8: an ordinary Fight records no secondary trace, and the executor keeps all seven deliberate no-ops', () => {
     const drawHook: VillainAbilityHook = {
       cardId: DRAW_VILLAIN,
       timing: 'onFight',
@@ -359,6 +359,8 @@ describe('WP-877 secondary-site traces (D-24824)', () => {
         { primitive: 'play-villain-deck-cards', magnitude: 1 },
         { primitive: 'reenter-sewers-if-villain-deck-top', reenterRevealKinds: ['villain'] },
         { primitive: 'stack-cards-enter-city-as-villains', stackVillainKind: 'bystander', magnitude: 1 },
+        { primitive: 'gain-one-attached-hero-rest-to-bottom' },
+        { primitive: 'charge', magnitude: 1, chargePushConsequence: 'demolish-if-pushed' },
       ],
     };
     const executed = makeState([null, null, null, null, null], [allNoOpHook], []);
@@ -371,6 +373,8 @@ describe('WP-877 secondary-site traces (D-24824)', () => {
         ['play-villain-deck-cards', 'no-op', 'villain-executor'],
         ['reenter-sewers-if-villain-deck-top', 'no-op', 'villain-executor'],
         ['stack-cards-enter-city-as-villains', 'no-op', 'villain-executor'],
+        ['gain-one-attached-hero-rest-to-bottom', 'no-op', 'villain-executor'],
+        ['charge', 'no-op', 'villain-executor'],
       ],
     );
     assert.deepStrictEqual(secondaryTraces(executed), []);
