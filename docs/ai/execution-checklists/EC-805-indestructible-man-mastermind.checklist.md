@@ -2,97 +2,89 @@
 
 **Source:** docs/ai/work-packets/WP-768-indestructible-man-mastermind.md
 **Layer:** Game Engine
+**Risk Tier:** MEDIUM — ranked integrity: closes a free leaderboard win
+**Reconciled:** 2026-11-16 on `main` `b93e6d6ca` (see the WP's Reconciliation header). The WP wins any conflict.
 
 ## Before Starting
-- [ ] Baseline `origin/main` includes #2412.
-- [ ] If WP-757 or WP-769 merged first, rebase onto it and keep every `fightMastermind` branch and projection field.
-- [ ] `pnpm install` and `pnpm -r build` → 0. Engine suite green.
-- [ ] Anchors unchanged:
-  - `fightMastermind` gate, guards and `defeatMastermindTacticCore`;
-  - `resolveMastermindFightCost`;
-  - `dispatchTacticOnFight` (`:1300`);
-  - `mastermindStrikeHandler` (`:1204`);
-  - the `villainRevealedThisTurn` reset (`game.ts:~860`);
-  - `playTopVillainDeckCards`;
-  - `freeRecruitFromHqByFilter`;
-  - `victoryPointValueForCard`.
-- [ ] Verify the 4 tactic ids against `mastermind.setup.ts:279`.
+- [ ] WORK_INDEX shows WP-497, WP-687, WP-692, WP-736, WP-750, WP-757, WP-765, WP-830, WP-838, WP-846, WP-867, WP-873, WP-840 `[x]`; WP-768 `[ ]`; WP-769 not started (it edits `fightMastermind` after this packet).
+- [ ] D-24601 / EC-805 / WP-768 are still reserved and unconsumed in `docs/ai/NUMBER-LEDGER.md`.
+- [ ] `pnpm install`, `pnpm -r build` → 0; `pnpm -r --no-bail test` → 0 fail (baseline: game-engine 7262, arena-client 2726).
+- [ ] Re-read every WP Assumes anchor (1-10). Target files = §Files to Produce (scope lock). In particular:
+  - `fightMastermind` step order (Haunt `:157`, guard `:167`, price `:176-189`, stage `:194`, heal `:253`, Enigma `:259-262`, Step 3 `:280-337`);
+  - the four MOVE_MAPs already pass `args`;
+  - `mastermindStrikeHandler` (`:1524`) and its hollow `else`;
+  - `dispatchTacticOnFight` (`:1564`), `freeRecruitFromHqByFilter` (`:1095`);
+  - `playTopVillainDeckCards` (`villainDeck.reveal.ts:1228`), `shuffleDeck` (`setup/shuffle.ts:28`);
+  - the per-turn deletes in `game.ts` onBegin (`:1065-1100`) and `applyOnBeginParity`;
+  - `UIMastermindState.fortifiedReason` and its build / filter lines.
+- [ ] Run the T13 engine-runner baseline (scratch scenario) and keep the output.
 
 ## Locked Values (do not re-derive)
-- Mastermind `bkwd/indestructible-man`. Assassin prefix `bkwd-villain-elite-assassins-`.
-- `fightMastermind({ shuffleAssassinIds?: [CardExtId, CardExtId] })`.
-  - For Indestructible Man, a call without it is a silent return at any attack value. Excessive Violence is ignored.
-  - With it, validate in order:
-    1. exactly 2 distinct ids;
-    2. each is an eligible Assassin in the **acting** player's Victory Pile;
-    3. `canShuffleFight`;
-    4. stage `main`;
-    5. the block-all guards;
-    6. the tactics / Final Blow gate.
-  - Skip the spendable-attack check. Keep `hasHealedThisTurn`.
-  - Then mutate:
-    1. Shuffle the pair in.
-    2. Set the flag.
-    3. Branch: `isFinalBlow` → `awardMastermindOnFinalBlow`; otherwise `defeatMastermindTacticCore(G, ctx, { random }, events)`. No attack is spent.
-    4. Set `G.hasActedThisTurn` and the Diamond Form edge, as the attack path does.
-- `mastermind/indestructibleMan.logic.ts` exports `isIndestructibleMan`, `listEligibleAssassins`, `canShuffleFight`, and `shuffleIntoVillainDeck(G, playerId, cardIds, shuffle | null)`. It has no boardgame.io import. A `null` shuffle means append + log, and never throws.
-  - The move passes `random.Shuffle`.
-  - The strike passes `resolveShuffleFunction(strikeContext)`.
-  - The tactics pass `shuffleContext.random.Shuffle`.
-- Flag: `G.indestructibleManShuffleUsedThisTurn?: true`. It is omit-when-absent. A guarded `delete` clears it in **both** `game.ts` onBegin and `simulation/onBeginParity.ts` `applyOnBeginParity`.
-- MOVE_MAPs: `simulation.runner.ts`, `par.aggregator.ts`, `test/fixtures/runFixture.ts` and `replay/replay.execute.ts` all change to `(context, args) => fightMastermind(context as never, args as never)`.
-- **Strike:** shuffle the current player's lowest-VP Assassin in (ties by `extId`). If there is none, each player (ascending) gains a Wound via `gainWoundForPlayer`.
-- **Secrets of Indestructibility:** auto-KO up to 2 Wounds, hand first, then discard.
-- **International Arms Dealer:**
-  - `freeRecruitFromHqByFilter(..., { kind: 'hero-class', values: ['tech'] })` for a `[hc:tech]` Hero (parks if ≥2 are eligible).
-  - Then each other player reveals a tech Hero from hand or gains a Wound (the `resolveCrushingShockwave` precedent).
-  - The synchronous clauses resolve before a parked gain is answered.
-- **Unveil Project Four:** each other player discards every hand card where `String(cardStats.cost|attack|recruit)` or a defined `String(cardVictoryPoints[id])` contains `'4'`. Keep cards with no `cardStats` entry. The log says "(approximate)".
-- **Those three tactics, when not the last tactic** (`tacticsDeck.length > 0`): build `RevealContext { random: shuffleContext.random, ctx: { currentPlayer } }` and call `playTopVillainDeckCards(G, revealContext, DEFAULT_IMPLEMENTATION_MAP, 2)`.
-- **Mad Monk:** `recordHollowEffect` with `{ cardId, cardType: 'villain', timing: 'onFight', mechanic: 'tactic-becomes-villain', reason: 'unsupported-keyword', turn: G.logMeta?.turn ?? 0 }`.
-- **Projection:** `UIMastermindState.shuffleFight?: { requiredCount; isUsedThisTurn; eligibleAssassins: { extId; display }[] }`. Present only for Indestructible Man, listing the active player's cards. Passed through the filter with a conditional spread.
-- **Bot:** no plain `fightMastermind` for Indestructible Man. When `canShuffleFight`, one intent using the lowest-VP pair (`victoryPointValueForCard`, ties by `extId`).
+- Mastermind `bkwd/indestructible-man`; Assassin prefix `bkwd-villain-elite-assassins-`; count 2.
+- Lock reason, verbatim: `You can't use Attack to fight Indestructible Man. Shuffle two Elite Assassins from your Victory Pile into the Villain Deck to fight him.`
+- `mastermind/indestructibleMan.logic.ts` exports `INDESTRUCTIBLE_MAN_MASTERMIND_ID`, `ELITE_ASSASSIN_EXT_ID_PREFIX`, `SHUFFLE_FIGHT_ASSASSIN_COUNT`, `INDESTRUCTIBLE_MAN_ATTACK_LOCK_REASON`, `isIndestructibleMan`, `listEligibleAssassins`, `canShuffleFight`, `isValidShuffleFightPick`, `selectLowestVpAssassins`, `shuffleIntoVillainDeck(G, playerId, cardIds, ShuffleProvider | null)`, `isShuffleFightOpen`. No boardgame.io import. `shuffleIntoVillainDeck` calls `shuffleDeck` once on `[...deck, ...cards]`; a null provider is a logged `'blocked'` no-op that moves nothing; returns whether it moved; never throws.
+- `fightMastermind({ shuffleAssassinIds?: readonly CardExtId[] })` (exactly 2 distinct at runtime), for Indestructible Man only:
+  - After the Haunt and guard returns: no `shuffleAssassinIds` → return; `!isValidShuffleFightPick(G, ctx.currentPlayer, ids)` → return; `!canShuffleFight` → return. Skip the price / spendable check.
+  - Step 2 unchanged (stage, block-all, heal); the existing Enigma block `:259-262` is gated `!isIndestructibleMan(G)` so his guess settles once, in his Step 3.
+  - Step 3, in order: Enigma well-formed check (return) → `shuffleIntoVillainDeck(..., { random })` + set the flag + log → Enigma settle (false → return; cost stays paid) → `isFinalBlow ? awardMastermindOnFinalBlow : defeatMastermindTacticCore(G, ctx, { random }, events)` → no Size-Changing line, no spend, no EV → `G.hasActedThisTurn = true` + the Diamond Form edge.
+  - Step 3 for him is the module-private sub-function `resolveIndestructibleManShuffleFight`.
+  - Every other Mastermind: byte-identical; the argument is ignored.
+- Flag `G.indestructibleManShuffleUsedThisTurn?: true`, never seeded; guarded `delete` in **both** `game.ts` onBegin and `applyOnBeginParity`.
+- **Strike** (`mastermindHandlers.ts`, module-private `resolveIndestructibleManStrike`, arm before the hollow `else`): current player has an Assassin → shuffle in `selectLowestVpAssassins(G, player, 1)` via `resolveShuffleFunction` wrapped as a `ShuffleProvider` (null when absent). Otherwise / null player → each player, current first then clockwise (`seatsInTurnOrderFrom`), `gainWoundToDiscard` + `describeStrikeWound`; empty supply → logged no-op. No capture. Log prefix `[Indestructible Man Master Strike]`.
+- **Secrets of Indestructibility:** KO up to 2 Wounds, hand first then discard (`koCard` + `recordOwnedCardKoed`); 0 → `'blocked'` log.
+- **International Arms Dealer:** `freeRecruitFromHqByFilter(G, currentPlayer, { kind: 'hero-class', values: ['tech'] }, false, 'International Arms Dealer', 'gain')`; then each other player clockwise (`otherSeatsClockwiseFrom`) reveals a Tech Hero from hand (`offPlayCardTraits` either class) or `gainWoundWithOutcome` (Finding Zemo log shapes); solo → one `'neutral'` line; then the play-two clause. When the gain parks, the reveal-or-Wound and play-two resolve before it is answered. After the play-two, if the parked entry is still queued with 0 eligible Heroes, remove it with the `'blocked'` line `Fight effect: no Tech Hero is left in the HQ to gain (International Arms Dealer).`
+- **Unveil Project Four:** each other player clockwise discards via `discardFromHand` every hand card where `String(cardStats.cost|attack|recruit)` or a defined `String(cardVictoryPoints[id])` contains `'4'`; no `cardStats` entry → kept; collect the matching ids first, then discard; log ends "(approximate)"; then the play-two clause.
+- **Play-two clause:** `G.mastermind.tacticsDeck.length > 0` → log `Fight effect: <tactic> plays the top 2 card(s) of the Villain Deck.`, then `RevealContext { random: shuffleContext.random, ctx: { currentPlayer, turn } }` + `playTopVillainDeckCards(G, revealContext, DEFAULT_IMPLEMENTATION_MAP, 2)`; last Tactic → nothing.
+- **Mad Monk:** not the last Tactic → `recordHollowEffect(G, { cardId, cardType: 'mastermind', timing: 'onFight', mechanic: 'tactic-becomes-villain', reason: 'unsupported-keyword', turn })`; last → nothing.
+- `freeRecruitFromHqByFilter(..., verb: 'recruit' | 'gain' = 'recruit')` returns the entry it parked (or null), which the Arms Dealer stale-gain drop looks up by identity; the verb changes its three log lines (`:1106`, `:1117`, `:1141`).
+- **Projection:** `UIMastermindState.shuffleFight?: { requiredCount; isUsedThisTurn; isAvailable; eligibleAssassins: UIDisplayEntry[] }` (built by `buildDisplayEntries`) (JSDoc: `isAvailable` = board + flag conditions only; the client keeps its stage / heal / pending gates), only for Indestructible Man, read for the active player (`isAvailable` = `isShuffleFightOpen`). `fortifiedReason` = the guard reason, else the lock reason while tactics remain or the Final Blow is available. Filter: conditional spread, `deepCopyDisplayEntries`; public to every audience. Update the `isMastermindGuarded` JSDoc and `uiState.build.ts:808-811` comment: `fortifiedReason` = guarded **or** the IM lock. `fightCost` stays the unchanged price read (never charged for him).
+- **Bot (step 4, same commit as the move gate):** inside the stage / tactics / Haunt / guard condition and **before** the price check; Indestructible Man → no plain intent, no price check; `canShuffleFight` → one intent `{ shuffleAssassinIds: selectLowestVpAssassins(G, active, 2) }` (+ `enigmaGuess` as the plain branch does; none when the guess is null).
+- **Feeds:** `tactic-provenance.json` Secrets / Arms Dealer `executable`, Project Four `deferred` (WP-768, D-24601); `strike-provenance.json` the strike `executable`; regenerate the effect index; Mad Monk stays `unmarked`.
 
 ## Guardrails
-- The move gate, the bot and the projection all read the one set of helpers in `indestructibleMan.logic.ts`, so they cannot diverge.
-- The only randomness is `random.Shuffle` on the shuffle-in. No other reshuffle.
-- The flag is never seeded. Core `finalStateHash` and the PAR oracles stay unchanged.
-- Engine only. No client change and no Epic face.
-- Moves never throw. No `.reduce()`.
+- The move gate, the bot and the projection read the same helpers in `indestructibleMan.logic.ts`.
+- The only new randomness is the shuffle-in through `shuffleDeck`.
+- No new key, log line, intent or projection key without Indestructible Man; hash oracles (`finalStateHash`, `PRE_WP080_HASH`, local-spike `initialStateHash`) unchanged. STOP if one moves.
+- Engine only. No client or server change. No Epic face. No `.reduce()`. Moves never throw.
+- Sanctioned existing-test edits: the WP-853 KO-site `LOCKED_TABLE` row `'rules/tacticHandlers.ts#koWoundsFromZone': { koSites: 1, ownedRecords: 1 }` (`hero/ownedCardKoTrigger.test.ts`), and `rules/mastermindStrike.unresolved.test.ts:274` `checkedCount` 15 → 16 with "+ Indestructible Man (WP-768 / D-24601) = 16" appended to its `// why:`. Every other existing assertion passes unedited (the Dark Technology / Bitter Captor log lines are byte-identical).
+- `tacticHandlers.ts` reads `DEFAULT_IMPLEMENTATION_MAP` only inside the function body (import cycle via `villainDeck.reveal` → `defeatChoice.resolve` → `fightMastermind` → `tacticHandlers`), with a `// why:`.
 
 ## Required `// why:` Comments
-- Attack can never fight him (card text); a normal call returns silently.
-- The operator decision that the player chooses the Assassins, passed as move args (the WP-757 pattern).
-- The mid-game Villain Deck shuffle-in: a first, beside D-24160, with its `random.Shuffle` rationale.
-- The omit-when-absent turn flag.
-- The strike's lowest-VP auto-pick, which is not a choice.
+- Attack can never fight him (card text); a plain call returns.
+- The player chooses the Assassins as move args (operator decision, WP-757 pattern).
+- The cost is paid before the Enigma guess (card order: shuffle, then "fight").
+- The shuffle-in follows D-24771 (seeded Shuffle).
+- The omit-when-absent turn flag (both reset sites).
+- The strike's lowest-VP auto-pick (not a choice) and its D-24780 wound order.
 - The Project Four approximation (operator decision).
-- The Mad Monk hollow.
+- The Arms Dealer clause order and the Haunted-gain residual.
+- The Mad Monk not-last-only hollow (D-24033).
+- `fortifiedReason` precedence (guard reason first) and why the lock reuses it.
 
 ## Files to Produce
 - `packages/game-engine/src/mastermind/indestructibleMan.logic.ts` + test — **new**
-- `moves/fightMastermind.ts` (+ test), `types.ts`, `game.ts`, `simulation/onBeginParity.ts` — **modified**
-- `simulation/simulation.runner.ts`, `simulation/par.aggregator.ts`, `test/fixtures/runFixture.ts`, `replay/replay.execute.ts` — **modified** (MOVE_MAP args)
+- `moves/fightMastermind.ts` (+ test), `types.ts`, `game.ts`, `simulation/onBeginParity.ts` (+ `onBeginParity.test.ts`) — **modified**
 - `rules/mastermindHandlers.ts` (+ test), `rules/tacticHandlers.ts` (+ test) — **modified**
-- `ui/uiState.types.ts`, `ui/uiState.build.ts` (+ test), `ui/uiState.filter.ts` (deep-copies `display`), `ui/uiState.filter.test.ts` — **modified**
+- `ui/uiState.types.ts`, `ui/uiState.build.ts` (+ test), `ui/uiState.filter.ts`, `ui/uiState.filter.test.ts` — **modified**
 - `simulation/ai.legalMoves.ts` (+ test) — **modified**
-- `scripts/coverage/tactic-provenance.json`, `data/metadata/effect-implementation-index.json` — **modified / regenerated**
-- `docs/ai/DECISIONS.md` (D-24601), `STATUS.md`, `WORK_INDEX.md`, `EC_INDEX.md`, `docs/05-ROADMAP-MINDMAP.md` — **modified** (governance close)
+- `board/besideMastermind.logic.ts` (JSDoc only); `rules/mastermindStrike.unresolved.test.ts` (the 15 → 16 pin); `hero/ownedCardKoTrigger.test.ts` (one `LOCKED_TABLE` row) — **modified**
+- `scripts/coverage/tactic-provenance.json`, `scripts/coverage/strike-provenance.json`, `data/metadata/effect-implementation-index.json` (+ `docs/ai/coverage/runtime-observed-hollows.json` / `scripts/coverage/hero-effect-coverage.baseline.json` only if their `:check` moves) — **modified / regenerated**
+- Governance: `docs/ai/DECISIONS.md` (D-24601), `STATUS.md`, `WORK_INDEX.md`, `EC_INDEX.md`, `docs/05-ROADMAP-MINDMAP.md`, `NUMBER-LEDGER.md`, 01.6 post-mortem — **modified / new**
 
 ## After Completing
-- [ ] `pnpm -r build` → 0.
-- [ ] Engine suite passes; `pnpm -r --no-bail test` → 0 fail.
-- [ ] A seeded 1p Indestructible Man sim terminates with no turn-1 win.
-- [ ] `effect-index:check`, `sim:runtime-observed:check` and `sim:coverage --check` → 0.
-- [ ] Core oracles unchanged.
-- [ ] D-24601 Active. STATUS updated. WORK_INDEX `[x]`. EC_INDEX Done. Mindmap `✅`. `roadmap:counts:check` 0.
-- [ ] Allowlist-only diff. Two-commit topology.
-- [ ] Live-verify (D-24026) together with WP-770.
+- [ ] `pnpm -r build` → 0; `pnpm -r --no-bail test` → 0 fail, every package's totals pasted.
+- [ ] `effect-index:check`, `sim:runtime-observed:check`, `sim:coverage --check`, `gauntlet:loadouts:check` → 0; hash oracles unchanged.
+- [ ] T13 engine-runner run on the branch: no turn-1 win (baseline output beside it).
+- [ ] D-24601 Active; STATUS; WORK_INDEX `[x]` + `[live-verify: pending]`; EC_INDEX Done; mindmap `✅`; `roadmap:counts:check`, `ledger:numbers:check`, `workindex:rows:check`, `workindex:executed:check`, `workindex:liveverify:check` 0; 01.6 post-mortem.
+- [ ] Allowlist-only diff; two-commit topology (`EC-805:` then `SPEC:`).
+- [ ] D-24026 live-verify after the deploy (WP-768 alone), incl. the Play Diagnostics `uiStateSnapshot` showing `mastermind.shuffleFight` + `fortifiedReason`; recorded as its own `SPEC:` PR.
 
 ## Common Failure Smells
-- The bot still wins on turn 1 → the plain `fightMastermind` intent is still emitted, or the move isn't refusing attack.
-- The bot never shuffle-fights in sim → a MOVE_MAP still drops `args`, or `onBeginParity` never clears the flag.
-- A second shuffle-fight in the same turn succeeds → the flag isn't set, or isn't read by `canShuffleFight`.
-- Another player's Assassin is accepted → validation checks existence, not the acting player's Victory Pile.
-- The Villain Deck order is unchanged after the shuffle → the cards were appended without calling `random.Shuffle`.
-- A core hash moved → the flag was seeded, or the branch isn't gated on the Mastermind id.
+- The bot still wins on turn 1 → the plain intent is still emitted, or the move isn't refusing attack.
+- The bot never shuffle-fights in the sim → `applyOnBeginParity` never clears the flag.
+- A second shuffle-fight in the same turn succeeds → the flag isn't set, or `canShuffleFight` doesn't read it.
+- Another player's Assassin is accepted → validation reads the wrong Victory Pile.
+- Deck order unchanged after the shuffle → `shuffleDeck` was not called.
+- A core hash moved → the flag was seeded, or a branch isn't gated on `isIndestructibleMan`.
+- The live Fight button still enables for him → `fortifiedReason` was built but not passed through the filter.
+- Dark Technology's log changed → the `verb` default is wrong.
