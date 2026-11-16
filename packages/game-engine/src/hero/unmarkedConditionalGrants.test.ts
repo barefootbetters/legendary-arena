@@ -32,6 +32,8 @@ import {
   HERO_KOED_THIS_TURN_CONDITION_TYPE,
 } from './heroConditions.evaluate.js';
 import { koCard } from '../board/ko.logic.js';
+import { moveCardFromZone } from '../moves/zoneOps.js';
+import { recordOwnedCardKoed } from './deferredConditionalGrants.js';
 import { applyOnBeginParity } from '../simulation/onBeginParity.js';
 import { LegendaryGame } from '../game.js';
 import { makeMockCtx } from '../test/mockCtx.js';
@@ -301,18 +303,42 @@ describe('WP-745 case 2: Dr. Octopus grants only as the exact eighth card played
     assert.equal(playAfter(8).turnEconomy.attack, 0);
   });
 
-  // why: Out of Scope E / D-24568 §2 — the shared played view drops a card KO'd out of play, so
-  // the exact ordinal can err late. This pins today's behaviour; the follow-up that keeps KO'd
-  // plays in the view flips it.
-  it('residual pin: one earlier play KO\'d out of play, then the 9th physical play reads as the 8th → +2', () => {
+  /**
+   * KOs a played card out of play exactly as every KO site does: out of inPlay, into the KO
+   * pile, then reported to the owned-KO chokepoint with the zone it left.
+   *
+   * @param G - The game state.
+   * @param cardId - The played card to KO.
+   */
+  function koFromPlay(G: LegendaryGameState, cardId: string): void {
+    const zones = G.playerZones['0']!;
+    const moved = moveCardFromZone(zones.inPlay, [], cardId as CardExtId);
+    zones.inPlay = moved.from;
+    G.ko = koCard(G.ko, cardId as CardExtId);
+    recordOwnedCardKoed(G, '0', cardId as CardExtId, 'inPlay');
+  }
+
+  // why: WP-899 / D-24856 retired the D-24568 §2 residual — a card KO'd out of play still counts
+  // in the shared played view, so the exact ordinal no longer errs late: the 9th physical play
+  // is the 9th card played, and does not grant.
+  it('one earlier play KO\'d out of play, then the 9th physical play → none', () => {
     const hook = findGatedHook(DR_OCTOPUS);
     const G = makeState([hook]);
     for (let playIndex = 0; playIndex < 8; playIndex++) {
       playFiller(G, `test/filler/card#${playIndex}`);
     }
-    const zones = G.playerZones['0']!;
-    zones.inPlay = zones.inPlay.filter((cardId) => cardId !== 'test/filler/card#0');
-    G.ko = koCard(G.ko, 'test/filler/card#0' as CardExtId);
+    koFromPlay(G, 'test/filler/card#0');
+    playGated(G, hook);
+    assert.equal(G.turnEconomy.attack, 0);
+  });
+
+  it('one earlier play KO\'d out of play, then the true 8th physical play → +2', () => {
+    const hook = findGatedHook(DR_OCTOPUS);
+    const G = makeState([hook]);
+    for (let playIndex = 0; playIndex < 7; playIndex++) {
+      playFiller(G, `test/filler/card#${playIndex}`);
+    }
+    koFromPlay(G, 'test/filler/card#0');
     playGated(G, hook);
     assert.equal(G.turnEconomy.attack, 2);
   });

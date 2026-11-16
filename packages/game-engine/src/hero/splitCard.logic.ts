@@ -209,23 +209,39 @@ export function matchesGreyHeroFilter(
 
 /**
  * Returns the "cards played this turn" view of an inPlay zone (WP-780 / D-24619), extended
- * with the cards that went Out of Time or returned from it this turn (WP-803 / D-24692).
+ * with the played cards that left play this turn: KO'd out of play or moved out by the operator
+ * (WP-899 / D-24856), returned Sidekicks (WP-842 / D-24776), cards that went Out of Time or
+ * returned from it (WP-803 / D-24692), and used Ritual Artifacts (WP-858 / D-24794).
  *
- * Starts from `playedCardIdsStillInPlay` (the Penumbra-expanded inPlay), then appends each
- * `G.turnEconomy.outOfTimePlayedCardIds` entry not already present, in record order. Reads the
- * ledger optionally (the minimal-G slice has no turnEconomy) and always returns a fresh array.
+ * Starts from `playedCardIdsStillInPlay` (the Penumbra-expanded inPlay), appends every
+ * `G.turnEconomy.leftPlayPlayedCardIds` entry (Penumbra-expanded, never de-duplicated), then
+ * the returned-Sidekick count, then each Out of Time and used-Ritual entry not already present,
+ * in record order. Reads the ledgers optionally (the minimal-G slice has no turnEconomy) and
+ * always returns a fresh array.
  *
- * ACTIVE-PLAYER-SCOPED: the Out of Time ledger belongs to the player whose turn it is, so a
- * call for any other seat's inPlay must not rely on it. Every rules-facing "played" caller
- * evaluates the active player.
+ * ACTIVE-PLAYER-SCOPED: the turn ledgers belong to the player whose turn it is, so a call for
+ * any other seat's inPlay must not rely on them. Every rules-facing "played" caller evaluates
+ * the active player.
  *
  * @param G - The game state (reads turnEconomy and the split-face map only).
  * @param inPlay - The active player's inPlay zone (not mutated).
- * @returns A new array of card ids, one per played card (a both-sides card counts twice; a
+ * @returns A new array of card ids, one per physical play (a both-sides card counts twice; a
  *   card that went Out of Time counts once).
  */
 export function playedCardIdsThisTurn(G: LegendaryGameState, inPlay: readonly CardExtId[]): CardExtId[] {
   const played = playedCardIdsStillInPlay(G, inPlay);
+  // why: WP-899 / D-24856 — rules v23 L3441-3453: a card you played this turn that was KO'd out
+  // of play (or otherwise moved elsewhere) still counts as "cards you played this turn". Each
+  // entry is one physical play that left inPlay, so these appends are NEVER de-duplicated (the
+  // basic tokens share one id) — and never against inPlay either: a card back in play took a new
+  // play. The same Penumbra expansion runs over them, so a both-sides card KO'd out still counts
+  // as both faces. Placed BEFORE the Sidekick count and the Out of Time / Ritual loops, so a card
+  // in both this ledger and one of theirs (an Out of Time replay KO'd out on turn 2) is absorbed
+  // by their `includes` and counts once.
+  const leftPlayPlayed = G.turnEconomy?.leftPlayPlayedCardIds;
+  if (leftPlayPlayed !== undefined) {
+    played.push(...playedCardIdsStillInPlay(G, leftPlayPlayed));
+  }
   // why: WP-842 / D-24776 — rules v23 "You still 'played' that Sidekick": a played Sidekick
   // returned to the Sidekick Stack left inPlay, so the turn count supplies it. A COUNT (not an
   // id ledger) because every Sidekick token shares one id, so these appends are never

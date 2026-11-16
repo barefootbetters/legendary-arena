@@ -31,7 +31,7 @@ import { recordOwnedCardKoed } from '../hero/deferredConditionalGrants.js';
 import { discardFromHand } from './discardFromHand.js';
 import { gainOfficerToDiscard } from './recruitOfficer.js';
 import { gainWoundForPlayer } from '../board/wounds.logic.js';
-import { addResources } from '../economy/economy.logic.js';
+import { addResources, recordPlayedCardLeftPlay } from '../economy/economy.logic.js';
 import { performVillainReveal, resolveVillainEscape } from '../villainDeck/villainDeck.reveal.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from '../rules/ruleRuntime.impl.js';
 import { formatCardRef } from '../log/logDisplay.js';
@@ -312,13 +312,37 @@ function moveBetweenPlayerZones(G: LegendaryGameState, from: OperatorPlayerZoneR
     if (!removal.found) return false;
     sourceZones[from.zone] = removal.from;
     destinationZones.deck = [cardId, ...destinationZones.deck];
+    recordOperatorLeftPlay(G, from, cardId);
     return true;
   }
   const moveResult = moveCardFromZone(sourceZones[from.zone], destinationZones[to.zone], cardId);
   if (!moveResult.found) return false;
   sourceZones[from.zone] = moveResult.from;
   destinationZones[to.zone] = moveResult.to;
+  recordOperatorLeftPlay(G, from, cardId);
   return true;
+}
+
+/**
+ * Records a card the operator moved out of play as still played this turn (WP-899 / D-24856).
+ *
+ * why: D-24713 §6 — nothing lands in a play area without having been played, so a card moved
+ * out of `inPlay` is a played card leaving play mid-turn, exactly as a card effect would move
+ * it (rules v23 L3441-3453). A KO from play needs no call here: koFromPlayerZone reaches
+ * recordOwnedCardKoed, which records it.
+ *
+ * why: a helper with two calls (moveBetweenPlayerZones' deck-top and general branches) rather
+ * than two inlined records, because the inlined form would take moveBetweenPlayerZones past
+ * the one-screen function cap (00.6 Rule 2).
+ *
+ * @param G - The game state, mutated in place.
+ * @param from - The source player zone the card left.
+ * @param cardId - The card that moved.
+ */
+function recordOperatorLeftPlay(G: LegendaryGameState, from: OperatorPlayerZoneRef, cardId: CardExtId): void {
+  if (from.zone === 'inPlay') {
+    G.turnEconomy = recordPlayedCardLeftPlay(G.turnEconomy, cardId);
+  }
 }
 
 /**

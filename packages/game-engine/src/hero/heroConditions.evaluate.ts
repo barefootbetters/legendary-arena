@@ -225,8 +225,8 @@ export const HERO_KOED_THIS_TURN_CONDITION_TYPE = 'heroPutIntoKoPileThisTurn';
 // never join WAIT_AND_SEE_CONDITION_TYPES; turn-event accumulators (Recruit, draws, discards, KOs,
 // defeats) are the ones that wait. All four read playedCardIdsThisTurn, the one "cards you played
 // this turn" view the shipped playedThisTurn / firstHeroPlayedThisTurn gates read; a card KO'd out
-// of play mid-turn drops out of it (the D-24798 §5 residual; the exact ordinal can err both ways,
-// D-24568 §2). The drift pin in
+// of play mid-turn still counts in it (WP-899 / D-24856 retired the D-24798 §5 / D-24568 §2
+// residual). The drift pin in
 // heroConditions.evaluate.test.ts keeps this set disjoint from the wait-and-see and
 // sequence-gate sets and checks every member has an evaluate and a describe case.
 export const PLAY_HISTORY_CONDITION_TYPES: readonly string[] = [
