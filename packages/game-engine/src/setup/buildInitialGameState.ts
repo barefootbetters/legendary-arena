@@ -637,11 +637,11 @@ export function buildInitialGameState(
   // a S.H.I.E.L.D. Officer recruits for 3 and plays for +2 recruit; a
   // Sidekick recruits for 2 (once per turn) and its printed value is a
   // draw-two ability rather than face stats, so attack/recruit stay 0.
-  // No engine path moves these out of G.piles yet, but every cost read
-  // falls back to 0 on a missing entry (the `?? 0` convention shared by
-  // recruitHero and the 0-cost eligibility predicates), which would make
-  // both tokens free recruits and false 0-cost matches the moment a
-  // gain/recruit-from-pile effect ships.
+  // Officers and Sidekicks do leave G.piles (recruitOfficer, recruitSidekick,
+  // gainSidekick, Undercover from the Officer Stack, villain effects), and every
+  // cost read falls back to 0 on a missing entry (the `?? 0` convention shared by
+  // recruitHero and the 0-cost eligibility predicates), so without these rows
+  // both tokens would read as free recruits and false 0-cost matches.
   // why: WP-675 / D-24490 — the Officer shows a +2 recruit icon; the Sidekick's printed
   // value is a draw-two ability, not a face attack/recruit icon (both false).
   cardStats[SHIELD_OFFICER_EXT_ID] = { attack: 0, recruit: 2, cost: 3, fightCost: 0, fightCostMode: 'static', fightCostBase: 0, hasAttackIcon: false, hasRecruitIcon: true, isShieldOrHydra: true };
