@@ -117,7 +117,8 @@
       "brotherhood-of-mutants": {
         "juggernaut": { "ambush": ["discard-hand-matching-hq-card-names-each-player", "hq-heroes-to-hero-deck-bottom"], "fight": ["ko-hero:current:2"] },
         "mystique": { "ambush": ["discard-hero-each-player-by-trait:team:x-men"], "escape": ["become-scheme-twist"] },
-        "sabretooth": { "ambush": ["reveal-or-wound:hc:instinct"], "escape": ["reveal-or-wound:hc:instinct"] }
+        "sabretooth": { "ambush": ["reveal-or-wound:hc:instinct"], "escape": ["reveal-or-wound:hc:instinct"] },
+        "the-blob": { "ambush": ["put-self-beside-mastermind"] }
       },
       "enemies-of-asgard": {
         "destroyer": { "ambush": ["ko-hero:each:1:discard:non-grey"], "fight": ["ko-up-to-from-discard-current:2:grey"], "escape": ["ko-hero:each:1:discard:non-grey"] },

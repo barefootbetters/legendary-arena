@@ -2101,3 +2101,54 @@ describe('WP-878 getLegalMoves — step 4c attemptHeist when the card-count odds
     assert.deepEqual(gameState.city, [CITY_VILLAIN, null, null, null, null], 'a decline moves nothing');
   });
 });
+
+describe('WP-840 getLegalMoves — The Blob mirrors the beside fight and the Mastermind lock (D-24773)', () => {
+  const BLOB_00 = 'co2e-villain-brotherhood-of-mutants-the-blob-00' as CardExtId;
+  const PLAIN = 'core-villain-hydra-hydra-kidnappers-00' as CardExtId;
+
+  /** A main-stage state with The Blob listed, a fightable Mastermind and the given attack. */
+  function makeBlobG(attack: number): LegendaryGameState {
+    const gameState = makeG({ inPlay: [], currentStage: 'main' });
+    gameState.turnEconomy = makeTurnEconomy({ attack });
+    gameState.cardStats = {
+      [BLOB_00]: makeCardStatEntry({ fightCost: 4 }),
+      [PLAIN]: makeCardStatEntry({ fightCost: 1 }),
+      'm-base': makeCardStatEntry({ fightCost: 3 }),
+    } as LegendaryGameState['cardStats'];
+    gameState.mastermind = { baseCardId: 'm-base', tacticsDeck: ['tactic-1'] } as unknown as LegendaryGameState['mastermind'];
+    gameState.villainsBesideMastermind = [BLOB_00];
+    return gameState;
+  }
+
+  /** Returns whether the beside intent for a position is offered. */
+  function hasBesideIntent(gameState: LegendaryGameState, besideIndex: number): boolean {
+    return getLegalMoves(gameState, CONTEXT).some(
+      (move) =>
+        move.name === 'fightVillain' &&
+        JSON.stringify(move.args) === JSON.stringify({ besideMastermindIndex: besideIndex }),
+    );
+  }
+
+  test('T17: The Blob is offered at 4 Attack and fightMastermind is not, however much Attack', () => {
+    const gameState = makeBlobG(20);
+    assert.equal(hasBesideIntent(gameState, 0), true);
+    assert.equal(getLegalMoves(gameState, CONTEXT).some((move) => move.name === 'fightMastermind'), false);
+  });
+
+  test('T18: at 3 Attack The Blob is not offered', () => {
+    assert.equal(hasBesideIntent(makeBlobG(3), 0), false);
+  });
+
+  test('T19: with no list the intents equal the pre-WP output exactly', () => {
+    const gameState = makeBlobG(5);
+    delete gameState.villainsBesideMastermind;
+    gameState.city = [PLAIN, null, null, null, null];
+    gameState.playerZones['0']!.hand = ['hand-card-1'] as CardExtId[];
+    assert.deepStrictEqual(getLegalMoves(gameState, CONTEXT), [
+      { name: 'playCard', args: { cardId: 'hand-card-1' } },
+      { name: 'fightVillain', args: { cityIndex: 0 } },
+      { name: 'fightMastermind', args: {} },
+      { name: 'advanceStage', args: {} },
+    ]);
+  });
+});

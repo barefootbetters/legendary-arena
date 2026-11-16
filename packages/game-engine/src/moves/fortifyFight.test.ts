@@ -20,6 +20,7 @@ import { makeMockMoveContext } from '../test/mockMoveContext.js';
 import { makeCardStatEntry, makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
 import { getAvailableAttack } from '../economy/economy.logic.js';
 import { formatCardRef } from '../log/logDisplay.js';
+import { isMastermindGuarded } from '../board/besideMastermind.logic.js';
 
 const SQUIRREL_GIRL = 'cvwr-villain-great-lakes-avengers-squirrel-girl-00' as CardExtId;
 const COLLEEN_WING = 'cvwr-villain-heroes-for-hire-colleen-wing-00' as CardExtId;
@@ -202,5 +203,143 @@ describe('WP-873 fortifier fight (D-24818)', () => {
       logTexts(G).includes(`Size-Changing: Player 0 fights ${formatCardRef(G.cardDisplayData, SHRINKING_FORTIFIER)} (5 Attack) for 3.`),
       logTexts(G).join(' | '),
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-840 / D-24773 — a Villain to the left of the Mastermind (The Blob, T11-T15)
+// ---------------------------------------------------------------------------
+
+describe('WP-840 fighting The Blob to the left of the Mastermind (D-24773)', () => {
+  const BLOB_00 = 'co2e-villain-brotherhood-of-mutants-the-blob-00' as CardExtId;
+  const BLOB_01 = 'co2e-villain-brotherhood-of-mutants-the-blob-01' as CardExtId;
+  const CITY_VILLAIN = 'test-villain-city-thug-00' as CardExtId;
+
+  /**
+   * The fortifier fixture with no fortification, The Blob listed and 4 attack.
+   *
+   * @param listed - The Villains to the left of the Mastermind.
+   * @returns The game state.
+   */
+  function createBlobState(listed: CardExtId[] = [BLOB_00]): LegendaryGameState {
+    const gameState = createFortifiedState();
+    delete gameState.fortifications;
+    gameState.villainsBesideMastermind = [...listed];
+    gameState.turnEconomy = makeTurnEconomy({ attack: 4 });
+    gameState.cardDisplayData[BLOB_00] = { extId: BLOB_00, name: 'The Blob', imageUrl: '', cost: 0 };
+    gameState.cardDisplayData[BLOB_01] = { extId: BLOB_01, name: 'The Blob', imageUrl: '', cost: 0 };
+    gameState.cardStats[BLOB_00] = makeCardStatEntry({ fightCost: 4 });
+    gameState.cardStats[BLOB_01] = makeCardStatEntry({ fightCost: 4 });
+    return gameState;
+  }
+
+  /**
+   * Calls fightVillain with the given (untrusted, possibly malformed) arguments.
+   *
+   * @param gameState - The state to fight in.
+   * @param args - The move arguments.
+   * @returns The move context after the move.
+   */
+  function fightWith(gameState: LegendaryGameState, args: Record<string, unknown>) {
+    const moveContext = makeMockMoveContext(gameState);
+    fightVillain(moveContext, args as unknown as Parameters<typeof fightVillain>[1]);
+    return moveContext;
+  }
+
+  /**
+   * Asserts a fight leaves G deep-equal (a silent refusal).
+   *
+   * @param gameState - The state to fight in.
+   * @param args - The move arguments.
+   * @param label - The case label.
+   */
+  function assertBesideRefused(gameState: LegendaryGameState, args: Record<string, unknown>, label: string): void {
+    const before = JSON.parse(JSON.stringify(gameState)) as unknown;
+    const moveContext = fightWith(gameState, args);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(moveContext.G)), before, `${label} must not mutate G`);
+  }
+
+  it('T11: fighting The Blob puts him in the Victory Pile and empties the list', () => {
+    const G = fightWith(createBlobState(), { besideMastermindIndex: 0 }).G;
+    assert.ok(G.playerZones['0']!.victory.includes(BLOB_00));
+    assert.equal('villainsBesideMastermind' in G, false, 'the list key is deleted');
+    assert.equal(getAvailableAttack(G.turnEconomy), 0, 'the 4 attack is spent');
+    assert.equal(G.hasActedThisTurn, true);
+    assert.ok(
+      logTexts(G).includes(`Player 0 fought ${formatCardRef(G.cardDisplayData, BLOB_00)} to the left of the Mastermind.`),
+      logTexts(G).join(' | '),
+    );
+    assert.deepStrictEqual(G.notableEvents, [], 'no fightResolved event for an off-City fight (D-24818 residual)');
+    assert.equal(isMastermindGuarded(G), false);
+  });
+
+  it('T12: every refusal is silent and leaves G deep-equal', () => {
+    const shortAttack = createBlobState();
+    shortAttack.turnEconomy = makeTurnEconomy({ attack: 3 });
+    assertBesideRefused(shortAttack, { besideMastermindIndex: 0 }, 'attack 3');
+    assertBesideRefused(createBlobState(), { besideMastermindIndex: 1 }, 'index 1 with one Blob');
+    assertBesideRefused(createBlobState(), { besideMastermindIndex: -1 }, 'index -1');
+    assertBesideRefused(createBlobState(), { besideMastermindIndex: 0.5 }, 'index 0.5');
+    assertBesideRefused(createBlobState(), { besideMastermindIndex: '0' }, 'index as a string');
+    const absent = createBlobState();
+    delete absent.villainsBesideMastermind;
+    assertBesideRefused(absent, { besideMastermindIndex: 0 }, 'the list absent');
+    const startStage = createBlobState();
+    startStage.currentStage = 'start';
+    assertBesideRefused(startStage, { besideMastermindIndex: 0 }, 'the start stage');
+    const healed = createBlobState();
+    healed.hasHealedThisTurn = true;
+    assertBesideRefused(healed, { besideMastermindIndex: 0 }, 'healed this turn');
+    const pending = createBlobState();
+    pending.pendingKoHeroChoices = [{ playerId: '0' }] as unknown as LegendaryGameState['pendingKoHeroChoices'];
+    assertBesideRefused(pending, { besideMastermindIndex: 0 }, 'a pending choice');
+  });
+
+  it('T13: restricted Attack never pays for The Blob (only plain Attack)', () => {
+    for (const target of ['sewers', 'mastermind']) {
+      const gameState = createBlobState();
+      // why: 4 attack in total, all of it a grant usable only against the named target.
+      gameState.turnEconomy = makeTurnEconomy({
+        attack: 4,
+        restrictedAttack: [{ remaining: 4, targets: [target], sourceCardId: 'bolt' as CardExtId }],
+      } as Parameters<typeof makeTurnEconomy>[0]);
+      assertBesideRefused(gameState, { besideMastermindIndex: 0 }, `a 4-point grant for ${target} with no plain Attack`);
+    }
+  });
+
+  it('T14: two Blobs and Colleen Wing — the Mastermind stays guarded until the last is fought', () => {
+    let gameState = createBlobState([BLOB_00, BLOB_01]);
+    gameState.fortifications = { mastermind: { villainCardId: COLLEEN_WING, lock: 'no-fight' } };
+    gameState.turnEconomy = makeTurnEconomy({ attack: 20 });
+    gameState = fightWith(gameState, { besideMastermindIndex: 1 }).G;
+    assert.deepStrictEqual(gameState.villainsBesideMastermind, [BLOB_00]);
+    assert.equal(isMastermindGuarded(gameState), true);
+    gameState = fightWith(gameState, { fortifiedPlace: 'mastermind' }).G;
+    assert.equal(gameState.fortifications, undefined);
+    assert.equal(isMastermindGuarded(gameState), true);
+    gameState = fightWith(gameState, { besideMastermindIndex: 0 }).G;
+    assert.equal(isMastermindGuarded(gameState), false);
+    assert.deepStrictEqual(gameState.playerZones['0']!.victory, [BLOB_01, COLLEEN_WING, BLOB_00]);
+  });
+
+  it('T15: fortifiedPlace wins over besideMastermindIndex; a City fight is unchanged', () => {
+    const both = createBlobState();
+    both.fortifications = { mastermind: { villainCardId: COLLEEN_WING, lock: 'no-fight' } };
+    both.turnEconomy = makeTurnEconomy({ attack: 9 });
+    const afterBoth = fightWith(both, { fortifiedPlace: 'mastermind', besideMastermindIndex: 0 }).G;
+    assert.ok(afterBoth.playerZones['0']!.victory.includes(COLLEEN_WING));
+    assert.deepStrictEqual(afterBoth.villainsBesideMastermind, [BLOB_00], 'the list is untouched');
+
+    const city = createBlobState();
+    city.city[0] = CITY_VILLAIN;
+    city.cardStats[CITY_VILLAIN] = makeCardStatEntry({ fightCost: 2 });
+    city.villainDeckCardTypes = { [CITY_VILLAIN]: 'villain' } as LegendaryGameState['villainDeckCardTypes'];
+    const afterCity = fightWith(city, { cityIndex: 0 }).G;
+    assert.ok(afterCity.playerZones['0']!.victory.includes(CITY_VILLAIN));
+    assert.deepStrictEqual(afterCity.villainsBesideMastermind, [BLOB_00], 'the list is untouched');
+    const fightResolved = (afterCity.notableEvents as unknown as { type: string; citySpace?: number }[]).find(
+      (event) => event.type === 'fightResolved',
+    );
+    assert.equal(fightResolved?.citySpace, 0);
   });
 });

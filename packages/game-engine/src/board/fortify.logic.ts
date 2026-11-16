@@ -8,7 +8,9 @@
  * Fortify state lives in `G.fortifications`, keyed by place. It is created lazily by the
  * first Fortify and deleted when the last fortification ends, so it is absent in every
  * match that never fortifies. These helpers are the ONLY writers of that table and the
- * only readers of it: every lock reads `isSidekickStackFortified` / `isMastermindFortified`.
+ * only readers of it: every lock reads `isSidekickStackFortified` / `isMastermindFortified`
+ * (the Mastermind lock through `isMastermindGuarded` in board/besideMastermind.logic.ts,
+ * WP-840 / D-24773, which also counts a Villain to the left of the Mastermind).
  *
  * Pure helpers over G. No boardgame.io import. No .reduce(). Never throws.
  */
@@ -71,8 +73,10 @@ export function isSidekickStackFortified(G: LegendaryGameState): boolean {
 /**
  * Returns whether the Mastermind is fortified with the no-fight lock.
  *
- * // why: WP-873 / D-24818 — the single predicate behind the Mastermind lock: the
- * fightMastermind move, its getLegalMoves mirror and the projection all read this.
+ * // why: WP-873 / D-24818 — the Fortify half of the Mastermind lock. Since WP-840 /
+ * D-24773 the fightMastermind move, its getLegalMoves mirror and the projection read
+ * `isMastermindGuarded` (board/besideMastermind.logic.ts), which is this predicate OR a
+ * Villain to the left of the Mastermind (The Blob).
  *
  * @param G - The game state to inspect (not mutated).
  * @returns True while a Villain fortifies the Mastermind.

@@ -5,6 +5,10 @@
  * it in the current player's victory pile. Follows the three-step
  * validation contract: validate args, check stage gate, mutate G.
  *
+ * Two off-City locations route to moves/fortifyFight.ts before any City read: a Villain
+ * fortifying a place (`fortifiedPlace`, WP-873 / D-24818) and a Villain to the left of the
+ * Mastermind (`besideMastermindIndex`, WP-840 / D-24773).
+ *
  * This is a non-core move that gates internally (same pattern as
  * revealVillainCard from WP-014A). It is NOT added to CoreMoveName,
  * CORE_MOVE_NAMES, or MOVE_ALLOWED_STAGES.
@@ -124,7 +128,7 @@ import { gainDefeatedMicroSizedHero } from '../rules/trapHeroesInTheMicroverse.l
 // why: WP-873 / D-24818 — the fortifier fight. fortifyFight.ts imports buildFightSizeChangingLine
 // back from this module; the cycle is runtime-safe (bindings are read only inside functions).
 import type { FortifyPlace } from '../board/fortify.types.js';
-import { fightFortifyingVillain } from './fortifyFight.js';
+import { fightFortifyingVillain, fightVillainBesideMastermind } from './fortifyFight.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -161,20 +165,28 @@ interface FightVillainArgs {
    * fights that fortifier and every other argument is ignored.
    */
   fortifiedPlace?: FortifyPlace;
+  /**
+   * WP-840 / D-24773 — fight the Villain at this 0-based position in
+   * `G.villainsBesideMastermind` (co2e The Blob, to the left of the Mastermind) instead of a
+   * City Villain. When present (and `fortifiedPlace` is absent) the move fights that Villain
+   * through the off-City fight path and every other argument is ignored.
+   */
+  besideMastermindIndex?: number;
 }
 
 /**
- * Fights a villain or henchman in the City.
+ * Fights a villain or henchman in the City, or an off-City Villain (a fortifier, WP-873, or a
+ * Villain to the left of the Mastermind, WP-840).
  *
- * Removes the card from the specified City space and places it in the
- * current player's victory pile.
+ * Removes the card from the specified City space (or its off-City location) and places it in
+ * the current player's victory pile.
  *
  * @param context - boardgame.io move context with G, ctx.
  * @param args - The city space index to fight.
  */
 export function fightVillain(
   { G, ...context }: MoveContext,
-  { cityIndex, useExcessiveViolence, discardCardId, payToRescueBystander, fortifiedPlace }: FightVillainArgs,
+  { cityIndex, useExcessiveViolence, discardCardId, payToRescueBystander, fortifiedPlace, besideMastermindIndex }: FightVillainArgs,
 ): void {
   // why: WP-754 / D-24581 — take the spread move context (the playCard shape) so the Excessive
   // Violence fire below hands hero handlers the context they expect, with `random` on it. Passing
@@ -189,6 +201,14 @@ export function fightVillain(
   // City read and returns, so with the argument absent every City fight is byte-identical.
   if (fortifiedPlace !== undefined) {
     fightFortifyingVillain(G, context, fortifiedPlace);
+    return;
+  }
+  // why: WP-840 / D-24773 — a second off-City location for the same fight (The Blob, to the
+  // left of the Mastermind), routed into the shared off-City fight path. It sits after the
+  // fortifiedPlace branch, so every input this move accepted before behaves exactly as it
+  // did, and before any City read, so a City fight is byte-identical.
+  if (besideMastermindIndex !== undefined) {
+    fightVillainBesideMastermind(G, context, besideMastermindIndex);
     return;
   }
   // Step 1: Validate args

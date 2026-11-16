@@ -36,6 +36,9 @@ import { resolveFightPrice } from '../economy/economy.resolve.js';
 import { getSpendableAttackForTarget } from '../economy/economy.logic.js';
 import { UNNAMED_CITY_SPACE_TARGET } from '../economy/economy.types.js';
 import { getFortification, isFortifyPlace } from '../board/fortify.logic.js';
+// why: WP-840 / D-24773 — a Villain to the left of the Mastermind (The Blob) is fought through
+// the same off-City authority as a fortifier.
+import { getVillainBesideMastermind } from '../board/besideMastermind.logic.js';
 
 /**
  * Returns the defeat requirement for a villain instance, or null when it has
@@ -444,7 +447,10 @@ export function getFightRestrictionBlockReason(
 // Fortifier fight (WP-873 / D-24818)
 // ---------------------------------------------------------------------------
 
-/** A fortifying Villain the current player can fight right now, with its price. */
+/**
+ * An off-City Villain the current player can fight right now, with its price: a fortifier
+ * (WP-873 / D-24818) or a Villain to the left of the Mastermind (WP-840 / D-24773).
+ */
 export interface FightableFortifier {
   cardId: CardExtId;
   /** The Size-Changing fight price (may be negative under Microscopic). */
@@ -480,7 +486,48 @@ export function findFightableFortifier(
   if (fortification === null) {
     return null;
   }
-  const cardId = fortification.villainCardId;
+  return findFightableOffCityVillain(state, playerId, fortification.villainCardId);
+}
+
+/**
+ * Returns the Villain at a position to the left of the Mastermind when a player can fight it
+ * there right now, or null (WP-840 / D-24773).
+ *
+ * @param state - The runtime game state.
+ * @param playerId - The player attempting the fight (`ctx.currentPlayer`).
+ * @param besideMastermindIndex - The requested position (an untrusted move argument).
+ * @returns The fightable Villain with its price, or null.
+ */
+export function findFightableVillainBesideMastermind(
+  state: LegendaryGameState,
+  playerId: string,
+  besideMastermindIndex: unknown,
+): FightableFortifier | null {
+  const cardId = getVillainBesideMastermind(state, besideMastermindIndex);
+  if (cardId === null) {
+    return null;
+  }
+  return findFightableOffCityVillain(state, playerId, cardId);
+}
+
+/**
+ * Returns an off-City Villain (a fortifier, or a Villain to the left of the Mastermind) with
+ * its price when a player can fight it right now, or null when a state check refuses.
+ *
+ * // why: WP-840 / D-24773 — the price, requirement, restriction and discard-cost checks
+ * moved verbatim out of findFightableFortifier, so a fortifier and The Blob share ONE
+ * fightability authority and can never drift; every fortifier result is unchanged.
+ *
+ * @param state - The runtime game state.
+ * @param playerId - The player attempting the fight (`ctx.currentPlayer`).
+ * @param cardId - The off-City Villain.
+ * @returns The fightable Villain with its price, or null.
+ */
+export function findFightableOffCityVillain(
+  state: LegendaryGameState,
+  playerId: string,
+  cardId: CardExtId,
+): FightableFortifier | null {
   // why: D-24802 — the fight is paid at the Size-Changing price, floored at 0 for the debit.
   // A fortifier is not on a named City space, so restricted Attack ("usable only against …")
   // never counts: UNNAMED_CITY_SPACE_TARGET is the target no restricted grant names.

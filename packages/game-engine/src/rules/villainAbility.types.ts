@@ -426,7 +426,11 @@ export type VillainEffectPrimitive =
   // and Ambush fire sites). Speed Demon reuses `charge` (D-24820).
   | 'move-self-to-city-space'
   | 'reveal-villain-deck-top-swap-self'
-  | 'enter-city-from-victory-pile';
+  | 'enter-city-from-victory-pile'
+  // why: WP-840 / D-24773 — co2e The Blob's Ambush "Put The Blob to the left of the
+  // Mastermind space": a keyword-less executor handler that moves him out of the City into
+  // G.villainsBesideMastermind (no params).
+  | 'put-self-beside-mastermind';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -683,6 +687,10 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'move-self-to-city-space',
   'reveal-villain-deck-top-swap-self',
   'enter-city-from-victory-pile',
+  // why: WP-840 / D-24773 — appended at position 64: co2e The Blob
+  // (`put-self-beside-mastermind`, no param), a keyword-less executor handler. The marker
+  // script's hand-synced copy appends it at the same position.
+  'put-self-beside-mastermind',
 ] as const;
 
 /**

@@ -673,6 +673,7 @@ function parseLocationGatedEffect(
  *   - `move-self-to-city-space:<space>`  (a CITY_SPACE_NAMES member; D-24772)
  *   - `enter-city-from-victory-pile:<groupSlug>:<cardSlug>`  (lowercase-kebab slugs; D-24772)
  *   - `reveal-villain-deck-top-swap-self` (D-24772; no params)
+ *   - `put-self-beside-mastermind` (D-24773; no params)
  *   - `capture-bystander-each-victory-pile` | `gain-one-attached-hero-rest-to-bottom` (D-24771) |
  *   - `hero-deck-top-to-escape` | `gain-officer-current` |
  *     `ko-bystander-each-victory-pile` (D-24749) |

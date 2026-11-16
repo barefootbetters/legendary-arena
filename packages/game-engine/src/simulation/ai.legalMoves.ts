@@ -22,7 +22,8 @@ import { UNNAMED_CITY_SPACE_TARGET } from '../economy/economy.types.js';
 import { resolveFightPrice, resolveMastermindFightPrice } from '../economy/economy.resolve.js';
 import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic.js';
 import { isHqSlotHaunted, isMastermindHaunting } from '../board/haunt.logic.js';
-import { isMastermindFortified, listFortifications } from '../board/fortify.logic.js';
+import { listFortifications } from '../board/fortify.logic.js';
+import { isMastermindGuarded, listVillainsBesideMastermind } from '../board/besideMastermind.logic.js';
 import {
   getDefeatRequirement,
   playerMeetsDefeatRequirement,
@@ -31,6 +32,7 @@ import {
   getFightRestriction,
   isFightRestrictionBlocking,
   findFightableFortifier,
+  findFightableVillainBesideMastermind,
 } from '../moves/villainDefeatRequirement.logic.js';
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
@@ -457,7 +459,9 @@ function selectDoOverDefault(gameState: LegendaryGameState): { accept: true } | 
  *      and availableAttack covers baseFightCost + patrolModifier and the
  *      slot is not Guard-blocked)
  *   3b. fightVillain fortifier intents — one per fightable fortified place,
- *      FORTIFY_PLACES order (WP-873 / D-24818; empty without a fortification)
+ *      FORTIFY_PLACES order (WP-873 / D-24818; empty without a fortification),
+ *      then one per fightable Villain to the left of the Mastermind, position
+ *      ascending (WP-840 / D-24773; empty without one)
  *   4. fightMastermind — one entry (if stage === 'main', tactics remain,
  *      and availableAttack covers the base-card fightCost)
  *   4b. exorciseHauntedHero intents — HQ slot 0..4 ascending, one per
@@ -1238,18 +1242,29 @@ export function getLegalMoves(
         legalMoves.push({ name: 'fightVillain', args: { fortifiedPlace: entry.place } });
       }
     }
+    // why: WP-840 / D-24773 — mirrors fightVillain({ besideMastermindIndex }) (D-24364).
+    // findFightableVillainBesideMastermind is the authority the move itself calls, through the
+    // same off-City gates as a fortifier. Without the list the loop pushes nothing, so the
+    // output is byte-identical.
+    const besideVillainCount = listVillainsBesideMastermind(gameState).length;
+    for (let besideIndex = 0; besideIndex < besideVillainCount; besideIndex += 1) {
+      if (findFightableVillainBesideMastermind(gameState, activePlayer, besideIndex) !== null) {
+        legalMoves.push({ name: 'fightVillain', args: { besideMastermindIndex: besideIndex } });
+      }
+    }
   }
 
   // 4. fightMastermind — at most one entry (affordable + tactics remain).
   // why: WP-757 / D-24587 — the Mastermind can't be fought while it haunts an HQ Hero;
   // the same isMastermindHaunting predicate gates the fightMastermind move.
-  // why: WP-873 / D-24818 — nor while a Villain fortifies it (Colleen Wing); the same
-  // isMastermindFortified predicate gates the move (D-24364 mirror).
+  // why: WP-873 / D-24818 + WP-840 / D-24773 — nor while a Villain fortifies it (Colleen
+  // Wing) or is to its left (The Blob); the same isMastermindGuarded predicate gates the move
+  // (D-24364 mirror).
   if (
     stage === 'main' &&
     gameState.mastermind.tacticsDeck.length > 0 &&
     !isMastermindHaunting(gameState) &&
-    !isMastermindFortified(gameState)
+    !isMastermindGuarded(gameState)
   ) {
     // why: D-24802 — mirror fightMastermind: the Size-Changing price.
     const mastermindFightCost = resolveMastermindFightPrice(gameState, activePlayer);

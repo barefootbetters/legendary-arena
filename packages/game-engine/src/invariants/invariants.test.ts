@@ -381,3 +381,33 @@ describe('WP-873 — checkNoCardInMultipleZones visits fortifiers in G.fortifica
     );
   });
 });
+
+// ===========================================================================
+// WP-840 / D-24773 — a Villain to the left of the Mastermind is a card container
+// ===========================================================================
+
+describe('WP-840 — checkNoCardInMultipleZones visits G.villainsBesideMastermind', () => {
+  const blobCardId = 'test-injection-unique-blob-001';
+
+  test('T20: passes with The Blob only in the list', () => {
+    const G = buildValidGameState();
+    G.villainsBesideMastermind = [blobCardId];
+    assert.doesNotThrow(() => runAllInvariantChecks(G, SETUP_CONTEXT));
+  });
+
+  test('T20: fails with gameRules category when The Blob is also in the City', () => {
+    const G = buildValidGameState();
+    // why: models an Ambush that listed The Blob without nulling his City space — the exact
+    // bug class the list visit exists to catch.
+    G.city[0] = blobCardId;
+    G.villainsBesideMastermind = [blobCardId];
+    assert.throws(
+      () => runAllInvariantChecks(G, SETUP_CONTEXT),
+      (error: Error) =>
+        error instanceof InvariantViolationError &&
+        error.category === 'gameRules' &&
+        error.message.includes(`'${blobCardId}'`) &&
+        error.message.includes("'villainsBesideMastermind.0'"),
+    );
+  });
+});

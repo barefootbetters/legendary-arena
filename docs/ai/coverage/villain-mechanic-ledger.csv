@@ -170,7 +170,7 @@ co2e-villain-skulls-skrull-shapeshifter,Skrull Shapeshifter,co2e,villain,capture
 co2e-villain-skulls-skrull-shapeshifter,Skrull Shapeshifter,co2e,villain,gain-attached-hero,executable,WP-450,D-24270,packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero
 co2e-villain-sinister-syndicate-speed-demon,Speed Demon,co2e,villain,charge,executable,WP-874,D-24820,packages/game-engine/src/villain/villainEffects.execute.ts#charge
 co2e-villain-skulls-super-skrull,Super-Skrull,co2e,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
-co2e-villain-brotherhood-of-mutants-the-blob,The Blob,co2e,villain,(unmarked),unmarked,,,
+co2e-villain-brotherhood-of-mutants-the-blob,The Blob,co2e,villain,put-self-beside-mastermind,executable,WP-840,D-24773,packages/game-engine/src/villain/villainEffects.execute.ts#put-self-beside-mastermind
 co2e-villain-radiation-the-leader,The Leader,co2e,villain,play-villain-deck-cards,executable,WP-542,D-24351,packages/game-engine/src/villain/villainEffects.execute.ts#play-villain-deck-cards
 co2e-villain-sinister-spider-foes-the-lizard,The Lizard,co2e,villain,gain-wound,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 co2e-villain-sinister-spider-foes-the-lizard,The Lizard,co2e,villain,ko-hero,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero

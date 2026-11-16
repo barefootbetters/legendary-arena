@@ -187,3 +187,83 @@ describe('FortifiedVillains (WP-873 / D-24818)', () => {
     assert.equal(/position:\s*fixed/.test(style), false, 'no fixed-position chip');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-840 / D-24773 — The Blob to the left of the Mastermind rides the Fortify chip (T22)
+// ---------------------------------------------------------------------------
+
+describe('WP-840 FortifiedVillains — The Blob (D-24773)', () => {
+  /**
+   * Builds a Blob entry (a fortifier entry with besideMastermindIndex).
+   *
+   * @param besideMastermindIndex - The position to the left of the Mastermind.
+   * @returns The projected entry.
+   */
+  function blob(besideMastermindIndex: number): UIFortifier {
+    const extId = `co2e-villain-brotherhood-of-mutants-the-blob-0${String(besideMastermindIndex)}`;
+    return {
+      place: 'mastermind',
+      placeLabel: 'the Mastermind',
+      extId,
+      display: { extId, name: 'The Blob', imageUrl: '', cost: 0 },
+      fightCost: 4,
+      lockText: "the Mastermind can't be fought",
+      besideMastermindIndex,
+    };
+  }
+
+  const colleenWing: UIFortifier = {
+    place: 'mastermind',
+    placeLabel: 'the Mastermind',
+    extId: 'cvwr-villain-heroes-for-hire-colleen-wing-00',
+    display: { extId: 'cvwr-villain-heroes-for-hire-colleen-wing-00', name: 'Colleen Wing', imageUrl: '', cost: 9 },
+    fightCost: 9,
+    lockText: "the Mastermind can't be fought",
+  };
+
+  test('T22: Colleen and two Blobs render three chips; a Blob fight sends its position', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(FortifiedVillains, {
+      props: {
+        fortifiers: [colleenWing, blob(0), blob(1)],
+        place: 'mastermind',
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    const chips = wrapper.findAll('[data-testid="play-fortifier"]');
+    assert.equal(chips.length, 3, 'one chip each: the key is unique per entry');
+    assert.equal(
+      chips[1]!.attributes('title'),
+      "The Blob is to the left of the Mastermind: the Mastermind can't be fought. Fight The Blob for 4 Attack to end it.",
+    );
+    assert.match(chips[1]!.text(), /To the left of the Mastermind/);
+    assert.match(chips[0]!.attributes('title') ?? '', /^Colleen Wing fortifies the Mastermind: /);
+    assert.match(chips[0]!.text(), /Fortifying the Mastermind/);
+    await chips[2]!.find('[data-testid="play-fortifier-fight"]').trigger('click');
+    await chips[0]!.find('[data-testid="play-fortifier-fight"]').trigger('click');
+    assert.deepStrictEqual(calls, [
+      { name: 'fightVillain', args: { besideMastermindIndex: 1 } },
+      { name: 'fightVillain', args: { fortifiedPlace: 'mastermind' } },
+    ]);
+  });
+
+  test("T22: not the viewer's turn — The Blob's fight is disabled and a click submits nothing", async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(FortifiedVillains, {
+      props: {
+        fortifiers: [blob(0)],
+        place: 'mastermind',
+        currentStage: 'main',
+        isViewerTurn: false,
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    const button = wrapper.find('[data-testid="play-fortifier-fight"]');
+    assert.equal(button.attributes('disabled'), '');
+    await button.trigger('click');
+    assert.deepStrictEqual(calls, []);
+  });
+});

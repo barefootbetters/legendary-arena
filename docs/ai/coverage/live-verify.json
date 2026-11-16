@@ -2104,6 +2104,17 @@
       "note": "Live check (NEW match with co2e Enemies of Asgard after the deploy, a Frost Giant Warrior already defeated into a Victory Pile): when Ymir enters the City the log shows \"Ambush effect: Ymir, Frost Giant King brings Frost Giant Warrior back from Player N's Victory Pile.\" then \"[Ambush] Frost Giant Warrior entered the city from Player N's Victory Pile!\" and the Warrior's own Ambush; the Warrior is in the Sewers with Ymir pushed forward, and the Ambush overlay names the returned Warrior. With no Warrior in any pile: \"no matching Villain is in any player's Victory Pile, so nothing enters the city.\" D-24772."
     },
     {
+      "key": "co2e-villain-brotherhood-of-mutants-the-blob|put-self-beside-mastermind",
+      "kind": "villain",
+      "card": "The Blob",
+      "ability": "Ambush: Put The Blob to the left of the Mastermind space. Nothing moves The Blob. While he's there, you can't fight the Mastermind. (You can still fight The Blob.)",
+      "wp": "WP-840",
+      "state": "pending",
+      "date": "2026-11-15",
+      "evidence": "",
+      "note": "Live check (NEW match with co2e Magneto / Brotherhood of Mutants after the deploy): when The Blob enters the City the log shows \"Ambush effect: The Blob moves to the left of the Mastermind; nothing can move him, and the Mastermind can't be fought while he is there.\" and he leaves the City; Play Diagnostics shows his city.fortifiers entry with besideMastermindIndex and mastermind.fortifiedReason; no fightMastermind lands while he is there; fighting him logs \"fought The Blob to the left of the Mastermind.\" and the Mastermind can be fought again. D-24773."
+    },
+    {
       "key": "chmp-villain-monsters-unleashed-groot-from-planet-x|stack-cards-enter-city-as-villains",
       "kind": "villain",
       "card": "Groot from Planet X",

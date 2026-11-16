@@ -1417,3 +1417,42 @@ describe('WP-758 / D-24588 — Zarathos end to end', () => {
     assert.equal(moveContext.G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING], 1, 'victory is assured at turn end (WP-732)');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-840 / D-24773 — The Blob to the left of the Mastermind (T9-T10)
+// ---------------------------------------------------------------------------
+
+describe('WP-840 fightMastermind — The Blob to the left of the Mastermind (D-24773)', () => {
+  const BLOB_00 = 'co2e-villain-brotherhood-of-mutants-the-blob-00' as CardExtId;
+
+  it('T9: refuses silently while The Blob is listed', () => {
+    const gameState = createMockGameState({
+      turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+    });
+    gameState.villainsBesideMastermind = [BLOB_00];
+    const snapshotBefore = JSON.stringify(gameState);
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext);
+    assert.equal(JSON.stringify(moveContext.G), snapshotBefore, 'G is byte-identical while The Blob guards the Mastermind');
+  });
+
+  it('T10: with the list absent the fight proceeds; Colleen Wing alone still refuses it', () => {
+    const open = createMockGameState({
+      turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+    });
+    const openContext = createMockMoveContext(open);
+    fightMastermind(openContext);
+    assert.deepStrictEqual(openContext.G.mastermind.tacticsDefeated, ['tactic-1'], 'the top tactic is defeated');
+
+    const fortified = createMockGameState({
+      turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+    });
+    fortified.fortifications = {
+      mastermind: { villainCardId: 'cvwr-villain-heroes-for-hire-colleen-wing-00', lock: 'no-fight' },
+    };
+    const fortifiedBefore = JSON.stringify(fortified);
+    const fortifiedContext = createMockMoveContext(fortified);
+    fightMastermind(fortifiedContext);
+    assert.equal(JSON.stringify(fortifiedContext.G), fortifiedBefore, 'Fortify still refuses it (unchanged)');
+  });
+});

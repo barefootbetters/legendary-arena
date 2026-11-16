@@ -13,6 +13,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { filterUIStateForAudience } from './uiState.filter.js';
 import { buildUIState } from './uiState.build.js';
+import { isMastermindGuarded } from '../board/besideMastermind.logic.js';
 import { buildInitialGameState } from '../setup/buildInitialGameState.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { makeMockCtx } from '../test/mockCtx.js';
@@ -4216,5 +4217,95 @@ describe('WP-873 Fortify projection (D-24818)', () => {
     assert.equal('fightRestrictionReason' in fortifiers[1]!, false, 'Colleen Wing has no restriction');
     assert.equal(uiState.mastermind.fortifiedReason, MASTERMIND_REASON);
     assert.equal(uiState.piles.sidekickStackFortifiedReason, SIDEKICK_REASON);
+  });
+});
+
+describe('WP-840 The Blob projection (D-24773)', () => {
+  const BLOB_00 = 'co2e-villain-brotherhood-of-mutants-the-blob-00' as CardExtId;
+  const COLLEEN_WING = 'cvwr-villain-heroes-for-hire-colleen-wing-00' as CardExtId;
+  const BLOB_REASON = 'The Blob is to the left of the Mastermind. Fight The Blob first.';
+  const COLLEEN_REASON = 'Colleen Wing fortifies the Mastermind. Fight Colleen Wing first.';
+
+  /**
+   * A game state with optional Colleen Wing fortifying the Mastermind and optional The Blob
+   * to its left.
+   *
+   * @param options - Which guards are present.
+   * @returns The game state.
+   */
+  function createGuardedState(options: { colleen: boolean; blob: boolean }): LegendaryGameState {
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    gameState.cardStats[BLOB_00] = makeCardStatEntry({ fightCost: 4 });
+    gameState.cardStats[COLLEEN_WING] = makeCardStatEntry({ fightCost: 9 });
+    gameState.cardDisplayData = {
+      ...gameState.cardDisplayData,
+      [BLOB_00]: { extId: BLOB_00, name: 'The Blob', imageUrl: '', cost: 0 },
+      [COLLEEN_WING]: { extId: COLLEEN_WING, name: 'Colleen Wing', imageUrl: '', cost: 9 },
+    };
+    if (options.colleen) {
+      gameState.fortifications = { mastermind: { villainCardId: COLLEEN_WING, lock: 'no-fight' } };
+    }
+    if (options.blob) {
+      gameState.villainsBesideMastermind = [BLOB_00];
+    }
+    return gameState;
+  }
+
+  it('T21: The Blob alone survives the filter for every audience, as a fortifier entry with its index', () => {
+    const uiState = buildUIState(createGuardedState({ colleen: false, blob: true }), mockCtx);
+    // why: five-step step 2 — buildUIState alone carries the field, before any filter.
+    assert.deepStrictEqual(uiState.city.fortifiers, [
+      {
+        place: 'mastermind',
+        placeLabel: 'the Mastermind',
+        extId: BLOB_00,
+        display: uiState.city.fortifiers![0]!.display,
+        fightCost: 4,
+        lockText: "the Mastermind can't be fought",
+        besideMastermindIndex: 0,
+      },
+    ]);
+    assert.equal(uiState.city.fortifiers![0]!.display.name, 'The Blob');
+    assert.equal(uiState.mastermind.fortifiedReason, BLOB_REASON);
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const filtered = filterUIStateForAudience(uiState, audience);
+      const label = JSON.stringify(audience);
+      assert.deepStrictEqual(
+        JSON.parse(JSON.stringify(filtered.city.fortifiers)),
+        JSON.parse(JSON.stringify(uiState.city.fortifiers)),
+        `${label}: city.fortifiers`,
+      );
+      assert.notEqual(filtered.city.fortifiers![0]!.display, uiState.city.fortifiers![0]!.display, `${label}: not aliased`);
+      assert.equal(filtered.mastermind.fortifiedReason, BLOB_REASON, `${label}: mastermind.fortifiedReason`);
+    }
+  });
+
+  it('T21: Colleen alone, both, and neither; the reason is present exactly when the Mastermind is guarded', () => {
+    const colleenOnly = buildUIState(createGuardedState({ colleen: true, blob: false }), mockCtx);
+    assert.equal(colleenOnly.city.fortifiers!.length, 1);
+    assert.equal('besideMastermindIndex' in colleenOnly.city.fortifiers![0]!, false, 'a fortifier gains no key');
+    assert.equal(colleenOnly.mastermind.fortifiedReason, COLLEEN_REASON);
+
+    const both = buildUIState(createGuardedState({ colleen: true, blob: true }), mockCtx);
+    assert.deepStrictEqual(
+      both.city.fortifiers!.map((entry) => [entry.extId, entry.besideMastermindIndex]),
+      [[COLLEEN_WING, undefined], [BLOB_00, 0]],
+    );
+    assert.equal(both.mastermind.fortifiedReason, COLLEEN_REASON, 'a fortifier reason wins when both guard');
+
+    const neither = buildUIState(createGuardedState({ colleen: false, blob: false }), mockCtx);
+    assert.equal('fortifiers' in neither.city, false);
+    assert.equal('fortifiedReason' in neither.mastermind, false);
+
+    for (const options of [
+      { colleen: false, blob: true },
+      { colleen: true, blob: false },
+      { colleen: true, blob: true },
+      { colleen: false, blob: false },
+    ]) {
+      const gameState = createGuardedState(options);
+      const projected = filterUIStateForAudience(buildUIState(gameState, mockCtx), SPECTATOR);
+      assert.equal('fortifiedReason' in projected.mastermind, isMastermindGuarded(gameState), JSON.stringify(options));
+    }
   });
 });

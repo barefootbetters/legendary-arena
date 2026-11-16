@@ -63,6 +63,7 @@ const ZEMO = 'co2e-villain-masters-of-evil-baron-zemo-00' as CardExtId;
 const WHIRLWIND = 'co2e-villain-masters-of-evil-whirlwind-00' as CardExtId;
 const MYSTIQUE = 'co2e-villain-brotherhood-of-mutants-mystique-00' as CardExtId;
 const JUGGERNAUT = 'co2e-villain-brotherhood-of-mutants-juggernaut-00' as CardExtId;
+const THE_BLOB = 'co2e-villain-brotherhood-of-mutants-the-blob-00' as CardExtId;
 const LEADER = 'co2e-villain-radiation-the-leader-00' as CardExtId;
 const TRULL = 'chmp-villain-monsters-unleashed-trull-the-unhuman-00' as CardExtId;
 const THE_WRECKER = 'chmp-villain-wrecking-crew-the-wrecker-00' as CardExtId;
@@ -458,8 +459,9 @@ describe('the keyword-less Ambush set in the card data (WP-897 RS-5)', () => {
   // why: WP-874 / D-24820 / D-24854 §6 — Bulldozer's `charge` and The Wrecker's per-group Demolish
   // join the set, 16 → 18 (a sanctioned pin change). WP-839 / D-24772 — Green Goblin's
   // `move-self-to-city-space` and Ymir's `enter-city-from-victory-pile` join it, 18 → 20 (Speed
-  // Demon's `charge` is already listed).
-  it('the real parser finds exactly the 20 keyword-less Ambush primitives, in printed order', () => {
+  // Demon's `charge` is already listed). WP-840 / D-24773 — The Blob's
+  // `put-self-beside-mastermind` joins it, 20 → 21 (a sanctioned pin change).
+  it('the real parser finds exactly the 21 keyword-less Ambush primitives, in printed order', () => {
     const primitives = new Set<string>();
     const descriptorsByCard = new Map<string, { isLegacy: boolean; primitive: string; isConditional: boolean }[]>();
     for (const hook of buildAllHooks()) {
@@ -506,6 +508,7 @@ describe('the keyword-less Ambush set in the card data (WP-897 RS-5)', () => {
       'hq-heroes-to-hero-deck-bottom',
       'move-self-to-city-space',
       'play-villain-deck-cards',
+      'put-self-beside-mastermind',
       'reveal-or-wound',
       'stack-cards-enter-city-as-villains',
       'swap-two-city-villains',
@@ -829,5 +832,35 @@ describe('The Leader, the fallback and the gates (WP-897 AC 5 / AC 6 / AC 7 / AC
     const G = makeState();
     reveal(G, OUTCAST);
     assert.equal(ambushFor(G, OUTCAST).narrative, '"Outcast" entered the city with no Ambush effect.');
+  });
+});
+
+describe('WP-840 The Blob (D-24773, T8)', () => {
+  it('his reveal pushes the City, then the Ambush takes him out of it; the overlay names the move', () => {
+    const G = makeState();
+    G.city = [DRAWER, THUG, FILLER, null, null] as LegendaryGameState['city'];
+    reveal(G, THE_BLOB);
+    assert.deepEqual(G.city, [null, DRAWER, THUG, FILLER, null]);
+    assert.deepEqual(G.villainsBesideMastermind, [THE_BLOB]);
+    assert.equal(
+      ambushFor(G, THE_BLOB).narrative,
+      "\"The Blob\" ambushed: The Blob moves to the left of the Mastermind; nothing can move him, and the Mastermind can't be fought while he is there.",
+    );
+    assertNarrativeEqualsLog(G, THE_BLOB);
+    assert.deepEqual(ambushFor(G, THE_BLOB).appliedEffects, []);
+    assert.deepEqual(traceStatuses(G, THE_BLOB), ['put-self-beside-mastermind:fired']);
+  });
+
+  it('a full City: the Bridge Villain escapes before his Ambush moves him (rules v23 L573-576)', () => {
+    const G = makeState();
+    G.city = [DRAWER, THUG, FILLER, HERO_CHEAP_A, HERO_PRICEY] as LegendaryGameState['city'];
+    reveal(G, THE_BLOB);
+    assert.ok(G.escapedPile.includes(HERO_PRICEY), 'the Bridge card escaped');
+    assert.deepEqual(G.city, [null, DRAWER, THUG, FILLER, HERO_CHEAP_A]);
+    assert.deepEqual(G.villainsBesideMastermind, [THE_BLOB]);
+    const lines = G.messages.map((message) => message.text);
+    const escapeIndex = lines.findIndex((line) => line.includes('escape'));
+    const moveIndex = lines.findIndex((line) => line.includes('moves to the left of the Mastermind'));
+    assert.ok(escapeIndex >= 0 && moveIndex > escapeIndex, 'the escape is logged before the move');
   });
 });

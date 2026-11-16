@@ -231,6 +231,8 @@ function isLockedEffectKeyword(keyword) {
 // `enter-city-from-victory-pile` (`:<group>:<card>`) appended at positions 61-63 by WP-839 (D-24772 —
 // co2e Green Goblin's and Ymir's Ambush, Boomerang's Fight; the two parameterized ones validate via
 // their own branches below, so their bare tokens are rejected).
+// `put-self-beside-mastermind` (no-param) appended at position 64 by WP-840 (D-24773 — co2e The
+// Blob's Ambush; validates via the terminal `parts.length === 1` branch, so `:1` is rejected).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -295,6 +297,7 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'move-self-to-city-space',
   'reveal-villain-deck-top-swap-self',
   'enter-city-from-victory-pile',
+  'put-self-beside-mastermind',
 ];
 
 // why: WP-836 / D-24769 — hand-synced local copy of the engine's HERO_CLASSES

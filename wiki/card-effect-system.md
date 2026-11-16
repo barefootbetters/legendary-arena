@@ -174,11 +174,11 @@ The villain/henchman path in
 made the same move from fragmented keywords to parameters. Its executable
 vocabulary is the `VillainEffectDescriptor` — a `VillainEffectPrimitive`
 plus optional `target` / `magnitude` / `selector` / predicate params
-(`VILLAIN_EFFECT_PRIMITIVES`, sixty-three entries as of WP-839, appended in order
+(`VILLAIN_EFFECT_PRIMITIVES`, sixty-four entries as of WP-840, appended in order
 from `ko-hero` · `gain-wound` · `capture-hq-hero` … through WP-874's
 `demolish-each-other-player` · `demolish-each-player-per-group-villain-in-city` ·
 `charge` and WP-839's `move-self-to-city-space` · `reveal-villain-deck-top-swap-self` ·
-`enter-city-from-victory-pile`; the array in the source is the canonical list, pinned
+`enter-city-from-victory-pile`, and WP-840's `put-self-beside-mastermind`; the array in the source is the canonical list, pinned
 by a drift test). A new
 target / magnitude / selector variant is a descriptor **param** (a data
 marker), not a new keyword plus switch arm plus drift test (D-24023).

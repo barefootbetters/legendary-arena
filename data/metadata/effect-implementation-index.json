@@ -11,11 +11,11 @@
       "scheme": 664
     },
     "byStatus": {
-      "executable": 869,
+      "executable": 870,
       "deferred": 18,
       "condition": 76,
       "unsupported": 255,
-      "unmarked": 1655,
+      "unmarked": 1654,
       "subsystem": 7
     }
   },
@@ -8146,11 +8146,11 @@
       "name": "The Blob",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "put-self-beside-mastermind",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#put-self-beside-mastermind",
+      "wp": "WP-840",
+      "decision": "D-24773"
     },
     {
       "extId": "co2e-villain-enemies-of-asgard-destroyer",
@@ -41113,7 +41113,7 @@
     "co2e-villain-brotherhood-of-mutants-the-blob": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "put-self-beside-mastermind"
       ]
     },
     "co2e-villain-enemies-of-asgard-destroyer": {

@@ -178,6 +178,9 @@ import {
   listFortifications,
 } from '../board/fortify.logic.js';
 import { FORTIFY_LOCK_TEXT, FORTIFY_PLACE_LABELS } from '../board/fortify.types.js';
+// why: WP-840 / D-24773 — a Villain to the left of the Mastermind (The Blob) is projected as a
+// fortifier entry with its index, and its lock reason feeds mastermind.fortifiedReason.
+import { buildBesideMastermindBlockReason, listVillainsBesideMastermind } from '../board/besideMastermind.logic.js';
 import { enigmaColorsOf } from '../rules/enigmaCode.logic.js';
 
 // why: exact structural contract — do not widen or add optional fields.
@@ -801,7 +804,55 @@ function buildFortifyProjection(gameState: LegendaryGameState, activePlayerId: s
       }
     }
   }
+  appendBesideMastermindFortifiers(gameState, activePlayerId, fortifiers);
+  // why: WP-840 / D-24773 — isMastermindGuarded is the lock fightMastermind gates on; a
+  // fortifier's reason wins when both a fortifier and The Blob guard the Mastermind.
+  if (mastermindFortifiedReason === null) {
+    mastermindFortifiedReason = buildBesideMastermindBlockReason(gameState);
+  }
   return { fortifiers, mastermindFortifiedReason, sidekickStackFortifiedReason };
+}
+
+/**
+ * Appends one fortifier entry per Villain to the left of the Mastermind (WP-840 / D-24773),
+ * in arrival order, priced and restricted exactly like a fortifier.
+ *
+ * // why: The Blob is fought through the Fortify fight path, so the client shows him with the
+ * Fortify chip; `besideMastermindIndex` is what routes the chip's fight to him.
+ *
+ * @param gameState - Current game state (read-only).
+ * @param activePlayerId - The player who can fight (prices and restrictions are theirs).
+ * @param fortifiers - The fortifier entries built so far (appended to).
+ */
+function appendBesideMastermindFortifiers(
+  gameState: LegendaryGameState,
+  activePlayerId: string,
+  fortifiers: UIFortifier[],
+): void {
+  const villains = listVillainsBesideMastermind(gameState);
+  for (let besideIndex = 0; besideIndex < villains.length; besideIndex += 1) {
+    const villainCardId = villains[besideIndex];
+    if (villainCardId === undefined) {
+      continue;
+    }
+    const restriction = getFightRestriction(gameState, villainCardId);
+    const isRestricted =
+      restriction !== null && isFightRestrictionBlocking(gameState, activePlayerId, null, restriction);
+    fortifiers.push({
+      place: 'mastermind',
+      placeLabel: FORTIFY_PLACE_LABELS.mastermind,
+      extId: villainCardId,
+      display: resolveDisplay(villainCardId, gameState),
+      // why: D-24802 — the fortifier rule: the active player's price, floored at 0, the debit
+      // findFightableVillainBesideMastermind checks.
+      fightCost: Math.max(0, resolveFightPrice(gameState, villainCardId, activePlayerId)),
+      lockText: FORTIFY_LOCK_TEXT['no-fight'],
+      ...(isRestricted && restriction !== null
+        ? { fightRestrictionReason: FIGHT_RESTRICTION_REASONS[restriction.kind] }
+        : {}),
+      besideMastermindIndex: besideIndex,
+    });
+  }
 }
 
 export function buildUIState(
@@ -1182,8 +1233,9 @@ export function buildUIState(
     // why: WP-757 / D-24587 — omit-when-absent: the key exists only while the Mastermind
     // haunts, read from the same isMastermindHaunting predicate fightMastermind uses.
     ...(isMastermindHaunting(gameState) ? { isHaunting: true as const } : {}),
-    // why: WP-873 / D-24818 — omit-when-absent: the key exists only while a Villain fortifies
-    // the Mastermind (isMastermindFortified, the predicate fightMastermind gates on).
+    // why: WP-873 / D-24818 + WP-840 / D-24773 — omit-when-absent: the key exists only while
+    // a Villain fortifies the Mastermind or is to its left (The Blob) — isMastermindGuarded,
+    // the predicate fightMastermind gates on.
     ...(fortifyProjection.mastermindFortifiedReason !== null
       ? { fortifiedReason: fortifyProjection.mastermindFortifiedReason }
       : {}),

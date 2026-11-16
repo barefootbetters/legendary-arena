@@ -112,6 +112,7 @@
     "move-self-to-city-space": { "wp": "WP-839", "decision": "D-24772" },
     "reveal-villain-deck-top-swap-self": { "wp": "WP-839", "decision": "D-24772" },
     "enter-city-from-victory-pile": { "wp": "WP-839", "decision": "D-24772" },
+    "put-self-beside-mastermind": { "wp": "WP-840", "decision": "D-24773" },
     "draw": { "wp": "WP-022", "decision": "D-2201" },
     "rescue": { "wp": "WP-215", "decision": "D-21501" },
     "undercover": { "wp": "WP-282", "decision": "D-24060" },

@@ -20,6 +20,7 @@ import {
 } from '../setup/buildInitialGameState.js';
 import { assertInvariant } from './assertInvariant.js';
 import { listFortifications } from '../board/fortify.logic.js';
+import { listVillainsBesideMastermind } from '../board/besideMastermind.logic.js';
 
 // why: D-3103 fungible token exclusion set. CardExtIds are card-type
 // identifiers, not per-instance identifiers. The MVP engine reuses
@@ -126,6 +127,15 @@ export function checkNoCardInMultipleZones(G: LegendaryGameState): void {
   // Escape Pile itself stays unscanned, as before.
   for (const entry of listFortifications(G)) {
     visitCardId(entry.fortification.villainCardId, `fortifications.${entry.place}`, firstSeenZone);
+  }
+  // why: WP-840 / D-24773 — a Villain to the left of the Mastermind (The Blob) lives ONLY in
+  // G.villainsBesideMastermind (his Ambush nulled his City space), so the list is a card
+  // container too: visiting it catches a Blob also left in the City or another zone.
+  const villainsBesideMastermind = listVillainsBesideMastermind(G);
+  for (let besideIndex = 0; besideIndex < villainsBesideMastermind.length; besideIndex += 1) {
+    const villainCardId = villainsBesideMastermind[besideIndex];
+    if (villainCardId === undefined) continue;
+    visitCardId(villainCardId, `villainsBesideMastermind.${besideIndex}`, firstSeenZone);
   }
 
   scanZone(G.ko, 'ko', firstSeenZone);
