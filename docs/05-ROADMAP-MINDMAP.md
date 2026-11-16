@@ -486,7 +486,7 @@ mindmap
         ["WP-765 ✅ Sunlight Moonlight day-night rule gated hero lines hero Blood Frenzy game engine plus card-data EC-802 D-24598 Active DONE 2026-09-25. Every Sunlight and Moonlight hero line stops firing unconditionally, shared Blood Frenzy helper"]
         ["WP-766 ✅ Day Night badge on the play HUD arena-client EC-803 DONE 2026-09-26. Sunlight Moonlight Neither badge beside the Danger Meter, renders the engine projection"]
         ["WP-767 ✅ Snarling Fangs Moonlight game engine plus card data plus arena-client EC-804 D-24600 Active DONE 2026-09-26. Whenever you defeat a Villain or Mastermind this turn you may KO one of your Heroes, hand and played cards only, no Wounds"]
-        ["WP-768 📝 Indestructible Man Elite Assassin shuffle-fight strike and tactics game engine DRAFTED 2026-09-26 EC-805 D-24601 reserved. Closes a free ranked win"]
+        ["WP-768 ✅ Indestructible Man can no longer be fought with Attack, once per turn a player shuffles two chosen Elite Assassins into the Villain Deck to fight him, his strike and three tactics resolve, EC-805 D-24601. Closes a free ranked win"]
         ["WP-769 📝 Killmonger Mastermind Wounds Wound-him move strike and tactics game engine DRAFTED 2026-09-26 EC-806 D-24602 reserved"]
         ["WP-770 📝 Indestructible Man client Elite Assassin chooser arena-client DRAFTED 2026-09-26 EC-807 BLOCKED on WP-768"]
         ["WP-771 📝 Killmonger client Wound him button and wounds badge arena-client DRAFTED 2026-09-26 EC-808 BLOCKED on WP-769"]
@@ -1067,7 +1067,7 @@ mindmap
 | Legends Public Scoreboard | 2/2 | — |
 | Villain Deck Pipeline | 5/5 | — |
 | Villain & Henchman Effects | 21/21 | — |
-| Hero Ability Coverage & Markup Pipeline | 249/261 | 12 open |
+| Hero Ability Coverage & Markup Pipeline | 250/261 | 11 open |
 | Notable Events & Overlays | 6/6 | — |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
 | Dashboard & Operator Analytics | 55/55 | — |
@@ -1088,9 +1088,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 4/4 | — |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **877/895 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 17 open |
+| **Total** | **878/895 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 16 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 18):** WP-849 open; WP-822 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 17):** WP-849 open; WP-822 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-764 open; WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
