@@ -106,8 +106,8 @@ function countVictoryBystanders(G: LegendaryGameState, playerID: string): number
  * excludes the triggering card itself — Divine Lightning's text is "+1 attack
  * for each OTHER card you played this turn that makes you Worthy", and Divine
  * Lightning (cost 5) would otherwise count itself. Cards played this turn live
- * in the in-play zone; a token or basic with no cardStats row (cost 0) never
- * meets the threshold.
+ * in the in-play zone; the basic tokens carry printed costs of at most 3 (Agent and Trooper 0,
+ * Officer 3, Sidekick 2; buildInitialGameState), so they never meet the threshold.
  *
  * @param G - Game state (read-only).
  * @param playerID - The player whose in-play zone to count.
@@ -130,8 +130,9 @@ function countWorthyCardsPlayedThisTurn(
     if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
       continue;
     }
-    // why: safe access — a token in play has no cardStats row (cost 0), so it
-    // never meets the >= 5 threshold; only true Heroes contribute.
+    // why: the basic tokens have cardStats rows with printed costs of at most 3 (Agent and
+    // Trooper 0, Officer 3, Sidekick 2), so they never meet the >= 5 threshold; `?? 0` only
+    // guards an id with no row.
     const cost = G.cardStats[playedCardId as CardExtId]?.cost ?? 0;
     if (cost >= WORTHY_HERO_COST_THRESHOLD) {
       worthyCount++;
@@ -146,8 +147,9 @@ function countWorthyCardsPlayedThisTurn(
  * "Other" excludes the triggering card itself — the sibling cards' text is
  * "+N attack/recruit for each OTHER card you played this turn that costs 4 or
  * more", and a triggering card that itself costs >= 4 would otherwise count
- * itself. Cards played this turn live in the in-play zone; a token or basic
- * with no cardStats row (cost 0) never meets the threshold.
+ * itself. Cards played this turn live in the in-play zone; the basic tokens carry printed
+ * costs of at most 3 (Agent and Trooper 0, Officer 3, Sidekick 2), so they never meet the
+ * threshold.
  *
  * @param G - Game state (read-only).
  * @param playerID - The player whose in-play zone to count.
@@ -170,8 +172,9 @@ function countCost4PlusCardsPlayedThisTurn(
     if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
       continue;
     }
-    // why: safe access — a token in play has no cardStats row (cost 0), so it
-    // never meets the >= 4 threshold; only true Heroes contribute.
+    // why: the basic tokens have cardStats rows with printed costs of at most 3 (Agent and
+    // Trooper 0, Officer 3, Sidekick 2), so they never meet the >= 4 threshold; `?? 0` only
+    // guards an id with no row.
     const cost = G.cardStats[playedCardId as CardExtId]?.cost ?? 0;
     if (cost >= COST_4_PLUS_THRESHOLD) {
       cost4PlusCount++;
@@ -628,8 +631,9 @@ function collectCostThresholdCardsPlayedThisTurn(
     if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
       continue;
     }
-    // why: safe access — a token in play has no cardStats row (cost 0), so it never
-    // meets the threshold; mirrors the counter's `?? 0` guard exactly.
+    // why: the basic tokens have cardStats rows with printed costs of at most 3 (Agent and
+    // Trooper 0, Officer 3, Sidekick 2), below every threshold the callers pass (4 or 5);
+    // mirrors the counter's `?? 0` guard for an id with no row exactly.
     const cost = G.cardStats[playedCardId as CardExtId]?.cost ?? 0;
     if (cost >= threshold) {
       matchedCardIds.push(playedCardId as CardExtId);
