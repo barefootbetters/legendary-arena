@@ -2065,9 +2065,9 @@
       "card": "Green Goblin",
       "ability": "Ambush: Green Goblin captures a Bystander. Put him on the Bridge. If there's another Villain there, swap them.",
       "wp": "WP-839",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-15",
-      "evidence": "",
+      "evidence": "solo autoplay Lf2ZOIsCNiE (Doctor Doom / Unleash the Power of the Cosmic Cube; Hand Ninjas; Sinister Spider-Foes; Spider-Man, Hawkeye, Cyclops; heuristic) and solo random-policy k74o__3WLJw (same setup); server `2741f666` (the #3410 merge, built 2026-11-16T01:24:45Z), client `de75e94`, every match created after the deploy: Lf2ZOIsCNiE 18.1.2 / 20.1.2 \"Ambush effect: Green Goblin moved to the Bridge.\", each later fought at city space 4 holding the captured Bystander (\"rescued 1 bystander(s)\"); overlay \"\\\"Green Goblin\\\" ambushed: a bystander was captured; Green Goblin moved to the Bridge.\" k74o__3WLJw 23.1.2 (the swap) \"Ambush effect: Green Goblin moved to the Bridge, and Green Goblin moved to the Sewers.\" (the other copy was on the Bridge), overlay naming the same swap.",
       "note": "Live check (NEW match with Sinister Spider-Foes after the deploy): when Green Goblin enters the City the log shows \"Ambush effect: Green Goblin moved to the Bridge.\" (or \", and <Villain> moved to the Sewers.\" when the Bridge was occupied), then the Bystander capture; Play Diagnostics shows him on the Bridge holding the Bystander, and the Ambush overlay names the move. D-24772."
     },
     {
@@ -2076,9 +2076,9 @@
       "card": "Speed Demon",
       "ability": "Ambush: Speed Demon moves two extra spaces forward. If this pushes any other Villains forward, each player discards a card.",
       "wp": "WP-839",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-15",
-      "evidence": "",
+      "evidence": "solo autoplay NUxxNorDjUm and JpurRTqKh82 (Doctor Doom / Unleash the Power of the Cosmic Cube; Hand Ninjas; Sinister Syndicate; Spider-Man, Hawkeye, Cyclops); server `2741f666` (the #3410 merge, built 2026-11-16T01:24:45Z), client `de75e94`, every match created after the deploy: NUxxNorDjUm 13.1.2-13.1.5 \"charged forward one space to the Bank, pushing the Villains ahead of it forward.\" / \"… to the Rooftops, pushing …\" / \"pushed Villains forward, so each player must discard a card.\" / \"Player 0 discarded Web-Shooters (…) (Ambush effect).\", overlay \"\\\"Speed Demon\\\" ambushed: charged forward 2 spaces, pushing Villains forward, then each player must discard a card.\"; the no-push branch at NUxxNorDjUm 1.1.4 and JpurRTqKh82 14.1.4 \"pushed no Villains forward, so no one discards.\" (overlay \"charged forward 2 spaces.\").",
       "note": "Live check (NEW match with Sinister Syndicate after the deploy): when Speed Demon enters the City he ends two spaces further on (the Rooftops from an empty Sewers) with two \"charged forward one space to …\" lines; with a Villain ahead of him the line adds \", pushing the Villains ahead of it forward.\", then \"pushed Villains forward, so each player must discard a card.\" and every player holding a card gets the \"A Villain's effect — choose a card to discard\" prompt; otherwise \"pushed no Villains forward, so no one discards.\" The Ambush overlay names the charge. D-24772 (charge D-24820)."
     },
     {
@@ -2087,9 +2087,9 @@
       "card": "Boomerang",
       "ability": "Fight: KO one of your Heroes. Then reveal the top card of the Villain Deck. If it's a Villain, put Boomerang in its place and play that Villain.",
       "wp": "WP-839",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-15",
-      "evidence": "",
+      "evidence": "2p autoplay 4TLz5VSjOOK (Doctor Doom / Unleash the Power of the Cosmic Cube; Hand Ninjas; Sinister Spider-Foes + Sinister Syndicate; Spider-Man, Miles Morales, Cyclops, Hawkeye, Nick Fury); server `2741f666` (the #3410 merge, built 2026-11-16T01:24:45Z), client `de75e94`, every match created after the deploy: 7.2.14 \"Fight effect: Boomerang (…-01) revealed Hand Ninjas (henchman-hand-ninjas-09) and takes its place on top of the Villain Deck; Hand Ninjas (…) is played.\" and Boomerang -01 was revealed again at 8.1.1; 10.2.10 the same with Venom (Boomerang back at 11.1.1); 9.2.11 \"revealed Scheme Twist (…) from the Villain Deck; it is not a Villain, so it stays on top.\"",
       "note": "Live check (NEW match with Sinister Syndicate after the deploy): fighting Boomerang with a Villain on top of the Villain Deck logs the KO, then \"Fight effect: Boomerang revealed <Villain> and takes its place on top of the Villain Deck; <Villain> is played.\"; that Villain enters the City, Boomerang is not in the fighter's Victory Pile (VP excludes him) and the next reveal brings him back. A non-Villain on top logs \"it is not a Villain, so it stays on top.\" D-24772."
     },
     {
@@ -2098,9 +2098,9 @@
       "card": "Ymir, Frost Giant King",
       "ability": "Ambush: Choose a Frost Giant Warrior from any player's Victory Pile to enter the city.",
       "wp": "WP-839",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-15",
-      "evidence": "",
+      "evidence": "2p autoplay lwfYwngaT2H (Doctor Doom / Unleash the Power of the Cosmic Cube; Hand Ninjas; Enemies of Asgard + Masters of Evil; Captain America, Hawkeye, Iron Man, Thor, Spider-Man); server `2741f666` (the #3410 merge, built 2026-11-16T01:24:45Z), client `de75e94`, every match created after the deploy: 13.1.2 \"Ambush effect: Ymir, Frost Giant King (…-00) brings Frost Giant Warrior (…-00) back from Player 0's Victory Pile.\" then 13.1.3 \"[Ambush] Frost Giant Warrior (…-00) entered the city from Player 0's Victory Pile!\"; 16.1.2-16.1.3 the same from Player 1's Victory Pile; both overlays \"\\\"Ymir, Frost Giant King\\\" ambushed: brought Frost Giant Warrior back into the city.\"",
       "note": "Live check (NEW match with co2e Enemies of Asgard after the deploy, a Frost Giant Warrior already defeated into a Victory Pile): when Ymir enters the City the log shows \"Ambush effect: Ymir, Frost Giant King brings Frost Giant Warrior back from Player N's Victory Pile.\" then \"[Ambush] Frost Giant Warrior entered the city from Player N's Victory Pile!\" and the Warrior's own Ambush; the Warrior is in the Sewers with Ymir pushed forward, and the Ambush overlay names the returned Warrior. With no Warrior in any pile: \"no matching Villain is in any player's Victory Pile, so nothing enters the city.\" D-24772."
     },
     {
