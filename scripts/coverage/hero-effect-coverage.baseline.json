@@ -2,8 +2,8 @@
   "corpus": {
     "executable": 4056,
     "heroes": 324,
-    "hooks": 6416,
-    "noEffect": 2256,
+    "hooks": 6419,
+    "noEffect": 2259,
     "parsedNotExecuted": 104
   },
   "perSet": {
@@ -24,8 +24,8 @@
     },
     "anni": {
       "executable": 61,
-      "hooks": 119,
-      "noEffect": 58
+      "hooks": 122,
+      "noEffect": 61
     },
     "antm": {
       "executable": 106,
@@ -222,8 +222,6 @@
     "artifact--": 6,
     "artifacts": 2,
     "astral-plane": 1,
-    "bank-conqueror": 1,
-    "bridge-conqueror": 8,
     "burn-2-shards": 3,
     "burn-4-shards": 2,
     "burn-8-shards": 1,
@@ -276,11 +274,11 @@
     "reveal-multi-take": 1,
     "ritual-artifact": 8,
     "rooftops-abomination": 1,
-    "rooftops-conqueror": 3,
+    "rooftops-conqueror": 1,
     "s.h.i.e.l.d.-level": 10,
     "s.h.i.e.l.d.-levels": 3,
     "sacrifice": 7,
-    "sewers-conqueror": 3,
+    "sewers-conqueror": 1,
     "shatter": 7,
     "soaring-flight": 17,
     "soulbind": 5,
@@ -288,7 +286,6 @@
     "soulbind-six-villains": 1,
     "speak": 1,
     "streets-abomination": 1,
-    "streets-conqueror": 4,
     "striker": 1,
     "sunlight": 4,
     "switcheroo": 7,

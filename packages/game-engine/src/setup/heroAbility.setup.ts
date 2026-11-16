@@ -468,6 +468,16 @@ export const HERO_PARSER_RECOGNIZED_MARKER_NAMES: readonly string[] = [
   'man-out-of-time',
   'woman-out-of-time',
   'man/woman-out-of-time',
+  // why: WP-886 / D-24837 — the five City-space Conqueror names. A pure Conqueror line is consumed
+  // by CONQUEROR_LINE_PATTERN (buildConquerorLineHook) and executes; Put to the Torch's display
+  // token rides its gain-wound-reward Conqueror reward (WP-893 / D-24850). A line that leaves the
+  // token unexecuted keeps the slug in unresolvedMarkers (parseAbilityText Step 4b / Step 4c, and
+  // the hollow "Instead," hook), so the probe still flags it for that hero.
+  'sewers-conqueror',
+  'bank-conqueror',
+  'rooftops-conqueror',
+  'streets-conqueror',
+  'bridge-conqueror',
 ];
 
 // why: D-24019 — the reward of an optional-ko-reward effect is dispatched to an
@@ -946,6 +956,13 @@ const PATROL_NAMED_SPACE_PATTERN = /^the\s+(sewers|bank|rooftops|streets|bridge)
 // +4 on every play. Non-global, so `.exec` is stateless.
 const CONQUEROR_LINE_PATTERN =
   /^\s*((?:\[(?:hc|team):[^\]]+\]\s*)*:?)\s*(Instead,\s*)?\[keyword:(Sewers|Bank|Rooftops|Streets|Bridge)\s+Conqueror\s+(\d+)\]\.?\s*$/i;
+
+// why: WP-886 / D-24837 — one "[keyword:<Space> Conqueror N]" token anywhere in a line (group 1 =
+// the space). A line that is not a pure Conqueror line reaches parseAbilityText, and the generic
+// KEYWORD_PATTERN cannot match the multi-word token, so it vanished silently on a line whose other
+// tokens already recorded an unresolved marker. Used only to record the `<space>-conqueror` slug as
+// an honest unresolved marker; it never grants anything.
+const CONQUEROR_TOKEN_PATTERN = /\[keyword:(Sewers|Bank|Rooftops|Streets|Bridge)\s+Conqueror\s+\d+\]/gi;
 
 // why: WP-881 / D-24832 — the "If it's empty," / "If it's not," branch heads (straight or curly
 // apostrophe). Case-insensitive, non-global.
@@ -3136,6 +3153,27 @@ function parseAbilityText(
     if (!lineResolvedOnlyItsGate) {
       ungatedKeywordTiming = findLeadingUnmatchedKeywordTiming(abilityText);
     }
+  }
+
+  // Step 4c: keep an unexecuted Conqueror token visible as an unresolved marker.
+  // why: WP-886 / D-24837 — a pure Conqueror line never reaches this parser (buildConquerorLineHook
+  // builds it), so a Conqueror token here is unexecuted unless the line consumed it as its
+  // gain-wound-reward Conqueror reward (Put to the Torch, WP-893 / D-24850). Step 4b records the
+  // slug only on a line that resolved nothing else, so a line that already recorded another marker
+  // (anni Stardust: "[keyword:Focus] … [keyword:Rooftops Conqueror 4]" records `focus` first)
+  // dropped it. Appending the slug changes no grant and no hollow record (detectHollowHeroHook
+  // reports the first marker); it lets the coverage probe tell this hollow line from an executing
+  // Conqueror line. Runs after Step 4b so a fully-empty line's Step 4b collection and printed
+  // timing stay exactly as before.
+  const conquerorTokenRegex = new RegExp(CONQUEROR_TOKEN_PATTERN.source, 'gi');
+  let conquerorTokenMatch: RegExpExecArray | null = conquerorTokenRegex.exec(abilityText);
+  while (conquerorTokenMatch !== null) {
+    const conquerorSlug = `${conquerorTokenMatch[1]!.toLowerCase()}-conqueror`;
+    const isConsumedAsReward = gainWoundRewardComposition === conquerorSlug;
+    if (!isConsumedAsReward && !unresolvedMarkers.includes(conquerorSlug)) {
+      unresolvedMarkers.push(conquerorSlug);
+    }
+    conquerorTokenMatch = conquerorTokenRegex.exec(abilityText);
   }
 
   // Step 5: Assign timing — a keyword default (e.g. wall-crawl → onRecruit), then an
