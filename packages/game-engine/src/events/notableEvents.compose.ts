@@ -457,6 +457,11 @@ export function composeChargeClause(outcome: ChargeOutcome): string | undefined 
         // the log, and a bridged clause summarizes (the play / stack precedent).
         clause += ', then Demolished each player';
         break;
+      case 'discard-if-pushed':
+        // why: WP-839 / D-24772 — Speed Demon's discard is owed: each player picks after the move,
+        // so the clause says what the players must do, not what they discarded.
+        clause += ', then each player must discard a card';
+        break;
       default: {
         // why: D-24820 — exhaustive over VillainChargePushConsequence; a new member (WP-839's
         // 'discard-if-pushed') must add its own case here or this fails to compile.
@@ -487,6 +492,8 @@ export function composeChargeClause(outcome: ChargeOutcome): string | undefined 
  *   "its Ambush effect resolved (see the log)" fallback. Empty → byte-identical.
  * @param chargeClause - Optional clause naming the Ambush charge the reveal fire site performed
  *   (WP-874 / D-24820, `composeChargeClause`). Absent → byte-identical.
+ * @param victoryPileEntryClause - Optional clause naming the Villain the Ambush brings back into
+ *   the City from a Victory Pile (WP-839 / D-24772, Ymir). Absent → byte-identical.
  * @returns Single English sentence describing the resolved ambush.
  */
 export function composeAmbushNarrative(
@@ -496,6 +503,7 @@ export function composeAmbushNarrative(
   stackVillainClause?: string,
   descriptorClauses: readonly string[] = [],
   chargeClause?: string,
+  victoryPileEntryClause?: string,
 ): string {
   // why: D-24703 — The Leader's "Ambush: Play the top card of the Villain Deck" is
   // played by the reveal fire site, not the executor (its handler is a deliberate
@@ -529,6 +537,12 @@ export function composeAmbushNarrative(
   // after the stack clause.
   if (chargeClause !== undefined) {
     clauses.push(chargeClause);
+  }
+  // why: WP-839 / D-24703 / D-24854 — Ymir's Victory-Pile entry is performed by the reveal fire
+  // site's bridge (the executor handler is a deliberate no-op), so its clause is the next trailing
+  // parameter, after the charge clause.
+  if (victoryPileEntryClause !== undefined) {
+    clauses.push(victoryPileEntryClause);
   }
   if (clauses.length === 0) {
     return `"${cardName}" entered the city with no Ambush effect.`;

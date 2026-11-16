@@ -761,3 +761,35 @@ describe('WP-884 choosePlayingSeatChoiceOption — Hunt for Victims (D-24835)', 
     assert.equal(choosePlayingSeatChoiceOption(withoutAgent, '0'), 1, 'the decline');
   });
 });
+
+import { VILLAIN_EFFECT_ANY_CARD_DISCARD_KIND } from '../villainDeck/villainEscapeProcedure.js';
+
+describe('WP-839 bot-ally pick for the every-player any-card discard (D-24772)', () => {
+  it('T21: discards its least valuable card, the Wound', () => {
+    const G = makeState(
+      { '0': ['hero-cost5', WOUND_EXT_ID, 'hero-cost3'] },
+      {
+        cardStats: {
+          'hero-cost5': makeCardStatEntry({ cost: 5 }),
+          'hero-cost3': makeCardStatEntry({ cost: 3 }),
+        },
+      },
+    );
+    withChoice(G, {
+      kind: VILLAIN_EFFECT_ANY_CARD_DISCARD_KIND,
+      addressedSeats: ['0'],
+      seatPrompts: {
+        '0': {
+          options: [
+            { label: 'hero-cost5', cardId: 'hero-cost5' },
+            { label: 'Wound', cardId: WOUND_EXT_ID },
+            { label: 'hero-cost3', cardId: 'hero-cost3' },
+          ],
+        },
+      },
+      submissions: {},
+      defaultOptionIndex: 0,
+    } as PendingSeatChoice);
+    assert.equal(choosePlayingSeatChoiceOption(G, '0'), 1);
+  });
+});

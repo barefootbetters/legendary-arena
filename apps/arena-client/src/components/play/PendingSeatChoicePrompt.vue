@@ -128,6 +128,10 @@ export default defineComponent({
         // Frost Giant Warrior Ambush); the options are already filtered.
         case 'villain-effect-trait-discard':
           return 'A Villain\'s effect — choose a Hero to discard';
+        // why: WP-839 / D-24772 — an owed every-player discard of any card (co2e Speed Demon's
+        // Ambush, when his charge pushed a Villain); every hand card is an option.
+        case 'villain-effect-any-card-discard':
+          return 'A Villain\'s effect — choose a card to discard';
         // why: WP-830 / D-24763 — The Unbreakable Enigma Code's paid peek after a Villain fight.
         case 'enigma-peek':
           return 'Enigma Code — pay 1 Recruit to look at a face-down card?';

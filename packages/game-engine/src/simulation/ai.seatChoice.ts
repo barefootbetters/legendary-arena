@@ -68,6 +68,7 @@ import {
   ESCAPE_BYSTANDER_DISCARD_KIND,
   ESCAPE_EFFECT_COST_DISCARD_KIND,
   VILLAIN_EFFECT_TRAIT_DISCARD_KIND,
+  VILLAIN_EFFECT_ANY_CARD_DISCARD_KIND,
 } from '../villainDeck/villainEscapeProcedure.js';
 import { hasSeatSubmitted, isSeatAddressed } from '../moves/seatChoice.resolve.js';
 import { TIMESTREAM_PURGE_SEAT_CHOICE_KIND } from '../rules/timestreamPurge.logic.js';
@@ -212,6 +213,8 @@ function chooseByKind(
     choice.kind === ESCAPE_BYSTANDER_DISCARD_KIND ||
     choice.kind === ESCAPE_EFFECT_COST_DISCARD_KIND ||
     choice.kind === VILLAIN_EFFECT_TRAIT_DISCARD_KIND ||
+    // why: WP-839 / D-24772 — Speed Demon's any-card discard drops the least valuable card.
+    choice.kind === VILLAIN_EFFECT_ANY_CARD_DISCARD_KIND ||
     choice.kind === FALLEN_IDOLS_DISCARD_KIND ||
     choice.kind === COMPUTER_UPLOADED_GENIUS_DISCARD_KIND ||
     choice.kind === ZARATHOS_CORRUPTED_SPIRIT_DISCARD_DOWN_KIND

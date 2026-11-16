@@ -318,6 +318,50 @@ function parseChargeEffect(parts: readonly string[]): VillainEffectDescriptor | 
 }
 
 /**
+ * Parses `move-self-to-city-space:<space>` (WP-839 / D-24772, Green Goblin's "Put him on the
+ * Bridge"): exactly two parts, the space a CITY_SPACE_NAMES member (case-sensitive).
+ *
+ * @param parts - The marker split on `:`.
+ * @returns The descriptor, or null when malformed.
+ */
+function parseMoveSelfToCitySpaceEffect(parts: readonly string[]): VillainEffectDescriptor | null {
+  // why: the bare token names no destination, so it must not fall through to the no-param tail.
+  if (parts.length !== 2) {
+    return null;
+  }
+  const spaceToken = parts[1]!;
+  if (!isCitySpaceName(spaceToken)) {
+    return null;
+  }
+  return { primitive: 'move-self-to-city-space', destinationCitySpace: spaceToken };
+}
+
+/**
+ * Parses `enter-city-from-victory-pile:<groupSlug>:<cardSlug>` (WP-839 / D-24772, Ymir's "Choose
+ * a Frost Giant Warrior from any player's Victory Pile to enter the city"): exactly three parts,
+ * each slug lowercase-kebab.
+ *
+ * @param parts - The marker split on `:`.
+ * @returns The descriptor, or null when malformed.
+ */
+function parseEnterCityFromVictoryPileEffect(parts: readonly string[]): VillainEffectDescriptor | null {
+  if (parts.length !== 3) {
+    return null;
+  }
+  const groupSlug = parts[1]!;
+  const cardSlug = parts[2]!;
+  // why: the slugs build an anchored instance-id prefix (`{set}-villain-{group}-{card}-`), so they
+  // must already be canonical lowercase-kebab; anything else is a malformed marker, never guessed.
+  if (!VICTORY_PILE_ENTRY_SLUG_PATTERN.test(groupSlug) || !VICTORY_PILE_ENTRY_SLUG_PATTERN.test(cardSlug)) {
+    return null;
+  }
+  return { primitive: 'enter-city-from-victory-pile', victoryVillainGroup: groupSlug, victoryVillainCard: cardSlug };
+}
+
+// why: WP-839 / D-24772 — a registry slug (lowercase-kebab, no leading / trailing / doubled hyphen).
+const VICTORY_PILE_ENTRY_SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+/**
  * Parses a `+`-joined capture-pile list (`officer+sidekick`) into canonical
  * VillainCapturePile values in preference order, or null when malformed.
  *
@@ -626,6 +670,9 @@ function parseLocationGatedEffect(
  *   - `charge:<N>[:<consequence>]`  (N a positive integer carried as `magnitude`; the consequence
  *     a VILLAIN_CHARGE_PUSH_CONSEQUENCES member carried as `chargePushConsequence`; D-24820)
  *   - `demolish-each-other-player` | `demolish-each-player-per-group-villain-in-city` (D-24820)
+ *   - `move-self-to-city-space:<space>`  (a CITY_SPACE_NAMES member; D-24772)
+ *   - `enter-city-from-victory-pile:<groupSlug>:<cardSlug>`  (lowercase-kebab slugs; D-24772)
+ *   - `reveal-villain-deck-top-swap-self` (D-24772; no params)
  *   - `capture-bystander-each-victory-pile` | `gain-one-attached-hero-rest-to-bottom` (D-24771) |
  *   - `hero-deck-top-to-escape` | `gain-officer-current` |
  *     `ko-bystander-each-victory-pile` (D-24749) |
@@ -1194,6 +1241,12 @@ function parseUngatedEffect(
   }
   if (primitiveToken === 'charge') {
     return parseChargeEffect(parts);
+  }
+  if (primitiveToken === 'move-self-to-city-space') {
+    return parseMoveSelfToCitySpaceEffect(parts);
+  }
+  if (primitiveToken === 'enter-city-from-victory-pile') {
+    return parseEnterCityFromVictoryPileEffect(parts);
   }
   // why: hero-deck-top-to-escape, gain-officer-current, and the other no-param
   // primitives take no params; reject any trailing colon-separated tokens so a

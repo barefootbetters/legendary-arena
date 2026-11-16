@@ -133,7 +133,8 @@ co2e-villain-hydra-baron-strucker-supreme-hydra,"Baron Strucker, Supreme Hydra",
 co2e-villain-masters-of-evil-baron-zemo,Baron Zemo,co2e,villain,capture-bystanders-plus-per-hq-hero-by-trait,executable,WP-521,D-24334,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystanders-plus-per-hq-hero-by-trait
 co2e-villain-sinister-syndicate-beetle,Beetle,co2e,villain,draw-cards-current-count-by-trait,executable,WP-836,D-24769,packages/game-engine/src/villain/villainEffects.execute.ts#draw-cards-current-count-by-trait
 co2e-villain-sinister-syndicate-beetle,Beetle,co2e,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
-co2e-villain-sinister-syndicate-boomerang,Boomerang,co2e,villain,(unmarked),unmarked,,,
+co2e-villain-sinister-syndicate-boomerang,Boomerang,co2e,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+co2e-villain-sinister-syndicate-boomerang,Boomerang,co2e,villain,reveal-villain-deck-top-swap-self,executable,WP-839,D-24772,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-villain-deck-top-swap-self
 co2e-villain-enemies-of-asgard-destroyer,Destroyer,co2e,villain,ko-hero,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 co2e-villain-enemies-of-asgard-destroyer,Destroyer,co2e,villain,ko-up-to-from-discard-current,executable,WP-760,D-24589,packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current
 henchman-doombot-legion,Doombot Legion,co2e,henchman,scry-ko-own-deck,executable,WP-447,D-24267,packages/game-engine/src/villain/villainEffects.execute.ts#scry-ko-own-deck
@@ -143,7 +144,8 @@ co2e-villain-hydra-endless-armies-of-hydra,Endless Armies of HYDRA,co2e,villain,
 co2e-villain-hydra-endless-armies-of-hydra,Endless Armies of HYDRA,co2e,villain,play-villain-deck-cards,executable,WP-542,D-24351,packages/game-engine/src/villain/villainEffects.execute.ts#play-villain-deck-cards
 co2e-villain-enemies-of-asgard-frost-giant-warrior,Frost Giant Warrior,co2e,villain,discard-hero-or-wound-each-player-by-trait,executable,WP-837,D-24770,packages/game-engine/src/villain/villainEffects.execute.ts#discard-hero-or-wound-each-player-by-trait
 co2e-villain-enemies-of-asgard-frost-giant-warrior,Frost Giant Warrior,co2e,villain,ko-up-to-from-discard-current,executable,WP-760,D-24589,packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current
-co2e-villain-sinister-spider-foes-green-goblin,Green Goblin,co2e,villain,(unmarked),unmarked,,,
+co2e-villain-sinister-spider-foes-green-goblin,Green Goblin,co2e,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
+co2e-villain-sinister-spider-foes-green-goblin,Green Goblin,co2e,villain,move-self-to-city-space,executable,WP-839,D-24772,packages/game-engine/src/villain/villainEffects.execute.ts#move-self-to-city-space
 co2e-villain-hydra-hydra-kidnappers,HYDRA Kidnappers,co2e,villain,capture-pile-hero,executable,WP-838,D-24771,packages/game-engine/src/villain/villainEffects.execute.ts#capture-pile-hero
 co2e-villain-hydra-hydra-kidnappers,HYDRA Kidnappers,co2e,villain,gain-attached-hero,executable,WP-450,D-24270,packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero
 henchman-hand-ninjas,Hand Ninjas,co2e,henchman,gain-recruit-current,executable,WP-541,D-24350,packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current
@@ -166,7 +168,7 @@ co2e-villain-skulls-skrull-queen-veranke,Skrull Queen Veranke,co2e,villain,captu
 co2e-villain-skulls-skrull-queen-veranke,Skrull Queen Veranke,co2e,villain,gain-attached-hero,executable,WP-450,D-24270,packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero
 co2e-villain-skulls-skrull-shapeshifter,Skrull Shapeshifter,co2e,villain,captureHqHeroRightmost,executable,WP-214,D-21401,packages/game-engine/src/villain/villainEffects.execute.ts#capture-hq-hero
 co2e-villain-skulls-skrull-shapeshifter,Skrull Shapeshifter,co2e,villain,gain-attached-hero,executable,WP-450,D-24270,packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero
-co2e-villain-sinister-syndicate-speed-demon,Speed Demon,co2e,villain,(unmarked),unmarked,,,
+co2e-villain-sinister-syndicate-speed-demon,Speed Demon,co2e,villain,charge,executable,WP-874,D-24820,packages/game-engine/src/villain/villainEffects.execute.ts#charge
 co2e-villain-skulls-super-skrull,Super-Skrull,co2e,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 co2e-villain-brotherhood-of-mutants-the-blob,The Blob,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-radiation-the-leader,The Leader,co2e,villain,play-villain-deck-cards,executable,WP-542,D-24351,packages/game-engine/src/villain/villainEffects.execute.ts#play-villain-deck-cards
@@ -180,6 +182,7 @@ co2e-villain-sinister-spider-foes-venom,Venom,co2e,villain,gain-one-attached-her
 co2e-villain-hydra-viper,Viper,co2e,villain,gain-wound-unless-victory-villain-group,executable,WP-494,D-24299,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound-unless-victory-villain-group
 co2e-villain-masters-of-evil-whirlwind,Whirlwind,co2e,villain,ko-hero,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 co2e-villain-masters-of-evil-whirlwind,Whirlwind,co2e,villain,swap-two-city-villains,executable,WP-523,D-24336,packages/game-engine/src/villain/villainEffects.execute.ts#swap-two-city-villains
+co2e-villain-enemies-of-asgard-ymir-frost-giant-king,"Ymir, Frost Giant King",co2e,villain,enter-city-from-victory-pile,executable,WP-839,D-24772,packages/game-engine/src/villain/villainEffects.execute.ts#enter-city-from-victory-pile
 co2e-villain-enemies-of-asgard-ymir-frost-giant-king,"Ymir, Frost Giant King",co2e,villain,ko-up-to-from-discard-current,executable,WP-760,D-24589,packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current
 co2e-villain-radiation-zzzax,Zzzax,co2e,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 core-villain-radiation-abomination,Abomination,core,villain,capture-bystander,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander

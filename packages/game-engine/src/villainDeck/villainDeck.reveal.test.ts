@@ -14,7 +14,19 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { revealVillainCard, performVillainReveal, playTopVillainDeckCards } from './villainDeck.reveal.js';
+import {
+  revealVillainCard,
+  performVillainReveal,
+  playTopVillainDeckCards,
+  selectVictoryPileCityEntrant,
+} from './villainDeck.reveal.js';
+import type { RevealContext } from './villainDeck.reveal.js';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { buildVillainAbilityHooks } from '../setup/villainAbility.setup.js';
+import { checkNoCardInMultipleZones } from '../invariants/gameRules.checks.js';
+import type { MatchConfiguration } from '../types.js';
 import { resolveVillainEscape } from './villainDeck.reveal.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
@@ -2556,5 +2568,162 @@ describe('WP-838 Villain Deck classifier fallback for supply Bystanders (D-24771
           'Villain deck reveal failed: card "mystery-01" has no entry in villainDeckCardTypes. No removal or trigger occurred.',
       ),
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-839 / D-24772 — Ymir brings a Frost Giant Warrior back into the City (T22-T25)
+// ---------------------------------------------------------------------------
+
+describe('WP-839 Ymir re-enters a Victory-Pile Frost Giant Warrior (D-24772)', () => {
+  const YMIR = 'co2e-villain-enemies-of-asgard-ymir-frost-giant-king-00' as CardExtId;
+  const WARRIOR_A = 'co2e-villain-enemies-of-asgard-frost-giant-warrior-00' as CardExtId;
+  const WARRIOR_B = 'co2e-villain-enemies-of-asgard-frost-giant-warrior-01' as CardExtId;
+  const fillers = ['v1', 'v2', 'v3', 'v4', 'v5'].map((slug) => `test/villain/${slug}#0` as CardExtId);
+  const [v1, v2, v3, v4, v5] = fillers as [CardExtId, CardExtId, CardExtId, CardExtId, CardExtId];
+  const BYSTANDER_IN_PILE = 'test/bystander/rescued#0' as CardExtId;
+  const cardsDirectory = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..', 'data', 'cards');
+  const co2eSet = JSON.parse(readFileSync(join(cardsDirectory, 'co2e.json'), 'utf8')) as unknown;
+  const asgardHooks = buildVillainAbilityHooks(
+    { listCards: () => [], getSet: (abbr: string) => (abbr === 'co2e' ? co2eSet : undefined) } as unknown as Parameters<typeof buildVillainAbilityHooks>[0],
+    { villainGroupIds: ['co2e/enemies-of-asgard'], henchmanGroupIds: [] } as unknown as MatchConfiguration,
+  );
+
+  /**
+   * A state with Ymir on top of the Villain Deck, the real Enemies of Asgard hooks, an
+   * onCardRevealed test hook, and the given City and Victory Piles.
+   *
+   * @param city - The City before the reveal.
+   * @param victories - Each seat's Victory Pile.
+   * @returns The game state.
+   */
+  function makeYmirState(city: (CardExtId | null)[], victories: Record<string, CardExtId[]>): LegendaryGameState {
+    const cardTypes: Record<string, string> = { [YMIR]: 'villain', [WARRIOR_A]: 'villain', [WARRIOR_B]: 'villain' };
+    const names: Record<string, string> = {
+      [YMIR]: 'Ymir, Frost Giant King',
+      [WARRIOR_A]: 'Frost Giant Warrior',
+      [WARRIOR_B]: 'Frost Giant Warrior',
+    };
+    for (const filler of fillers) {
+      cardTypes[filler] = 'villain';
+      names[filler] = filler;
+    }
+    const displayData: Record<string, { name: string; imageUrl: string; cost: number }> = {};
+    for (const [cardId, name] of Object.entries(names)) {
+      displayData[cardId] = { name, imageUrl: '', cost: 0 };
+    }
+    const playerZones: Record<string, ReturnType<typeof makePlayerZones>> = {};
+    for (const [seat, victory] of Object.entries(victories)) {
+      playerZones[seat] = { ...makePlayerZones(), victory: [...victory] };
+    }
+    return {
+      currentStage: 'start',
+      messages: [],
+      counters: { [ENDGAME_CONDITIONS.ESCAPED_VILLAINS]: 0 },
+      hookRegistry: [createTestHookDefinition(['onCardRevealed'])],
+      turnEconomy: { ...makeTurnEconomy() },
+      playerZones,
+      piles: makeGlobalPiles(),
+      mastermind: makeMastermindState(),
+      villainDeck: { deck: [YMIR], discard: [] },
+      villainDeckCardTypes: cardTypes,
+      city: [...city],
+      hq: [null, null, null, null, null],
+      heroDeck: [],
+      escapedPile: [],
+      ko: [],
+      attachedBystanders: {},
+      villainAttachedHeroes: {},
+      scheme: { twistPile: [] },
+      selection: { schemeId: 'test/scheme', mastermindId: 'test/mastermind', villainGroupIds: ['co2e/enemies-of-asgard'], henchmanGroupIds: [], heroDeckIds: [] },
+      heroAbilityHooks: [],
+      villainAbilityHooks: [...asgardHooks],
+      cardStats: {},
+      cardTraits: {},
+      cardKeywords: { [YMIR]: ['ambush'], [WARRIOR_A]: ['ambush'], [WARRIOR_B]: ['ambush'] },
+      cardDisplayData: displayData,
+      notableEvents: [],
+    } as unknown as LegendaryGameState;
+  }
+
+  /**
+   * Reveals Ymir as player `currentPlayer`'s Villain Deck reveal.
+   *
+   * @param G - The game state.
+   * @param currentPlayer - The active player.
+   */
+  function revealYmir(G: LegendaryGameState, currentPlayer = '0'): void {
+    const context: RevealContext = {
+      random: makeMockCtx({ numPlayers: 2 }).random,
+      ctx: { currentPlayer, turn: 3 },
+    };
+    performVillainReveal(G, context, createTestImplementationMap());
+  }
+
+  /**
+   * The ambushResolved events, in order.
+   *
+   * @param G - The game state.
+   * @returns `revealedCardId` and narrative per event.
+   */
+  function ambushEvents(G: LegendaryGameState): { revealedCardId: string; narrative: string }[] {
+    const events = G.notableEvents as unknown as { type: string; revealedCardId: string; narrative: string }[];
+    return events.filter((event) => event.type === 'ambushResolved');
+  }
+
+  it('T22: the current player\'s Warrior re-enters through the full entry path and does its own Ambush', () => {
+    const G = makeYmirState([null, null, null, null, null], { '0': [WARRIOR_A, BYSTANDER_IN_PILE], '1': [WARRIOR_B] });
+    revealYmir(G);
+    assert.deepStrictEqual(G.city, [WARRIOR_A, YMIR, null, null, null]);
+    assert.deepStrictEqual(G.playerZones['0']!.victory, [BYSTANDER_IN_PILE]);
+    assert.deepStrictEqual(G.playerZones['1']!.victory, [WARRIOR_B]);
+    const events = ambushEvents(G);
+    assert.deepStrictEqual(events.map((event) => event.revealedCardId), [YMIR, WARRIOR_A]);
+    assert.equal(events[0]!.narrative, '"Ymir, Frost Giant King" ambushed: brought Frost Giant Warrior back into the city.');
+    const texts = G.messages.map((message) => message.text);
+    assert.ok(texts.includes(`Ambush effect: Ymir, Frost Giant King (${YMIR}) brings Frost Giant Warrior (${WARRIOR_A}) back from Player 0's Victory Pile.`));
+    assert.ok(texts.includes(`[Ambush] Frost Giant Warrior (${WARRIOR_A}) entered the city from Player 0's Victory Pile!`));
+    const ymirTraces = (G.diagnostics?.traces ?? [])
+      .filter((trace) => trace.cardId === YMIR && trace.timing === 'onAmbush')
+      .map((trace) => `${trace.effect}:${trace.status}:${trace.handler}`);
+    assert.deepStrictEqual(ymirTraces, [
+      'enter-city-from-victory-pile:no-op:enter-city-from-victory-pile',
+      'enter-city-from-victory-pile:secondary-site:enterCityFromVictoryPile',
+    ]);
+    // why: the Warrior enters; it is not revealed — onCardRevealed fires for Ymir only.
+    assert.ok(texts.some((text) => text.startsWith(`test-trigger:cardId:${YMIR}`)));
+    assert.equal(texts.some((text) => text.startsWith(`test-trigger:cardId:${WARRIOR_A}`)), false);
+    assert.doesNotThrow(() => checkNoCardInMultipleZones(G));
+  });
+
+  it('T23: the seat walk starts at the current player and wraps', () => {
+    const G = makeYmirState([null, null, null, null, null], { '0': [WARRIOR_A], '1': [], '2': [WARRIOR_B] });
+    const descriptor = { primitive: 'enter-city-from-victory-pile' as const, victoryVillainGroup: 'enemies-of-asgard', victoryVillainCard: 'frost-giant-warrior' };
+    assert.deepStrictEqual(selectVictoryPileCityEntrant(G, YMIR, descriptor, '1'), { seat: '2', cardId: WARRIOR_B });
+  });
+
+  it('T24: no Warrior anywhere — near-miss ids never match; nothing enters', () => {
+    const nearMisses = [
+      'core-villain-enemies-of-asgard-frost-giant-00',
+      'co2e-villain-enemies-of-asgard-destroyer-00',
+      'co2e-villain-enemies-of-asgard-frost-giant-warrior-x1',
+    ] as CardExtId[];
+    const G = makeYmirState([null, null, null, null, null], { '0': nearMisses, '1': [] });
+    const descriptor = { primitive: 'enter-city-from-victory-pile' as const, victoryVillainGroup: 'enemies-of-asgard', victoryVillainCard: 'frost-giant-warrior' };
+    assert.equal(selectVictoryPileCityEntrant(G, YMIR, descriptor, '0'), null);
+    revealYmir(G);
+    assert.deepStrictEqual(G.city, [YMIR, null, null, null, null]);
+    assert.ok(G.messages.some((message) =>
+      message.outcome === 'blocked' &&
+      message.text === 'Ambush effect: no matching Villain is in any player\'s Victory Pile, so nothing enters the city.'));
+    assert.equal(ambushEvents(G)[0]!.narrative, '"Ymir, Frost Giant King" entered the city with no Ambush effect.');
+  });
+
+  it('T25: into a full City, Ymir\'s entry escapes v5 and the Warrior\'s entry escapes v4', () => {
+    const G = makeYmirState([v1, v2, v3, v4, v5], { '0': [WARRIOR_A], '1': [] });
+    revealYmir(G);
+    assert.deepStrictEqual(G.city, [WARRIOR_A, YMIR, v1, v2, v3]);
+    assert.deepStrictEqual(G.escapedPile, [v5, v4]);
+    assert.doesNotThrow(() => checkNoCardInMultipleZones(G));
   });
 });

@@ -11,7 +11,8 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { fightVillain, defeatCityVillainCore } from './fightVillain.js';
+import { fightVillain, defeatCityVillainCore, resolveVillainDeckDefeatFightEffect } from './fightVillain.js';
+import { checkNoCardInMultipleZones } from '../invariants/gameRules.checks.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { VillainAbilityHook } from '../rules/villainAbility.types.js';
@@ -2297,5 +2298,137 @@ describe('WP-838 fightVillain — Venom, HYDRA Kidnappers and Baron Strucker (D-
     assert.ok(shuffleIndex >= 0 && playIndex > shuffleIndex, 'the shuffle line precedes the play line');
     assert.equal(texts.filter((text) => text.includes('revealed and captured by')).length, 2);
     assert.ok(!texts.some((text) => text.includes('has no entry in villainDeckCardTypes')), 'no fail-closed line');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-839 / D-24772 — Boomerang takes a revealed Villain's place (T26-T27)
+// ---------------------------------------------------------------------------
+
+describe('WP-839 fightVillain — Boomerang takes a revealed Villain\'s place (D-24772)', () => {
+  const BOOMERANG = 'co2e-villain-sinister-syndicate-boomerang-00' as CardExtId;
+  const PLAYED = 'test-villain-played-00' as CardExtId;
+  const EXTRA = 'test-villain-extra-00' as CardExtId;
+  const HENCHMAN = 'test-henchman-00' as CardExtId;
+  const TWIST = 'test-scheme-twist-00' as CardExtId;
+  const RESCUED = 'test-bystander-00' as CardExtId;
+  const HERO = 'test-hero-only-00' as CardExtId;
+  const HQ_HERO = 'core-hero-ironman' as CardExtId;
+  const boomerangHook: VillainAbilityHook = {
+    cardId: BOOMERANG,
+    timing: 'onFight',
+    keywords: ['koHeroCurrentPlayer'],
+    effects: [{ primitive: 'ko-hero', target: 'current' }, { primitive: 'reveal-villain-deck-top-swap-self' }],
+  };
+  const playedAmbushHook: VillainAbilityHook = {
+    cardId: PLAYED,
+    timing: 'onAmbush',
+    keywords: ['captureHqHeroRightmost'],
+    effects: [{ primitive: 'capture-hq-hero', selector: 'rightmost' }],
+  };
+
+  /**
+   * Boomerang at City 0 holding a Bystander, the given Villain Deck, and one KO-able Hero in hand.
+   *
+   * @param deck - The Villain Deck, top first.
+   * @returns The game state.
+   */
+  function makeBoomerangState(deck: CardExtId[]): LegendaryGameState {
+    const gameState = createMockGameState({
+      city: [BOOMERANG, null, null, null, null],
+      hand: [HERO],
+      villainAbilityHooks: [boomerangHook, playedAmbushHook],
+      cardDisplayData: {
+        [BOOMERANG]: { name: 'Boomerang', imageUrl: '', cost: 0 },
+        [PLAYED]: { name: 'Played Villain', imageUrl: '', cost: 0 },
+        [HERO]: { name: 'Only Hero', imageUrl: '', cost: 0 },
+      } as LegendaryGameState['cardDisplayData'],
+    });
+    gameState.attachedBystanders = { [BOOMERANG]: [RESCUED] };
+    gameState.villainDeck = { deck: [...deck], discard: [] };
+    gameState.villainDeckCardTypes = {
+      [BOOMERANG]: 'villain', [PLAYED]: 'villain', [EXTRA]: 'villain', [HENCHMAN]: 'henchman', [TWIST]: 'scheme-twist',
+    };
+    gameState.cardKeywords = { ...(gameState.cardKeywords ?? {}), [PLAYED]: ['ambush'] };
+    gameState.hq = [null, null, null, null, HQ_HERO];
+    gameState.heroDeck = [];
+    return gameState;
+  }
+
+  /**
+   * The index of the first log line containing a fragment.
+   *
+   * @param gameState - The game state.
+   * @param fragment - The text to find.
+   * @returns The line index, or -1.
+   */
+  function lineIndex(gameState: LegendaryGameState, fragment: string): number {
+    return gameState.messages.findIndex((message) => message.text.includes(fragment));
+  }
+
+  it('T26: a Villain on top — it is played and Boomerang takes its place, out of the Victory Pile', () => {
+    const gameState = makeBoomerangState([PLAYED, EXTRA]);
+    fightVillain(makeMockMoveContext(gameState, { turn: 4 }), { cityIndex: 0 });
+
+    const victory = gameState.playerZones['0']!.victory;
+    assert.ok(victory.includes(RESCUED), 'the rescued Bystander stays rescued');
+    assert.equal(victory.includes(BOOMERANG), false, 'Boomerang left the Victory Pile');
+    assert.deepStrictEqual(gameState.villainDeck.deck, [BOOMERANG, EXTRA]);
+    assert.equal(gameState.city.includes(PLAYED), true, 'the played Villain entered the City');
+    assert.ok(
+      (gameState.notableEvents as unknown as { type: string; revealedCardId?: string }[])
+        .some((event) => event.type === 'ambushResolved' && event.revealedCardId === PLAYED),
+      'the played Villain did its Ambush',
+    );
+    assert.equal(gameState.playerZones['0']!.hand.includes(HERO), false, 'the single KO-able Hero was KO\'d');
+    const koLine = lineIndex(gameState, 'KO’d a hero (Only Hero from their hand)');
+    const swapLine = lineIndex(gameState, 'takes its place on top of the Villain Deck');
+    const entryLine = lineIndex(gameState, `Played Villain (${PLAYED}) revealed and entered the city`);
+    assert.ok(koLine >= 0 && koLine < swapLine && swapLine < entryLine, 'KO → swap → played entry');
+    assert.equal(
+      gameState.messages[swapLine]!.text,
+      `Fight effect: Boomerang (${BOOMERANG}) revealed Played Villain (${PLAYED}) and takes its place on top of the Villain Deck; Played Villain (${PLAYED}) is played.`,
+    );
+    const traces = gameState.diagnostics?.traces ?? [];
+    const swapTrace = traces.findIndex((trace) => trace.cardId === BOOMERANG && trace.status === 'secondary-site');
+    const playedTrace = traces.findIndex((trace) => trace.cardId === PLAYED);
+    assert.ok(swapTrace >= 0, 'the bridge recorded its secondary-site trace');
+    assert.equal(traces[swapTrace]!.handler, 'swapFoughtVillainWithVillainDeckTop');
+    assert.ok(swapTrace < playedTrace, 'the bridge trace precedes the played Villain\'s traces');
+    assert.equal(gameState.villainRevealedThisTurn, undefined);
+    assert.doesNotThrow(() => checkNoCardInMultipleZones(gameState));
+  });
+
+  it('T27: a Scheme Twist on top stays there; an empty deck reveals nothing; a Henchman is swapped and played', () => {
+    const twistState = makeBoomerangState([TWIST, EXTRA]);
+    fightVillain(makeMockMoveContext(twistState), { cityIndex: 0 });
+    assert.deepStrictEqual(twistState.villainDeck.deck, [TWIST, EXTRA]);
+    assert.ok(twistState.playerZones['0']!.victory.includes(BOOMERANG));
+    const twistLine = twistState.messages.find((message) => message.text.includes('it is not a Villain, so it stays on top'));
+    assert.equal(twistLine?.outcome, 'blocked');
+    assert.deepStrictEqual(twistState.scheme?.twistPile ?? [], [], 'no twist resolved');
+
+    const emptyState = makeBoomerangState([]);
+    fightVillain(makeMockMoveContext(emptyState), { cityIndex: 0 });
+    assert.ok(emptyState.messages.some((message) =>
+      message.text === `Fight effect: the Villain Deck is empty, so Boomerang (${BOOMERANG}) reveals nothing.`));
+    assert.ok(emptyState.playerZones['0']!.victory.includes(BOOMERANG));
+
+    const henchmanState = makeBoomerangState([HENCHMAN, EXTRA]);
+    fightVillain(makeMockMoveContext(henchmanState), { cityIndex: 0 });
+    assert.deepStrictEqual(henchmanState.villainDeck.deck, [BOOMERANG, EXTRA]);
+    assert.ok(henchmanState.city.includes(HENCHMAN));
+    assert.doesNotThrow(() => checkNoCardInMultipleZones(henchmanState));
+  });
+
+  it('T27: a Nightbringer Villain Deck defeat runs the same bridge, so Boomerang swaps there too', () => {
+    const gameState = makeBoomerangState([PLAYED, EXTRA]);
+    gameState.city = [null, null, null, null, null];
+    gameState.playerZones['0']!.victory = [BOOMERANG];
+    resolveVillainDeckDefeatFightEffect(gameState, { currentPlayer: '0', turn: 2 }, BOOMERANG, { random: makeMockCtx().random });
+    assert.deepStrictEqual(gameState.villainDeck.deck, [BOOMERANG, EXTRA]);
+    assert.ok(gameState.city.includes(PLAYED));
+    assert.equal(gameState.playerZones['0']!.victory.includes(BOOMERANG), false);
+    assert.doesNotThrow(() => checkNoCardInMultipleZones(gameState));
   });
 });

@@ -62,6 +62,7 @@ import {
   resolveCardDisplayName,
   readTurnNumber,
   recordVillainSecondarySiteTrace,
+  findVillainHookDescriptor,
 } from '../villain/villainEffects.execute.js';
 // why: WP-868 / D-24811 — Mr. Immortal's reenter bridge (the last step of defeatCityVillainCore).
 import { reenterSewersOnVillainDeckReveal } from '../villainDeck/villainDeck.enterCity.js';
@@ -69,7 +70,11 @@ import { reenterSewersOnVillainDeckReveal } from '../villainDeck/villainDeck.ent
 // two Villain Deck cards. The reveal machinery lives in villainDeck.reveal.ts; this move
 // imports the shared loop + the RevealContext shape (the move builds one — see below).
 import type { RevealContext } from '../villainDeck/villainDeck.reveal.js';
-import { playTopVillainDeckCards, enterStackCardsAsVillains } from '../villainDeck/villainDeck.reveal.js';
+import {
+  playTopVillainDeckCards,
+  enterStackCardsAsVillains,
+  swapFoughtVillainWithVillainDeckTop,
+} from '../villainDeck/villainDeck.reveal.js';
 // why: WP-542 / D-24351 — the STATIC handler map performVillainReveal needs. The fight move
 // does not receive an implementationMap (only the reveal move + scheme resolvers thread one),
 // so it imports the module constant — the same one game.ts + villainDeck.reveal.ts import.
@@ -1095,6 +1100,33 @@ export function runVillainFightFireSiteBridges(
       readTurnNumber(ctx),
     );
     enterStackCardsAsVillains(G, stackRevealContext, DEFAULT_IMPLEMENTATION_MAP, cardId, fightStackEntry, 'onFight');
+  }
+
+  // why: WP-839 / D-24772 — Boomerang's "reveal the top card of the Villain Deck. If it's a Villain,
+  // put Boomerang in its place and play that Villain." The executor's
+  // reveal-villain-deck-top-swap-self handler is a deliberate no-op (the D-24351 executor-no-op plus
+  // fire-site-bridge pattern), so the swap and the play run HERE as the last step, after the defeat
+  // has fully settled, with a RevealContext built as the sibling bridges build one. A Nightbringer
+  // Villain Deck defeat routes him to the fighter's Victory Pile and runs this same list
+  // (D-24817), so he swaps there too.
+  if (findVillainHookDescriptor(G, cardId, 'onFight', 'reveal-villain-deck-top-swap-self') !== null) {
+    const swapRevealContext: RevealContext = {
+      random: shuffleContext.random,
+      ctx: { currentPlayer, turn: readTurnNumber(ctx) },
+    };
+    // why: WP-877 / D-24824 — the executor traced the swap `no-op`; record the bridge first, so the
+    // record precedes the played Villain's own traces.
+    recordVillainSecondarySiteTrace(
+      G,
+      cardId,
+      'onFight',
+      'reveal-villain-deck-top-swap-self',
+      'swapFoughtVillainWithVillainDeckTop',
+      'villain-fight-bridge',
+      {},
+      readTurnNumber(ctx),
+    );
+    swapFoughtVillainWithVillainDeckTop(G, swapRevealContext, DEFAULT_IMPLEMENTATION_MAP, cardId, currentPlayer);
   }
 }
 

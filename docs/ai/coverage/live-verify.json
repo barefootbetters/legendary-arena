@@ -2060,6 +2060,50 @@
       "note": "Live check (NEW match with Wrecking Crew after the deploy): fighting Thunderball in the Sewers or Bank logs \"Fight effect: Demolish revealed <Hero> (cost C) …\" with a discard line for every player except the fighter (solo: \"there is no other player to discard.\"); fought anywhere else it logs \"Fight effect: not fought on the Sewers or Bank; no effect.\" D-24820."
     },
     {
+      "key": "co2e-villain-sinister-spider-foes-green-goblin|move-self-to-city-space",
+      "kind": "villain",
+      "card": "Green Goblin",
+      "ability": "Ambush: Green Goblin captures a Bystander. Put him on the Bridge. If there's another Villain there, swap them.",
+      "wp": "WP-839",
+      "state": "pending",
+      "date": "2026-11-15",
+      "evidence": "",
+      "note": "Live check (NEW match with Sinister Spider-Foes after the deploy): when Green Goblin enters the City the log shows \"Ambush effect: Green Goblin moved to the Bridge.\" (or \", and <Villain> moved to the Sewers.\" when the Bridge was occupied), then the Bystander capture; Play Diagnostics shows him on the Bridge holding the Bystander, and the Ambush overlay names the move. D-24772."
+    },
+    {
+      "key": "co2e-villain-sinister-syndicate-speed-demon|charge",
+      "kind": "villain",
+      "card": "Speed Demon",
+      "ability": "Ambush: Speed Demon moves two extra spaces forward. If this pushes any other Villains forward, each player discards a card.",
+      "wp": "WP-839",
+      "state": "pending",
+      "date": "2026-11-15",
+      "evidence": "",
+      "note": "Live check (NEW match with Sinister Syndicate after the deploy): when Speed Demon enters the City he ends two spaces further on (the Rooftops from an empty Sewers) with two \"charged forward one space to …\" lines; with a Villain ahead of him the line adds \", pushing the Villains ahead of it forward.\", then \"pushed Villains forward, so each player must discard a card.\" and every player holding a card gets the \"A Villain's effect — choose a card to discard\" prompt; otherwise \"pushed no Villains forward, so no one discards.\" The Ambush overlay names the charge. D-24772 (charge D-24820)."
+    },
+    {
+      "key": "co2e-villain-sinister-syndicate-boomerang|reveal-villain-deck-top-swap-self",
+      "kind": "villain",
+      "card": "Boomerang",
+      "ability": "Fight: KO one of your Heroes. Then reveal the top card of the Villain Deck. If it's a Villain, put Boomerang in its place and play that Villain.",
+      "wp": "WP-839",
+      "state": "pending",
+      "date": "2026-11-15",
+      "evidence": "",
+      "note": "Live check (NEW match with Sinister Syndicate after the deploy): fighting Boomerang with a Villain on top of the Villain Deck logs the KO, then \"Fight effect: Boomerang revealed <Villain> and takes its place on top of the Villain Deck; <Villain> is played.\"; that Villain enters the City, Boomerang is not in the fighter's Victory Pile (VP excludes him) and the next reveal brings him back. A non-Villain on top logs \"it is not a Villain, so it stays on top.\" D-24772."
+    },
+    {
+      "key": "co2e-villain-enemies-of-asgard-ymir-frost-giant-king|enter-city-from-victory-pile",
+      "kind": "villain",
+      "card": "Ymir, Frost Giant King",
+      "ability": "Ambush: Choose a Frost Giant Warrior from any player's Victory Pile to enter the city.",
+      "wp": "WP-839",
+      "state": "pending",
+      "date": "2026-11-15",
+      "evidence": "",
+      "note": "Live check (NEW match with co2e Enemies of Asgard after the deploy, a Frost Giant Warrior already defeated into a Victory Pile): when Ymir enters the City the log shows \"Ambush effect: Ymir, Frost Giant King brings Frost Giant Warrior back from Player N's Victory Pile.\" then \"[Ambush] Frost Giant Warrior entered the city from Player N's Victory Pile!\" and the Warrior's own Ambush; the Warrior is in the Sewers with Ymir pushed forward, and the Ambush overlay names the returned Warrior. With no Warrior in any pile: \"no matching Villain is in any player's Victory Pile, so nothing enters the city.\" D-24772."
+    },
+    {
       "key": "chmp-villain-monsters-unleashed-groot-from-planet-x|stack-cards-enter-city-as-villains",
       "kind": "villain",
       "card": "Groot from Planet X",

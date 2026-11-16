@@ -50,7 +50,7 @@ import {
   VILLAIN_EFFECT_PRIMITIVES,
 } from '../rules/villainAbility.types.js';
 import type { CitySpaceName } from '../board/citySpaceNames.js';
-import { citySpaceNameForIndex } from '../board/citySpaceNames.js';
+import { CITY_SPACE_NAMES, citySpaceNameForIndex, describeCitySpace } from '../board/citySpaceNames.js';
 import type { ResolvedEffectResult, ResolvedPlayerTargetNames } from '../events/notableEvents.compose.js';
 import { composeWoundOutcomeClause } from '../events/notableEvents.compose.js';
 import type { StrikeBlockThreatKind } from '../events/notableEvents.types.js';
@@ -1037,6 +1037,13 @@ const DELIBERATE_NO_OP_VILLAIN_PRIMITIVES: ReadonlySet<VillainEffectPrimitive> =
     // performVillainReveal moves the cards before the executor runs and narrates the charge, so its
     // trace must read `no-op`, not `fired`.
     'charge',
+    // why: WP-839 / D-24772 — Boomerang's swap and Ymir's Victory-Pile entry mutate nothing in the
+    // executor: the Fight bridge (runVillainFightFireSiteBridges) and the Ambush bridge
+    // (performVillainReveal) do the work and record the secondary-site trace (D-24824 §7), so the
+    // executor trace must read `no-op`, not `fired`. `move-self-to-city-space` is not listed: it
+    // moves the card in the executor.
+    'reveal-villain-deck-top-swap-self',
+    'enter-city-from-victory-pile',
   ]);
 
 /**
@@ -1130,18 +1137,24 @@ export function recordVillainSecondarySiteTrace(
   // appended under the D-24824 §7 forward rule: Venom's split runs at the fight site, not the executor.
   // why: WP-874 / D-24820 — `charge` / `chargeAmbushVillain` appended under the same D-24824 §7 rule:
   // the charge runs at the Ambush bridge, before the executor.
+  // why: WP-839 / D-24772 — Boomerang's swap (the Fight bridge) and Ymir's Victory-Pile entry (the
+  // Ambush bridge) appended under the same D-24824 §7 rule.
   effect:
     | 'play-villain-deck-cards'
     | 'reenter-sewers-if-villain-deck-top'
     | 'stack-cards-enter-city-as-villains'
     | 'gain-one-attached-hero-rest-to-bottom'
-    | 'charge',
+    | 'charge'
+    | 'reveal-villain-deck-top-swap-self'
+    | 'enter-city-from-victory-pile',
   handler:
     | 'playTopVillainDeckCards'
     | 'reenterSewersOnVillainDeckReveal'
     | 'enterStackCardsAsVillains'
     | 'awardOneAttachedHeroRestToBottom'
-    | 'chargeAmbushVillain',
+    | 'chargeAmbushVillain'
+    | 'swapFoughtVillainWithVillainDeckTop'
+    | 'enterCityFromVictoryPile',
   fireSite: 'villain-fight-bridge' | 'villain-ambush-bridge',
   params: Record<string, string | number | boolean>,
   turn: number,
@@ -5460,6 +5473,12 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'demolish-each-other-player': villainEffectDemolishEachOtherPlayer,
   'demolish-each-player-per-group-villain-in-city': villainEffectDemolishEachPlayerPerGroupVillainInCity,
   charge: villainEffectCharge,
+  // why: WP-839 / D-24772 — positions 61-63, the co2e City-movement lines. Green Goblin's move runs
+  // here and swaps any occupant; Boomerang's swap and Ymir's Victory-Pile entry are deliberate
+  // no-ops (their bridges in runVillainFightFireSiteBridges and performVillainReveal do the work).
+  'move-self-to-city-space': villainEffectMoveSelfToCitySpace,
+  'reveal-villain-deck-top-swap-self': villainEffectRevealVillainDeckTopSwapSelf,
+  'enter-city-from-victory-pile': villainEffectEnterCityFromVictoryPile,
 };
 
 /**
@@ -5605,6 +5624,160 @@ function countCityVillainsWithPrefix(G: LegendaryGameState, groupPrefix: string)
  */
 function villainEffectCharge(): VillainEffectApplication {
   return { targets: [] };
+}
+
+/**
+ * move-self-to-city-space primitive — Green Goblin's Ambush "Put him on the Bridge. If there's
+ * another Villain there, swap them." (WP-839 / D-24772).
+ *
+ * Moves the card to its marked City space; an occupant there moves to the card's old space (the
+ * D-24664 swap-if-occupied shape, never a push, so nothing escapes). Henchmen are Villains
+ * (D-24607). Self-narrates and returns the logged clause as `narrativeClause` (D-24854 §6).
+ *
+ * @param G - Game state (mutated: `G.city`, the log).
+ * @param _currentPlayer - Unused.
+ * @param cardId - The moving card.
+ * @param timing - The firing timing (the log label).
+ * @param descriptor - Carries `destinationCitySpace`.
+ * @returns `{ targets: [], narrativeClause }`.
+ */
+function villainEffectMoveSelfToCitySpace(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const label = villainEffectTimingLabel(timing);
+  const name = resolveCardDisplayName(G, cardId);
+  const blockedClause = findCityMoveBlockedClause(G, cardId, name, descriptor.destinationCitySpace);
+  if (blockedClause !== null) {
+    pushLog(G, `${label} effect: ${blockedClause}.`, 'blocked');
+    // why: WP-897 / D-24854 — the narrative clause is the logged clause.
+    return { targets: [], narrativeClause: blockedClause };
+  }
+  const destinationIndex = CITY_SPACE_NAMES.indexOf(descriptor.destinationCitySpace!);
+  const fromIndex = G.city.indexOf(cardId);
+  // why: D-24664 — swap-if-occupied: the occupant takes the mover's old space (null when the
+  // destination was empty). Direct index assignment, as the swap-two-city-villains handler does;
+  // the City holds CardExtId strings only. Henchmen are Villains (D-24607), so any occupant swaps.
+  const occupant = G.city[destinationIndex] ?? null;
+  G.city[destinationIndex] = cardId;
+  G.city[fromIndex] = occupant;
+  let clause = `${name} moved to ${describeCitySpace(destinationIndex)}`;
+  if (occupant !== null) {
+    clause += `, and ${resolveCardDisplayName(G, occupant)} moved to ${describeCitySpace(fromIndex)}`;
+  }
+  pushLog(G, `${label} effect: ${clause}.`, 'applied');
+  // why: WP-897 / D-24854 — the narrative clause is the logged clause.
+  return { targets: [], narrativeClause: clause };
+}
+
+/**
+ * Returns the clause for a City self-move that cannot happen, or null when it can (WP-839 /
+ * D-24772), checked in order: no destination, not in the City, the destination not part of the
+ * City, already there.
+ *
+ * @param G - Game state (read-only).
+ * @param cardId - The moving card.
+ * @param name - Its display name.
+ * @param destination - The marked destination space, if any.
+ * @returns The blocked clause, or null.
+ */
+function findCityMoveBlockedClause(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+  name: string,
+  destination: CitySpaceName | undefined,
+): string | null {
+  if (destination === undefined) {
+    return `${name} has no destination space; it does not move`;
+  }
+  const fromIndex = G.city.indexOf(cardId);
+  if (fromIndex < 0) {
+    return `${name} is not in the City, so it does not move`;
+  }
+  const destinationIndex = CITY_SPACE_NAMES.indexOf(destination);
+  // why: rules v23 L1478-1484 — a space that does not exist (a City of 4 or fewer has no Bridge)
+  // makes a "move a Villain to <space>" effect do nothing.
+  if (destinationIndex >= G.city.length) {
+    return `${describeCitySpace(destinationIndex)} is not part of the City right now, so ${name} stays where it is`;
+  }
+  if (fromIndex === destinationIndex) {
+    return `${name} is already on ${describeCitySpace(destinationIndex)}`;
+  }
+  return null;
+}
+
+/**
+ * reveal-villain-deck-top-swap-self primitive — Boomerang's Fight "reveal the top card of the
+ * Villain Deck. If it's a Villain, put Boomerang in its place and play that Villain." (WP-839 /
+ * D-24772).
+ *
+ * A DELIBERATE NO-OP: the swap needs `performVillainReveal`, a RevealContext and the
+ * implementationMap, which the executor does not receive, so the Fight bridge
+ * (`runVillainFightFireSiteBridges` → `swapFoughtVillainWithVillainDeckTop`) does the work and
+ * records the secondary-site trace (the D-24351 pattern). Listed in
+ * DELIBERATE_NO_OP_VILLAIN_PRIMITIVES so its executor trace reads `no-op`.
+ *
+ * @returns `{ targets: [] }` always.
+ */
+function villainEffectRevealVillainDeckTopSwapSelf(): VillainEffectApplication {
+  return { targets: [] };
+}
+
+/**
+ * enter-city-from-victory-pile primitive — Ymir's Ambush "Choose a Frost Giant Warrior from any
+ * player's Victory Pile to enter the city." (WP-839 / D-24772).
+ *
+ * A DELIBERATE NO-OP: the entry needs the full City-entry path (push, escape, Ambush), so the
+ * Ambush bridge in performVillainReveal (`enterCityFromVictoryPile`) does the work and records
+ * the secondary-site trace (the D-24351 pattern). Listed in DELIBERATE_NO_OP_VILLAIN_PRIMITIVES
+ * so its executor trace reads `no-op`.
+ *
+ * @returns `{ targets: [] }` always.
+ */
+function villainEffectEnterCityFromVictoryPile(): VillainEffectApplication {
+  return { targets: [] };
+}
+
+/**
+ * Returns the first descriptor of `primitive` among a card's villain hooks at `timing`, or null
+ * (WP-839 / D-24772). The fire-site bridges read their bridged primitive's parameters through it.
+ *
+ * A gated descriptor (a City-space gate or a condition) returns null: the executor fails a gated
+ * descriptor closed at a bridge's fire site, so the bridge must not fire it either (the
+ * villainCardChargeEffect rule). No marked carrier is gated.
+ *
+ * @param G - Game state (read-only).
+ * @param cardId - The card instance.
+ * @param timing - The timing to inspect.
+ * @param primitive - The primitive to find.
+ * @returns The descriptor, or null.
+ */
+export function findVillainHookDescriptor(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  primitive: VillainEffectPrimitive,
+): VillainEffectDescriptor | null {
+  // why: guard against G states / test mocks lacking villainAbilityHooks (the
+  // villainCardPlaysVillainDeckCards guard) — getVillainHooksForCard would throw on undefined.
+  if (!G.villainAbilityHooks || G.villainAbilityHooks.length === 0) {
+    return null;
+  }
+  for (const hook of getVillainHooksForCard(G.villainAbilityHooks, cardId, timing)) {
+    for (const descriptor of hook.effects ?? []) {
+      if (descriptor.primitive !== primitive) {
+        continue;
+      }
+      if (descriptor.requireCitySpaces !== undefined || descriptor.requireCondition !== undefined) {
+        return null;
+      }
+      return descriptor;
+    }
+  }
+  return null;
 }
 
 /**

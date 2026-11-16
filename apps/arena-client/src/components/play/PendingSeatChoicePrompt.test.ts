@@ -302,6 +302,25 @@ describe('PendingSeatChoicePrompt — WP-837 every-player Hero-trait discard (D-
   });
 });
 
+describe('PendingSeatChoicePrompt — WP-839 every-player any-card discard (D-24772)', () => {
+  test('T30: the villain-effect-any-card-discard kind has its own heading', () => {
+    const { submitMove } = recorder();
+    const choice: UIPendingSeatChoice = {
+      kind: 'villain-effect-any-card-discard',
+      addressedSeats: ['player-1'],
+      outstandingSeats: ['player-1'],
+      seatPrompts: { 'player-1': { options: [{ label: 'Cyclops' }, { label: 'Wound' }] } },
+    };
+    const wrapper = mount(PendingSeatChoicePrompt, {
+      props: { pendingSeatChoice: choice, viewerPlayerId: 'player-1', submitMove },
+    });
+    assert.equal(
+      wrapper.find('.pending-seat-choice-prompt__heading').text(),
+      "A Villain's effect — choose a card to discard",
+    );
+  });
+});
+
 describe('PendingSeatChoicePrompt — WP-845 reveal or gain a Wound (D-24779)', () => {
   test('AC-10: the reveal-or-wound kind shows its heading and both options, and option 1 submits optionIndex 1', async () => {
     const { calls, submitMove } = recorder();

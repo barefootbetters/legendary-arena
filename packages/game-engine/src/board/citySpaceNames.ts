@@ -1,8 +1,8 @@
 /**
  * Named City spaces for the Legendary Arena game engine (WP-489 / D-24295).
  *
- * The City is a fixed 5-tuple (board/city.types.ts): index 0 is the entry
- * space, index 4 is the escape edge. Those indices carry no name in the engine.
+ * The City is an array of 1-6 spaces (board/city.types.ts, WP-831 / D-24764): index 0 is the
+ * entry space and the last index is the escape edge; the five names stay on engine indices 0-4.
  * This module gives each index its canonical Marvel Legendary space name so a
  * villain ability that reads "if you fight this Villain on the <space>…" can be
  * gated on where the villain sits.
@@ -60,6 +60,25 @@ export function citySpaceNameForIndex(
     return undefined;
   }
   return CITY_SPACE_NAMES[index];
+}
+
+/**
+ * Names a City space for a log line: `the Bank` for a named space, else `city space <index>`
+ * (a grown City's extra spaces have no name).
+ *
+ * // why: WP-839 / D-24772 — moved verbatim from villainDeck.reveal.ts (WP-874's charge lines)
+ * for its second caller, Green Goblin's move in the villain executor, so both name a space the
+ * same way.
+ *
+ * @param cityIndex - The 0-based City index.
+ * @returns The space label.
+ */
+export function describeCitySpace(cityIndex: number): string {
+  const spaceName = citySpaceNameForIndex(cityIndex);
+  if (spaceName === undefined) {
+    return `city space ${cityIndex}`;
+  }
+  return `the ${spaceName.charAt(0).toUpperCase()}${spaceName.slice(1)}`;
 }
 
 /**
