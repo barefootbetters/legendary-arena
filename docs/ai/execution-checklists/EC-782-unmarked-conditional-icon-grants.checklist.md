@@ -2,6 +2,7 @@
 
 **Source:** docs/ai/work-packets/WP-745-unmarked-conditional-icon-grants.md
 **Layer:** Game Engine (`packages/game-engine/src/**`) + card data via the curated hero-ability-marker map
+**Risk Tier:** MEDIUM — scoring input: removes unearned Attack / Recruit from 12 cards
 **Status:** Pending — reconciled and re-gated 2026-11-16 on `main` `b93e6d6ca` (12 lines; the five already-gated lines and the draft's play-history field are dropped, WP §Reconciliation)
 
 ## Before Starting
@@ -18,16 +19,22 @@
   - ordinal: `played.length === N`
   - other-cost: some other entry `G.cardStats?.[id]?.cost === N`; cost: some entry (self included)
   - distinct: distinct names (`G.cardDisplayData?.[id]?.name`, else id without `#copy`) among other entries whose `G.cardTraits?.[id]` has a non-empty `heroClass` or `heroClass2`, `>= N`
-  - Rage: `G.koPileLengthAtTurnStart` absent → `false`; else some `G.ko[i]`, `i >= start`, passes `isHeroCardId` (a `cardTraits` entry, or `SHIELD_AGENT_EXT_ID` / `SHIELD_TROOPER_EXT_ID` / `SHIELD_OFFICER_EXT_ID` / `SIDEKICK_EXT_ID`)
-- **Describe text:** verbatim WP §Locked Values (five strings); signature unchanged; the two "other" strings carry no count.
+  - Rage: `start = G.koPileLengthAtTurnStart`; absent → `false`; else some `G.ko[i]`, `i >= start`, passes `isHeroCardId` (a `cardTraits` entry, or `SHIELD_AGENT_EXT_ID` / `SHIELD_TROOPER_EXT_ID` / `SHIELD_OFFICER_EXT_ID` / `SIDEKICK_EXT_ID`)
+- **Describe text** (verbatim; `${…}` interpolated; signature unchanged; the two "other" strings carry no count):
+  - `cardPlayOrdinalEquals` → `it needs to be card number ${value} you played this turn — it was card number ${played.length}`
+  - `otherCardOfCostPlayedThisTurn` → `it needs another card costing ${value} played this turn`
+  - `cardOfCostPlayedThisTurn` → `it needs a card costing ${value} played this turn`
+  - `otherDistinctNonGreyHeroesPlayedThisTurnAtLeast` → `it needs ${value} other non-grey Heroes with different names played this turn`
+  - `heroPutIntoKoPileThisTurn` → `it needs a Hero put into the KO pile this turn`
 - **Markers:** `card-play-ordinal:N`, `played-other-cost:N`, `played-cost:N`, `played-other-distinct-heroes:N` → the four constants; `hero-koed-this-turn` (bare) → Rage; `bystanders-threshold:N` → Savior's `'bystandersInVictoryAtLeast'` literal; `draw-threshold:N` unchanged. All six new names join `HERO_PARSER_RECOGNIZED_MARKER_NAMES`.
 - **Apply entries:** the 13 entries on 12 lines in WP §Locked Values, verbatim.
-- **Write sites:** `koPileLengthAtTurnStart = G.ko.length` exactly twice, gated on `matchReadsConditionType(G, HERO_KOED_THIS_TURN_CONDITION_TYPE)`: play-phase `turn.onBegin` and `applyOnBeginParity`.
+- **Write sites:** `koPileLengthAtTurnStart = G.ko.length` exactly twice (parity writes it over its `gameState` parameter; no comment contains the literal `koPileLengthAtTurnStart =`), gated on `matchReadsConditionType(G, HERO_KOED_THIS_TURN_CONDITION_TYPE)`: play-phase `turn.onBegin` (beside the WP-743 deletes, **before** the `onTurnStart` rule pipeline) and `applyOnBeginParity` (the rebuilt loops run no `onTurnStart`, D-0205).
 - **Wait-and-see:** only `heroPutIntoKoPileThisTurn` joins `WAIT_AND_SEE_CONDITION_TYPES`.
 
 ## Guardrails
 - **Hash oracles stay byte-unchanged** (sentinel `finalStateHash`, `PRE_WP080_HASH`). A move is a gating bug. Never re-pin.
-- **Play-history conditions evaluate on play** (D-24568 §1 amends D-24377 §1). Never in `WAIT_AND_SEE_CONDITION_TYPES` or `SEQUENCE_GATE_CONDITION_TYPES`.
+- **Play-history conditions evaluate on play** (D-24568 §1 amends D-24377 §1: a condition whose only input is the played-card view is read on play; turn-event accumulators wait). Never in `WAIT_AND_SEE_CONDITION_TYPES` or `SEQUENCE_GATE_CONDITION_TYPES`.
+- **The exact ordinal inherits the D-24798 §5 residual both ways** (a KO'd-out earlier play makes the 9th read as the 8th); it is pinned in the test, not fixed here.
 - **Read the played view, never raw `inPlay`, never a new history.**
 - `firstHeroPlayedThisTurn`, `playedThisTurn`, `bystandersInVictoryAtLeast` and the D-24746 text arm are unchanged.
 - **Card data only via apply mode**, co2e included. `cards:check` and an apply re-run are zero-diff.
@@ -50,11 +57,12 @@
 - `data/cards/{msis,vill,anni,ff04,vnom,asrd,co2e,dkcy,rvlt,mgtg,wtif}.json` — regenerated
 - `docs/ai/coverage/hero-mechanic-ledger.{json,csv}`, `data/metadata/effect-implementation-index.json`, `data/metadata/card-mechanics.json`, `apps/arena-client/src/fixtures/localSpike/featuredSetupBundle.json` — regenerated (certain; order `ledger:heroes` → `effect-index` → `mechanics:metadata` → `sim:runtime-observed`, then the bundle)
 - `docs/ai/coverage/runtime-observed-hollows.json`, `apps/dashboard/src/composables/useInPlayCoverage.test.ts`, `scripts/coverage/hero-effect-coverage.baseline.json` — **only if** their `:check` fails after the regen
+- `docs/05-ROADMAP-MINDMAP.md`, `docs/ai/coverage/live-verify.json`, `docs/ai/DECISIONS.md`, `docs/ai/STATUS.md`, `docs/ai/work-packets/WORK_INDEX.md`, `docs/ai/execution-checklists/EC_INDEX.md`, `docs/ai/NUMBER-LEDGER.md`, `docs/ai/post-mortems/01.6-WP-745-unmarked-conditional-icon-grants.md` — **modified / new** in the `SPEC:` close commit
 
 ## After Completing
 - [ ] `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail; per-package baseline → new counts in the `EC-782:` body.
 - [ ] Exit 0: `cards:check`, `cards:count-markers:check`, `ledger:heroes:check`, `effect-index:check`, `mechanics:metadata:check`, `sim:coverage --check`, `sim:runtime-observed:check`, `build-local-spike-bundle.mjs --check`.
-- [ ] Apply re-run zero-diff; `koPileLengthAtTurnStart =` grep returns exactly 2.
+- [ ] Apply re-run zero-diff; the non-test `koPileLengthAtTurnStart =` grep (WP §Verification) returns exactly 2.
 - [ ] Revert proofs recorded: (a) drop the `onBegin`/parity snapshot → Rage tests fail; (b) put a play-history type in `WAIT_AND_SEE_CONDITION_TYPES` → the drift pin fails; (c) read raw `inPlay` instead of the played view in the other-cost helper → the Out-of-Time cost case fails.
 - [ ] `SPEC:` close (same PR): D-24568 Active; STATUS; WORK_INDEX `[x]` + `[live-verify: pending]`; EC_INDEX Done; NUMBER-LEDGER LANDED; mindmap `✅` + `roadmap:counts:write`; `live-verify.json` pending rows; 01.6 post-mortem; `roadmap:counts:check`, `ledger:numbers:check`, `workindex:*:check` 0.
 - [ ] Live (D-24026), its own `SPEC:` PR: one card per family on an operator match created after the deploy.
@@ -66,5 +74,6 @@
 - **Every KO counts as "this turn" in the sim.** `applyOnBeginParity` is missing the snapshot.
 - **Dr. Strange grants on a 4-cost alone.** Only one `played-cost` token landed; the second apply entry must target the same line.
 - **`cards:check` passes but co2e is wrong.** co2e is excluded from `cards:check`; check Hawkeye / Black Widow by the apply re-run and the probe.
+- **Rage tests pass on Grief.** `G.splitFaces` unset, so the face never relabels; assert the Rage id in `inPlay`.
 - **Rage tests pass but the live card never gates.** The test called `applyCardPlay` on a Rage id; drive `playCard` + `resolveSplitFaceChoice('b')`.
 - **`sim:coverage` lists a new marker as unsupported.** It is missing from `HERO_PARSER_RECOGNIZED_MARKER_NAMES`.
