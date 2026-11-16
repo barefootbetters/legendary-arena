@@ -2722,3 +2722,54 @@ describe('buildVillainAbilityHooks — WP-839 City-movement grammars (D-24772)',
     }
   });
 });
+// ---------------------------------------------------------------------------
+// WP-840 / D-24773 — co2e The Blob's put-self-beside-mastermind (T3-T4)
+// ---------------------------------------------------------------------------
+
+describe('buildVillainAbilityHooks — WP-840 The Blob grammar (D-24773)', () => {
+  it('T3: the bare token parses; any param is unresolved', () => {
+    const registry = makeRegistry(
+      'core',
+      [
+        {
+          slug: 'wp840',
+          cards: [
+            { slug: 'bare', abilities: ['Ambush: test line. [effect:put-self-beside-mastermind]'] },
+            { slug: 'param', abilities: ['Ambush: test line. [effect:put-self-beside-mastermind:1]'] },
+          ],
+        },
+      ],
+      [],
+    );
+    const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/wp840'], []));
+    const hookFor = (slug: string) => hooks.find((h) => h.cardId === `core-villain-wp840-${slug}-00`)!;
+    assert.deepStrictEqual(hookFor('bare').effects, [{ primitive: 'put-self-beside-mastermind' }]);
+    assert.deepStrictEqual(hookFor('param').effects, []);
+    assert.deepStrictEqual(hookFor('param').unresolvedMarkers, ['put-self-beside-mastermind:1']);
+  });
+
+  it('T4: the regenerated co2e Blob line builds one onAmbush hook', () => {
+    // why: this line is copied verbatim from the regenerated data/cards/co2e.json.
+    const co2eRegistry = makeRegistry(
+      'co2e',
+      [
+        {
+          slug: 'brotherhood-of-mutants',
+          cards: [
+            {
+              slug: 'the-blob',
+              abilities: ["Ambush: Put The Blob to the left of the Mastermind space. Nothing moves The Blob. While he's there, you can't fight the Mastermind. (You can still fight The Blob.) [effect:put-self-beside-mastermind]"],
+            },
+          ],
+        },
+      ],
+      [],
+    );
+    const co2eHooks = buildVillainAbilityHooks(co2eRegistry, makeConfig(['co2e/brotherhood-of-mutants'], []));
+    const blobHooks = co2eHooks.filter((h) => h.cardId === 'co2e-villain-brotherhood-of-mutants-the-blob-00');
+    assert.equal(blobHooks.length, 1);
+    assert.equal(blobHooks[0]!.timing, 'onAmbush');
+    assert.deepStrictEqual(blobHooks[0]!.effects, [{ primitive: 'put-self-beside-mastermind' }]);
+    assert.deepStrictEqual(blobHooks[0]!.unresolvedMarkers ?? [], []);
+  });
+});

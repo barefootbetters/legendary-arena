@@ -25,6 +25,8 @@ import {
   getFightRestrictionBlockReason,
   FIGHT_RESTRICTION_REASONS,
   findFightableFortifier,
+  findFightableVillainBesideMastermind,
+  findFightableOffCityVillain,
 } from './villainDefeatRequirement.logic.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
@@ -542,5 +544,36 @@ describe('WP-873 fortifier helpers (D-24818)', () => {
       price: 3,
       required: 3,
     });
+  });
+});
+
+describe('WP-840 findFightableVillainBesideMastermind — the one off-City authority (D-24773)', () => {
+  const BLOB_00 = 'co2e-villain-brotherhood-of-mutants-the-blob-00' as CardExtId;
+
+  /** The smallest state the off-City authority reads, with The Blob listed at fight cost 4. */
+  function makeBlobState(attack: number): LegendaryGameState {
+    const state = {
+      playerZones: { '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] } },
+      city: [null, null, null, null, null],
+      hq: [null, null, null, null, null],
+      cardTraits: {},
+      cardStats: {
+        [BLOB_00]: { attack: 0, recruit: 0, cost: 0, fightCost: 4, fightCostMode: 'static', fightCostBase: 0 },
+      },
+      villainAttachedHeroes: {},
+      escapedPile: [],
+      turnEconomy: { attack, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+      villainsBesideMastermind: [BLOB_00],
+    };
+    return state as unknown as LegendaryGameState;
+  }
+
+  it('T16: affordable → priced; unaffordable or a bad index → null; a fortifier through the same core', () => {
+    assert.deepStrictEqual(findFightableVillainBesideMastermind(makeBlobState(4), '0', 0), { cardId: BLOB_00, price: 4, required: 4 });
+    assert.equal(findFightableVillainBesideMastermind(makeBlobState(3), '0', 0), null, 'attack 3');
+    assert.equal(findFightableVillainBesideMastermind(makeBlobState(4), '0', 1), null, 'index 1');
+    assert.equal(findFightableVillainBesideMastermind(makeBlobState(4), '0', '0'), null, 'a string index');
+    const blob = makeBlobState(4);
+    assert.deepStrictEqual(findFightableOffCityVillain(blob, '0', BLOB_00), findFightableVillainBesideMastermind(blob, '0', 0));
   });
 });

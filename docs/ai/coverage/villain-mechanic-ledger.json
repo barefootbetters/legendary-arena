@@ -4,13 +4,13 @@
   "summary": {
     "totalRows": 773,
     "byStatus": {
-      "executable": 277,
+      "executable": 278,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 491,
+      "unmarked": 490,
       "subsystem": 4
     },
-    "distinctMechanics": 72
+    "distinctMechanics": 73
   },
   "rows": [
     {
@@ -1899,11 +1899,11 @@
       "cardName": "The Blob",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "put-self-beside-mastermind",
+      "status": "executable",
+      "wp": "WP-840",
+      "decision": "D-24773",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#put-self-beside-mastermind"
     },
     {
       "extId": "co2e-villain-radiation-the-leader",

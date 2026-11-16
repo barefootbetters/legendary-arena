@@ -2093,7 +2093,7 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-brotherhood-of-mutants-the-blob.webp",
           "abilities": [
-            "Ambush: Put The Blob to the left of the Mastermind space. Nothing moves The Blob. While he's there, you can't fight the Mastermind. (You can still fight The Blob.)"
+            "Ambush: Put The Blob to the left of the Mastermind space. Nothing moves The Blob. While he's there, you can't fight the Mastermind. (You can still fight The Blob.) [effect:put-self-beside-mastermind]"
           ],
           "copies": 2
         }

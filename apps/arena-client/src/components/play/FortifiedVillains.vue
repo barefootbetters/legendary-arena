@@ -21,6 +21,11 @@ import type { SubmitMove } from './uiMoveName.types';
  *
  * The chip list is in normal flow under the host's card, never over it (D-24819).
  *
+ * WP-840 / D-24773: a Villain to the left of the Mastermind (co2e The Blob) is projected as a
+ * fortifier entry with `besideMastermindIndex`. Its chip says "is to the left of" instead of
+ * "fortifies", and its Fight sends `fightVillain({ besideMastermindIndex })`. Its gate is the
+ * fortifier gate (the engine fights it through the same off-City path).
+ *
  * Gate order (EC-132 §3, stage → resource → structural): stage, heal lock, cost at the
  * unnamed target (a fortifier is on no named City space, so restricted Attack never
  * counts), then the projected fight restriction. `place` only routes a fortifier to the
@@ -93,12 +98,58 @@ export default defineComponent({
      */
     function chipTitle(fortifier: UIFortifier): string {
       const name = fortifier.display.name;
-      const locks = `${name} fortifies ${fortifier.placeLabel}: ${fortifier.lockText}.`;
+      const locks = `${name} ${relationText(fortifier)} ${fortifier.placeLabel}: ${fortifier.lockText}.`;
       const gate = gateForFortifier(fortifier);
       if (gate.allowed) {
         return `${locks} Fight ${name} for ${fortifier.fightCost} Attack to end it.`;
       }
       return `${locks} You can't fight ${name} now: ${gate.reason ?? 'the fight is not allowed right now.'}`;
+    }
+
+    /**
+     * Returns how the Villain stands to its place, for the chip's hover text.
+     *
+     * // why: WP-840 / D-24773 — The Blob is not the Fortify keyword ("Put The Blob to the left
+     * of the Mastermind space"), so his chip must not say he fortifies it.
+     *
+     * @param fortifier - The projected fortifier.
+     * @returns `is to the left of` for a Villain beside the Mastermind, `fortifies` otherwise.
+     */
+    function relationText(fortifier: UIFortifier): string {
+      if (fortifier.besideMastermindIndex !== undefined) {
+        return 'is to the left of';
+      }
+      return 'fortifies';
+    }
+
+    /**
+     * Returns the screen-reader label naming how the Villain stands to its place.
+     *
+     * @param fortifier - The projected fortifier.
+     * @returns `To the left of <place>` or `Fortifying <place>`.
+     */
+    function relationLabel(fortifier: UIFortifier): string {
+      if (fortifier.besideMastermindIndex !== undefined) {
+        return `To the left of ${fortifier.placeLabel}`;
+      }
+      return `Fortifying ${fortifier.placeLabel}`;
+    }
+
+    /**
+     * Returns a key unique among the chips.
+     *
+     * // why: WP-840 / D-24773 — both Blob copies and a Colleen Wing fortify all share the
+     * place `mastermind`, so a key on the place alone would collapse their chips. A
+     * fortifier's key is unchanged.
+     *
+     * @param fortifier - The projected fortifier.
+     * @returns The place, plus the position for a Villain to the left of the Mastermind.
+     */
+    function fortifierKey(fortifier: UIFortifier): string {
+      if (fortifier.besideMastermindIndex !== undefined) {
+        return `${fortifier.place}-beside-${String(fortifier.besideMastermindIndex)}`;
+      }
+      return fortifier.place;
     }
 
     /**
@@ -139,10 +190,16 @@ export default defineComponent({
       if (!gateForFortifier(fortifier).allowed) {
         return;
       }
+      // why: WP-840 / D-24773 — a Villain to the left of the Mastermind is fought by its
+      // position; a fortifier by its place.
+      if (fortifier.besideMastermindIndex !== undefined) {
+        props.submitMove('fightVillain', { besideMastermindIndex: fortifier.besideMastermindIndex });
+        return;
+      }
       props.submitMove('fightVillain', { fortifiedPlace: fortifier.place });
     }
 
-    return { fortifiersHere, chipTitle, gateForFortifier, onFightFortifier };
+    return { fortifiersHere, chipTitle, relationLabel, fortifierKey, gateForFortifier, onFightFortifier };
   },
 });
 </script>
@@ -151,11 +208,11 @@ export default defineComponent({
   <ul
     v-if="fortifiersHere().length > 0"
     class="fortified-villains"
-    aria-label="Fortifying Villains"
+    aria-label="Villains guarding this place"
   >
     <li
       v-for="fortifier in fortifiersHere()"
-      :key="fortifier.place"
+      :key="fortifierKey(fortifier)"
       class="fortified-villains__chip"
       data-testid="play-fortifier"
       :data-place="fortifier.place"
@@ -163,7 +220,7 @@ export default defineComponent({
     >
       <span class="fortified-villains__row">
         <span class="fortified-villains__name">{{ fortifier.display.name }}</span>
-        <span class="sr-only">Fortifying {{ fortifier.placeLabel }}: {{ fortifier.lockText }}</span>
+        <span class="sr-only">{{ relationLabel(fortifier) }}: {{ fortifier.lockText }}</span>
         <button
           type="button"
           class="fortified-villains__fight"

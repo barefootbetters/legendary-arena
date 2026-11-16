@@ -93,6 +93,8 @@ import type { CaptureHeroResult } from '../board/heroCapture.logic.js';
 // captureHeroFromHq uses (leaves null when the reservoir is empty).
 import { refillHqSlot } from '../board/city.logic.js';
 import { hauntHqSlot, selectUnhauntedHqIndex } from '../board/haunt.logic.js';
+// why: WP-840 / D-24773 — The Blob's Ambush puts him to the left of the Mastermind.
+import { putVillainBesideMastermind } from '../board/besideMastermind.logic.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
 // why: WP-837 / D-24770 — Juggernaut's same-name discards go through the single
 // hand→discard chokepoint so return-on-discard / teleport reactions fire.
@@ -5190,6 +5192,64 @@ function narrateBlockedHaunt(G: LegendaryGameState, label: string, clause: strin
 }
 
 /**
+ * put-self-beside-mastermind primitive — co2e The Blob's Ambush "Put The Blob to the left of
+ * the Mastermind space. Nothing moves The Blob. While he's there, you can't fight the
+ * Mastermind." (WP-840 / D-24773).
+ *
+ * Moves the Villain from its City space into G.villainsBesideMastermind (arrival order). A
+ * Villain no longer in the City, or already listed, stays where it is.
+ *
+ * @param G - Game state (mutated under the Immer draft).
+ * @param _currentPlayer - Unused (the move affects no player).
+ * @param cardId - The Villain whose Ambush fired.
+ * @param timing - The firing timing (onAmbush in the card data).
+ * @param _descriptor - The descriptor (no params).
+ * @returns No targets, with the logged clause as the narrative clause (D-24854).
+ */
+function villainEffectPutSelfBesideMastermind(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  _descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const label = villainEffectTimingLabel(timing);
+  const villainName = resolveCardDisplayName(G, cardId);
+  const cityIndex = G.city.indexOf(cardId);
+  if (cityIndex < 0) {
+    return narrateBlockedBesideMastermind(G, label, `${villainName} is not in the City; it stays where it is`);
+  }
+  if (!putVillainBesideMastermind(G, cardId)) {
+    return narrateBlockedBesideMastermind(G, label, `${villainName} is already to the left of the Mastermind`);
+  }
+  // why: WP-840 / D-24773 — the Ambush runs after the City entry (and any escape it caused,
+  // rules v23 L573-576) and takes him OUT of the City (the D-24587 Haunt shape). Nulling the
+  // space is what makes "Nothing moves The Blob" true by construction: no City mover, push,
+  // escape or Guard reads G.villainsBesideMastermind, and the card-uniqueness invariant sees
+  // him only there.
+  G.city[cityIndex] = null;
+  const clause = `${villainName} moves to the left of the Mastermind; nothing can move him, and the Mastermind can't be fought while he is there`;
+  pushLog(G, `${label} effect: ${clause}.`, 'threat');
+  // why: WP-897 / D-24854 — the narrative clause is the logged clause.
+  return { targets: [], narrativeClause: clause };
+}
+
+/**
+ * Logs a put-self-beside-mastermind that did not happen and reports the same clause
+ * (WP-840 / D-24773, WP-897 / D-24854).
+ *
+ * @param G - Game state (log appended).
+ * @param label - The timing label (`Ambush`, `Fight`, `Escape`).
+ * @param clause - The blocked clause, without prefix or final period.
+ * @returns No targets, with the logged clause as the narrative clause.
+ */
+function narrateBlockedBesideMastermind(G: LegendaryGameState, label: string, clause: string): VillainEffectApplication {
+  pushLog(G, `${label} effect: ${clause}.`, 'blocked');
+  // why: WP-897 / D-24854 — the narrative clause is the logged clause.
+  return { targets: [], narrativeClause: clause };
+}
+
+/**
  * Whether a player's Victory Pile holds a villain of the target group OTHER than
  * the just-defeated/escaped card (WP-494 / D-24299).
  *
@@ -5479,6 +5539,9 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'move-self-to-city-space': villainEffectMoveSelfToCitySpace,
   'reveal-villain-deck-top-swap-self': villainEffectRevealVillainDeckTopSwapSelf,
   'enter-city-from-victory-pile': villainEffectEnterCityFromVictoryPile,
+  // why: WP-840 / D-24773 — position 64, co2e The Blob: the executor moves him out of the City
+  // to the left of the Mastermind and sets its narrative clause (D-24854).
+  'put-self-beside-mastermind': villainEffectPutSelfBesideMastermind,
 };
 
 /**

@@ -115,6 +115,11 @@ function deepCopyFortifiers(fortifiers: UIFortifier[]): UIFortifier[] {
       ...(fortifier.fightRestrictionReason !== undefined
         ? { fightRestrictionReason: fortifier.fightRestrictionReason }
         : {}),
+      // why: WP-840 / D-24773 — The Blob's position routes the chip's fight; it must pass
+      // through or the whitelist drops it (the EC-206 / #1165 class). Absent stays absent.
+      ...(fortifier.besideMastermindIndex !== undefined
+        ? { besideMastermindIndex: fortifier.besideMastermindIndex }
+        : {}),
     });
   }
   return result;

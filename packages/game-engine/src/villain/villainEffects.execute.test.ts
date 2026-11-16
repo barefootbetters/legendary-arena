@@ -7644,3 +7644,72 @@ describe('WP-839 City-movement executor (D-24772)', () => {
     assert.equal(findVillainHookDescriptor(gated, GOBLIN, 'onFight', 'reveal-villain-deck-top-swap-self'), null);
   });
 });
+describe('WP-840 The Blob executor (D-24773)', () => {
+  const BLOB_00 = 'co2e-villain-brotherhood-of-mutants-the-blob-00' as CardExtId;
+  const BLOB_01 = 'co2e-villain-brotherhood-of-mutants-the-blob-01' as CardExtId;
+  const V0 = 'test/villain/v0#0' as CardExtId;
+  const V1 = 'test/villain/v1#0' as CardExtId;
+  const MOVED_CLAUSE =
+    "The Blob moves to the left of the Mastermind; nothing can move him, and the Mastermind can't be fought while he is there";
+
+  /**
+   * A state with both Blob copies' Ambush hook and the given City.
+   *
+   * @param city - The City.
+   * @returns The game state.
+   */
+  function makeBlobG(city: (CardExtId | null)[]): LegendaryGameState {
+    const G = makeG({
+      hooks: [
+        { cardId: BLOB_00, timing: 'onAmbush', keywords: [], effects: [{ primitive: 'put-self-beside-mastermind' }] },
+        { cardId: BLOB_01, timing: 'onAmbush', keywords: [], effects: [{ primitive: 'put-self-beside-mastermind' }] },
+      ],
+      messages: [],
+      cardDisplayData: { [BLOB_00]: { name: 'The Blob' }, [BLOB_01]: { name: 'The Blob' }, [V0]: { name: 'Toad' }, [V1]: { name: 'Pyro' } },
+    });
+    (G as { city?: unknown }).city = city;
+    return G;
+  }
+
+  it('T5: he leaves his City space for the list; the clause is the logged clause; traced fired', () => {
+    const G = makeBlobG([V0, V1, BLOB_00, null, null]);
+    const execution = executeVillainAbilitiesWithNarrative(G, CTX, BLOB_00, 'onAmbush');
+    assert.deepStrictEqual(G.city, [V0, V1, null, null, null]);
+    assert.deepStrictEqual(G.villainsBesideMastermind, [BLOB_00]);
+    assert.deepStrictEqual(execution.results, []);
+    assert.deepStrictEqual(execution.narrativeClauses, [MOVED_CLAUSE]);
+    assert.equal(G.messages![0]!.text, `Ambush effect: ${MOVED_CLAUSE}.`);
+    assert.equal(G.messages![0]!.outcome, 'threat');
+    const statuses = (G.diagnostics?.traces ?? []).map((trace) => `${trace.effect}:${trace.status}`);
+    assert.deepStrictEqual(statuses, ['put-self-beside-mastermind:fired']);
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0);
+  });
+
+  it('T6: the second copy follows the first, in arrival order', () => {
+    const G = makeBlobG([null, null, BLOB_00, null, null]);
+    executeVillainAbilities(G, CTX, BLOB_00, 'onAmbush');
+    G.city[0] = BLOB_01;
+    executeVillainAbilities(G, CTX, BLOB_01, 'onAmbush');
+    assert.deepStrictEqual(G.villainsBesideMastermind, [BLOB_00, BLOB_01]);
+    assert.deepStrictEqual(G.city, [null, null, null, null, null]);
+  });
+
+  it('T7: not in the City, or already listed — no write, a blocked clause equal to the log; never throws', () => {
+    const absentG = makeBlobG([V0, null, null, null, null]);
+    const absent = executeVillainAbilitiesWithNarrative(absentG, CTX, BLOB_00, 'onAmbush');
+    assert.equal('villainsBesideMastermind' in absentG, false);
+    assert.deepStrictEqual(absentG.city, [V0, null, null, null, null]);
+    assert.equal(absentG.messages![0]!.text, 'Ambush effect: The Blob is not in the City; it stays where it is.');
+    assert.equal(absentG.messages![0]!.outcome, 'blocked');
+    assert.deepStrictEqual(absent.narrativeClauses, ['The Blob is not in the City; it stays where it is']);
+
+    const listedG = makeBlobG([null, BLOB_00, null, null, null]);
+    listedG.villainsBesideMastermind = [BLOB_00];
+    const listed = executeVillainAbilitiesWithNarrative(listedG, CTX, BLOB_00, 'onAmbush');
+    assert.deepStrictEqual(listedG.city, [null, BLOB_00, null, null, null]);
+    assert.deepStrictEqual(listedG.villainsBesideMastermind, [BLOB_00]);
+    assert.equal(listedG.messages![0]!.text, 'Ambush effect: The Blob is already to the left of the Mastermind.');
+    assert.equal(listedG.messages![0]!.outcome, 'blocked');
+    assert.deepStrictEqual(listed.narrativeClauses, ['The Blob is already to the left of the Mastermind']);
+  });
+});

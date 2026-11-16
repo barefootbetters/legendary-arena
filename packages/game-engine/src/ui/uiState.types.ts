@@ -692,9 +692,14 @@ export interface UICityState {
   escapedPile: UIDisplayEntry[];
   /**
    * WP-873 / D-24818 — the Villains fortifying a place (Squirrel Girl at the Sidekick
-   * Stack, Colleen Wing at the Mastermind), in FORTIFY_PLACES order. A fortifier left the
+   * Stack, Colleen Wing at the Mastermind), in FORTIFY_PLACES order, then the Villains to the
+   * left of the Mastermind in arrival order (WP-840, below). A fortifier left the
    * Escape Pile, so the client shows it under the Escaped Pile column with its own Fight
    * button. Public (every audience). Present only when at least one place is fortified.
+   *
+   * WP-840 / D-24773 — a Villain to the left of the Mastermind (co2e The Blob) is listed here
+   * too, after the fortifiers, one entry per Villain in arrival order, with
+   * `besideMastermindIndex` set; the key is also present while only such a Villain is there.
    */
   fortifiers?: UIFortifier[];
 }
@@ -707,7 +712,11 @@ export interface UICityState {
  * switches on `place` (D-24574: the client gates on projected data).
  */
 export interface UIFortifier {
-  /** The fortified place; the client sends it back as `fightVillain({ fortifiedPlace })`. */
+  /**
+   * The fortified place, or `mastermind` for a Villain to the left of the Mastermind
+   * (WP-840). The client sends it back as `fightVillain({ fortifiedPlace })` unless
+   * `besideMastermindIndex` is present.
+   */
   place: FortifyPlace;
   /** The place's player-facing name (`the Sidekick Stack`). */
   placeLabel: string;
@@ -719,6 +728,13 @@ export interface UIFortifier {
   lockText: string;
   /** Present only while the fortifier's printed fight restriction blocks the active player. */
   fightRestrictionReason?: string;
+  /**
+   * WP-840 / D-24773 — present only on an entry for a Villain to the left of the Mastermind
+   * (co2e The Blob; `place` is `'mastermind'`): its 0-based position in
+   * G.villainsBesideMastermind. The client sends it back as
+   * `fightVillain({ besideMastermindIndex })`. Absent on every fortifier.
+   */
+  besideMastermindIndex?: number;
 }
 
 /**
@@ -830,8 +846,9 @@ export interface UIMastermindState {
   // the key appears only while the Mastermind actually haunts.
   isHaunting?: true;
   // why: WP-873 / D-24818 — present only while a Villain fortifies the Mastermind (Colleen
-  // Wing): the engine-written reason it can't be fought, which the tile shows as the Fight
-  // button's tooltip. Public; omit-when-absent.
+  // Wing) or, WP-840 / D-24773, is to its left (The Blob; a fortifier's reason wins when both
+  // guard it): the engine-written reason it can't be fought, which the tile shows as the
+  // Fight button's tooltip. Public; omit-when-absent.
   fortifiedReason?: string;
 }
 

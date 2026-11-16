@@ -2390,6 +2390,15 @@ export interface LegendaryGameState {
   /** Per-place fortifying Villain (lazy; WP-873 / D-24818). */
   fortifications?: Partial<Record<FortifyPlace, Fortification>>;
 
+  // why: WP-840 / D-24773 — co2e The Blob's Ambush puts him "to the left of the Mastermind
+  // space": outside the City, so no City mover, push, escape or Guard reaches him ("Nothing
+  // moves The Blob"). Arrival order; both copies can be there at once (Fortify holds one
+  // Villain per place, so this is its own list). Created lazily by the first put and the key
+  // deleted when the last one is fought, so a match without a Blob Ambush omits it from
+  // canonical JSON. Read and written only by board/besideMastermind.logic.ts.
+  /** Villains to the left of the Mastermind, arrival order (lazy; WP-840 / D-24773). */
+  villainsBesideMastermind?: CardExtId[];
+
   // why: WP-695 / D-24512 — per-player deferred SPECIFIC-card hand injections, keyed by
   // PlayerID; value = the ext_ids to add to that player's hand as extra cards at their
   // NEXT play-phase `onBegin` fill (after the normal fill), then the key is deleted. A
