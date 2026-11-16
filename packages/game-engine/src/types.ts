@@ -2819,6 +2819,12 @@ export interface LegendaryGameState {
   // that never reveals one carries no field.
   /** Flying Shield Block copies revealed this turn (WP-827). */
   flyingShieldBlockUsedThisTurn?: CardExtId[] | undefined;
+  // why: WP-768 / D-24601 — Indestructible Man's "Once during each of your turns, you may
+  // shuffle two Elite Assassins … If you do, fight Indestructible Man." Written only by a
+  // successful shuffle-fight and deleted at turn start (game.ts onBegin + applyOnBeginParity),
+  // never seeded, so every other match carries no field and the hash oracles hold.
+  /** True once this turn's Indestructible Man shuffle-fight has been used (WP-768). */
+  indestructibleManShuffleUsedThisTurn?: true | undefined;
   // why: WP-828 / D-24761 — each fired "a Hero in your hand gains Man Out of Time this turn"
   // line owes one grant here, resolved by the play-phase onMove opener (auto or via
   // G.pendingSeatChoice, kind 'out-of-time-grant'). Lazily created, deleted at turn start.

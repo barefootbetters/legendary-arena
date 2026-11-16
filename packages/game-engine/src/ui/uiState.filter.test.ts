@@ -4309,3 +4309,96 @@ describe('WP-840 The Blob projection (D-24773)', () => {
     }
   });
 });
+
+describe('WP-768 / D-24601 — Indestructible Man shuffleFight + attack lock projection (T11)', () => {
+  const ASSASSIN_A = 'bkwd-villain-elite-assassins-blue-talon-00' as CardExtId;
+  const ASSASSIN_B = 'bkwd-villain-elite-assassins-iron-maiden-00' as CardExtId;
+  const LOCK_REASON =
+    "You can't use Attack to fight Indestructible Man. Shuffle two Elite Assassins from your Victory Pile into the Villain Deck to fight him.";
+
+  /**
+   * A game state with Indestructible Man as the Mastermind and two Assassins banked by seat 0.
+   *
+   * @param mastermindId - The selected Mastermind.
+   * @returns The game state.
+   */
+  function createIndestructibleManState(mastermindId = 'bkwd/indestructible-man'): LegendaryGameState {
+    const baseState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    const gameState: LegendaryGameState = { ...baseState, selection: { ...baseState.selection, mastermindId } };
+    gameState.mastermind = { ...gameState.mastermind, tacticsDeck: ['tactic-a', 'tactic-b'] as CardExtId[] };
+    gameState.playerZones['0']!.victory = [ASSASSIN_A, ASSASSIN_B];
+    gameState.cardDisplayData = {
+      ...gameState.cardDisplayData,
+      [ASSASSIN_A]: { extId: ASSASSIN_A, name: 'Blue Talon', imageUrl: '', cost: 0 },
+      [ASSASSIN_B]: { extId: ASSASSIN_B, name: 'Iron Maiden', imageUrl: '', cost: 0 },
+    };
+    return gameState;
+  }
+
+  it('buildUIState projects shuffleFight + the lock reason, and both survive every audience unaliased', () => {
+    const uiState = buildUIState(createIndestructibleManState(), mockCtx);
+    // why: five-step step 2 — buildUIState alone carries the fields, before any filter.
+    assert.equal(uiState.mastermind.fortifiedReason, LOCK_REASON);
+    assert.equal(uiState.mastermind.shuffleFight!.requiredCount, 2);
+    assert.equal(uiState.mastermind.shuffleFight!.isUsedThisTurn, false);
+    assert.equal(uiState.mastermind.shuffleFight!.isAvailable, true);
+    assert.deepStrictEqual(
+      uiState.mastermind.shuffleFight!.eligibleAssassins.map((entry) => [entry.extId, entry.display.name]),
+      [[ASSASSIN_A, 'Blue Talon'], [ASSASSIN_B, 'Iron Maiden']],
+    );
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const filtered = filterUIStateForAudience(uiState, audience);
+      const label = JSON.stringify(audience);
+      assert.deepStrictEqual(
+        JSON.parse(JSON.stringify(filtered.mastermind.shuffleFight)),
+        JSON.parse(JSON.stringify(uiState.mastermind.shuffleFight)),
+        `${label}: mastermind.shuffleFight`,
+      );
+      assert.notEqual(
+        filtered.mastermind.shuffleFight!.eligibleAssassins[0]!.display,
+        uiState.mastermind.shuffleFight!.eligibleAssassins[0]!.display,
+        `${label}: not aliased`,
+      );
+      assert.equal(filtered.mastermind.fortifiedReason, LOCK_REASON, `${label}: mastermind.fortifiedReason`);
+    }
+  });
+
+  it('a guard reason wins; the lock drops once he is vanquished; used / short shows isAvailable false', () => {
+    const guarded = createIndestructibleManState();
+    guarded.villainsBesideMastermind = ['co2e-villain-brotherhood-of-mutants-the-blob-00' as CardExtId];
+    const guardedUi = buildUIState(guarded, mockCtx);
+    assert.notEqual(guardedUi.mastermind.fortifiedReason, LOCK_REASON, 'the Blob reason wins');
+    assert.equal(guardedUi.mastermind.shuffleFight!.isAvailable, false, 'a guard blocks the shuffle-fight too');
+
+    const vanquished = createIndestructibleManState();
+    vanquished.mastermind = { ...vanquished.mastermind, tacticsDeck: [] };
+    assert.equal('fortifiedReason' in buildUIState(vanquished, mockCtx).mastermind, false);
+
+    const used = createIndestructibleManState();
+    used.indestructibleManShuffleUsedThisTurn = true;
+    const usedUi = buildUIState(used, mockCtx);
+    assert.equal(usedUi.mastermind.shuffleFight!.isUsedThisTurn, true);
+    assert.equal(usedUi.mastermind.shuffleFight!.isAvailable, false);
+
+    const short = createIndestructibleManState();
+    short.playerZones['0']!.victory = [ASSASSIN_A];
+    assert.equal(buildUIState(short, mockCtx).mastermind.shuffleFight!.isAvailable, false);
+  });
+
+  it('fortifiedReason is present exactly when guarded or his lock is shown; no shuffleFight for another Mastermind', () => {
+    const other = buildUIState(createIndestructibleManState('test-mastermind-001'), mockCtx);
+    assert.equal('shuffleFight' in other.mastermind, false);
+    assert.equal('fortifiedReason' in other.mastermind, false);
+    for (const mastermindId of ['bkwd/indestructible-man', 'test-mastermind-001']) {
+      for (const isGuarded of [false, true]) {
+        const gameState = createIndestructibleManState(mastermindId);
+        if (isGuarded) {
+          gameState.villainsBesideMastermind = ['co2e-villain-brotherhood-of-mutants-the-blob-00' as CardExtId];
+        }
+        const projected = filterUIStateForAudience(buildUIState(gameState, mockCtx), SPECTATOR);
+        const expected = isMastermindGuarded(gameState) || mastermindId === 'bkwd/indestructible-man';
+        assert.equal('fortifiedReason' in projected.mastermind, expected, `${mastermindId} guarded=${String(isGuarded)}`);
+      }
+    }
+  });
+});

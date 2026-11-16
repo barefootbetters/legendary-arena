@@ -108,6 +108,8 @@ export function takeVillainBesideMastermind(G: LegendaryGameState, besideIndex: 
  * fightMastermind move, its getLegalMoves mirror (D-24364) and the projected
  * `mastermind.fortifiedReason` all read this, so they can never disagree. It covers a
  * Villain fortifying the Mastermind (WP-873, Colleen Wing) and one to its left (The Blob).
+ * WP-768 / D-24601: `fortifiedReason` is also written for Indestructible Man's attack lock
+ * (mastermind/indestructibleMan.logic.ts), which is not a guard — his shuffle-fight stays open.
  *
  * @param G - The game state to inspect (not mutated).
  * @returns True while a Villain fortifies the Mastermind or is to its left.

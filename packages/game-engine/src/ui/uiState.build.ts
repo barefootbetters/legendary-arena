@@ -95,6 +95,7 @@ import type {
   UIHqCardChoice,
   UIEligibleKoHeroCard,
   UIDeckCardStat,
+  UIShuffleFightState,
 } from './uiState.types.js';
 // why: WP-313 — reuse the engine's authoritative victory-pile eligibility helper
 // (victory pile ∩ villainDeckCardTypes ∈ {villain, henchman}, D-24608) so the projected list is
@@ -182,6 +183,16 @@ import { FORTIFY_LOCK_TEXT, FORTIFY_PLACE_LABELS } from '../board/fortify.types.
 // fortifier entry with its index, and its lock reason feeds mastermind.fortifiedReason.
 import { buildBesideMastermindBlockReason, listVillainsBesideMastermind } from '../board/besideMastermind.logic.js';
 import { enigmaColorsOf } from '../rules/enigmaCode.logic.js';
+// why: WP-768 / D-24601 — Indestructible Man's attack lock and shuffle-fight projection read the
+// same helpers the fightMastermind move and its getLegalMoves mirror read.
+import {
+  INDESTRUCTIBLE_MAN_ATTACK_LOCK_REASON,
+  SHUFFLE_FIGHT_ASSASSIN_COUNT,
+  isIndestructibleMan,
+  isIndestructibleManLockShown,
+  isShuffleFightOpen,
+  listEligibleAssassins,
+} from '../mastermind/indestructibleMan.logic.js';
 
 // why: exact structural contract — do not widen or add optional fields.
 // buildUIState MUST NOT depend on any other ctx fields.
@@ -749,6 +760,22 @@ interface FortifyProjection {
 }
 
 /**
+ * Builds Indestructible Man's shuffle-fight projection for the active player (WP-768 / D-24601).
+ *
+ * @param gameState - The game state (read-only).
+ * @param activePlayerId - The active player.
+ * @returns The projection.
+ */
+function buildShuffleFightProjection(gameState: LegendaryGameState, activePlayerId: string): UIShuffleFightState {
+  return {
+    requiredCount: SHUFFLE_FIGHT_ASSASSIN_COUNT,
+    isUsedThisTurn: gameState.indestructibleManShuffleUsedThisTurn === true,
+    isAvailable: isShuffleFightOpen(gameState, activePlayerId),
+    eligibleAssassins: buildDisplayEntries(listEligibleAssassins(gameState, activePlayerId), gameState),
+  };
+}
+
+/**
  * Builds the Fortify projection: one UIFortifier per fortified place, and the reason each
  * locked place shows (WP-873 / D-24818).
  *
@@ -809,6 +836,13 @@ function buildFortifyProjection(gameState: LegendaryGameState, activePlayerId: s
   // fortifier's reason wins when both a fortifier and The Blob guard the Mastermind.
   if (mastermindFortifiedReason === null) {
     mastermindFortifiedReason = buildBesideMastermindBlockReason(gameState);
+  }
+  // why: WP-768 / D-24601 — fortifiedReason is "the engine-written reason a plain Fight is
+  // refused": isMastermindGuarded OR Indestructible Man's attack lock. The live tile already
+  // disables Fight with this reason, so the lock needs no client change. A guard reason wins
+  // (a guard blocks even his shuffle-fight); the lock is dropped once he is vanquished.
+  if (mastermindFortifiedReason === null && isIndestructibleManLockShown(gameState)) {
+    mastermindFortifiedReason = INDESTRUCTIBLE_MAN_ATTACK_LOCK_REASON;
   }
   return { fortifiers, mastermindFortifiedReason, sidekickStackFortifiedReason };
 }
@@ -1238,6 +1272,11 @@ export function buildUIState(
     // the predicate fightMastermind gates on.
     ...(fortifyProjection.mastermindFortifiedReason !== null
       ? { fortifiedReason: fortifyProjection.mastermindFortifiedReason }
+      : {}),
+    // why: WP-768 / D-24601 — present only for Indestructible Man, read for the active player
+    // (the only one who can fight); the WP-770 chooser lists these Assassins.
+    ...(isIndestructibleMan(gameState)
+      ? { shuffleFight: buildShuffleFightProjection(gameState, ctx.currentPlayer) }
       : {}),
   };
 

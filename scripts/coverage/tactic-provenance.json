@@ -211,6 +211,24 @@
       "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveDemonicEssenceOfGhostRider",
       "wp": "WP-758",
       "decision": "D-24588"
+    },
+    "bkwd-mastermind-indestructible-man-secrets-of-indestructibility": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveSecretsOfIndestructibility",
+      "wp": "WP-768",
+      "decision": "D-24601"
+    },
+    "bkwd-mastermind-indestructible-man-international-arms-dealer": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveInternationalArmsDealer",
+      "wp": "WP-768",
+      "decision": "D-24601"
+    },
+    "bkwd-mastermind-indestructible-man-unveil-project-four": {
+      "status": "deferred",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveUnveilProjectFour",
+      "wp": "WP-768",
+      "decision": "D-24601"
     }
   }
 }

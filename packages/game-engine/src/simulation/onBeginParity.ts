@@ -148,6 +148,12 @@ export function applyOnBeginParity(
   if (gameState.flyingShieldBlockUsedThisTurn !== undefined) {
     delete gameState.flyingShieldBlockUsedThisTurn;
   }
+  // why: WP-768 / D-24601 — mirrors game.ts onBegin's Indestructible Man once-per-turn reset;
+  // without it the sim bot would shuffle-fight once and never again. Guarded so a never-set G
+  // stays byte-unchanged.
+  if (gameState.indestructibleManShuffleUsedThisTurn !== undefined) {
+    delete gameState.indestructibleManShuffleUsedThisTurn;
+  }
   // why: WP-828 / D-24761 — mirrors game.ts onBegin's Man Out of Time grant resets. The rebuilt
   // loops never run the onMove opener, so an owed grant here is dropped at the turn boundary.
   // Guarded so a never-set G stays byte-unchanged.

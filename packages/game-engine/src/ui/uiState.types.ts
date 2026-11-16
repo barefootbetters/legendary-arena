@@ -848,8 +848,33 @@ export interface UIMastermindState {
   // why: WP-873 / D-24818 — present only while a Villain fortifies the Mastermind (Colleen
   // Wing) or, WP-840 / D-24773, is to its left (The Blob; a fortifier's reason wins when both
   // guard it): the engine-written reason it can't be fought, which the tile shows as the
-  // Fight button's tooltip. Public; omit-when-absent.
+  // Fight button's tooltip. WP-768 / D-24601 widens it to "the reason a plain Fight is
+  // refused": it also carries Indestructible Man's attack lock while he can still be fought
+  // (a guard reason wins). Public; omit-when-absent.
   fortifiedReason?: string;
+  // why: WP-768 / D-24601 — present only when the Mastermind is Indestructible Man, read for the
+  // active player: the Elite Assassins the WP-770 chooser offers for his shuffle-fight. Public
+  // (Victory Piles are public); the filter MUST pass it through (the EC-206 drop).
+  shuffleFight?: UIShuffleFightState;
+}
+
+/**
+ * Indestructible Man's shuffle-fight state for the active player (WP-768 / D-24601).
+ */
+export interface UIShuffleFightState {
+  /** How many Elite Assassins one shuffle-fight costs (2 on the base face). */
+  requiredCount: number;
+  /** True once this turn's shuffle-fight has been used. */
+  isUsedThisTurn: boolean;
+  /**
+   * True when the shuffle-fight passes every BOARD and flag gate for the active player
+   * (enough Assassins, unused this turn, a tactic or the Final Blow left, not haunting, not
+   * guarded). It does NOT cover the stage, heal or pending-choice gates; the client applies
+   * those exactly as it does for a plain Fight.
+   */
+  isAvailable: boolean;
+  /** The active player's Elite Assassins in their Victory Pile, in pile order. */
+  eligibleAssassins: UIDisplayEntry[];
 }
 
 /**

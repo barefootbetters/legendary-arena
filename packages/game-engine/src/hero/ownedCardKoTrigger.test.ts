@@ -410,6 +410,9 @@ const LOCKED_TABLE: Record<string, KoSiteCounts> = {
   'rules/schemeTwistResolvers.ts#koFromHq': { koSites: 1, ownedRecords: 0 },
   'rules/tacticHandlers.ts#resolveWhispersAndLies': { koSites: 1, ownedRecords: 0 },
   'rules/tacticHandlers.ts#resolveFindingZemo': { koSites: 1, ownedRecords: 0 },
+  // why: WP-768 / D-24601 — Secrets of Indestructibility KOs the defeating player's own Wounds
+  // from hand and discard pile, so it credits the owner (Absorb Energies, D-24789).
+  'rules/tacticHandlers.ts#koWoundsFromZone': { koSites: 1, ownedRecords: 1 },
   'rules/timestreamPurge.logic.ts#sweepPurgedHeroesFromHq': { koSites: 1, ownedRecords: 0 },
   'villain/villainEffects.execute.ts#villainEffectKoBystanderEachVictoryPile': { koSites: 1, ownedRecords: 0 },
   'villain/villainEffects.execute.ts#villainEffectScryKoOwnDeck': { koSites: 1, ownedRecords: 1 },

@@ -24,6 +24,13 @@ import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic
 import { isHqSlotHaunted, isMastermindHaunting } from '../board/haunt.logic.js';
 import { listFortifications } from '../board/fortify.logic.js';
 import { isMastermindGuarded, listVillainsBesideMastermind } from '../board/besideMastermind.logic.js';
+// why: WP-768 / D-24601 — the same helpers the fightMastermind shuffle-fight gate reads.
+import {
+  SHUFFLE_FIGHT_ASSASSIN_COUNT,
+  canShuffleFight,
+  isIndestructibleMan,
+  selectLowestVpAssassins,
+} from '../mastermind/indestructibleMan.logic.js';
 import {
   getDefeatRequirement,
   playerMeetsDefeatRequirement,
@@ -1260,12 +1267,27 @@ export function getLegalMoves(
   // why: WP-873 / D-24818 + WP-840 / D-24773 — nor while a Villain fortifies it (Colleen
   // Wing) or is to its left (The Blob); the same isMastermindGuarded predicate gates the move
   // (D-24364 mirror).
-  if (
+  const isMastermindFightable =
     stage === 'main' &&
     gameState.mastermind.tacticsDeck.length > 0 &&
     !isMastermindHaunting(gameState) &&
-    !isMastermindGuarded(gameState)
-  ) {
+    !isMastermindGuarded(gameState);
+  if (isMastermindFightable && isIndestructibleMan(gameState)) {
+    // why: WP-768 / D-24601 — mirrors the move: attack can't fight Indestructible Man, so no
+    // plain intent and no price check (a Dark Portal can raise his price; it is never paid).
+    // When the shuffle is open, one intent spends the two lowest-VP Assassins.
+    if (canShuffleFight(gameState, activePlayer)) {
+      const shuffleAssassinIds = selectLowestVpAssassins(gameState, activePlayer, SHUFFLE_FIGHT_ASSASSIN_COUNT);
+      if ((gameState.enigmaCode?.length ?? 0) === 0) {
+        legalMoves.push({ name: 'fightMastermind', args: { shuffleAssassinIds } });
+      } else {
+        const enigmaGuess = chooseBotEnigmaGuess(gameState, activePlayer);
+        if (enigmaGuess !== null) {
+          legalMoves.push({ name: 'fightMastermind', args: { shuffleAssassinIds, enigmaGuess } });
+        }
+      }
+    }
+  } else if (isMastermindFightable) {
     // why: D-24802 — mirror fightMastermind: the Size-Changing price.
     const mastermindFightCost = resolveMastermindFightPrice(gameState, activePlayer);
     // why: WP-790 / D-24652 — the same per-target figure the fightMastermind move gates on.

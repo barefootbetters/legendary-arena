@@ -91,6 +91,12 @@
       "handler": "packages/game-engine/src/mastermind/zarathos.logic.ts#resolveZarathosStrike",
       "wp": "WP-758",
       "decision": "D-24588"
+    },
+    "bkwd-mastermind-indestructible-man-master-strike": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveIndestructibleManStrike",
+      "wp": "WP-768",
+      "decision": "D-24601"
     }
   }
 }

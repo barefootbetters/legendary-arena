@@ -72,6 +72,17 @@ import { hasHealedThisTurn } from './healWounds.js';
 import { formatCardRef, resolveCardName } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
 import { isEnigmaGuessWellFormed, settleEnigmaGuess } from '../rules/enigmaCode.logic.js';
+import type { EnigmaColor } from '../rules/enigmaCode.logic.js';
+import type { CardExtId } from '../state/zones.types.js';
+// why: WP-768 / D-24601 — Indestructible Man's shuffle-fight rules live in one module that the
+// move, its getLegalMoves mirror and the projection all read.
+import {
+  isIndestructibleMan,
+  isValidShuffleFightPick,
+  canShuffleFight,
+  shuffleIntoVillainDeck,
+  formatAssassinList,
+} from '../mastermind/indestructibleMan.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -92,6 +103,13 @@ interface FightMastermindArgs {
    * holds a card; ignored otherwise. A missing or malformed guess rejects the fight silently.
    */
   enigmaGuess?: readonly string[];
+  /**
+   * WP-768 / D-24601 — Indestructible Man: the two Elite Assassins the player chooses to shuffle
+   * from their Victory Pile into the Villain Deck to fight him (operator decision: a move
+   * argument, the WP-757 pattern). Untrusted; exactly two distinct eligible ids are checked at
+   * runtime. Ignored for every other Mastermind.
+   */
+  shuffleAssassinIds?: readonly CardExtId[];
 }
 
 /**
@@ -125,7 +143,7 @@ interface TacticSeatChoiceEvents {
 // execution; tactic Fight was scoped out of WP-316/386/388 and had no owner).
 export function fightMastermind(
   { G, ...context }: MoveContext,
-  { useExcessiveViolence, enigmaGuess }: FightMastermindArgs = {},
+  { useExcessiveViolence, enigmaGuess, shuffleAssassinIds }: FightMastermindArgs = {},
 ): void {
   // why: WP-754 / D-24581 — take the spread move context (the playCard shape) so the Excessive
   // Violence fire below hands hero handlers the context they expect, with `random` on it. Passing
@@ -168,6 +186,23 @@ export function fightMastermind(
     return;
   }
 
+  // why: WP-768 / D-24601 — "You can't use [icon:attack] to fight Indestructible Man." A plain
+  // call returns at any attack value (with or without Excessive Violence); his only fight is the
+  // once-per-turn shuffle of two Elite Assassins the player names, so the price check below is
+  // skipped for him — attack is never read or spent.
+  const isShuffleFight = isIndestructibleMan(G);
+  if (isShuffleFight) {
+    if (shuffleAssassinIds === undefined) {
+      return;
+    }
+    if (!isValidShuffleFightPick(G, ctx.currentPlayer, shuffleAssassinIds)) {
+      return;
+    }
+    if (!canShuffleFight(G, ctx.currentPlayer)) {
+      return;
+    }
+  }
+
   // why: baseCardId is the canonical stats key; fightCost is the fight
   // requirement field per WP-018 D-1805; never use G.mastermind.id or
   // any tactic card ID for stat lookup
@@ -184,7 +219,7 @@ export function fightMastermind(
 
   // why: silent failure preserves deterministic move contract —
   // insufficient attack points means the mastermind fight cannot proceed
-  if (spendableAttack < requiredFightCost) {
+  if (!isShuffleFight && spendableAttack < requiredFightCost) {
     return;
   }
 
@@ -256,9 +291,19 @@ export function fightMastermind(
   // the color of each Enigma card, and then reveal them. If you guessed them right, fight the
   // Mastermind as normal. If not, your turn ends." Settled after every other gate, so a guess is
   // only spent on a fight that would happen; a malformed guess is an invalid request (silent).
-  if ((G.enigmaCode?.length ?? 0) > 0) {
+  // why: WP-768 / D-24601 — gated off for Indestructible Man: his path pays its Assassins
+  // first and settles the guess in resolveIndestructibleManShuffleFight, exactly once.
+  if (!isShuffleFight && (G.enigmaCode?.length ?? 0) > 0) {
     if (!isEnigmaGuessWellFormed(G, enigmaGuess)) return;
     if (!settleEnigmaGuess(G, ctx.currentPlayer, enigmaGuess, random, events)) return;
+  }
+
+  if (isShuffleFight) {
+    // why: the validated pick narrows to the two ids (isValidShuffleFightPick above).
+    resolveIndestructibleManShuffleFight(
+      G, ctx, random, events, shuffleAssassinIds as readonly CardExtId[], enigmaGuess, isFinalBlow,
+    );
+    return;
   }
 
   // Step 3: Mutate G.
@@ -332,6 +377,68 @@ export function fightMastermind(
   // "defeating the Mastermind" for a whenever-you-defeat trigger — so EVERY tactic
   // fight counts (repeatable +3 per tactic), not only the final vanquish. GATED and
   // EDGE-triggered exactly as the fightVillain site; consumed by resolveDeferredHeroGrants.
+  if (G.deferredConditionalGrants !== undefined && G.deferredConditionalGrants.length > 0) {
+    G.villainOrMastermindDefeatedSinceResolve = true;
+  }
+}
+
+/**
+ * Resolves Indestructible Man's shuffle-fight after every gate passed (WP-768 / D-24601).
+ *
+ * Pays the cost (the two chosen Elite Assassins into the Villain Deck, the once-per-turn flag),
+ * settles an Enigma guess when the code holds cards, then fights: the Final Blow award or the
+ * shared tactic defeat core. No attack is read or spent and Excessive Violence never fires.
+ *
+ * @param G - Game state (mutated under the Immer draft).
+ * @param ctx - The boardgame.io ctx (currentPlayer).
+ * @param random - The move's seeded random (shuffle-in, tactic Fight effects, Enigma mix).
+ * @param events - The move's events (tactic seat choices, an Enigma turn end).
+ * @param assassinIds - The two validated Assassin ids.
+ * @param enigmaGuess - The untrusted Enigma guess, when the code holds cards.
+ * @param isFinalBlow - Whether this fight is the Final Blow.
+ */
+function resolveIndestructibleManShuffleFight(
+  G: LegendaryGameState,
+  ctx: MoveContext['ctx'],
+  random: MoveContext['random'],
+  events: MoveContext['events'],
+  assassinIds: readonly CardExtId[],
+  enigmaGuess: readonly string[] | undefined,
+  isFinalBlow: boolean,
+): void {
+  // why: a malformed guess is an invalid request — refuse before anything is paid.
+  let validatedGuess: readonly EnigmaColor[] | null = null;
+  if ((G.enigmaCode?.length ?? 0) > 0) {
+    if (!isEnigmaGuessWellFormed(G, enigmaGuess)) {
+      return;
+    }
+    validatedGuess = enigmaGuess;
+  }
+  // why: card order — "shuffle two Elite Assassins … If you do, fight": the shuffle is the
+  // cost, paid before the fight, so an Enigma guess ("when you fight the Mastermind, first
+  // guess") comes after it and a wrong guess leaves the Assassins spent. The shuffle uses the
+  // move's seeded Shuffle (the D-24771 shuffle-in shape).
+  if (!shuffleIntoVillainDeck(G, ctx.currentPlayer, assassinIds, { random })) {
+    return;
+  }
+  // why: omit-when-absent once-per-turn flag; game.ts onBegin and applyOnBeginParity delete it.
+  G.indestructibleManShuffleUsedThisTurn = true;
+  pushLog(G,
+    `Player ${ctx.currentPlayer} shuffled ${formatAssassinList(G, assassinIds)} from their Victory Pile into the Villain Deck to fight ${resolveCardName(G.cardDisplayData, G.mastermind.baseCardId)}.`,
+    'applied',
+  );
+  if (validatedGuess !== null && !settleEnigmaGuess(G, ctx.currentPlayer, validatedGuess, random, events)) {
+    return;
+  }
+  if (isFinalBlow) {
+    awardMastermindOnFinalBlow(G, ctx);
+  } else {
+    defeatMastermindTacticCore(G, ctx, { random }, events);
+  }
+  // why: D-24180 — a successful fight bars Wound Healing for the rest of the turn, as the
+  // attack path does.
+  G.hasActedThisTurn = true;
+  // why: WP-656 / D-24467 — the Diamond Form defeat edge, gated exactly as the attack path.
   if (G.deferredConditionalGrants !== undefined && G.deferredConditionalGrants.length > 0) {
     G.villainOrMastermindDefeatedSinceResolve = true;
   }
