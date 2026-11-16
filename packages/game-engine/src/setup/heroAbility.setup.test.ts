@@ -2010,8 +2010,34 @@ describe('HERO_PARSER_RECOGNIZED_MARKER_NAMES — every listed name reaches a pa
     ['woman-out-of-time', '[keyword:Woman Out of Time]'],
     ['man/woman-out-of-time', '[keyword:Man/Woman Out of Time]'],
   ]);
+  // why: WP-886 / D-24837 — the Conqueror names are multi-word space-form tokens too, consumed
+  // only as a WHOLE pure Conqueror line (CONQUEROR_LINE_PATTERN). Each builds its printed token
+  // and must grant its +N under conquerorSpaceHasVillain for that space.
+  const CONQUEROR_WHOLE_LINE_NAMES = new Map<string, { token: string; space: string }>([
+    ['sewers-conqueror', { token: '[keyword:Sewers Conqueror 2]', space: 'sewers' }],
+    ['bank-conqueror', { token: '[keyword:Bank Conqueror 2]', space: 'bank' }],
+    ['rooftops-conqueror', { token: '[keyword:Rooftops Conqueror 2]', space: 'rooftops' }],
+    ['streets-conqueror', { token: '[keyword:Streets Conqueror 2]', space: 'streets' }],
+    ['bridge-conqueror', { token: '[keyword:Bridge Conqueror 2]', space: 'bridge' }],
+  ]);
 
   for (const markerName of HERO_PARSER_RECOGNIZED_MARKER_NAMES) {
+    const conquerorLine = CONQUEROR_WHOLE_LINE_NAMES.get(markerName);
+    if (conquerorLine !== undefined) {
+      it(`${markerName} reaches the pure Conqueror line arm`, () => {
+        const registry = makeRegistry('test', 'marker-hero', [
+          { slug: 'marker-card', abilities: [conquerorLine.token] },
+        ]);
+        const hooks = buildHeroAbilityHooks(registry, makeConfig('test/marker-hero'));
+        assert.equal(hooks.length, 1, 'one hook for the one ability line');
+        assert.deepEqual(hooks[0]!.conditions, [
+          { type: CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE, value: conquerorLine.space },
+        ]);
+        assert.deepEqual(hooks[0]!.effects, [{ type: 'attack', magnitude: 2 }]);
+        assert.deepEqual(hooks[0]!.unresolvedMarkers ?? [], [], 'recognized marker leaves no unresolved entry');
+      });
+      continue;
+    }
     const wholeLineToken = SPACE_FORM_WHOLE_LINE_NAMES.get(markerName);
     if (wholeLineToken !== undefined) {
       it(`${markerName} reaches its whole-line parser arm`, () => {
@@ -2787,7 +2813,11 @@ describe('buildHeroAbilityHooks — hero Conqueror lines (WP-886 / D-24837)', ()
 
     const stardust = patrolCardHooks('anni', 'heralds-of-galactus', 'stardust');
     assert.equal(stardust[0]!.effects, undefined);
-    assert.deepEqual(stardust[0]!.unresolvedMarkers, ['focus']);
+    // why: Step 4c — the Conqueror token on the Focus line stays visible as an unresolved marker
+    // after `focus` (it used to vanish), so the coverage probe keeps flagging this hollow line
+    // once `rooftops-conqueror` is a recognized name. `focus` stays first: the runtime hollow
+    // record (first marker) is unchanged.
+    assert.deepEqual(stardust[0]!.unresolvedMarkers, ['focus', 'rooftops-conqueror']);
 
     const dragonfang = patrolCardHooks('asrd', 'valkyrie', 'dragonfang');
     assert.equal(dragonfang[0]!.effects, undefined);
