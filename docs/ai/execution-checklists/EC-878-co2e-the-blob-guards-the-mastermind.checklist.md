@@ -2,77 +2,75 @@
 
 **Source:** docs/ai/work-packets/WP-840-co2e-the-blob-guards-the-mastermind.md
 **Layer:** Game Engine (+ Arena Client consumer, card-data marker, derived feeds)
+**Risk Tier:** MEDIUM
+**Reconciled 2026-11-15** on `main` `a752fc130`: Operator fork 3 = reuse WP-873 Fortify (Jeff). The 2026-10-25 parallel-path values (`defeatVillainCardCore`, `BESIDE_MASTERMIND_TARGET`, `citySpace -1`, `villainsBeside`, `BesideMastermindVillains.vue`) are superseded. Operator forks 1 (free defeats unchanged) and 2 (Energy Shield out of scope) are locked to their defaults at pre-flight.
 
 ## Before Starting
-- [ ] WP-831 (#3001) merged (WP-829 #2995 = `461ed924` and WP-830 #2998 = `e580d801` already on `main`). `fightVillain` has the `cityIndex >= G.city.length` guard and the `UNNAMED_CITY_SPACE_TARGET` fallback; `fightMastermind` has the Enigma gate; `MastermindTile.vue` has the Enigma picker.
-- [ ] Record `VILLAIN_EFFECT_PRIMITIVES.length` (31 at draft; higher if WP-835..839 landed) and every marker-map row already under `villains.co2e.brotherhood-of-mutants`.
-- [ ] `defeatCityVillainCore` still nulls the space, then its body = route → awards (incl. any WP-838 Step 3c branch) → rescue → onFight → log → `fightResolved` → Endless Armies (+ any WP-839 Boomerang block). Carry any WP-838 / WP-839 block verbatim into `defeatVillainCardCore`. Its callers are `fightVillain`, `defeatChoice.resolve.ts` (Silent Sniper, Pure Fury and Cruel Ruler route through it) and two direct test calls (`fightVillain.test.ts` ~L553 / ~L582).
-- [ ] WP-831 head `0585f811` at drafting (rebased onto `e580d801`; tree-identical to `a6e8dfa5` / `9e710dfb`; anchors code-identical to `dfc118c8`); only #3001 remains to merge; if WP-832 (#3004) merged first, re-read the `villainDeck.reveal.ts` / `notableEvents.types.ts` anchors. If WP-759 landed, keep its MastermindTile lock beside this one.
-- [ ] `fightMastermind` still returns on `isMastermindHaunting(G)` before the cost check; `getLegalMoves` step 4 still mirrors it.
-- [ ] `packages/game-engine/src/test/**` and `data/par/**` still have no `brotherhood-of-mutants` reference (WP Assumes 14).
-- [ ] `pnpm -r build` → 0; `pnpm --filter @legendary-arena/arena-client typecheck` → 0; record the engine and arena-client test totals.
+- [ ] `main` contains WP-873 (Fortify), WP-839 (#3410) and WP-897 (D-24854). `moves/fortifyFight.ts` has `fightFortifyingVillain` / `defeatFortifyingVillainCore`; `findFightableFortifier` is in `moves/villainDefeatRequirement.logic.ts`; `fightVillain` has the `fortifiedPlace` branch before step 1.
+- [ ] `VILLAIN_EFFECT_PRIMITIVES.length` is 63, last `enter-city-from-victory-pile`; the RS-5 set in `villain/ambushNarrative.keywordless.test.ts` has 20 entries.
+- [ ] `fightMastermind` and `getLegalMoves` step 4 read `isMastermindFortified`; `MastermindTile.vue` locks on `mastermind.fortifiedReason`; `FortifiedVillains.vue` keys chips by `place`.
+- [ ] `packages/game-engine/src/test/**` and `data/par/**` have no `brotherhood-of-mutants` reference (WP Assumes 8).
+- [ ] `pnpm -r build` → 0; `pnpm -r --no-bail test` → 0 fail; record every package's totals (baseline: game-engine 7233, arena-client 2724).
 
 ## Locked Values (do not re-derive)
 - `G.villainsBesideMastermind?: CardExtId[]` — arrival order, lazy, deleted when empty, never `[]`.
-- `board/besideMastermind.logic.ts`: `hasVillainBesideMastermind(G)`, `getVillainBesideMastermind(G, besideIndex)` (integer in range else null), `putVillainBesideMastermind(G, cardId)` (false if listed), `takeVillainBesideMastermind(G, besideIndex)` (deletes the field when it empties).
-- Primitive `'put-self-beside-mastermind'`, no params, appended last to the union, the engine array and the script copy. Pins in `villainAbility.types.test.ts`: L393-397 length +1, L398-402 last entry re-pointed to `put-self-beside-mastermind` and its position, L403-405 ordered list appended, L619 / L652 length +1 (re-read positions if WP-835..839 landed); intended product change, stated in the commit body.
-- Handler `villainEffectPutSelfBesideMastermind`: not in City → `` `${label} effect: ${name} is not in the City; it stays where it is.` `` `'blocked'`; put refused → `` `${label} effect: ${name} is already beside the Mastermind.` `` `'blocked'`; else null the space, `` `${label} effect: ${name} moves to the left of the Mastermind. Nothing moves him there, and the Mastermind can't be fought while he is there.` `` `'threat'`. Always `{ targets: [] }`.
-- `BESIDE_MASTERMIND_TARGET = 'beside-mastermind'` in `AttackTargetName`; label `'beside the Mastermind'`.
-- `FightVillainArgs.cityIndex?: number`, `besideMastermindIndex?: number`. Beside branch: `cityIndex` also given → return; `getVillainBesideMastermind` null → return; target `BESIDE_MASTERMIND_TARGET`; no Guard. City branch unchanged. Every later gate shared.
-- Step 3 beside: `takeVillainBesideMastermind(G, besideMastermindIndex)`, then `defeatVillainCardCore(G, ctx, cardId, { kind: 'beside-mastermind' }, { random }, { payRescueOnFight })` with the step-1 `cardId`. `FightLocation = { kind: 'city'; cityIndex } | { kind: 'beside-mastermind' }`. `defeatCityVillainCore` signature and output unchanged.
-- Beside fight: onFight `cityIndex` undefined; line `` `Player ${currentPlayer} fought ${formatCardRef(G.cardDisplayData, cardId)} beside the Mastermind.` ``; `fightResolved.citySpace = OFF_CITY_FIGHT_SPACE` (`-1`).
-- `fightMastermind`: `if (hasVillainBesideMastermind(G)) { return; }` right after the haunting return.
-- `getLegalMoves`: step 3b after the City loop, `besideIndex` ascending, same requirement / discard / cost checks with `BESIDE_MASTERMIND_TARGET`, args `{ besideMastermindIndex }` (+ `discardCardId`); step 4 adds `&& !hasVillainBesideMastermind(gameState)`.
-- Invariant: `scanZone(G.villainsBesideMastermind ?? [], 'villainsBesideMastermind', firstSeenZone)`.
-- `FightResolvedEvent.citySpace` JSDoc: `City space the defeated card occupied, or -1 for a Villain fought outside the City (WP-840, beside the Mastermind).`
-- UIState: `UIMastermindState.villainsBeside?: UICityCard[]`; build via the extracted `buildCityCardProjection(gameState, ctx, cardId)`; filter via the extracted `deepCopyCityCard(card)`; both conditional spreads, every audience.
-- Client: `BesideMastermindVillains.vue` (props `villains`, `currentStage`, `isViewerTurn`, `hasHealedThisTurn`, `economy`, `submitMove`; testids `play-beside-mastermind`, `play-beside-mastermind-villain` + `data-beside-index`; label `Left of the Mastermind`); gate `canFightVillain` → `healLockGate` → `canFight(fightCost, 'beside-mastermind')`; payload `fightVillain { besideMastermindIndex: index }`. First child of the Mastermind zone / band on both pages.
-- `MastermindTile` `gateForFight` order: stage → heal → cost → the existing vanquished check (unchanged) → beside lock `` `You can't fight the Mastermind while ${name} is beside it — fight ${name} first` `` → allowed. A vanquished Mastermind keeps its vanquished reason (T24 case).
-- Data: `villains.co2e.brotherhood-of-mutants.the-blob.ambush = ["put-self-beside-mastermind"]`; provenance → WP-840 / D-24773.
+- `board/besideMastermind.logic.ts`: `listVillainsBesideMastermind`, `getVillainBesideMastermind(G, besideIndex: unknown)` (integer in range else null), `putVillainBesideMastermind` (false if listed), `takeVillainBesideMastermind` (deletes the field when it empties), `isMastermindGuarded` (= `isMastermindFortified || list non-empty`), `buildBesideMastermindBlockReason` → `` `${name} is to the left of the Mastermind. Fight ${name} first.` `` for the first listed Villain, null when empty.
+- Primitive `'put-self-beside-mastermind'`, no params, position 64 in the union, the engine array and the script copy. Pins: L390 title + L458-464 → 64 / `put-self-beside-mastermind`; ordered list appended; every `length, 63` → 64 with its `// why:`; WP-839 `slice(60)` → `slice(60, 63)`; parity Record gains it. Intended product change, in the commit body.
+- Handler `villainEffectPutSelfBesideMastermind`, each branch logs `` `${label} effect: ${clause}.` `` and returns `{ targets: [], narrativeClause: clause }`: not in City → `` `${name} is not in the City; it stays where it is` `` `'blocked'`; put refused → `` `${name} is already to the left of the Mastermind` `` `'blocked'`; else null the space, `` `${name} moves to the left of the Mastermind; nothing can move him, and the Mastermind can't be fought while he is there` `` `'threat'`. RS-5 set 20 → 21.
+- `findFightableOffCityVillain(state, playerId, cardId)` = `findFightableFortifier`'s price / requirement / restriction / discard checks moved verbatim; `findFightableFortifier` delegates; `findFightableVillainBesideMastermind(state, playerId, besideMastermindIndex: unknown)` = get → delegate. Return type `FightableFortifier`.
+- `fortifyFight.ts`: `OffCityFightLocation = { kind: 'fortified'; place } | { kind: 'beside-mastermind'; besideIndex }`; `fightOffCityVillain` = today's post-authority body verbatim, its four turn-state refusals moved into `isOffCityFightBlocked(G, currentPlayer)`, defeat via a `never`-default switch; `awardOffCityVillain(G, ctx, zones, cardId, foughtLine, shuffleContext)` = recorder → Victory Pile → log → onFight(undefined) verbatim; new exported `fightVillainBesideMastermind` and `defeatVillainBesideMastermindCore`; Blob line `` `Player ${currentPlayer} fought ${formatCardRef(G.cardDisplayData, cardId)} to the left of the Mastermind.` `` Fortify signatures and output unchanged.
+- `FightVillainArgs.besideMastermindIndex?: number`; branch directly after the `fortifiedPlace` branch (fortifiedPlace wins).
+- `fightMastermind` and `getLegalMoves` step 4: `isMastermindFortified` → `isMastermindGuarded`. Step 3b: after the fortifier loop, `{ besideMastermindIndex: besideIndex }` per `findFightableVillainBesideMastermind` hit, ascending.
+- Invariant: each listed id visited as `` `villainsBesideMastermind.${index}` ``.
+- UIState: `UIFortifier.besideMastermindIndex?: number`; `buildFortifyProjection` calls module-local `appendBesideMastermindFortifiers(gameState, activePlayerId, fortifiers)` (one entry per listed Villain: `place: 'mastermind'`, `FORTIFY_PLACE_LABELS.mastermind`, `FORTIFY_LOCK_TEXT['no-fight']`, price / restriction as a fortifier, the index), then `mastermindFortifiedReason ??= buildBesideMastermindBlockReason`; `fortifiedReason` present exactly when `isMastermindGuarded`; `deepCopyFortifiers` conditional-spreads the index. Comment / JSDoc updates: the `fortifiedReason` spread comment, `UIFortifier.place`, the `UICityState.fortifiers` order, `UIMastermindState.fortifiedReason`.
+- Client `FortifiedVillains.vue`: index entry submits `fightVillain { besideMastermindIndex }`; title `` `${name} is to the left of ${placeLabel}: ${lockText}.` ``; sr-only `To the left of …`; `fortifierKey` = `place` or `` `${place}-beside-${index}` ``; list `aria-label` `Villains guarding this place`. Gate unchanged. `MastermindTile.vue`, `SharedDecks.vue`, pages unchanged.
+- `board/fortify.logic.ts`: comments only (header L11, the `isMastermindFortified` `// why:` L74-75 name `isMastermindGuarded`). `wiki/card-effect-system.md` L177 → "sixty-four entries as of WP-840".
+- Data: `villains.co2e.brotherhood-of-mutants.the-blob.ambush = ["put-self-beside-mastermind"]`; provenance → WP-840 / D-24773; `live-verify.json` gains a `pending` row `co2e-villain-brotherhood-of-mutants-the-blob|put-self-beside-mastermind`.
 
 ## Guardrails
-- Byte-identical without a Blob Ambush: no new `G` key, intent arg, log line or event change; hash oracles unchanged (STOP if one moves).
-- The `fightMastermind` gate and the bot mirror land in the same commit (D-24364).
-- No City code changes: no mover, push, escape, Guard or City-space helper edit.
-- One predicate (`hasVillainBesideMastermind`); the client reads only the projected `villainsBeside`.
-- Free defeats unchanged (Operator fork 1 default) unless Jeff chose the alternative. Pure Fury cannot target a Villain beside the Mastermind (its builder iterates `G.city`): a named residual, not fixed here.
-- Do not edit `src/fixtures/uiState/mid-turn.json` or page CSS; the board check injects `villainsBeside` at runtime.
+- Byte-identical without a Blob Ambush, Fortify matches included: no new `G` key, intent arg, log line, projection key or event; hash oracles unchanged (STOP if one moves). Every existing Fortify test passes unedited.
+- The `fightMastermind` change and the bot mirrors land in the same commit (D-24364).
+- No City code changes: no mover, push, escape, Guard, City fight or City-space helper edit.
+- One predicate (`isMastermindGuarded`); one fightability authority (`findFightableOffCityVillain`); the client reads only projected fields.
+- Free defeats unchanged (Operator fork 1 default). Pure Fury cannot target a Villain to the left of the Mastermind: a named residual.
+- Do not edit `src/fixtures/uiState/mid-turn.json` or page CSS; the board check injects the projection at runtime.
 - No parser reads English; marker only; never run `convert-cards-v15.mjs`.
 - Client submits intent only; no engine-internal import.
 
 ## Required `// why:` Comments
-- The handler: Ambush moves him out of the City after entry, so no City mover reaches him (D-24587 shape, D-24773).
-- The `fightMastermind` gate and the step-4 bot condition: "you can't fight the Mastermind" while he is there; one predicate (D-24364).
-- The beside branch in step 1: a second location for the same fight, so every rider applies; `cityIndex` and `besideMastermindIndex` together are ambiguous.
-- `BESIDE_MASTERMIND_TARGET`: no restricted grant names it, so plain Attack only.
-- `OFF_CITY_FIGHT_SPACE`: keeps the `fightResolved` shape; `useVillainSlashVfx.ts` forwards it and `VfxOverlay.vue` finds no City cell (slice hint `take(-1)` finds nothing).
-- `defeatVillainCardCore`: the shared defeat half, so a beside fight never drifts from a City fight.
-- The step-3 take: nothing between step 1 and step 3 writes the list, so the step-1 read still holds.
-- Doc touch-ups (same files): the `fightVillain` header + JSDoc name the second location; the `getLegalMoves` order JSDoc gains "3b. fightVillain beside the Mastermind".
-- `villainsBeside` in the filter: must pass through or the whitelist drops it (EC-206 / #1165).
+- The handler: the Ambush moves him out of the City after entry, so no City mover reaches him (D-24587 shape, D-24773); the narrative clause is the logged clause (D-24854).
+- `isMastermindGuarded` at `fightMastermind` and step 4: "you can't fight the Mastermind" while a fortifier or The Blob is there; one predicate (D-24364).
+- The `besideMastermindIndex` branch: a second off-City location for the same fight, after `fortifiedPlace` so every existing input is byte-identical.
+- `findFightableOffCityVillain`: one authority for both off-City fights (the extraction keeps Fortify byte-identical).
+- `fightOffCityVillain` / `awardOffCityVillain`: shared so a Blob fight never drifts from a fortifier fight.
+- The step-3b beside loop: mirrors `fightVillain({ besideMastermindIndex })`; byte-identical without the list.
+- `besideMastermindIndex` in the filter: must pass through or the whitelist drops it (EC-206 / #1165).
+- The chip key: two Blobs and a fortifier share `place`.
 - The array append note in the engine array AND the script copy.
 
 ## Files to Produce
 - Engine **new**: `board/besideMastermind.logic.ts` + test.
-- Engine **modified**: `types.ts`; `rules/villainAbility.types.ts` + test; `setup/villainAbility.setup.ts` (doc list) + test; `villain/villainEffects.execute.ts` + test; `economy/economy.types.ts`, `economy/economy.logic.ts`; `moves/fightVillain.ts` + test; `moves/fightMastermind.ts` + test; `simulation/ai.legalMoves.ts` + test; `invariants/gameRules.checks.ts` + `invariants/invariants.test.ts`; `events/notableEvents.types.ts`; `villainDeck/villainDeck.reveal.test.ts`; `ui/uiState.types.ts`, `ui/uiState.build.ts`, `ui/uiState.filter.ts` + `ui/uiState.filter.test.ts`.
-- Client: `components/play/BesideMastermindVillains.vue` + test (**new**); `components/play/MastermindTile.vue` + test, `pages/PlayDesktop.vue`, `pages/PlayMobile.vue` (**modified**).
-- Scripts: `apply-effect-markers.mjs`, `inputs/villain-effect-markers.json`, `scripts/coverage/mechanic-provenance.json` (**modified**).
-- **Regenerated**: `data/cards/co2e.json`, `docs/ai/coverage/villain-mechanic-ledger.{json,csv}`, `data/metadata/effect-implementation-index.json`; `data/metadata/card-mechanics.json` only if its check flags.
-- Governance close: `DECISIONS.md` (D-24773), `STATUS.md`, `WORK_INDEX.md`, `EC_INDEX.md`, `docs/05-ROADMAP-MINDMAP.md`, `docs/ai/post-mortems/01.6-WP-840-co2e-the-blob-guards-the-mastermind.md` (**new**, mandatory 01.6).
+- Engine **modified**: `types.ts`; `rules/villainAbility.types.ts` + test; `setup/villainAbility.setup.ts` (doc list) + test; `villain/villainEffects.execute.ts` + test; `villain/ambushNarrative.keywordless.test.ts` (T8); `moves/villainDefeatRequirement.logic.ts` + test; `moves/fortifyFight.ts` + test (incl. T15 via `fightVillain`); `moves/fightVillain.ts`; `moves/fightMastermind.ts` + test; `simulation/ai.legalMoves.ts` + test; `invariants/gameRules.checks.ts` + `invariants/invariants.test.ts`; `ui/uiState.types.ts`, `ui/uiState.build.ts`, `ui/uiState.filter.ts` + `ui/uiState.filter.test.ts`; `board/fortify.logic.ts` (comments only).
+- Client **modified**: `components/play/FortifiedVillains.vue` + test.
+- Scripts **modified**: `apply-effect-markers.mjs`, `inputs/villain-effect-markers.json`, `scripts/coverage/mechanic-provenance.json`. Docs **modified**: `docs/ai/coverage/live-verify.json` (one row), `wiki/card-effect-system.md` (count).
+- **Regenerated**: `data/cards/co2e.json`, `docs/ai/coverage/villain-mechanic-ledger.{json,csv}`, `data/metadata/effect-implementation-index.json`, `apps/arena-client/src/fixtures/localSpike/featuredSetupBundle.json` (`pnpm spike:local-bundle`); `data/metadata/card-mechanics.json` / wiki-viewer projection only if their checks flag.
+- Governance close: `DECISIONS.md` (D-24773), `STATUS.md`, `WORK_INDEX.md`, `EC_INDEX.md`, `docs/05-ROADMAP-MINDMAP.md`, `NUMBER-LEDGER.md` if needed, `docs/ai/post-mortems/01.6-WP-840-co2e-the-blob-guards-the-mastermind.md` (**new**, mandatory 01.6).
 
 ## After Completing
-- [ ] T1-T24 pass. `pnpm -r build` → 0. `pnpm -r --no-bail test` → 0 fail. `pnpm --filter @legendary-arena/arena-client typecheck` → 0.
+- [ ] T1-T22 pass. `pnpm -r build` → 0. `pnpm -r --no-bail test` → 0 fail (every package's totals pasted). `pnpm --filter @legendary-arena/arena-client typecheck` → 0.
 - [ ] Marker: 1 `[effect:]` on the Blob line, `co2e.json` only; re-run 0. The hand-checked `put-self-beside-mastermind:1` rejection is recorded in the commit body.
-- [ ] `pnpm ledger:villains && pnpm effect-index` after a rebuild; the Blob row `executable` with WP-840 provenance; the seven feed checks → 0.
-- [ ] Seven revert proofs observed (WP Verification 8); the 1280x720 board check observed (AC 7), and `PlayMobile` at 375x812 has no horizontal overflow (the component root wraps).
-- [ ] Hash oracles unchanged. Allowlist-only diff. Commits `EC-878:` then `SPEC:` (or `EC-878:` engine, `EC-878:` client, `SPEC:`).
-- [ ] D-24773 Active (incl. the D-24587 free-defeat contrast and the three extracted helpers); 01.6 post-mortem written; STATUS (+ Energy Shield, Pure Fury beside-target gap, the "no Ambush effect" overlay class, beside EV / rescue controls, slice VFX, the stale `useVillainSlashVfx.ts` `citySpace` "0..4" JSDoc); WORK_INDEX `[x]`; EC_INDEX Done; mindmap `✅` + `pnpm roadmap:counts:write`; `roadmap:counts:check`, `ledger:numbers:check`, `workindex:rows:check`, `workindex:executed:check` → 0.
-- [ ] Live-verify (D-24026) post-deploy, incl. `mastermind.villainsBeside` in the diagnostics snapshot; operator-pending until seen.
+- [ ] `pnpm ledger:villains && pnpm effect-index && pnpm spike:local-bundle` after a rebuild; the Blob row `executable` with WP-840 provenance; `cards:check`, `cards:count-markers:check`, `effect-index:check`, `ledger:villains:check`, `mechanics:metadata:check`, `gauntlet:loadouts:check`, `sim:runtime-observed:check`, `sim:coverage --check`, `node scripts/build-local-spike-bundle.mjs --check`, `wiki-viewer:check-links` (after `wiki-viewer:project`) → 0.
+- [ ] Seven revert proofs observed (WP Verification 8); the 1280x720 board check and the 375x812 overflow check observed (AC 7).
+- [ ] Hash oracles (`finalStateHash`, `PRE_WP080_HASH`, the local-spike `initialStateHash`) unchanged. Allowlist-only diff. Commits `EC-878:` then `SPEC:`.
+- [ ] D-24773 Active (incl. Operator fork 3 = reuse, decided by Jeff; the off-City helpers as a recorded 00.6 Rule 1 exception; the stale-client residual); 01.6 post-mortem written; STATUS (+ Energy Shield, Pure Fury beside-target gap, the shared off-City residuals, the `MastermindTile.vue` L230-233 comment drift); WORK_INDEX `[x]` + `[live-verify: pending]`; EC_INDEX Done; mindmap `✅` + `pnpm roadmap:counts:write`; `roadmap:counts:check`, `ledger:numbers:check`, `workindex:rows:check`, `workindex:executed:check`, `workindex:liveverify:check` → 0.
+- [ ] Live-verify (D-24026) post-deploy via `/api/match/autoplay` setupData, incl. the Blob `city.fortifiers` entry and `mastermind.fortifiedReason` in the `uiStateSnapshot`; then a `SPEC:` PR flips the token to `[live-verify: verified]`.
 
 ## Common Failure Smells
-- Bot-ally faults with attack left and The Blob beside → `getLegalMoves` still offers `fightMastermind`, or offers a beside fight the move refuses (target or cost mismatch).
+- A local-spike `--check` failure after the marker pass → the bundle was not regenerated.
+- Bot-ally faults with attack left and The Blob beside → step 4 still reads `isMastermindFortified`, or step 3b offers a beside fight the move refuses (the wrappers diverged from the one authority).
 - The Blob still visible in the City after his Ambush → the handler did not null the space (the invariant reports a duplicate).
-- The Blob beside but the Mastermind button enabled → `villainsBeside` dropped by the filter, or MastermindTile not reading it.
-- A City fight's log or `fightResolved` changed → the core split altered the City path.
-- A restricted Sewers / Mastermind grant pays for The Blob → the beside branch used a City or `'mastermind'` target.
+- The Blob beside but the Mastermind button enabled → `mastermindFortifiedReason` not set from the list, or the filter dropped it.
+- Only one Blob chip shows with two listed → the chip key still uses `place` alone.
+- A Colleen Wing fight log or projection changed → an extraction altered the Fortify path.
+- A restricted Sewers / Mastermind grant pays for The Blob → the off-City price used a named target.
 - A sentinel hash moved → a key was written in a match without a Blob Ambush.
