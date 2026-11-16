@@ -216,6 +216,14 @@ const KNOWN_CONDITIONS = {
   'draw-threshold': 'cardsDrawnThisTurnAtLeast',                  // ≥N cards drawn this turn
   // why: WP-777 / D-24616 — New Wings / Pumpkin Bombs: the +N attack gates on ≥N card-effect hand
   // discards this turn (a shipped wait-and-see condition), so the row reads `condition`.
+  // why: WP-745 / D-24568 — the unmarked "If <condition>, you get +N" markers gate their
+  // printed grant on a shipped condition, so their rows read `condition`, not `unsupported`.
+  'card-play-ordinal': 'cardPlayOrdinalEquals',                   // Dr. Octopus: Nth card played
+  'played-other-cost': 'otherCardOfCostPlayedThisTurn',           // Invisible Woman: another N-cost card
+  'played-cost': 'cardOfCostPlayedThisTurn',                      // Venomized Dr. Strange: a 4-cost and a 2-cost
+  'played-other-distinct-heroes': 'otherDistinctNonGreyHeroesPlayedThisTurnAtLeast', // Warriors Three
+  'hero-koed-this-turn': 'heroPutIntoKoPileThisTurn',             // Rage: a Hero KO'd this turn
+  'bystanders-threshold': 'bystandersInVictoryAtLeast',           // Black Widow: ≥N Bystanders in VP
   'discard-threshold': 'cardsDiscardedThisTurnAtLeast',          // ≥N cards discarded this turn
   // why: WP-681 / D-24498 — Deadpool "Hey, Can I Get a Do-Over?": the discard-and-redraw gates
   // on this being the FIRST Hero played this turn (a shipped condition, the D-24055 posture),

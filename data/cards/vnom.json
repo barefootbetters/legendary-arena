@@ -388,7 +388,7 @@
           "attack": "4+",
           "recruit": null,
           "abilities": [
-            "If you played a 4-cost card and a 2-cost card this turn, you get +2[icon:attack]."
+            "If you played a 4-cost card and a 2-cost card this turn, you get +2[icon:attack]. [keyword:played-cost:4] [keyword:played-cost:2]"
           ]
         },
         {

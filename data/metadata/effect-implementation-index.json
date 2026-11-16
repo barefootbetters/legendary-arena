@@ -3,9 +3,9 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2880,
+    "totalEntries": 2891,
     "byScope": {
-      "hero": 876,
+      "hero": 887,
       "villain": 773,
       "mastermind": 567,
       "scheme": 664
@@ -13,7 +13,7 @@
     "byStatus": {
       "executable": 870,
       "deferred": 18,
-      "condition": 76,
+      "condition": 87,
       "unsupported": 255,
       "unmarked": 1654,
       "subsystem": 7
@@ -2629,6 +2629,23 @@
       ]
     },
     {
+      "extId": "anni/fantastic-four-united",
+      "name": "Fantastic Four United",
+      "set": "anni",
+      "scope": "hero",
+      "mechanic": "played-other-cost",
+      "status": "condition",
+      "handler": "",
+      "wp": "WP-745",
+      "decision": "D-24568",
+      "designs": [
+        {
+          "slug": "invisible-woman",
+          "name": "Invisible Woman"
+        }
+      ]
+    },
+    {
       "extId": "anni/heralds-of-galactus",
       "name": "Heralds of Galactus",
       "set": "anni",
@@ -4284,6 +4301,23 @@
         {
           "slug": "hogun-the-grim",
           "name": "Hogun the Grim"
+        }
+      ]
+    },
+    {
+      "extId": "asrd/warriors-three-the",
+      "name": "Warriors Three, The",
+      "set": "asrd",
+      "scope": "hero",
+      "mechanic": "played-other-distinct-heroes",
+      "status": "condition",
+      "handler": "",
+      "wp": "WP-745",
+      "decision": "D-24568",
+      "designs": [
+        {
+          "slug": "three-stand-as-one",
+          "name": "Three Stand as One"
         }
       ]
     },
@@ -8680,6 +8714,23 @@
       "name": "Black Widow",
       "set": "co2e",
       "scope": "hero",
+      "mechanic": "bystanders-threshold",
+      "status": "condition",
+      "handler": "",
+      "wp": "WP-745",
+      "decision": "D-24568",
+      "designs": [
+        {
+          "slug": "covert-operation",
+          "name": "Covert Operation"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/black-widow",
+      "name": "Black Widow",
+      "set": "co2e",
+      "scope": "hero",
       "mechanic": "draw",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
@@ -8960,6 +9011,23 @@
         {
           "slug": "quick-draw",
           "name": "Quick Draw"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/hawkeye",
+      "name": "Hawkeye",
+      "set": "co2e",
+      "scope": "hero",
+      "mechanic": "draw-threshold",
+      "status": "condition",
+      "handler": "",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "trick-arrow",
+          "name": "Trick Arrow"
         }
       ]
     },
@@ -15376,6 +15444,23 @@
       "name": "Wolverine",
       "set": "dkcy",
       "scope": "hero",
+      "mechanic": "draw-threshold",
+      "status": "condition",
+      "handler": "",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "sudden-ambush",
+          "name": "Sudden Ambush"
+        }
+      ]
+    },
+    {
+      "extId": "dkcy/wolverine",
+      "name": "Wolverine",
+      "set": "dkcy",
+      "scope": "hero",
       "mechanic": "optional-ko-hand-discard",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
@@ -16928,6 +17013,23 @@
         {
           "slug": "unseen-rescue",
           "name": "Unseen Rescue"
+        }
+      ]
+    },
+    {
+      "extId": "ff04/invisible-woman",
+      "name": "Invisible Woman",
+      "set": "ff04",
+      "scope": "hero",
+      "mechanic": "played-other-cost",
+      "status": "condition",
+      "handler": "",
+      "wp": "WP-745",
+      "decision": "D-24568",
+      "designs": [
+        {
+          "slug": "four-of-a-kind",
+          "name": "Four of a Kind"
         }
       ]
     },
@@ -19830,6 +19932,10 @@
       "decision": "",
       "designs": [
         {
+          "slug": "guardians-escape",
+          "name": "Guardians Escape"
+        },
+        {
           "slug": "stolen-necroblaster",
           "name": "Stolen Necroblaster"
         }
@@ -20658,6 +20764,23 @@
         {
           "slug": "invoke-the-time-stone",
           "name": "Invoke the Time Stone"
+        }
+      ]
+    },
+    {
+      "extId": "msis/wanda-vision",
+      "name": "Wanda & Vision",
+      "set": "msis",
+      "scope": "hero",
+      "mechanic": "hero-koed-this-turn",
+      "status": "condition",
+      "handler": "",
+      "wp": "WP-745",
+      "decision": "D-24568",
+      "designs": [
+        {
+          "slug": "rage",
+          "name": "Rage"
         }
       ]
     },
@@ -25952,6 +26075,23 @@
       "handler": "",
       "wp": "",
       "decision": ""
+    },
+    {
+      "extId": "rvlt/captain-marvel-agent-of-shield",
+      "name": "Captain Marvel, Agent of S.H.I.E.L.D.",
+      "set": "rvlt",
+      "scope": "hero",
+      "mechanic": "draw-threshold",
+      "status": "condition",
+      "handler": "",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "radiant-blast",
+          "name": "Radiant Blast"
+        }
+      ]
     },
     {
       "extId": "rvlt/captain-marvel-agent-of-shield",
@@ -31534,6 +31674,23 @@
       "name": "Dr. Octopus",
       "set": "vill",
       "scope": "hero",
+      "mechanic": "card-play-ordinal",
+      "status": "condition",
+      "handler": "",
+      "wp": "WP-745",
+      "decision": "D-24568",
+      "designs": [
+        {
+          "slug": "eighth-times-a-charm",
+          "name": "Eighth Time's a Charm"
+        }
+      ]
+    },
+    {
+      "extId": "vill/dr-octopus",
+      "name": "Dr. Octopus",
+      "set": "vill",
+      "scope": "hero",
       "mechanic": "draw",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
@@ -32567,6 +32724,23 @@
         {
           "slug": "cauldron-of-the-cosmos",
           "name": "Cauldron of the Cosmos"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venomized-dr-strange",
+      "name": "Venomized Dr. Strange",
+      "set": "vnom",
+      "scope": "hero",
+      "mechanic": "played-cost",
+      "status": "condition",
+      "handler": "",
+      "wp": "WP-745",
+      "decision": "D-24568",
+      "designs": [
+        {
+          "slug": "complete-the-grand-ritual",
+          "name": "Complete the Grand Ritual"
         }
       ]
     },
@@ -34094,6 +34268,23 @@
       "handler": "",
       "wp": "",
       "decision": ""
+    },
+    {
+      "extId": "wtif/apocalyptic-black-widow",
+      "name": "Apocalyptic Black Widow",
+      "set": "wtif",
+      "scope": "hero",
+      "mechanic": "bystanders-threshold",
+      "status": "condition",
+      "handler": "",
+      "wp": "WP-745",
+      "decision": "D-24568",
+      "designs": [
+        {
+          "slug": "humanitys-final-hope",
+          "name": "Humanity's Final Hope"
+        }
+      ]
     },
     {
       "extId": "wtif/apocalyptic-black-widow",
@@ -39611,7 +39802,8 @@
       "scope": "hero",
       "mechanics": [
         "draw",
-        "focus"
+        "focus",
+        "played-other-cost"
       ]
     },
     "anni/heralds-of-galactus": {
@@ -40073,7 +40265,8 @@
       "mechanics": [
         "conqueror",
         "draw",
-        "optional-ko-hand-discard"
+        "optional-ko-hand-discard",
+        "played-other-distinct-heroes"
       ]
     },
     "bkpt-mastermind-killmonger-a-scar-for-every-kill": {
@@ -41306,6 +41499,7 @@
       "scope": "hero",
       "mechanics": [
         "attack-per-count",
+        "bystanders-threshold",
         "draw",
         "optional-ko-reward",
         "rescue"
@@ -41346,7 +41540,8 @@
     "co2e/hawkeye": {
       "scope": "hero",
       "mechanics": [
-        "draw"
+        "draw",
+        "draw-threshold"
       ]
     },
     "co2e/hulk": {
@@ -43393,6 +43588,7 @@
       "scope": "hero",
       "mechanics": [
         "draw",
+        "draw-threshold",
         "optional-ko-hand-discard"
       ]
     },
@@ -43882,7 +44078,8 @@
     "ff04/invisible-woman": {
       "scope": "hero",
       "mechanics": [
-        "focus"
+        "focus",
+        "played-other-cost"
       ]
     },
     "ff04/mr-fantastic": {
@@ -45139,6 +45336,7 @@
     "msis/wanda-vision": {
       "scope": "hero",
       "mechanics": [
+        "hero-koed-this-turn",
         "master-strike-this-turn",
         "reveal-odd-draw",
         "sacrifice"
@@ -46868,6 +47066,7 @@
     "rvlt/captain-marvel-agent-of-shield": {
       "scope": "hero",
       "mechanics": [
+        "draw-threshold",
         "last-stand"
       ]
     },
@@ -48631,6 +48830,7 @@
     "vill/dr-octopus": {
       "scope": "hero",
       "mechanics": [
+        "card-play-ordinal",
         "draw",
         "next-hand-extra-draw"
       ]
@@ -48929,6 +49129,7 @@
       "mechanics": [
         "digest",
         "draw",
+        "played-cost",
         "reveal",
         "reveal-three-assign",
         "reveal-three-assign-again"
@@ -49507,6 +49708,7 @@
     "wtif/apocalyptic-black-widow": {
       "scope": "hero",
       "mechanics": [
+        "bystanders-threshold",
         "draw",
         "liberate",
         "what-if"

@@ -169,7 +169,7 @@
           "attack": null,
           "recruit": "2+",
           "abilities": [
-            "If you played any other cards that cost 4 this turn, you get +2[icon:recruit].",
+            "If you played any other cards that cost 4 this turn, you get +2[icon:recruit]. [keyword:played-other-cost:4]",
             "[keyword:Focus] 4[icon:recruit] [icon:5] Rescue a Bystander, then you may KO a card from your hand or discard pile."
           ]
         },

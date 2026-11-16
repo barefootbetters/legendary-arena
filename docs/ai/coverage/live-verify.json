@@ -2591,6 +2591,138 @@
       "date": "2026-11-15",
       "evidence": "2p autoplay NEPNusmBEwM (Doctor Doom / Unleash the Power of the Cosmic Cube; Enemies of Asgard + Masters of Evil; Hand Ninjas; Captain America, Hawkeye, Iron Man, Thor, Spider-Man; server 3cc2c042 (the #3394 merge, built 2026-11-15T06:50:42Z), client 3cc2c04, every match created after the deploy): Baron Zemo -00 holding 5 Bystanders (captured by his Ambush, 28.1) read Fight 9 (4 + 5); he had fought for a flat 4 before (D-24333).",
       "note": "Operator fork F6. D-24771 §3."
+    },
+    {
+      "key": "msis/wanda-vision|hero-koed-this-turn",
+      "kind": "hero",
+      "card": "Wanda & Vision",
+      "ability": "Rage: If a Hero was put into the KO pile this turn you get +2 Attack.",
+      "wp": "WP-745",
+      "state": "pending",
+      "date": "2026-11-16",
+      "evidence": "",
+      "note": "Live check (NEW match created after the deploy with this hero): Rage (the Rage face of a Grief/Rage card) gives +2 Attack only once a Hero has entered the KO pile this turn; played before any Hero KO it logs that it is waiting and fires once when one lands; a Wound or Bystander KO does not count. D-24568."
+    },
+    {
+      "key": "vill/dr-octopus|card-play-ordinal",
+      "kind": "hero",
+      "card": "Dr. Octopus",
+      "ability": "Eighth Time's a Charm: If this is the eighth card you played this turn, you get +2 Attack.",
+      "wp": "WP-745",
+      "state": "pending",
+      "date": "2026-11-16",
+      "evidence": "",
+      "note": "Live check (NEW match created after the deploy with this hero): Gives +2 Attack only as the 8th card played this turn; otherwise the log shows \"it needs to be card number 8 you played this turn — it was card number N\". D-24568."
+    },
+    {
+      "key": "anni/fantastic-four-united|played-other-cost",
+      "kind": "hero",
+      "card": "Fantastic Four United",
+      "ability": "Invisible Woman: If you played any other cards that cost 4 this turn, you get +2 Recruit.",
+      "wp": "WP-745",
+      "state": "pending",
+      "date": "2026-11-16",
+      "evidence": "",
+      "note": "Live check (NEW match created after the deploy with this hero): Gives +2 Recruit only after another 4-cost card was played this turn (not herself); otherwise \"it needs another card costing 4 played this turn\". D-24568."
+    },
+    {
+      "key": "ff04/invisible-woman|played-other-cost",
+      "kind": "hero",
+      "card": "Invisible Woman",
+      "ability": "Four of a Kind: If you played any other cards that cost 4 this turn, you get +2 Attack.",
+      "wp": "WP-745",
+      "state": "pending",
+      "date": "2026-11-16",
+      "evidence": "",
+      "note": "Live check (NEW match created after the deploy with this hero): Gives +2 Attack only after another 4-cost card was played this turn (a second Four of a Kind counts); otherwise \"it needs another card costing 4 played this turn\". D-24568."
+    },
+    {
+      "key": "vnom/venomized-dr-strange|played-cost",
+      "kind": "hero",
+      "card": "Venomized Dr. Strange",
+      "ability": "Complete the Grand Ritual: If you played a 4-cost card and a 2-cost card this turn, you get +2 Attack.",
+      "wp": "WP-745",
+      "state": "pending",
+      "date": "2026-11-16",
+      "evidence": "",
+      "note": "Live check (NEW match created after the deploy with this hero): Gives +2 Attack only after both a 4-cost and a 2-cost card were played this turn (a Sidekick is a 2-cost card). D-24568."
+    },
+    {
+      "key": "asrd/warriors-three-the|played-other-distinct-heroes",
+      "kind": "hero",
+      "card": "Warriors Three, The",
+      "ability": "Three Stand as One: If you played at least three other non-grey Heroes with different card names this turn, you get +3 Attack.",
+      "wp": "WP-745",
+      "state": "pending",
+      "date": "2026-11-16",
+      "evidence": "",
+      "note": "Live check (NEW match created after the deploy with this hero): Gives +3 Attack only after three other non-grey Heroes with three different names were played this turn; S.H.I.E.L.D. cards and repeat copies do not count. D-24568."
+    },
+    {
+      "key": "co2e/hawkeye|draw-threshold",
+      "kind": "hero",
+      "card": "Hawkeye",
+      "ability": "Trick Arrow: If you drew any cards this turn, you get +2 Attack.",
+      "wp": "WP-745",
+      "state": "pending",
+      "date": "2026-11-16",
+      "evidence": "",
+      "note": "Live check (NEW match created after the deploy with this hero): Played before any draw this turn it waits and grants +2 Attack once a card is drawn; played after a draw it grants on play. D-24568."
+    },
+    {
+      "key": "dkcy/wolverine|draw-threshold",
+      "kind": "hero",
+      "card": "Wolverine",
+      "ability": "Sudden Ambush: If you drew any extra cards this turn, you get +2 Attack.",
+      "wp": "WP-745",
+      "state": "pending",
+      "date": "2026-11-16",
+      "evidence": "",
+      "note": "Live check (NEW match created after the deploy with this hero): Waits for an extra draw this turn, then grants +2 Attack once. D-24568."
+    },
+    {
+      "key": "rvlt/captain-marvel-agent-of-shield|draw-threshold",
+      "kind": "hero",
+      "card": "Captain Marvel, Agent of S.H.I.E.L.D.",
+      "ability": "Radiant Blast: If you drew any extra cards this turn, you get +1 Attack.",
+      "wp": "WP-745",
+      "state": "pending",
+      "date": "2026-11-16",
+      "evidence": "",
+      "note": "Live check (NEW match created after the deploy with this hero): Waits for an extra draw this turn, then grants +1 Attack once. D-24568."
+    },
+    {
+      "key": "mgtg/gamora|draw-threshold",
+      "kind": "hero",
+      "card": "Gamora",
+      "ability": "Guardians Escape: If you drew at least two cards this turn, you get +2 Attack.",
+      "wp": "WP-745",
+      "state": "pending",
+      "date": "2026-11-16",
+      "evidence": "",
+      "note": "Live check (NEW match created after the deploy with this hero): Guardians Escape waits for two draws this turn, then grants +2 Attack once (this ledger row also covers Stolen Necroblaster, WP-851). D-24568."
+    },
+    {
+      "key": "co2e/black-widow|bystanders-threshold",
+      "kind": "hero",
+      "card": "Black Widow",
+      "ability": "Covert Operation: If you have at least 4 Bystanders in your Victory Pile, you get +2 Attack.",
+      "wp": "WP-745",
+      "state": "pending",
+      "date": "2026-11-16",
+      "evidence": "",
+      "note": "Live check (NEW match created after the deploy with this hero): Gives +2 Attack only with 4 or more Bystanders in the Victory Pile when played; with fewer the log shows \"it needs 4 Bystanders in your Victory Pile — you have N\". D-24568."
+    },
+    {
+      "key": "wtif/apocalyptic-black-widow|bystanders-threshold",
+      "kind": "hero",
+      "card": "Apocalyptic Black Widow",
+      "ability": "Humanity's Final Hope: If you have at least 4 Bystanders in your Victory Pile, you get +2 Recruit.",
+      "wp": "WP-745",
+      "state": "pending",
+      "date": "2026-11-16",
+      "evidence": "",
+      "note": "Live check (NEW match created after the deploy with this hero): Gives +2 Recruit only with 4 or more Bystanders in the Victory Pile when played. D-24568."
     }
   ]
 }

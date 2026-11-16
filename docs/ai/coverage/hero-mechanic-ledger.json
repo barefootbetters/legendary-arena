@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 876,
+    "totalRows": 887,
     "byStatus": {
       "executable": 505,
       "deferred": 16,
-      "condition": 76,
+      "condition": 87,
       "unsupported": 254,
       "unmarked": 22,
       "subsystem": 3
     },
-    "distinctMechanics": 182
+    "distinctMechanics": 188
   },
   "rows": [
     {
@@ -1093,6 +1093,22 @@
       ]
     },
     {
+      "extId": "anni/fantastic-four-united",
+      "heroName": "Fantastic Four United",
+      "set": "anni",
+      "mechanic": "played-other-cost",
+      "status": "condition",
+      "wp": "WP-745",
+      "decision": "D-24568",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "invisible-woman",
+          "name": "Invisible Woman"
+        }
+      ]
+    },
+    {
       "extId": "anni/heralds-of-galactus",
       "heroName": "Heralds of Galactus",
       "set": "anni",
@@ -1881,6 +1897,22 @@
         {
           "slug": "hogun-the-grim",
           "name": "Hogun the Grim"
+        }
+      ]
+    },
+    {
+      "extId": "asrd/warriors-three-the",
+      "heroName": "Warriors Three, The",
+      "set": "asrd",
+      "mechanic": "played-other-distinct-heroes",
+      "status": "condition",
+      "wp": "WP-745",
+      "decision": "D-24568",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "three-stand-as-one",
+          "name": "Three Stand as One"
         }
       ]
     },
@@ -3464,6 +3496,22 @@
       "extId": "co2e/black-widow",
       "heroName": "Black Widow",
       "set": "co2e",
+      "mechanic": "bystanders-threshold",
+      "status": "condition",
+      "wp": "WP-745",
+      "decision": "D-24568",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "covert-operation",
+          "name": "Covert Operation"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/black-widow",
+      "heroName": "Black Widow",
+      "set": "co2e",
       "mechanic": "draw",
       "status": "executable",
       "wp": "WP-022",
@@ -3729,6 +3777,22 @@
         {
           "slug": "quick-draw",
           "name": "Quick Draw"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/hawkeye",
+      "heroName": "Hawkeye",
+      "set": "co2e",
+      "mechanic": "draw-threshold",
+      "status": "condition",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "trick-arrow",
+          "name": "Trick Arrow"
         }
       ]
     },
@@ -6516,6 +6580,22 @@
       "extId": "dkcy/wolverine",
       "heroName": "Wolverine",
       "set": "dkcy",
+      "mechanic": "draw-threshold",
+      "status": "condition",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "sudden-ambush",
+          "name": "Sudden Ambush"
+        }
+      ]
+    },
+    {
+      "extId": "dkcy/wolverine",
+      "heroName": "Wolverine",
+      "set": "dkcy",
       "mechanic": "optional-ko-hand-discard",
       "status": "executable",
       "wp": "WP-667",
@@ -7089,6 +7169,22 @@
         {
           "slug": "unseen-rescue",
           "name": "Unseen Rescue"
+        }
+      ]
+    },
+    {
+      "extId": "ff04/invisible-woman",
+      "heroName": "Invisible Woman",
+      "set": "ff04",
+      "mechanic": "played-other-cost",
+      "status": "condition",
+      "wp": "WP-745",
+      "decision": "D-24568",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "four-of-a-kind",
+          "name": "Four of a Kind"
         }
       ]
     },
@@ -7911,6 +8007,10 @@
       "handler": "",
       "designs": [
         {
+          "slug": "guardians-escape",
+          "name": "Guardians Escape"
+        },
+        {
           "slug": "stolen-necroblaster",
           "name": "Stolen Necroblaster"
         }
@@ -8313,6 +8413,22 @@
         {
           "slug": "invoke-the-time-stone",
           "name": "Invoke the Time Stone"
+        }
+      ]
+    },
+    {
+      "extId": "msis/wanda-vision",
+      "heroName": "Wanda & Vision",
+      "set": "msis",
+      "mechanic": "hero-koed-this-turn",
+      "status": "condition",
+      "wp": "WP-745",
+      "decision": "D-24568",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "rage",
+          "name": "Rage"
         }
       ]
     },
@@ -10092,6 +10208,22 @@
         {
           "slug": "splitting-hairs",
           "name": "Splitting Hairs"
+        }
+      ]
+    },
+    {
+      "extId": "rvlt/captain-marvel-agent-of-shield",
+      "heroName": "Captain Marvel, Agent of S.H.I.E.L.D.",
+      "set": "rvlt",
+      "mechanic": "draw-threshold",
+      "status": "condition",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "radiant-blast",
+          "name": "Radiant Blast"
         }
       ]
     },
@@ -12384,6 +12516,22 @@
       "extId": "vill/dr-octopus",
       "heroName": "Dr. Octopus",
       "set": "vill",
+      "mechanic": "card-play-ordinal",
+      "status": "condition",
+      "wp": "WP-745",
+      "decision": "D-24568",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "eighth-times-a-charm",
+          "name": "Eighth Time's a Charm"
+        }
+      ]
+    },
+    {
+      "extId": "vill/dr-octopus",
+      "heroName": "Dr. Octopus",
+      "set": "vill",
       "mechanic": "draw",
       "status": "executable",
       "wp": "WP-022",
@@ -12996,6 +13144,22 @@
       "extId": "vnom/venomized-dr-strange",
       "heroName": "Venomized Dr. Strange",
       "set": "vnom",
+      "mechanic": "played-cost",
+      "status": "condition",
+      "wp": "WP-745",
+      "decision": "D-24568",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "complete-the-grand-ritual",
+          "name": "Complete the Grand Ritual"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venomized-dr-strange",
+      "heroName": "Venomized Dr. Strange",
+      "set": "vnom",
       "mechanic": "reveal",
       "status": "executable",
       "wp": "WP-253",
@@ -13361,6 +13525,22 @@
         {
           "slug": "infuse-skeleton-with-adamantium",
           "name": "Infuse Skeleton with Adamantium"
+        }
+      ]
+    },
+    {
+      "extId": "wtif/apocalyptic-black-widow",
+      "heroName": "Apocalyptic Black Widow",
+      "set": "wtif",
+      "mechanic": "bystanders-threshold",
+      "status": "condition",
+      "wp": "WP-745",
+      "decision": "D-24568",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "humanitys-final-hope",
+          "name": "Humanity's Final Hope"
         }
       ]
     },

@@ -65,6 +65,7 @@ import { resolveDeferredHeroGrants } from './hero/heroEffects.execute.js';
 // to its Great Old One face when the trigger (Chthon: 5 Bystanders in the KO pile) is met.
 import { checkAndTransformScheme } from './scheme/schemeTransform.logic.js';
 import { clearDeferredConditionalGrants } from './hero/deferredConditionalGrants.js';
+import { HERO_KOED_THIS_TURN_CONDITION_TYPE, matchReadsConditionType } from './hero/heroConditions.evaluate.js';
 import { setPlayerReady, startMatchIfReady } from './lobby/lobby.moves.js';
 import { revealVillainCard } from './villainDeck/villainDeck.reveal.js';
 import { fightVillain } from './moves/fightVillain.js';
@@ -1082,6 +1083,14 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           }
           if (G.ambushVillainPlayedThisTurn !== undefined) {
             delete G.ambushVillainPlayedThisTurn;
+          }
+          // why: WP-745 / D-24568 — Rage's "If a Hero was put into the KO pile this turn" reads
+          // the KO pile's tail past this snapshot (the pile is append-only). Taken here, before
+          // any move of the turn and before the onTurnStart rule hooks, so a KO during this turn's
+          // villain reveal counts as this turn. GATED: written only when a hook reads the
+          // condition, so a match without Rage is byte-unchanged; applyOnBeginParity mirrors it.
+          if (matchReadsConditionType(G, HERO_KOED_THIS_TURN_CONDITION_TYPE)) {
+            G.koPileLengthAtTurnStart = G.ko.length;
           }
           // why: WP-827 / D-24760 — Flying Shield Block's "once per turn" resets each turn.
           // Guarded delete, so a match that never revealed one is byte-unchanged;

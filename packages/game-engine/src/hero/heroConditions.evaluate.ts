@@ -17,7 +17,14 @@ import type { HeroCondition } from '../rules/heroAbility.types.js';
 import { getHooksForCard } from '../rules/heroAbility.types.js';
 import { cardHasClassWhenPlayed, hasSizeChanging, getCopiedClasses } from './sizeChanging.logic.js';
 import { cardCountsAsTeamMember } from './effectiveTeams.logic.js';
-import { BYSTANDER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
+import {
+  BYSTANDER_EXT_ID,
+  SHIELD_AGENT_EXT_ID,
+  SHIELD_OFFICER_EXT_ID,
+  SHIELD_TROOPER_EXT_ID,
+  SIDEKICK_EXT_ID,
+  WOUND_EXT_ID,
+} from '../setup/pilesInit.js';
 import { computeDayNight } from '../rules/dayNight.logic.js';
 import {
   matchesGreyHeroFilter,
@@ -188,6 +195,46 @@ export const MASTER_STRIKE_THIS_TURN_CONDITION_TYPE = 'masterStrikePlayedThisTur
 
 /** Spring the Trap: a Master Strike or an Ambush Villain was played this turn. */
 export const MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE = 'masterStrikeOrAmbushPlayedThisTurn';
+
+// ---------------------------------------------------------------------------
+// Unmarked "If <condition>, you get +N" condition types (WP-745 / D-24568)
+// ---------------------------------------------------------------------------
+
+// why: WP-745 / D-24568 — each literal is shared by the setup marker arm, the evaluate and
+// describe cases and the drift pin, so a named constant keeps them from drifting apart
+// (HeroCondition.type is a bare string and the evaluator's default is false, so a typo would
+// silently never fire). They live in this module for the load-order reason noted on
+// OWNED_CARD_KOED_CONDITION_TYPE above.
+/** Dr. Octopus "Eighth Time's a Charm": this is the Nth card played this turn. */
+export const CARD_PLAY_ORDINAL_CONDITION_TYPE = 'cardPlayOrdinalEquals';
+
+/** Invisible Woman: another card costing N was played this turn. */
+export const OTHER_CARD_OF_COST_PLAYED_CONDITION_TYPE = 'otherCardOfCostPlayedThisTurn';
+
+/** Venomized Dr. Strange: a card costing N was played this turn (one condition per cost). */
+export const CARD_OF_COST_PLAYED_CONDITION_TYPE = 'cardOfCostPlayedThisTurn';
+
+/** Warriors Three: at least N other non-grey Heroes with different names were played this turn. */
+export const OTHER_DISTINCT_HEROES_PLAYED_CONDITION_TYPE = 'otherDistinctNonGreyHeroesPlayedThisTurnAtLeast';
+
+/** Rage: a Hero was put into the KO pile this turn (whole-turn wait-and-see). */
+export const HERO_KOED_THIS_TURN_CONDITION_TYPE = 'heroPutIntoKoPileThisTurn';
+
+// why: WP-745 / D-24568 §1 (amends D-24377 §1) — a condition whose only input is the
+// played-card view is read ON PLAY (the D-24746 §3 / D-24798 §3 "played" gates), so these four
+// never join WAIT_AND_SEE_CONDITION_TYPES; turn-event accumulators (Recruit, draws, discards, KOs,
+// defeats) are the ones that wait. All four read playedCardIdsThisTurn, the one "cards you played
+// this turn" view the shipped playedThisTurn / firstHeroPlayedThisTurn gates read; a card KO'd out
+// of play mid-turn drops out of it (the D-24798 §5 residual; the exact ordinal can err both ways,
+// D-24568 §2). The drift pin in
+// heroConditions.evaluate.test.ts keeps this set disjoint from the wait-and-see and
+// sequence-gate sets and checks every member has an evaluate and a describe case.
+export const PLAY_HISTORY_CONDITION_TYPES: readonly string[] = [
+  CARD_PLAY_ORDINAL_CONDITION_TYPE,
+  OTHER_CARD_OF_COST_PLAYED_CONDITION_TYPE,
+  CARD_OF_COST_PLAYED_CONDITION_TYPE,
+  OTHER_DISTINCT_HEROES_PLAYED_CONDITION_TYPE,
+];
 
 // ---------------------------------------------------------------------------
 // evaluateCondition — single condition evaluator
@@ -534,6 +581,23 @@ export function evaluateCondition(
       // ambush flag alone never satisfies Grief's case above. Ignores condition.value.
       return G.masterStrikePlayedThisTurn === true || G.ambushVillainPlayedThisTurn === true;
     }
+
+    // why: WP-745 / D-24568 — the four play-history gates (on-play; PLAY_HISTORY_CONDITION_TYPES)
+    // and Rage's KO-pile event (wait-and-see). Each body is a named helper below.
+    case CARD_PLAY_ORDINAL_CONDITION_TYPE:
+      return isCardPlayOrdinal(G, playerZones.inPlay, condition.value);
+
+    case OTHER_CARD_OF_COST_PLAYED_CONDITION_TYPE:
+      return hasPlayedCardOfCost(G, playerZones.inPlay, condition.value, triggeringCardId);
+
+    case CARD_OF_COST_PLAYED_CONDITION_TYPE:
+      return hasPlayedCardOfCost(G, playerZones.inPlay, condition.value, undefined);
+
+    case OTHER_DISTINCT_HEROES_PLAYED_CONDITION_TYPE:
+      return hasPlayedOtherDistinctNonGreyHeroes(G, playerZones.inPlay, condition.value, triggeringCardId);
+
+    case HERO_KOED_THIS_TURN_CONDITION_TYPE:
+      return wasHeroPutIntoKoPileThisTurn(G);
 
     case 'heroClassInDiscardPile': {
       // why: D-24544 — X-Gene glossary ("X-Gene [class]: <effect>" means "If you have a
@@ -922,6 +986,173 @@ function countBystandersInVictory(G: LegendaryGameState, playerID: string): numb
   return count;
 }
 
+// ---------------------------------------------------------------------------
+// Play-history and KO-pile helpers (WP-745 / D-24568)
+// ---------------------------------------------------------------------------
+// why: each helper holds one evaluateCondition case body, so that switch keeps one-line arms
+// and every function stays within the 00.6 one-screen rule (the countBystandersInVictory
+// precedent). All are pure reads that never throw: an unparseable value or absent field is false.
+
+/**
+ * Whether the card being resolved is exactly the Nth card played this turn
+ * (`cardPlayOrdinalEquals`, Dr. Octopus "If this is the eighth card you played this turn").
+ *
+ * // why: applyCardPlay appends the played card to inPlay before its effects run, so the
+ * played view already holds it: "the eighth card" is a played-view length of exactly 8.
+ *
+ * @param G - Current game state (read-only).
+ * @param inPlay - The active player's inPlay zone.
+ * @param conditionValue - The ordinal N, as a string.
+ * @returns Whether exactly N cards have been played this turn.
+ */
+function isCardPlayOrdinal(G: LegendaryGameState, inPlay: readonly CardExtId[], conditionValue: string): boolean {
+  const ordinal = parseInt(conditionValue, 10);
+  if (Number.isNaN(ordinal)) {
+    return false;
+  }
+  return playedCardIdsThisTurn(G, inPlay).length === ordinal;
+}
+
+/**
+ * Whether a card of the given printed cost was played this turn, optionally excluding the
+ * card being resolved (`otherCardOfCostPlayedThisTurn` / `cardOfCostPlayedThisTurn`).
+ *
+ * // why: in play a split card is the face it was played as (its inPlay entry carries the face
+ * id), so the raw G.cardStats entry for each played id is its in-play cost — the
+ * countDistinctHeroCostsInHandOrPlay precedent. A Wound or Bystander has no stats row and never
+ * matches. A second copy of the same card has a different `#N` id, so it counts as "other".
+ *
+ * @param G - Current game state (read-only).
+ * @param inPlay - The active player's inPlay zone.
+ * @param conditionValue - The printed cost N, as a string.
+ * @param excludedCardId - The card to leave out ("other"), or undefined to count every play.
+ * @returns Whether some counted played card costs exactly N.
+ */
+function hasPlayedCardOfCost(
+  G: LegendaryGameState,
+  inPlay: readonly CardExtId[],
+  conditionValue: string,
+  excludedCardId: CardExtId | undefined,
+): boolean {
+  const cost = parseInt(conditionValue, 10);
+  if (Number.isNaN(cost) || !G.cardStats) {
+    return false;
+  }
+  for (const playedCardId of playedCardIdsThisTurn(G, inPlay)) {
+    if (excludedCardId !== undefined && playedCardId === excludedCardId) {
+      continue;
+    }
+    if (G.cardStats[playedCardId]?.cost === cost) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Returns a card's name for a "different card names" rules check (WP-745 / D-24568 §5).
+ *
+ * // why: the setup-static G.cardDisplayData snapshot, never a UIState projection. Without an
+ * entry, the id minus its `#<copy>` suffix still groups every copy of one card together.
+ *
+ * @param G - Current game state (read-only).
+ * @param cardId - The card instance ext_id.
+ * @returns The card's display name, or its copy-free id.
+ */
+function cardNameForRules(G: LegendaryGameState, cardId: CardExtId): string {
+  const displayName = G.cardDisplayData?.[cardId]?.name;
+  if (typeof displayName === 'string' && displayName !== '') {
+    return displayName;
+  }
+  const copySuffixIndex = cardId.indexOf('#');
+  return copySuffixIndex === -1 ? cardId : cardId.slice(0, copySuffixIndex);
+}
+
+/**
+ * Whether at least N OTHER non-grey Heroes with different card names were played this turn
+ * (`otherDistinctNonGreyHeroesPlayedThisTurnAtLeast`, Warriors Three "Three Stand as One").
+ *
+ * // why: non-grey = a printed heroClass or heroClass2 (rules v23 L1487-1492: grey Heroes have no
+ * class); S.H.I.E.L.D. and Sidekick tokens, Wounds and Bystanders have no G.cardTraits class and
+ * never count. Names are de-duplicated, so two copies of one card count once.
+ *
+ * @param G - Current game state (read-only).
+ * @param inPlay - The active player's inPlay zone.
+ * @param conditionValue - The threshold N, as a string.
+ * @param triggeringCardId - The card being resolved (never counted).
+ * @returns Whether the distinct-name count reaches N.
+ */
+function hasPlayedOtherDistinctNonGreyHeroes(
+  G: LegendaryGameState,
+  inPlay: readonly CardExtId[],
+  conditionValue: string,
+  triggeringCardId: CardExtId | undefined,
+): boolean {
+  const threshold = parseInt(conditionValue, 10);
+  if (Number.isNaN(threshold) || !G.cardTraits) {
+    return false;
+  }
+  const distinctNames = new Set<string>();
+  for (const playedCardId of playedCardIdsThisTurn(G, inPlay)) {
+    if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
+      continue;
+    }
+    const traits = G.cardTraits[playedCardId];
+    const hasHeroClass = typeof traits?.heroClass === 'string' && traits.heroClass !== '';
+    const hasHeroClass2 = typeof traits?.heroClass2 === 'string' && traits.heroClass2 !== '';
+    if (hasHeroClass || hasHeroClass2) {
+      distinctNames.add(cardNameForRules(G, playedCardId));
+    }
+  }
+  return distinctNames.size >= threshold;
+}
+
+/**
+ * Whether a card id in the KO pile is a Hero (WP-745 / D-24568 §3).
+ *
+ * // why: every hero-deck card (HQ or a player's deck) carries a G.cardTraits entry; the basic
+ * S.H.I.E.L.D. and Sidekick tokens carry none but are Heroes. Wounds, Bystanders, Villains and
+ * Henchmen have neither. A single-use helper, split out for the 00.6 one-screen rule.
+ *
+ * @param G - Current game state (read-only).
+ * @param cardId - A card id from G.ko.
+ * @returns Whether that card is a Hero.
+ */
+function isHeroCardId(G: LegendaryGameState, cardId: CardExtId): boolean {
+  if (
+    cardId === SHIELD_AGENT_EXT_ID ||
+    cardId === SHIELD_TROOPER_EXT_ID ||
+    cardId === SHIELD_OFFICER_EXT_ID ||
+    cardId === SIDEKICK_EXT_ID
+  ) {
+    return true;
+  }
+  return G.cardTraits?.[cardId] !== undefined;
+}
+
+/**
+ * Whether a Hero entered the KO pile this turn (`heroPutIntoKoPileThisTurn`, Rage).
+ *
+ * // why: the KO pile is append-only, so the cards KO'd this turn are exactly the tail past the
+ * turn-start snapshot. An absent snapshot (a match whose hooks never read this condition, or a
+ * fixture that skipped turn start) reads false rather than counting the whole pile.
+ *
+ * @param G - Current game state (read-only).
+ * @returns Whether some card KO'd this turn is a Hero.
+ */
+function wasHeroPutIntoKoPileThisTurn(G: LegendaryGameState): boolean {
+  const turnStartLength = G.koPileLengthAtTurnStart;
+  if (turnStartLength === undefined || !Array.isArray(G.ko)) {
+    return false;
+  }
+  for (let koIndex = turnStartLength; koIndex < G.ko.length; koIndex++) {
+    if (isHeroCardId(G, G.ko[koIndex] as CardExtId)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Whether a player's discard pile holds at least one card whose PRINTED hero class
  * (`heroClass` or `heroClass2`) equals the given class slug — the scan behind the
@@ -1137,6 +1368,30 @@ export function describeFailedCondition(
     case MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE:
       // why: WP-743 / D-24566 — a boolean per-turn gate; no running count to quote.
       return 'it needs a Master Strike or a Villain with an Ambush ability played this turn';
+
+    case CARD_PLAY_ORDINAL_CONDITION_TYPE: {
+      // why: WP-745 / D-24568 — quotes the played-view length the gate compared.
+      const playerZones = G.playerZones[playerID];
+      const played = playerZones ? playedCardIdsThisTurn(G, playerZones.inPlay).length : 0;
+      return `it needs to be card number ${condition.value} you played this turn — it was card number ${played}`;
+    }
+
+    case OTHER_CARD_OF_COST_PLAYED_CONDITION_TYPE:
+      // why: WP-745 / D-24568 — no running count: this describer gets no triggeringCardId, so an
+      // "other" count could not exclude the card being resolved.
+      return `it needs another card costing ${condition.value} played this turn`;
+
+    case CARD_OF_COST_PLAYED_CONDITION_TYPE:
+      // why: WP-745 / D-24568 — a boolean existence gate; no running count to quote.
+      return `it needs a card costing ${condition.value} played this turn`;
+
+    case OTHER_DISTINCT_HEROES_PLAYED_CONDITION_TYPE:
+      // why: WP-745 / D-24568 — no running count, for the same reason as the other-cost case.
+      return `it needs ${condition.value} other non-grey Heroes with different names played this turn`;
+
+    case HERO_KOED_THIS_TURN_CONDITION_TYPE:
+      // why: WP-745 / D-24568 — a boolean per-turn event gate; the wait-and-see "not yet" phrasing.
+      return 'it needs a Hero put into the KO pile this turn';
 
     case 'heroClassInDiscardPile':
       // why: D-24544 — X-Gene's discard-pile class-presence gate; a boolean existence

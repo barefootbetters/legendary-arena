@@ -513,7 +513,7 @@
           "attack": "4+",
           "recruit": null,
           "abilities": [
-            "If you played at least three other non-grey Heroes with different card names this turn, you get +3[icon:attack].",
+            "If you played at least three other non-grey Heroes with different card names this turn, you get +3[icon:attack]. [keyword:played-other-distinct-heroes:3]",
             "[team:heroes-of-asgard]: [keyword:Streets Conqueror 3]"
           ]
         }

@@ -23,6 +23,12 @@
  *     play-ordering skill from class synergy. Sticky per-turn EVENT predicates
  *     (`masterStrikePlayedThisTurn` / `masterStrikeOrAmbushPlayedThisTurn`, WP-743 /
  *     D-24566) are shape #1 too: once the event happens it stays true for the turn.
+ *     So is Rage's "a Hero was put into the KO pile this turn"
+ *     (`heroPutIntoKoPileThisTurn`, WP-745 / D-24568). The four play-history gates
+ *     (`PLAY_HISTORY_CONDITION_TYPES`: eighth card, another 4-cost card, a 4-cost and a
+ *     2-cost card, three other non-grey Heroes) are deliberately NOT members: a condition
+ *     whose only input is the played-card view is read on play, like the shipped
+ *     playedThisTurn / firstHeroPlayedThisTurn gates; turn-event accumulators wait (D-24568 §1).
  *
  *  2. EDGE-TRIGGERED, REPEATABLE-PER-EVENT (WP-656 / D-24467).
  *     `defeatedVillainOrMastermindThisTurn` (Diamond Form: "Whenever you defeat a
@@ -59,6 +65,7 @@ import {
   DECK_CARD_KOED_CONDITION_TYPE,
   ATTACK_ICON_DECK_KO_CONDITION_TYPE,
   NON_GREY_HERO_DECK_KO_CONDITION_TYPE,
+  HERO_KOED_THIS_TURN_CONDITION_TYPE,
   matchReadsConditionType,
 } from './heroConditions.evaluate.js';
 
@@ -119,6 +126,11 @@ export const WAIT_AND_SEE_CONDITION_TYPES: readonly string[] = [
   // condition holds this turn. Both have evaluateCondition cases (the lockstep the pin enforces).
   ATTACK_ICON_DECK_KO_CONDITION_TYPE,
   NON_GREY_HERO_DECK_KO_CONDITION_TYPE,
+  // why: WP-745 / D-24568 — "If a Hero was put into the KO pile this turn" (Rage) is a STICKY
+  // per-turn event (a count >= 1 threshold over the turn's KO-pile tail): shape #1, one-shot, no
+  // re-arm, so Rage played before the KO grants once when it lands. Has an evaluateCondition
+  // case (the lockstep the drift pin enforces).
+  HERO_KOED_THIS_TURN_CONDITION_TYPE,
 ];
 
 // why: WP-859 / D-24795 — the one count source that reads the deck-KO turn record (World-Spanning

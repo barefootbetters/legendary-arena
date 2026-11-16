@@ -42,7 +42,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "If you drew any extra cards this turn, you get +1[icon:attack]."
+            "If you drew any extra cards this turn, you get +1[icon:attack]. [keyword:draw-threshold:1]"
           ]
         },
         {

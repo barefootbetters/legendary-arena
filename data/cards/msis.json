@@ -765,7 +765,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "If a Hero was put into the KO pile this turn you get +2[icon:attack]."
+            "If a Hero was put into the KO pile this turn you get +2[icon:attack]. [keyword:hero-koed-this-turn]"
           ]
         },
         {

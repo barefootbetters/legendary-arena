@@ -51,6 +51,11 @@ import {
   PATROL_SPACE_EMPTY_CONDITION_TYPE,
   PATROL_SPACE_OCCUPIED_CONDITION_TYPE,
   CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE,
+  CARD_PLAY_ORDINAL_CONDITION_TYPE,
+  OTHER_CARD_OF_COST_PLAYED_CONDITION_TYPE,
+  CARD_OF_COST_PLAYED_CONDITION_TYPE,
+  OTHER_DISTINCT_HEROES_PLAYED_CONDITION_TYPE,
+  HERO_KOED_THIS_TURN_CONDITION_TYPE,
 } from '../hero/heroConditions.evaluate.js';
 
 // ---------------------------------------------------------------------------
@@ -455,6 +460,15 @@ export const HERO_PARSER_RECOGNIZED_MARKER_NAMES: readonly string[] = [
   // parseAbilityText arm that pushes its whole-turn wait-and-see condition.
   'master-strike-this-turn',
   'master-strike-or-ambush-this-turn',
+  // why: WP-745 / D-24568 — the unmarked "If <condition>, you get +N" markers; each has a
+  // parseAbilityText arm that pushes its condition (four on-play play-history gates, Rage's
+  // wait-and-see KO-pile event, and the Savior condition at a printed threshold).
+  'card-play-ordinal',
+  'played-other-cost',
+  'played-cost',
+  'played-other-distinct-heroes',
+  'hero-koed-this-turn',
+  'bystanders-threshold',
   'teleport',
   'x-gene',
   // why: D-24696 — the Spy Network choose-one option marker; consumed by the count-scaled-choose
@@ -2111,6 +2125,55 @@ function parseAbilityText(
       // precedent (D-24467); the +1[icon:attack] stays on this hook via Step 2b. A boolean
       // gate; '1' is a stable placeholder. Placed before the unresolved-marker fallback.
       conditions.push({ type: MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE, value: '1' });
+    } else if (normalizedKeyword === 'card-play-ordinal') {
+      // why: WP-745 / D-24568 — Dr. Octopus "If this is the eighth card you played this turn".
+      // The marker→condition precedent (D-24467 / D-24616): push the ON-PLAY play-history gate
+      // onto the hook carrying the line's printed +N icon (Step 2b), so the grant fires only
+      // when this is the Nth card played. :N is KEYWORD_PATTERN's capture; absent → no push
+      // (the recruit-threshold guard). Placed before the unresolved-marker fallback.
+      const playOrdinal = keywordMatch[2];
+      if (playOrdinal !== undefined) {
+        conditions.push({ type: CARD_PLAY_ORDINAL_CONDITION_TYPE, value: playOrdinal });
+      }
+    } else if (normalizedKeyword === 'played-other-cost') {
+      // why: WP-745 / D-24568 — Invisible Woman "If you played any other cards that cost N this
+      // turn". ON-PLAY play-history gate (the card being resolved is excluded). Same guard and
+      // placement as the arm above.
+      const otherCost = keywordMatch[2];
+      if (otherCost !== undefined) {
+        conditions.push({ type: OTHER_CARD_OF_COST_PLAYED_CONDITION_TYPE, value: otherCost });
+      }
+    } else if (normalizedKeyword === 'played-cost') {
+      // why: WP-745 / D-24568 — Venomized Dr. Strange "If you played a 4-cost card and a 2-cost
+      // card this turn": the line carries this marker twice, one per cost, and each pushes its own
+      // ON-PLAY condition; hook conditions AND together (evaluateAllConditions). Same guard and
+      // placement as the arms above.
+      const playedCost = keywordMatch[2];
+      if (playedCost !== undefined) {
+        conditions.push({ type: CARD_OF_COST_PLAYED_CONDITION_TYPE, value: playedCost });
+      }
+    } else if (normalizedKeyword === 'played-other-distinct-heroes') {
+      // why: WP-745 / D-24568 — Warriors Three "If you played at least three other non-grey Heroes
+      // with different card names this turn". ON-PLAY play-history gate. Same guard and placement.
+      const distinctHeroes = keywordMatch[2];
+      if (distinctHeroes !== undefined) {
+        conditions.push({ type: OTHER_DISTINCT_HEROES_PLAYED_CONDITION_TYPE, value: distinctHeroes });
+      }
+    } else if (normalizedKeyword === 'hero-koed-this-turn') {
+      // why: WP-745 / D-24568 — Rage "If a Hero was put into the KO pile this turn". The WP-743
+      // sticky-event precedent: push the whole-turn WAIT-AND-SEE gate, so Rage played before the
+      // KO grants once when it lands. A boolean gate; '1' is a stable placeholder. Placed before
+      // the unresolved-marker fallback.
+      conditions.push({ type: HERO_KOED_THIS_TURN_CONDITION_TYPE, value: '1' });
+    } else if (normalizedKeyword === 'bystanders-threshold') {
+      // why: WP-745 / D-24568 — Black Widow "If you have at least 4 Bystanders in your Victory
+      // Pile": the Savior condition (D-24464) at the printed threshold, ON-PLAY like Savior (a
+      // present-state "have", not a "this turn" window). The literal matches the Savior arm's;
+      // the evaluator already parses any N. Same :N guard and placement as the arms above.
+      const bystanderThreshold = keywordMatch[2];
+      if (bystanderThreshold !== undefined) {
+        conditions.push({ type: 'bystandersInVictoryAtLeast', value: bystanderThreshold });
+      }
     } else if (normalizedKeyword === 'first-hero-condition') {
       // why: WP-681 / D-24498 — Deadpool's "Hey, Can I Get a Do-Over?" gates its
       // optional discard-and-redraw on "if this is the first Hero you played this turn".

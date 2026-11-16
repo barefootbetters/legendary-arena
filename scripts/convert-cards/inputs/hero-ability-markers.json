@@ -333,6 +333,18 @@
       "cardSlug": "web-trap",
       "abilityIndex": 0,
       "markupToken": "[keyword:next-hand-extra-draw:1]"
+    },
+    {
+      "heroSlug": "hawkeye",
+      "cardSlug": "trick-arrow",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:draw-threshold:1]"
+    },
+    {
+      "heroSlug": "black-widow",
+      "cardSlug": "covert-operation",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:bystanders-threshold:4]"
     }
   ],
   "core": [
@@ -1027,6 +1039,12 @@
       "cardSlug": "first-strike",
       "abilityIndex": 0,
       "markupToken": "[keyword:first-hero-condition]"
+    },
+    {
+      "heroSlug": "wolverine",
+      "cardSlug": "sudden-ambush",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:draw-threshold:1]"
     }
   ],
   "msis": [
@@ -1077,6 +1095,12 @@
       "cardSlug": "grief",
       "abilityIndex": 0,
       "markupToken": "[keyword:master-strike-this-turn]"
+    },
+    {
+      "heroSlug": "wanda-vision",
+      "cardSlug": "rage",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:hero-koed-this-turn]"
     }
   ],
   "msp1": [
@@ -1899,6 +1923,12 @@
       "cardSlug": "mr-fantastic",
       "abilityIndex": 0,
       "markupToken": "[keyword:draw:2]"
+    },
+    {
+      "heroSlug": "fantastic-four-united",
+      "cardSlug": "invisible-woman",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:played-other-cost:4]"
     }
   ],
   "antm": [
@@ -2012,6 +2042,12 @@
       "cardSlug": "hogun-the-grim",
       "abilityIndex": 0,
       "markupToken": "[keyword:optional-ko-hand-discard]"
+    },
+    {
+      "heroSlug": "warriors-three-the",
+      "cardSlug": "three-stand-as-one",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:played-other-distinct-heroes:3]"
     }
   ],
   "bkpt": [
@@ -2185,6 +2221,12 @@
       "cardSlug": "hothead",
       "abilityIndex": 0,
       "markupToken": "[keyword:gain-wound-self]"
+    },
+    {
+      "heroSlug": "invisible-woman",
+      "cardSlug": "four-of-a-kind",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:played-other-cost:4]"
     }
   ],
   "mgtg": [
@@ -2230,6 +2272,12 @@
       "cardSlug": "stolen-necroblaster",
       "abilityIndex": 0,
       "markupToken": "[keyword:optional-ko-hand-discard]"
+    },
+    {
+      "heroSlug": "gamora",
+      "cardSlug": "guardians-escape",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:draw-threshold:2]"
     }
   ],
   "msmc": [
@@ -2506,6 +2554,12 @@
       "cardSlug": "ultraviolet-radiation",
       "abilityIndex": 0,
       "markupToken": "[keyword:discard-to-play:1]"
+    },
+    {
+      "heroSlug": "captain-marvel-agent-of-shield",
+      "cardSlug": "radiant-blast",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:draw-threshold:1]"
     }
   ],
   "shld": [
@@ -2632,6 +2686,12 @@
       "cardSlug": "brilliant-research",
       "abilityIndex": 0,
       "markupToken": "[keyword:next-hand-extra-draw:1]"
+    },
+    {
+      "heroSlug": "dr-octopus",
+      "cardSlug": "eighth-times-a-charm",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:card-play-ordinal:8]"
     }
   ],
   "vnom": [
@@ -2742,6 +2802,18 @@
       "cardSlug": "spring-the-trap",
       "abilityIndex": 0,
       "markupToken": "[keyword:master-strike-or-ambush-this-turn]"
+    },
+    {
+      "heroSlug": "venomized-dr-strange",
+      "cardSlug": "complete-the-grand-ritual",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:played-cost:4]"
+    },
+    {
+      "heroSlug": "venomized-dr-strange",
+      "cardSlug": "complete-the-grand-ritual",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:played-cost:2]"
     }
   ],
   "dims": [
@@ -2814,6 +2886,12 @@
       "cardSlug": "colliding-dreams",
       "abilityIndex": 0,
       "markupToken": "[keyword:put-any-number-bottom-hq:1]"
+    },
+    {
+      "heroSlug": "apocalyptic-black-widow",
+      "cardSlug": "humanitys-final-hope",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:bystanders-threshold:4]"
     }
   ],
   "xmen": [

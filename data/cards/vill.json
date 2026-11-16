@@ -165,7 +165,7 @@
           "attack": "4+",
           "recruit": null,
           "abilities": [
-            "If this is the eighth card you played this turn, you get +2[icon:attack]."
+            "If this is the eighth card you played this turn, you get +2[icon:attack]. [keyword:card-play-ordinal:8]"
           ]
         },
         {

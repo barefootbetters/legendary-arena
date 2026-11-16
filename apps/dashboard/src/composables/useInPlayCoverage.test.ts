@@ -749,8 +749,15 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // gain-wound-reward prompt, so rooftops-conqueror (7) leaves the regenerated feed (7352 -> 7345
   // raw observations): totalObs 8724 -> 8717 and resolvedObs 1220 -> 1213, so percentResolved
   // 14 -> 13.9 (1213 / 8717). A feed re-pin, not a behavior change.
+  // why: WP-745 / D-24568 (2026-11-16) — 12 unmarked "If …, you get +N" hero lines now gate their
+  // bonus, so the sweep's bot games play out differently (feed regenerated: 7345 -> 7351 raw
+  // observations). No WP-745 mechanic is a hollow; the move is trajectory only, above baseline
+  // peaks: liberate 29 -> 35, recruit-no-magnitude 437 -> 447, what-if...? 41 -> 44,
+  // excessive-kindness 91 -> 93, excessive-violence 162 -> 164, triggered-artifact 6 -> 8, focus
+  // 927 -> 926 (its baseline peak). totalObs 8717 -> 8741 (+24); resolvedObs unchanged at 1213, so
+  // percentResolved stays 13.9 (1213 / 8741). A feed re-pin, not a behavior change.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8717);
+  assert.equal(view.totalObs.value, 8741);
   assert.equal(view.resolvedObs.value, 1213);
   assert.equal(view.percentResolved.value, 13.9);
   assert.ok(view.remaining.value.length > 0);
