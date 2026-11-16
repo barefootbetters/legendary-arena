@@ -1,9 +1,9 @@
 {
   "corpus": {
-    "executable": 3946,
+    "executable": 4056,
     "heroes": 324,
-    "hooks": 6397,
-    "noEffect": 2347,
+    "hooks": 6416,
+    "noEffect": 2256,
     "parsedNotExecuted": 104
   },
   "perSet": {
@@ -18,14 +18,14 @@
       "noEffect": 34
     },
     "amwp": {
-      "executable": 150,
+      "executable": 163,
       "hooks": 195,
-      "noEffect": 45
+      "noEffect": 32
     },
     "anni": {
-      "executable": 45,
-      "hooks": 122,
-      "noEffect": 77
+      "executable": 61,
+      "hooks": 119,
+      "noEffect": 58
     },
     "antm": {
       "executable": 106,
@@ -33,9 +33,9 @@
       "noEffect": 3
     },
     "asrd": {
-      "executable": 57,
+      "executable": 73,
       "hooks": 102,
-      "noEffect": 45
+      "noEffect": 29
     },
     "bkpt": {
       "executable": 58,
@@ -113,9 +113,9 @@
       "noEffect": 73
     },
     "mdns": {
-      "executable": 80,
-      "hooks": 122,
-      "noEffect": 42
+      "executable": 121,
+      "hooks": 135,
+      "noEffect": 14
     },
     "mgtg": {
       "executable": 55,
@@ -123,9 +123,9 @@
       "noEffect": 44
     },
     "msis": {
-      "executable": 76,
+      "executable": 78,
       "hooks": 101,
-      "noEffect": 25
+      "noEffect": 23
     },
     "msmc": {
       "executable": 74,
@@ -178,9 +178,9 @@
       "noEffect": 65
     },
     "ssw2": {
-      "executable": 188,
-      "hooks": 271,
-      "noEffect": 83
+      "executable": 207,
+      "hooks": 280,
+      "noEffect": 73
     },
     "vill": {
       "executable": 204,
@@ -203,9 +203,9 @@
       "noEffect": 53
     },
     "wwhk": {
-      "executable": 254,
+      "executable": 257,
       "hooks": 341,
-      "noEffect": 87
+      "noEffect": 84
     },
     "xmen": {
       "executable": 158,
@@ -222,8 +222,8 @@
     "artifact--": 6,
     "artifacts": 2,
     "astral-plane": 1,
-    "bridge": 3,
-    "bridge-conqueror": 3,
+    "bank-conqueror": 1,
+    "bridge-conqueror": 8,
     "burn-2-shards": 3,
     "burn-4-shards": 2,
     "burn-8-shards": 1,
@@ -231,7 +231,6 @@
     "burn-any-number-of-shards": 1,
     "cheering-crowds": 6,
     "clone": 16,
-    "conqueror": 11,
     "contest-of-champions": 2,
     "coordinate": 11,
     "cosmic-threat": 2,
@@ -256,7 +255,6 @@
     "focus": 25,
     "fortify": 1,
     "highest-abomination": 1,
-    "hunt-for-victims": 1,
     "hyperspeed": 14,
     "indigestion": 5,
     "last-stand": 3,
@@ -277,23 +275,22 @@
     "piercing-energy": 11,
     "reveal-multi-take": 1,
     "ritual-artifact": 8,
-    "rooftops": 1,
     "rooftops-abomination": 1,
+    "rooftops-conqueror": 3,
     "s.h.i.e.l.d.-level": 10,
     "s.h.i.e.l.d.-levels": 3,
     "sacrifice": 7,
-    "sewers-conqueror": 2,
+    "sewers-conqueror": 3,
     "shatter": 7,
     "soaring-flight": 17,
     "soulbind": 5,
     "soulbind-a-bystander-or-villain": 1,
     "soulbind-six-villains": 1,
     "speak": 1,
-    "streets": 3,
     "streets-abomination": 1,
-    "streets-conqueror": 1,
+    "streets-conqueror": 4,
     "striker": 1,
-    "sunlight": 5,
+    "sunlight": 4,
     "switcheroo": 7,
     "tactical-formation": 13,
     "teleport": 20,
