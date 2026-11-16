@@ -2109,9 +2109,9 @@
       "card": "The Blob",
       "ability": "Ambush: Put The Blob to the left of the Mastermind space. Nothing moves The Blob. While he's there, you can't fight the Mastermind. (You can still fight The Blob.)",
       "wp": "WP-840",
-      "state": "pending",
-      "date": "2026-11-15",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-11-16",
+      "evidence": "solo autoplay sH1nmiICCYK (co2e Magneto / Unleash the Power of the Cosmic Cube; Brotherhood of Mutants; Hand Ninjas; Captain America, Hulk, Iron Man; heuristic); server `7ce79b3f` (the #3413 merge, built 2026-11-16T05:56:59Z), client bundle `index-DJjCd-vJ.js` carrying `besideMastermindIndex`, match created after the deploy: 5.1.1-5.1.2 \"[Ambush] The Blob (…-01) revealed and entered the city!\" then \"Ambush effect: The Blob moves to the left of the Mastermind; nothing can move him, and the Mastermind can't be fought while he is there.\" with the City empty after (he left it); the Play Diagnostics snapshot at turn 5 had `city.fortifiers` = [{ place `mastermind`, extId …-the-blob-01, fightCost 4, lockText \"the Mastermind can't be fought\", besideMastermindIndex 0 }] and `mastermind.fortifiedReason` \"The Blob is to the left of the Mastermind. Fight The Blob first.\"; at turn 7 both copies were listed (2 entries); 7.2.11 / 11.2.10 \"Player 0 fought The Blob (…-01 / …-00) to the left of the Mastermind.\"; no Mastermind fight while either was there (first tactic fight 14.2.14, after the last Blob); the final snapshot has no `fortifiers` / `fortifiedReason` key. Control DenGJ9q_E2K (same setup) never revealed The Blob and fought Magneto normally.",
       "note": "Live check (NEW match with co2e Magneto / Brotherhood of Mutants after the deploy): when The Blob enters the City the log shows \"Ambush effect: The Blob moves to the left of the Mastermind; nothing can move him, and the Mastermind can't be fought while he is there.\" and he leaves the City; Play Diagnostics shows his city.fortifiers entry with besideMastermindIndex and mastermind.fortifiedReason; no fightMastermind lands while he is there; fighting him logs \"fought The Blob to the left of the Mastermind.\" and the Mastermind can be fought again. D-24773."
     },
     {
