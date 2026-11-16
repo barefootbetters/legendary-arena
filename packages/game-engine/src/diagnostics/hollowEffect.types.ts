@@ -233,15 +233,18 @@ export const DEFERRED_BY_DESIGN_MECHANICS: ReadonlySet<string> = new Set<string>
  * - `no-op` — a DELIBERATE-no-op handler ran. Determined by PRIMITIVE IDENTITY
  *   (the fixed allowlist `DELIBERATE_NO_OP_VILLAIN_PRIMITIVES`: `become-scheme-twist`
  *   [D-24287], `gain-attached-hero` [D-24270], `play-villain-deck-cards` [D-24351],
- *   `reenter-sewers-if-villain-deck-top` [D-24811] and `stack-cards-enter-city-as-villains`
- *   [D-24814], all of which intentionally mutate nothing), NEVER by `targets.length` —
- *   many real-firing handlers legitimately return empty targets.
+ *   `reenter-sewers-if-villain-deck-top` [D-24811], `stack-cards-enter-city-as-villains`
+ *   [D-24814], `gain-one-attached-hero-rest-to-bottom` [D-24771] and `charge` [D-24820],
+ *   all of which intentionally mutate nothing), NEVER by `targets.length` — many
+ *   real-firing handlers legitimately return empty targets.
  * - `no-handler` — no handler was reached for the token (co-recorded as a hollow).
  * - `secondary-site` — the effect's real work fired at a DIFFERENT site than the
  *   executor, recorded beside the executor's `no-op` trace: Mystique's escape→Scheme-Twist
- *   (the villain-deck escape site), and the three bridged primitives
- *   `play-villain-deck-cards`, `reenter-sewers-if-villain-deck-top` and
- *   `stack-cards-enter-city-as-villains` (the fight and Ambush bridges; WP-877 / D-24824).
+ *   (the villain-deck escape site), and the five bridged primitives
+ *   `play-villain-deck-cards`, `reenter-sewers-if-villain-deck-top`,
+ *   `stack-cards-enter-city-as-villains` (the fight and Ambush bridges; WP-877 / D-24824),
+ *   `gain-one-attached-hero-rest-to-bottom` (the fight site; D-24771) and `charge` (the
+ *   Ambush bridge; D-24820).
  */
 export type EffectTraceStatus =
   | 'fired'
