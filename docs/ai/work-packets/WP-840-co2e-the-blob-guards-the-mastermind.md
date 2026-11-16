@@ -341,7 +341,7 @@ Minimal-`G` fixtures in each file's existing style. "Blob" = `co2e-villain-broth
   - 01.7: RISK / HOLD — must-fix 1 (the same bundle), should-fix 2 (stale UIState / Fortify comments) and 3 (00.6 Rule 1 stated as a recorded exception, not relabelled), optional 4 (stale-client residual) and 5 (handler wording "nothing can move him", chip `aria-label`). All applied.
   - 00.3: FAIL — §5 (the bundle), §16.4 (`buildFortifyProjection` and `fightOffCityVillain` over one screen → `appendBesideMastermindFortifiers` and `isOffCityFightBlocked`), §4 (ARCHITECTURE Section 1 and the rules-file Layer Boundary cited). Recommendations applied: Risk Tier MEDIUM, "every input a client or bot sends today", T2 wording, this record.
   - Also moved: T8 into `ambushNarrative.keywordless.test.ts` and T15 into `fortifyFight.test.ts` (both already drive the real reveal / `fightVillain`), so `villainDeck.reveal.test.ts` and `fightVillain.test.ts` leave the Files list.
-- 2026-11-15 round 2: see below.
+- 2026-11-15 round 2 (on `c20f5a442`, the same independent subagents): **01.4 READY TO EXECUTE** (PS-1..3 resolved; findings 4-10 present); **01.7 CONFIRM** (all five round-1 findings resolved, nothing new); **00.3 PASS** (every section PASS or N/A; Risk Tier MEDIUM matches in WP and EC).
 
 ---
 
