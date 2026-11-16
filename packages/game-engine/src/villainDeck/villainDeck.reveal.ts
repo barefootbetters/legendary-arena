@@ -37,7 +37,7 @@ import { moveAttachedHeroesToEscapedPile } from '../board/heroCapture.logic.js';
 // runtime-safe import cycle: enqueueEscapeProcedure is referenced only inside a function
 // body, never at module top level, so ESM resolves the binding by call time (the
 // divingBlock.logic.ts precedent).
-import { enqueueEscapeProcedure } from './villainEscapeProcedure.js';
+import { enqueueEscapeProcedure, enqueueAnyCardEffectDiscard } from './villainEscapeProcedure.js';
 import { recordEffectTrace } from '../diagnostics/effectTrace.record.js';
 import {
   MASTER_STRIKE_THIS_TURN_CONDITION_TYPE,
@@ -54,6 +54,7 @@ import {
   resolveCardDisplayName,
   recordVillainSecondarySiteTrace,
   villainCardChargeEffect,
+  findVillainHookDescriptor,
 } from '../villain/villainEffects.execute.js';
 import type { StackVillainEntry, VillainChargeEffect } from '../villain/villainEffects.execute.js';
 // why: WP-874 / D-24820 — the Ambush charge bridge steps the City through the pure Charge helper and
@@ -62,8 +63,16 @@ import type { StackVillainEntry, VillainChargeEffect } from '../villain/villainE
 import { chargeCityVillainOneSpace } from '../board/villainCharge.logic.js';
 import type { ChargeOutcome } from '../board/villainCharge.logic.js';
 import { demolishEachPlayer } from '../board/demolish.logic.js';
-import { citySpaceNameForIndex } from '../board/citySpaceNames.js';
-import type { VillainAbilityTiming, VillainChargePushConsequence } from '../rules/villainAbility.types.js';
+import { describeCitySpace } from '../board/citySpaceNames.js';
+import type {
+  VillainAbilityTiming,
+  VillainChargePushConsequence,
+  VillainEffectDescriptor,
+} from '../rules/villainAbility.types.js';
+// why: WP-839 / D-24772 — moveCardFromZone (pure zone helper) and seatsInTurnOrderFrom (pure seat
+// order, D-24780) have no runtime imports of their own, so neither adds a module cycle.
+import { moveCardFromZone } from '../moves/zoneOps.js';
+import { seatsInTurnOrderFrom } from '../turn/seatOrder.logic.js';
 import { listFreeStackVillainIds } from '../rules/stackVillain.logic.js';
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
@@ -270,7 +279,6 @@ export function performVillainReveal(
   context: RevealContext,
   implementationMap: ImplementationMap,
 ): void {
-  const ctx = context.ctx;
   const deck = G.villainDeck.deck;
 
   // Step 1: Handle empty deck
@@ -324,234 +332,9 @@ export function performVillainReveal(
     // Remove card from deck only after city validation succeeds
     G.villainDeck.deck = G.villainDeck.deck.slice(1);
 
-    const pushResult = pushVillainIntoCity(G.city, cardId);
-    G.city = pushResult.city;
-
-    // why: every villain-deck reveal must produce a start-stage log line. The
-    // bystander branch logs "revealed and captured by X" and mastermind-strike
-    // logs via its rule hook, but a villain/henchman entering the city had no
-    // base log line — so the first turn (empty city → the reveal fills it, no
-    // escape) showed nothing at step 1 and the game log appeared to start at
-    // step 2. Log the city entry here, before the escape/wound/ambush detail
-    // lines below, so the reveal is always narrated. (G.messages is
-    // hash-excluded, D-24081, so this is replay-safe.)
-    // why: WP-643-follow-up — an Ambush card flags the entry line `[Ambush]` and
-    // colours it `threat` (villain-purple) so a player sees the incoming threat
-    // stand out; the printed effect targets are named on the coloured
-    // "Ambush effect:" line below (fired after the executor resolves them). The
-    // "revealed and entered the city" substring is kept in BOTH branches so the
-    // city-entry log assertions stay valid regardless of Ambush. hasAmbush is
-    // resolved once here and reused at the Ambush executor site below.
-    const cardHasAmbush = hasAmbush(cardId, G.cardKeywords ?? {});
-    if (cardHasAmbush) {
-      pushLog(
-        G,
-        `[Ambush] ${formatCardRef(G.cardDisplayData, cardId)} revealed and entered the city!`,
-        'threat',
-      );
-    } else {
-      pushLog(
-        G,
-        `${formatCardRef(G.cardDisplayData, cardId)} revealed and entered the city.`,
-      );
-    }
-
-    if (pushResult.escapedCard !== null) {
-      // why: WP-757 / D-24587 — the escape branch is extracted MECHANICALLY into
-      // resolveVillainEscape so a no-Ambush City entry (the Haunt exorcise,
-      // enterCityIgnoringAmbush) resolves an escape with exact reveal parity.
-      resolveVillainEscape(G, context, implementationMap, pushResult.escapedCard);
-    }
-
-    // why: Ambush fires on City entry. The hardcoded "each player gains a
-    // wound" loop previously here is deleted (D-18504; supersedes the D-2403
-    // safe-skip note for the Ambush case) — it fired identical wrong behavior
-    // for every Ambush card regardless of printed text. Dispatch now runs the
-    // card's parsed [effect:] hooks via executeVillainAbilities, gated by the
-    // existing hasAmbush fast pre-check (the keyword-detection invariant from
-    // buildCardKeywords.ts). The keyword map is re-derived inline so this call
-    // carries no dependency on a deleted binding.
-    // why: WP-200 — capture the executor's return and emit `ambushResolved`.
-    // Only genuine Ambush `[effect:]` results feed `appliedEffects` / the
-    // narrative. (The MVP unconditional city-entry bystander attach — D-1701,
-    // NOT the D-18504 ambush-wound deletion above — was removed by WP-432 as
-    // non-canonical, so there is no longer a non-Ambush attach to exclude here.)
-    // Resolving the citySpace via `G.city.indexOf(cardId)`
-    // after `pushVillainIntoCity` reflects the final placement index
-    // (0..4); -1 falls back to 0 if the push collapsed the card off the
-    // edge (a contract violation the move never hits in production but
-    // the emission must remain defensive).
-    if (cardHasAmbush) {
-      // why: WP-743 / D-24566 — record the Ambush Villain for Spring the Trap's
-      // this-turn gate. Written only when a hero hook in this match reads that
-      // condition (games without it stay byte-unchanged, the D-24467 posture), and
-      // BEFORE The Leader's chained play below, so a card that chain reveals sees it.
-      if (matchReadsConditionType(G, MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE)) {
-        G.ambushVillainPlayedThisTurn = true;
-      }
-      // why: WP-874 / D-24820 — the Ambush charge bridge (D-24351). Charge is an Ambush effect
-      // resolved after entry escapes (rules v23 L571-575, L1117-1119), so it runs after
-      // resolveVillainEscape above and BEFORE the onAmbush executor below: that is printed order for
-      // every marked carrier (the charge is the first or only Ambush clause; a real-data test pins
-      // it). Its secondary-site trace therefore precedes the executor's `no-op` trace (D-24824).
-      const ambushChargeEffect = villainCardChargeEffect(G, cardId, 'onAmbush');
-      let ambushChargeClause: string | undefined;
-      if (ambushChargeEffect !== null) {
-        // why: WP-874 / D-24824 §3 — the executor traces the charge `no-op`; record where it really
-        // fires, inside the guard and immediately before the bridge. `magnitude` is the marked count.
-        recordVillainSecondarySiteTrace(
-          G,
-          cardId,
-          'onAmbush',
-          'charge',
-          'chargeAmbushVillain',
-          'villain-ambush-bridge',
-          { magnitude: ambushChargeEffect.spaces },
-          readRevealContextTurn(context),
-        );
-        const chargeOutcome = chargeAmbushVillain(G, context, implementationMap, cardId, ambushChargeEffect);
-        ambushChargeClause = composeChargeClause(chargeOutcome);
-      }
-      // why: WP-478 / D-24285 — pass the reveal move's shuffle source (uniform with
-      // the Fight/Escape fire sites) so a future Ambush-timed scry could reshuffle.
-      // why: WP-489 / D-24295 — the Ambush fire site has no fought City space, so
-      // cityIndex is undefined; the location gate FAILS CLOSED (no Tier-B card ambushes).
-      // why: WP-897 / D-24854 — the narrative variant also returns the clauses of the keyword-less
-      // Ambush descriptors that ran (`results` is exactly what executeVillainAbilities returns), so
-      // the overlay names them instead of "entered the city with no Ambush effect".
-      const ambushExecution = executeVillainAbilitiesWithNarrative(G, ctx, cardId, 'onAmbush', { random: context.random }, undefined);
-      const appliedAmbushResults = ambushExecution.results;
-      // why: WP-316 — map results→keywords so the ambushResolved `appliedEffects`
-      // field and the composeAmbushNarrative string stay byte-identical to main;
-      // the hashed notableEvents surface (and the arena-client) never observe the
-      // per-target widening, so finalStateHash is unchanged.
-      const appliedAmbushEffects = appliedAmbushResults.map((result) => result.keyword);
-      // why: WP-200 — defensive access; legacy test states may leave
-      // `cardDisplayData` undefined. Production setup always builds it.
-      const ambushCardDisplay = G.cardDisplayData?.[cardId];
-      const ambushCardName =
-        ambushCardDisplay && typeof ambushCardDisplay.name === 'string' && ambushCardDisplay.name.length > 0
-          ? ambushCardDisplay.name
-          : cardId;
-      const ambushCitySpace = (() => {
-        const found = G.city.indexOf(cardId);
-        return found >= 0 ? found : 0;
-      })();
-      // why: WP-316 + WP-319 — resolve the effect targets to display names ONCE;
-      // the same resolved results feed BOTH the durable `Ambush effect:` log line
-      // AND the ambushResolved narrative (so the overlay + log name the same hero).
-      const resolvedAmbushResults = resolveEffectResultNames(G, appliedAmbushResults);
-      // why: WP-316 — narrate the Ambush: effect targets into the durable log
-      // (G.messages, hash-excluded per D-24081) after the executor runs and
-      // BEFORE the ambushResolved event push. Length-guarded: no line when no
-      // effect applied. The unconditional city-entry bystander attach below is
-      // NOT an Ambush effect and never appears here.
-      if (appliedAmbushResults.length > 0) {
-        // why: WP-643-follow-up — colour the Ambush effect line `threat`
-        // (villain-purple), matching the `[Ambush]` entry line above, so the whole
-        // Ambush reads as one board-adversity beat in the log.
-        pushLog(G,
-          `Ambush effect: ${composeEffectResultLogLine(resolvedAmbushResults)}.`,
-          'threat',
-        );
-      }
-      // why: D-24703 — The Leader's Ambush play (WP-542 / D-24351) is performed below,
-      // not by the executor, so read its count BEFORE the ambushResolved push and feed it
-      // to the narrative; otherwise the overlay reads "entered the city with no Ambush
-      // effect" while the Ambush plays a card. The narrated log line mirrors the Fight
-      // site's, so the played card's reveal is attributed to this villain. The play
-      // itself still fires AFTER the event (ordering unchanged).
-      // why: WP-837 / D-24770 — the current player decides a reveal-gated play (The Leader).
-      const ambushPlayCount = villainCardPlaysVillainDeckCards(G, cardId, 'onAmbush', ctx.currentPlayer);
-      if (ambushPlayCount > 0) {
-        pushLog(G,
-          `Ambush effect: ${formatCardRef(G.cardDisplayData, cardId)} ${composeVillainDeckPlayClause(ambushPlayCount)}.`,
-          'threat',
-        );
-      }
-      // why: WP-869 / D-24814 — Agent Eric Marshall's Ambush Officer entry is performed below by
-      // enterStackCardsAsVillains, not the executor (a deliberate no-op), so the clause count is
-      // read BEFORE the ambushResolved push (D-24703): the cards that will enter are the fewest of
-      // the marked count, the stack and the free ids. 0 → no clause.
-      const ambushStackEntry = villainCardStackVillainEntry(G, cardId, 'onAmbush');
-      let ambushStackVillainClause: string | undefined;
-      if (ambushStackEntry !== null) {
-        let ambushStack = G.piles.bystanders;
-        if (ambushStackEntry.kind === 'officer') {
-          ambushStack = G.piles.officers;
-        }
-        const ambushFreeIds = listFreeStackVillainIds(G, cardId, ambushStackEntry.count);
-        const ambushEntryCount = Math.min(ambushStackEntry.count, ambushStack.length, ambushFreeIds.length);
-        if (ambushEntryCount > 0) {
-          ambushStackVillainClause = composeStackVillainEntryClause(
-            ambushEntryCount,
-            resolveCardDisplayName(G, ambushFreeIds[0]!),
-          );
-        }
-      }
-      G.notableEvents.push({
-        type: 'ambushResolved',
-        revealedCardId: cardId,
-        citySpace: ambushCitySpace,
-        appliedEffects: appliedAmbushEffects,
-        // why: WP-319 — the narrative now names the captured HQ hero / KO'd hero
-        // (etc.) via the resolved results, so the center-screen overlay announces
-        // the specific hero. `appliedEffects` stays the keyword array (badges).
-        narrative: composeAmbushNarrative(
-          ambushCardName,
-          resolvedAmbushResults,
-          ambushPlayCount,
-          ambushStackVillainClause,
-          ambushExecution.narrativeClauses,
-          // why: WP-874 / D-24854 §6 — the bridged charge clause is the sixth, trailing parameter.
-          ambushChargeClause,
-        ),
-      });
-
-      // why: WP-542 / D-24351 — The Leader's "Ambush: Play the top card of the Villain
-      // Deck." The executor's play-villain-deck-cards handler is a no-op (it cannot reach
-      // the reveal pipeline); the actual play fires HERE, where the RevealContext + the
-      // implementationMap are in scope. Fired AFTER the ambush abilities resolve (the
-      // ambushResolved event above) — the Ambush plays the top N villain-deck cards, each
-      // resolving as a normal reveal (villain→city, henchman / bystander / scheme-twist /
-      // master-strike, recursing through the rule pipeline). N is the marked count.
-      if (ambushPlayCount > 0) {
-        // why: WP-877 / D-24824 — the executor traced this play `no-op`; record where it really
-        // fires. Inside the guard (a reveal-gated The Leader whose player revealed plays nothing and
-        // gets no trace) and BEFORE the play, so the played cards' own traces follow their cause.
-        recordVillainSecondarySiteTrace(
-          G,
-          cardId,
-          'onAmbush',
-          'play-villain-deck-cards',
-          'playTopVillainDeckCards',
-          'villain-ambush-bridge',
-          { magnitude: ambushPlayCount },
-          readRevealContextTurn(context),
-        );
-        playTopVillainDeckCards(G, context, implementationMap, ambushPlayCount);
-      }
-      // why: WP-869 / D-24814 — the Ambush-site bridge (D-24351), after The Leader's play block:
-      // the stack cards enter the City here, where the RevealContext and implementationMap are in
-      // scope for any escape the entry causes.
-      if (ambushStackEntry !== null) {
-        // why: WP-877 / D-24824 — the executor traced the stack entry `no-op`; record the bridge.
-        // Inside the guard: no stack entry, no bridge, no trace. Before the bridge, so the record
-        // precedes the entering cards' own traces. `magnitude` is the marked
-        // count (D-24824 §4).
-        recordVillainSecondarySiteTrace(
-          G,
-          cardId,
-          'onAmbush',
-          'stack-cards-enter-city-as-villains',
-          'enterStackCardsAsVillains',
-          'villain-ambush-bridge',
-          { magnitude: ambushStackEntry.count, stackVillainKind: ambushStackEntry.kind },
-          readRevealContextTurn(context),
-        );
-        enterStackCardsAsVillains(G, context, implementationMap, cardId, ambushStackEntry, 'onAmbush');
-      }
-    }
+    // why: WP-839 / D-24772 — the push, entry log, escape and Ambush block live in
+    // resolveVillainCityEntry (a mechanical extraction) so a re-entering Villain shares them.
+    resolveVillainCityEntry(G, context, implementationMap, cardId, 'revealed and entered the city');
 
     // why: WP-432 (supersedes D-1701 / removes the WP-431 entry-capture log) —
     // a villain/henchman does NOT capture a bystander merely by entering the
@@ -984,6 +767,442 @@ function placeStackVillainInCity(
   return pushResult.escapedCard;
 }
 
+/** The Victory-Pile card a re-entry effect brings back into the City, and whose pile holds it. */
+export interface VictoryPileCityEntrant {
+  /** The seat whose Victory Pile holds the card. */
+  seat: string;
+  /** The card that re-enters. */
+  cardId: CardExtId;
+}
+
+// why: WP-839 / D-24772 — a villain instance id ends in a two-digit copy index (`-00`, `-01`).
+const VILLAIN_COPY_SUFFIX_PATTERN = /^[0-9]{2}$/;
+
+/**
+ * Picks the Victory-Pile Villain an `enter-city-from-victory-pile` effect brings back (WP-839 /
+ * D-24772: Ymir's "Choose a Frost Giant Warrior from any player's Victory Pile"), or null.
+ *
+ * // why: the copies are identical, so "Choose" only decides whose pile loses the VP; the
+ * deterministic stand-in (Operator fork F1) takes the current player's pile first, then the other
+ * seats in turn order from the shared seatsInTurnOrderFrom (D-24780), and the first match in pile
+ * order. The set comes from the source card's own id through the `-villain-` infix and the match is
+ * an anchored instance-id prefix plus a two-digit copy suffix (D-24299 Path B), so another set's or
+ * group's card of a similar name never matches.
+ *
+ * @param G - Game state (read-only).
+ * @param sourceCardId - The Villain whose effect fires (gives the set).
+ * @param descriptor - Carries `victoryVillainGroup` and `victoryVillainCard`.
+ * @param currentPlayer - The active player.
+ * @returns The entrant, or null when none matches.
+ */
+export function selectVictoryPileCityEntrant(
+  G: LegendaryGameState,
+  sourceCardId: CardExtId,
+  descriptor: VillainEffectDescriptor,
+  currentPlayer: string,
+): VictoryPileCityEntrant | null {
+  const infixIndex = sourceCardId.indexOf('-villain-');
+  if (infixIndex <= 0 || descriptor.victoryVillainGroup === undefined || descriptor.victoryVillainCard === undefined) {
+    return null;
+  }
+  const setAbbr = sourceCardId.slice(0, infixIndex);
+  const prefix = `${setAbbr}-villain-${descriptor.victoryVillainGroup}-${descriptor.victoryVillainCard}-`;
+  for (const seat of seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)) {
+    const victory = G.playerZones[seat]?.victory ?? [];
+    for (const cardId of victory) {
+      if (cardId.startsWith(prefix) && VILLAIN_COPY_SUFFIX_PATTERN.test(cardId.slice(prefix.length))) {
+        return { seat, cardId };
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Brings the picked Victory-Pile Villain back into the City as a newly entering Villain (WP-839 /
+ * D-24772: Ymir's Ambush), through resolveVillainCityEntry (push, escape, its own Ambush).
+ *
+ * @param G - The game state to mutate.
+ * @param context - Narrow reveal context for the entry.
+ * @param implementationMap - Handler map for the entry.
+ * @param sourceCardId - The Villain whose Ambush fires.
+ * @param entrant - The pick from selectVictoryPileCityEntrant (made before the event), or null.
+ */
+export function enterCityFromVictoryPile(
+  G: LegendaryGameState,
+  context: RevealContext,
+  implementationMap: ImplementationMap,
+  sourceCardId: CardExtId,
+  entrant: VictoryPileCityEntrant | null,
+): void {
+  if (entrant === null) {
+    pushLog(G, 'Ambush effect: no matching Villain is in any player\'s Victory Pile, so nothing enters the city.', 'blocked');
+    return;
+  }
+  const entrantRef = formatCardRef(G.cardDisplayData, entrant.cardId);
+  pushLog(
+    G,
+    `Ambush effect: ${formatCardRef(G.cardDisplayData, sourceCardId)} brings ${entrantRef} back from Player ${entrant.seat}'s Victory Pile.`,
+    'threat',
+  );
+  const zones = G.playerZones[entrant.seat];
+  const removal = moveCardFromZone(zones?.victory ?? [], [], entrant.cardId);
+  // why: defensive — The Leader's play and the stack entry run between the pick and this entry.
+  if (zones === undefined || !removal.found) {
+    pushLog(
+      G,
+      `Ambush effect: ${entrantRef} is no longer in Player ${entrant.seat}'s Victory Pile, so nothing enters the city.`,
+      'blocked',
+    );
+    return;
+  }
+  zones.victory = removal.from;
+  resolveVillainCityEntry(
+    G,
+    context,
+    implementationMap,
+    entrant.cardId,
+    `entered the city from Player ${entrant.seat}'s Victory Pile`,
+  );
+}
+
+/**
+ * Boomerang's Fight swap (WP-839 / D-24772): "reveal the top card of the Villain Deck. If it's a
+ * Villain, put Boomerang in its place and play that Villain."
+ *
+ * Checks, in order: the fought card is in the fighter's Victory Pile; the deck is not empty; the
+ * top card is a Villain or Henchman (Henchmen are Villains, D-24607). Then the fought card leaves
+ * the Victory Pile for the place just under the top card and the top card is played through
+ * performVillainReveal, which leaves the fought card on top.
+ *
+ * @param G - The game state to mutate.
+ * @param context - Narrow reveal context for the play.
+ * @param implementationMap - Handler map for the play.
+ * @param foughtCardId - The defeated Villain (Boomerang).
+ * @param currentPlayer - The fighter.
+ */
+export function swapFoughtVillainWithVillainDeckTop(
+  G: LegendaryGameState,
+  context: RevealContext,
+  implementationMap: ImplementationMap,
+  foughtCardId: CardExtId,
+  currentPlayer: string,
+): void {
+  const ref = formatCardRef(G.cardDisplayData, foughtCardId);
+  const zones = G.playerZones[currentPlayer];
+  if (zones === undefined || !zones.victory.includes(foughtCardId)) {
+    pushLog(G, `Fight effect: ${ref} is not in Player ${currentPlayer}'s Victory Pile, so it cannot take a Villain's place.`, 'blocked');
+    return;
+  }
+  const topCardId = G.villainDeck.deck[0];
+  if (topCardId === undefined) {
+    pushLog(G, `Fight effect: the Villain Deck is empty, so ${ref} reveals nothing.`, 'blocked');
+    return;
+  }
+  const topRef = formatCardRef(G.cardDisplayData, topCardId);
+  const topType = G.villainDeckCardTypes[topCardId];
+  if (topType !== 'villain' && topType !== 'henchman') {
+    pushLog(G, `Fight effect: ${ref} revealed ${topRef} from the Villain Deck; it is not a Villain, so it stays on top.`, 'blocked');
+    return;
+  }
+  pushLog(G, `Fight effect: ${ref} revealed ${topRef} and takes its place on top of the Villain Deck; ${topRef} is played.`, 'applied');
+  const removal = moveCardFromZone(zones.victory, [], foughtCardId);
+  zones.victory = removal.from;
+  // why: "put Boomerang in its place and play that Villain" — the fought card goes just under the
+  // revealed Villain, so the play (performVillainReveal takes deck[0]) leaves it on top of the
+  // Villain Deck, where the next reveal brings it back. Zones hold CardExtId strings only.
+  G.villainDeck.deck = [topCardId, foughtCardId, ...G.villainDeck.deck.slice(1)];
+  performVillainReveal(G, context, implementationMap);
+}
+
+/**
+ * Places a Villain or Henchman card in the City as a newly entering Villain: the push, the entry
+ * log line, the escape of a pushed-out card and the whole Ambush block (WP-839 / D-24772).
+ *
+ * // why: WP-839 / D-24772 — extracted MECHANICALLY from performVillainReveal's villain branch (the
+ * WP-757 resolveVillainEscape precedent) so a Villain re-entering from elsewhere (Ymir's Frost Giant
+ * Warrior) enters exactly like a revealed one: rules v23 L1458-1463, L1824-1830 and L2831-2837 say a
+ * re-entering Villain follows the normal entry rules and still does its Ambush. The reveal passes
+ * 'revealed and entered the city', so its lines stay byte-identical. The block stays one function,
+ * moved verbatim: a recorded exception to the 00.6 function-length rule (D-24772); splitting it is a
+ * follow-up. The card is NOT revealed here: onCardRevealed stays with the caller.
+ *
+ * @param G - The game state to mutate.
+ * @param context - Narrow reveal context (random + ctx) for escapes and Ambush effects.
+ * @param implementationMap - Handler map for the escape and nested reveals.
+ * @param cardId - The entering card, already removed from wherever it came from.
+ * @param entryPhrase - The entry line's verb phrase (`revealed and entered the city`).
+ */
+export function resolveVillainCityEntry(
+  G: LegendaryGameState,
+  context: RevealContext,
+  implementationMap: ImplementationMap,
+  cardId: CardExtId,
+  entryPhrase: string,
+): void {
+  const ctx = context.ctx;
+  const pushResult = pushVillainIntoCity(G.city, cardId);
+  G.city = pushResult.city;
+
+  // why: every villain-deck reveal must produce a start-stage log line. The
+  // bystander branch logs "revealed and captured by X" and mastermind-strike
+  // logs via its rule hook, but a villain/henchman entering the city had no
+  // base log line — so the first turn (empty city → the reveal fills it, no
+  // escape) showed nothing at step 1 and the game log appeared to start at
+  // step 2. Log the city entry here, before the escape/wound/ambush detail
+  // lines below, so the reveal is always narrated. (G.messages is
+  // hash-excluded, D-24081, so this is replay-safe.)
+  // why: WP-643-follow-up — an Ambush card flags the entry line `[Ambush]` and
+  // colours it `threat` (villain-purple) so a player sees the incoming threat
+  // stand out; the printed effect targets are named on the coloured
+  // "Ambush effect:" line below (fired after the executor resolves them). The
+  // "revealed and entered the city" substring is kept in BOTH branches so the
+  // city-entry log assertions stay valid regardless of Ambush. hasAmbush is
+  // resolved once here and reused at the Ambush executor site below.
+  const cardHasAmbush = hasAmbush(cardId, G.cardKeywords ?? {});
+  if (cardHasAmbush) {
+    pushLog(
+      G,
+      `[Ambush] ${formatCardRef(G.cardDisplayData, cardId)} ${entryPhrase}!`,
+      'threat',
+    );
+  } else {
+    pushLog(
+      G,
+      `${formatCardRef(G.cardDisplayData, cardId)} ${entryPhrase}.`,
+    );
+  }
+
+  if (pushResult.escapedCard !== null) {
+    // why: WP-757 / D-24587 — the escape branch is extracted MECHANICALLY into
+    // resolveVillainEscape so a no-Ambush City entry (the Haunt exorcise,
+    // enterCityIgnoringAmbush) resolves an escape with exact reveal parity.
+    resolveVillainEscape(G, context, implementationMap, pushResult.escapedCard);
+  }
+
+  // why: Ambush fires on City entry. The hardcoded "each player gains a
+  // wound" loop previously here is deleted (D-18504; supersedes the D-2403
+  // safe-skip note for the Ambush case) — it fired identical wrong behavior
+  // for every Ambush card regardless of printed text. Dispatch now runs the
+  // card's parsed [effect:] hooks via executeVillainAbilities, gated by the
+  // existing hasAmbush fast pre-check (the keyword-detection invariant from
+  // buildCardKeywords.ts). The keyword map is re-derived inline so this call
+  // carries no dependency on a deleted binding.
+  // why: WP-200 — capture the executor's return and emit `ambushResolved`.
+  // Only genuine Ambush `[effect:]` results feed `appliedEffects` / the
+  // narrative. (The MVP unconditional city-entry bystander attach — D-1701,
+  // NOT the D-18504 ambush-wound deletion above — was removed by WP-432 as
+  // non-canonical, so there is no longer a non-Ambush attach to exclude here.)
+  // Resolving the citySpace via `G.city.indexOf(cardId)`
+  // after `pushVillainIntoCity` reflects the final placement index
+  // (0..4); -1 falls back to 0 if the push collapsed the card off the
+  // edge (a contract violation the move never hits in production but
+  // the emission must remain defensive).
+  if (cardHasAmbush) {
+    // why: WP-743 / D-24566 — record the Ambush Villain for Spring the Trap's
+    // this-turn gate. Written only when a hero hook in this match reads that
+    // condition (games without it stay byte-unchanged, the D-24467 posture), and
+    // BEFORE The Leader's chained play below, so a card that chain reveals sees it.
+    if (matchReadsConditionType(G, MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE)) {
+      G.ambushVillainPlayedThisTurn = true;
+    }
+    // why: WP-874 / D-24820 — the Ambush charge bridge (D-24351). Charge is an Ambush effect
+    // resolved after entry escapes (rules v23 L571-575, L1117-1119), so it runs after
+    // resolveVillainEscape above and BEFORE the onAmbush executor below: that is printed order for
+    // every marked carrier (the charge is the first or only Ambush clause; a real-data test pins
+    // it). Its secondary-site trace therefore precedes the executor's `no-op` trace (D-24824).
+    const ambushChargeEffect = villainCardChargeEffect(G, cardId, 'onAmbush');
+    let ambushChargeClause: string | undefined;
+    if (ambushChargeEffect !== null) {
+      // why: WP-874 / D-24824 §3 — the executor traces the charge `no-op`; record where it really
+      // fires, inside the guard and immediately before the bridge. `magnitude` is the marked count.
+      recordVillainSecondarySiteTrace(
+        G,
+        cardId,
+        'onAmbush',
+        'charge',
+        'chargeAmbushVillain',
+        'villain-ambush-bridge',
+        { magnitude: ambushChargeEffect.spaces },
+        readRevealContextTurn(context),
+      );
+      const chargeOutcome = chargeAmbushVillain(G, context, implementationMap, cardId, ambushChargeEffect);
+      ambushChargeClause = composeChargeClause(chargeOutcome);
+    }
+    // why: WP-478 / D-24285 — pass the reveal move's shuffle source (uniform with
+    // the Fight/Escape fire sites) so a future Ambush-timed scry could reshuffle.
+    // why: WP-489 / D-24295 — the Ambush fire site has no fought City space, so
+    // cityIndex is undefined; the location gate FAILS CLOSED (no Tier-B card ambushes).
+    // why: WP-897 / D-24854 — the narrative variant also returns the clauses of the keyword-less
+    // Ambush descriptors that ran (`results` is exactly what executeVillainAbilities returns), so
+    // the overlay names them instead of "entered the city with no Ambush effect".
+    const ambushExecution = executeVillainAbilitiesWithNarrative(G, ctx, cardId, 'onAmbush', { random: context.random }, undefined);
+    const appliedAmbushResults = ambushExecution.results;
+    // why: WP-316 — map results→keywords so the ambushResolved `appliedEffects`
+    // field and the composeAmbushNarrative string stay byte-identical to main;
+    // the hashed notableEvents surface (and the arena-client) never observe the
+    // per-target widening, so finalStateHash is unchanged.
+    const appliedAmbushEffects = appliedAmbushResults.map((result) => result.keyword);
+    // why: WP-200 — defensive access; legacy test states may leave
+    // `cardDisplayData` undefined. Production setup always builds it.
+    const ambushCardDisplay = G.cardDisplayData?.[cardId];
+    const ambushCardName =
+      ambushCardDisplay && typeof ambushCardDisplay.name === 'string' && ambushCardDisplay.name.length > 0
+        ? ambushCardDisplay.name
+        : cardId;
+    const ambushCitySpace = (() => {
+      const found = G.city.indexOf(cardId);
+      return found >= 0 ? found : 0;
+    })();
+    // why: WP-316 + WP-319 — resolve the effect targets to display names ONCE;
+    // the same resolved results feed BOTH the durable `Ambush effect:` log line
+    // AND the ambushResolved narrative (so the overlay + log name the same hero).
+    const resolvedAmbushResults = resolveEffectResultNames(G, appliedAmbushResults);
+    // why: WP-316 — narrate the Ambush: effect targets into the durable log
+    // (G.messages, hash-excluded per D-24081) after the executor runs and
+    // BEFORE the ambushResolved event push. Length-guarded: no line when no
+    // effect applied. The unconditional city-entry bystander attach below is
+    // NOT an Ambush effect and never appears here.
+    if (appliedAmbushResults.length > 0) {
+      // why: WP-643-follow-up — colour the Ambush effect line `threat`
+      // (villain-purple), matching the `[Ambush]` entry line above, so the whole
+      // Ambush reads as one board-adversity beat in the log.
+      pushLog(G,
+        `Ambush effect: ${composeEffectResultLogLine(resolvedAmbushResults)}.`,
+        'threat',
+      );
+    }
+    // why: D-24703 — The Leader's Ambush play (WP-542 / D-24351) is performed below,
+    // not by the executor, so read its count BEFORE the ambushResolved push and feed it
+    // to the narrative; otherwise the overlay reads "entered the city with no Ambush
+    // effect" while the Ambush plays a card. The narrated log line mirrors the Fight
+    // site's, so the played card's reveal is attributed to this villain. The play
+    // itself still fires AFTER the event (ordering unchanged).
+    // why: WP-837 / D-24770 — the current player decides a reveal-gated play (The Leader).
+    const ambushPlayCount = villainCardPlaysVillainDeckCards(G, cardId, 'onAmbush', ctx.currentPlayer);
+    if (ambushPlayCount > 0) {
+      pushLog(G,
+        `Ambush effect: ${formatCardRef(G.cardDisplayData, cardId)} ${composeVillainDeckPlayClause(ambushPlayCount)}.`,
+        'threat',
+      );
+    }
+    // why: WP-869 / D-24814 — Agent Eric Marshall's Ambush Officer entry is performed below by
+    // enterStackCardsAsVillains, not the executor (a deliberate no-op), so the clause count is
+    // read BEFORE the ambushResolved push (D-24703): the cards that will enter are the fewest of
+    // the marked count, the stack and the free ids. 0 → no clause.
+    const ambushStackEntry = villainCardStackVillainEntry(G, cardId, 'onAmbush');
+    let ambushStackVillainClause: string | undefined;
+    if (ambushStackEntry !== null) {
+      let ambushStack = G.piles.bystanders;
+      if (ambushStackEntry.kind === 'officer') {
+        ambushStack = G.piles.officers;
+      }
+      const ambushFreeIds = listFreeStackVillainIds(G, cardId, ambushStackEntry.count);
+      const ambushEntryCount = Math.min(ambushStackEntry.count, ambushStack.length, ambushFreeIds.length);
+      if (ambushEntryCount > 0) {
+        ambushStackVillainClause = composeStackVillainEntryClause(
+          ambushEntryCount,
+          resolveCardDisplayName(G, ambushFreeIds[0]!),
+        );
+      }
+    }
+    // why: WP-839 / D-24772 — Ymir's Victory-Pile entry is performed below by enterCityFromVictoryPile,
+    // not the executor (a deliberate no-op), so the entrant is picked BEFORE the ambushResolved push
+    // and its clause rides the trailing bridged-clause parameter (D-24703 / D-24854). The same pick
+    // feeds the entry, so the narrative and the board name the same card.
+    const victoryPileEntryDescriptor = findVillainHookDescriptor(G, cardId, 'onAmbush', 'enter-city-from-victory-pile');
+    let victoryPileEntrant: VictoryPileCityEntrant | null = null;
+    let victoryPileEntryClause: string | undefined;
+    if (victoryPileEntryDescriptor !== null) {
+      victoryPileEntrant = selectVictoryPileCityEntrant(G, cardId, victoryPileEntryDescriptor, ctx.currentPlayer);
+      if (victoryPileEntrant !== null) {
+        victoryPileEntryClause = `brought ${resolveCardDisplayName(G, victoryPileEntrant.cardId)} back into the city`;
+      }
+    }
+    G.notableEvents.push({
+      type: 'ambushResolved',
+      revealedCardId: cardId,
+      citySpace: ambushCitySpace,
+      appliedEffects: appliedAmbushEffects,
+      // why: WP-319 — the narrative now names the captured HQ hero / KO'd hero
+      // (etc.) via the resolved results, so the center-screen overlay announces
+      // the specific hero. `appliedEffects` stays the keyword array (badges).
+      narrative: composeAmbushNarrative(
+        ambushCardName,
+        resolvedAmbushResults,
+        ambushPlayCount,
+        ambushStackVillainClause,
+        ambushExecution.narrativeClauses,
+        // why: WP-874 / D-24854 §6 — the bridged charge clause is the sixth, trailing parameter.
+        ambushChargeClause,
+        // why: WP-839 / D-24854 — the bridged Victory-Pile entry clause is the seventh.
+        victoryPileEntryClause,
+      ),
+    });
+
+    // why: WP-542 / D-24351 — The Leader's "Ambush: Play the top card of the Villain
+    // Deck." The executor's play-villain-deck-cards handler is a no-op (it cannot reach
+    // the reveal pipeline); the actual play fires HERE, where the RevealContext + the
+    // implementationMap are in scope. Fired AFTER the ambush abilities resolve (the
+    // ambushResolved event above) — the Ambush plays the top N villain-deck cards, each
+    // resolving as a normal reveal (villain→city, henchman / bystander / scheme-twist /
+    // master-strike, recursing through the rule pipeline). N is the marked count.
+    if (ambushPlayCount > 0) {
+      // why: WP-877 / D-24824 — the executor traced this play `no-op`; record where it really
+      // fires. Inside the guard (a reveal-gated The Leader whose player revealed plays nothing and
+      // gets no trace) and BEFORE the play, so the played cards' own traces follow their cause.
+      recordVillainSecondarySiteTrace(
+        G,
+        cardId,
+        'onAmbush',
+        'play-villain-deck-cards',
+        'playTopVillainDeckCards',
+        'villain-ambush-bridge',
+        { magnitude: ambushPlayCount },
+        readRevealContextTurn(context),
+      );
+      playTopVillainDeckCards(G, context, implementationMap, ambushPlayCount);
+    }
+    // why: WP-869 / D-24814 — the Ambush-site bridge (D-24351), after The Leader's play block:
+    // the stack cards enter the City here, where the RevealContext and implementationMap are in
+    // scope for any escape the entry causes.
+    if (ambushStackEntry !== null) {
+      // why: WP-877 / D-24824 — the executor traced the stack entry `no-op`; record the bridge.
+      // Inside the guard: no stack entry, no bridge, no trace. Before the bridge, so the record
+      // precedes the entering cards' own traces. `magnitude` is the marked
+      // count (D-24824 §4).
+      recordVillainSecondarySiteTrace(
+        G,
+        cardId,
+        'onAmbush',
+        'stack-cards-enter-city-as-villains',
+        'enterStackCardsAsVillains',
+        'villain-ambush-bridge',
+        { magnitude: ambushStackEntry.count, stackVillainKind: ambushStackEntry.kind },
+        readRevealContextTurn(context),
+      );
+      enterStackCardsAsVillains(G, context, implementationMap, cardId, ambushStackEntry, 'onAmbush');
+    }
+    // why: WP-839 / D-24772 — Ymir's Ambush bridge (D-24351), the block's last step: the Warrior
+    // enters through resolveVillainCityEntry, where the RevealContext and implementationMap are in
+    // scope for its push, escape and own Ambush. WP-877 / D-24824 — the executor traced it `no-op`;
+    // record the bridge first, inside the guard, so the record precedes the entering card's traces.
+    if (victoryPileEntryDescriptor !== null) {
+      recordVillainSecondarySiteTrace(
+        G,
+        cardId,
+        'onAmbush',
+        'enter-city-from-victory-pile',
+        'enterCityFromVictoryPile',
+        'villain-ambush-bridge',
+        {},
+        readRevealContextTurn(context),
+      );
+      enterCityFromVictoryPile(G, context, implementationMap, cardId, victoryPileEntrant);
+    }
+  }
+}
+
 /**
  * Plays (reveals + resolves) the top `count` cards of the Villain Deck via
  * `performVillainReveal`, stopping early when the deck and discard are both empty
@@ -1156,6 +1375,26 @@ function resolveChargePushConsequence(
       }
       demolishEachPlayer(G, context.ctx.currentPlayer, 'Ambush effect:');
       return 'demolish-if-pushed';
+    case 'discard-if-pushed':
+      // why: WP-839 / D-24772 (D-24820's extension rule) — Speed Demon's "each player discards a
+      // card" is every player's own pick, a seat choice the reveal cannot park (no `events`), so it
+      // is owed: an any-card entry at the BACK of WP-817's FIFO, opened after the escape procedures
+      // (rule order, the D-24750 / D-24770 after-the-move class).
+      if (!hasPushedAnyVillain) {
+        pushLog(
+          G,
+          `Ambush effect: ${resolveCardName(G.cardDisplayData, cardId)} pushed no Villains forward, so no one discards.`,
+          'blocked',
+        );
+        return null;
+      }
+      enqueueAnyCardEffectDiscard(G, cardId, 'Ambush');
+      pushLog(
+        G,
+        `Ambush effect: ${resolveCardName(G.cardDisplayData, cardId)} pushed Villains forward, so each player must discard a card.`,
+        'threat',
+      );
+      return 'discard-if-pushed';
     default: {
       // why: D-24820 — exhaustive over VillainChargePushConsequence; a new member (WP-839's
       // 'discard-if-pushed') must add its own case, with its own no-push line, or this fails to
@@ -1197,19 +1436,4 @@ function logChargeStep(
     return;
   }
   pushLog(G, `Ambush effect: ${chargerName} charged forward one space to ${spaceLabel}.`, 'threat');
-}
-
-/**
- * Names a City space for a log line: `the Bank` for a named space, else `city space <index>`
- * (a grown City's extra spaces have no name).
- *
- * @param cityIndex - The 0-based City index.
- * @returns The space label.
- */
-function describeCitySpace(cityIndex: number): string {
-  const spaceName = citySpaceNameForIndex(cityIndex);
-  if (spaceName === undefined) {
-    return `city space ${cityIndex}`;
-  }
-  return `the ${spaceName.charAt(0).toUpperCase()}${spaceName.slice(1)}`;
 }

@@ -33,6 +33,8 @@ import {
   ESCAPE_HQ_KO_KIND,
   ESCAPE_HQ_KO_MAX_COST,
   VILLAIN_EFFECT_TRAIT_DISCARD_KIND,
+  VILLAIN_EFFECT_ANY_CARD_DISCARD_KIND,
+  enqueueAnyCardEffectDiscard,
   enqueueEscapeProcedure,
   openEscapeProcedureSeatChoiceIfNeeded,
 } from './villainEscapeProcedure.js';
@@ -880,5 +882,122 @@ describe('WP-837 the owed every-player Hero-trait discard (D-24770)', () => {
     assert.deepEqual(noCurrentPlayer.playerZones['0']!.discard, ['w0'], 'sorted without a current player');
     assert.ok(hasLog(noCurrentPlayer, 'Ambush effect: Player 2 has no Ranged Hero to discard; the Wound supply is empty.'));
     assert.equal(noCurrentPlayer.turnEconomy.woundsDrawn, 0);
+  });
+});
+
+describe('WP-839 the owed every-player any-card discard (D-24772)', () => {
+  const SPEED_DEMON = 'speed-demon-01' as CardExtId;
+
+  it('T17: opens one any-card seat choice listing every hand card in hand order; logs the empty hand', () => {
+    const gameState = buildState({
+      '0': ['card-a', 'card-b'] as CardExtId[],
+      '1': [],
+      '2': ['test-wound-00'] as CardExtId[],
+    });
+    enqueueAnyCardEffectDiscard(gameState, SPEED_DEMON, 'Ambush');
+    assert.deepEqual(gameState.pendingEscapeEffectDiscards, [
+      { escapedCardId: SPEED_DEMON, eligibleCosts: [], anyHandCard: { effectLabel: 'Ambush' } },
+    ]);
+    openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, '0');
+
+    const choice = openChoice(gameState);
+    assert.equal(choice.kind, VILLAIN_EFFECT_ANY_CARD_DISCARD_KIND);
+    assert.deepEqual(choice.addressedSeats, ['0', '2']);
+    assert.deepEqual(choice.seatPrompts['0']!.options, [
+      { label: 'card-a', cardId: 'card-a' },
+      { label: 'card-b', cardId: 'card-b' },
+    ]);
+    assert.deepEqual(choice.seatPrompts['2']!.options, [{ label: 'test-wound-00', cardId: 'test-wound-00' }], 'a Wound is a card');
+    assert.equal(choice.defaultOptionIndex, 0);
+    assert.ok(hasLog(gameState, 'Ambush effect: Player 1 has no card to discard.'));
+    assert.equal('pendingEscapeEffectDiscards' in gameState, false, 'the drained queue is deleted');
+  });
+
+  it('T18: the resolve dispatch discards each pick in ascending seat order', () => {
+    const gameState = buildState({
+      '0': ['card-a', 'card-b'] as CardExtId[],
+      '2': ['card-c'] as CardExtId[],
+    });
+    enqueueAnyCardEffectDiscard(gameState, SPEED_DEMON, 'Ambush');
+    openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, '0');
+    submit(gameState, '2', 0);
+    submit(gameState, '0', 1);
+
+    assert.equal(gameState.pendingSeatChoice, undefined);
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['card-a']);
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['card-b']);
+    assert.deepEqual(gameState.playerZones['2']!.discard, ['card-c']);
+    const discardLines = gameState.messages
+      .map((entry) => entry.text)
+      .filter((text) => text.endsWith('(Ambush effect).'));
+    assert.deepEqual(discardLines, [
+      'Player 0 discarded card-b (card-b) (Ambush effect).',
+      'Player 2 discarded card-c (card-c) (Ambush effect).',
+    ]);
+  });
+
+  it('T19: rule order — the Bystander discard, then Primus, then the trait discard, then the any-card discard', () => {
+    const gameState = buildState({
+      // why: the filler cards lead each hand, so the index-0 picks of the Bystander and any-card
+      // rounds never take the costed or X-Men card a later round needs.
+      '0': ['card-b', 'card-c', 'xmen-A', 'card-a'] as CardExtId[],
+      '1': ['card-f', 'card-g', 'xmen-B', 'card-e'] as CardExtId[],
+    });
+    gameState.cardStats['card-a' as CardExtId] = makeCardStatEntry({ cost: 2 });
+    gameState.cardStats['card-e' as CardExtId] = makeCardStatEntry({ cost: 3 });
+    gameState.cardTraits = {
+      ...gameState.cardTraits,
+      'xmen-A': { heroClass: 'tech', team: 'x-men' },
+      'xmen-B': { heroClass: 'tech', team: 'x-men' },
+    } as LegendaryGameState['cardTraits'];
+    gameState.pendingEscapeProcedures = [
+      { escapedCardId: ESCAPER, chooserPlayerID: '0', hasCarriedBystanders: true, isHqKoResolved: true },
+    ];
+    gameState.pendingEscapeEffectDiscards = [{ escapedCardId: 'primus-01' as CardExtId, eligibleCosts: [2, 3, 5, 7] }];
+    gameState.pendingEscapeEffectDiscards.push({
+      escapedCardId: 'mystique-01' as CardExtId,
+      eligibleCosts: [],
+      traitFilter: { requireKind: 'team', requireValue: 'x-men', requirementLabel: 'X-Men', effectLabel: 'Ambush', hasWoundAlternative: false },
+    });
+    enqueueAnyCardEffectDiscard(gameState, SPEED_DEMON, 'Ambush');
+
+    const openedKinds: string[] = [];
+    for (let round = 0; round < 4; round++) {
+      openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, '0');
+      const choice = openChoice(gameState);
+      openedKinds.push(choice.kind);
+      for (const seat of choice.addressedSeats) {
+        submit(gameState, seat, 0);
+      }
+      assert.equal(gameState.pendingSeatChoice, undefined);
+    }
+    assert.deepEqual(openedKinds, [
+      ESCAPE_BYSTANDER_DISCARD_KIND,
+      ESCAPE_EFFECT_COST_DISCARD_KIND,
+      VILLAIN_EFFECT_TRAIT_DISCARD_KIND,
+      VILLAIN_EFFECT_ANY_CARD_DISCARD_KIND,
+    ]);
+  });
+
+  it('T20: an open seat choice or a decided match opens nothing and leaves the entry owed', () => {
+    const waiting = buildState({ '0': ['card-a'] as CardExtId[], '1': ['card-b'] as CardExtId[] });
+    waiting.pendingSeatChoice = {
+      kind: 'other-kind',
+      addressedSeats: ['1'],
+      seatPrompts: { '1': { options: [{ label: 'x' }] } },
+      submissions: {},
+      defaultOptionIndex: 0,
+    } as PendingSeatChoice;
+    enqueueAnyCardEffectDiscard(waiting, SPEED_DEMON, 'Ambush');
+    openEscapeProcedureSeatChoiceIfNeeded(waiting, undefined, '0');
+    assert.equal(waiting.pendingSeatChoice?.kind, 'other-kind');
+    assert.equal(waiting.pendingEscapeEffectDiscards?.length, 1);
+
+    const decided = buildState({ '0': ['card-a'] as CardExtId[], '1': ['card-b'] as CardExtId[] });
+    decided.counters[ENDGAME_CONDITIONS.SCHEME_LOSS] = 1;
+    enqueueAnyCardEffectDiscard(decided, SPEED_DEMON, 'Ambush');
+    openEscapeProcedureSeatChoiceIfNeeded(decided, undefined, '0');
+    assert.equal(decided.pendingSeatChoice, undefined);
+    assert.equal(decided.pendingEscapeEffectDiscards?.length, 1);
   });
 });

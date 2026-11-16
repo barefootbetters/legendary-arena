@@ -77,6 +77,9 @@ export const ESCAPE_EFFECT_COST_DISCARD_KIND = 'escape-effect-cost-discard';
 /** The seat-choice kind for an owed every-player Hero-trait discard (WP-837 / D-24770). */
 export const VILLAIN_EFFECT_TRAIT_DISCARD_KIND = 'villain-effect-trait-discard';
 
+/** The seat-choice kind for an owed every-player discard of any one hand card (WP-839 / D-24772). */
+export const VILLAIN_EFFECT_ANY_CARD_DISCARD_KIND = 'villain-effect-any-card-discard';
+
 // why: rules v23 L561 — "the escaping Villain KOs a Hero that costs 6 or less from the HQ".
 // A Hero costing 7 or more is never offered or KO'd.
 export const ESCAPE_HQ_KO_MAX_COST = 6;
@@ -359,8 +362,12 @@ export function openEscapeEffectDiscardIfNeeded(
     }
     // why: WP-837 / D-24770 — a trait entry (co2e Mystique / Frost Giant Warrior) builds the
     // trait discard; every other entry routes to WP-817's cost builder exactly as before.
+    // why: WP-839 / D-24772 — an any-card entry (co2e Speed Demon) builds the unfiltered discard;
+    // the field is presence-tested, so a trait or cost entry routes exactly as before.
     let choice: PendingSeatChoice | undefined;
-    if (entry.traitFilter !== undefined) {
+    if (entry.anyHandCard !== undefined) {
+      choice = buildVillainEffectAnyCardDiscardChoice(G, entry);
+    } else if (entry.traitFilter !== undefined) {
       choice = prepareVillainEffectTraitDiscardChoice(G, entry.traitFilter, currentPlayer);
     } else {
       choice = buildEscapeEffectCostDiscardChoice(G, entry);
@@ -688,6 +695,97 @@ export function applyEscapeEffectCostDiscard(G: LegendaryGameState, choice: Pend
     }
     if (discardFromHand(G, seat, cardId)) {
       pushLog(G, `Player ${seat} discarded ${formatCardRef(G.cardDisplayData, cardId)} (Escape effect).`, 'applied');
+    }
+  }
+}
+
+/**
+ * Records an owed every-player discard of any one hand card (WP-839 / D-24772: co2e Speed Demon's
+ * push-triggered "each player discards a card"), opened after the move by the escape opener.
+ *
+ * @param G - The game state, mutated in place (the FIFO is created lazily).
+ * @param sourceCardId - The Villain whose effect owes the discard.
+ * @param effectLabel - The timing label for the log (`'Ambush'`, the only record site).
+ */
+export function enqueueAnyCardEffectDiscard(
+  G: LegendaryGameState,
+  sourceCardId: CardExtId,
+  effectLabel: 'Ambush',
+): void {
+  // why: the BACK of the FIFO (never the front) keeps rule order: an Escape effect of a Villain the
+  // charge pushed out records first and opens first (the D-24750 / D-24770 class).
+  G.pendingEscapeEffectDiscards ??= [];
+  G.pendingEscapeEffectDiscards.push({ escapedCardId: sourceCardId, eligibleCosts: [], anyHandCard: { effectLabel } });
+}
+
+/**
+ * Builds the every-player discard choice for one owed any-card entry (WP-839 / D-24772), or
+ * undefined when no seat holds a card. Every seat with a card is addressed, one option per hand
+ * card in hand order; a seat with an empty hand is logged and left out.
+ *
+ * @param G - The game state (read for hands and names; the log is appended).
+ * @param entry - The owed any-card entry.
+ * @returns The pending discard choice, or undefined when no seat is addressed.
+ */
+export function buildVillainEffectAnyCardDiscardChoice(
+  G: LegendaryGameState,
+  entry: PendingEscapeEffectDiscard,
+): PendingSeatChoice | undefined {
+  const effectLabel = entry.anyHandCard?.effectLabel ?? 'Ambush';
+  const addressedSeats: string[] = [];
+  const seatPrompts: PendingSeatChoice['seatPrompts'] = {};
+  // why: D-24780 §6 / D-24501 — the builder of one simultaneous prompt stays ascending (as WP-817's
+  // cost builder); it deliberately parallels buildEscapeBystanderDiscardChoice with its own kind,
+  // log label and apply (D-24772).
+  for (const seat of Object.keys(G.playerZones).sort()) {
+    const hand = G.playerZones[seat]?.hand ?? [];
+    if (hand.length === 0) {
+      pushLog(G, `${effectLabel} effect: Player ${seat} has no card to discard.`, 'blocked');
+      continue;
+    }
+    const options: SeatChoiceOption[] = [];
+    for (const cardId of hand) {
+      options.push({ label: resolveCardName(G.cardDisplayData, cardId), cardId });
+    }
+    addressedSeats.push(seat);
+    seatPrompts[seat] = { options };
+  }
+  if (addressedSeats.length === 0) {
+    return undefined;
+  }
+  return {
+    kind: VILLAIN_EFFECT_ANY_CARD_DISCARD_KIND,
+    addressedSeats,
+    seatPrompts,
+    submissions: {},
+    // why: the sim / autoplay + disconnect default discards each seat's first card (index 0) —
+    // deterministic and always in range.
+    defaultOptionIndex: 0,
+  };
+}
+
+/**
+ * Applies a fully-submitted any-card discard ATOMICALLY (WP-839 / D-24772): every addressed seat
+ * discards its chosen card through the `discardFromHand` chokepoint.
+ *
+ * @param G - The game state, mutated in place.
+ * @param choice - The fully-submitted choice (kind 'villain-effect-any-card-discard').
+ */
+export function applyVillainEffectAnyCardDiscard(G: LegendaryGameState, choice: PendingSeatChoice): void {
+  // why: D-24780 §6 / D-24501 — a simultaneous seat-choice apply stays ascending, as
+  // applyEscapeEffectCostDiscard does.
+  const seatsInApplyOrder = [...choice.addressedSeats].sort();
+  for (const seat of seatsInApplyOrder) {
+    const submission = choice.submissions[seat];
+    if (submission === undefined) {
+      continue;
+    }
+    const cardId = choice.seatPrompts[seat]?.options[submission.optionIndex]?.cardId;
+    if (cardId === undefined) {
+      continue;
+    }
+    if (discardFromHand(G, seat, cardId)) {
+      pushLog(G, `Player ${seat} discarded ${formatCardRef(G.cardDisplayData, cardId)} (Ambush effect).`, 'applied');
     }
   }
 }

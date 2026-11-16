@@ -2151,7 +2151,7 @@
           "vAttack": "6",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-enemies-of-asgard-ymir-frost-giant-king.webp",
           "abilities": [
-            "Ambush: Choose a Frost Giant Warrior from any player's Victory Pile to enter the city.",
+            "Ambush: Choose a Frost Giant Warrior from any player's Victory Pile to enter the city. [effect:enter-city-from-victory-pile:enemies-of-asgard:frost-giant-warrior]",
             "Fight: You may KO a grey Hero from your discard pile. [effect:ko-up-to-from-discard-current:1:grey]"
           ],
           "copies": 2
@@ -2340,7 +2340,7 @@
           "vAttack": "5",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-spider-foes-green-goblin.webp",
           "abilities": [
-            "Ambush: Green Goblin captures a Bystander. Put him on the Bridge. If there's another Villain there, swap them."
+            "Ambush: Green Goblin captures a Bystander. Put him on the Bridge. If there's another Villain there, swap them. [effect:captureBystander] [effect:move-self-to-city-space:bridge]"
           ],
           "copies": 2
         },
@@ -2407,7 +2407,7 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-syndicate-boomerang.webp",
           "abilities": [
-            "Fight: KO one of your Heroes. Then reveal the top card of the Villain Deck. If it's a Villain, put Boomerang in its place and play that Villain."
+            "Fight: KO one of your Heroes. Then reveal the top card of the Villain Deck. If it's a Villain, put Boomerang in its place and play that Villain. [effect:koHeroCurrentPlayer] [effect:reveal-villain-deck-top-swap-self]"
           ],
           "copies": 2
         },
@@ -2430,7 +2430,7 @@
           "vAttack": "5",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-syndicate-speed-demon.webp",
           "abilities": [
-            "Ambush: Speed Demon moves two extra spaces forward. If this pushes any other Villains forward, each player discards a card."
+            "Ambush: Speed Demon moves two extra spaces forward. If this pushes any other Villains forward, each player discards a card. [effect:charge:2:discard-if-pushed]"
           ],
           "copies": 2
         }

@@ -418,7 +418,15 @@ export type VillainEffectPrimitive =
   // one Charge primitive, a deliberate executor no-op bridged at the Ambush fire site).
   | 'demolish-each-other-player'
   | 'demolish-each-player-per-group-villain-in-city'
-  | 'charge';
+  | 'charge'
+  // why: WP-839 / D-24772 — the co2e City-movement lines, appended last: Green Goblin's Ambush
+  // moves him to a named City space and swaps any occupant (an executor handler), Boomerang's Fight
+  // takes a revealed Villain's place on top of the Villain Deck, and Ymir's Ambush brings a Villain
+  // back into the City from a Victory Pile (both deliberate executor no-ops, bridged at the Fight
+  // and Ambush fire sites). Speed Demon reuses `charge` (D-24820).
+  | 'move-self-to-city-space'
+  | 'reveal-villain-deck-top-swap-self'
+  | 'enter-city-from-victory-pile';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -666,6 +674,15 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'demolish-each-other-player',
   'demolish-each-player-per-group-villain-in-city',
   'charge',
+  // why: WP-839 / D-24772 — appended at positions 61-63, the co2e City-movement lines: Green
+  // Goblin (`move-self-to-city-space:<space>`, `destinationCitySpace`), Boomerang
+  // (`reveal-villain-deck-top-swap-self`, no param; bridged in runVillainFightFireSiteBridges) and
+  // Ymir (`enter-city-from-victory-pile:<group>:<card>`, `victoryVillainGroup` +
+  // `victoryVillainCard`; bridged at the Ambush fire site). The marker script's hand-synced copy
+  // appends them at the same positions.
+  'move-self-to-city-space',
+  'reveal-villain-deck-top-swap-self',
+  'enter-city-from-victory-pile',
 ] as const;
 
 /**
@@ -684,9 +701,11 @@ export const VILLAIN_CAPTURE_PILES: readonly VillainCapturePile[] = ['officer', 
 /**
  * What a `charge` descriptor does after its charge, when a step pushed a Villain forward
  * (WP-874 / D-24820): `demolish-if-pushed` is Bulldozer's "If this pushes any Villains forward,
- * [Demolish] each player."
+ * [Demolish] each player."; `discard-if-pushed` is Speed Demon's "If this pushes any other
+ * Villains forward, each player discards a card." (WP-839 / D-24772: an owed every-player discard
+ * opened after the move).
  */
-export type VillainChargePushConsequence = 'demolish-if-pushed';
+export type VillainChargePushConsequence = 'demolish-if-pushed' | 'discard-if-pushed';
 
 // why: drift-detection array — must match VillainChargePushConsequence exactly
 // (villainAbility.types.test.ts asserts it at runtime, D-24372). Append-only (D-24820): `charge`
@@ -697,6 +716,8 @@ export type VillainChargePushConsequence = 'demolish-if-pushed';
 /** All charge push consequences in canonical order. */
 export const VILLAIN_CHARGE_PUSH_CONSEQUENCES: readonly VillainChargePushConsequence[] = [
   'demolish-if-pushed',
+  // why: WP-839 / D-24772 — Speed Demon, appended under D-24820's extension rule.
+  'discard-if-pushed',
 ] as const;
 
 /**
@@ -892,7 +913,9 @@ export interface VillainEffectDescriptor {
   // as its zone-less sibling and narrates identically (see `descriptorKey`).
   zone?: 'discard' | 'hand';
   // why: D-24299 — the target villain GROUP slug (e.g. 'hydra'), present ONLY on
-  // `{ primitive: 'gain-wound-unless-victory-villain-group' }` descriptors (Viper).
+  // `{ primitive: 'gain-wound-unless-victory-villain-group' }` descriptors (Viper) and
+  // `{ primitive: 'enter-city-from-victory-pile' }` descriptors (Ymir, WP-839 / D-24772: the group
+  // slug of the Victory-Pile Villain that re-enters, validated and kept verbatim).
   // Each player gains a Wound UNLESS their Victory Pile holds another villain of
   // this group. Normalized (normalizeTraitSlug) at parse time to match the
   // registry-verbatim lowercase-kebab group slug in the villain instance ext_id
@@ -963,6 +986,14 @@ export interface VillainEffectDescriptor {
   // `undefined`). Deliberately NOT part of `descriptorKey` — the primitive is keyword-less, and the
   // Ambush bridge narrates it.
   chargePushConsequence?: VillainChargePushConsequence;
+  // why: WP-839 / D-24772 — present ONLY on `{ primitive: 'move-self-to-city-space' }` descriptors
+  // (Green Goblin: 'bridge'): the named City space the card moves itself to, swapping any occupant.
+  // Deliberately NOT part of `descriptorKey` — the primitive is keyword-less and self-narrates.
+  destinationCitySpace?: CitySpaceName;
+  // why: WP-839 / D-24772 — present ONLY on `{ primitive: 'enter-city-from-victory-pile' }`
+  // descriptors (Ymir: 'frost-giant-warrior'): the card slug of the Victory-Pile Villain that
+  // re-enters the City, beside `victoryVillainGroup`. Deliberately NOT part of `descriptorKey`.
+  victoryVillainCard?: string;
 }
 
 // why: D-24023 — the frozen legacy-keyword → descriptor translation table. The

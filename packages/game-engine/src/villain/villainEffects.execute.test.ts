@@ -22,6 +22,8 @@ import {
   resolveEffectResultNames,
   selectKoHeroTargetByGreyFilter,
   villainCardGainsOneCapturedHero,
+  executeVillainAbilitiesWithNarrative,
+  findVillainHookDescriptor,
 } from './villainEffects.execute.js';
 import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { composeEffectResultLogLine, composeWoundOutcomeClause } from '../events/notableEvents.compose.js';
@@ -7507,5 +7509,138 @@ describe('WP-838 co2e capture family handlers (D-24771)', () => {
     const noHooksG = makeG({});
     (noHooksG as unknown as { villainAbilityHooks?: unknown }).villainAbilityHooks = undefined;
     assert.equal(villainCardGainsOneCapturedHero(noHooksG, VENOM), false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-839 / D-24772 — Green Goblin's City self-move, the two bridged no-ops, the descriptor finder
+// ---------------------------------------------------------------------------
+
+describe('WP-839 City-movement executor (D-24772)', () => {
+  const GOBLIN = 'co2e-villain-sinister-spider-foes-green-goblin-00' as CardExtId;
+  const V1 = 'test/villain/v1#0' as CardExtId;
+  const V5 = 'test/villain/v5#0' as CardExtId;
+  const H1 = 'henchman-hand-ninjas-00' as CardExtId;
+  const BYSTANDER_A = 'test/bystander/a#0' as CardExtId;
+  const BYSTANDER_B = 'test/bystander/b#0' as CardExtId;
+
+  /**
+   * A state with Green Goblin's move hook and the given City.
+   *
+   * @param city - The City.
+   * @param hooks - The hooks (Goblin's move by default).
+   * @returns The game state.
+   */
+  function makeGoblinG(city: (CardExtId | null)[], hooks?: VillainAbilityHook[]): LegendaryGameState {
+    const G = makeG({
+      hooks: hooks ?? [
+        {
+          cardId: GOBLIN,
+          timing: 'onAmbush',
+          keywords: [],
+          effects: [{ primitive: 'move-self-to-city-space', destinationCitySpace: 'bridge' }],
+        },
+      ],
+      messages: [],
+      cardDisplayData: { [GOBLIN]: { name: 'Green Goblin' }, [V1]: { name: 'Electro' }, [V5]: { name: 'Vulture' }, [H1]: { name: 'Hand Ninjas' } },
+    });
+    (G as { city?: unknown }).city = city;
+    (G as { villainDeckCardTypes?: unknown }).villainDeckCardTypes = {
+      [GOBLIN]: 'villain', [V1]: 'villain', [V5]: 'villain', [H1]: 'henchman',
+    };
+    return G;
+  }
+
+  it('T8: an empty Bridge — he moves there; the clause is the logged clause', () => {
+    const G = makeGoblinG([GOBLIN, null, null, null, null]);
+    const execution = executeVillainAbilitiesWithNarrative(G, CTX, GOBLIN, 'onAmbush');
+    assert.deepStrictEqual(G.city, [null, null, null, null, GOBLIN]);
+    assert.deepStrictEqual(execution.results, []);
+    assert.deepStrictEqual(execution.narrativeClauses, ['Green Goblin moved to the Bridge']);
+    assert.equal(G.messages![0]!.text, 'Ambush effect: Green Goblin moved to the Bridge.');
+    assert.equal(G.messages![0]!.outcome, 'applied');
+  });
+
+  it('T9: an occupied Bridge — the two swap; captured Bystanders stay with their Villain; nothing escapes', () => {
+    const G = makeGoblinG([GOBLIN, null, null, null, V1]);
+    G.attachedBystanders = { [GOBLIN]: [BYSTANDER_A], [V1]: [BYSTANDER_B] };
+    executeVillainAbilities(G, CTX, GOBLIN, 'onAmbush');
+    assert.deepStrictEqual(G.city, [V1, null, null, null, GOBLIN]);
+    assert.deepStrictEqual(G.attachedBystanders, { [GOBLIN]: [BYSTANDER_A], [V1]: [BYSTANDER_B] });
+    assert.deepStrictEqual(G.escapedPile, []);
+    assert.equal(G.messages![0]!.text, 'Ambush effect: Green Goblin moved to the Bridge, and Electro moved to the Sewers.');
+  });
+
+  it('T10: a henchman swaps; a 3-space City has no Bridge; a 6-space City; not in the City; already there', () => {
+    const henchmanG = makeGoblinG([GOBLIN, null, null, null, H1]);
+    executeVillainAbilities(henchmanG, CTX, GOBLIN, 'onAmbush');
+    assert.deepStrictEqual(henchmanG.city, [H1, null, null, null, GOBLIN]);
+
+    const smallG = makeGoblinG([GOBLIN, null, null]);
+    executeVillainAbilities(smallG, CTX, GOBLIN, 'onAmbush');
+    assert.deepStrictEqual(smallG.city, [GOBLIN, null, null]);
+    assert.equal(smallG.messages![0]!.text, 'Ambush effect: the Bridge is not part of the City right now, so Green Goblin stays where it is.');
+    assert.equal(smallG.messages![0]!.outcome, 'blocked');
+
+    const wideG = makeGoblinG([GOBLIN, null, null, null, null, V5]);
+    executeVillainAbilities(wideG, CTX, GOBLIN, 'onAmbush');
+    assert.deepStrictEqual(wideG.city, [null, null, null, null, GOBLIN, V5]);
+
+    const absentG = makeGoblinG([null, null, null, null, null]);
+    executeVillainAbilities(absentG, CTX, GOBLIN, 'onAmbush');
+    assert.equal(absentG.messages![0]!.text, 'Ambush effect: Green Goblin is not in the City, so it does not move.');
+    assert.equal(absentG.messages![0]!.outcome, 'blocked');
+
+    const thereG = makeGoblinG([null, null, null, null, GOBLIN]);
+    executeVillainAbilities(thereG, CTX, GOBLIN, 'onAmbush');
+    assert.deepStrictEqual(thereG.city, [null, null, null, null, GOBLIN]);
+    assert.equal(thereG.messages![0]!.text, 'Ambush effect: Green Goblin is already on the Bridge.');
+  });
+
+  it('T11: the two bridged primitives are reachable no-ops traced `no-op`, with no hollow and no fallback clause', () => {
+    const hooks: VillainAbilityHook[] = [
+      { cardId: GOBLIN, timing: 'onFight', keywords: [], effects: [{ primitive: 'reveal-villain-deck-top-swap-self' }] },
+      {
+        cardId: GOBLIN,
+        timing: 'onAmbush',
+        keywords: [],
+        effects: [{ primitive: 'enter-city-from-victory-pile', victoryVillainGroup: 'enemies-of-asgard', victoryVillainCard: 'frost-giant-warrior' }],
+      },
+    ];
+    const G = makeGoblinG([GOBLIN, null, null, null, null], hooks);
+    const before = JSON.parse(JSON.stringify(G)) as Record<string, unknown>;
+    const fight = executeVillainAbilitiesWithNarrative(G, CTX, GOBLIN, 'onFight');
+    const ambush = executeVillainAbilitiesWithNarrative(G, CTX, GOBLIN, 'onAmbush');
+    assert.deepStrictEqual(fight.results, []);
+    assert.deepStrictEqual(ambush.results, []);
+    assert.deepStrictEqual(fight.narrativeClauses, []);
+    assert.deepStrictEqual(ambush.narrativeClauses, []);
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0);
+    const statuses = (G.diagnostics?.traces ?? []).map((trace) => `${trace.effect}:${trace.status}`);
+    assert.deepStrictEqual(statuses, ['reveal-villain-deck-top-swap-self:no-op', 'enter-city-from-victory-pile:no-op']);
+    const after = JSON.parse(JSON.stringify(G)) as Record<string, unknown>;
+    delete after.diagnostics;
+    assert.deepStrictEqual(after, before);
+  });
+
+  it('T12: findVillainHookDescriptor finds the descriptor, and null for the wrong timing, no hooks, or a gate', () => {
+    const G = makeGoblinG([GOBLIN, null, null, null, null]);
+    assert.deepStrictEqual(findVillainHookDescriptor(G, GOBLIN, 'onAmbush', 'move-self-to-city-space'), {
+      primitive: 'move-self-to-city-space',
+      destinationCitySpace: 'bridge',
+    });
+    assert.equal(findVillainHookDescriptor(G, GOBLIN, 'onFight', 'move-self-to-city-space'), null);
+    const noHooks = makeGoblinG([GOBLIN, null, null, null, null]);
+    delete (noHooks as { villainAbilityHooks?: unknown }).villainAbilityHooks;
+    assert.equal(findVillainHookDescriptor(noHooks, GOBLIN, 'onAmbush', 'move-self-to-city-space'), null);
+    const gated = makeGoblinG([GOBLIN, null, null, null, null], [
+      {
+        cardId: GOBLIN,
+        timing: 'onFight',
+        keywords: [],
+        effects: [{ primitive: 'reveal-villain-deck-top-swap-self', requireCitySpaces: ['sewers'] }],
+      },
+    ]);
+    assert.equal(findVillainHookDescriptor(gated, GOBLIN, 'onFight', 'reveal-villain-deck-top-swap-self'), null);
   });
 });

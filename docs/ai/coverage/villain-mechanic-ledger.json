@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "cardType": "villain",
   "summary": {
-    "totalRows": 770,
+    "totalRows": 773,
     "byStatus": {
-      "executable": 271,
+      "executable": 277,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 494,
+      "unmarked": 491,
       "subsystem": 4
     },
-    "distinctMechanics": 69
+    "distinctMechanics": 72
   },
   "rows": [
     {
@@ -1492,11 +1492,22 @@
       "cardName": "Boomerang",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "co2e-villain-sinister-syndicate-boomerang",
+      "cardName": "Boomerang",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "reveal-villain-deck-top-swap-self",
+      "status": "executable",
+      "wp": "WP-839",
+      "decision": "D-24772",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-villain-deck-top-swap-self"
     },
     {
       "extId": "co2e-villain-enemies-of-asgard-destroyer",
@@ -1602,11 +1613,22 @@
       "cardName": "Green Goblin",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "captureBystander",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18506",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander"
+    },
+    {
+      "extId": "co2e-villain-sinister-spider-foes-green-goblin",
+      "cardName": "Green Goblin",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "move-self-to-city-space",
+      "status": "executable",
+      "wp": "WP-839",
+      "decision": "D-24772",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#move-self-to-city-space"
     },
     {
       "extId": "co2e-villain-hydra-hydra-kidnappers",
@@ -1855,11 +1877,11 @@
       "cardName": "Speed Demon",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "charge",
+      "status": "executable",
+      "wp": "WP-874",
+      "decision": "D-24820",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#charge"
     },
     {
       "extId": "co2e-villain-skulls-super-skrull",
@@ -2003,6 +2025,17 @@
       "wp": "WP-523",
       "decision": "D-24336",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#swap-two-city-villains"
+    },
+    {
+      "extId": "co2e-villain-enemies-of-asgard-ymir-frost-giant-king",
+      "cardName": "Ymir, Frost Giant King",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "enter-city-from-victory-pile",
+      "status": "executable",
+      "wp": "WP-839",
+      "decision": "D-24772",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#enter-city-from-victory-pile"
     },
     {
       "extId": "co2e-villain-enemies-of-asgard-ymir-frost-giant-king",

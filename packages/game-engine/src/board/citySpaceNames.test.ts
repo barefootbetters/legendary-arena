@@ -11,7 +11,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { CITY_SPACE_NAMES, citySpaceNameForIndex, hqSlotIndexUnderCitySpace } from './citySpaceNames.js';
+import { CITY_SPACE_NAMES, citySpaceNameForIndex, describeCitySpace, hqSlotIndexUnderCitySpace } from './citySpaceNames.js';
 
 describe('CITY_SPACE_NAMES (WP-489 / D-24295)', () => {
   // why: the operator-confirmed binding — Streets MUST be index 3 and Bridge
@@ -65,5 +65,14 @@ describe('hqSlotIndexUnderCitySpace (WP-815 / D-24747)', () => {
     assert.equal(hqSlotIndexUnderCitySpace(-1), undefined);
     assert.equal(hqSlotIndexUnderCitySpace(5), undefined);
     assert.equal(hqSlotIndexUnderCitySpace(1.5), undefined);
+  });
+});
+
+describe('WP-839 describeCitySpace (D-24772)', () => {
+  it('T7: names the five spaces and labels an unnamed one, byte-identical to WP-874\'s charge lines', () => {
+    assert.deepStrictEqual(
+      [0, 1, 2, 3, 4, 5].map((cityIndex) => describeCitySpace(cityIndex)),
+      ['the Sewers', 'the Bank', 'the Rooftops', 'the Streets', 'the Bridge', 'city space 5'],
+    );
   });
 });

@@ -30,6 +30,7 @@ import {
   makeTurnEconomy,
 } from '../test/fixtureBuilders.js';
 import type { LegendaryGameState, MatchConfiguration } from '../types.js';
+import { checkNoCardInMultipleZones } from '../invariants/gameRules.checks.js';
 import type { VillainAbilityHook } from '../rules/villainAbility.types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { EffectTrace } from '../diagnostics/hollowEffect.types.js';
@@ -441,5 +442,147 @@ describe('the charge-first premise in the card data (WP-874 RS-4 Ordering)', () 
       }
     }
     assert.ok(chargeCount > 0, 'at least one charge (Bulldozer) is marked');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-839 / D-24772 — co2e Speed Demon reuses `charge` (`charge:2:discard-if-pushed`), T13-T16
+// ---------------------------------------------------------------------------
+
+describe('WP-839 Speed Demon charges two spaces and owes a discard (D-24772)', () => {
+  const SPEED_DEMON = 'co2e-villain-sinister-syndicate-speed-demon-00' as CardExtId;
+  const fillers = ['v1', 'v2', 'v3', 'v4', 'v5'].map((slug) => `test/villain/${slug}#0` as CardExtId);
+  const [v1, v2, v3, v4, v5] = fillers as [CardExtId, CardExtId, CardExtId, CardExtId, CardExtId];
+  const speedDemonHooks = buildVillainAbilityHooks(
+    makeRegistry(['co2e']),
+    { villainGroupIds: ['co2e/sinister-syndicate'], henchmanGroupIds: [] } as unknown as MatchConfiguration,
+  );
+
+  /**
+   * A two-seat state with Speed Demon on top of the Villain Deck and the given City.
+   *
+   * @param city - The City before the reveal.
+   * @returns The game state.
+   */
+  function makeSpeedDemonState(city: (CardExtId | null)[]): LegendaryGameState {
+    const cardTypes: Record<string, string> = { [SPEED_DEMON]: 'villain' };
+    const displayData: Record<string, { name: string; imageUrl: string; cost: number }> = {
+      [SPEED_DEMON]: { name: 'Speed Demon', imageUrl: '', cost: 0 },
+    };
+    for (const filler of fillers) {
+      cardTypes[filler] = 'villain';
+      displayData[filler] = { name: filler.slice('test/villain/'.length, -2), imageUrl: '', cost: 0 };
+    }
+    return {
+      currentStage: 'start',
+      messages: [],
+      counters: { [ENDGAME_CONDITIONS.ESCAPED_VILLAINS]: 0 },
+      hookRegistry: [],
+      turnEconomy: { ...makeTurnEconomy() },
+      playerZones: { '0': { ...makePlayerZones(), hand: [HAND_COST_3] }, '1': { ...makePlayerZones(), hand: [HAND_COST_5] } },
+      piles: makeGlobalPiles(),
+      mastermind: makeMastermindState(),
+      villainDeck: { deck: [SPEED_DEMON], discard: [] },
+      villainDeckCardTypes: cardTypes,
+      city: [...city],
+      hq: [null, null, null, null, null],
+      heroDeck: [],
+      escapedPile: [],
+      ko: [],
+      attachedBystanders: {},
+      villainAttachedHeroes: {},
+      scheme: { twistPile: [] },
+      selection: { schemeId: 'test/scheme', mastermindId: 'test/mastermind', villainGroupIds: ['co2e/sinister-syndicate'], henchmanGroupIds: [], heroDeckIds: [] },
+      heroAbilityHooks: [],
+      villainAbilityHooks: [...speedDemonHooks],
+      cardStats: {},
+      cardTraits: {},
+      cardKeywords: { [SPEED_DEMON]: ['ambush'] },
+      cardDisplayData: displayData,
+      notableEvents: [],
+    } as unknown as LegendaryGameState;
+  }
+
+  /**
+   * Reveals Speed Demon through the real reveal path.
+   *
+   * @param G - The game state.
+   */
+  function revealSpeedDemon(G: LegendaryGameState): void {
+    const context: RevealContext = {
+      random: makeMockCtx({ numPlayers: 2 }).random,
+      ctx: { currentPlayer: '0', turn: AMBUSH_TURN },
+    };
+    performVillainReveal(G, context, DEFAULT_IMPLEMENTATION_MAP);
+  }
+
+  /**
+   * Speed Demon's ambushResolved narrative.
+   *
+   * @param G - The game state.
+   * @returns The narrative.
+   */
+  function speedDemonNarrative(G: LegendaryGameState): string {
+    const events = G.notableEvents as unknown as { type: string; revealedCardId: string; narrative: string }[];
+    return events.find((event) => event.type === 'ambushResolved' && event.revealedCardId === SPEED_DEMON)!.narrative;
+  }
+
+  it('T6: villainCardChargeEffect reads his real hook as a 2-space charge with the discard consequence', () => {
+    const G = makeSpeedDemonState([null, null, null, null, null]);
+    assert.deepStrictEqual(villainCardChargeEffect(G, SPEED_DEMON, 'onAmbush'), {
+      spaces: 2,
+      pushConsequence: 'discard-if-pushed',
+    });
+  });
+
+  it('T13: a Villain ahead of him is pushed, so every player owes a discard', () => {
+    const G = makeSpeedDemonState([null, v1, null, null, null]);
+    revealSpeedDemon(G);
+    assert.deepStrictEqual(G.city, [null, null, SPEED_DEMON, v1, null]);
+    assert.deepStrictEqual(G.pendingEscapeEffectDiscards, [
+      { escapedCardId: SPEED_DEMON, eligibleCosts: [], anyHandCard: { effectLabel: 'Ambush' } },
+    ]);
+    const lines = logLines(G);
+    assert.ok(lines.includes('threat: Ambush effect: Speed Demon charged forward one space to the Bank, pushing the Villains ahead of it forward.'));
+    assert.ok(lines.includes('threat: Ambush effect: Speed Demon charged forward one space to the Rooftops, pushing the Villains ahead of it forward.'));
+    assert.equal(lines.at(-1), 'threat: Ambush effect: Speed Demon pushed Villains forward, so each player must discard a card.');
+    assert.equal(
+      speedDemonNarrative(G),
+      '"Speed Demon" ambushed: charged forward 2 spaces, pushing Villains forward, then each player must discard a card.',
+    );
+    assert.doesNotThrow(() => checkNoCardInMultipleZones(G));
+  });
+
+  it('T14: an empty City is not pushed, so no one discards', () => {
+    const G = makeSpeedDemonState([null, null, null, null, null]);
+    revealSpeedDemon(G);
+    assert.deepStrictEqual(G.city, [null, null, SPEED_DEMON, null, null]);
+    assert.equal(G.pendingEscapeEffectDiscards, undefined);
+    assert.equal(logLines(G).at(-1), 'blocked: Ambush effect: Speed Demon pushed no Villains forward, so no one discards.');
+    assert.equal(speedDemonNarrative(G), '"Speed Demon" ambushed: charged forward 2 spaces.');
+  });
+
+  it('T15: a full City — the entry escapes v5, the charge escapes v4 then v3, in rule order', () => {
+    const G = makeSpeedDemonState([v1, v2, v3, v4, v5]);
+    revealSpeedDemon(G);
+    assert.deepStrictEqual(G.city, [null, null, SPEED_DEMON, v1, v2]);
+    assert.deepStrictEqual(G.escapedPile, [v5, v4, v3]);
+    assert.deepStrictEqual(
+      (G.pendingEscapeProcedures ?? []).map((entry) => entry.escapedCardId),
+      [v5, v4, v3],
+    );
+    assert.equal(G.pendingEscapeEffectDiscards?.length, 1);
+    assert.equal(G.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS], 3);
+    assert.doesNotThrow(() => checkNoCardInMultipleZones(G));
+  });
+
+  it('T16: a 2-space City — step 1 escapes v1, step 2 the charger escapes; the discard is still owed', () => {
+    const G = makeSpeedDemonState([null, v1]);
+    revealSpeedDemon(G);
+    assert.deepStrictEqual(G.city, [null, null]);
+    assert.deepStrictEqual(G.escapedPile, [v1, SPEED_DEMON]);
+    assert.ok(logLines(G).includes('threat: Ambush effect: Speed Demon charged forward out of the city.'));
+    assert.equal(G.pendingEscapeEffectDiscards?.length, 1);
+    assert.doesNotThrow(() => checkNoCardInMultipleZones(G));
   });
 });

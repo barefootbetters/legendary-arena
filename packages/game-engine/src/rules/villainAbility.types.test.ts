@@ -384,8 +384,10 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
   // Baron Strucker) — an intended product change that moves this pin 52 → 57. WP-874 (D-24820)
   // appended the fifty-eighth to sixtieth (chmp Thunderball's each-other-player Demolish, The
   // Wrecker's per-group Demolish, Bulldozer's `charge`) — an intended product change that moves this
-  // pin 57 → 60.
-  it('contains exactly the 60 canonical primitives in order', () => {
+  // pin 57 → 60. WP-839 (D-24772) appended the sixty-first to sixty-third (co2e Green Goblin's
+  // City self-move, Boomerang's Villain Deck swap, Ymir's Victory-Pile entry) — an intended product
+  // change that moves this pin 60 → 63.
+  it('contains exactly the 63 canonical primitives in order', () => {
     const expectedPrimitives: VillainEffectPrimitive[] = [
       'ko-hero',
       'gain-wound',
@@ -447,16 +449,19 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
       'demolish-each-other-player',
       'demolish-each-player-per-group-villain-in-city',
       'charge',
+      'move-self-to-city-space',
+      'reveal-villain-deck-top-swap-self',
+      'enter-city-from-victory-pile',
     ];
     assert.equal(
       VILLAIN_EFFECT_PRIMITIVES.length,
-      60,
-      'VILLAIN_EFFECT_PRIMITIVES must have exactly 60 entries',
+      63,
+      'VILLAIN_EFFECT_PRIMITIVES must have exactly 63 entries',
     );
     assert.equal(
       VILLAIN_EFFECT_PRIMITIVES[VILLAIN_EFFECT_PRIMITIVES.length - 1],
-      'charge',
-      'charge must be appended last (position 60)',
+      'enter-city-from-victory-pile',
+      'enter-city-from-victory-pile must be appended last (position 63)',
     );
     assert.deepStrictEqual(
       [...VILLAIN_EFFECT_PRIMITIVES],
@@ -681,8 +686,8 @@ describe('WP-816 villain-side Savior types (D-24749)', () => {
     // (D-24817) 49-51 and WP-889 (D-24841) 52, so the total moved 29 → 31 → 34 → 38 → 39 → 42 → 43
     // → 44 → 45 → 48 → 51 → 52.
     // why: WP-838 (D-24771) appended 53-57, so the total is 57.
-    // why: WP-874 (D-24820) appended 58-60, so the total is 60.
-    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 60);
+    // why: WP-874 (D-24820) appended 58-60 and WP-839 (D-24772) 61-63, so the total is 63.
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 63);
     assert.equal(VILLAIN_EFFECT_PRIMITIVES[28], 'ko-bystander-each-victory-pile');
   });
 
@@ -720,8 +725,8 @@ describe('WP-817 Captain Zolandia + Primus types (D-24750)', () => {
     // 44, WP-869 (D-24814) 45, WP-870 (D-24815) 46-48, WP-872 (D-24817) 49-51 and WP-889 (D-24841)
     // 52, so the total is 52.
     // why: WP-838 (D-24771) appended 53-57, so the total is 57.
-    // why: WP-874 (D-24820) appended 58-60, so the total is 60.
-    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 60);
+    // why: WP-874 (D-24820) appended 58-60 and WP-839 (D-24772) 61-63, so the total is 63.
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 63);
     assert.equal(VILLAIN_EFFECT_PRIMITIVES[29], 'gain-recruit-current-per-hero-class');
     assert.equal(VILLAIN_EFFECT_PRIMITIVES[30], 'discard-hero-each-player-by-cost');
   });
@@ -749,8 +754,8 @@ describe('WP-836 co2e grey-Hero and Hero-count types (D-24769)', () => {
     // (D-24811) 40-42, WP-873 (D-24818) 43, WP-864 (D-24807) 44, WP-869 (D-24814) 45 and WP-870
     // (D-24815) 46-48, WP-872 (D-24817) 49-51 and WP-889 (D-24841) 52, so the total is 52.
     // why: WP-838 (D-24771) appended 53-57, so the total is 57.
-    // why: WP-874 (D-24820) appended 58-60, so the total is 60.
-    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 60);
+    // why: WP-874 (D-24820) appended 58-60 and WP-839 (D-24772) 61-63, so the total is 63.
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 63);
     assert.equal(VILLAIN_EFFECT_PRIMITIVES[31], 'gain-recruit-current-count-by-trait');
     assert.equal(VILLAIN_EFFECT_PRIMITIVES[32], 'draw-cards-current-count-by-trait');
     assert.equal(VILLAIN_EFFECT_PRIMITIVES[33], 'reveal-top-ko-grey-or-draw-by-class');
@@ -805,8 +810,8 @@ describe('WP-837 co2e each-player discard and reveal-gated Ambush types (D-24770
     // (D-24818) 43, WP-864 (D-24807) 44, WP-869 (D-24814) 45 and WP-870 (D-24815) 46-48 and
     // WP-872 (D-24817) 49-51 and WP-889 (D-24841) 52, so the slice stops at 38.
     // why: WP-838 (D-24771) appended 53-57, so the total is 57.
-    // why: WP-874 (D-24820) appended 58-60, so the total is 60.
-    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 60);
+    // why: WP-874 (D-24820) appended 58-60 and WP-839 (D-24772) 61-63, so the total is 63.
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 63);
     assert.deepStrictEqual(VILLAIN_EFFECT_PRIMITIVES.slice(34, 38), [
       'discard-hero-each-player-by-trait',
       'discard-hero-or-wound-each-player-by-trait',
@@ -865,8 +870,8 @@ describe('WP-873 fortify primitive (D-24818)', () => {
     // stack-cards-enter-city-as-villains at 45, WP-870 (D-24815) 46-48 and WP-872 (D-24817) 49-51,
     // WP-889 (D-24841) 52, so the total is 52.
     // why: WP-838 (D-24771) appended 53-57, so the total is 57.
-    // why: WP-874 (D-24820) appended 58-60, so the total is 60.
-    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 60);
+    // why: WP-874 (D-24820) appended 58-60 and WP-839 (D-24772) 61-63, so the total is 63.
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 63);
     assert.equal(VILLAIN_EFFECT_PRIMITIVES[42], 'fortify');
     // why: a runtime parity pin (WP-563 / D-24372) — the Record literal must list every union
     // member (tsc enforces that only on a typecheck run), and its keys must equal the array.
@@ -932,6 +937,10 @@ describe('WP-873 fortify primitive (D-24818)', () => {
       'demolish-each-other-player': true,
       'demolish-each-player-per-group-villain-in-city': true,
       charge: true,
+      // why: WP-839 / D-24772 — the three appended primitives.
+      'move-self-to-city-space': true,
+      'reveal-villain-deck-top-swap-self': true,
+      'enter-city-from-victory-pile': true,
     };
     assert.deepStrictEqual(Object.keys(unionMembers), [...VILLAIN_EFFECT_PRIMITIVES]);
   });
@@ -950,8 +959,8 @@ describe('WP-869 stack-cards-enter-city-as-villains primitive (D-24814)', () => 
     // WP-870 (D-24815) appended 46-48, WP-872 (D-24817) 49-51 and WP-889 (D-24841) 52 after it, so
     // the total is 52.
     // why: WP-838 (D-24771) appended 53-57, so the total is 57.
-    // why: WP-874 (D-24820) appended 58-60, so the total is 60.
-    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 60);
+    // why: WP-874 (D-24820) appended 58-60 and WP-839 (D-24772) 61-63, so the total is 63.
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 63);
     assert.equal(VILLAIN_EFFECT_PRIMITIVES[44], 'stack-cards-enter-city-as-villains');
   });
 
@@ -974,9 +983,9 @@ describe('WP-869 stack-cards-enter-city-as-villains primitive (D-24814)', () => 
 
 describe('WP-838 capture-family vocabulary (D-24771)', () => {
   it('T1: the five primitives are positions 53-57 in locked order; the two closed sets are pinned', () => {
-    // why: WP-874 (D-24820) appended 58-60 after these five, so the total is 60 and the slice is
-    // bounded at 57 (the five names are unchanged).
-    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 60);
+    // why: WP-874 (D-24820) appended 58-60 after these five, so the slice is bounded at 57 (the
+    // five names are unchanged); WP-839 (D-24772) appended 61-63, so the total is 63.
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 63);
     assert.deepStrictEqual(VILLAIN_EFFECT_PRIMITIVES.slice(52, 57), [
       'capture-bystander-each-victory-pile',
       'capture-pile-hero',
@@ -1016,8 +1025,10 @@ describe('WP-838 capture-family vocabulary (D-24771)', () => {
 
 describe('WP-874 Wrecking Crew vocabulary (D-24820)', () => {
   it('the three primitives are positions 58-60 in locked order', () => {
-    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 60);
-    assert.deepStrictEqual(VILLAIN_EFFECT_PRIMITIVES.slice(57), [
+    // why: WP-839 (D-24772) appended 61-63 after these three, so the total is 63 and the slice is
+    // bounded at 60 (the three names are unchanged).
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 63);
+    assert.deepStrictEqual(VILLAIN_EFFECT_PRIMITIVES.slice(57, 60), [
       'demolish-each-other-player',
       'demolish-each-player-per-group-villain-in-city',
       'charge',
@@ -1027,9 +1038,13 @@ describe('WP-874 Wrecking Crew vocabulary (D-24820)', () => {
   it('VILLAIN_CHARGE_PUSH_CONSEQUENCES matches VillainChargePushConsequence at runtime', () => {
     // why: D-24372 — a runtime keyset pin (a `satisfies` enforces nothing in an untypechecked
     // test). WP-839's 'discard-if-pushed' append is a deliberate change to this pin (D-24820).
-    const consequenceMembers: Record<VillainChargePushConsequence, true> = { 'demolish-if-pushed': true };
+    // why: WP-839 (D-24772) appended 'discard-if-pushed' (Speed Demon) — that deliberate change.
+    const consequenceMembers: Record<VillainChargePushConsequence, true> = {
+      'demolish-if-pushed': true,
+      'discard-if-pushed': true,
+    };
     assert.deepStrictEqual(Object.keys(consequenceMembers), [...VILLAIN_CHARGE_PUSH_CONSEQUENCES]);
-    assert.deepStrictEqual([...VILLAIN_CHARGE_PUSH_CONSEQUENCES], ['demolish-if-pushed']);
+    assert.deepStrictEqual([...VILLAIN_CHARGE_PUSH_CONSEQUENCES], ['demolish-if-pushed', 'discard-if-pushed']);
   });
 
   it('every new descriptor is keyword-less; chargePushConsequence stays out of the key', () => {
@@ -1038,6 +1053,38 @@ describe('WP-874 Wrecking Crew vocabulary (D-24820)', () => {
       { primitive: 'demolish-each-player-per-group-villain-in-city' },
       { primitive: 'charge', magnitude: 1 },
       { primitive: 'charge', magnitude: 1, chargePushConsequence: 'demolish-if-pushed' },
+    ];
+    for (const descriptor of descriptors) {
+      assert.equal(descriptorToLegacyKeyword(descriptor), undefined, `${descriptor.primitive} must self-narrate`);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-839 / D-24772 — the co2e City-movement lines (T1-T2)
+// ---------------------------------------------------------------------------
+
+describe('WP-839 City-movement vocabulary (D-24772)', () => {
+  it('T1: the three primitives are positions 61-63 in locked order; the consequence is appended', () => {
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 63);
+    assert.deepStrictEqual(VILLAIN_EFFECT_PRIMITIVES.slice(60), [
+      'move-self-to-city-space',
+      'reveal-villain-deck-top-swap-self',
+      'enter-city-from-victory-pile',
+    ]);
+    assert.equal(VILLAIN_CHARGE_PUSH_CONSEQUENCES[VILLAIN_CHARGE_PUSH_CONSEQUENCES.length - 1], 'discard-if-pushed');
+  });
+
+  it('T2: every new descriptor is keyword-less; the new fields stay out of the key', () => {
+    const descriptors: VillainEffectDescriptor[] = [
+      { primitive: 'move-self-to-city-space', destinationCitySpace: 'bridge' },
+      { primitive: 'reveal-villain-deck-top-swap-self' },
+      {
+        primitive: 'enter-city-from-victory-pile',
+        victoryVillainGroup: 'enemies-of-asgard',
+        victoryVillainCard: 'frost-giant-warrior',
+      },
+      { primitive: 'charge', magnitude: 2, chargePushConsequence: 'discard-if-pushed' },
     ];
     for (const descriptor of descriptors) {
       assert.equal(descriptorToLegacyKeyword(descriptor), undefined, `${descriptor.primitive} must self-narrate`);

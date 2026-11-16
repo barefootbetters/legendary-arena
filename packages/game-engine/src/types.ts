@@ -1953,6 +1953,8 @@ export interface PendingEnigmaPeekOffer {
  *
  * WP-837 / D-24770 — Ambush-timed every-player trait discards (co2e Mystique, Frost
  * Giant Warrior) ride the same FIFO with a `traitFilter` and `eligibleCosts: []`.
+ * WP-839 / D-24772 — Speed Demon's every-player any-card discard rides it with an
+ * `anyHandCard` marker and `eligibleCosts: []`.
  */
 export interface PendingEscapeEffectDiscard {
   /** The Villain whose Escape or Ambush effect owes the discard. */
@@ -1964,6 +1966,23 @@ export interface PendingEscapeEffectDiscard {
   // in-flight state from before WP-837) routes to the cost builder exactly as before.
   /** The Hero-trait filter of an every-player trait discard; absent on a cost discard. */
   traitFilter?: PendingEffectDiscardTraitFilter;
+  // why: WP-839 / D-24772 — Speed Demon's push-triggered every-player discard of any card rides
+  // the same FIFO, marked by this field (with `eligibleCosts: []`); an entry without it routes as
+  // before (presence-tested, Operator fork F3).
+  /** Present on an every-player discard of any one hand card; absent otherwise. */
+  anyHandCard?: PendingEffectDiscardAnyHandCard;
+}
+
+/**
+ * An owed every-player discard of any one hand card (WP-839 / D-24772: co2e Speed Demon's
+ * "If this pushes any other Villains forward, each player discards a card.").
+ *
+ * `effectLabel` is the literal `'Ambush'`, the only record site; widen it, and carry the label
+ * into the choice the WP-837 way, when a second record site lands.
+ */
+export interface PendingEffectDiscardAnyHandCard {
+  /** The timing label of the effect that owes the discard. */
+  effectLabel: 'Ambush';
 }
 
 /**

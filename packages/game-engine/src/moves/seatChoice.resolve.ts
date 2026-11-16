@@ -159,6 +159,8 @@ import {
   ESCAPE_EFFECT_COST_DISCARD_KIND,
   ESCAPE_HQ_KO_KIND,
   VILLAIN_EFFECT_TRAIT_DISCARD_KIND,
+  VILLAIN_EFFECT_ANY_CARD_DISCARD_KIND,
+  applyVillainEffectAnyCardDiscard,
 } from '../villainDeck/villainEscapeProcedure.js';
 // why: WP-793 / D-24656 — a non-active seat's return-on-discard apply. resolveReturnOnDiscard
 // imports parkSeatChoice from this module: the same runtime-safe cycle (function bodies only).
@@ -827,6 +829,12 @@ function applySeatChoiceByKind(
   // chokepoint, and the current player's Wound moves woundsDrawn.
   if (choice.kind === VILLAIN_EFFECT_TRAIT_DISCARD_KIND) {
     applyVillainEffectTraitDiscard(G, choice, currentPlayer);
+    return;
+  }
+  // why: WP-839 / D-24772 — the owed every-player any-card discard (co2e Speed Demon); each card
+  // goes through discardFromHand.
+  if (choice.kind === VILLAIN_EFFECT_ANY_CARD_DISCARD_KIND) {
+    applyVillainEffectAnyCardDiscard(G, choice);
     return;
   }
   if (choice.kind === RETURN_ON_DISCARD_SEAT_CHOICE_KIND) {

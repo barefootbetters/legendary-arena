@@ -822,3 +822,36 @@ describe('composeChargeClause and the sixth composeAmbushNarrative slot (WP-874 
     assert.equal(composeAmbushNarrative('The Leader', [], 1, undefined, [], undefined), composeAmbushNarrative('The Leader', [], 1));
   });
 });
+
+describe('the discard-if-pushed charge clause and the seventh composeAmbushNarrative slot (WP-839 / D-24772)', () => {
+  it('T28: Speed Demon\'s charge clause names the owed discard', () => {
+    assert.equal(
+      composeChargeClause({
+        spacesMoved: 2,
+        hasPushedAnyVillain: true,
+        hasChargerEscaped: false,
+        triggeredPushConsequence: 'discard-if-pushed',
+      }),
+      'charged forward 2 spaces, pushing Villains forward, then each player must discard a card',
+    );
+  });
+
+  it('T28: the Victory-Pile entry clause trails the charge clause', () => {
+    assert.equal(
+      composeAmbushNarrative('Ymir', [], 0, undefined, [], undefined, 'brought Frost Giant Warrior back into the city'),
+      '"Ymir" ambushed: brought Frost Giant Warrior back into the city.',
+    );
+    assert.equal(
+      composeAmbushNarrative('X', [], 0, undefined, [], 'charged forward one space', 'brought Y back into the city'),
+      '"X" ambushed: charged forward one space; brought Y back into the city.',
+    );
+  });
+
+  it('T28: an absent seventh argument is byte-identical', () => {
+    assert.equal(
+      composeAmbushNarrative('Bulldozer', [], 0, undefined, [], 'charged forward one space', undefined),
+      composeAmbushNarrative('Bulldozer', [], 0, undefined, [], 'charged forward one space'),
+    );
+    assert.equal(composeAmbushNarrative('Ymir', [], 0, undefined, [], undefined, undefined), '"Ymir" entered the city with no Ambush effect.');
+  });
+});

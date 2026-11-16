@@ -3,19 +3,19 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2877,
+    "totalEntries": 2880,
     "byScope": {
       "hero": 876,
-      "villain": 770,
+      "villain": 773,
       "mastermind": 567,
       "scheme": 664
     },
     "byStatus": {
-      "executable": 863,
+      "executable": 869,
       "deferred": 18,
       "condition": 76,
       "unsupported": 255,
-      "unmarked": 1658,
+      "unmarked": 1655,
       "subsystem": 7
     }
   },
@@ -8223,6 +8223,17 @@
       "name": "Ymir, Frost Giant King",
       "set": "co2e",
       "scope": "villain",
+      "mechanic": "enter-city-from-victory-pile",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#enter-city-from-victory-pile",
+      "wp": "WP-839",
+      "decision": "D-24772"
+    },
+    {
+      "extId": "co2e-villain-enemies-of-asgard-ymir-frost-giant-king",
+      "name": "Ymir, Frost Giant King",
+      "set": "co2e",
+      "scope": "villain",
       "mechanic": "ko-up-to-from-discard-current",
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current",
@@ -8421,11 +8432,22 @@
       "name": "Green Goblin",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "captureBystander",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander",
+      "wp": "WP-185",
+      "decision": "D-18506"
+    },
+    {
+      "extId": "co2e-villain-sinister-spider-foes-green-goblin",
+      "name": "Green Goblin",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "move-self-to-city-space",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#move-self-to-city-space",
+      "wp": "WP-839",
+      "decision": "D-24772"
     },
     {
       "extId": "co2e-villain-sinister-spider-foes-scorpion",
@@ -8531,11 +8553,22 @@
       "name": "Boomerang",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-185",
+      "decision": "D-18503"
+    },
+    {
+      "extId": "co2e-villain-sinister-syndicate-boomerang",
+      "name": "Boomerang",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "reveal-villain-deck-top-swap-self",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-villain-deck-top-swap-self",
+      "wp": "WP-839",
+      "decision": "D-24772"
     },
     {
       "extId": "co2e-villain-sinister-syndicate-hydro-man",
@@ -8553,11 +8586,11 @@
       "name": "Speed Demon",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "charge",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#charge",
+      "wp": "WP-874",
+      "decision": "D-24820"
     },
     {
       "extId": "co2e-villain-skulls-paibok-the-power-skrull",
@@ -41107,6 +41140,7 @@
     "co2e-villain-enemies-of-asgard-ymir-frost-giant-king": {
       "scope": "villain",
       "mechanics": [
+        "enter-city-from-victory-pile",
         "ko-up-to-from-discard-current"
       ]
     },
@@ -41190,7 +41224,8 @@
     "co2e-villain-sinister-spider-foes-green-goblin": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "captureBystander",
+        "move-self-to-city-space"
       ]
     },
     "co2e-villain-sinister-spider-foes-scorpion": {
@@ -41225,7 +41260,8 @@
     "co2e-villain-sinister-syndicate-boomerang": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "koHeroCurrentPlayer",
+        "reveal-villain-deck-top-swap-self"
       ]
     },
     "co2e-villain-sinister-syndicate-hydro-man": {
@@ -41237,7 +41273,7 @@
     "co2e-villain-sinister-syndicate-speed-demon": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "charge"
       ]
     },
     "co2e-villain-skulls-paibok-the-power-skrull": {

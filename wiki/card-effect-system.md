@@ -174,16 +174,12 @@ The villain/henchman path in
 made the same move from fragmented keywords to parameters. Its executable
 vocabulary is the `VillainEffectDescriptor` — a `VillainEffectPrimitive`
 plus optional `target` / `magnitude` / `selector` / predicate params
-(`VILLAIN_EFFECT_PRIMITIVES`, nineteen entries: `ko-hero` · `gain-wound` ·
-`capture-hq-hero` · `hero-deck-top-to-escape` · `capture-bystander` ·
-`scry-ko-own-deck` · `gain-attached-hero` · `reveal-or-wound` ·
-`become-scheme-twist` · `draw-cards-current` · `ko-heroes-current-by-trait` ·
-`rescue-bystanders-current-by-trait-count` ·
-`gain-wound-unless-victory-villain-group` · `override-next-hand-size` ·
-`ko-wounds-current-hand-and-discard` · `ko-cullable-each-deck-top` ·
-`capture-bystanders-plus-per-hq-hero-by-trait` ·
-`give-hq-hero-by-trait-to-current` · `swap-two-city-villains` ·
-`give-hq-hero-each-player`). A new
+(`VILLAIN_EFFECT_PRIMITIVES`, sixty-three entries as of WP-839, appended in order
+from `ko-hero` · `gain-wound` · `capture-hq-hero` … through WP-874's
+`demolish-each-other-player` · `demolish-each-player-per-group-villain-in-city` ·
+`charge` and WP-839's `move-self-to-city-space` · `reveal-villain-deck-top-swap-self` ·
+`enter-city-from-victory-pile`; the array in the source is the canonical list, pinned
+by a drift test). A new
 target / magnitude / selector variant is a descriptor **param** (a data
 marker), not a new keyword plus switch arm plus drift test (D-24023).
 
@@ -323,6 +319,23 @@ enters the City — and uses no `ctx.random`. Self-narrates via `pushLog`
 (keyword-less). It is the first of an as-yet-unimplemented City-swap/reposition
 family (Ravagers, Infinity Stones, named-space Twists, …); the helper is written
 general enough to serve those, but only Whirlwind's Ambush is wired here.
+
+**More City movement (D-24772).** WP-839 adds three more ways a Villain moves cards
+around the City, and reuses the one Charge primitive for a fourth.
+`move-self-to-city-space:<space>` (co2e Green Goblin, *"Put him on the Bridge. If
+there's another Villain there, swap them."*) runs in the executor: the card moves to
+the named space and an occupant takes its old space (the D-24664 swap-if-occupied
+shape, never a push), and a City with no Bridge leaves him where he is. Speed Demon's
+*"moves two extra spaces forward. If this pushes any other Villains forward, each
+player discards a card"* is `charge:2:discard-if-pushed` — WP-874's `charge` with one
+new push consequence, which owes every player a discard of any card on WP-817's FIFO
+(the `villain-effect-any-card-discard` seat choice, opened after the move).
+`enter-city-from-victory-pile` (Ymir) and `reveal-villain-deck-top-swap-self`
+(Boomerang) are deliberate executor no-ops bridged at the Ambush and Fight fire sites:
+Ymir's Frost Giant Warrior leaves a Victory Pile and enters through
+`resolveVillainCityEntry` — the reveal path's push / escape / Ambush block, extracted
+byte-identically — so it pushes, can cause escapes and does its own Ambush; Boomerang
+goes back on top of the Villain Deck under a revealed Villain, which is played.
 
 Ten earlier `VILLAIN_EFFECT_KEYWORDS` are **frozen** as the parser's
 legacy-translation input only. `LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR`
@@ -669,6 +682,7 @@ handler reads as *applied* while the real Scheme Twist fires elsewhere.
 - D-24529 (bug fix, 2026-09-19) — Captain America's Avengers Assemble! / Perfect Teamwork *"for each color of Hero you have"* counted colors among cards **played this turn only** (play-area, order-dependent), so playing the card first ignored colored Heroes still in hand (live-observed: 2p Red Skull / Midtown match `l5FaVEbyJp0`). "Heroes you have" is a rulebook term of art = **hand ∪ play area**, order-independent; corrected via a dedicated `countDistinctHeroClassesYouHave` (leaving the play-only `countDistinctHeroClassesInPlay` for the on-play class-synergy gate + deferred-grant monotonicity). Grey `heroClass: null` cards contribute no color (rulebook Grey Heroes / Spectrum "don't help") — the flip side of D-24345's "`heroClass != null` means 'has a color', never 'is a Hero'." Engine-only; no committed fixture plays Captain America → no re-pin. See the "For each color of Hero you have" edge case above.
 - D-24530 (bug fix, 2026-09-19) — Nick Fury's Pure Fury *"Defeat any Villain or Mastermind whose Attack is less than the number of `[team:shield]` Heroes in the KO pile"* was blocked by a spurious `requiresTeam: 'shield'` play-gate ("needs another shield Hero played this turn") — the same Step 1b mid-sentence-`[team:X]` mis-read fixed for Psychic Link (D-24470) and Battlefield Promotion (D-24498). Its `[team:shield]` describes the KO-pile Heroes to count, not a play-gate; added a `lineHasPureFury` guard to the Step 1b suppression list so the card fires unconditionally and `heroEffectPureFury` (D-24499) reads the KO pile at resolve. Engine-only; no re-pin.
 - WP-837 (D-24770) — five co2e Ambushes that did nothing now do what they print. Four villain primitives (thirty-fifth to thirty-eighth): `discard-hero-each-player-by-trait` (Mystique: each player discards an X-Men Hero) and `discard-hero-or-wound-each-player-by-trait` (Frost Giant Warrior: a Ranged Hero, or gain a Wound) ride WP-817's owed-discard FIFO as a new `villain-effect-trait-discard` seat choice that opens after the move; `discard-hand-matching-hq-card-names-each-player` and `hq-heroes-to-hero-deck-bottom` are Juggernaut's two auto-resolving halves (card names keyed by card slug, so reprints match; the HQ moves to the Hero Deck bottom as a snapshot, then refills). One new condition, `!another-group-villain-in-city` (Scorpion: Wounds only with another Villain of its own group in the City, found as the longest selected-group prefix, failing closed), and an optional reveal gate on `play-villain-deck-cards:<N>:<kind>:<value>` (The Leader: the current player auto-reveals a Strength Hero and nothing is played). The Juggernaut discards and Frost Giant Warrior's open-time Wounds go in turn order from the current player (D-24780).
+- WP-839 (D-24772) — four co2e City-movement lines: `move-self-to-city-space` (Green Goblin to the Bridge, swapping any occupant), Speed Demon's `charge:2:discard-if-pushed` on WP-874's one Charge primitive (an owed every-player any-card discard), `reveal-villain-deck-top-swap-self` (Boomerang takes a revealed Villain's place on top of the Villain Deck) and `enter-city-from-victory-pile` (Ymir brings a Frost Giant Warrior back into the City through the extracted `resolveVillainCityEntry`); primitives sixty-one to sixty-three.
 - The hollow-effect detection and coverage-ledger spine (DESIGN-HOLLOW-EFFECT-DETECTION.md, DESIGN-EFFECT-AUTHORING-SCALE.md)
 
 ## Scaling and Open Directions

@@ -227,6 +227,10 @@ function isLockedEffectKeyword(keyword) {
 // chmp Thunderball's Fight, The Wrecker's Ambush and Bulldozer's Ambush; the two no-param ones
 // validate via the terminal `parts.length === 1` branch, `charge` via its own branch below, so its
 // bare token is rejected; `charge` is the engine's one Charge primitive).
+// `move-self-to-city-space` (`:<space>`), `reveal-villain-deck-top-swap-self` (no-param) and
+// `enter-city-from-victory-pile` (`:<group>:<card>`) appended at positions 61-63 by WP-839 (D-24772 —
+// co2e Green Goblin's and Ymir's Ambush, Boomerang's Fight; the two parameterized ones validate via
+// their own branches below, so their bare tokens are rejected).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -288,6 +292,9 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'demolish-each-other-player',
   'demolish-each-player-per-group-villain-in-city',
   'charge',
+  'move-self-to-city-space',
+  'reveal-villain-deck-top-swap-self',
+  'enter-city-from-victory-pile',
 ];
 
 // why: WP-836 / D-24769 — hand-synced local copy of the engine's HERO_CLASSES
@@ -326,7 +333,8 @@ const VILLAIN_CAPTURE_PILES = ['officer', 'sidekick'];
 // discipline + loud-fail-on-drift posture as VILLAIN_CAPTURE_PILES above: the optional third token
 // of `charge:<N>:<consequence>` validates against it. Append-only; WP-839's Speed Demon appends
 // 'discard-if-pushed' here and in the engine array together.
-const VILLAIN_CHARGE_PUSH_CONSEQUENCES = ['demolish-if-pushed'];
+// 'discard-if-pushed' appended by WP-839 (D-24772 — co2e Speed Demon).
+const VILLAIN_CHARGE_PUSH_CONSEQUENCES = ['demolish-if-pushed', 'discard-if-pushed'];
 
 // why: WP-873 / D-24818 — hand-synced local copy of the engine's FORTIFY_ALLOWED_LOCKS
 // (packages/game-engine/src/board/fortify.types.ts); its keys are FORTIFY_PLACES. Same
@@ -669,6 +677,20 @@ function isValidParameterizedEffectToken(token) {
     if (parts.length !== 2 && parts.length !== 3) return false;
     if (!/^[1-9][0-9]*$/.test(parts[1])) return false;
     return parts.length === 2 || VILLAIN_CHARGE_PUSH_CONSEQUENCES.includes(parts[2]);
+  }
+  if (primitive === 'move-self-to-city-space') {
+    // why: D-24772 — grammar move-self-to-city-space:<space> (exactly 2 tokens; Green Goblin
+    // :bridge), the space a CITY_SPACE_NAMES member (case-sensitive). Mirrors the engine parser's
+    // parseMoveSelfToCitySpaceEffect; the bare token names no space, so it must not reach the
+    // no-param branch.
+    return parts.length === 2 && CITY_SPACE_NAMES.includes(parts[1]);
+  }
+  if (primitive === 'enter-city-from-victory-pile') {
+    // why: D-24772 — grammar enter-city-from-victory-pile:<group>:<card> (exactly 3 tokens; Ymir
+    // :enemies-of-asgard:frost-giant-warrior), each a lowercase-kebab slug. Mirrors the engine
+    // parser's parseEnterCityFromVictoryPileEffect.
+    const slugPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+    return parts.length === 3 && slugPattern.test(parts[1]) && slugPattern.test(parts[2]);
   }
   // why: hero-deck-top-to-escape, gain-officer-current, and the other no-param
   // primitives take no params.

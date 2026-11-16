@@ -2546,9 +2546,9 @@ describe('buildVillainAbilityHooks — WP-874 Wrecking Crew grammars (D-24820)',
     { slug: 'reject-charge-zero', token: 'charge:0' },
     { slug: 'reject-charge-letter', token: 'charge:x' },
     { slug: 'reject-charge-other', token: 'charge:1:other' },
-    // why: D-24820 — not a VILLAIN_CHARGE_PUSH_CONSEQUENCES member yet; WP-839's append flips this
-    // case to a positive one (a deliberate test change).
-    { slug: 'reject-charge-discard', token: 'charge:1:discard-if-pushed' },
+    // why: WP-839 (D-24772) — 'discard-if-pushed' is now a VILLAIN_CHARGE_PUSH_CONSEQUENCES member,
+    // so this case flipped from a rejection to a positive parse (a deliberate test change, D-24820).
+    { slug: 'charge-discard', token: 'charge:1:discard-if-pushed' },
     { slug: 'reject-charge-extra', token: 'charge:1:demolish-if-pushed:x' },
     { slug: 'reject-each-other-param', token: 'demolish-each-other-player:1' },
     { slug: 'reject-per-group-param', token: 'demolish-each-player-per-group-villain-in-city:1' },
@@ -2580,6 +2580,9 @@ describe('buildVillainAbilityHooks — WP-874 Wrecking Crew grammars (D-24820)',
       { primitive: 'demolish-each-other-player', requireCitySpaces: ['sewers', 'bank'] },
     ]);
     assert.deepStrictEqual(hookFor('per-group').effects, [{ primitive: 'demolish-each-player-per-group-villain-in-city' }]);
+    assert.deepStrictEqual(hookFor('charge-discard').effects, [
+      { primitive: 'charge', magnitude: 1, chargePushConsequence: 'discard-if-pushed' },
+    ]);
   });
 
   it('every malformed token resolves to unresolvedMarkers, never a silent accept', () => {
@@ -2591,6 +2594,131 @@ describe('buildVillainAbilityHooks — WP-874 Wrecking Crew grammars (D-24820)',
         [entry.token],
         `${entry.token} must land in unresolvedMarkers`,
       );
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-839 / D-24772 — the co2e City-movement grammars (T3-T5)
+// ---------------------------------------------------------------------------
+
+describe('buildVillainAbilityHooks — WP-839 City-movement grammars (D-24772)', () => {
+  const grammarTokens: Array<{ slug: string; token: string }> = [
+    { slug: 'move-bridge', token: 'move-self-to-city-space:bridge' },
+    { slug: 'move-sewers', token: 'move-self-to-city-space:sewers' },
+    { slug: 'charge-two-discard', token: 'charge:2:discard-if-pushed' },
+    { slug: 'swap-self', token: 'reveal-villain-deck-top-swap-self' },
+    { slug: 'enter', token: 'enter-city-from-victory-pile:enemies-of-asgard:frost-giant-warrior' },
+    { slug: 'reject-move-bare', token: 'move-self-to-city-space' },
+    { slug: 'reject-move-empty', token: 'move-self-to-city-space:' },
+    { slug: 'reject-move-moon', token: 'move-self-to-city-space:moon' },
+    { slug: 'reject-move-case', token: 'move-self-to-city-space:Bridge' },
+    { slug: 'reject-move-extra', token: 'move-self-to-city-space:bridge:x' },
+    { slug: 'reject-charge-discard-each', token: 'charge:2:discard-each' },
+    { slug: 'reject-charge-discard-extra', token: 'charge:2:discard-if-pushed:x' },
+    { slug: 'reject-swap-param', token: 'reveal-villain-deck-top-swap-self:1' },
+    { slug: 'reject-enter-bare', token: 'enter-city-from-victory-pile' },
+    { slug: 'reject-enter-one', token: 'enter-city-from-victory-pile:a' },
+    { slug: 'reject-enter-empty-card', token: 'enter-city-from-victory-pile:a:' },
+    { slug: 'reject-enter-empty-group', token: 'enter-city-from-victory-pile::b' },
+    { slug: 'reject-enter-case', token: 'enter-city-from-victory-pile:A:b' },
+    { slug: 'reject-enter-extra', token: 'enter-city-from-victory-pile:a:b:c' },
+  ];
+  const registry = makeRegistry(
+    'core',
+    [
+      {
+        slug: 'wp839',
+        cards: grammarTokens.map((entry) => ({
+          slug: entry.slug,
+          abilities: [`Ambush: test line. [effect:${entry.token}]`],
+        })),
+      },
+    ],
+    [],
+  );
+  const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/wp839'], []));
+  const hookFor = (slug: string) =>
+    hooks.find((h) => h.cardId === `core-villain-wp839-${slug}-00`)!;
+
+  it('T3: parses every Locked-Values marker into its descriptor', () => {
+    assert.deepStrictEqual(hookFor('move-bridge').effects, [
+      { primitive: 'move-self-to-city-space', destinationCitySpace: 'bridge' },
+    ]);
+    assert.deepStrictEqual(hookFor('move-sewers').effects, [
+      { primitive: 'move-self-to-city-space', destinationCitySpace: 'sewers' },
+    ]);
+    assert.deepStrictEqual(hookFor('charge-two-discard').effects, [
+      { primitive: 'charge', magnitude: 2, chargePushConsequence: 'discard-if-pushed' },
+    ]);
+    assert.deepStrictEqual(hookFor('swap-self').effects, [{ primitive: 'reveal-villain-deck-top-swap-self' }]);
+    assert.deepStrictEqual(hookFor('enter').effects, [
+      {
+        primitive: 'enter-city-from-victory-pile',
+        victoryVillainGroup: 'enemies-of-asgard',
+        victoryVillainCard: 'frost-giant-warrior',
+      },
+    ]);
+  });
+
+  it('T4: every malformed token resolves to unresolvedMarkers, never a silent accept', () => {
+    for (const entry of grammarTokens) {
+      if (!entry.slug.startsWith('reject-')) continue;
+      assert.deepStrictEqual(hookFor(entry.slug).effects, [], `${entry.token} must yield no descriptor`);
+      assert.deepStrictEqual(
+        hookFor(entry.slug).unresolvedMarkers,
+        [entry.token],
+        `${entry.token} must land in unresolvedMarkers`,
+      );
+    }
+  });
+
+  it('T5: the regenerated co2e lines build the expected hooks', () => {
+    // why: these lines are copied verbatim from the regenerated data/cards/co2e.json.
+    const co2eRegistry = makeRegistry(
+      'co2e',
+      [
+        { slug: 'enemies-of-asgard', cards: [{ slug: 'ymir-frost-giant-king', abilities: ["Ambush: Choose a Frost Giant Warrior from any player's Victory Pile to enter the city. [effect:enter-city-from-victory-pile:enemies-of-asgard:frost-giant-warrior]", "Fight: You may KO a grey Hero from your discard pile. [effect:ko-up-to-from-discard-current:1:grey]"] }] },
+        { slug: 'sinister-spider-foes', cards: [{ slug: 'green-goblin', abilities: ["Ambush: Green Goblin captures a Bystander. Put him on the Bridge. If there's another Villain there, swap them. [effect:captureBystander] [effect:move-self-to-city-space:bridge]"] }] },
+        {
+          slug: 'sinister-syndicate',
+          cards: [
+            { slug: 'boomerang', abilities: ["Fight: KO one of your Heroes. Then reveal the top card of the Villain Deck. If it's a Villain, put Boomerang in its place and play that Villain. [effect:koHeroCurrentPlayer] [effect:reveal-villain-deck-top-swap-self]"] },
+            { slug: 'speed-demon', abilities: ["Ambush: Speed Demon moves two extra spaces forward. If this pushes any other Villains forward, each player discards a card. [effect:charge:2:discard-if-pushed]"] },
+          ],
+        },
+      ],
+      [],
+    );
+    const co2eHooks = buildVillainAbilityHooks(
+      co2eRegistry,
+      makeConfig(['co2e/enemies-of-asgard', 'co2e/sinister-spider-foes', 'co2e/sinister-syndicate'], []),
+    );
+    const effectsFor = (cardId: string, timing: string) =>
+      co2eHooks.find((h) => h.cardId === cardId && h.timing === timing)?.effects;
+    assert.deepStrictEqual(effectsFor('co2e-villain-sinister-spider-foes-green-goblin-00', 'onAmbush'), [
+      { primitive: 'capture-bystander' },
+      { primitive: 'move-self-to-city-space', destinationCitySpace: 'bridge' },
+    ]);
+    assert.deepStrictEqual(effectsFor('co2e-villain-sinister-syndicate-speed-demon-00', 'onAmbush'), [
+      { primitive: 'charge', magnitude: 2, chargePushConsequence: 'discard-if-pushed' },
+    ]);
+    assert.deepStrictEqual(effectsFor('co2e-villain-sinister-syndicate-boomerang-00', 'onFight'), [
+      { primitive: 'ko-hero', target: 'current' },
+      { primitive: 'reveal-villain-deck-top-swap-self' },
+    ]);
+    assert.deepStrictEqual(effectsFor('co2e-villain-enemies-of-asgard-ymir-frost-giant-king-00', 'onAmbush'), [
+      {
+        primitive: 'enter-city-from-victory-pile',
+        victoryVillainGroup: 'enemies-of-asgard',
+        victoryVillainCard: 'frost-giant-warrior',
+      },
+    ]);
+    assert.deepStrictEqual(effectsFor('co2e-villain-enemies-of-asgard-ymir-frost-giant-king-00', 'onFight'), [
+      { primitive: 'ko-up-to-from-discard-current', magnitude: 1, greyFilter: 'grey' },
+    ]);
+    for (const builtHook of co2eHooks) {
+      assert.deepStrictEqual(builtHook.unresolvedMarkers ?? [], [], `${builtHook.cardId} has no unresolved marker`);
     }
   });
 });

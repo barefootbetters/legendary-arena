@@ -47,6 +47,8 @@ const FIXTURE_GROUP_IDS = [
   // why: WP-874 / D-24820 / D-24854 §6 — The Wrecker's hook, and its own group in the selection so
   // resolveVillainGroupPrefix resolves (a sanctioned fixture edit).
   'chmp/wrecking-crew',
+  // why: WP-839 / D-24772 — Speed Demon's hook (a sanctioned fixture edit, the WP-874 precedent).
+  'co2e/sinister-syndicate',
   'mdns/fallen',
   'mdns/lilin',
   'msis/infinity-stones',
@@ -64,6 +66,8 @@ const JUGGERNAUT = 'co2e-villain-brotherhood-of-mutants-juggernaut-00' as CardEx
 const LEADER = 'co2e-villain-radiation-the-leader-00' as CardExtId;
 const TRULL = 'chmp-villain-monsters-unleashed-trull-the-unhuman-00' as CardExtId;
 const THE_WRECKER = 'chmp-villain-wrecking-crew-the-wrecker-00' as CardExtId;
+const GREEN_GOBLIN = 'co2e-villain-sinister-spider-foes-green-goblin-00' as CardExtId;
+const SPEED_DEMON = 'co2e-villain-sinister-syndicate-speed-demon-00' as CardExtId;
 const THUNDERBALL = 'chmp-villain-wrecking-crew-thunderball-00' as CardExtId;
 const METARCHUS = 'mdns-villain-fallen-metarchus-00' as CardExtId;
 const MIND_STONE = 'msis-villain-infinity-stones-the-mind-stone-00' as CardExtId;
@@ -452,8 +456,10 @@ const PINNED_LOGS: Record<string, string[]> = {
 
 describe('the keyword-less Ambush set in the card data (WP-897 RS-5)', () => {
   // why: WP-874 / D-24820 / D-24854 §6 — Bulldozer's `charge` and The Wrecker's per-group Demolish
-  // join the set, 16 → 18 (a sanctioned pin change).
-  it('the real parser finds exactly the 18 keyword-less Ambush primitives, in printed order', () => {
+  // join the set, 16 → 18 (a sanctioned pin change). WP-839 / D-24772 — Green Goblin's
+  // `move-self-to-city-space` and Ymir's `enter-city-from-victory-pile` join it, 18 → 20 (Speed
+  // Demon's `charge` is already listed).
+  it('the real parser finds exactly the 20 keyword-less Ambush primitives, in printed order', () => {
     const primitives = new Set<string>();
     const descriptorsByCard = new Map<string, { isLegacy: boolean; primitive: string; isConditional: boolean }[]>();
     for (const hook of buildAllHooks()) {
@@ -494,9 +500,11 @@ describe('the keyword-less Ambush set in the card data (WP-897 RS-5)', () => {
       'discard-hand-matching-hq-card-names-each-player',
       'discard-hero-each-player-by-trait',
       'discard-hero-or-wound-each-player-by-trait',
+      'enter-city-from-victory-pile',
       'haunt-hq-hero',
       'hq-heroes-cost-change',
       'hq-heroes-to-hero-deck-bottom',
+      'move-self-to-city-space',
       'play-villain-deck-cards',
       'reveal-or-wound',
       'stack-cards-enter-city-as-villains',
@@ -715,6 +723,40 @@ describe('every clause-setting primitive narrates its logged clause (WP-897 AC 3
       ambushFor(G, TRULL).narrative,
       `"Trull the Unhuman" ambushed: ${ambushEffectClauses(G).at(-1)!}; the Hero Deck is empty, so nothing is Demolished.`,
     );
+  });
+
+  it('Green Goblin (WP-839 T31): the move logs inside the executor, then the capture; the overlay names both', () => {
+    const G = makeState();
+    G.piles.bystanders = [BYSTANDER_EXT_ID];
+    G.city = [null, null, null, null, THUG] as LegendaryGameState['city'];
+    reveal(G, GREEN_GOBLIN);
+    assert.deepEqual(G.city, [THUG, null, null, null, GREEN_GOBLIN]);
+    const lines = logLines(G);
+    assert.equal(lines[0], `threat: [Ambush] Green Goblin (${GREEN_GOBLIN}) revealed and entered the city!`);
+    assert.equal(lines[1], 'applied: Ambush effect: Green Goblin moved to the Bridge, and Thug moved to the Sewers.');
+    const clauses = ambushEffectClauses(G);
+    const captureClause = clauses.at(-1)!;
+    assert.equal(lines.length, 3);
+    assert.ok(lines[2]!.endsWith(`Ambush effect: ${captureClause}.`), 'the capture line comes last');
+    assert.equal(
+      ambushFor(G, GREEN_GOBLIN).narrative,
+      `"Green Goblin" ambushed: ${captureClause}; Green Goblin moved to the Bridge, and Thug moved to the Sewers.`,
+    );
+    assert.deepEqual(ambushFor(G, GREEN_GOBLIN).appliedEffects, ['captureBystander']);
+    assert.deepEqual(traceStatuses(G, GREEN_GOBLIN), ['capture-bystander:fired', 'move-self-to-city-space:fired']);
+  });
+
+  it('Speed Demon (WP-839 T31): the overlay names the charge and the owed discard', () => {
+    const G = makeState();
+    G.city = [null, THUG, null, null, null] as LegendaryGameState['city'];
+    reveal(G, SPEED_DEMON);
+    assert.deepEqual(G.city, [null, null, SPEED_DEMON, THUG, null]);
+    assert.equal(
+      ambushFor(G, SPEED_DEMON).narrative,
+      '"Speed Demon" ambushed: charged forward 2 spaces, pushing Villains forward, then each player must discard a card.',
+    );
+    assert.deepEqual(ambushFor(G, SPEED_DEMON).appliedEffects, []);
+    assert.deepEqual(traceStatuses(G, SPEED_DEMON), ['charge:secondary-site', 'charge:no-op']);
   });
 
   it('Enchantress: the keyword capture, then the Victory Pile capture (AC 4)', () => {
