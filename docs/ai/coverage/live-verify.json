@@ -2598,9 +2598,9 @@
       "card": "Wanda & Vision",
       "ability": "Rage: If a Hero was put into the KO pile this turn you get +2 Attack.",
       "wp": "WP-745",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-16",
-      "evidence": "",
+      "evidence": "Operator match FiGmiJcSY-m (2p, co2e Doctor Doom / Cosmic Cube; Wanda & Vision, Dr. Octopus, Invisible Woman (ff04), Warriors Three, Venomized Dr. Strange), server `ac18b4bd` (the #3418 merge), created after the deploy, cards staged with the operator setters: Grief/Rage played as the 2nd card with the Rage face chosen (2.2.25-2.2.26) logged \"ability is waiting — it needs a Hero put into the KO pile this turn\" (2.2.27); moving a S.H.I.E.L.D. Agent from hand to the KO pile (2.2.28) fired \"+2 attack from Rage\" (2.2.29); a second Hero KO (Trooper, 2.2.40) added nothing (attack 24 -> 24, one-shot). Next turn, with Heroes KO'd only last turn, Rage waited again (4.2.1-4.2.3).",
       "note": "Live check (NEW match created after the deploy with this hero): Rage (the Rage face of a Grief/Rage card) gives +2 Attack only once a Hero has entered the KO pile this turn; played before any Hero KO it logs that it is waiting and fires once when one lands; a Wound or Bystander KO does not count. D-24568."
     },
     {
@@ -2609,9 +2609,9 @@
       "card": "Dr. Octopus",
       "ability": "Eighth Time's a Charm: If this is the eighth card you played this turn, you get +2 Attack.",
       "wp": "WP-745",
-      "state": "partial",
+      "state": "verified",
       "date": "2026-11-16",
-      "evidence": "Match 3dToo-0o72o, server `ac18b4bd` (the #3418 merge, built 2026-11-16T17:13:03Z), client `ac18b4b`; solo autoplay (heuristic) on core Red Skull / Midtown Bank Robbery, Hydra + Hand Ninjas, created after the deploy: Eighth Time's a Charm played as the 3rd card logged \"ability did not activate — it needs to be card number 8 you played this turn — it was card number 3\" (18.2.5-18.2.6). The 8th-card grant was not reached (bots rarely play 8 cards); operator match pending.",
+      "evidence": "Operator match FiGmiJcSY-m (2p, co2e Doctor Doom / Cosmic Cube; Wanda & Vision, Dr. Octopus, Invisible Woman (ff04), Warriors Three, Venomized Dr. Strange), server `ac18b4bd` (the #3418 merge), created after the deploy, cards staged with the operator setters: played as exactly the 8th card (Grand Ritual, Rage, Four of a Kind, Sidekick, Grand Ritual, Three Stand as One, Trooper, then Eighth Time's a Charm) it granted +2 (2.2.41-2.2.42; attack 24 -> 30 = printed 4 + 2). Autoplay 3dToo-0o72o showed the blocked side (\"it needs to be card number 8 you played this turn — it was card number 3\", 18.2.6).",
       "note": "Live check (NEW match created after the deploy with this hero): Gives +2 Attack only as the 8th card played this turn; otherwise the log shows \"it needs to be card number 8 you played this turn — it was card number N\". D-24568."
     },
     {
@@ -2620,9 +2620,9 @@
       "card": "Fantastic Four United",
       "ability": "Invisible Woman: If you played any other cards that cost 4 this turn, you get +2 Recruit.",
       "wp": "WP-745",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-16",
-      "evidence": "",
+      "evidence": "Operator match CGMxrWLSkaq (2p, co2e Doctor Doom / Cosmic Cube; Fantastic Four United, Gamora, Captain Marvel Agent of S.H.I.E.L.D., Apocalyptic Black Widow, Hawkeye), server `ac18b4bd`, created after the deploy, cards staged with the operator setters: Invisible Woman played with no other 4-cost card logged \"it needs another card costing 4 played this turn\" (1.2.25-1.2.26); a second copy after it and the 4-cost Radiant Blast gained +2 Recruit (1.2.32-1.2.33; recruit 44 -> 48 = printed 2 + 2).",
       "note": "Live check (NEW match created after the deploy with this hero): Gives +2 Recruit only after another 4-cost card was played this turn (not herself); otherwise \"it needs another card costing 4 played this turn\". D-24568."
     },
     {
@@ -2642,9 +2642,9 @@
       "card": "Venomized Dr. Strange",
       "ability": "Complete the Grand Ritual: If you played a 4-cost card and a 2-cost card this turn, you get +2 Attack.",
       "wp": "WP-745",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-16",
-      "evidence": "",
+      "evidence": "Operator match FiGmiJcSY-m (2p, co2e Doctor Doom / Cosmic Cube; Wanda & Vision, Dr. Octopus, Invisible Woman (ff04), Warriors Three, Venomized Dr. Strange), server `ac18b4bd` (the #3418 merge), created after the deploy, cards staged with the operator setters: Complete the Grand Ritual played first logged \"it needs a card costing 4 played this turn\" (2.2.23-2.2.24); after Four of a Kind (4) and a Sidekick (2, returned to the stack after drawing, still counted as played) the second copy gained +2 (2.2.34-2.2.35).",
       "note": "Live check (NEW match created after the deploy with this hero): Gives +2 Attack only after both a 4-cost and a 2-cost card were played this turn (a Sidekick is a 2-cost card). D-24568."
     },
     {
@@ -2653,9 +2653,9 @@
       "card": "Warriors Three, The",
       "ability": "Three Stand as One: If you played at least three other non-grey Heroes with different card names this turn, you get +3 Attack.",
       "wp": "WP-745",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-16",
-      "evidence": "",
+      "evidence": "Operator match FiGmiJcSY-m (2p, co2e Doctor Doom / Cosmic Cube; Wanda & Vision, Dr. Octopus, Invisible Woman (ff04), Warriors Three, Venomized Dr. Strange), server `ac18b4bd` (the #3418 merge), created after the deploy, cards staged with the operator setters: Three Stand as One played after Complete the Grand Ritual (x2, one name), Rage and Four of a Kind (the grey Sidekick not counted) gained +3 (2.2.36-2.2.37); next turn, played after only Rage, it logged \"it needs 3 other non-grey Heroes with different names played this turn\" (4.2.4-4.2.5).",
       "note": "Live check (NEW match created after the deploy with this hero): Gives +3 Attack only after three other non-grey Heroes with three different names were played this turn; S.H.I.E.L.D. cards and repeat copies do not count. D-24568."
     },
     {
@@ -2686,9 +2686,9 @@
       "card": "Captain Marvel, Agent of S.H.I.E.L.D.",
       "ability": "Radiant Blast: If you drew any extra cards this turn, you get +1 Attack.",
       "wp": "WP-745",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-16",
-      "evidence": "",
+      "evidence": "Operator match CGMxrWLSkaq (2p, co2e Doctor Doom / Cosmic Cube; Fantastic Four United, Gamora, Captain Marvel Agent of S.H.I.E.L.D., Apocalyptic Black Widow, Hawkeye), server `ac18b4bd`, created after the deploy, cards staged with the operator setters: Radiant Blast played before any draw logged \"is waiting — it needs 1 or more cards drawn this turn — you have drawn 0\" (1.2.30-1.2.31) and gained +1 once the Sidekick drew 2 (1.2.35-1.2.38).",
       "note": "Live check (NEW match created after the deploy with this hero): Waits for an extra draw this turn, then grants +1 Attack once. D-24568."
     },
     {
@@ -2697,9 +2697,9 @@
       "card": "Gamora",
       "ability": "Guardians Escape: If you drew at least two cards this turn, you get +2 Attack.",
       "wp": "WP-745",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-16",
-      "evidence": "",
+      "evidence": "Operator match CGMxrWLSkaq (2p, co2e Doctor Doom / Cosmic Cube; Fantastic Four United, Gamora, Captain Marvel Agent of S.H.I.E.L.D., Apocalyptic Black Widow, Hawkeye), server `ac18b4bd`, created after the deploy, cards staged with the operator setters: Guardians Escape played before any draw logged \"is waiting — it needs 2 or more cards drawn this turn — you have drawn 0\" (1.2.28-1.2.29) and gained +2 once the Sidekick drew 2 (1.2.36-1.2.37).",
       "note": "Live check (NEW match created after the deploy with this hero): Guardians Escape waits for two draws this turn, then grants +2 Attack once (this ledger row also covers Stolen Necroblaster, WP-851). D-24568."
     },
     {
@@ -2719,9 +2719,9 @@
       "card": "Apocalyptic Black Widow",
       "ability": "Humanity's Final Hope: If you have at least 4 Bystanders in your Victory Pile, you get +2 Recruit.",
       "wp": "WP-745",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-16",
-      "evidence": "",
+      "evidence": "Operator match CGMxrWLSkaq (2p, co2e Doctor Doom / Cosmic Cube; Fantastic Four United, Gamora, Captain Marvel Agent of S.H.I.E.L.D., Apocalyptic Black Widow, Hawkeye), server `ac18b4bd`, created after the deploy, cards staged with the operator setters: Humanity's Final Hope at 0 Bystanders logged \"it needs 4 Bystanders in your Victory Pile — you have 0\" (1.2.23-1.2.24); after 4 Bystanders moved to the Victory Pile (1.2.39-1.2.42) the second copy gained +2 Recruit (1.2.43-1.2.44).",
       "note": "Live check (NEW match created after the deploy with this hero): Gives +2 Recruit only with 4 or more Bystanders in the Victory Pile when played. D-24568."
     },
     {
