@@ -1098,6 +1098,12 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           if (G.flyingShieldBlockUsedThisTurn !== undefined) {
             delete G.flyingShieldBlockUsedThisTurn;
           }
+          // why: WP-768 / D-24601 — Indestructible Man's shuffle-fight is once per turn. Guarded
+          // delete, so a match that never shuffle-fought is byte-unchanged; applyOnBeginParity
+          // mirrors it for the rebuilt loops.
+          if (G.indestructibleManShuffleUsedThisTurn !== undefined) {
+            delete G.indestructibleManShuffleUsedThisTurn;
+          }
           // why: WP-828 / D-24761 — a Man Out of Time grant lasts this turn only. Guarded deletes,
           // so a match that never granted one is byte-unchanged; applyOnBeginParity mirrors them.
           if (G.outOfTimeGrantedThisTurn !== undefined) {

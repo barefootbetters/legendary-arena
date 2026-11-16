@@ -224,6 +224,7 @@ If any item is false, this packet is **BLOCKED**.
 - `packages/game-engine/src/rules/mastermindStrike.unresolved.test.ts` — one sanctioned value edit: the overlay-parity `checkedCount` 15 → 16 (`:274`), its `// why:` appending "+ Indestructible Man (WP-768 / D-24601) = 16"
 - `scripts/coverage/tactic-provenance.json`, `scripts/coverage/strike-provenance.json`, `data/metadata/effect-implementation-index.json` — modified / regenerated
 - `docs/ai/coverage/runtime-observed-hollows.json`, `scripts/coverage/hero-effect-coverage.baseline.json` — regenerated only if their `:check` moves
+- `docs/ai/coverage/live-verify.json` — one `pending` row (added at execution, the WP-840 precedent)
 - Governance: `docs/ai/DECISIONS.md` (D-24601), `docs/ai/STATUS.md`, `docs/ai/work-packets/WORK_INDEX.md`, `docs/ai/execution-checklists/EC_INDEX.md`, `docs/05-ROADMAP-MINDMAP.md`, `docs/ai/NUMBER-LEDGER.md` (LANDED), `docs/ai/post-mortems/01.6-WP-768-indestructible-man-mastermind.md` (new)
 
 About 22 code and data files in one packet: it is the two-session lane, half of the files are tests, and the UIState five-step contract alone spans four.

@@ -11,11 +11,11 @@
       "scheme": 664
     },
     "byStatus": {
-      "executable": 870,
-      "deferred": 18,
+      "executable": 873,
+      "deferred": 19,
       "condition": 87,
       "unsupported": 255,
-      "unmarked": 1654,
+      "unmarked": 1650,
       "subsystem": 7
     }
   },
@@ -5052,10 +5052,10 @@
       "set": "bkwd",
       "scope": "mastermind",
       "mechanic": "international-arms-dealer",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveInternationalArmsDealer",
+      "wp": "WP-768",
+      "decision": "D-24601"
     },
     {
       "extId": "bkwd-mastermind-indestructible-man-manipulate-murderous-mad-monk",
@@ -5074,10 +5074,10 @@
       "set": "bkwd",
       "scope": "mastermind",
       "mechanic": "master-strike",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveIndestructibleManStrike",
+      "wp": "WP-768",
+      "decision": "D-24601"
     },
     {
       "extId": "bkwd-mastermind-indestructible-man-secrets-of-indestructibility",
@@ -5085,10 +5085,10 @@
       "set": "bkwd",
       "scope": "mastermind",
       "mechanic": "secrets-of-indestructibility",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveSecretsOfIndestructibility",
+      "wp": "WP-768",
+      "decision": "D-24601"
     },
     {
       "extId": "bkwd-mastermind-indestructible-man-unveil-project-four",
@@ -5096,10 +5096,10 @@
       "set": "bkwd",
       "scope": "mastermind",
       "mechanic": "unveil-project-four",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "deferred",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveUnveilProjectFour",
+      "wp": "WP-768",
+      "decision": "D-24601"
     },
     {
       "extId": "bkwd-mastermind-taskmaster-henchman-instructor",

@@ -18,9 +18,10 @@
  *
  * Pure handlers: they mutate `G` directly and never throw. No boardgame.io
  * import (`ctx` is narrowed via `unknown`, mirroring `defeatMastermindTacticCore`).
- * No registry import. No `.reduce()`. No direct `ctx.random.*`: the only shuffle is
- * Baron Zemo's Finding Zemo, through the move's `shuffleContext.random.Shuffle`
- * (WP-818 / D-24752).
+ * No registry import. No `.reduce()`. No direct `ctx.random.*`: the shuffles are
+ * Baron Zemo's Finding Zemo (WP-818 / D-24752) and the Villain-Deck cards Indestructible
+ * Man's tactics play (WP-768 / D-24601), both through the move's
+ * `shuffleContext.random.Shuffle`.
  */
 
 import type {
@@ -48,10 +49,21 @@ import { addResources } from '../economy/economy.logic.js';
 import { drawCardsIntoHand, HAND_SIZE } from '../moves/drawCards.logic.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
 import { cardHasTeamWhenPlayed } from '../hero/effectiveTeams.logic.js';
-import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
+import { BYSTANDER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { koCard } from '../board/ko.logic.js';
 import { isHqSlotHaunted } from '../board/haunt.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
+import { recordOwnedCardKoed } from '../hero/deferredConditionalGrants.js';
+import { discardFromHand } from '../moves/discardFromHand.js';
+import { recordHollowEffect } from '../diagnostics/hollowEffect.record.js';
+// why: WP-768 / D-24601 — Indestructible Man's tactics "play two cards from the Villain Deck".
+// These imports close a cycle (villainDeck.reveal → defeatChoice.resolve → fightMastermind →
+// tacticHandlers), so DEFAULT_IMPLEMENTATION_MAP is read only inside a function body, never at
+// module top level — the fightVillain.ts precedent (it imports the same pair). Function
+// declarations are bound before any module body runs, so the call-time read is safe.
+import type { RevealContext } from '../villainDeck/villainDeck.reveal.js';
+import { playTopVillainDeckCards } from '../villainDeck/villainDeck.reveal.js';
+import { DEFAULT_IMPLEMENTATION_MAP } from './ruleRuntime.impl.js';
 // why: WP-694 / D-24511 — the two multi-seat tactics PARK a WP-684 pending seat choice.
 // parkSeatChoice is the foundational park entry; the mode/KO builders are pure (from the
 // no-cycle seatChoiceTactics module). tacticHandlers imports these one-directionally;
@@ -129,6 +141,27 @@ const ZARATHOS_DEMONIC_ESSENCE_CLASSES: readonly string[] = [
   ZARATHOS_DEMONIC_ESSENCE_RANGED_CLASS,
   ZARATHOS_DEMONIC_ESSENCE_STRENGTH_CLASS,
 ];
+
+// why: WP-768 / D-24601 — bkwd Indestructible Man's four tactic ext_ids
+// (`${setAbbr}-mastermind-${slug}-${tacticSlug}`, data/cards/bkwd.json).
+const INDESTRUCTIBLE_MAN_SECRETS_TACTIC_ID: CardExtId =
+  'bkwd-mastermind-indestructible-man-secrets-of-indestructibility';
+const INDESTRUCTIBLE_MAN_ARMS_DEALER_TACTIC_ID: CardExtId =
+  'bkwd-mastermind-indestructible-man-international-arms-dealer';
+const INDESTRUCTIBLE_MAN_PROJECT_FOUR_TACTIC_ID: CardExtId =
+  'bkwd-mastermind-indestructible-man-unveil-project-four';
+const INDESTRUCTIBLE_MAN_MAD_MONK_TACTIC_ID: CardExtId =
+  'bkwd-mastermind-indestructible-man-manipulate-murderous-mad-monk';
+// why: Secrets of Indestructibility prints "KO up to two Wounds".
+const SECRETS_OF_INDESTRUCTIBILITY_KO_LIMIT = 2;
+// why: the shared clause prints "If this is not the last Tactic, play two cards from the
+// Villain Deck".
+const INDESTRUCTIBLE_MAN_TACTIC_PLAY_COUNT = 2;
+// why: International Arms Dealer prints "Gain a [hc:tech] Hero from the HQ".
+const ARMS_DEALER_FILTER: GiveHqHeroFilter = { kind: 'hero-class', values: ['tech'] };
+// why: Unveil Project Four discards each card with a "4" printed on it (operator decision
+// 2026-09-26: approximated from the printed stats).
+const PROJECT_FOUR_DIGIT = '4';
 
 // why: OCTET_HAND_SIZE = 8 is the printed draw count of Doctor Octopus's "Octet
 // of Valence Electrons" tactic (co2e, corrected 9→8 in #1214) — distinct from
@@ -1091,6 +1124,9 @@ function collectEligibleHqIndices(
  * @param filter - The eligibility predicate (heroClass or team).
  * @param optional - true for Dark Technology's "may" (decline allowed); false for Bitter Captor.
  * @param tacticName - The printed tactic name, for the self-narrated log lines.
+ * @param verb - The printed verb for the log lines: 'recruit' (the two core tactics) or
+ *   'gain' (International Arms Dealer, WP-768 / D-24601). Defaults to 'recruit'.
+ * @returns The parked entry, or null when nothing was parked.
  */
 function freeRecruitFromHqByFilter(
   G: LegendaryGameState,
@@ -1098,13 +1134,14 @@ function freeRecruitFromHqByFilter(
   filter: GiveHqHeroFilter,
   optional: boolean,
   tacticName: string,
-): void {
+  verb: 'recruit' | 'gain' = 'recruit',
+): PendingGiveHqHeroChoice | null {
   const eligibleIndices = collectEligibleHqIndices(G, filter);
 
   if (eligibleIndices.length === 0) {
     // why: no HQ Hero matches the filter — a reachable no-op (never a hollow record).
-    pushLog(G, `Fight effect: no eligible Hero in the HQ to recruit (${tacticName}); no effect.`, 'blocked');
-    return;
+    pushLog(G, `Fight effect: no eligible Hero in the HQ to ${verb} (${tacticName}); no effect.`, 'blocked');
+    return null;
   }
 
   if (!optional && eligibleIndices.length === 1) {
@@ -1113,12 +1150,15 @@ function freeRecruitFromHqByFilter(
     // one-option pick with no decline, which is just ceremony.
     const gainedId = gainHqHeroToDiscard(G, currentPlayer, eligibleIndices[0]!);
     if (gainedId !== null) {
+      // why: WP-768 — "gained … from the HQ" for a gain; the recruit wording is unchanged.
+      const pastTense = verb === 'gain' ? 'gained' : 'recruited';
+      const freeSuffix = verb === 'gain' ? '' : ' for free';
       pushLog(G,
-        `Fight effect: Player ${currentPlayer} recruited ${formatCardRef(G.cardDisplayData, gainedId)} from the HQ for free (${tacticName}).`,
+        `Fight effect: Player ${currentPlayer} ${pastTense} ${formatCardRef(G.cardDisplayData, gainedId)} from the HQ${freeSuffix} (${tacticName}).`,
         'applied',
       );
     }
-    return;
+    return null;
   }
 
   // why: EC-729 — park an active pending choice on the give-hq-hero queue. optional ≥ 1 or
@@ -1137,10 +1177,12 @@ function freeRecruitFromHqByFilter(
   };
   G.pendingGiveHqHeroChoices.push(entry);
   const declineHint = optional ? ' (or decline)' : '';
+  const parkFreeSuffix = verb === 'gain' ? '' : ' for free';
   pushLog(G,
-    `Fight effect: Player ${currentPlayer} — recruit an eligible Hero from the HQ for free${declineHint} (${tacticName}).`,
+    `Fight effect: Player ${currentPlayer} — ${verb} an eligible Hero from the HQ${parkFreeSuffix}${declineHint} (${tacticName}).`,
     'neutral',
   );
+  return entry;
 }
 
 /**
@@ -1764,6 +1806,25 @@ export function dispatchTacticOnFight(
   }
   if (defeatedTacticId === ZARATHOS_DEMONIC_ESSENCE_TACTIC_ID) {
     resolveDemonicEssenceOfGhostRider(G, events, currentPlayer);
+    return;
+  }
+  // why: WP-768 / D-24601 — Indestructible Man's tactics. Three resolve their Fight and then
+  // "If this is not the last Tactic, play two cards from the Villain Deck"; Mad Monk's
+  // tactic-becomes-a-Villain is a recorded hollow.
+  if (defeatedTacticId === INDESTRUCTIBLE_MAN_SECRETS_TACTIC_ID) {
+    resolveSecretsOfIndestructibility(G, ctx, currentPlayer, shuffleContext);
+    return;
+  }
+  if (defeatedTacticId === INDESTRUCTIBLE_MAN_ARMS_DEALER_TACTIC_ID) {
+    resolveInternationalArmsDealer(G, ctx, currentPlayer, shuffleContext);
+    return;
+  }
+  if (defeatedTacticId === INDESTRUCTIBLE_MAN_PROJECT_FOUR_TACTIC_ID) {
+    resolveUnveilProjectFour(G, ctx, currentPlayer, shuffleContext);
+    return;
+  }
+  if (defeatedTacticId === INDESTRUCTIBLE_MAN_MAD_MONK_TACTIC_ID) {
+    recordMadMonkHollow(G, ctx, defeatedTacticId);
     return;
   }
 }
@@ -2526,4 +2587,340 @@ export function resolveCrushPacifistResistance(
     `Fight effect: Player ${currentPlayer} may KO up to two Heroes with less than 2 printed Attack (Crush Pacifist Resistance).`,
     'neutral',
   );
+}
+
+/**
+ * Narrows a tactic-dispatch ctx to its framework turn number (WP-768 / D-24601).
+ *
+ * @param ctx - The bare boardgame.io ctx passed to dispatchTacticOnFight (typed unknown).
+ * @returns The turn number, or 0 when the ctx carries no finite one (unit stubs).
+ */
+function readTacticTurn(ctx: unknown): number {
+  if (typeof ctx !== 'object' || ctx === null) {
+    return 0;
+  }
+  const turn = (ctx as { turn?: unknown }).turn;
+  if (typeof turn !== 'number' || !Number.isFinite(turn)) {
+    return 0;
+  }
+  return turn;
+}
+
+/**
+ * Indestructible Man's shared tactic clause (WP-768 / D-24601): "If this is not the last
+ * Tactic, play two cards from the Villain Deck."
+ *
+ * @param G - The game state, mutated in place.
+ * @param ctx - The bare boardgame.io ctx (for the turn number).
+ * @param currentPlayer - The player who defeated the tactic.
+ * @param shuffleContext - The move's seeded Shuffle, handed to the reveals.
+ * @param tacticName - The printed tactic name, for the log line.
+ */
+function playIndestructibleManTacticCards(
+  G: LegendaryGameState,
+  ctx: unknown,
+  currentPlayer: string,
+  shuffleContext: ShuffleProvider,
+  tacticName: string,
+): void {
+  // why: the defeat core moved the tactic out of tacticsDeck before this dispatch, so an empty
+  // deck means this was the last Tactic and the clause does nothing.
+  if (G.mastermind.tacticsDeck.length === 0) {
+    return;
+  }
+  pushLog(G,
+    `Fight effect: ${tacticName} plays the top ${String(INDESTRUCTIBLE_MAN_TACTIC_PLAY_COUNT)} card(s) of the Villain Deck.`,
+  );
+  const revealContext: RevealContext = {
+    random: shuffleContext.random,
+    // why: D-24704 — forward the framework turn so the played cards' traces carry it.
+    ctx: { currentPlayer, turn: readTacticTurn(ctx) },
+  };
+  // why: the fightVillain.ts Fight-play precedent — the default rule map, read here at call
+  // time (the module-level import closes a cycle; see the import note).
+  playTopVillainDeckCards(G, revealContext, DEFAULT_IMPLEMENTATION_MAP, INDESTRUCTIBLE_MAN_TACTIC_PLAY_COUNT);
+}
+
+/**
+ * KOs up to `limit` Wounds from one of a player's zones.
+ *
+ * @param G - The game state, mutated in place.
+ * @param playerId - The owner.
+ * @param zoneName - Which zone to KO from.
+ * @param limit - The most Wounds to KO.
+ * @returns How many Wounds were KO'd.
+ */
+function koWoundsFromZone(
+  G: LegendaryGameState,
+  playerId: string,
+  zoneName: 'hand' | 'discard',
+  limit: number,
+): number {
+  const zones = G.playerZones[playerId];
+  if (!zones || limit <= 0) {
+    return 0;
+  }
+  const kept: CardExtId[] = [];
+  let koedCount = 0;
+  for (const cardId of zones[zoneName]) {
+    if (cardId === WOUND_EXT_ID && koedCount < limit) {
+      // why: every Wound shares WOUND_EXT_ID; the healWounds.ts KO pattern, crediting the
+      // owner for a KO'd owned card (WP-853 / D-24789).
+      G.ko = koCard(G.ko, WOUND_EXT_ID);
+      recordOwnedCardKoed(G, playerId, WOUND_EXT_ID, zoneName);
+      koedCount += 1;
+    } else {
+      kept.push(cardId);
+    }
+  }
+  zones[zoneName] = kept;
+  return koedCount;
+}
+
+/**
+ * Resolves Indestructible Man's "Secrets of Indestructibility" (WP-768 / D-24601): "Fight: KO
+ * up to two Wounds from your hand and/or discard pile. If this is not the last Tactic, play
+ * two cards from the Villain Deck."
+ *
+ * // why: KOing a Wound is always good for its owner, so "up to" is resolved as many as
+ * possible (hand first, then discard) with no prompt.
+ *
+ * @param G - The game state, mutated in place.
+ * @param ctx - The bare boardgame.io ctx (for the turn number).
+ * @param currentPlayer - The player who defeated the tactic.
+ * @param shuffleContext - The move's seeded Shuffle.
+ */
+export function resolveSecretsOfIndestructibility(
+  G: LegendaryGameState,
+  ctx: unknown,
+  currentPlayer: string,
+  shuffleContext: ShuffleProvider,
+): void {
+  const fromHand = koWoundsFromZone(G, currentPlayer, 'hand', SECRETS_OF_INDESTRUCTIBILITY_KO_LIMIT);
+  const fromDiscard = koWoundsFromZone(G, currentPlayer, 'discard', SECRETS_OF_INDESTRUCTIBILITY_KO_LIMIT - fromHand);
+  const koedCount = fromHand + fromDiscard;
+  if (koedCount === 0) {
+    pushLog(G,
+      `Fight effect: Player ${currentPlayer} has no Wound in hand or discard pile to KO (Secrets of Indestructibility).`,
+      'blocked',
+    );
+  } else {
+    pushLog(G,
+      `Fight effect: Player ${currentPlayer} KO'd ${String(koedCount)} Wound(s) from their hand and discard pile (Secrets of Indestructibility).`,
+      'applied',
+    );
+  }
+  playIndestructibleManTacticCards(G, ctx, currentPlayer, shuffleContext, 'Secrets of Indestructibility');
+}
+
+/**
+ * Resolves International Arms Dealer's "each other player reveals a [hc:tech] Hero or gains
+ * a Wound" clause (WP-768 / D-24601).
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The player who defeated the tactic (skipped).
+ */
+function resolveArmsDealerRevealOrWound(G: LegendaryGameState, currentPlayer: string): void {
+  // why: rules v23 L2247 — clockwise from the current player (D-24780).
+  const otherSeats = otherSeatsClockwiseFrom(G, currentPlayer);
+  if (otherSeats.length === 0) {
+    pushLog(G,
+      `Fight effect: there is no other player to reveal a Tech Hero or gain a Wound (International Arms Dealer).`,
+      'neutral',
+    );
+    return;
+  }
+  for (const seat of otherSeats) {
+    const zones = G.playerZones[seat];
+    // why: during your turn another player's Heroes are in their hand, so the reveal reads the
+    // hand only, either class slot (the Computer-Uploaded Genius rule, D-24523).
+    const techHero = zones?.hand.find((cardExtId) => {
+      const traits = offPlayCardTraits(G, cardExtId);
+      return traits?.heroClass === HERO_CLASS_TECH || traits?.heroClass2 === HERO_CLASS_TECH;
+    });
+    if (techHero !== undefined) {
+      pushLog(G,
+        `Fight effect: Player ${seat} revealed ${formatCardRef(G.cardDisplayData, techHero)} — no Wound (International Arms Dealer).`,
+        'neutral',
+      );
+      continue;
+    }
+    // why: WP-682 / D-24499 — the Wound chokepoint, so a Diving-Block holder gets its window;
+    // D-24673 wording while it is pending.
+    const woundOutcome = gainWoundWithOutcome(G, seat);
+    if (woundOutcome === 'gained') {
+      pushLog(G, `Fight effect: Player ${seat} gained a Wound (International Arms Dealer).`, 'applied');
+    } else if (woundOutcome === 'diving-block-pending') {
+      pushLog(G,
+        `Fight effect: Player ${seat} would gain a Wound — Diving Block can prevent it (International Arms Dealer).`,
+        'neutral',
+      );
+    } else {
+      pushLog(G,
+        `Fight effect: Player ${seat} gained no Wound — the Wound supply is empty (International Arms Dealer).`,
+        'blocked',
+      );
+    }
+  }
+}
+
+/**
+ * Resolves International Arms Dealer (WP-768 / D-24601): "Fight: Gain a [hc:tech] Hero from
+ * the HQ. Each other player reveals a [hc:tech] Hero or gains a Wound. If this is not the last
+ * Tactic, play two cards from the Villain Deck."
+ *
+ * The gain reuses the WP-692 filtered HQ queue (one eligible → gained now; two or more → a
+ * parked pick). Haunted HQ Heroes are skipped by that queue (a named residual: a gain should
+ * reach them, D-24587).
+ *
+ * @param G - The game state, mutated in place.
+ * @param ctx - The bare boardgame.io ctx (for the turn number).
+ * @param currentPlayer - The player who defeated the tactic.
+ * @param shuffleContext - The move's seeded Shuffle.
+ */
+export function resolveInternationalArmsDealer(
+  G: LegendaryGameState,
+  ctx: unknown,
+  currentPlayer: string,
+  shuffleContext: ShuffleProvider,
+): void {
+  const parkedGain = freeRecruitFromHqByFilter(
+    G, currentPlayer, ARMS_DEALER_FILTER, false, 'International Arms Dealer', 'gain',
+  );
+  // why: a parked gain is answered by a later move, so the synchronous clauses (reveal-or-
+  // Wound, then the play-two) resolve first, in printed order after the gain.
+  resolveArmsDealerRevealOrWound(G, currentPlayer);
+  playIndestructibleManTacticCards(G, ctx, currentPlayer, shuffleContext, 'International Arms Dealer');
+  dropStaleArmsDealerGain(G, parkedGain);
+}
+
+/**
+ * Drops International Arms Dealer's parked gain when the played cards emptied its choices.
+ *
+ * // why: WP-768 / D-24601 — the two played cards can take every Tech Hero out of the HQ (an
+ * Ambush removal, a hero capture, a Haunt, a Twist). resolveGiveHqHeroChoice assumes an
+ * eligible Hero exists and a mandatory entry can't be declined, so a stale entry would freeze
+ * the board. It is removed with a blocked line instead.
+ *
+ * @param G - The game state, mutated in place.
+ * @param parkedGain - The entry this tactic parked, or null.
+ */
+export function dropStaleArmsDealerGain(
+  G: LegendaryGameState,
+  parkedGain: PendingGiveHqHeroChoice | null,
+): void {
+  if (parkedGain === null || G.pendingGiveHqHeroChoices === undefined) {
+    return;
+  }
+  const entryIndex = G.pendingGiveHqHeroChoices.indexOf(parkedGain);
+  if (entryIndex < 0) {
+    return;
+  }
+  if (collectEligibleHqIndices(G, ARMS_DEALER_FILTER).length > 0) {
+    return;
+  }
+  G.pendingGiveHqHeroChoices.splice(entryIndex, 1);
+  pushLog(G,
+    `Fight effect: no Tech Hero is left in the HQ to gain (International Arms Dealer).`,
+    'blocked',
+  );
+}
+
+/**
+ * Reports whether a card has a "4" in one of its printed stats (the Project Four approximation).
+ *
+ * // why: operator decision 2026-09-26 — G holds parsed stats, not printed text, so the check
+ * reads cost, attack, recruit and (when defined) VP as strings. A 4 only in rules text or art
+ * is not caught; a card with no stats entry is kept.
+ *
+ * @param G - The game state (read-only).
+ * @param cardId - The hand card.
+ * @returns True when one of those values contains the digit 4.
+ */
+function hasPrintedFourApproximation(G: LegendaryGameState, cardId: CardExtId): boolean {
+  const stats = G.cardStats[cardId];
+  if (stats === undefined) {
+    return false;
+  }
+  const values: string[] = [String(stats.cost), String(stats.attack), String(stats.recruit)];
+  const victoryPoints = G.cardVictoryPoints?.[cardId];
+  if (victoryPoints !== undefined) {
+    values.push(String(victoryPoints));
+  }
+  for (const value of values) {
+    if (value.includes(PROJECT_FOUR_DIGIT)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Resolves Unveil Project Four (WP-768 / D-24601): "Fight: Each other player reveals their
+ * hand and discards each card with a "4" printed anywhere on it. If this is not the last
+ * Tactic, play two cards from the Villain Deck." Approximated from printed stats.
+ *
+ * @param G - The game state, mutated in place.
+ * @param ctx - The bare boardgame.io ctx (for the turn number).
+ * @param currentPlayer - The player who defeated the tactic (skipped).
+ * @param shuffleContext - The move's seeded Shuffle.
+ */
+export function resolveUnveilProjectFour(
+  G: LegendaryGameState,
+  ctx: unknown,
+  currentPlayer: string,
+  shuffleContext: ShuffleProvider,
+): void {
+  // why: rules v23 L2247 — clockwise from the current player (D-24780).
+  const otherSeats = otherSeatsClockwiseFrom(G, currentPlayer);
+  if (otherSeats.length === 0) {
+    pushLog(G,
+      `Fight effect: there is no other player to reveal their hand (Unveil Project Four).`,
+      'neutral',
+    );
+  }
+  for (const seat of otherSeats) {
+    const zones = G.playerZones[seat];
+    if (!zones) {
+      continue;
+    }
+    // why: collect first, then discard — discardFromHand reassigns the hand, so discarding
+    // while iterating it would skip cards.
+    const matchingCards = zones.hand.filter((cardId) => hasPrintedFourApproximation(G, cardId));
+    for (const cardId of matchingCards) {
+      discardFromHand(G, seat, cardId);
+    }
+    pushLog(G,
+      `Fight effect: Player ${seat} discarded ${String(matchingCards.length)} card(s) with a printed 4 (Unveil Project Four, approximate).`,
+      matchingCards.length > 0 ? 'applied' : 'neutral',
+    );
+  }
+  playIndestructibleManTacticCards(G, ctx, currentPlayer, shuffleContext, 'Unveil Project Four');
+}
+
+/**
+ * Records Manipulate Murderous Mad Monk's unimplemented Fight as a hollow effect (WP-768 /
+ * D-24601): "If this is not the last Tactic, rescue four Bystanders and this Tactic enters the
+ * city as a "Molot Boga" Villain …".
+ *
+ * // why: a tactic that becomes a City Villain needs substrate the engine does not have, so the
+ * Fight is recorded hollow through the one seam. Its whole Fight is conditional on not being
+ * the last Tactic, so the last-Tactic defeat records nothing (D-24033 reachability).
+ *
+ * @param G - The game state (hollow channel appended).
+ * @param ctx - The bare boardgame.io ctx (for the turn number).
+ * @param cardId - The defeated tactic's ext_id.
+ */
+function recordMadMonkHollow(G: LegendaryGameState, ctx: unknown, cardId: CardExtId): void {
+  if (G.mastermind.tacticsDeck.length === 0) {
+    return;
+  }
+  recordHollowEffect(G, {
+    cardId,
+    cardType: 'mastermind',
+    timing: 'onFight',
+    mechanic: 'tactic-becomes-villain',
+    reason: 'unsupported-keyword',
+    turn: readTacticTurn(ctx),
+  });
 }

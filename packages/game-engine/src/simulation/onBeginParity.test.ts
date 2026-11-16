@@ -293,3 +293,14 @@ describe('applyOnBeginParity (WP-266 / WP-701)', () => {
     assert.deepEqual(Object.keys(gameState).sort(), expectedKeys);
   });
 });
+
+describe('applyOnBeginParity — Indestructible Man once-per-turn flag (WP-768 / D-24601)', () => {
+  it('deletes the flag when set and never creates the key', () => {
+    const { gameState } = makeStateWithDeck(['c1'], [], []);
+    applyOnBeginParity(gameState, '0');
+    assert.equal(Object.prototype.hasOwnProperty.call(gameState, 'indestructibleManShuffleUsedThisTurn'), false);
+    gameState.indestructibleManShuffleUsedThisTurn = true;
+    applyOnBeginParity(gameState, '0');
+    assert.equal(Object.prototype.hasOwnProperty.call(gameState, 'indestructibleManShuffleUsedThisTurn'), false);
+  });
+});

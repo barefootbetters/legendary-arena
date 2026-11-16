@@ -2723,6 +2723,17 @@
       "date": "2026-11-16",
       "evidence": "",
       "note": "Live check (NEW match created after the deploy with this hero): Gives +2 Recruit only with 4 or more Bystanders in the Victory Pile when played. D-24568."
+    },
+    {
+      "key": "mastermind:bkwd/indestructible-man|shuffle-fight",
+      "kind": "mastermind",
+      "card": "Indestructible Man",
+      "ability": "You can't use [icon:attack] to fight Indestructible Man. Once during each of your turns, you may shuffle two Elite Assassins from your Victory Pile into the Villain Deck. If you do, fight Indestructible Man. Master Strike: Shuffle an Elite Assassin from your Victory Pile into the Villain Deck. If you can't, each player gains a Wound. (+ tactics Secrets of Indestructibility, International Arms Dealer, Unveil Project Four)",
+      "wp": "WP-768",
+      "state": "pending",
+      "date": "2026-11-16",
+      "evidence": "",
+      "note": "Live check (NEW Indestructible Man match after the deploy): the Mastermind Fight button is disabled with \"You can't use Attack to fight Indestructible Man. Shuffle two Elite Assassins from your Victory Pile into the Villain Deck to fight him.\"; a bot / autoplay seat logs \"shuffled <Assassin> and <Assassin> from their Victory Pile into the Villain Deck to fight Indestructible Man.\" and defeats a tactic, at most once per turn, and never wins on turn 1; a Master Strike logs \"[Indestructible Man Master Strike]\" (an Assassin shuffled in, or a Wound for every player); Play Diagnostics shows mastermind.shuffleFight and mastermind.fortifiedReason. D-24601."
     }
   ]
 }

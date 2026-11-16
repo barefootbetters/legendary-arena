@@ -57,6 +57,14 @@ import { ARNIM_ZOLA_MASTERMIND_ID, listZolaWeakHqSlots } from '../mastermind/arn
 // why: WP-758 / D-24588 — Zarathos's strike lives with his shared Haunt reads; that module
 // never imports this one, so the edge adds no cycle.
 import { resolveZarathosStrike, ZARATHOS_MASTERMIND_ID } from '../mastermind/zarathos.logic.js';
+// why: WP-768 / D-24601 — Indestructible Man's Assassin reads and the shuffle-in are shared
+// with the fightMastermind move; the module never imports this one, so the edge adds no cycle.
+import {
+  INDESTRUCTIBLE_MAN_MASTERMIND_ID,
+  selectLowestVpAssassins,
+  shuffleIntoVillainDeck,
+  formatAssassinList,
+} from '../mastermind/indestructibleMan.logic.js';
 import { refillHqSlot } from '../board/city.logic.js';
 import { selectDefaultCostDiscardCard } from '../moves/villainDefeatRequirement.logic.js';
 import { demolishEachPlayer } from '../board/demolish.logic.js';
@@ -990,6 +998,54 @@ function resolveBaronZemoStrike(
 }
 
 /**
+ * Resolves Indestructible Man's Master Strike (WP-768 / D-24601): "Shuffle an Elite Assassin
+ * from your Victory Pile into the Villain Deck. If you can't, each player gains a Wound."
+ *
+ * The current player's lowest-VP Assassin (ties by ext_id) is shuffled in through the
+ * strike's seeded Shuffle. A player with none means every player gains a Wound, the current
+ * player first and then clockwise (D-24780). Never throws.
+ *
+ * @param gameState - The game state to mutate.
+ * @param currentPlayer - The active player (null in stub contexts → no Assassin, sorted order).
+ * @param shuffle - The strike context's seeded Shuffle, or null in stub contexts.
+ */
+function resolveIndestructibleManStrike(
+  gameState: LegendaryGameState,
+  currentPlayer: string | null,
+  shuffle: (<T>(items: T[]) => T[]) | null,
+): void {
+  // why: the strike is not a player choice — the lowest-VP Assassin is the one the player
+  // would give up (D-24601), so it auto-picks rather than parking a choice.
+  const picked = currentPlayer === null ? [] : selectLowestVpAssassins(gameState, currentPlayer, 1);
+  if (currentPlayer !== null && picked.length > 0) {
+    const shuffleContext = shuffle === null ? null : { random: { Shuffle: shuffle } };
+    if (shuffleIntoVillainDeck(gameState, currentPlayer, picked, shuffleContext)) {
+      pushLog(gameState,
+        `[Indestructible Man Master Strike] Player ${currentPlayer} shuffled ${formatAssassinList(gameState, picked)} from their Victory Pile into the Villain Deck.`,
+        'applied',
+      );
+    }
+    return;
+  }
+
+  // why: rules v23 L2247 — each player, starting with the current player, then clockwise
+  // (D-24780); a null currentPlayer (stub contexts) keeps the sorted order.
+  const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), currentPlayer);
+  for (const playerId of playerIds) {
+    const woundOutcome = gainWoundToDiscard(gameState, playerId);
+    if (woundOutcome !== 'no-wound') {
+      pushLog(gameState,
+        `[Indestructible Man Master Strike] No Elite Assassin to shuffle in — Player ${playerId} ${describeStrikeWound(woundOutcome)}.`,
+      );
+    } else {
+      pushLog(gameState,
+        `[Indestructible Man Master Strike] No Elite Assassin to shuffle in — the Wound supply is empty, so Player ${playerId} gained no Wound.`,
+      );
+    }
+  }
+}
+
+/**
  * Resolves The Mandarin's Master Strike (WP-875 / D-24822): "Each player chooses a Mandarin's Ring
  * from their Victory Pile to enter the city. Any player who didn't have a Ring gains a Wound
  * instead."
@@ -1595,6 +1651,15 @@ export function mastermindStrikeHandler(
     // enter the city. Any player who didn't have a Ring gains a Wound instead." Wounds now; Ring
     // choices are queued for the onMove opener (a strike has no events).
     resolveMandarinStrike(gameState, resolveCurrentPlayer(strikeContext));
+  } else if (mastermindId === INDESTRUCTIBLE_MAN_MASTERMIND_ID) {
+    // why: WP-768 / D-24601 — "Shuffle an Elite Assassin from your Victory Pile into the
+    // Villain Deck. If you can't, each player gains a Wound." The seeded Shuffle comes from the
+    // reveal context (resolveShuffleFunction, the Doctor Octopus precedent).
+    resolveIndestructibleManStrike(
+      gameState,
+      resolveCurrentPlayer(strikeContext),
+      resolveShuffleFunction(strikeContext),
+    );
   } else {
     // why: WP-867 / D-24810 — no per-Mastermind arm was reached, so the printed
     // strike is hollow (the D-24033 reachability rule: an arm that resolves

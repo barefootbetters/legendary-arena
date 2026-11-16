@@ -734,6 +734,19 @@ export function filterUIStateForAudience(
       ...(uiState.mastermind.fortifiedReason !== undefined
         ? { fortifiedReason: uiState.mastermind.fortifiedReason }
         : {}),
+      // why: WP-768 / D-24601 — Indestructible Man's shuffle-fight state is public (Victory
+      // Piles are public) and optional, so it MUST be passed through here or it is silently
+      // dropped (the EC-206 class); the Assassin entries are copied so no viewer aliases them.
+      ...(uiState.mastermind.shuffleFight !== undefined
+        ? {
+          shuffleFight: {
+            requiredCount: uiState.mastermind.shuffleFight.requiredCount,
+            isUsedThisTurn: uiState.mastermind.shuffleFight.isUsedThisTurn,
+            isAvailable: uiState.mastermind.shuffleFight.isAvailable,
+            eligibleAssassins: deepCopyDisplayEntries(uiState.mastermind.shuffleFight.eligibleAssassins),
+          },
+        }
+        : {}),
     },
     scheme: {
       id: uiState.scheme.id,
