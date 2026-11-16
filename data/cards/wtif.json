@@ -677,7 +677,7 @@
           "attack": null,
           "recruit": "2+",
           "abilities": [
-            "If you have at least 4 Bystanders in your Victory Pile, you get +2[icon:recruit]."
+            "If you have at least 4 Bystanders in your Victory Pile, you get +2[icon:recruit]. [keyword:bystanders-threshold:4]"
           ]
         },
         {

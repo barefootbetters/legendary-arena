@@ -215,6 +215,29 @@
       "hidden": true
     },
     {
+      "slug": "bystanders-threshold",
+      "label": "Bystanders Threshold",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 2,
+      "cardIds": [
+        "co2e/black-widow",
+        "wtif/apocalyptic-black-widow"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "card-play-ordinal",
+      "label": "Card Play Ordinal",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 1,
+      "cardIds": [
+        "vill/dr-octopus"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "cheering-crowds",
       "label": "Cheering Crowds",
       "scope": "hero",
@@ -722,9 +745,12 @@
       "label": "Draw Threshold",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 2,
+      "cardCount": 5,
       "cardIds": [
+        "co2e/hawkeye",
+        "dkcy/wolverine",
         "mgtg/gamora",
+        "rvlt/captain-marvel-agent-of-shield",
         "wwhk/amadeus-cho"
       ],
       "hidden": true
@@ -1010,6 +1036,17 @@
       "cardCount": 1,
       "cardIds": [
         "core/deadpool"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "hero-koed-this-turn",
+      "label": "Hero Koed This Turn",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 1,
+      "cardIds": [
+        "msis/wanda-vision"
       ],
       "hidden": true
     },
@@ -1542,6 +1579,40 @@
       "cardCount": 1,
       "cardIds": [
         "cvwr/cloak-dagger"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "played-cost",
+      "label": "Played Cost",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 1,
+      "cardIds": [
+        "vnom/venomized-dr-strange"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "played-other-cost",
+      "label": "Played Other Cost",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 2,
+      "cardIds": [
+        "anni/fantastic-four-united",
+        "ff04/invisible-woman"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "played-other-distinct-heroes",
+      "label": "Played Other Distinct Heroes",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 1,
+      "cardIds": [
+        "asrd/warriors-three-the"
       ],
       "hidden": true
     },
@@ -2846,7 +2917,8 @@
     "anni/fantastic-four-united": {
       "mechanics": [
         "draw",
-        "focus"
+        "focus",
+        "played-other-cost"
       ]
     },
     "anni/heralds-of-galactus": {
@@ -2940,7 +3012,8 @@
       "mechanics": [
         "conqueror",
         "draw",
-        "optional-ko-hand-discard"
+        "optional-ko-hand-discard",
+        "played-other-distinct-heroes"
       ]
     },
     "bkpt/general-okoye": {
@@ -3109,6 +3182,7 @@
     "co2e/black-widow": {
       "mechanics": [
         "attack-per-count",
+        "bystanders-threshold",
         "draw",
         "optional-ko-reward",
         "rescue"
@@ -3144,7 +3218,8 @@
     },
     "co2e/hawkeye": {
       "mechanics": [
-        "draw"
+        "draw",
+        "draw-threshold"
       ]
     },
     "co2e/hulk": {
@@ -3609,6 +3684,7 @@
     "dkcy/wolverine": {
       "mechanics": [
         "draw",
+        "draw-threshold",
         "optional-ko-hand-discard"
       ]
     },
@@ -3694,7 +3770,8 @@
     },
     "ff04/invisible-woman": {
       "mechanics": [
-        "focus"
+        "focus",
+        "played-other-cost"
       ]
     },
     "ff04/mr-fantastic": {
@@ -3851,6 +3928,7 @@
     },
     "msis/wanda-vision": {
       "mechanics": [
+        "hero-koed-this-turn",
         "master-strike-this-turn",
         "reveal-odd-draw",
         "sacrifice"
@@ -4088,6 +4166,7 @@
     },
     "rvlt/captain-marvel-agent-of-shield": {
       "mechanics": [
+        "draw-threshold",
         "last-stand"
       ]
     },
@@ -4446,6 +4525,7 @@
     },
     "vill/dr-octopus": {
       "mechanics": [
+        "card-play-ordinal",
         "draw",
         "next-hand-extra-draw"
       ]
@@ -4551,6 +4631,7 @@
       "mechanics": [
         "digest",
         "draw",
+        "played-cost",
         "reveal",
         "reveal-three-assign",
         "reveal-three-assign-again"
@@ -4595,6 +4676,7 @@
     },
     "wtif/apocalyptic-black-widow": {
       "mechanics": [
+        "bystanders-threshold",
         "draw",
         "liberate",
         "what-if"

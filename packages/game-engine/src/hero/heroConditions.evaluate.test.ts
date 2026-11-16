@@ -24,6 +24,12 @@ import {
   PATROL_SPACE_EMPTY_CONDITION_TYPE,
   PATROL_SPACE_OCCUPIED_CONDITION_TYPE,
   CONQUEROR_SPACE_HAS_VILLAIN_CONDITION_TYPE,
+  PLAY_HISTORY_CONDITION_TYPES,
+  CARD_PLAY_ORDINAL_CONDITION_TYPE,
+  OTHER_CARD_OF_COST_PLAYED_CONDITION_TYPE,
+  CARD_OF_COST_PLAYED_CONDITION_TYPE,
+  OTHER_DISTINCT_HEROES_PLAYED_CONDITION_TYPE,
+  HERO_KOED_THIS_TURN_CONDITION_TYPE,
 } from './heroConditions.evaluate.js';
 import type { HeroConditionCardData } from './heroConditions.evaluate.js';
 import { WAIT_AND_SEE_CONDITION_TYPES } from './deferredConditionalGrants.js';
@@ -2218,5 +2224,58 @@ describe('conquerorSpaceHasVillain (WP-886 / D-24837)', () => {
       `"${conditionType}" is resolved per line, never a wait-and-see gate.`);
     assert.equal(SEQUENCE_GATE_CONDITION_TYPES.includes(conditionType), false,
       `"${conditionType}" is board state, never a play-order sequence gate.`);
+  });
+});
+
+// why: WP-745 / D-24568 — a RUNTIME drift pin (engine tests are not typechecked, D-24372) for the
+// four play-history conditions. Each member must have a real evaluateCondition case (a truthy
+// fixture returns true; a missing case falls through default → false) and a non-default
+// describeFailedCondition string, and the set stays disjoint from the wait-and-see and
+// sequence-gate sets (D-24568 §1: a condition whose only input is the played-card view is read on
+// play; it never waits and is not a class / team / keyword reorder tip).
+describe('PLAY_HISTORY_CONDITION_TYPES lockstep (WP-745 / D-24568)', () => {
+  /** For each member: a value + the played cards (ids, printed costs, classes, names) making it true. */
+  const TRUTHY_FIXTURE: Record<string, { value: string; inPlay: string[]; costs: Record<string, number>; classes: Record<string, string> }> = {
+    [CARD_PLAY_ORDINAL_CONDITION_TYPE]: { value: '2', inPlay: ['a#0', 'self#0'], costs: {}, classes: {} },
+    [OTHER_CARD_OF_COST_PLAYED_CONDITION_TYPE]: { value: '4', inPlay: ['a#0', 'self#0'], costs: { 'a#0': 4 }, classes: {} },
+    [CARD_OF_COST_PLAYED_CONDITION_TYPE]: { value: '2', inPlay: ['a#0', 'self#0'], costs: { 'a#0': 2 }, classes: {} },
+    [OTHER_DISTINCT_HEROES_PLAYED_CONDITION_TYPE]: {
+      value: '2',
+      inPlay: ['a#0', 'b#0', 'self#0'],
+      costs: {},
+      classes: { 'a#0': 'tech', 'b#0': 'covert' },
+    },
+  };
+
+  it('every member has an evaluateCondition case that can return true and a non-default describe string', () => {
+    assert.equal(PLAY_HISTORY_CONDITION_TYPES.length, 4);
+    for (const conditionType of PLAY_HISTORY_CONDITION_TYPES) {
+      const fixture = TRUTHY_FIXTURE[conditionType];
+      assert.ok(fixture !== undefined, `no truthy fixture for "${conditionType}" — add one.`);
+      const cardTraits: Record<string, { heroClass: string | null; team: string | null }> = {};
+      for (const [cardId, heroClass] of Object.entries(fixture.classes)) {
+        cardTraits[cardId] = { heroClass, team: null };
+      }
+      const G = makeTestState({ inPlay: fixture.inPlay, cardStatCosts: fixture.costs, cardTraits });
+      assert.equal(
+        evaluateCondition(G, '0', { type: conditionType, value: fixture.value }, 'self#0' as never),
+        true,
+        `evaluateCondition returned false for "${conditionType}" — its switch case is missing.`,
+      );
+      const describeText = describeFailedCondition(G, '0', { type: conditionType, value: fixture.value });
+      assert.equal(describeText.includes('could not be evaluated'), false,
+        `"${conditionType}" has no describeFailedCondition case.`);
+    }
+  });
+
+  it('is disjoint from the wait-and-see and sequence-gate sets', () => {
+    for (const conditionType of PLAY_HISTORY_CONDITION_TYPES) {
+      assert.equal(WAIT_AND_SEE_CONDITION_TYPES.includes(conditionType), false,
+        `"${conditionType}" reads only the played-card view, so it is read on play, never waits.`);
+      assert.equal(SEQUENCE_GATE_CONDITION_TYPES.includes(conditionType), false,
+        `"${conditionType}" is not a class / team / keyword sequence gate.`);
+    }
+    assert.equal(WAIT_AND_SEE_CONDITION_TYPES.includes(HERO_KOED_THIS_TURN_CONDITION_TYPE), true,
+      'Rage\'s KO-pile event is the one WP-745 condition that waits.');
   });
 });

@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 68,
-    "totalObservations": 7345,
+    "totalObservations": 7351,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 521,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 6824
+      "parse-unrecognized": 6830
     }
   },
   "byMechanic": {
@@ -140,12 +140,12 @@
       ]
     },
     "artifact": {
-      "hitCount": 125,
+      "hitCount": 126,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 125
+        "parse-unrecognized": 126
       },
       "examples": [
         {
@@ -263,12 +263,12 @@
       ]
     },
     "attack-no-magnitude": {
-      "hitCount": 379,
+      "hitCount": 376,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 379
+        "parse-unrecognized": 376
       },
       "examples": [
         {
@@ -900,12 +900,12 @@
       ]
     },
     "excessive-kindness": {
-      "hitCount": 91,
+      "hitCount": 93,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 91
+        "parse-unrecognized": 93
       },
       "examples": [
         {
@@ -941,12 +941,12 @@
       ]
     },
     "excessive-violence": {
-      "hitCount": 162,
+      "hitCount": 164,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 162
+        "parse-unrecognized": 164
       },
       "examples": [
         {
@@ -1023,12 +1023,12 @@
       ]
     },
     "focus": {
-      "hitCount": 927,
+      "hitCount": 913,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 927
+        "parse-unrecognized": 913
       },
       "examples": [
         {
@@ -1064,12 +1064,12 @@
       ]
     },
     "gate-only": {
-      "hitCount": 344,
+      "hitCount": 343,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 344
+        "parse-unrecognized": 343
       },
       "examples": [
         {
@@ -1146,12 +1146,12 @@
       ]
     },
     "hyperspeed": {
-      "hitCount": 15,
+      "hitCount": 14,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 15
+        "parse-unrecognized": 14
       },
       "examples": [
         {
@@ -1245,12 +1245,12 @@
       ]
     },
     "liberate": {
-      "hitCount": 29,
+      "hitCount": 35,
       "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 29
+        "parse-unrecognized": 35
       },
       "examples": [
         {
@@ -1272,13 +1272,13 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "wtif/apocalyptic-black-widow/relentless#1",
+          "cardId": "wtif/apocalyptic-black-widow/relentless#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "wtif/captain-carter/the-shield-of-britain#0",
+          "cardId": "wtif/apocalyptic-black-widow/relentless#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -1532,12 +1532,12 @@
       ]
     },
     "recruit-no-magnitude": {
-      "hitCount": 437,
+      "hitCount": 447,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 437
+        "parse-unrecognized": 447
       },
       "examples": [
         {
@@ -1901,22 +1901,16 @@
       ]
     },
     "soulbind": {
-      "hitCount": 2,
-      "lastSeenTurn": 20,
+      "hitCount": 1,
+      "lastSeenTurn": 19,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 2
+        "parse-unrecognized": 1
       },
       "examples": [
         {
           "cardId": "wtif/doctor-strange-supreme/stygian-communion#0",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
-          "cardId": "wtif/gamora-destroyer-of-thanos/destroy-an-infinity-stone#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -2292,12 +2286,12 @@
       ]
     },
     "triggered-artifact": {
-      "hitCount": 6,
+      "hitCount": 8,
       "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 6
+        "parse-unrecognized": 8
       },
       "examples": [
         {
@@ -2473,12 +2467,12 @@
       ]
     },
     "what-if...?": {
-      "hitCount": 41,
+      "hitCount": 44,
       "lastSeenTurn": 27,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 41
+        "parse-unrecognized": 44
       },
       "examples": [
         {

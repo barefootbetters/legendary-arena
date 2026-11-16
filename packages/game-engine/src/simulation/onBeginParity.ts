@@ -13,7 +13,8 @@
  * (`deckCardsKoedSinceResolve`, D-24791) and the WP-859 deck-KO turn record
  * (`cardsKoedFromDeckThisTurn`, D-24795), deletes the WP-743 per-turn
  * Master Strike / Ambush Villain flags (`masterStrikePlayedThisTurn`,
- * `ambushVillainPlayedThisTurn`, D-24566), and stamps the per-turn
+ * `ambushVillainPlayedThisTurn`, D-24566), re-takes the WP-745 KO-pile snapshot
+ * (`koPileLengthAtTurnStart`, D-24568, only when a Rage hook reads it), and stamps the per-turn
  * log numbering (`logMeta`, WP-328) and `lastPlayEffectsFired` (WP-409). None of the engine's
  * three non-framework per-turn loops run that hook, so each mirrors it manually
  * through this helper:
@@ -39,6 +40,7 @@
 
 import type { LegendaryGameState } from '../types.js';
 import { clearDeferredConditionalGrants } from '../hero/deferredConditionalGrants.js';
+import { HERO_KOED_THIS_TURN_CONDITION_TYPE, matchReadsConditionType } from '../hero/heroConditions.evaluate.js';
 
 /**
  * Mirrors the play-phase onBegin hook for one turn start: resets the
@@ -59,7 +61,8 @@ import { clearDeferredConditionalGrants } from '../hero/deferredConditionalGrant
  *   `ownedHeroesKoedSinceResolve`, `deckCardsKoedSinceResolve`,
  *   `cardsKoedFromDeckThisTurn`,
  *   `masterStrikePlayedThisTurn` and
- *   `ambushVillainPlayedThisTurn` are deleted when present.
+ *   `ambushVillainPlayedThisTurn` are deleted when present; `koPileLengthAtTurnStart` is set
+ *   to `G.ko.length` when a hook reads Rage's condition (WP-745 / D-24568).
  * @param playerId - the seat whose turn is beginning (unused now beyond symmetry;
  *   the flags are global-per-turn, not per-seat, but kept for call-site clarity).
  */
@@ -132,6 +135,13 @@ export function applyOnBeginParity(
   }
   if (gameState.ambushVillainPlayedThisTurn !== undefined) {
     delete gameState.ambushVillainPlayedThisTurn;
+  }
+  // why: WP-745 / D-24568 — mirrors game.ts onBegin's gated KO-pile snapshot for Rage. The
+  // simulation runner, PAR aggregator and fixture runner never run game.ts onBegin; without
+  // this the snapshot would stay at its game-start value and every later-turn KO would count
+  // as "this turn". Gated the same way, so a match without Rage stays byte-unchanged.
+  if (matchReadsConditionType(gameState, HERO_KOED_THIS_TURN_CONDITION_TYPE)) {
+    gameState.koPileLengthAtTurnStart = gameState.ko.length;
   }
   // why: WP-827 / D-24760 — mirrors game.ts onBegin's Flying Shield Block once-per-turn reset.
   // Guarded so a never-set G stays byte-unchanged.

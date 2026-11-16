@@ -27,7 +27,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "If you have at least 4 Bystanders in your Victory Pile, you get +2[icon:attack]."
+            "If you have at least 4 Bystanders in your Victory Pile, you get +2[icon:attack]. [keyword:bystanders-threshold:4]"
           ]
         },
         {
@@ -573,7 +573,7 @@
           "attack": "1+",
           "recruit": null,
           "abilities": [
-            "If you drew any cards this turn, you get +2[icon:attack]."
+            "If you drew any cards this turn, you get +2[icon:attack]. [keyword:draw-threshold:1]"
           ]
         },
         {

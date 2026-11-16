@@ -87,6 +87,8 @@ describe('wait-and-see scope (WP-568 / D-24377 section 1; WP-656 / D-24467)', ()
       // why: WP-859 / D-24795 — Metamorphosis / Bursting with Life's one-shot deck-KO Transform gates.
       'attackIconCardKoedFromDeckThisTurn',
       'nonGreyHeroKoedFromDeckThisTurn',
+      // why: WP-745 / D-24568 — Rage's one-shot "a Hero was put into the KO pile this turn" gate.
+      'heroPutIntoKoPileThisTurn',
     ]);
     // why: the edge-triggered member is exported as a named const so the array, the
     // evaluator case, the re-arm check, and the setup marker branch share one literal.
@@ -151,6 +153,16 @@ describe('AC-6: WAIT_AND_SEE ↔ evaluateCondition lockstep (runtime drift pin)'
       mutate: (G) => {
         G.cardTraits = { 'hero-x': { heroClass: 'tech' } } as unknown as LegendaryGameState['cardTraits'];
         G.cardsKoedFromDeckThisTurn = { '0': ['hero-x'] };
+      },
+    },
+    // why: WP-745 / D-24568 — the turn-start snapshot is 0 and one hero-deck card (a cardTraits
+    // entry) entered the KO pile after it.
+    heroPutIntoKoPileThisTurn: {
+      value: '1',
+      mutate: (G) => {
+        G.cardTraits = { 'hero-x': { heroClass: 'tech' } } as unknown as LegendaryGameState['cardTraits'];
+        G.koPileLengthAtTurnStart = 0;
+        G.ko = ['hero-x'];
       },
     },
   };

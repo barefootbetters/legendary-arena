@@ -57,6 +57,7 @@ anni/brainstorm,Brainstorm,anni,out-of-time,executable,WP-803,D-24692,packages/g
 anni/brainstorm,Brainstorm,anni,put-hand-on-deck-top,executable,WP-700,D-24519,packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top,time-loop-experiments
 anni/fantastic-four-united,Fantastic Four United,anni,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,mr-fantastic
 anni/fantastic-four-united,Fantastic Four United,anni,focus,unsupported,,,,human-torch|invisible-woman|mr-fantastic|thing
+anni/fantastic-four-united,Fantastic Four United,anni,played-other-cost,condition,WP-745,D-24568,,invisible-woman
 anni/heralds-of-galactus,Heralds of Galactus,anni,conqueror,condition,WP-886,D-24837,,firelord|stardust
 anni/heralds-of-galactus,Heralds of Galactus,anni,focus,unsupported,,,,silver-surfer|stardust
 anni/psi-lord,Psi-Lord,anni,focus,unsupported,,,,avert-future-tragedy|interdimensional-rescue|reshape-reality|slip-the-timestream
@@ -99,6 +100,7 @@ asrd/valkyrie,Valkyrie,asrd,thrown-artifact,unsupported,,,,dragonfang
 asrd/warriors-three-the,"Warriors Three, The",asrd,conqueror,condition,WP-886,D-24837,,three-stand-as-one|volstagg-the-valiant
 asrd/warriors-three-the,"Warriors Three, The",asrd,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,fandral-the-dashing
 asrd/warriors-three-the,"Warriors Three, The",asrd,optional-ko-hand-discard,executable,WP-667,D-24480,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,hogun-the-grim
+asrd/warriors-three-the,"Warriors Three, The",asrd,played-other-distinct-heroes,condition,WP-745,D-24568,,three-stand-as-one
 bkpt/general-okoye,General Okoye,bkpt,ambush,unsupported,,,,to-my-last-breath
 bkpt/general-okoye,General Okoye,bkpt,wound-a-villain,unsupported,,,,sovereign-bodyguard
 bkpt/king-black-panther,King Black Panther,bkpt,ambush,unsupported,,,,heart-shaped-herb|unite-the-tribes-of-wakanda|unseen-protector|vibranium-claws
@@ -183,6 +185,7 @@ chmp/viv-vision,Viv Vision,chmp,next-hand-extra-draw,executable,WP-866,D-24809,p
 chmp/viv-vision,Viv Vision,chmp,size-changing,executable,,D-24801,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,alter-molecular-density|expanding-neural-network
 chmp/viv-vision,Viv Vision,chmp,versatile,unsupported,,,,crowdsourcing
 co2e/black-widow,Black Widow,co2e,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,intelligence-network
+co2e/black-widow,Black Widow,co2e,bystanders-threshold,condition,WP-745,D-24568,,covert-operation
 co2e/black-widow,Black Widow,co2e,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,intelligence-network
 co2e/black-widow,Black Widow,co2e,optional-ko-reward,executable,WP-248,D-24019,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,dangerous-rescue
 co2e/black-widow,Black Widow,co2e,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,gather-intel|intelligence-network
@@ -199,6 +202,7 @@ co2e/gambit,Gambit,co2e,reveal-top-dispose,executable,WP-702,D-24521,packages/ga
 co2e/gambit,Gambit,co2e,reveal-top-dispose-ko,executable,,D-24558,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose-ko,hypnotic-charm
 co2e/gambit,Gambit,co2e,reveal-top-dispose-others,executable,WP-702,D-24521,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose-others,hypnotic-charm
 co2e/hawkeye,Hawkeye,co2e,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,quick-draw
+co2e/hawkeye,Hawkeye,co2e,draw-threshold,condition,,,,trick-arrow
 co2e/hulk,Hulk,co2e,gain-wound-reward,executable,WP-883,D-24834,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-reward,hulk-smash
 co2e/hulk,Hulk,co2e,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,dont-make-me-angry
 co2e/hulk,Hulk,co2e,reveal-or-gain-wound-each,executable,WP-843,D-24777,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-or-gain-wound-each,crazed-rampage
@@ -359,6 +363,7 @@ dkcy/professor-x,Professor X,dkcy,optional-ko-hand-discard,executable,WP-667,D-2
 dkcy/punisher,Punisher,dkcy,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,boom-goes-the-dynamite
 dkcy/punisher,Punisher,dkcy,reveal-ko,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-ko,boom-goes-the-dynamite
 dkcy/wolverine,Wolverine,dkcy,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,animal-instincts|no-mercy
+dkcy/wolverine,Wolverine,dkcy,draw-threshold,condition,,,,sudden-ambush
 dkcy/wolverine,Wolverine,dkcy,optional-ko-hand-discard,executable,WP-667,D-24480,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,no-mercy
 dstr/ancient-one-the,"Ancient One, The",dstr,astral-plane,unsupported,,,,astral-confrontation
 dstr/ancient-one-the,"Ancient One, The",dstr,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,teachings-of-kamar-taj
@@ -393,6 +398,7 @@ ff04/human-torch,Human Torch,ff04,focus,unsupported,,,,flame-on
 ff04/human-torch,Human Torch,ff04,gain-wound-self,executable,WP-364,D-24156,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self,hothead
 ff04/human-torch,Human Torch,ff04,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,call-for-backup
 ff04/invisible-woman,Invisible Woman,ff04,focus,unsupported,,,,disappearing-act|unseen-rescue
+ff04/invisible-woman,Invisible Woman,ff04,played-other-cost,condition,WP-745,D-24568,,four-of-a-kind
 ff04/mr-fantastic,Mr. Fantastic,ff04,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,unstable-molecules
 ff04/mr-fantastic,Mr. Fantastic,ff04,focus,unsupported,,,,twisting-equations|ultimate-nullifier
 ff04/silver-surfer,Silver Surfer,ff04,focus,unsupported,,,,epic-destiny|the-power-cosmic|warp-speed
@@ -437,7 +443,7 @@ mgtg/drax,Drax,mgtg,reveal-top-may-ko,executable,WP-754,D-24581,packages/game-en
 mgtg/drax,Drax,mgtg,triggered-artifact,unsupported,,,,dual-knives
 mgtg/gamora,Gamora,mgtg,artifact,unsupported,,,,sharpen-blades
 mgtg/gamora,Gamora,mgtg,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,forgive|resourceful-fugitive
-mgtg/gamora,Gamora,mgtg,draw-threshold,condition,,,,stolen-necroblaster
+mgtg/gamora,Gamora,mgtg,draw-threshold,condition,,,,guardians-escape|stolen-necroblaster
 mgtg/gamora,Gamora,mgtg,optional-ko-hand-discard,executable,WP-667,D-24480,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,stolen-necroblaster
 mgtg/gamora,Gamora,mgtg,triggered-artifact,unsupported,,,,retractable-sword
 mgtg/mantis,Mantis,mgtg,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,selfish|selfless
@@ -457,6 +463,7 @@ msis/captain-marvel,Captain Marvel,msis,draw,executable,WP-022,D-2201,packages/g
 msis/captain-marvel,Captain Marvel,msis,endgame,unsupported,,,,infused-by-the-tesseract|return-from-the-stars|time-to-end-it|turning-point
 msis/doctor-strange,Doctor Strange,msis,phasing,executable,WP-783,D-24629,packages/game-engine/src/moves/phaseCard.ts,invoke-the-time-stone|open-portals|sift-futures
 msis/doctor-strange,Doctor Strange,msis,sacrifice,unsupported,,,,1-in-14-000-065|invoke-the-time-stone
+msis/wanda-vision,Wanda & Vision,msis,hero-koed-this-turn,condition,WP-745,D-24568,,rage
 msis/wanda-vision,Wanda & Vision,msis,master-strike-this-turn,condition,,,,grief
 msis/wanda-vision,Wanda & Vision,msis,reveal-odd-draw,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-odd-draw,witchcraft
 msis/wanda-vision,Wanda & Vision,msis,sacrifice,unsupported,,,,let-go|we-have-to-destroy-it
@@ -550,6 +557,7 @@ rlmk/karnak,Karnak,rlmk,next-hand-extra-draw,executable,WP-866,D-24809,packages/
 rlmk/karnak,Karnak,rlmk,when-recruited-abilities,unsupported,,,,brilliant-strategist|find-fatal-flaw|seek-the-center|shatter-the-weak-point
 rlmk/medusa,Medusa,rlmk,thrones-favor,unsupported,,,,headstrong|queen-of-the-inhumans|royal-command|splitting-hairs
 rlmk/medusa,Medusa,rlmk,when-recruited-abilities,unsupported,,,,headstrong|queen-of-the-inhumans|royal-command|splitting-hairs
+rvlt/captain-marvel-agent-of-shield,"Captain Marvel, Agent of S.H.I.E.L.D.",rvlt,draw-threshold,condition,,,,radiant-blast
 rvlt/captain-marvel-agent-of-shield,"Captain Marvel, Agent of S.H.I.E.L.D.",rvlt,last-stand,unsupported,,,,dominate-the-battlefield|higher-further-faster
 rvlt/darkhawk,Darkhawk,rvlt,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,balance-the-darkforce
 rvlt/darkhawk,Darkhawk,rvlt,hyperspeed,unsupported,,,,hawk-dive|warflight
@@ -680,6 +688,7 @@ ssw2/time-traveling-jean-grey,Time-Traveling Jean Grey,ssw2,next-hand-extra-draw
 ssw2/time-traveling-jean-grey,Time-Traveling Jean Grey,ssw2,patrol,condition,WP-881,D-24832,,bridge-to-a-better-future|change-history
 vill/bullseye,Bullseye,vill,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts,fulfill-the-contract
 vill/bullseye,Bullseye,vill,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,everythings-a-weapon
+vill/dr-octopus,Dr. Octopus,vill,card-play-ordinal,condition,WP-745,D-24568,,eighth-times-a-charm
 vill/dr-octopus,Dr. Octopus,vill,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,crazed-experiments
 vill/dr-octopus,Dr. Octopus,vill,next-hand-extra-draw,executable,WP-866,D-24809,packages/game-engine/src/hero/heroEffects.execute.ts#next-hand-extra-draw,brilliant-research
 vill/electro,Electro,vill,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts,electroshock-therapy|shocking-robbery
@@ -717,6 +726,7 @@ vnom/venom-rocket,Venom Rocket,vnom,optional-discard-draw,executable,WP-754,D-24
 vnom/venom-rocket,Venom Rocket,vnom,optional-ko-hand-discard,executable,WP-667,D-24480,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,serious-overkill
 vnom/venomized-dr-strange,Venomized Dr. Strange,vnom,digest,unsupported,,,,cauldron-of-the-cosmos
 vnom/venomized-dr-strange,Venomized Dr. Strange,vnom,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,cauldron-of-the-cosmos
+vnom/venomized-dr-strange,Venomized Dr. Strange,vnom,played-cost,condition,WP-745,D-24568,,complete-the-grand-ritual
 vnom/venomized-dr-strange,Venomized Dr. Strange,vnom,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal,see-future-timelines
 vnom/venomized-dr-strange,Venomized Dr. Strange,vnom,reveal-three-assign,executable,WP-753,D-24580,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-three-assign,crystal-of-kadavus
 vnom/venomized-dr-strange,Venomized Dr. Strange,vnom,reveal-three-assign-again,executable,WP-753,D-24580,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-three-assign-again,crystal-of-kadavus
@@ -737,6 +747,7 @@ wpnx/weapon-h,Weapon H,wpnx,weapon-x-sequence,unsupported,,,,ultimate-killing-ma
 wpnx/weapon-x-wolverine,Weapon X (Wolverine),wpnx,berserk,executable,WP-256,D-24031,packages/game-engine/src/hero/effectPrimitive.interpret.ts,escape-the-weapon-x-lab|raging-regeneration|violent-conditioning
 wpnx/weapon-x-wolverine,Weapon X (Wolverine),wpnx,gain-wound-reward,executable,WP-883,D-24834,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-reward,violent-conditioning
 wpnx/weapon-x-wolverine,Weapon X (Wolverine),wpnx,weapon-x-sequence,unsupported,,,,escape-the-weapon-x-lab|infuse-skeleton-with-adamantium
+wtif/apocalyptic-black-widow,Apocalyptic Black Widow,wtif,bystanders-threshold,condition,WP-745,D-24568,,humanitys-final-hope
 wtif/apocalyptic-black-widow,Apocalyptic Black Widow,wtif,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,plant-hidden-asset|relentless
 wtif/apocalyptic-black-widow,Apocalyptic Black Widow,wtif,liberate,unsupported,,,,relentless|the-last-avenger|time-to-save-the-multiverse
 wtif/apocalyptic-black-widow,Apocalyptic Black Widow,wtif,what-if,unsupported,,,,the-last-avenger
