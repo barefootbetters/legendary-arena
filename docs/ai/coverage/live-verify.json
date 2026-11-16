@@ -2609,9 +2609,9 @@
       "card": "Dr. Octopus",
       "ability": "Eighth Time's a Charm: If this is the eighth card you played this turn, you get +2 Attack.",
       "wp": "WP-745",
-      "state": "pending",
+      "state": "partial",
       "date": "2026-11-16",
-      "evidence": "",
+      "evidence": "Match 3dToo-0o72o, server `ac18b4bd` (the #3418 merge, built 2026-11-16T17:13:03Z), client `ac18b4b`; solo autoplay (heuristic) on core Red Skull / Midtown Bank Robbery, Hydra + Hand Ninjas, created after the deploy: Eighth Time's a Charm played as the 3rd card logged \"ability did not activate — it needs to be card number 8 you played this turn — it was card number 3\" (18.2.5-18.2.6). The 8th-card grant was not reached (bots rarely play 8 cards); operator match pending.",
       "note": "Live check (NEW match created after the deploy with this hero): Gives +2 Attack only as the 8th card played this turn; otherwise the log shows \"it needs to be card number 8 you played this turn — it was card number N\". D-24568."
     },
     {
@@ -2631,9 +2631,9 @@
       "card": "Invisible Woman",
       "ability": "Four of a Kind: If you played any other cards that cost 4 this turn, you get +2 Attack.",
       "wp": "WP-745",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-16",
-      "evidence": "",
+      "evidence": "Match 3dToo-0o72o (Wanda & Vision, Dr. Octopus, Invisible Woman), server `ac18b4bd` (the #3418 merge, built 2026-11-16T17:13:03Z), client `ac18b4b`; solo autoplay (heuristic) on core Red Skull / Midtown Bank Robbery, Hydra + Hand Ninjas, created after the deploy: Four of a Kind granted +2 after a 4-cost Disappearing Act (9.2.7-9.2.8, 14.2.8-14.2.9) and logged \"ability did not activate — it needs another card costing 4 played this turn\" with no other 4-cost play (11.2.2, 17.2.4, 18.2.12: Hold On 3, Trooper, Eighth Time's a Charm 6, Grief 5, Agent).",
       "note": "Live check (NEW match created after the deploy with this hero): Gives +2 Attack only after another 4-cost card was played this turn (a second Four of a Kind counts); otherwise \"it needs another card costing 4 played this turn\". D-24568."
     },
     {
@@ -2664,9 +2664,9 @@
       "card": "Hawkeye",
       "ability": "Trick Arrow: If you drew any cards this turn, you get +2 Attack.",
       "wp": "WP-745",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-16",
-      "evidence": "",
+      "evidence": "Match 6Vvt4bytHjM (Warriors Three, Venomized Dr. Strange, Hawkeye), server `ac18b4bd` (the #3418 merge, built 2026-11-16T17:13:03Z), client `ac18b4b`; solo autoplay (heuristic) on core Red Skull / Midtown Bank Robbery, Hydra + Hand Ninjas, created after the deploy: Trick Arrow played before any draw logged \"ability is waiting — it needs 1 or more cards drawn this turn — you have drawn 0\" (3.2.3) and granted +2 right after Quick Draw drew a card (3.2.7-3.2.9); also 16.2.2 -> 16.2.6, both copies 19.2.2/19.2.5 -> 19.2.10-11; played after a draw it granted on play (8.2.7-8.2.8).",
       "note": "Live check (NEW match created after the deploy with this hero): Played before any draw this turn it waits and grants +2 Attack once a card is drawn; played after a draw it grants on play. D-24568."
     },
     {
@@ -2675,9 +2675,9 @@
       "card": "Wolverine",
       "ability": "Sudden Ambush: If you drew any extra cards this turn, you get +2 Attack.",
       "wp": "WP-745",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-16",
-      "evidence": "",
+      "evidence": "Match LIu-8g3QKyR (Black Widow, Gamora, Wolverine), server `ac18b4bd` (the #3418 merge, built 2026-11-16T17:13:03Z), client `ac18b4b`; solo autoplay (heuristic) on core Red Skull / Midtown Bank Robbery, Hydra + Hand Ninjas, created after the deploy: Sudden Ambush logged \"is waiting — it needs 1 or more cards drawn this turn — you have drawn 0\" (5.2.3, 8.2.6, 10.2.2, 13.2.3) and granted +2 once a draw landed (10.2.9, 13.2.7); a copy played after the draw granted on play (13.2.11-13.2.12).",
       "note": "Live check (NEW match created after the deploy with this hero): Waits for an extra draw this turn, then grants +2 Attack once. D-24568."
     },
     {
@@ -2708,9 +2708,9 @@
       "card": "Black Widow",
       "ability": "Covert Operation: If you have at least 4 Bystanders in your Victory Pile, you get +2 Attack.",
       "wp": "WP-745",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-16",
-      "evidence": "",
+      "evidence": "Match LIu-8g3QKyR, server `ac18b4bd` (the #3418 merge, built 2026-11-16T17:13:03Z), client `ac18b4b`; solo autoplay (heuristic) on core Red Skull / Midtown Bank Robbery, Hydra + Hand Ninjas, created after the deploy: Covert Operation logged \"ability did not activate — it needs 4 Bystanders in your Victory Pile — you have 0\" on every play through 13.2.10; after 4 rescues (13.2.14 +2 from the Mastermind, 13.2.17 +2 from Endless Armies of HYDRA) it granted +2 (14.2.14-14.2.17, 15.2.4-15.2.5, 16.2.11-16.2.14).",
       "note": "Live check (NEW match created after the deploy with this hero): Gives +2 Attack only with 4 or more Bystanders in the Victory Pile when played; with fewer the log shows \"it needs 4 Bystanders in your Victory Pile — you have N\". D-24568."
     },
     {
