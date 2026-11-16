@@ -1,244 +1,90 @@
-# WP-745 — Unmarked "If …, you get +N" grants: gate 17 free conditional cards on their printed condition (Engine + card data)
+# WP-745 — Unmarked "If …, you get +N" grants: gate 12 free conditional cards on their printed condition (Engine + card data)
 
-**Status:** Draft 2026-09-22 (EC-782; D-24568 reserved) — READY TO EXECUTE once WP-743 executes (pre-flight READY r4, copilot PASS r2, lint PASS r3 + confirm)
+**Status:** Draft 2026-09-22; **reconciled and re-gated 2026-11-16** on `main` `b93e6d6ca` (after WP-743, WP-744, WP-777, WP-861 / D-24798 and D-24746). EC-782; **D-24568** reserved (NUMBER-LEDGER, #2290). See §Gate Record.
+**Reconciliation (2026-11-16):** five of the draft's 17 lines are already gated on `main`, and the draft's play-history field is superseded by a shipped view.
+- **Already gated, dropped from scope.** Elektra's First Strike (dkcy) and Wasp's Follow My Lead line 1 (amwp) read `firstHeroPlayedThisTurn` through `[keyword:first-hero-condition]` (WP-861 / D-24798, live-verified). Winter Soldier's KGB Training (ca75), Iron Man's Repulsor Rays (co2e) and Cannonball's Human Cannon (xmen) read `playedThisTurn` N + 1 through the `PLAYED_OTHER_CARDS_THRESHOLD_PATTERN` text arm (D-24746, live-verified). A fresh probe at `b93e6d6ca` confirms all five hooks carry their gate.
+- **No new play-history field.** `playedCardIdsThisTurn(G, inPlay)` (`hero/splitCard.logic.ts:227`) is the shipped "cards played this turn" view: `inPlay` (Penumbra-expanded) plus the cards that went Out of Time, Sidekicks returned to the stack and used Ritual Artifacts (WP-780 / WP-803 / WP-842 / WP-858). `playedThisTurn` and `firstHeroPlayedThisTurn` both read it. The draft's `G.cardsPlayedThisTurn`, its two `coreMoves.impl.ts` appends, its turn-start delete and `matchReadsPlayHistory` are **deleted**: the four play-history conditions here read the same view, so "cards you played this turn" keeps one definition across Winter Soldier, Elektra, Dr. Octopus and Invisible Woman. A card KO'd out of play mid-turn still drops out of that view; D-24798 §5 already accepts that residual for the same family, and it stays one shared follow-up (§Out of Scope E), not a second history.
+- **Follow-up D is done.** `G.turnEconomy.cardsDrawn` now increments at ~20 draw sites (Dodge, Do-Over, tactic, villain, Diving Block, Sidekick recruit, smash, seat choices, …), not only `draw:N`. The draft's "draw lines under-grant" caveat is gone.
+- **One lockstep site added** that the draft predates: `HERO_PARSER_RECOGNIZED_MARKER_NAMES` (`setup/heroAbility.setup.ts:426`), which `scripts/hero-effect-coverage.mjs` reads so a resolved marker is not counted unsupported. Plus `scripts/coverage/mechanic-provenance.json` rows (the WP-777 / WP-856 practice) and a `live-verify.json` pending row per mechanic (WP-895 / WP-896, D-24852 / D-24853).
+- **Feed pins** are measured, not predicted. The dashboard in-play pin now lives at `apps/dashboard/src/composables/useInPlayCoverage.test.ts:753-755` (`totalObs` 8717, `resolvedObs` 1213, `percentResolved` 13.9 at baseline).
+
 **Primary Layer:** Game Engine (`packages/game-engine/src/**`) + card data (`data/cards/*.json` via the curated hero-ability-marker map)
-**Dependencies:** **WP-743 / D-24566 (hard, sequencing — spec merged #2286, not yet executed at draft time)**; WP-744 / D-24567 (soft, sequencing — sim turn-loop deferred-grant parity, drafted on `main` #2292 `b510d3c9`, unexecuted; touches `simulation/onBeginParity.ts` and the rebuilt loops); WP-568 / D-24377 ✅, WP-656 / D-24467 ✅, WP-665 / D-24476 ✅, WP-653 / D-24464 ✅, WP-681 / D-24498 ✅
+**Dependencies:** all merged on `main` `b93e6d6ca`: WP-743 / D-24566 (`matchReadsConditionType`, the gated-lazy turn-flag pattern and its `onBegin` / `applyOnBeginParity` sites), WP-744 / D-24567 (rebuilt loops resolve and clear deferred grants), WP-777 / D-24616 (`discard-threshold`, the marker→condition template this WP copies), WP-861 / D-24798, D-24746, WP-568 / D-24377, WP-656 / D-24467, WP-665 / D-24476, WP-653 / D-24464, WP-780 / D-24619, WP-803 / D-24692.
+**Parallel session:** WP-768 (Indestructible Man, Mastermind fight code) runs alongside. The two share only derived feeds and governance files (`hero-mechanic-ledger`, `effect-implementation-index`, `card-mechanics`, `runtime-observed-hollows`, the dashboard pin, `live-verify.json`, WORK_INDEX, DECISIONS, STATUS, NUMBER-LEDGER, mindmap). Whichever lands second rebases, regenerates every feed from the merged tree and re-measures the pin.
 **User-Visible Surface:** play.legendary-arena.com (the in-match economy + game log)
-**Baseline:** `origin/main` @ `03c69f7d` (probe + scaffold run on `a0c1697f`; nothing between touches engine or card data). Renumbered from WP-744 / EC-781 / D-24567 after a reservation collision with #2287; reserve PR #2290.
+**Risk Tier:** MEDIUM (scoring input: removes unearned Attack / Recruit from 12 cards)
+**Lane:** Standard (two-session). One new optional `G` field, four new on-play conditions, one new wait-and-see condition, six marker arms, card data.
+
+> Baseline: reconciled on `origin/main` `b93e6d6ca` (#3414). Every line anchor below was read there.
 
 ---
 
 ## Goal
 
-As a player, I want every hero card whose text reads "If <condition>, you get +N Attack/Recruit"
-to pay out only when the condition is true, so a match plays the way the cards read. Today, 17
-such cards (beyond WP-743's two) ignore their condition and grant the bonus on every play.
+As a player, I want every hero card whose text reads "If <condition>, you get +N Attack/Recruit" to pay out only when the condition is true, so a match plays the way the cards read and a score is not inflated by bonuses nobody earned. Today these 12 lines ignore their condition and grant the bonus on every play.
+
+| Card (set / hero / card #line) | Printed line (verbatim, `data/cards/<set>.json`) | Today | After |
+|---|---|---|---|
+| `msis/wanda-vision/rage#0` (face B of the Grief/Rage split card) | `If a Hero was put into the KO pile this turn you get +2[icon:attack].` | +2 every play | +2 once a Hero has entered the KO pile this turn; played before that, it waits for the rest of the turn |
+| `vill/dr-octopus/eighth-times-a-charm#0` | `If this is the eighth card you played this turn, you get +2[icon:attack].` | +2 every play | +2 only as the 8th card played |
+| `anni/fantastic-four-united/invisible-woman#0` | `If you played any other cards that cost 4 this turn, you get +2[icon:recruit].` | +2 Recruit every play | +2 only after another 4-cost card was played |
+| `ff04/invisible-woman/four-of-a-kind#0` | `If you played any other cards that cost 4 this turn, you get +2[icon:attack].` | +2 every play | same gate |
+| `vnom/venomized-dr-strange/complete-the-grand-ritual#0` | `If you played a 4-cost card and a 2-cost card this turn, you get +2[icon:attack].` | +2 every play | +2 only after both a 4-cost and a 2-cost play |
+| `asrd/warriors-three-the/three-stand-as-one#0` | `If you played at least three other non-grey Heroes with different card names this turn, you get +3[icon:attack].` | +3 every play | +3 only after three other non-grey Heroes with three different names |
+| `co2e/hawkeye/trick-arrow#0` | `If you drew any cards this turn, you get +2[icon:attack].` | +2 every play | +2 once a card has been drawn this turn (waits) |
+| `dkcy/wolverine/sudden-ambush#0` | `If you drew any extra cards this turn, you get +2[icon:attack].` | +2 every play | same |
+| `rvlt/captain-marvel-agent-of-shield/radiant-blast#0` | `If you drew any extra cards this turn, you get +1[icon:attack].` | +1 every play | same |
+| `mgtg/gamora/guardians-escape#0` | `If you drew at least two cards this turn, you get +2[icon:attack].` | +2 every play | +2 once two cards have been drawn (waits) |
+| `co2e/black-widow/covert-operation#0` | `If you have at least 4 Bystanders in your Victory Pile, you get +2[icon:attack].` | +2 every play | +2 only with 4+ Bystanders there at play |
+| `wtif/apocalyptic-black-widow/humanitys-final-hope#0` | `If you have at least 4 Bystanders in your Victory Pile, you get +2[icon:recruit].` | +2 Recruit every play | same |
 
 ---
 
 ## User-Visible Impact
 
-The bug class is the same one WP-743 fixes for Spring the Trap and Grief. The ability line has
-no `[keyword:…]` marker, so the Step 2b icon-magnitude read in `setup/heroAbility.setup.ts` turns
-`+N[icon:attack|recruit]` into an **unconditional** grant.
-
-After this WP:
-
-- **Rage** (`msis/wanda-vision/rage`) grants +2 Attack only if a Hero was put into the KO pile
-  this turn. If none has been KO'd when you play it, it waits for the rest of the turn.
-- **First card / eighth card** (Wasp's *Follow My Lead*, Elektra's *First Strike*, Dr. Octopus's
-  *Eighth Time's a Charm*) grant only when the card is literally the 1st / 8th card played this
-  turn.
-- **"Played at least N other cards"** (Winter Soldier, co2e Iron Man, Cannonball), **"played
-  another 4-cost card"** (both Invisible Woman cards), **"a 4-cost and a 2-cost card"**
-  (Venomized Dr. Strange) and **"three other non-grey Heroes with different names"** (Warriors
-  Three) grant only when that play history is true at the moment the card is played.
-- **"If you drew any (extra) cards / at least two cards this turn"** (co2e Hawkeye, Wolverine,
-  rvlt Captain Marvel, Gamora) grant only once the turn's effect draws reach the count. They get
-  the same wait-and-see window as Gamma-Draining Nanites.
-- **"If you have at least 4 Bystanders in your Victory Pile"** (co2e Black Widow, wtif
-  Apocalyptic Black Widow) grant only with 4+ Bystanders there, the way Savior does.
+- The 12 lines above stop granting their bonus when the condition is false. The log shows the existing `[blocked]` line with the failed-condition reason (§Locked Values: describe text) instead of `+N from <card>`.
+- Rage and the four draw lines get the same wait-and-see window as Spring the Trap / Gamma-Draining Nanites: played early, they log that they are waiting, and fire once when the event lands later that turn.
+- Matches with these cards score lower when the condition was not met, because the bonus was never earned.
 
 ---
 
 ## Assumes
 
-All verified at baseline `a0c1697f` unless marked otherwise.
+All verified at `b93e6d6ca`.
 
-- **Every in-scope line is a free grant today.** A probe ran `buildHeroAbilityHooks` against
-  every hero ability line in `data/cards/*.json` matching `/\bif\b[^.]*?you get \+\d+\[icon:(attack|recruit)\]/i`
-  (121 lines). It built each line in isolation through a one-card synthetic set, using the real
-  set/hero/card slugs so the per-card allowlists resolve. **87 hooks have effects and no
-  `conditions`**; all 17 in-scope lines are among them, for example:
-  - `msis/wanda-vision/rage#0` → `{"keywords":["attack"],"effects":[{"type":"attack","magnitude":2}]}`
-  - `vill/dr-octopus/eighth-times-a-charm#0` → `{"keywords":["attack"],"effects":[{"type":"attack","magnitude":2}]}`
+1. **All 12 lines are free grants today.** A probe ran `buildHeroAbilityHooks` on each line's hero deck from the committed `data/cards/<set>.json` (one-set registry reader, the `firstCardPlayed.test.ts` pattern). Each in-scope line's hook has effects and **no** `conditions` (e.g. `msis/wanda-vision/rage#` → `{"effects":[{"type":"attack","magnitude":2}]}`; `asrd/warriors-three-the/three-stand-as-one#` hook 0 → `attack:3`, no conditions). No line carries a `[keyword:…]` marker.
+2. **The five dropped lines are gated** (same probe): First Strike and Follow My Lead line 1 → `firstHeroPlayedThisTurn`; KGB Training → `playedThisTurn:8`, Repulsor Rays → `:9`, Human Cannon → `:7`.
+3. **`playedCardIdsThisTurn(G, inPlay)`** (`hero/splitCard.logic.ts:227-262`) returns a fresh array of the active player's played cards: `playedCardIdsStillInPlay` (Penumbra both-sides → two face ids) plus `sidekicksReturnedThisTurn` × `SIDEKICK_EXT_ID`, `outOfTimePlayedCardIds` and `ritualUsedPlayedCardIds` (de-duplicated). It is active-player-scoped, which every hero condition is. `applyCardPlay` (`moves/coreMoves.impl.ts`) appends the played card to `inPlay` before `executeHeroEffects`, so the playing card is in the view when its own conditions read it (D-24746 §2). A card removed from play mid-turn by a KO, transform or villain effect is not in the view (D-24798 §5 accepted residual).
+4. **In-play card data.** `playedThisTurn` / `firstHeroPlayedThisTurn` read the view; `countDistinctHeroCostsInHandOrPlay` (`heroConditions.evaluate.ts:878`) reads `G.cardStats[id]?.cost` for in-play cards; `distinctHeroClassesAtLeast` reads `G.cardTraits[id]` `heroClass` / `heroClass2` (S.H.I.E.L.D. and Sidekick tokens have no class). In play, a split card is the face it was played as (its `inPlay` entry is relabeled to the face id by `resolveSplitFaceChoice`), so the raw maps keyed by the view's ids are the right reads. Display names are `G.cardDisplayData[id]?.name` (setup-static, `resolveCardName` in `log/logDisplay.ts:29`).
+5. **The KO pile is append-only.** `G.ko` is written only by `G.ko = koCard(G.ko, id)` (36 sites) and three `moveCardFromZone(<zone>, G.ko, id)` appends (`moves/operatorSetters.ts:272`, `rules/tacticHandlers.ts:993`, `villain/villainEffects.execute.ts:1493`). No site removes from it. So "a card entered the KO pile this turn" is exactly "its index ≥ the KO pile's length at turn start".
+6. **A "Hero" in the KO pile** is a card with a `G.cardTraits` entry (every hero-deck card) or one of the basic tokens `SHIELD_AGENT_EXT_ID`, `SHIELD_TROOPER_EXT_ID`, `SHIELD_OFFICER_EXT_ID`, `SIDEKICK_EXT_ID` (`setup/pilesInit.ts:28-43`). Wounds, Bystanders, Villains and Henchmen have neither.
+7. **Rage is face B of a split card.** `msis` `wanda-vision` `physicalCards` `p1` has `sides: ["grief", "rage"]`, count 2. Its hook resolves under the face-B id after `resolveSplitFaceChoice`. Rage's condition reads the KO pile, not play history.
+8. **Reused conditions.**
+   - `cardsDrawnThisTurnAtLeast` (WP-665 / D-24476) reads `G.turnEconomy.cardsDrawn`, is in `WAIT_AND_SEE_CONDITION_TYPES`, and `[keyword:draw-threshold:N]` already produces it (`heroAbility.setup.ts:2004`). The counter increments at every hand-draw site (Assumes reconciled; `grep "cardsDrawn +="` lists 20 sites in `hero/`, `moves/`, `rules/`, `villain/`); the end-of-turn new-hand draw is not counted, which is right for "this turn".
+   - `bystandersInVictoryAtLeast` (WP-653 / D-24464, Savior) is on-play; the Savior arm pushes it with the literal value `'3'` (`heroAbility.setup.ts:2049-2052`); the evaluator (`heroConditions.evaluate.ts:409`) parses any `N`.
+9. **Marker plumbing** (the WP-777 `discard-threshold` template): the parser arm in `parseAbilityText` (`heroAbility.setup.ts:2019`), `HERO_PARSER_RECOGNIZED_MARKER_NAMES` (`:426-450`), the apply script's per-token `// why:` + `VALID_TOKEN_PATTERN` (`scripts/convert-cards/apply-hero-ability-markers.mjs:118-160`) and its error-message token list (`:378`), the ledger's marker→condition map (`scripts/hero-mechanic-ledger.mjs:200-225`), and `scripts/coverage/mechanic-provenance.json`. The apply script handles several tokens on one line (WP-667) and writes `co2e.json` (which `cards:check` excludes).
+10. **Turn-start sites.** `game.ts` play-phase `turn.onBegin` holds the WP-743 guarded deletes (`:1077-1085`) after `clearDeferredConditionalGrants` (`:1028`); `simulation/onBeginParity.ts` `applyOnBeginParity` mirrors them (`:125-136`) for the simulation runner, PAR aggregator and fixture runner. `onBegin` runs before any move of the turn, including `revealVillainCard`.
+11. **Hash oracles** contain no in-scope card: sentinel `sentinel-core-doom-2p` plays `core/black-widow` + `core/captain-america`; `PRE_WP080_HASH` uses `test/test-hero-deck-00{1,2}`. A field written only when a hook reads its condition leaves both byte-unchanged (D-24467 / D-24566 posture).
+12. **No test pins an in-scope card id** (grep of `packages/`, `apps/`, `scripts/` for the 12 card slugs finds only same-slug **core** cards such as `core/black-widow/covert-operation`).
+13. **No typecheck gate on engine tests** (D-24372). Drift pins are runtime assertions.
 
-  The full disposition of all 87, plus the partially gated COND lines, is the **Sweep Ledger**
-  appendix.
-- **WP-743 lands first (hard dependency).** At draft time its spec is merged on `main` (PR #2286,
-  identical to `d7df43ce`) but not executed. This WP reuses three things WP-743 adds:
-  - `matchReadsConditionType(G, conditionType)` in `hero/heroConditions.evaluate.ts`
-  - the gated-lazy-`G`-field pattern with guarded deletes in the play-phase turn `onBegin` and
-    in `applyOnBeginParity`
-  - its edits to the same lockstep sites (`types.ts`, `game.ts`, `onBeginParity.ts`,
-    `deferredConditionalGrants.ts`, `heroAbility.setup.ts`, the apply-script allowlist, the
-    ledger map)
-
-  Executing before WP-743 would conflict on every one of those files. **If WP-743 has not landed
-  on `main` when this WP opens, this WP is BLOCKED.** If WP-743 shipped the helper under a
-  different name, use the shipped name and record it in the EC commit body.
-- **WP-744 (sim turn-loop deferred-grant parity)** is drafted on `main` (#2292, `b510d3c9`) and
-  unexecuted. It wires `resolveDeferredHeroGrants` / `clearDeferredConditionalGrants` into the
-  rebuilt loops and edits `simulation/onBeginParity.ts` and the loop files. It is not a hard
-  dependency, since neither WP reads the other's code. The two collide on the same dashboard
-  pin: WP-744's scaffold moves `totalObs` 3012 → 3011, and this WP's moves it 3012 → 3013.
-  Whichever lands second rebases onto the other's `applyOnBeginParity` edits, regenerates the
-  feed, and re-pins from its own post-rebase measurement. WP-744's execution-order note names
-  only WP-743; if WP-744 is still unexecuted at this WP's govern-close, that `SPEC:` commit
-  amends WP-744's note to name WP-745.
-- **`replay/replay.execute.ts` has no turn rotation**, so no parity call is needed there
-  (D-24322; the WP-743 posture).
-- **Existing conditions reused as-is** (`hero/heroConditions.evaluate.ts`):
-  - `cardsDrawnThisTurnAtLeast` reads `G.turnEconomy.cardsDrawn` (WP-665 / D-24476). It is
-    already in `WAIT_AND_SEE_CONDITION_TYPES`, and `[keyword:draw-threshold:N]` already parses to
-    it. **`cardsDrawn` counts only the hero `draw:N` path** (`heroEffectDraw`,
-    `hero/heroEffects.execute.ts:1366`). Other hand draws do not increment it:
-    - Dodge (`moves/dodgeCard.ts:175`)
-    - Do-Over (`moves/doOver.resolve.ts:131`)
-    - tactic draws (`rules/tacticHandlers.ts:513`)
-    - villain and rule draws (`villain/villainEffects.execute.ts:1689`,
-      `rules/ruleRuntime.effects.ts:85`)
-    - `heroEffects.execute.ts:2670` and `:4538`
-
-    So the four draw lines under-grant when the only draw came from one of those. That is
-    accepted here and named as Follow-up D.
-  - `bystandersInVictoryAtLeast` (WP-653 / D-24464, Savior) is on-play and counts
-    `BYSTANDER_EXT_ID` plus villain-deck Bystanders in the Victory Pile.
-- **No play-ordinal primitive exists, and `inPlay` is not one.** `G` has no per-turn play count or
-  play log (grep for `cardsPlayed|playsThisTurn`: none). `playerZones.inPlay` shrinks mid-turn:
-  - self-KO (`heroEffectKo`, `hero/heroEffects.execute.ts:1442`)
-  - KO-from-play choices (D-24442 `koHeroChoice`)
-  - the villain KO-hero effect (`villain/villainEffects.execute.ts:2167`)
-  - transform (`heroEffects.execute.ts:4724`)
-  - deferred hand injection (`moves/deferredHandInjection.logic.ts:45`)
-
-  So `inPlay.length` undercounts plays, and "no other card in `inPlay`" (the
-  `firstHeroPlayedThisTurn` test) can be true for a 2nd or later card. The existing
-  `playedThisTurn` condition (`inPlay.length >= N`, WP-023) has **no parser producer** today.
-- **There are two play chokepoints**, both in `moves/coreMoves.impl.ts`:
-  - `applyCardPlay` (L274–285): the `inPlay` append, before the card's effects run
-    (`executeHeroEffects`, ~L320). Its single caller is `playCard` (~L555);
-    `playFromUndercover` was retired by WP-678 / D-24494.
-  - the split-card branch of `playCard` (~L542): the `inPlay` append before
-    `parkSplitFaceChoice`
-- **The KO pile is append-only.** `G.ko` is written only through `koCard(G.ko, id)` (24 callers),
-  `heroCapture.logic.ts:192` (`push`) and `tacticHandlers.ts:735` (a `moveCardFromZone`
-  append). A grep for `.ko = `, `splice`, `pop`, `shift` or `filter` on `ko` finds no removal.
-  So "a card entered the KO pile this turn" is exactly "its index ≥ the KO pile's length at
-  turn start".
-- **Rage is face B of a split card.** In `msis` `physicalCards`, sides `['grief','rage']` (WP-724
-  / D-24545). Its effects fire from `resolveSplitFaceChoice` (`splitFaceChoice.resolve.ts:222`)
-  under the face-B id, while the play history holds the face-A id from the play. Rage's
-  condition is not play-history, so this does not affect it. Grief (face A) is WP-743's.
-- **"Hero" in the KO pile** has these representations:
-  - hero-deck cards (HQ and player decks) carry a `G.cardTraits` entry (`setup/buildCardTraits.ts`)
-  - basic S.H.I.E.L.D. and Sidekick tokens are `SHIELD_AGENT_EXT_ID`, `SHIELD_TROOPER_EXT_ID`,
-    `SHIELD_OFFICER_EXT_ID` and `SIDEKICK_EXT_ID` (`setup/pilesInit.ts`)
-
-  Wounds, Bystanders, Villains and Henchmen have neither.
-- **Card cost and name** come from `G.cardStats[id].cost` and `G.cardDisplayData[id].name`. Both
-  are built at setup and read-only.
-- **Hook conditions AND together** (`evaluateAllConditions`, `heroConditions.evaluate.ts:406`).
-  So two conditions on one hook both must hold.
-- **Hash-safe lazy fields.** Neither hash oracle contains an in-scope card:
-  - sentinel `sentinel-core-doom-2p`: `core/black-widow`, `core/captain-america`
-  - `PRE_WP080_HASH`: `test/test-hero-deck-00{1,2}`
-
-  So a field written only when a reading hook exists leaves both byte-unchanged (the D-24467 /
-  WP-743 posture).
-- **Marker plumbing is proven.** The curated map covers every in-scope set:
-  `scripts/convert-cards/inputs/hero-ability-markers.json`, applied surgically and idempotently
-  by `apply-hero-ability-markers.mjs`, which supports several tokens on one line (WP-667
-  carry-forward, L377–384).
-  - `cards:check` compares the 40 pipeline sets and **excludes co2e** (hand-authored,
-    `check-card-data-regen.mjs`). The apply script still writes `co2e.json`.
-- **No test pins an in-scope card.** A grep of `packages/`, `apps/` and `scripts/` for the 17
-  slugs finds only same-slug **core** cards (e.g. `core/iron-man/repulsor-rays`,
-  `core/black-widow/covert-operation`), which are different cards.
-- **Draft-time scaffold (observed, not reasoned), 2026-09-22.** The four draw-threshold markers
-  were applied on `a0c1697f`, then reverted:
-  - the probe shows each hook gains `cardsDrawnThisTurnAtLeast`
-  - `cards:check`, `effect-index:check` and `mechanics:metadata:check` exit 0 (the last two ran
-    against the stale ledger they read; both drift once it is regenerated, see Scope H)
-  - `ledger:heroes:check` and `sim:runtime-observed:check` go **stale** (main was green before)
-  - `sim:runtime-observed` regen moves `totalObservations` 2528 → 2530
-  - `useInPlayCoverage.test.ts` then fails `actual: 3013, expected: 3012`
-
-  So the ledger, effect-index, mechanics-metadata and runtime-observed regens and the dashboard
-  re-pin are **certain**, not conditional. Their final values are measured after the full change.
-- **No typecheck gate on engine tests** (D-24372). Drift pins are runtime assertions.
-
-If any is false, this packet is **BLOCKED**.
+If any is false, this packet is **BLOCKED**: STOP and reconcile.
 
 ---
 
 ## Context (Read First)
 
-- `docs/ai/DECISIONS.md`:
-  - D-24377 (whole-turn wait-and-see, numeric thresholds; `[hc:X]` class gates kept on-play
-    to preserve play-order skill)
-  - D-24467 (event gate plus gated lazy `G` field)
-  - D-24476 (`draw-threshold`)
-  - D-24464 (Savior `bystandersInVictoryAtLeast`)
-  - D-24498 (`first-hero-condition`)
-  - D-24372 (runtime drift pins)
-  - D-24566 (WP-743, lands first)
-- `docs/ai/REFERENCE/00.2-data-requirements.md` §5 (Ability Text Markup Language): the new
-  `[keyword:…]` tokens use the §5.1 token form.
-- `docs/ai/work-packets/WP-743-spring-the-trap-master-strike-or-ambush-condition.md`: the
-  sibling WP. This one follows its shape.
-- Source:
-  - `hero/heroConditions.evaluate.ts` (`evaluateCondition`, `describeFailedCondition`,
-    `SEQUENCE_GATE_CONDITION_TYPES`)
-  - `hero/deferredConditionalGrants.ts`
-  - `setup/heroAbility.setup.ts` ~L1225–1335 (marker arms, then the unresolved fallback)
-  - `moves/coreMoves.impl.ts` L274–290 and ~L530–548
-  - `game.ts` ~L798–818
-  - `simulation/onBeginParity.ts`
+- `docs/ai/DECISIONS.md`: D-24377 (wait-and-see; `[hc:X]` class gates stay on-play), D-24467 (event gate + gated lazy field), D-24476 (`draw-threshold`), D-24464 (Savior), D-24566 (WP-743 turn flags), D-24616 (`discard-threshold`, `matchReadsConditionType`), D-24746 and D-24798 (the same family, already gated; the played-view residual), D-24619 / D-24692 (what the played view counts), D-24372.
+- `docs/ai/REFERENCE/00.2-data-requirements.md` §5 (Ability Text Markup Language): the new `[keyword:…]` tokens use the §5.1 token form.
+- Source: `hero/heroConditions.evaluate.ts` (`evaluateCondition` L210, `describeFailedCondition` L1016, `SEQUENCE_GATE_CONDITION_TYPES` L1189), `hero/deferredConditionalGrants.ts` (`WAIT_AND_SEE_CONDITION_TYPES` L79), `hero/splitCard.logic.ts` (`playedCardIdsThisTurn`), `setup/heroAbility.setup.ts` (L426, L2004-2032, L2049), `game.ts` (~L1028-1090), `simulation/onBeginParity.ts`, `hero/firstCardPlayed.test.ts` and `hero/playedOtherCardsThreshold.test.ts` (test precedent), `hero/masterStrikeOrAmbushCondition.test.ts` (WP-743 turn-flag tests).
 
-**Why play-order gates evaluate on play (not wait-and-see).** D-24377 gave the whole-turn window
-to numeric *accumulators*: recruit made, effect draws, distinct classes. Reordering hero plays
-cannot change those totals. It kept `[hc:X]` class gates on-play because their whole point is
-play order. "First card", "eighth card", "at least N **other** cards", "another 4-cost card", "a
-4-cost and a 2-cost card" and "three other non-grey Heroes" all ask what was played **before**
-this card. Playing Winter Soldier last is the skill the card rewards. Under a whole-turn window it
-would pay out played first, and "first card" would lose its meaning. So all five play-history
-conditions stay **on-play**, and none joins `WAIT_AND_SEE_CONDITION_TYPES`.
+**Why play-history gates evaluate on play.** D-24377 gave the whole-turn window to numeric accumulators that play order cannot change: Recruit made, cards drawn, distinct classes. It kept `[hc:X]` class gates on-play because their point is play order. "Eighth card", "another 4-cost card", "a 4-cost and a 2-cost card" and "three other non-grey Heroes" all ask what was played **before** this card, and D-24746 / D-24798 already read "at least N other cards" and "first card" on play. Under a whole-turn window, Dr. Octopus would pay out played first. So the four new play-history conditions stay **on-play**. D-24377 §1 states its boundary as "is it a numeric threshold", and all four take a number (an ordinal, a cost or a count), so D-24568 §1 **amends D-24377 §1**: the seam becomes "a numeric threshold that play order cannot manufacture". It also names `playedThisTurn` and `firstHeroPlayedThisTurn` as members of the same on-play group, which they already are.
 
-This is an amendment, not an extension. D-24377 §1 states its boundary as "is it a numeric
-threshold", and all five of these conditions take a number (a count, a cost or an ordinal), so
-that test would admit them. D-24568 §1 therefore **amends D-24377 §1**:
-play-history predicates join the `[hc:X]`/team on-play exception, and the wait-and-see seam
-becomes "a numeric threshold that play order cannot manufacture". Recruit made, effect draws,
-distinct classes in play and Rage's KO event stay on the wait-and-see side.
+**Why Rage and the draw lines wait.** "A Hero was put into the KO pile this turn" is a sticky, monotonic event: once true it stays true for the turn, and play order cannot manufacture it. That is the D-24566 shape #1 (one-shot). The draw lines reuse `cardsDrawnThisTurnAtLeast`, already a wait-and-see member.
 
-**Why Rage and the draw lines get the window.** "A Hero was put into the KO pile this turn" is a
-**sticky, monotonic** event predicate: once true it stays true for the turn, and play order
-cannot manufacture it. That is the WP-743 / D-24566 shape #1 (one-shot). The draw lines reuse
-`cardsDrawnThisTurnAtLeast`, which is already a wait-and-see member.
+**Why Bystanders-in-VP stays on-play.** "If you **have** at least 4 Bystanders" is a present-state check, not a "this turn" clause. It reuses Savior's on-play `bystandersInVictoryAtLeast`.
 
-**Why Bystanders-in-VP stays on-play.** "If you **have** at least 4 Bystanders" is a present-state
-check, not a "this turn" clause. It reuses Savior's `bystandersInVictoryAtLeast`, which is on-play
-(D-24464). Parameterizing the threshold changes nothing about its timing.
-
-**Why a play-history record, not a counter and not `inPlay`.**
-- `inPlay` shrinks mid-turn (Assumes), so it is not a play ordinal.
-- A bare counter answers "first" and "eighth" but not "another 4-cost card" or "different card
-  names".
-- A per-turn list of the `CardExtId`s played, in order, answers all five from one write site.
-
-It holds `CardExtId` strings only (a history record, not a zone). It is written only when a
-reading hook exists, and deleted at the turn boundary. This is the Deadpool
-`first-hero-condition` distinction the brief flags. `firstHeroPlayedThisTurn` reads `inPlay`
-presence ("no other Hero in play"), which is the right shape for its "first **Hero**" Do-Over
-text. The new ordinal reads the play history ("the Nth **card** played"). The two are not
-merged, and `firstHeroPlayedThisTurn` is unchanged.
-
-**Why a KO-pile snapshot for Rage, not 26 flag writes.** The KO pile is append-only, so recording
-its length when the turn begins answers "did a Hero enter it this turn" by scanning the tail. The
-alternative is a flag at all 26 KO write sites (24 `koCard` callers + 2 direct), which would leave
-26 places to forget. The snapshot is written only when a Rage-style hook exists.
-
-**Why one WP, not four.** All 17 cards share one parse path (a marker arm before the unresolved
-fallback) and one evaluator switch. The new state (two lazy fields) is written at one play
-chokepoint file and one turn-start pair. That is 7 production files, one D-entry and one layer
-plus card data. Splitting would triple the WP-743-style sequencing on the same hot files.
-
-**Why the rest of the sweep is out.** Of the other 70 free hooks, 2 are WP-743's and 8 are
-predicate gates that need new event or board state (Follow-ups A–C). The remaining 60 are
-optional costs ("You may X. If you do"), reveal-then-branch, Patrol, Focus, Tactical Formation,
-guess-a-card, KO-a-Wound-or-gain-one, Shards, Artifacts, Endgame and Galactus. Each is its own
-mechanic family and needs a handler, not a condition (Sweep Ledger).
+**Why a KO-pile snapshot for Rage, not flags at every KO site.** The KO pile is append-only (Assumes 5), so its length when the turn began answers "did a Hero enter it this turn" by scanning the tail. Flags would need 39 write sites. WP-853 / WP-856's `recordOwnedCardKoed` covers only the 25 owned-card sites, consumes per resolve and is per-owner; Rage counts any Hero from anywhere (HQ, other players), so it cannot reuse that counter.
 
 ---
 
@@ -247,421 +93,200 @@ mechanic family and needs a handler, not a condition (Sweep Ledger).
 **Engine-wide (always apply — do not remove):**
 - Full file contents for every new or modified file — no diffs, no snippets.
 - ESM only, Node v22+, `node:`-prefixed imports.
-- Human-style code per `docs/ai/REFERENCE/00.6-code-style.md`:
-  - full English words
-  - `is`/`has`/`can` booleans
-  - JSDoc on every function
-  - `// why:` on non-obvious choices
-  - no `.reduce()` with branching
-- Determinism: no `Math.random()` or wall-clock. Moves never throw. The evaluator never throws:
-  an absent field reads `false`.
+- Human-style code per `docs/ai/REFERENCE/00.6-code-style.md`: full English words, `is`/`has`/`can` booleans, JSDoc on every function, `// why:` on non-obvious choices, no `.reduce()` with branching.
+- Determinism: no `Math.random()` or wall-clock. Moves never throw. The evaluator never throws: an absent field or unparseable value reads `false`.
 - Error messages are full sentences.
 
 **Session protocol:** if any Assumes item is false or scope is unclear, STOP and ask.
 
 **Packet-specific:**
-- **Two write sites for the play history, one for the KO snapshot.**
-  - `G.cardsPlayedThisTurn` is appended only in `moves/coreMoves.impl.ts`: `applyCardPlay`, right
-    after the `inPlay` append, and the split-card branch of `playCard`, right after its `inPlay`
-    append.
-  - `G.koPileLengthAtTurnStart` is written only in the play-phase turn `onBegin` and in
-    `applyOnBeginParity`.
-  - No other writes anywhere.
-- **Gated, lazy.** Each field is written only when `G.heroAbilityHooks` carries a condition that
-  reads it:
-  - play history: any `PLAY_HISTORY_CONDITION_TYPES` member
-  - KO snapshot: `HERO_KOED_THIS_TURN_CONDITION_TYPE`
-
-  Otherwise it is absent. The play history is deleted (guarded) at turn start. The sentinel
-  `finalStateHash` and `PRE_WP080_HASH` stay **byte-unchanged**. No re-pin is permitted; a moved
-  oracle means a gating bug.
-- **Play-history conditions stay on-play.** Only `heroPutIntoKoPileThisTurn` joins
-  `WAIT_AND_SEE_CONDITION_TYPES`. `SEQUENCE_GATE_CONDITION_TYPES` is unchanged.
-- **`firstHeroPlayedThisTurn` and `playedThisTurn` are untouched** (behavior, evaluator case,
-  marker).
-- **Card data is regenerated, never hand-edited:** the curated map plus
-  `apply-hero-ability-markers.mjs`. The same applies to `co2e.json`, even though `cards:check`
-  excludes it.
+- **One new `G` field, one write site pair.** `G.koPileLengthAtTurnStart` is written only in the play-phase `turn.onBegin` and in `applyOnBeginParity`, and only when `matchReadsConditionType(G, HERO_KOED_THIS_TURN_CONDITION_TYPE)`. Otherwise it is absent. No other write anywhere. The sentinel `finalStateHash` and `PRE_WP080_HASH` stay byte-unchanged; a moved oracle is a gating bug, never a re-pin.
+- **Play-history conditions read `playedCardIdsThisTurn(G, playerZones.inPlay)`**, never raw `inPlay` and never a new history. No `coreMoves.impl.ts` change.
+- **Play-history conditions stay on-play.** Only `heroPutIntoKoPileThisTurn` joins `WAIT_AND_SEE_CONDITION_TYPES`. `SEQUENCE_GATE_CONDITION_TYPES` is unchanged.
+- **`firstHeroPlayedThisTurn`, `playedThisTurn` and `bystandersInVictoryAtLeast` are unchanged** (evaluator case, describe text, existing arms, the D-24746 text arm).
+- **Card data is regenerated, never hand-edited:** the curated map plus `apply-hero-ability-markers.mjs`, co2e included.
 - **Drift pins are runtime assertions** (D-24372). Never `any`, `@ts-ignore`, or a loosened type.
-- **No new move, no new `onMove` resolve call, no UIState field, no client change.** No client
-  change is safe because the new tokens are lowercase-hyphenated or `:N`-segmented, which
-  `isEngineOnlyKeyword` (arena-client `abilityMarkers.ts`, registry-viewer `useRules.ts`, D-24496)
-  already hides. No raw marker reaches a player.
-- **`bystandersInVictoryAtLeast`'s evaluator and describe cases are unchanged.** Only a marker arm
-  is added.
-- **Card-name identity** (Warriors Three) reads the setup-static `G.cardDisplayData[id].name`
-  snapshot, falling back to the id without `#copy`. It never reads a UIState projection. This is
-  the first rules read of that snapshot, and D-24568 records it.
+- **No new move, no `onMove` change, no UIState field, no client change.** The new tokens are lowercase-hyphenated (`:N`-segmented or bare), which the shape test hides from players (`isEngineOnlyKeyword` / `ENGINE_EFFECT_MARKER_SHAPE`, D-24496); no raw marker reaches a player.
+- **Card-name identity** (Warriors Three) reads `G.cardDisplayData[id]?.name`, falling back to the id with its `#<copy>` suffix removed. It never reads a UIState projection. D-24568 §5 records this first rules read of that snapshot.
+
+---
+
+## Locked Values
+
+**Condition types** (exported constants in `hero/heroConditions.evaluate.ts`):
+
+| Constant | Type string | Timing | Marker |
+|---|---|---|---|
+| `CARD_PLAY_ORDINAL_CONDITION_TYPE` | `'cardPlayOrdinalEquals'` | on-play | `[keyword:card-play-ordinal:N]` |
+| `OTHER_CARD_OF_COST_PLAYED_CONDITION_TYPE` | `'otherCardOfCostPlayedThisTurn'` | on-play | `[keyword:played-other-cost:N]` |
+| `CARD_OF_COST_PLAYED_CONDITION_TYPE` | `'cardOfCostPlayedThisTurn'` | on-play | `[keyword:played-cost:N]` (twice on one line) |
+| `OTHER_DISTINCT_HEROES_PLAYED_CONDITION_TYPE` | `'otherDistinctNonGreyHeroesPlayedThisTurnAtLeast'` | on-play | `[keyword:played-other-distinct-heroes:N]` |
+| `HERO_KOED_THIS_TURN_CONDITION_TYPE` | `'heroPutIntoKoPileThisTurn'` | wait-and-see (shape #1) | `[keyword:hero-koed-this-turn]` (bare; pushes `value: '1'`, unused) |
+| — (Savior's literal) | `'bystandersInVictoryAtLeast'` | on-play | `[keyword:bystanders-threshold:N]` |
+| — (existing) | `'cardsDrawnThisTurnAtLeast'` | wait-and-see | `[keyword:draw-threshold:N]` (no parser change) |
+
+`PLAY_HISTORY_CONDITION_TYPES: readonly string[]` = the four new on-play types, in table order.
+
+**Evaluate** (`played` = `playedCardIdsThisTurn(G, playerZones.inPlay)`; `N` = `parseInt(condition.value, 10)`, `NaN` → `false`; "other" = entries `!== triggeringCardId`):
+- `cardPlayOrdinalEquals` → `played.length === N`
+- `otherCardOfCostPlayedThisTurn` → some other entry has `G.cardStats?.[id]?.cost === N`
+- `cardOfCostPlayedThisTurn` → some entry (self included) has `G.cardStats?.[id]?.cost === N`
+- `otherDistinctNonGreyHeroesPlayedThisTurnAtLeast` → the number of distinct names among other entries whose `G.cardTraits?.[id]` has a non-empty string `heroClass` or `heroClass2` is `>= N`; name = `G.cardDisplayData?.[id]?.name`, else the id without its `#<copy>` suffix
+- `heroPutIntoKoPileThisTurn` → `start = G.koPileLengthAtTurnStart`; absent → `false`; else true iff some `G.ko[i]`, `i >= start`, satisfies `isHeroCardId(G, id)` (a `G.cardTraits` entry, or one of the four basic token ids)
+
+Each case body lives in a named module-local helper with JSDoc (the `countDistinctHeroCostsInHandOrPlay` precedent), so `evaluateCondition` gains one-line `case` arms only.
+
+**Describe text** (`describeFailedCondition`, verbatim; `${…}` interpolated):
+- `cardPlayOrdinalEquals` → `it needs to be card number ${value} you played this turn — it was card number ${played.length}`
+- `otherCardOfCostPlayedThisTurn` → `it needs another card costing ${value} played this turn`
+- `cardOfCostPlayedThisTurn` → `it needs a card costing ${value} played this turn`
+- `otherDistinctNonGreyHeroesPlayedThisTurnAtLeast` → `it needs ${value} other non-grey Heroes with different names played this turn`
+- `heroPutIntoKoPileThisTurn` → `it needs a Hero put into the KO pile this turn`
+
+The "other" strings carry no running count: `describeFailedCondition(G, playerID, condition)` takes no `triggeringCardId` (`heroConditions.evaluate.ts:1016`), and widening that export is out of scope.
+
+**Apply entries** (`scripts/convert-cards/inputs/hero-ability-markers.json`; 13 entries on 12 lines):
+
+| Set | heroSlug | cardSlug | abilityIndex | markupToken |
+|---|---|---|---|---|
+| msis | wanda-vision | rage | 0 | `[keyword:hero-koed-this-turn]` |
+| vill | dr-octopus | eighth-times-a-charm | 0 | `[keyword:card-play-ordinal:8]` |
+| anni | fantastic-four-united | invisible-woman | 0 | `[keyword:played-other-cost:4]` |
+| ff04 | invisible-woman | four-of-a-kind | 0 | `[keyword:played-other-cost:4]` |
+| vnom | venomized-dr-strange | complete-the-grand-ritual | 0 | `[keyword:played-cost:4]` |
+| vnom | venomized-dr-strange | complete-the-grand-ritual | 0 | `[keyword:played-cost:2]` |
+| asrd | warriors-three-the | three-stand-as-one | 0 | `[keyword:played-other-distinct-heroes:3]` |
+| co2e | hawkeye | trick-arrow | 0 | `[keyword:draw-threshold:1]` |
+| dkcy | wolverine | sudden-ambush | 0 | `[keyword:draw-threshold:1]` |
+| rvlt | captain-marvel-agent-of-shield | radiant-blast | 0 | `[keyword:draw-threshold:1]` |
+| mgtg | gamora | guardians-escape | 0 | `[keyword:draw-threshold:2]` |
+| co2e | black-widow | covert-operation | 0 | `[keyword:bystanders-threshold:4]` |
+| wtif | apocalyptic-black-widow | humanitys-final-hope | 0 | `[keyword:bystanders-threshold:4]` |
 
 ---
 
 ## Scope (In)
 
 ### A) `packages/game-engine/src/types.ts` (**modified**)
-`LegendaryGameState` gains two optional fields, each with a `// why:` (WP-745 / D-24568):
-- `cardsPlayedThisTurn?: CardExtId[]`: the `CardExtId`s the current player played this turn, in
-  play order (`playCard`, including a split card at its play). Gated and lazy.
-  Deleted at turn start.
-- `koPileLengthAtTurnStart?: number`: `G.ko.length` when the current turn began. Gated and lazy.
-  Overwritten each turn start.
+`LegendaryGameState` gains `koPileLengthAtTurnStart?: number` with a `// why:` (WP-745 / D-24568): `G.ko.length` when the current turn began; written only when a hook reads `heroPutIntoKoPileThisTurn`; overwritten every turn start; exact because the KO pile is append-only.
 
-### B) `packages/game-engine/src/moves/coreMoves.impl.ts` (**modified**)
-- In `applyCardPlay`, immediately after `playerZones.inPlay = [...playerZones.inPlay, cardId];`,
-  and in `playCard`'s split-card branch, immediately after its `inPlay` append, add the same
-  gated append:
-  - when `matchReadsPlayHistory(G)` is true, append `cardId` in exactly this form (locked, so
-    the Verification grep is exact):
-    `if (G.cardsPlayedThisTurn === undefined) { G.cardsPlayedThisTurn = []; }` then
-    `G.cardsPlayedThisTurn.push(cardId);` in `applyCardPlay`, and
-    `G.cardsPlayedThisTurn.push(args.cardId);` in the split branch (its in-scope variable)
-- Each site gets a `// why:`. The append precedes the card's effects, so the card's own
-  conditions see it as the latest entry.
+### B) `packages/game-engine/src/hero/heroConditions.evaluate.ts` (**modified**)
+- The five constants and `PLAY_HISTORY_CONDITION_TYPES` (§Locked Values), each with a `// why:`; the array's `// why:` names D-24568 §1 (play-order gates, amends D-24377 §1).
+- Five `evaluateCondition` case arms delegating to named helpers (one of them `isHeroCardId(G, id)`; its `// why:` names the 30-line function rule), and five `describeFailedCondition` cases. The `default` fallback stays.
+- Imports `playedCardIdsThisTurn` (already imported) and the four basic token ids from `setup/pilesInit.js`.
 
-### C) `packages/game-engine/src/hero/heroConditions.evaluate.ts` (**modified**)
-- New exported condition-type constants:
+### C) `packages/game-engine/src/hero/deferredConditionalGrants.ts` (**modified**)
+- Append `HERO_KOED_THIS_TURN_CONDITION_TYPE` to `WAIT_AND_SEE_CONDITION_TYPES` with a `// why:`: a sticky per-turn event is a count ≥ 1 threshold (D-24566 shape #1, one-shot).
+- Extend the module doctrine comment by one sentence each: shape #1 names Rage's event; the play-history types are deliberately **not** members (play-order gates, D-24568 §1).
 
-  | Constant | Type string | Timing |
-  |---|---|---|
-  | `CARD_PLAY_ORDINAL_CONDITION_TYPE` | `'cardPlayOrdinalEquals'` | on-play |
-  | `OTHER_CARDS_PLAYED_CONDITION_TYPE` | `'otherCardsPlayedThisTurnAtLeast'` | on-play |
-  | `OTHER_CARD_OF_COST_PLAYED_CONDITION_TYPE` | `'otherCardOfCostPlayedThisTurn'` | on-play |
-  | `CARD_OF_COST_PLAYED_CONDITION_TYPE` | `'cardOfCostPlayedThisTurn'` | on-play |
-  | `OTHER_DISTINCT_HEROES_PLAYED_CONDITION_TYPE` | `'otherDistinctNonGreyHeroesPlayedThisTurnAtLeast'` | on-play |
-  | `HERO_KOED_THIS_TURN_CONDITION_TYPE` | `'heroPutIntoKoPileThisTurn'` | wait-and-see |
+### D) `packages/game-engine/src/setup/heroAbility.setup.ts` (**modified**)
+- Six new parser arms in `parseAbilityText`, beside the `discard-threshold` arm and before the unresolved-marker fallback, each with a `// why:` citing WP-745 / D-24568 and its on-play / wait-and-see timing. Five push `{ type: <EXPORTED_CONSTANT>, value }` (never a literal); `bystanders-threshold` pushes Savior's `'bystandersInVictoryAtLeast'` literal (the Savior arm's literal, and the `discard-threshold` arm's literal-with-comment precedent). A parameterized arm whose `:N` capture is absent pushes nothing (the `recruit-threshold` guard). `played-cost` may fire twice on one line and pushes one condition each time.
+- `HERO_PARSER_RECOGNIZED_MARKER_NAMES` gains the six names (`card-play-ordinal`, `played-other-cost`, `played-cost`, `played-other-distinct-heroes`, `hero-koed-this-turn`, `bystanders-threshold`), one `// why:` for the group.
+- The line's printed `+N[icon:…]` grant stays on the same hook (the unchanged Step 2b icon read).
 
-- `PLAY_HISTORY_CONDITION_TYPES: readonly string[]` holds the first five, with a `// why:`.
-- `matchReadsPlayHistory(G): boolean` is `true` iff `matchReadsConditionType(G, type)` holds for
-  any member. It uses an explicit `for…of`.
-- Each new case body lives in a named module-local helper (the `countBystandersInVictory` /
-  `countDistinctHeroCostsInHandOrPlay` precedent), so `evaluateCondition` gains only one-line
-  `case` arms. Each helper has JSDoc and a `// why:` naming the 30-line function rule. That also
-  covers the single-use `isHeroCardId`.
-- `evaluateCondition` cases. `history` is `G.cardsPlayedThisTurn ?? []`, `N` is
-  `parseInt(condition.value, 10)` with the house NaN guard (return `false`), and "other" means
-  entries `!== triggeringCardId`:
-  - `cardPlayOrdinalEquals` → `history.length === N`
-  - `otherCardsPlayedThisTurnAtLeast` → (count of other entries) `>= N`
-  - `otherCardOfCostPlayedThisTurn` → some other entry has `G.cardStats[id]?.cost === N`
-  - `cardOfCostPlayedThisTurn` → some entry (self included) has `G.cardStats[id]?.cost === N`
-  - `otherDistinctNonGreyHeroesPlayedThisTurnAtLeast` → the count of distinct names among other
-    entries that are non-grey is `>= N`
-    - non-grey: `G.cardTraits[id]?.heroClass` or `heroClass2` is a non-empty string (printed
-      class only)
-    - name: `G.cardDisplayData[id]?.name`, falling back to the id with its `#<copy>` suffix
-      removed
-  - `heroPutIntoKoPileThisTurn` → with `start = G.koPileLengthAtTurnStart`:
-    - absent → `false`
-    - otherwise, some `G.ko[i]` for `i >= start` is a Hero: it has a `G.cardTraits` entry, or it
-      is one of `SHIELD_AGENT_EXT_ID`, `SHIELD_TROOPER_EXT_ID`, `SHIELD_OFFICER_EXT_ID`,
-      `SIDEKICK_EXT_ID`
-    - a module-local helper `isHeroCardId(G, id)` implements this
-- `describeFailedCondition` cases (locked text; `${…}` is interpolated):
-  - `cardPlayOrdinalEquals` → `it needs to be card number ${value} you played this turn — it was card number ${history.length}`
-  - `otherCardsPlayedThisTurnAtLeast` → `it needs ${value} other cards played this turn`
-  - `otherCardOfCostPlayedThisTurn` → `it needs another card costing ${value} played this turn`
-  - `cardOfCostPlayedThisTurn` → `it needs a card costing ${value} played this turn`
-  - `otherDistinctNonGreyHeroesPlayedThisTurnAtLeast` → `it needs ${value} other non-grey Heroes with different names played this turn`
-  - `heroPutIntoKoPileThisTurn` → `it needs a Hero put into the KO pile this turn`
-  - The `default` fallback stays.
-  - The two "other" strings carry no running count on purpose. `describeFailedCondition(G,
-    playerID, condition)` takes no `triggeringCardId` (`heroConditions.evaluate.ts:706`, caller
-    `heroEffects.execute.ts:750`), so an "other" count cannot be computed there faithfully.
-    Widening that export is out of scope.
-- `bystandersInVictoryAtLeast` needs **no** evaluate or describe change; only its new marker
-  arm (Scope E) is added.
+### E) `packages/game-engine/src/game.ts` + `packages/game-engine/src/simulation/onBeginParity.ts` (**modified**)
+In the play-phase `turn.onBegin`, beside the WP-743 deletes, add with a `// why:`:
+`if (matchReadsConditionType(G, HERO_KOED_THIS_TURN_CONDITION_TYPE)) { G.koPileLengthAtTurnStart = G.ko.length; }`
+`applyOnBeginParity` gets the same statement with a `// why:` naming the `game.ts` mirror (the rebuilt loops never run `onBegin`; without it the snapshot stays at game start and every later-turn KO counts as "this turn"), and its module / function JSDoc lists the new field. `onBegin` runs before any move, so a KO during that turn's villain reveal counts as this turn.
 
-### D) `packages/game-engine/src/hero/deferredConditionalGrants.ts` (**modified**)
-- Append `HERO_KOED_THIS_TURN_CONDITION_TYPE` to `WAIT_AND_SEE_CONDITION_TYPES` with a `// why:`:
-  a sticky per-turn event is a count ≥ 1 threshold (shape #1, one-shot).
-- Extend the module doctrine comment by one sentence each:
-  - shape #1 names Rage's event
-  - the play-history types are deliberately **not** members: they are play-order gates, the same
-    reason the class gates stay on-play
+### F) Card data + scripts (**modified**; regenerated)
+- `scripts/convert-cards/inputs/hero-ability-markers.json`: the 13 entries in §Locked Values.
+- `scripts/convert-cards/apply-hero-ability-markers.mjs`: the six new token forms in `VALID_TOKEN_PATTERN` (`hero-koed-this-turn` bare; the other five `:[1-9]\d*`), one house `// why:` per token, and the error-message token list.
+- `scripts/hero-mechanic-ledger.mjs`: six marker→condition entries in the map.
+- `scripts/coverage/mechanic-provenance.json`: six rows `{ "wp": "WP-745", "decision": "D-24568" }`.
+- `data/cards/{msis,vill,anni,ff04,vnom,asrd,co2e,dkcy,rvlt,mgtg,wtif}.json` (11 files) regenerated by apply mode: exactly the 12 ability lines change.
 
-### E) `packages/game-engine/src/setup/heroAbility.setup.ts` (**modified**)
-Seven new marker arms, placed before the unresolved-marker fallback, beside the WP-743 arms: six
-feed the new conditions and one feeds Savior's existing condition. Each has a `// why:` citing
-WP-745 / D-24568. The six new-condition arms push `{ type: <EXPORTED_CONSTANT>, … }` using the Scope C
-constants, never a literal. The `bystanders-threshold` arm pushes the same `'bystandersInVictoryAtLeast'`
-literal the Savior arm uses (`heroAbility.setup.ts:1272`); no constant is added for it. The table
-shows the resolved strings for reference:
+### G) Derived artifacts (**regenerated** by their sanctioned commands; run every `:check` even with no diff)
+Order: `ledger:heroes` → `effect-index` → `mechanics:metadata` → `sim:runtime-observed` (the two middle feeds read the committed hero ledger, `build-effect-implementation-index.mjs:56`, `build-card-mechanics-metadata.mjs:51`).
+- `docs/ai/coverage/hero-mechanic-ledger.{json,csv}`, `data/metadata/effect-implementation-index.json`, `data/metadata/card-mechanics.json`: certain (new marker slugs).
+- `docs/ai/coverage/runtime-observed-hollows.json`: regenerate; commit only if `sim:runtime-observed:check` fails.
+- `apps/dashboard/src/composables/useInPlayCoverage.test.ts` L753-755: re-pin `totalObs` / `resolvedObs` / `percentResolved` to the measured values **only if** the regenerated feed moves them, with a `// why:` line in the house format and a `Tests-changed:` trailer (the documented feed-regen pairing, not a weakened test).
+- `scripts/coverage/hero-effect-coverage.baseline.json`: `sim:coverage --update-baseline` only if `sim:coverage --check` exits non-zero.
+- `apps/arena-client/src/fixtures/localSpike/featuredSetupBundle.json`: certain. It embeds every set's hero ability text (it already holds all 12 lines), so `node scripts/build-local-spike-bundle.mjs` regenerates it and `--check` then exits 0. Its `initialStateHash` may move only if a featured-setup hook gains a condition; record the before / after hash in the commit body either way.
+- Each diff touches only the in-scope cards and tokens.
 
-| Marker | Pushes |
-|---|---|
-| `[keyword:card-play-ordinal:N]` | `{ type: 'cardPlayOrdinalEquals', value: N }` |
-| `[keyword:played-other-cards:N]` | `{ type: 'otherCardsPlayedThisTurnAtLeast', value: N }` |
-| `[keyword:played-other-cost:N]` | `{ type: 'otherCardOfCostPlayedThisTurn', value: N }` |
-| `[keyword:played-cost:N]` | `{ type: 'cardOfCostPlayedThisTurn', value: N }` (may appear twice on one line) |
-| `[keyword:played-other-distinct-heroes:N]` | `{ type: 'otherDistinctNonGreyHeroesPlayedThisTurnAtLeast', value: N }` |
-| `[keyword:hero-koed-this-turn]` | `{ type: 'heroPutIntoKoPileThisTurn', value: '1' }` (single segment) |
-| `[keyword:bystanders-threshold:N]` | `{ type: 'bystandersInVictoryAtLeast', value: N }` (reuses the Savior condition) |
-
-- A parameterized arm whose `:N` capture is absent pushes nothing. That is the
-  `recruit-threshold` arm's guard.
-- The line's printed `+N[icon:…]` grant stays on the same hook (the unchanged Step 2b path).
-- `[keyword:draw-threshold:N]` needs no parser change.
-
-### F) `packages/game-engine/src/game.ts` + `packages/game-engine/src/simulation/onBeginParity.ts` (**modified**)
-In the play-phase turn `onBegin`, beside the WP-656 / WP-743 guarded deletes, add each with a
-`// why:`:
-- a guarded `delete G.cardsPlayedThisTurn`
-- when `matchReadsConditionType(G, HERO_KOED_THIS_TURN_CONDITION_TYPE)`, set
-  `G.koPileLengthAtTurnStart = G.ko.length`
-
-`onBegin` runs before any move of the turn, including `revealVillainCard`, so a KO during that
-reveal counts as this turn.
-
-Add the **same two statements** to `applyOnBeginParity`, with a `// why:` naming the `game.ts`
-mirror. The simulation runner, the PAR aggregator and the fixture runner never run `game.ts`
-`onBegin`. Without the mirror, the play history would span turns and the KO snapshot would stay
-stale. Update the module and function JSDoc to name them.
-
-### G) Card data (**modified**; regenerated)
-`scripts/convert-cards/inputs/hero-ability-markers.json`, 18 apply entries on 17 lines (Dr. Strange
-takes two):
-
-| Set | heroSlug / cardSlug | idx | markupToken |
-|---|---|---|---|
-| msis | wanda-vision / rage | 0 | `[keyword:hero-koed-this-turn]` |
-| amwp | wasp / follow-my-lead | 1 | `[keyword:card-play-ordinal:1]` |
-| dkcy | elektra / first-strike | 0 | `[keyword:card-play-ordinal:1]` |
-| vill | dr-octopus / eighth-times-a-charm | 0 | `[keyword:card-play-ordinal:8]` |
-| ca75 | winter-soldier / kgb-training | 0 | `[keyword:played-other-cards:7]` |
-| co2e | iron-man / repulsor-rays | 0 | `[keyword:played-other-cards:8]` |
-| xmen | cannonball / human-cannon | 1 | `[keyword:played-other-cards:6]` |
-| anni | fantastic-four-united / invisible-woman | 0 | `[keyword:played-other-cost:4]` |
-| ff04 | invisible-woman / four-of-a-kind | 0 | `[keyword:played-other-cost:4]` |
-| vnom | venomized-dr-strange / complete-the-grand-ritual | 0 | `[keyword:played-cost:4]` then `[keyword:played-cost:2]` |
-| asrd | warriors-three-the / three-stand-as-one | 0 | `[keyword:played-other-distinct-heroes:3]` |
-| co2e | hawkeye / trick-arrow | 0 | `[keyword:draw-threshold:1]` |
-| dkcy | wolverine / sudden-ambush | 0 | `[keyword:draw-threshold:1]` |
-| rvlt | captain-marvel-agent-of-shield / radiant-blast | 0 | `[keyword:draw-threshold:1]` |
-| mgtg | gamora / guardians-escape | 0 | `[keyword:draw-threshold:2]` |
-| co2e | black-widow / covert-operation | 0 | `[keyword:bystanders-threshold:4]` |
-| wtif | apocalyptic-black-widow / humanitys-final-hope | 0 | `[keyword:bystanders-threshold:4]` |
-
-- `scripts/convert-cards/apply-hero-ability-markers.mjs`: add the seven new token forms to
-  `VALID_TOKEN_PATTERN`, with the house `// why:` line. `hero-koed-this-turn` is bare; the other
-  six take `:[1-9]\d*`.
-- `scripts/hero-mechanic-ledger.mjs`: add the seven marker→condition entries to the map at
-  ~L173–182.
-- `data/cards/{msis,amwp,dkcy,vill,ca75,co2e,xmen,anni,ff04,vnom,asrd,rvlt,mgtg,wtif}.json` (14
-  files) are regenerated by apply mode. It is surgical: exactly the 17 ability lines change.
-
-### H) Derived artifacts (**modified**; regenerated by their sanctioned commands)
-Run every `:check` even when it shows no diff.
-- **Certain.** Run in this order, because `effect-index` and `mechanics:metadata` read the
-  committed hero ledger (`build-effect-implementation-index.mjs:56`,
-  `build-card-mechanics-metadata.mjs:51`), not the card data:
-  `ledger:heroes` → `effect-index` → `mechanics:metadata` → `sim:runtime-observed`.
-  The scaffold proved the ledger and runtime-observed drift; the two ledger readers follow from
-  it (the new marker slugs are absent from both today).
-  - `docs/ai/coverage/hero-mechanic-ledger.{json,csv}`: `ledger:heroes`
-  - `docs/ai/coverage/runtime-observed-hollows.json`: `sim:runtime-observed`
-  - `apps/dashboard/src/composables/useInPlayCoverage.test.ts`: re-pin the one `totalObs`
-    constant to the fresh value in the same commit. This is the documented feed-regen pairing,
-    not a weakened test; it needs a `Tests-changed:` trailer.
-  - `data/metadata/effect-implementation-index.json`: `effect-index`
-  - `data/metadata/card-mechanics.json`: `mechanics:metadata`
-- **Conditional.** `scripts/coverage/hero-effect-coverage.baseline.json`:
-  `sim:coverage --update-baseline`, only if `--check` exits non-zero (it hard-fails only when
-  `noEffect` rises; a new mechanic only warns).
-- Confirm that each diff touches only the in-scope cards and tokens.
-
-### I) Tests (**new/modified**)
-**New** `packages/game-engine/src/hero/unmarkedConditionalGrants.test.ts`, covering at least:
-1. **Parse.** The case reads the 17 committed ability strings from `data/cards/*.json` (read via a
-   path resolved from `import.meta.url` + `readFileSync`, the `rules/effectRulings.test.ts:123`
-   precedent; this is the first engine test to read `data/cards` at runtime), never literals, co2e included. For each it
-   asserts that the condition sits on the same hook as the grant, the grant is unchanged, and
-   there is no `unresolvedMarkers` entry. The Dr. Strange line carries **two**
-   `cardOfCostPlayedThisTurn` conditions (4 and 2).
-2. **Ordinal.**
-   - Elektra as the 1st play → +1 Attack. As the 2nd → none.
-   - **KO-shrink case:** play card A, KO A from play, then play Elektra. `inPlay` holds only
-     Elektra, but she is the 2nd play → **no** grant. This case is the reason for the play
-     history.
-   - Dr. Octopus as the 8th play → +2. As the 7th or the 9th → none.
-3. **Other-count.** Winter Soldier after 7 other plays → +2. After 6 → none. Played first, then
-   7 more → **none** (on-play, no deferral recorded).
-4. **Cost.**
-   - Invisible Woman after another 4-cost play → grant. When the only 4-cost play is herself →
-     none. A second copy of Invisible Woman (a different `#N`) counts as the other 4-cost card.
-   - Dr. Strange after a 4-cost and a 2-cost → +2. After only a 4-cost → none.
-5. **Distinct Heroes.** Warriors Three after three other non-grey, differently named Heroes →
-   +3. Two copies of the same card count once. A S.H.I.E.L.D. Agent does not count.
-6. **Rage.** Drive it the real way: `playCard` on the Grief/Rage split card, then
-   `resolveSplitFaceChoice` with face `'b'`. Never call `applyCardPlay` on a Rage id directly.
-   - With a play-history reader present, that split play leaves exactly **one**
-     `cardsPlayedThisTurn` entry.
+### H) Tests (**new / modified**)
+**New `packages/game-engine/src/hero/unmarkedConditionalGrants.test.ts`** (`node:test`; no boardgame.io import), covering at least:
+1. **Parse** (from the committed `data/cards` JSON, the `firstCardPlayed.test.ts` reader; never literals; co2e included): each of the 12 lines' hook carries its condition beside the unchanged grant and no `unresolvedMarkers` entry; Dr. Strange carries **two** `cardOfCostPlayedThisTurn` conditions (`'4'`, `'2'`); the two Black Widow lines carry `bystandersInVictoryAtLeast:'4'`.
+2. **Ordinal** (Dr. Octopus through `applyCardPlay`): 8th play → +2; 7th and 9th → none.
+3. **Cost.** Invisible Woman (ff04) after another 4-cost play → +2; when the only 4-cost card played is herself → none; a second Invisible Woman copy (a different `#N`) counts as the other. Dr. Strange after a 4-cost and a 2-cost → +2; after only a 4-cost → none. A 4-cost card that went Out of Time this turn (in `outOfTimePlayedCardIds`) still counts (the shared view).
+4. **Distinct Heroes** (Warriors Three): three other non-grey, differently named Heroes → +3; two copies of one card count once; a S.H.I.E.L.D. Agent does not count; Warriors Three itself does not count.
+5. **Rage**, driven the real way: `playCard` on a Grief/Rage card, then `resolveSplitFaceChoice` face `'b'` (never `applyCardPlay` on a Rage id).
    - A Hero KO'd earlier this turn → +2 on play.
-   - A Wound or Bystander KO'd → none, and a deferred grant is recorded.
-   - Rage played first, then a Hero KO'd → the deferred grant fires **once** on the next
-     resolution. A second KO does not grant again.
-   - A Hero KO'd **last** turn → none (the snapshot resets).
-7. **Reused conditions.**
-   - Hawkeye with no effect draw → none. After a draw → the deferred grant fires.
-   - Gamora needs 2.
-   - Black Widow with 4 Bystanders in VP → +2. With 3 → none, and no deferral recorded.
-8. **Oracle safety.** With no reading hook, neither `cardsPlayedThisTurn` nor
-   `koPileLengthAtTurnStart` exists on `G` after plays and a turn boundary.
-9. **Turn reset.**
-   - The real `LegendaryGame` play-phase `turn.onBegin` (the `game.test.ts` ~L279 pattern, never
-     a hand-written `delete`) deletes the history and re-snapshots the KO pile.
-   - `applyOnBeginParity` does the same.
-   - Both are no-ops without a reading hook.
+   - Only a Wound or Bystander KO'd → none, and a deferred grant is recorded.
+   - Rage played first, then a Hero KO'd → the deferred grant fires **once** on the next resolution; a second KO does not grant again.
+   - A Hero KO'd before the turn-start snapshot → none.
+6. **Reused conditions.** Hawkeye with no draw → none, deferred; after a draw → the deferred grant fires. Gamora needs 2. Black Widow (co2e) with 4 Bystanders in VP → +2; with 3 → none and no deferral recorded.
+7. **Oracle safety.** With no Rage hook, `koPileLengthAtTurnStart` never appears on `G` after `turn.onBegin` and `applyOnBeginParity`.
+8. **Turn reset.** The real `LegendaryGame` play-phase `turn.onBegin` (the `game.test.ts` pattern, never a hand-written assignment) sets `koPileLengthAtTurnStart` to `G.ko.length` when a Rage hook exists; `applyOnBeginParity` does the same.
 
-**`deferredConditionalGrants.test.ts` (modified, certain).** Its keyset `deepEqual` and its
-`TRUTHY_FIXTURE` gain `heroPutIntoKoPileThisTurn`, or the drift pin fails. This is a value-only
-extension. The fixture needs a `G` with a snapshot of `0` and one hero-deck card in `G.ko`.
-
-**`heroConditions.evaluate.test.ts` (modified, certain)** gains a runtime drift pin:
-- every `PLAY_HISTORY_CONDITION_TYPES` member has an `evaluateCondition` case and a
-  non-default `describeFailedCondition` string
-- the set is disjoint from both `WAIT_AND_SEE_CONDITION_TYPES` and
-  `SEQUENCE_GATE_CONDITION_TYPES`
-
-`rules/heroAbility.setup.test.ts` is modified **only if** an existing runtime pin enumerates the
-extended sets. The existing `SEQUENCE_GATE_CONDITION_TYPES` disjointness pin must stay green
-unchanged.
+**`hero/deferredConditionalGrants.test.ts`** (modified, certain): the keyset `deepEqual` and `TRUTHY_FIXTURE` gain `heroPutIntoKoPileThisTurn` (value-only; the fixture `G` has `koPileLengthAtTurnStart: 0` and one hero-deck card in `G.ko`).
+**`hero/heroConditions.evaluate.test.ts`** (modified, certain): a runtime drift pin: every `PLAY_HISTORY_CONDITION_TYPES` member has an `evaluateCondition` case (a truthy fixture) and a non-default `describeFailedCondition` string; the set is disjoint from `WAIT_AND_SEE_CONDITION_TYPES` and `SEQUENCE_GATE_CONDITION_TYPES`.
+**`rules/heroAbility.setup.test.ts` / `setup/heroAbility.setup.test.ts`**: modified **only if** an existing runtime pin enumerates `HERO_PARSER_RECOGNIZED_MARKER_NAMES` or the wait-and-see set (value-only extension). The existing `SEQUENCE_GATE_CONDITION_TYPES` disjointness pin stays green unchanged.
 
 ---
 
 ## Out of Scope
 
-- **WP-743's two cards** (Spring the Trap, Grief). They are fixed there.
-- **Follow-up A: board or collection-state predicates** (new on-play conditions; one WP). Six
-  lines: the first three are free today, and the last three are gated only by their `[hc:X]` class
-  prefix, with the "If …" clause ignored. (`asrd/lady-sif/weapons-master#0` also reads board
-  state, but it needs the unmodeled Artifact mechanic; see the Sweep Ledger.)
-  - `mgtg/drax/xandar-is-invincible#0` ("no Villains in the city")
-  - `mgtg/rocket-groot/tricky#0` ("you have at least five different card names")
-  - `msis/black-panther/avengers-reassembled#0` ("you have all five Hero Classes"; "have" means
-    hand + play, D-24497)
-  - `co2e/nick-fury/weapon-bank#0` ("the Bank is empty")
-  - `cvwr/speedball/bounce-around#0` ("Bystanders in the city or KO pile")
-  - `bkpt/white-wolf/secret-assignment#1` ("a Villain or Mastermind has any Wounds")
-- **Follow-up B: discard event** (claimed by WP-777 / D-24616, drafted 2026-09-26). `bkwd/falcon-winter-soldier/new-wings#0`,
-  `vill/green-goblin/pumpkin-bombs#1` ("If you discarded any cards this turn"). These need a
-  discard signal across many discard sites, and end-of-turn cleanup must be excluded.
-- **Follow-up C: most-recent-Hero icon branch.** `rvlt/darkhawk/travel-to-nullspace#0`,
-  `ssw1/proxima-midnight/master-combatant#0`. Two grants, each gated on an icon of the last
-  Hero played. The play history added here is their natural input.
-- **Follow-up D: count every hand draw toward `cardsDrawn`.** Today only the hero `draw:N` path
-  counts (Assumes). Until that lands, the four draw lines here and Gamma-Draining Nanites
-  under-grant on draws from other sources.
-- **Every other free hook in the Sweep Ledger** belongs to a different mechanic family:
-  optional-cost, reveal-branch, Patrol, Focus, Tactical Formation, guess, KO-Wound-or-gain,
-  Shards, Artifacts, Endgame, Galactus.
-- **Split cards (face-B relabel and latent hazard).** `resolveSplitFaceChoice` relabels the `inPlay`
-  entry to face B, but the play history keeps the primary-face id; `moves/splitFaceChoice.resolve.ts`
-  is not touched. All 39 split cards share one printed cost across faces (verified), so only a
-  name-based count could differ, and a future face-B card with an "other" play-history condition
-  would count its own face-A entry. Warriors Three is name-based, so it counts a split card under
-  its primary-face name even when face B was chosen. That imprecision is accepted and recorded in
-  D-24568 §6. Rage is face B but not play-history. No guard is added.
-- **Copy Powers or Steal Abilities copying an in-scope line.** Ordinal and "other" semantics
-  follow `triggeringCardId`, as every existing condition does. There is no special case.
-- **`firstHeroPlayedThisTurn`'s `inPlay`-shrink imprecision** (Deadpool Do-Over). Its "first
-  Hero" text and the existing tests are unchanged. Moving it onto the play history is a possible
-  later refinement, not this WP.
-- **The rebuilt loops never resolve deferred grants** (the pre-existing WP-568 / 656 gap). That
-  gap is WP-744's to fix, not this WP's. Until WP-744 lands, a Rage or draw line played in the sim
-  before its event never grants later, which is conservative. Once WP-744 has landed, those lines
-  also fire later in the sim. On-play grants work in the sim either way.
-- No UIState field, no client change, no bot-valuation change, no new move.
-- Refactors not listed in Scope (In).
+- **The five already-gated lines** (§Reconciliation). Not touched.
+- **A. Board / collection-state predicates** (one future WP; new on-play conditions): `mgtg/drax/xandar-is-invincible#0`, `mgtg/rocket-groot/tricky#0`, `msis/black-panther/avengers-reassembled#0`, `co2e/nick-fury/weapon-bank#0`, `cvwr/speedball/bounce-around#0`, `bkpt/white-wolf/secret-assignment#1`; `asrd/lady-sif/weapons-master#0` needs the Artifact mechanic.
+- **B. Most-recent-Hero icon branch:** `rvlt/darkhawk/travel-to-nullspace#0`, `ssw1/proxima-midnight/master-combatant#0`.
+- **C. Discard event:** done by WP-777 / D-24616.
+- **D. Draw counting:** done (Assumes 8).
+- **E. Cards KO'd out of play still count as "played this turn"** (rules v23 L3441-3453). The shared view drops them; the fix is one more ledger inside `playedCardIdsThisTurn`, which fixes `playedThisTurn`, `firstHeroPlayedThisTurn` and this WP's four conditions together. D-24798 §5 already accepts the residual; this WP inherits it.
+- **Copy Powers / Steal Abilities copying an in-scope line.** "Other" and the ordinal follow `triggeringCardId`, as every existing condition does.
+- **The other Sweep Ledger families** (optional cost, reveal-branch, Patrol, Focus, Tactical Formation, guess, KO-Wound-or-gain, Shards, Artifacts, Endgame, Galactus): each is its own mechanic.
+- No UIState field, no client change, no bot-valuation change, no new move. Refactors not listed in Scope (In).
 
 ---
 
 ## Files Expected to Change
 
-- `packages/game-engine/src/types.ts` — **modified** — two optional lazy fields
-- `packages/game-engine/src/moves/coreMoves.impl.ts` — **modified** — two gated play-history appends
-- `packages/game-engine/src/hero/heroConditions.evaluate.ts` — **modified** — 6 constants, `PLAY_HISTORY_CONDITION_TYPES`, `matchReadsPlayHistory`, `isHeroCardId`, 6 evaluate + 6 describe cases
+- `packages/game-engine/src/types.ts` — **modified** — one optional lazy field
+- `packages/game-engine/src/hero/heroConditions.evaluate.ts` — **modified** — 5 constants, `PLAY_HISTORY_CONDITION_TYPES`, helpers, 5 evaluate + 5 describe cases
 - `packages/game-engine/src/hero/deferredConditionalGrants.ts` — **modified** — one wait-and-see member + doctrine sentences
-- `packages/game-engine/src/setup/heroAbility.setup.ts` — **modified** — seven marker arms
-- `packages/game-engine/src/game.ts` — **modified** — `onBegin` delete + snapshot
-- `packages/game-engine/src/simulation/onBeginParity.ts` — **modified** — the same, plus JSDoc
+- `packages/game-engine/src/setup/heroAbility.setup.ts` — **modified** — six marker arms + six recognized names
+- `packages/game-engine/src/game.ts` — **modified** — `onBegin` snapshot
+- `packages/game-engine/src/simulation/onBeginParity.ts` — **modified** — the mirror + JSDoc
 - `packages/game-engine/src/hero/unmarkedConditionalGrants.test.ts` — **new**
-- `packages/game-engine/src/hero/deferredConditionalGrants.test.ts` — **modified** — keyset + truthy-fixture extension
-- `packages/game-engine/src/hero/heroConditions.evaluate.test.ts` — **modified** — `PLAY_HISTORY_CONDITION_TYPES` drift pin
-- `packages/game-engine/src/rules/heroAbility.setup.test.ts` — **modified only if** an existing runtime pin enumerates the extended set
-- `scripts/convert-cards/inputs/hero-ability-markers.json` — **modified** — 18 apply entries on 17 lines
-- `scripts/convert-cards/apply-hero-ability-markers.mjs` — **modified** — token allowlist
-- `scripts/hero-mechanic-ledger.mjs` — **modified** — marker→condition map
-- `data/cards/{msis,amwp,dkcy,vill,ca75,co2e,xmen,anni,ff04,vnom,asrd,rvlt,mgtg,wtif}.json` — **modified** — regenerated marker lines (17 lines, 14 files)
-- `docs/ai/coverage/hero-mechanic-ledger.{json,csv}`, `docs/ai/coverage/runtime-observed-hollows.json`, `data/metadata/effect-implementation-index.json`, `data/metadata/card-mechanics.json` — **modified** — regenerated (certain)
-- `scripts/coverage/hero-effect-coverage.baseline.json` — **modified only if** `sim:coverage --check` exits non-zero
-- `apps/dashboard/src/composables/useInPlayCoverage.test.ts` — **modified** — the paired `totalObs` re-pin (`Tests-changed:` trailer)
+- `packages/game-engine/src/hero/deferredConditionalGrants.test.ts` — **modified** — keyset + truthy fixture
+- `packages/game-engine/src/hero/heroConditions.evaluate.test.ts` — **modified** — drift pin
+- `packages/game-engine/src/rules/heroAbility.setup.test.ts`, `packages/game-engine/src/setup/heroAbility.setup.test.ts` — **modified only if** an existing pin enumerates an extended set
+- `scripts/convert-cards/inputs/hero-ability-markers.json`, `scripts/convert-cards/apply-hero-ability-markers.mjs`, `scripts/hero-mechanic-ledger.mjs`, `scripts/coverage/mechanic-provenance.json` — **modified**
+- `data/cards/{msis,vill,anni,ff04,vnom,asrd,co2e,dkcy,rvlt,mgtg,wtif}.json` — **modified** — regenerated (12 lines, 11 files)
+- `docs/ai/coverage/hero-mechanic-ledger.{json,csv}`, `data/metadata/effect-implementation-index.json`, `data/metadata/card-mechanics.json` — **modified** — regenerated
+- `apps/arena-client/src/fixtures/localSpike/featuredSetupBundle.json` — **modified** — regenerated (certain)
+- `docs/ai/coverage/runtime-observed-hollows.json`, `apps/dashboard/src/composables/useInPlayCoverage.test.ts`, `scripts/coverage/hero-effect-coverage.baseline.json` — **modified only if** their `:check` fails after the regen (the dashboard re-pin carries a `Tests-changed:` trailer)
 
-No other files may be modified in the `EC-782:` commit. The governance close `SPEC:` commit edits
-STATUS, DECISIONS (D-24568 Active), WORK_INDEX, EC_INDEX and the mindmap.
+No other file in the `EC-782:` commit. The governance close `SPEC:` commit (same PR) edits DECISIONS (D-24568 Active), STATUS, WORK_INDEX (`[x]` + `[live-verify: pending]`), EC_INDEX, NUMBER-LEDGER (LANDED), the mindmap + `roadmap:counts:write`, `docs/ai/coverage/live-verify.json` (one `pending` entry per new hero mechanic row) and `docs/ai/post-mortems/01.6-WP-745-unmarked-conditional-icon-grants.md`.
 
 ---
 
 ## Contract
 
-- **`LegendaryGameState.cardsPlayedThisTurn?: CardExtId[]`**
-  - holds the current player's plays this turn, in order, as written at the two `coreMoves`
-    append sites
-  - present only when a hook in the match reads a `PLAY_HISTORY_CONDITION_TYPES` member
-  - deleted at turn start
-- **`LegendaryGameState.koPileLengthAtTurnStart?: number`**
-  - holds `G.ko.length` at turn start
-  - present only when a hook reads `heroPutIntoKoPileThisTurn`
-- **Conditions** (as in Scope C):
-  - `cardPlayOrdinalEquals`, `otherCardsPlayedThisTurnAtLeast`, `otherCardOfCostPlayedThisTurn`,
-    `cardOfCostPlayedThisTurn` and `otherDistinctNonGreyHeroesPlayedThisTurnAtLeast` are
-    **on-play**
-  - `heroPutIntoKoPileThisTurn` is **whole-turn wait-and-see**, shape #1 one-shot
-- **Markers** (as in Scope E):
-  - parameterized: `card-play-ordinal:N`, `played-other-cards:N`, `played-other-cost:N`,
-    `played-cost:N`, `played-other-distinct-heroes:N`, `bystanders-threshold:N`
-  - bare: `hero-koed-this-turn`
-- **`matchReadsPlayHistory(G)`** and **`isHeroCardId(G, id)`** are pure reads.
-- **Hash oracles.** The sentinel `finalStateHash` and `PRE_WP080_HASH` are unchanged.
+- **`LegendaryGameState.koPileLengthAtTurnStart?: number`**: `G.ko.length` at turn start; present only when a hook reads `heroPutIntoKoPileThisTurn`.
+- **Conditions** as in §Locked Values: four on-play play-history conditions over `playedCardIdsThisTurn`; `heroPutIntoKoPileThisTurn` whole-turn wait-and-see, shape #1 one-shot.
+- **Markers:** parameterized `card-play-ordinal:N`, `played-other-cost:N`, `played-cost:N`, `played-other-distinct-heroes:N`, `bystanders-threshold:N`; bare `hero-koed-this-turn`.
+- **`isHeroCardId(G, id)`** is a module-local pure read.
+- **Hash oracles** unchanged.
 
 ---
 
 ## Vision Alignment
 
-- **Vision clauses touched:**
-  - §1 (rules authenticity: each printed condition is enforced)
-  - §2 (content authenticity: card semantics)
-  - §3 (no hidden modifiers: 17 unearned bonuses removed)
-  - §8, §22, §26 (deterministic engine; PAR and sim feeds regenerate through their sanctioned
-    commands)
-  - NG-1 (untouched)
-- **Conflict assertion:** No conflict. The change removes unearned bonuses and restores the
-  play-order skill several cards were designed around.
-- **Non-Goal proximity:** NG-1..8 are not crossed.
-- **Determinism:** the new state is deterministic: written at deterministic play and turn-start
-  sites, from deterministic inputs. The hash oracles are unchanged by construction (gated lazy
-  fields).
-  - Matches with these cards legitimately change outcome, because the bonuses were wrong.
-  - The committed sim feeds regenerate (Scope H).
-- **Upgrade / replay story.** No migration. No persisted shape changes, and both fields are lazy
-  and optional.
-  - `G.heroAbilityHooks` is built once at setup (`buildInitialGameState.ts:387`) and travels with
-    the match. So a match in flight at deploy keeps its old, condition-free hooks and the old free
-    grants until it ends. No hook in it reads the new fields, so they are never written, and no
-    mixed state arises. Accepted.
-  - The same holds for a D-24119 reduction of a stored blob: its `initialState` carries the old
-    hooks, so it reproduces the original match. Only a replay that re-runs setup from the match
-    configuration builds the new hooks and applies the corrected grants (the D-24467 / D-24566
-    posture). Such a replay may diverge, for example when a fight was paid with a removed bonus.
-    Competitive scores are verified only at submit time.
-  - PAR profiles are unchanged, because `HERO_POOL` is core-only
-    (`generate-par-profiles.mjs:57–64`).
+- **Vision clauses touched:** §1 (rules authenticity), §2 (card semantics), §3 (no hidden modifiers: 12 unearned bonuses removed), §8 / §22 / §26 (deterministic engine; feeds regenerate through sanctioned commands). NG-1 untouched.
+- **Conflict assertion:** No conflict. The change removes unearned bonuses that inflate scores and restores the play-order skill several cards reward.
+- **Non-Goal proximity:** NG-1..8 not crossed.
+- **Determinism:** the snapshot is written at deterministic turn-start sites from deterministic inputs; the play-history reads are pure. Hash oracles unchanged by construction.
+- **Upgrade / replay story.** No migration. `G.heroAbilityHooks` is built once at setup and travels in `initialState`, so a match in flight at deploy keeps its old, condition-free hooks until it ends, and no hook in it reads the new field. A D-24119 reduction of a stored blob reproduces the original match. Only a replay that re-runs setup from the configuration builds the new hooks and may diverge (the D-24467 / D-24566 posture); competitive scores are verified at submit time. PAR profiles are unchanged (`HERO_POOL` is core-only).
 
 ## Funding Surface Gate
 
-N/A — no funding affordance, channel, or donate/support copy (engine + card-data only; no UI or copy changes).
+N/A — engine + card data only; no funding affordance, channel, or copy.
 
 ## API Catalog
 
-N/A (§21). No `apps/server` endpoint or `Library-only` server function changes. Engine-only.
+N/A (§21). No `apps/server` endpoint or `Library-only` server function changes.
 
 ---
 
@@ -669,24 +294,15 @@ N/A (§21). No `apps/server` endpoint or `Library-only` server function changes.
 
 All binary pass/fail.
 
-- [ ] All 17 in-scope hooks carry their condition. Re-running the draft probe (or an equivalent
-  `buildHeroAbilityHooks` check) shows **0** of them in the FREE bucket, and no
-  `unresolvedMarkers` on them.
-- [ ] Elektra played 2nd, after the 1st card was KO'd from play, grants **no** Attack.
-- [ ] Dr. Octopus grants only as the exact 8th play.
-- [ ] Winter Soldier played before its 7 others grants **no** Attack and records no deferred
-  grant.
-- [ ] Invisible Woman does not count herself. Dr. Strange needs both a 4-cost and a 2-cost play.
-- [ ] Warriors Three counts distinct names of non-grey Heroes only.
-- [ ] Rage grants only after a **Hero** entered the KO pile this turn. Played before the KO, it
-  fires once when the KO lands.
-- [ ] The four draw lines wait for the effect-draw count. The two Black Widow lines need 4
-  Bystanders at play.
-- [ ] With no reading hook, neither new key exists on `G`. The sentinel `finalStateHash` and
-  `PRE_WP080_HASH` are byte-unchanged (no re-pin).
-- [ ] `cards:check` passes, and a re-run of the apply script is zero-diff (co2e included).
-- [ ] `pnpm -r build` exits 0. The engine suite is green at baseline plus the new cases (counts in
-  the commit body). Every Coverage & Ledger `:check` exits 0, and so does the dashboard suite.
+1. All 12 in-scope hooks carry their condition (re-run the probe: 0 of them free, no `unresolvedMarkers` on them); the five already-gated hooks are byte-identical to baseline.
+2. Dr. Octopus grants only as the exact 8th card played.
+3. Invisible Woman does not count herself; Dr. Strange needs both a 4-cost and a 2-cost play.
+4. Warriors Three counts distinct names of other non-grey Heroes only.
+5. Rage grants only after a **Hero** entered the KO pile this turn; played before the KO, it fires once when the KO lands.
+6. The four draw lines wait for the draw count; the two Black Widow lines need 4 Bystanders at play.
+7. With no Rage hook, `koPileLengthAtTurnStart` never exists on `G`; the sentinel `finalStateHash` and `PRE_WP080_HASH` are byte-unchanged (no re-pin).
+8. `cards:check` passes and an apply re-run is zero-diff (co2e included).
+9. `pnpm -r build` exits 0; `pnpm -r --no-bail test` is 0 fail (per-package totals in the commit body); every coverage / ledger `:check` exits 0.
 
 ---
 
@@ -694,25 +310,24 @@ All binary pass/fail.
 
 ```pwsh
 pnpm -r build
-pnpm --filter @legendary-arena/game-engine test
-# Expected: exit 0; unmarkedConditionalGrants.test.ts passes; no sentinel/PRE_WP080 failure
+pnpm -r --no-bail test
+# Expected: exit 0; unmarkedConditionalGrants.test.ts passes; no sentinel / PRE_WP080 failure
 
 node scripts/convert-cards/apply-hero-ability-markers.mjs
 git diff --stat data/cards
-# Expected (first run): 14 files changed, 17 insertions(+), 17 deletions(-); a re-run is zero-diff
+# Expected (first run): 11 files changed, 12 insertions(+), 12 deletions(-); a re-run is zero-diff
 
-pnpm cards:check; pnpm ledger:heroes:check; pnpm effect-index:check; pnpm mechanics:metadata:check
+pnpm cards:check; pnpm cards:count-markers:check; pnpm ledger:heroes:check; pnpm effect-index:check; pnpm mechanics:metadata:check
 pnpm sim:coverage --check; pnpm sim:runtime-observed:check
-pnpm --filter @legendary-arena/dashboard test
-# Expected: all exit 0 (after the Scope H regens and the paired re-pin)
+node scripts/build-local-spike-bundle.mjs --check
+# Expected: all exit 0 (after the Scope G regens and any paired re-pin)
 
-Select-String -Path "packages\game-engine\src\moves\coreMoves.impl.ts" -Pattern "cardsPlayedThisTurn.push"
-# Expected: exactly two matches (the two gated appends)
+Select-String -Path "packages\game-engine\src\**\*.ts" -Pattern "koPileLengthAtTurnStart =" 
+# Expected: exactly two matches (game.ts, simulation/onBeginParity.ts)
 
 git diff --name-only
 # Expected (implementation commit): within ## Files Expected to Change
 ```
-
 
 ---
 
@@ -720,187 +335,66 @@ git diff --name-only
 
 > Run every command in `## Verification Steps` before checking any item.
 
-- [ ] **Live verification (D-24026), on play.legendary-arena.com:** start a match whose hero
-  pool includes one of these cards: Elektra (dkcy), Winter Soldier (ca75) or Wanda & Vision
-  (msis). Use a bot-ally or `POST /api/match/autoplay` match with a chosen setup. Read the log:
-  - a first-card, Nth-card or Rage play grants **only** when its condition held
-  - a play where it did not hold shows no "+N from <card>" line
-- [ ] `docs/ai/STATUS.md` updated, with the live observation.
 - [ ] All acceptance criteria pass.
-- [ ] No files outside `## Files Expected to Change` are modified in the `EC-782:` commit.
-- [ ] `docs/ai/DECISIONS.md`: D-24568 landed Active.
-- [ ] `WORK_INDEX.md` WP-745 is `[x]`, and `EC_INDEX.md` EC-782 is Done.
-- [ ] `docs/05-ROADMAP-MINDMAP.md` node `📝` → `✅`, then `pnpm roadmap:counts:write`;
-  `roadmap:counts:check` exits 0.
+- [ ] No files outside `## Files Expected to Change` in the `EC-782:` commit.
+- [ ] `docs/ai/DECISIONS.md`: D-24568 Active; NUMBER-LEDGER row LANDED.
+- [ ] `docs/ai/STATUS.md` entry; `WORK_INDEX.md` WP-745 `[x]` ending `[live-verify: pending]`; `EC_INDEX.md` EC-782 Done; `docs/05-ROADMAP-MINDMAP.md` node `✅` + `pnpm roadmap:counts:write`; `roadmap:counts:check`, `ledger:numbers:check`, `workindex:rows:check`, `workindex:executed:check`, `workindex:liveverify:check` exit 0.
+- [ ] `docs/ai/coverage/live-verify.json`: one `pending` entry per new hero ledger mechanic row, `wp: "WP-745"`.
+- [ ] 01.6 post-mortem committed.
+- [ ] **Live verification (D-24026)** on play.legendary-arena.com after deploy, on an operator match created after the server boot: one card from each family (Rage; Dr. Octopus; Invisible Woman or Dr. Strange; Warriors Three; a draw line; a Black Widow line). The log shows `[blocked]` with the §Locked Values reason when the condition was false and the grant when it held (or the deferred grant firing later, for Rage and the draw lines). Recorded as its own `SPEC:` PR: live-verify.json entries `verified`, the WORK_INDEX token `[live-verify: verified]` with the date, D-24568 and STATUS amended.
 
 ---
 
 ## Reserved Decision (lands at execution)
 
-- **D-24568 (reserved; Drafted 2026-09-22): unmarked "If <condition>, you get +N" lines are gated
-  through marker→condition arms, with play-history predicates evaluated on play.**
-  1. **Play-history conditions** (`cardPlayOrdinalEquals`, `otherCardsPlayedThisTurnAtLeast`,
-     `otherCardOfCostPlayedThisTurn`, `cardOfCostPlayedThisTurn`,
-     `otherDistinctNonGreyHeroesPlayedThisTurnAtLeast`) are **play-order gates**. They evaluate
-     on play and never join `WAIT_AND_SEE_CONDITION_TYPES`. **Amends D-24377 §1:** all five
-     take a number (a count, a cost or an ordinal), yet they join the `[hc:X]`/team on-play
-     exception. The wait-and-see seam becomes "a numeric threshold that play order cannot
-     manufacture".
-  2. **A card-play ordinal** reads a gated, lazy, per-turn play history `G.cardsPlayedThisTurn`,
-     never `inPlay` (which shrinks mid-turn). `firstHeroPlayedThisTurn` keeps its `inPlay`
-     "first Hero" reading, unchanged.
-  3. **"A Hero was put into the KO pile this turn"** is a sticky event: wait-and-see, shape #1,
-     one-shot. It reads a gated turn-start snapshot `G.koPileLengthAtTurnStart` over the
-     append-only KO pile. A Hero is a `cardTraits` entry or a basic S.H.I.E.L.D. / Sidekick token.
-  4. **Reuse over new conditions.** The "drew N cards this turn" lines reuse
-     `cardsDrawnThisTurnAtLeast` (wait-and-see). The "have at least N Bystanders" lines reuse
-     `bystandersInVictoryAtLeast` via `[keyword:bystanders-threshold:N]` (on-play, like Savior).
-     The four draw lines inherit the `draw:N`-only count; draws from other sources under-grant
-     until Follow-up D.
-  5. **Both new fields are gated and lazy.** Games without a reading hook are byte-unchanged.
-  6. **Card-name identity for a rules check** ("different card names") reads the setup-static
-     `G.cardDisplayData[id].name`, falling back to the id without its `#copy` suffix. It never
-     reads a projection. A split card counts under its primary-face name even when face B was
-     chosen (accepted).
+- **D-24568 (reserved; Drafted 2026-09-22; reconciled 2026-11-16): unmarked "If <condition>, you get +N" lines are gated through marker→condition arms; play-history predicates read the shared played view on play.**
+  1. **Play-history conditions** (`cardPlayOrdinalEquals`, `otherCardOfCostPlayedThisTurn`, `cardOfCostPlayedThisTurn`, `otherDistinctNonGreyHeroesPlayedThisTurnAtLeast`, with the shipped `playedThisTurn` and `firstHeroPlayedThisTurn`) are **play-order gates**: they evaluate on play and never join `WAIT_AND_SEE_CONDITION_TYPES`. **Amends D-24377 §1:** the wait-and-see seam is "a numeric threshold that play order cannot manufacture".
+  2. **They read `playedCardIdsThisTurn`**, the one "cards you played this turn" view, not a second history and not raw `inPlay`. A card KO'd out of play mid-turn drops out of it (the D-24798 §5 residual), to be fixed once inside the view (Out of Scope E).
+  3. **"A Hero was put into the KO pile this turn"** is a sticky event: wait-and-see, shape #1, one-shot. It reads a gated turn-start snapshot `G.koPileLengthAtTurnStart` over the append-only KO pile. A Hero is a `cardTraits` entry or a basic S.H.I.E.L.D. / Sidekick token.
+  4. **Reuse over new conditions.** The draw lines reuse `cardsDrawnThisTurnAtLeast` (wait-and-see). The "have at least N Bystanders" lines reuse `bystandersInVictoryAtLeast` via `[keyword:bystanders-threshold:N]` (on-play, like Savior).
+  5. **Card-name identity for a rules check** ("different card names") reads the setup-static `G.cardDisplayData[id].name`, falling back to the id without its `#copy` suffix; never a projection.
+  6. **The new field is gated and lazy.** Games without a Rage hook are byte-unchanged.
 
 ---
 
 ## Sweep Ledger (appendix)
 
-The probe covered 121 hero ability lines matching the regex in Assumes. 87 hooks had effects and
-no conditions (FREE); 34 carried some condition (COND). Every FREE hook, plus the COND hooks
-whose condition is only a class/team prefix while the "If …" clause is ignored, is dispositioned
-below.
+The 2026-09-22 probe covered 121 hero ability lines matching `/\bif\b[^.]*?you get \+\d+\[icon:(attack|recruit)\]/i`; 87 hooks had effects and no conditions. Disposition at `b93e6d6ca`:
 
 | Disposition | Lines |
 |---|---|
-| **This WP (17)** | Listed in Scope G |
-| **WP-743 (2)** | `vnom/venom-rocket/spring-the-trap#0`, `msis/wanda-vision/grief#0` |
-| **Follow-up A: board/collection state (7)** | `mgtg/drax/xandar-is-invincible#0`, `mgtg/rocket-groot/tricky#0`, `msis/black-panther/avengers-reassembled#0`, `asrd/lady-sif/weapons-master#0`\*, and the partially gated COND lines `co2e/nick-fury/weapon-bank#0`, `cvwr/speedball/bounce-around#0`, `bkpt/white-wolf/secret-assignment#1` |
-| **Follow-up B: discard event (2)** | `bkwd/falcon-winter-soldier/new-wings#0`, `vill/green-goblin/pumpkin-bombs#1` |
-| **Follow-up C: most-recent-Hero icon (2)** | `rvlt/darkhawk/travel-to-nullspace#0`, `ssw1/proxima-midnight/master-combatant#0` |
-| **Follow-up D: draw counting (0 new lines)** | Widens `cardsDrawn` to every hand draw; affects the 4 in-scope draw lines + Gamma-Draining Nanites |
-| **Optional cost, "You may X. If you do" (no handler)** | `2099/ghost-rider-2099/hell-ride#0`, `2099/doctor-doom-2099/subvert-this-new-future#0`, `shld/sharon-carter/sharon-carter#0`, `dkcy/ghost-rider/blazing-hellfire#0`, `ssw1/thanos/transdimensional-overlord#1`, `vill/venom/devour#0`, `vill/magneto/magnetic-levitation#1`, `wwhk/sentry/golden-guardian-of-good#0`, `dkcy/domino/specialized-ammunition#0`, `mdns/morbius/scalded-by-sunlight#0`, `#1`, `nmut/sunspot/solar-powered#0` |
-| **Handler-backed reward keywords (hook also carries a plain icon effect; see note)** | `ko-wound-reward` on `{3dtc,core,msp1,co2e}/hulk/*`, `cvwr/hulkling/cellular-regeneration#1`, `ff04/human-torch/call-for-backup#0`, `msis/bruce-banner/hulkbuster-armor#0`; `put-bottom-hq-icon-reward` on `antm/wonder-man/absorb-ambient-power#0`, `xmen/kitty-pryde/intangible-qualities#0`; `shuffle-discard-empty-reward` on `antm/jocasta/*` |
-| **Reveal / discard-top then branch** | `fear/kuurth-breaker-of-stone/reach-for-power#0`, `pttr/symbiote-spider-man/dark-strength#1`, `noir/daredevil-noir/hitting-rock-bottom#0`, `cvwr/wiccan/astral-projection#1`, `dkcy/daredevil/radar-sense#0`, `cosm/moondragon/lunar-dragon-form#1`, `vill/mysterio/shifting-decoy#0` |
-| **Guess a card** | `nmut/karma/temporary-possession#0`, `rvlt/hellcat/demon-sight#0` |
-| **KO-a-Wound-or-gain-one** | `chmp/totally-awesome-hulk/growing-pains#1`, `dead/deadpool/itll-grow-back#0`, `msmc/m/penance-form#2` |
-| **Patrol** | `mdns/*` (4 lines), `ssw2/*` (10 lines) |
-| **Focus / Tactical Formation** | `anni/psi-lord/*` (4), `msmc/stepford-cuckoos/*` (2) |
-| **Shards / Artifacts / Endgame / Galactus** | `cosm/phyla-vell/*` (2), `fear/greithoth-breaker-of-wills/absorb-metal#0`, `msis/captain-marvel/turning-point#1`, `anni/heralds-of-galactus/galactus-hungers#0` |
+| **This WP (12)** | §Locked Values apply table |
+| **Done since the draft (7)** | WP-743: `vnom/venom-rocket/spring-the-trap#0`, `msis/wanda-vision/grief#0`. WP-861 / D-24798: `dkcy/elektra/first-strike#0`, `amwp/wasp/follow-my-lead#1`. D-24746: `ca75/winter-soldier/kgb-training#0`, `co2e/iron-man/repulsor-rays#0`, `xmen/cannonball/human-cannon#1` |
+| **Done since the draft: discard event (2)** | WP-777 / D-24616: `bkwd/falcon-winter-soldier/new-wings#0`, `vill/green-goblin/pumpkin-bombs#1` |
+| **Follow-up A: board / collection state (7)** | `mgtg/drax/xandar-is-invincible#0`, `mgtg/rocket-groot/tricky#0`, `msis/black-panther/avengers-reassembled#0`, `asrd/lady-sif/weapons-master#0`\*, `co2e/nick-fury/weapon-bank#0`, `cvwr/speedball/bounce-around#0`, `bkpt/white-wolf/secret-assignment#1` |
+| **Follow-up B: most-recent-Hero icon (2)** | `rvlt/darkhawk/travel-to-nullspace#0`, `ssw1/proxima-midnight/master-combatant#0` |
+| **Other mechanic families (not conditions)** | optional cost ("You may X. If you do"), handler-backed reward keywords (D-24570 suppression shipped), reveal / discard-top branch, guess a card, KO-a-Wound-or-gain-one, Patrol, Focus / Tactical Formation, Shards / Artifacts / Endgame / Galactus — the draft's per-line list stands; several have shipped since under their own WPs |
 
-\* `asrd/lady-sif/weapons-master#0` ("If you control any Artifacts") needs the Artifact mechanic,
-which is not modeled. It is listed under A only because its predicate is board state.
-
-**Note (not in scope; flagged for a separate check):** the `ko-wound-reward`,
-`put-bottom-hq-icon-reward` and `shuffle-discard-empty-reward` hooks list the handler effect
-**and** a plain `attack`/`recruit` effect with the same magnitude. If the executor does not
-suppress the plain effect, those cards grant the reward even when the cost is not paid. The
-draft did not confirm either way.
+\* needs the Artifact mechanic.
 
 ---
 
+## Gate Record
+
+Filled at the re-gate (2026-11-16): 01.4 pre-flight, 01.7 copilot, 00.3 lint, each by an independent subagent against `b93e6d6ca`.
+
 ## Lint Gate Self-Review (00.3)
 
-All rounds were run by an independent reviewer.
-
-**Round 1: FAIL.** The collisions and gaps it found, all fixed:
-- **P0: numbering.** WP-744 / EC-781 / D-24567 had already been reserved on `main` by #2287.
-  Renumbered to WP-745 / EC-782 / D-24568 through reserve #2290; #2288 was closed.
-- **P1: facts and spec gaps.**
-  - The card count was 17, not 16.
-  - `playFromUndercover` was retired by WP-678.
-  - The `.push` grep did not match the house append style; the append form is now locked.
-  - The "other" describe counts could not be computed; the running counts were dropped.
-  - The card-name source was not locked; it is now `cardDisplayData.name` (D-24568 §6).
-- **P2:**
-  - The KO-site count is 24 callers + 2 direct.
-  - New evaluator case bodies go in named helpers.
-  - The EC now uses exact constant names.
-  - Regens are labeled certain or conditional.
-  - The "71 non-predicate" prose was corrected.
-  - The client no-leak line was added.
-
-**Round 2: PASS**, with four wording cleanups applied: the WP-744 bullet placement, the merged
-split-card bullets, the `onBegin` / reveal wording, and the EC Before-Starting order.
-
-**Round 3: PASS**, with six fixes applied:
-- the in-flight-match and replay story, since `heroAbilityHooks` is setup-time
-- EC comment wording
-- A–D follow-up order
-- "all five take a number"
-- two reflows
-
-**Final confirm: PASS** after the pre-flight PS fix (the bystanders literal) and the
-test-precedent citation.
-
-§10, §11 and §19 are N/A. §20 and §21 are N/A, justified: engine and card data only, with no
-funding surface and no `apps/server` surface.
+Draft rounds (2026-09-22): R1 FAIL (numbering collision → renumbered via #2290; card count; `playFromUndercover` retired; grep form; describe counts; name source), R2 PASS, R3 PASS, final confirm PASS. Re-gate rounds: §Gate Record.
 
 ## Pre-Flight Verdict (01.4)
 
-**READY TO EXECUTE (2026-09-22)**, blocked only on WP-743 / EC-780 executing on `main`. The EC
-Before-Starting hard gate enforces that.
-
-Four independent rounds:
-- **Round 1: NOT READY.**
-  - PS-1: the number collision with #2287. Renumbered, and WP-744 was recorded as a sequencing
-    sibling.
-  - PS-2: the "other" describe counts needed `triggeringCardId`. The counts were dropped
-    (option a).
-  - RS-1..5 applied:
-    - `playFromUndercover` is retired
-    - Rage is face B of the Grief/Rage split card, so its tests drive `resolveSplitFaceChoice('b')`
-    - the grep self-trip guard
-    - the KO-site count
-    - the bystanders arm needs no evaluator change
-- **Round 2: NOT READY.**
-  - PS-1: the index rebuild onto the new `main` had dropped WP-743's rows. Rebuilt from HEAD,
-    additions only.
-  - RS-1: `effect-index` and `mechanics:metadata` read the hero ledger, so their regens are
-    certain; the order is locked.
-  - RS-2: the split branch appends `args.cardId`.
-- **Round 3: NOT READY.**
-  - PS-1: the "every arm pushes a constant" rule had no constant for `bystanders-threshold`. It
-    now keeps Savior's literal.
-  - RS-1: the test-precedent citation now points to `effectRulings.test.ts:123`.
-- **Round 4: READY.**
-
-Verified in code:
-- the two play chokepoints (`coreMoves.impl.ts:285`, `:542`); `resolveSplitFaceChoice` never
-  re-appends
-- the KO pile is append-only
-- `onBegin` runs before any move, and parity runs at game start and on every rotation
-- all 17 lines and their `abilityIndex`
-- `cardsDrawn` increments only at `heroEffects.execute.ts:1366`
-- the hash oracles contain no in-scope hero
-- no other marker or condition lockstep site
+Draft: READY 2026-09-22 (r4), blocked on WP-743, which has since executed. Re-gate: §Gate Record.
 
 ## Copilot Check (01.7)
 
-**Round 1: RISK / HOLD** on modes #4, #10, #11, #18, #20, #26, #28 and #30. The eight fixes:
-1. D-24568 §1 now explicitly **amends** D-24377 §1 (option A: ratify on-play). The operator's
-   brief for this WP set "play-order gates evaluate on play", and a count of cards played is
-   manufactured by play order.
-2. `cardsDrawn` counts only the `draw:N` path; this is recorded, with Follow-up D.
-3. The Warriors Three split-name imprecision is recorded (D-24568 §6).
-4. Tests: case 1 reads the committed `data/cards` strings; a split play leaves exactly one
-   history entry; a second Invisible Woman copy counts.
-5. A certain `PLAY_HISTORY_CONDITION_TYPES` drift pin.
-6. Exported constants in the marker arms.
-7. A corrected and expanded upgrade/replay story.
-8. WP-744 (#2292) sequencing and the `totalObs` 3011-vs-3013 collision.
-
-**Round 2: PASS on all 30 modes.** The upgrade claim was checked against
-`buildInitialGameState.ts:387` and `matchReplay.logic.ts:5, 84`.
+Draft: PASS r2 (30 modes) 2026-09-22. Re-gate: §Gate Record.
 
 ---
 
 ## See Also
 
-- WP-743 / D-24566 — Spring the Trap / Grief (sibling; lands first)
-- WP-656 / D-24467 — Diamond Form (event gate; gated lazy `G` field)
-- WP-568 / D-24377 — the wait-and-see window
-- WP-665 / D-24476 — `draw-threshold`
-- WP-653 / D-24464 — Savior / Outwit / Worthy / Antics conditions
-- WP-681 / D-24498 — `first-hero-condition`
+- WP-743 / D-24566 — Spring the Trap / Grief (turn flags; sibling)
+- WP-861 / D-24798, D-24746 — the already-gated first-card and N-other-cards lines
+- WP-777 / D-24616 — `discard-threshold` (the marker template)
+- WP-656 / D-24467, WP-568 / D-24377, WP-665 / D-24476, WP-653 / D-24464
