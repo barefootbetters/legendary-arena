@@ -356,10 +356,9 @@ export function isFightRestrictionBlocking(
       // Mastermind is not a Villain ("defeated another Villain").
       return state.turnEconomy.hasDefeatedVillainThisTurn !== true;
     case 'at-most-one-card-played':
-      // why: D-24776 / D-24794 — "played more than one card this turn" reads the one
+      // why: D-24776 / D-24794 / D-24856 — "played more than one card this turn" reads the one
       // played-this-turn authority, not inPlay.length: a returned Sidekick, an Out of Time
-      // card or a used Ritual Artifact still counts as played. Inherited residual (D-24692):
-      // a played card that left play another way (e.g. a self-KO) stops counting.
+      // card, a used Ritual Artifact or a card KO'd out of play still counts as played.
       return playedCardIdsThisTurn(state, state.playerZones[playerId]?.inPlay ?? []).length > 1;
     case 'no-adjacent-villain':
       // why: WP-873 / D-24818 — a null index is a villain outside the City (a fortifier),

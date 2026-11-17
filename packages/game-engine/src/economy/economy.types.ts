@@ -280,6 +280,30 @@ export interface TurnEconomy {
    */
   ritualUsedPlayedCardIds?: CardExtId[];
   /**
+   * WP-899 / D-24856 — every other card the current player played this turn that then left
+   * `inPlay` mid-turn: KO'd from play (every site reaches `recordOwnedCardKoed` with zone
+   * `'inPlay'`) or moved out of play by the operator "Move a card" setter. Rules v23
+   * L3441-3453 say such a card still counts as "cards you played this turn", so
+   * `playedCardIdsThisTurn` appends every entry here. "Heroes you have" reads use
+   * `playedCardIdsStillInPlay` and never see it.
+   *
+   * A MULTISET: one entry per exit, never de-duplicated, because the basic tokens share one
+   * id (two S.H.I.E.L.D. Agents KO'd out are two entries). A card has at most one entry per
+   * physical play: it can only leave play once, and returning to play takes a new play.
+   * Exits already covered by their own ledger are NOT recorded here (Out of Time, a used
+   * Ritual Artifact, a Commune Artifact, a returned Sidekick), and neither is a Transform
+   * (the second form takes the played card's inPlay slot, so the view still counts one card)
+   * nor the end-of-turn cleanup.
+   *
+   * ACTIVE-PLAYER-SCOPED, like `outOfTimePlayedCardIds`: only the active player's inPlay is
+   * ever non-empty mid-turn (cleanup empties it at every turn end). LAZILY MATERIALIZED:
+   * absent until the first record (`recordPlayedCardLeftPlay`), dropped by
+   * `resetTurnEconomy` at turn start, carried by `carryConversionFlag`. Absent ≡ none;
+   * omitted by `JSON.stringify`, so a turn in which no played card leaves play serializes
+   * byte-identically and neither state-hash oracle moves. Strings only (CardExtId).
+   */
+  leftPlayPlayedCardIds?: CardExtId[];
+  /**
    * WP-865 / D-24808 — the Heist crew: the allowlisted Heist cards the current player readied
    * this turn, in play order. Playing a Heist card appends its CardExtId here (via
    * `enrollHeistCard`) instead of firing its Heist ability; a successful `attemptHeist` then

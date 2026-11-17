@@ -494,6 +494,7 @@ type CarriedTurnFields = Partial<
     | 'sidekicksReturnedThisTurn'
     | 'highestRecruitedHeroCost'
     | 'ritualUsedPlayedCardIds'
+    | 'leftPlayPlayedCardIds'
     | 'heistCrewCards'
     | 'hasAttemptedHeistThisTurn'
     | 'heistRevealedCardId'
@@ -594,6 +595,12 @@ function carryConversionFlag(economy: TurnEconomy): CarriedTurnFields {
   }
   if (economy.ritualUsedPlayedCardIds !== undefined) {
     carried.ritualUsedPlayedCardIds = economy.ritualUsedPlayedCardIds;
+  }
+  // why: WP-899 / D-24856 — carry the left-play ledger ONLY when present (omit-when-absent keeps
+  // both hash oracles byte-stable). Without the carry, the next addResources / spend rebuild
+  // would drop it and a card KO'd out of play would stop counting as played this turn.
+  if (economy.leftPlayPlayedCardIds !== undefined) {
+    carried.leftPlayPlayedCardIds = economy.leftPlayPlayedCardIds;
   }
   // why: WP-865 / D-24808 — carry the Heist crew and the once-per-turn attempt latch beside the
   // Excessive Violence ledger, ONLY when present (omit-when-absent keeps both hash oracles
@@ -1255,6 +1262,37 @@ export function markHeistAttempted(economy: TurnEconomy, revealedCardId: CardExt
     // why: WP-876 / D-24823 — recorded, not re-read: The Big Score and Revolutionary Anthem read
     // this id's type, because an earlier Heist ability can change the live Villain Deck top.
     heistRevealedCardId: revealedCardId,
+  };
+}
+
+/**
+ * Records a card the current player played this turn that then left play mid-turn, so it
+ * still counts as played this turn (WP-899 / D-24856).
+ *
+ * Appends `cardId` to `leftPlayPlayedCardIds`, materializing the array on the first call.
+ * Never de-duplicates: the ledger is a multiset (the basic tokens share one id). Every other
+ * field is carried unchanged. `resetTurnEconomy` drops the ledger at the next turn start.
+ *
+ * @param economy - Current turn economy state.
+ * @param cardId - The card that left `inPlay`.
+ * @returns New TurnEconomy with `cardId` appended to `leftPlayPlayedCardIds`.
+ */
+export function recordPlayedCardLeftPlay(economy: TurnEconomy, cardId: CardExtId): TurnEconomy {
+  // why: WP-899 / D-24856 — build a NEW array (mirrors recordOutOfTimePlayed) so the rebuild
+  // never aliases the prior economy's ledger.
+  const nextLeftPlayPlayed = [...(economy.leftPlayPlayedCardIds ?? []), cardId];
+  return {
+    attack: economy.attack,
+    recruit: economy.recruit,
+    spentAttack: economy.spentAttack,
+    spentRecruit: economy.spentRecruit,
+    piercing: economy.piercing,
+    woundsDrawn: economy.woundsDrawn,
+    cardsDrawn: economy.cardsDrawn,
+    // why: WP-899 / D-24856 — spread the single carry chokepoint so recording a card that left
+    // play never drops another lazy field set earlier this turn.
+    ...carryConversionFlag(economy),
+    leftPlayPlayedCardIds: nextLeftPlayPlayed,
   };
 }
 

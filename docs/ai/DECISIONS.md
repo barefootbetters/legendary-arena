@@ -50094,6 +50094,8 @@ Protect this file.
 
 **Reserved by:** NUMBER-LEDGER D-24798 (#3132). Related: D-24498 (first-Hero condition), D-24746 (text-gate contrast, test pattern), D-24705 / D-24706 (bot marker read), D-24566 (icon on a gated line), D-24026.
 
+
+**Amended by D-24856 (2026-11-16, WP-899):** §5 is retired. A card KO'd out of play mid-turn now stays in `playedCardIdsThisTurn`, so it still counts toward "first": a second card after a KO'd-out first card is not first.
 ---
 
 ### D-24799 — The dashboard's WPs-done KPI counts the rolling 7 days ending on HEAD's day, not the Monday-anchored ISO week (direct fix, no WP) (Active 2026-11-03)
@@ -50476,6 +50478,8 @@ PR #3186 marked the villain and henchman cards with this text through `villain-e
 
 **Reserved by:** NUMBER-LEDGER D-24816 (#3197). Related: D-24076 (defeat requirement), D-24750 (fight discard cost), D-24185 (pre-commit preconditions), D-24363 / D-24364 (move ↔ `getLegalMoves` mirror), D-24377 (lazy turn fields), D-24467 (the villain-defeat signal, not reused), D-24574 (client gates on projected data), D-24692 / D-24776 / D-24794 (played this turn), D-24736 (Clash Monster Pit), D-24737 (free defeats ignore restrictions), D-24764 (resized City), D-24372 (runtime drift pins), D-24026.
 
+
+**Amended by D-24856 (2026-11-16, WP-899):** §4's inherited residual is retired. A played card KO'd out of play still counts toward `at-most-one-card-played`, so Squirrel Girl stays unfightable after one play plus one KO'd-out play.
 ---
 Protect this file.
 
@@ -51760,6 +51764,8 @@ Protect this file.
 
 **Packet:** WP-745 / EC-782. **Reserved by:** NUMBER-LEDGER D-24568 (#2290). Related: D-24377, D-24467, D-24476, D-24464, D-24566, D-24616, D-24746, D-24798, D-24619, D-24692, D-24694, D-24372, D-24026.
 
+
+**Amended by D-24856 (2026-11-16, WP-899):** §2's residual is retired. A card KO'd out of play stays in the shared played view, so the exact ordinal no longer errs either way, and the threshold and existence conditions count it. The `unmarkedConditionalGrants.test.ts` case 2 pin flipped on purpose.
 ---
 
 ### D-24601 — Indestructible Man can't be fought with Attack: a plain `fightMastermind` returns, his only fight is a once-per-turn shuffle of two player-chosen Elite Assassins into the Villain Deck (`fightMastermind({ shuffleAssassinIds })`), the attack lock rides `fortifiedReason`, and his strike and three tactics resolve (Active 2026-11-16 — WP-768 / EC-805)
@@ -51789,6 +51795,56 @@ Protect this file.
 **Out of scope / follow-ups.** WP-770 (the chooser; its Assumes must adopt `isAvailable` and order the lock reason ahead of the client cost gate); Epic Indestructible Man; Mad Monk's Villain substrate; Dark Memories; a faithful "any printed 4" check; the two Arms Dealer residuals above.
 
 **Packet:** WP-768 / EC-805. **Reserved by:** NUMBER-LEDGER D-24601 (#2412). Related: D-24504, D-24509, D-24556, D-24574, D-24587, D-24598, D-24654, D-24673, D-24737, D-24763, D-24771, D-24773, D-24780, D-24789, D-24802, D-24810, D-24818, D-24364, D-24185, D-24750, D-24033, D-24119, D-24026.
+
+---
+Protect this file.
+
+### D-24856 — "Cards you played this turn" keeps a card that left play mid-turn: an exit-side multiset ledger `G.turnEconomy.leftPlayPlayedCardIds`, written by `recordOwnedCardKoed` for a KO from play and by the operator move, unioned into `playedCardIdsThisTurn` (Active 2026-11-16 — WP-899 / EC-937)
+
+**Status:** Active 2026-11-16. Reserved 2026-11-16 (#3423); drafted and gated (#3427: 01.4 READY TO EXECUTE, 01.7 CONFIRM, 00.3 PASS). Live-verify (D-24026) pending.
+
+**Context.** Rules v23 L3441-3453: a card you played this turn that moved somewhere else still counts as one of "the cards you played this turn", but not as "your Heroes" / "Heroes you have" (L3443-3447). The one played view, `playedCardIdsThisTurn`, already kept Out of Time cards (D-24692), returned Sidekicks (D-24776) and used Ritual Artifacts (D-24794); any other exit (a KO from play) dropped the card. Every reader undercounted. The first-card gates over-granted, Dr. Octopus's exact ordinal erred both ways, and Squirrel Girl became fightable. D-24798 §5, D-24568 §2 and D-24816 §4 recorded this as an accepted residual (WP-745 Out of Scope E).
+
+**Decision.**
+1. **An exit-side ledger, not an entry-side play history.** `TurnEconomy.leftPlayPlayedCardIds?: CardExtId[]` (contract field) records a played card when it leaves `inPlay` mid-turn. An entry-side history would be written on every play, materializing a hashed field in every match and moving both hash oracles. The exit ledger is written only when a played card actually leaves play.
+2. **Exactly two write sites.**
+   - `recordOwnedCardKoed` with `fromZone === 'inPlay'`: every KO site already reaches it, and the WP-853 / WP-855 pins force new ones through it. It is ungated, and guarded only for minimal-`G` slices without an economy.
+   - The operator `moveBetweenPlayerZones` route through `recordOperatorLeftPlay`, on both the deck-top and the general branch. D-24713 §6: nothing enters `inPlay` without a play.
+
+   `recordPlayedCardLeftPlay` mirrors `recordOutOfTimePlayed`: it always builds a new array; `carryConversionFlag` carries the ledger by reference; `resetTurnEconomy` drops it.
+3. **The closed exit table** (13 functions / 22 literal `inPlay` writes) with each row's disposition:
+   - KO, recorded through site 1: `heroEffectKo`, `koOneHeroForPlayer`, `villainEffectKoHeroesCurrentByTrait`
+   - covered by its own ledger: Out of Time (`heroEffectOutOfTime`, `replayOutOfTimeCards`), Ritual (`useRitualArtifact`, `applyCommuneCostResolvedSeatChoice`), the Sidekick count (`returnPlayedSidekick`)
+   - not recorded: Transform (`applyHeroTransform`), the split relabel (`resolveSplitFaceChoice`), end of turn (`keepControlledArtifacts`, `applyEndOfTurnCleanup`, `pullCardIntoHand`)
+
+   `playedCardLeftPlay.test.ts` pins it as `LOCKED_IN_PLAY_WRITE_TABLE`, and pins the record calls as `LOCKED_LEFT_PLAY_RECORD_TABLE`.
+4. **View order.** The Penumbra-expanded `inPlay` comes first. Then the ledger, also Penumbra-expanded and **never de-duplicated** (a multiset: the basic tokens share one id, and a card back in play took a new play). Then the Sidekick count. Then the Out of Time and Ritual `includes` loops, which absorb a card that is in both histories (an Out of Time replay KO'd out on turn 2 counts once).
+5. **Transform is not recorded.** The engine removes the base card and appends the second form to `inPlay`, so the second form stands in for the play. That satisfies rules v23 L2059 by count; trait reads of the second form are the recorded residual.
+6. **Later exits.**
+   - A KO records itself through `recordOwnedCardKoed`.
+   - Any other mid-turn exit from `inPlay` calls `recordPlayedCardLeftPlay` at its own site, unless its own ledger covers it. WP-901 (Undercover-from-play, D-24858) is the first named case.
+   - T15 sees literal `.inPlay` writes only. A dynamic-zone write (`zones[zone] = …`) or an in-place-mutating helper is invisible to it, so such a packet names its record and tests it.
+7. **Retired residuals:** D-24798 §5 (first-card gates), D-24568 §2 (the exact ordinal) and D-24816 §4 (Squirrel Girl).
+8. **Kept residuals and divergences:**
+   - **D-24776's shared-id collapse** in the Out of Time loop. It now also crosses ledgers: a KO'd-out Sidekick plus a different Sidekick set aside Out of Time counts once, which is no regression.
+   - **The coach sequence teacher** (`apps/server/src/coach/sequenceTeacher.logic.ts`) reproduces gates over the captured raw `inPlay`. It can read a gate that now holds through a KO'd-out play as failing. WP-900 / D-24857 or a follow-up owns it.
+   - **The bot's `isFirstHeroCardPlayableFirst`** (`simulation/ai.competent.ts`) reads the raw `inPlayCount`, as it already did for Out of Time, Ritual and Sidekicks.
+9. **Code-style exception.** T15 holds the third copy of the comment-strip and enclosing-function scan helpers. Extracting a shared helper is deferred, because it would edit the two frozen KO-trigger test files.
+10. **Hash and replay.** The field is absent until a played card leaves play and is omitted by `JSON.stringify`, so `PRE_WP080_HASH`, the sentinel and every `finalStateHash` pin are unchanged (measured).
+    - The determinism harness (`replay/replay.execute.ts`) does not reset `turnEconomy`, so the ledger accumulates across turns there. A future hash-pinned run that KOs a played card pins that state; re-pinning is the operator's call.
+    - This is a runtime change: a stored match whose log KOs a played card out of play and then reads the view may re-execute differently from `initialState + log` (D-24119).
+
+**Execution (2026-11-16).** Baseline `origin/main` `22ea829d0` (after #3425). game-engine 7343 / 0. EC-937 `697f23972`.
+
+**Gates.**
+- game-engine 7343 → 7363 / 0, +20: 19 in the new `hero/playedCardLeftPlay.test.ts`, and +1 for the residual pin's true-8th sibling. The pin itself flipped to "the 9th physical play after a KO'd-out card → none".
+- `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail.
+- `sim:runtime-observed:check`, `sim:coverage --check` and `effect-index:check` are OK; no feed moved.
+- Hash oracles are unchanged.
+- Verification Step 4 shows 3 lines.
+- Revert proofs 5/5.
+
+**Packet:** WP-899 / EC-937. **Reserved by:** NUMBER-LEDGER D-24856 (#3423). Related: D-24568, D-24798, D-24816, D-24619, D-24692, D-24776, D-24794, D-24789, D-24791, D-24713, D-24795, D-24823, D-24746, D-24372, D-24857, D-24858, D-24119, D-24026.
 
 ---
 Protect this file.

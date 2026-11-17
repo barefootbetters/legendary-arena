@@ -10,6 +10,33 @@
 
 ## Current State
 
+### WP-899 / EC-937 — "Cards you played this turn" keeps a card that left play mid-turn (D-24856) (2026-11-16)
+
+**User-visible on `play.legendary-arena.com` after deploy, in a match created after the deploy.** A played card KO'd out of play still counts as one of the cards you played this turn (rules v23 L3441-3453). Before this, it dropped out of the count:
+- Dr. Octopus's Eighth Time's a Charm granted on the 9th physical play.
+- The first-card gates (First Strike, Follow My Lead, Surprise Attack, Deadpool's Do-Over) treated the second card as the first.
+- "At least N other cards played" (Winter Soldier, Iron Man, Cannonball), Invisible Woman's other-4-cost check, Warriors Three's distinct names, the class / team superpowers, `requiresKeyword` synergy, the Size-Changing discount and every "for each card you played this turn" count were short.
+- Squirrel Girl became fightable.
+
+"Heroes you have" is unchanged: a KO'd card is not one of your Heroes.
+
+- **Engine.** New lazy multiset ledger `G.turnEconomy.leftPlayPlayedCardIds`, which is a `TurnEconomy` contract field.
+  - It has two write sites: `recordOwnedCardKoed` with zone `'inPlay'` (every KO-from-play site already reaches it), and the operator "Move a card" route (`recordOperatorLeftPlay`).
+  - `playedCardIdsThisTurn` unions it, Penumbra-expanded and never de-duplicated, before the Sidekick / Out of Time / Ritual ledgers. No reader changed.
+  - Transform is not recorded: the second form stands in for the play.
+  - A drift pin locks the 13 functions that write `inPlay`, with their dispositions, and the two record sites.
+- **Tests.** game-engine 7343 → 7363 / 0 (+20). Every other package is unchanged and has 0 failures: arena-client 2726, server 1853 (1646 pass, 207 DB-gated skips), dashboard 622, registry 313, registry-viewer 354, legends-board 138, lagn-spec 108, preplan 52, engine-runner 20, vue-sfc-loader 11, replay-producer 4.
+  - `pnpm -r build` 0.
+  - `sim:runtime-observed:check`, `sim:coverage --check` and `effect-index:check` are 0, and no feed moved.
+  - Hash oracles are unchanged. Revert proofs 5/5.
+  - Sanctioned pin edit: WP-745 case 2's residual pin now expects no grant on the 9th physical play after a KO'd-out card, and a true-8th sibling grants.
+- **Hash / replay.** The field is absent until a played card leaves play, so hash oracles do not move. This is a runtime change: a stored match that KOs a played card out of play and then reads the view may re-execute differently (D-24856 §10).
+- **Live-verify (D-24026) pending.** On an operator match: Dr. Octopus as the true 8th card grants and as the 9th physical card does not, after a KO'd-out card; First Strike played second after a KO'd-out first card is blocked.
+- **Residuals / follow-ups.**
+  - The coach sequence teacher (`apps/server/src/coach/sequenceTeacher.logic.ts`) and the bot's `isFirstHeroCardPlayableFirst` still read raw `inPlay` (D-24856 §8). The teacher's follow-up rides WP-900.
+  - WP-901 (Undercover-from-play) records its in-play exit through `recordPlayedCardLeftPlay`.
+  - The WP-745 STATUS follow-up (E) is resolved by this packet.
+
 ### WP-768 / EC-805 — Indestructible Man: Attack can't fight him; a once-per-turn shuffle of two chosen Elite Assassins does (D-24601) (2026-11-16)
 
 **User-visible on `play.legendary-arena.com` after deploy, in a match created after the deploy.** Indestructible Man stops being a free ranked win (printed 0 attack, no once-per-turn cap: every player and bot beat all four tactics on turn 1). The Mastermind Fight button is disabled with "You can't use Attack to fight Indestructible Man. Shuffle two Elite Assassins from your Victory Pile into the Villain Deck to fight him." Bots bank Elite Assassins and shuffle two in, once per turn, to defeat a tactic; humans get the chooser with WP-770. His Master Strike shuffles in an Assassin or wounds every player, and three of his tactics now do what they print.

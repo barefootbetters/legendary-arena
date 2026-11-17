@@ -537,7 +537,7 @@ high-water: 422
 - WP-896 — workindex-liveverify-row-token (a structured `[live-verify: verified|partial|pending|n/a]` token on every done WORK_INDEX row, checked against live-verify.json where the WP has entries. reserved 2026-11-14, claude/wp896-liveverify-row-token-reserve; LANDED 2026-11-14)
 - WP-897 — ambush-overlay-keywordless-narration (the center-screen Ambush overlay names keyword-less Ambush effects instead of "entered the city with no Ambush effect". reserved 2026-11-15, claude/wp897-ambush-overlay-narration-reserve; LANDED 2026-11-15)
 - WP-898 — villain-setup-walk-fold (one shared enumerator for the five villain setup registry walks in villainDefeatRequirement.setup.ts; decides the G.villainAttackPerCaptured -> G.villainVariableAttack table fold, D-24774 §8-9. reserved 2026-11-15, claude/wp898-villain-setup-walk-fold-reserve; LANDED 2026-11-15)
-- WP-899 — played-this-turn-left-play (the "cards you played this turn" view counts a card that left play mid-turn, exactly once per physical play; WP-745 follow-up E, retires the D-24798 §5 / D-24568 §2 residual. reserved 2026-11-16, claude/wp899-played-left-play-reserve)
+- WP-899 — played-this-turn-left-play (the "cards you played this turn" view counts a card that left play mid-turn, exactly once per physical play; WP-745 follow-up E, retires the D-24798 §5 / D-24568 §2 residual. reserved 2026-11-16, claude/wp899-played-left-play-reserve; LANDED 2026-11-16)
 - WP-900 — coach-order-safe-enabler (the sequence teacher qualifies an enabler only when every hook condition is an engine-classified order-safe type; WP-745 follow-up F, amends D-24533. reserved 2026-11-16, claude/wp-coach-order-safe-enabler)
 - WP-901 — undercover-your-hero (bkwd "send one of your (other) Heroes Undercover" from hand or play, with a decline; Weave a Web of Spies draw gate; WP-745 follow-up G, extends D-24494. reserved 2026-11-16, claude/wp-undercover-your-hero)
 
@@ -1039,7 +1039,7 @@ high-water: 457
 - EC-934 — workindex-liveverify-row-token (WP-896. reserved 2026-11-14, claude/wp896-liveverify-row-token-reserve; LANDED 2026-11-14)
 - EC-935 — ambush-overlay-keywordless-narration (WP-897. reserved 2026-11-15, claude/wp897-ambush-overlay-narration-reserve; LANDED 2026-11-15)
 - EC-936 — villain-setup-walk-fold (WP-898. reserved 2026-11-15, claude/wp898-villain-setup-walk-fold-reserve; LANDED 2026-11-15)
-- EC-937 — played-this-turn-left-play (WP-899. reserved 2026-11-16, claude/wp899-played-left-play-reserve)
+- EC-937 — played-this-turn-left-play (WP-899. reserved 2026-11-16, claude/wp899-played-left-play-reserve; LANDED 2026-11-16)
 - EC-938 — coach-order-safe-enabler (WP-900. reserved 2026-11-16, claude/wp-coach-order-safe-enabler)
 - EC-939 — undercover-your-hero (WP-901. reserved 2026-11-16, claude/wp-undercover-your-hero)
 
@@ -1675,6 +1675,6 @@ section below) and the allocation protocol in
 - D-24853 — workindex-liveverify-row-token (WP-896; every done WORK_INDEX row carries exactly one live-verify state token, the status of record, never auto-written. reserved 2026-11-14, claude/wp896-liveverify-row-token-reserve; LANDED 2026-11-14)
 - D-24854 — ambush-overlay-keywordless-narration (WP-897; how a keyword-less villain-ability descriptor contributes its clause to the ambushResolved narrative, and the orphaned WP-252 → WP-253 narration deferral. reserved 2026-11-15, claude/wp897-ambush-overlay-narration-reserve; LANDED 2026-11-15)
 - D-24855 — villain-setup-walk-fold (WP-898; the shared villain setup enumerator and the attack-per-captured table-fold verdict. reserved 2026-11-15, claude/wp898-villain-setup-walk-fold-reserve; LANDED 2026-11-15)
-- D-24856 — played-this-turn-left-play (WP-899; where played-this-turn history is recorded, multiset semantics, hash posture, transform verdict. reserved 2026-11-16, claude/wp899-played-left-play-reserve)
+- D-24856 — played-this-turn-left-play (WP-899; where played-this-turn history is recorded, multiset semantics, hash posture, transform verdict. reserved 2026-11-16, claude/wp899-played-left-play-reserve; LANDED 2026-11-16)
 - D-24857 — coach-order-safe-enabler (WP-900; fail-closed enabler rule, engine-owned ORDER_SAFE_ENABLER_CONDITION_TYPES, cached reports keep their tips. reserved 2026-11-16, claude/wp-coach-order-safe-enabler)
 - D-24858 — undercover-your-hero (WP-901; new Undercover source shape over hand + in-play Heroes, "other" excludes the source, declinable choice, PendingUndercoverChoice widened. reserved 2026-11-16, claude/wp-undercover-your-hero)

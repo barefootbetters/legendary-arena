@@ -57,6 +57,7 @@ import type { HeroCondition } from '../rules/heroAbility.types.js';
 import type { HeroCountSource } from '../rules/heroCountSource.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { BYSTANDER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { recordPlayedCardLeftPlay } from '../economy/economy.logic.js';
 import {
   MASTER_STRIKE_THIS_TURN_CONDITION_TYPE,
   MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE,
@@ -211,6 +212,14 @@ export function recordOwnedCardKoed(
   cardId: CardExtId,
   fromZone: OwnedKoSourceZone,
 ): void {
+  // why: WP-899 / D-24856 — rules v23 L3441-3453: a card you played this turn that was KO'd
+  // out of play still counts as "cards you played this turn". Every KO site already reaches
+  // this one function with the zone the card left (the WP-853 / WP-855 site pins), so a
+  // single write here covers every KO from play. Ungated on purpose: the ledger is written
+  // only when a card is KO'd from play, so a match without one never gains the key.
+  if (fromZone === 'inPlay' && G.turnEconomy !== undefined) {
+    G.turnEconomy = recordPlayedCardLeftPlay(G.turnEconomy, cardId);
+  }
   if (hasWaitingGrantWithCondition(G, OWNED_CARD_KOED_CONDITION_TYPE)) {
     if (G.ownedCardsKoedSinceResolve === undefined) {
       G.ownedCardsKoedSinceResolve = {};
