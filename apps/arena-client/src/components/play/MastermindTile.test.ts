@@ -11,6 +11,7 @@ import type {
   UIMastermindState,
   UITurnEconomyState,
 } from '@legendary-arena/game-engine';
+import { KILLMONGER_ATTACK_LOCK_REASON } from '@legendary-arena/game-engine';
 import type { SubmitMove, UiMoveName } from './uiMoveName.types';
 
 interface RecordedCall {
@@ -1076,5 +1077,213 @@ describe('MastermindTile — Haunting badge (WP-759 / D-24587)', () => {
       },
     });
     assert.equal(wrapper.find('[data-testid="play-mastermind-haunting"]').exists(), false);
+  });
+});
+
+describe('MastermindTile — Killmonger Wound him + Wounds badge (WP-771 / D-24602)', () => {
+  /** Killmonger as the engine projects him while locked: printed 5, the lock reason, woundable. */
+  function killmonger(over: Partial<UIMastermindState> = {}): UIMastermindState {
+    return mastermindLive({
+      id: 'bkpt-mastermind-killmonger',
+      display: { extId: 'bkpt-mastermind-killmonger', name: 'Killmonger', imageUrl: '', cost: 5 },
+      fightCost: 5,
+      fortifiedReason: KILLMONGER_ATTACK_LOCK_REASON,
+      woundable: true,
+      ...over,
+    });
+  }
+
+  /** Killmonger at 0 Attack (or vanquished): the engine projects no lock reason and no woundable. */
+  function killmongerUnlocked(over: Partial<UIMastermindState> = {}): UIMastermindState {
+    return mastermindLive({
+      id: 'bkpt-mastermind-killmonger',
+      display: { extId: 'bkpt-mastermind-killmonger', name: 'Killmonger', imageUrl: '', cost: 5 },
+      fightCost: 0,
+      ...over,
+    });
+  }
+
+  const woundButton = '[data-testid="play-mastermind-wound"]';
+  const woundsBadge = '[data-testid="play-mastermind-wounds"]';
+
+  test('AC 1: with no woundable, woundCount or Killmonger reason there is no Wound button and no badge', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy({ attack: 9, availableAttack: 9 }), submitMove },
+    });
+    assert.equal(wrapper.find(woundButton).exists(), false);
+    assert.equal(wrapper.find(woundsBadge).exists(), false);
+    assert.equal(wrapper.find('[data-testid="play-mastermind-button"]').attributes('disabled'), undefined);
+  });
+
+  test('AC 2: under the lock Fight is disabled with the engine reason at any attack, and submits nothing', async () => {
+    for (const availableAttack of [0, 3, 5, 9]) {
+      const { calls, submitMove } = recorder();
+      const wrapper = mount(MastermindTile, {
+        props: { mastermind: killmonger(), currentStage: 'main', economy: economy({ attack: availableAttack, availableAttack }), submitMove },
+      });
+      const fight = wrapper.find('[data-testid="play-mastermind-button"]');
+      assert.equal(fight.attributes('disabled'), '', `attack ${availableAttack}`);
+      assert.equal(fight.attributes('title'), KILLMONGER_ATTACK_LOCK_REASON, `attack ${availableAttack}`);
+      await fight.trigger('click');
+      assert.equal(calls.length, 0, `attack ${availableAttack}`);
+    }
+  });
+
+  test('AC 2: under the lock the Excessive Violence button is hidden', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: killmonger(),
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9, excessiveViolenceAvailable: true }),
+        submitMove,
+      },
+    });
+    assert.equal(wrapper.find('[data-testid="play-mastermind-ev"]').exists(), false);
+  });
+
+  test('AC 3: a non-Killmonger fortifiedReason keeps the cost gate first', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive({ fortifiedReason: 'Colleen Wing fortifies the Mastermind. Fight Colleen Wing first.' }),
+        currentStage: 'main',
+        economy: economy({ attack: 2, availableAttack: 2 }),
+        submitMove,
+      },
+    });
+    assert.equal(wrapper.find('[data-testid="play-mastermind-button"]').attributes('title'), 'Needs 6 attack, you have 2.');
+  });
+
+  test('AC 4: under the lock the Fight N badge shows his Attack but never goes loud', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: killmonger({ fightCost: 4, woundCount: 1 }),
+        currentStage: 'main',
+        economy: economy({ attack: 1, availableAttack: 1 }),
+        submitMove,
+      },
+    });
+    const badge = wrapper.find('[data-testid="play-mastermind-fight-cost"]');
+    assert.equal(badge.text(), 'Fight 4');
+    assert.equal(badge.classes().includes('mastermind__fight-cost--unaffordable'), false);
+  });
+
+  test('AC 5: the Wound button names his Attack and submits woundMastermind with {}', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: { mastermind: killmonger({ fightCost: 3, woundCount: 2 }), currentStage: 'main', economy: economy({ attack: 3, availableAttack: 3 }), submitMove },
+    });
+    const button = wrapper.find(woundButton);
+    assert.equal(button.text(), 'Wound him — spend 3 → +1 Recruit');
+    assert.equal(button.attributes('disabled'), undefined);
+    assert.equal(button.find('svg').exists(), true, 'CrossedSwordsIcon, never a Unicode glyph');
+    assert.equal(button.element.closest('[data-testid="play-mastermind-button"]'), null, 'not inside the Fight button');
+    await button.trigger('click');
+    assert.deepEqual(calls, [{ name: 'woundMastermind', args: {} }]);
+  });
+
+  test('AC 6: the Wound button is gated on turn, stage, then attack (restricted Mastermind attack counts)', async () => {
+    const cases: Array<{ stage: string; isViewerTurn: boolean; availableAttack: number; reason: string }> = [
+      { stage: 'main', isViewerTurn: false, availableAttack: 9, reason: 'It is not your turn.' },
+      { stage: 'start', isViewerTurn: true, availableAttack: 9, reason: 'Only available during the Main (Play / Recruit / Fight) step (current: start).' },
+      { stage: 'cleanup', isViewerTurn: true, availableAttack: 9, reason: 'Only available during the Main (Play / Recruit / Fight) step (current: cleanup).' },
+      { stage: 'main', isViewerTurn: true, availableAttack: 4, reason: 'Needs 5 attack, you have 4.' },
+    ];
+    for (const blocked of cases) {
+      const { calls, submitMove } = recorder();
+      const wrapper = mount(MastermindTile, {
+        props: {
+          mastermind: killmonger(),
+          currentStage: blocked.stage,
+          isViewerTurn: blocked.isViewerTurn,
+          economy: economy({ attack: blocked.availableAttack, availableAttack: blocked.availableAttack }),
+          submitMove,
+        },
+      });
+      const button = wrapper.find(woundButton);
+      assert.equal(button.attributes('disabled'), '', blocked.reason);
+      assert.equal(button.attributes('title'), blocked.reason);
+      await button.trigger('click');
+      assert.equal(calls.length, 0, blocked.reason);
+    }
+    const { submitMove } = recorder();
+    const restricted = mount(MastermindTile, {
+      props: {
+        mastermind: killmonger(),
+        currentStage: 'main',
+        economy: economy({ attack: 5, availableAttack: 3, restrictedAttack: [{ remaining: 2, targets: ['mastermind'], label: 'x' }] }),
+        submitMove,
+      },
+    });
+    assert.equal(restricted.find(woundButton).attributes('disabled'), undefined);
+  });
+
+  test('AC 7: the heal lock does not block the Wound, and an Enigma code never opens the guess picker', async () => {
+    const { calls, submitMove } = recorder();
+    const enigmaCode = { isRevealed: false, cards: [{ peekedBy: [] }] };
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: killmonger(),
+        currentStage: 'main',
+        hasHealedThisTurn: true,
+        economy: economy({ attack: 5, availableAttack: 5 }),
+        enigmaCode,
+        submitMove,
+      },
+    });
+    const button = wrapper.find(woundButton);
+    assert.equal(button.attributes('disabled'), undefined);
+    assert.match(button.attributes('title') ?? '', /Wounding is not a fight\./);
+    await button.trigger('click');
+    assert.deepEqual(calls, [{ name: 'woundMastermind', args: {} }]);
+    assert.equal(guessPicker(wrapper).exists(), false);
+  });
+
+  test('AC 8: without woundable there is no Wound button (Fight enabled at 0), and none once the game is over', () => {
+    const { submitMove } = recorder();
+    const atZero = mount(MastermindTile, {
+      props: {
+        mastermind: killmongerUnlocked({ woundCount: 5 }),
+        currentStage: 'main',
+        economy: economy(),
+        submitMove,
+      },
+    });
+    assert.equal(atZero.find(woundButton).exists(), false);
+    assert.equal(atZero.find('[data-testid="play-mastermind-button"]').attributes('disabled'), undefined);
+    const gameOver = mount(MastermindTile, {
+      props: { mastermind: killmonger(), currentStage: 'main', economy: economy({ attack: 9, availableAttack: 9 }), isGameOver: true, submitMove },
+    });
+    assert.equal(gameOver.find(woundButton).exists(), false);
+  });
+
+  test('AC 9: the Wounds badge counts, shows under a Final Blow, and hides once vanquished (game over or not)', () => {
+    const { submitMove } = recorder();
+    const live = mount(MastermindTile, {
+      props: { mastermind: killmonger({ woundCount: 3, fightCost: 2 }), currentStage: 'main', economy: economy(), submitMove },
+    });
+    const badge = live.find(woundsBadge);
+    assert.equal(badge.text(), 'Wounds: 3');
+    assert.equal(badge.attributes('data-count'), '3');
+    assert.equal(badge.element.closest('[data-testid="play-mastermind-button"]'), null);
+    const finalBlow = mount(MastermindTile, {
+      props: { mastermind: killmonger({ tacticsRemaining: 0, finalBlowPending: true, woundCount: 2 }), currentStage: 'main', economy: economy(), submitMove },
+    });
+    assert.equal(finalBlow.find(woundsBadge).exists(), true);
+    for (const isGameOver of [false, true]) {
+      const vanquished = mount(MastermindTile, {
+        props: {
+          mastermind: killmongerUnlocked({ tacticsRemaining: 0, finalBlowPending: false, woundCount: 5 }),
+          currentStage: 'main',
+          economy: economy(),
+          isGameOver,
+          submitMove,
+        },
+      });
+      assert.equal(vanquished.find(woundsBadge).exists(), false, `isGameOver ${isGameOver}`);
+    }
   });
 });

@@ -104,6 +104,7 @@ const NOT_YOUR_TURN: GatingResult = {
  *   - `canRecruitSidekick` → `recruitSidekick` at `play.main` (WP-842)
  *   - `canExorciseHauntedHero` → `exorciseHauntedHero` at `play.main` (WP-759)
  *   - `canFightMastermind` → `fightMastermind` at `play.main`
+ *   - `canWoundMastermind` → `woundMastermind` at `play.main` (WP-771)
  *   - `canPassPriority`    → `advanceStage` at any stage (canonical
  *                             stage-advance per D-10011)
  *   - `canEndTurn`         → `endTurn` at `play.cleanup`
@@ -333,6 +334,7 @@ export function useTurnActions(
   canRecruitSidekick: () => GatingResult;
   canExorciseHauntedHero: () => GatingResult;
   canFightMastermind: () => GatingResult;
+  canWoundMastermind: () => GatingResult;
   canPassPriority: () => GatingResult;
   canEndTurn: () => GatingResult;
   canHealWounds: () => GatingResult;
@@ -412,6 +414,17 @@ export function useTurnActions(
         return { allowed: false, reason: stageGateReason(currentStage, 'main') };
       }
       return healLockGate(hasHealedThisTurn);
+    },
+    // why: WP-771 / D-24602 — the turn + stage gate for wounding Killmonger (woundMastermind
+    // runs only in `main`). No heal lock: wounding "does not count as a Fight" (rules v23
+    // L2240-2244), so the engine lets a player who healed still wound him. MastermindTile layers
+    // the attack-cost check on top; the engine's `woundable` decides whether he can be wounded.
+    canWoundMastermind: () => {
+      if (!isViewerTurn) return NOT_YOUR_TURN;
+      if (currentStage !== 'main') {
+        return { allowed: false, reason: stageGateReason(currentStage, 'main') };
+      }
+      return ALLOWED;
     },
     // why: D-10011 — Pass-priority fires `advanceStage`, the canonical
     // stage-advance vocabulary. Allowed at every stage (start advances

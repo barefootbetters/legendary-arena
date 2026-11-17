@@ -482,4 +482,25 @@ describe('PendingSeatChoicePrompt — WP-883 gain-wound-reward (D-24834)', () =>
     await wrapper.find('[data-testid="pending-seat-choice-option-0"]').trigger('click');
     assert.deepEqual(calls, [{ name: 'resolveSeatChoice', args: { optionIndex: 0 } }]);
   });
+
+  // why: WP-771 / D-24602 — Killmonger's Throw from the Waterfall: each other player's own
+  // concurrent discard pick gets the tactic's name instead of the "Your choice" fallback.
+  test('renders the Throw from the Waterfall heading for the killmonger-waterfall-discard kind (WP-771)', () => {
+    const { submitMove } = recorder();
+    const waterfallChoice: UIPendingSeatChoice = {
+      kind: 'killmonger-waterfall-discard',
+      addressedSeats: ['player-1'],
+      outstandingSeats: ['player-1'],
+      seatPrompts: {
+        'player-1': { options: [{ label: 'Discard Hulk' }, { label: 'Discard Wolverine' }] },
+      },
+    };
+    const wrapper = mount(PendingSeatChoicePrompt, {
+      props: { pendingSeatChoice: waterfallChoice, viewerPlayerId: 'player-1', submitMove },
+    });
+    assert.equal(
+      wrapper.find('.pending-seat-choice-prompt__heading').text(),
+      'Throw from the Waterfall — choose a card to discard',
+    );
+  });
 });

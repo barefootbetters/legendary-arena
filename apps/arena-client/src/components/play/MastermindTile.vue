@@ -6,6 +6,7 @@ import type {
   UIMastermindState,
   UITurnEconomyState,
 } from '@legendary-arena/game-engine';
+import { KILLMONGER_ATTACK_LOCK_REASON } from '@legendary-arena/game-engine';
 import { useTurnActions, healLockGate } from '../../composables/useTurnActions';
 import { useCardCostGating, type GatingResult } from '../../composables/useCardCostGating';
 import CardTile from './CardTile.vue';
@@ -39,7 +40,13 @@ import type { SubmitMove } from './uiMoveName.types';
  * predate the field. A `Fight N` badge shows the projected cost whenever it
  * differs from the printed one. Disabled-state tooltip precedence locked at
  * EC-132 §3 (stage → resource → structural; "all tactics defeated" is the
- * structural lock).
+ * structural lock), with one exception: Killmonger's attack lock (WP-771 /
+ * D-24602) is shown ahead of the resource gate, because it refuses the fight at
+ * any attack.
+ *
+ * Killmonger (WP-771 / D-24602): while the engine projects `woundable`, a
+ * "Wound him" button submits `woundMastermind` (spend his Attack, +1 Recruit);
+ * a "Wounds: n" badge shows `woundCount` until the Mastermind is vanquished.
  *
  * Per the EC-132 §2 SFC authoring whitelist: this is a tested non-leaf
  * composer that USES composables, so it MUST use
@@ -184,7 +191,24 @@ export default defineComponent({
       if (!healLockGate(props.hasHealedThisTurn).allowed) {
         return false;
       }
+      // why: WP-771 / D-24602 — under Killmonger's lock the "Fight N" badge is his Attack (the
+      // Wound price), not a shortfall: the lock, not the attack total, refuses the fight.
+      if (isKillmongerLocked()) {
+        return false;
+      }
       return !useCardCostGating(props.economy).canFight(mastermindFightCost(), 'mastermind').allowed;
+    }
+
+    /**
+     * Whether the engine refuses a plain fight because of Killmonger's attack lock.
+     *
+     * @returns true while `fortifiedReason` is exactly the engine's Killmonger lock reason.
+     */
+    function isKillmongerLocked(): boolean {
+      // why: WP-771 / D-24602 — matched on the engine's own string, never a Mastermind id: a
+      // guard reason (Colleen Wing, The Blob) wins over the lock in the projection and keeps
+      // its existing place after the cost gate.
+      return props.mastermind.fortifiedReason === KILLMONGER_ATTACK_LOCK_REASON;
     }
 
     function hasFightCostBadge(): boolean {
@@ -201,7 +225,8 @@ export default defineComponent({
       // why: disabled-state tooltip precedence per EC-132 §3 — stage →
       // resource → structural. Stage gate first; then cost gate (consumes
       // WP-128 economy.availableAttack); finally the structural-lock
-      // "all tactics defeated" check.
+      // "all tactics defeated" check. One exception (WP-771 / D-24602, "the
+      // cost-before-lock tile order"): Killmonger's lock sits before the cost gate.
       const stage = useTurnActions(props.currentStage, props.isViewerTurn).canFightMastermind();
       if (!stage.allowed) {
         return stage;
@@ -209,6 +234,12 @@ export default defineComponent({
       const healLock = healLockGate(props.hasHealedThisTurn);
       if (!healLock.allowed) {
         return healLock;
+      }
+      // why: WP-771 / D-24602 — Killmonger can't be fought above 0 Attack at ANY attack total,
+      // so "Needs N attack" would be false advice; his lock reason shows first. The engine drops
+      // the reason once he is vanquished, so the victory message below is never masked.
+      if (isKillmongerLocked()) {
+        return { allowed: false, reason: props.mastermind.fortifiedReason ?? null };
       }
       // why: WP-790 / D-24652 — pass the 'mastermind' target (here, in the cost badge and in the
       // EV check) so restricted attack whose grant names the Mastermind counts, exactly as the
@@ -330,7 +361,84 @@ export default defineComponent({
       props.submitMove('fightMastermind', { useExcessiveViolence: true });
     }
 
+    /**
+     * Whether the Mastermind is vanquished: every Tactic defeated and no Final Blow pending.
+     *
+     * // why: WP-771 / D-24602 — independent of isGameOver on purpose. woundCount persists after
+     * a Final Blow award; isVictoryAssured() turns false once the game is over, which would
+     * bring the Wounds badge back on the finished board.
+     *
+     * @returns true once the Mastermind can no longer be fought.
+     */
+    function isVanquished(): boolean {
+      return props.mastermind.tacticsRemaining === 0 && props.mastermind.finalBlowPending !== true;
+    }
+
+    /**
+     * Whether the Wounds badge shows.
+     *
+     * @returns true while the Mastermind holds Wounds and is not vanquished.
+     */
+    function showWoundCount(): boolean {
+      return props.mastermind.woundCount !== undefined && !isVanquished();
+    }
+
+    /**
+     * Whether the "Wound him" button shows: the engine says Killmonger can be wounded on this
+     * board, and the match is still running.
+     *
+     * @returns true while `woundable` is projected and the game is not over.
+     */
+    function showWoundButton(): boolean {
+      // why: WP-771 / D-24602 — availability is the engine's (Killmonger, Attack above 0, a
+      // Tactic or the Final Blow left, a Wound to take); the client never re-derives it.
+      return props.mastermind.woundable === true && !props.isGameOver;
+    }
+
+    /**
+     * Gates the "Wound him" button: turn + stage, then the attack cost.
+     *
+     * @returns allowed, or blocked with a full-sentence reason.
+     */
+    function gateForWound(): GatingResult {
+      // why: WP-771 / D-24602 — no heal lock: wounding is not a fight (rules v23 L2240-2244).
+      const stage = useTurnActions(props.currentStage, props.isViewerTurn).canWoundMastermind();
+      if (!stage.allowed) {
+        return stage;
+      }
+      // why: the engine charges his Attack (resolveMastermindFightCost); fightCost is the same
+      // value for Killmonger, whose card has no Size-Changing discount. The 'mastermind' target
+      // counts Mastermind-restricted attack, as the engine's woundMastermind gate does.
+      return useCardCostGating(props.economy).canFight(mastermindFightCost(), 'mastermind');
+    }
+
+    /**
+     * The "Wound him" button's tooltip.
+     *
+     * @returns the gate reason when disabled, otherwise what a Wound does.
+     */
+    function woundTitle(): string {
+      const gate = gateForWound();
+      if (!gate.allowed && gate.reason !== null) {
+        return gate.reason;
+      }
+      return "Spend Attack equal to Killmonger's Attack to put a Wound on him (−1 Attack) and get +1 Recruit. Wounding is not a fight.";
+    }
+
+    /** Submits the Wound intent. */
+    function onWound(): void {
+      // why: WP-771 / D-24602 — empty payload; woundMastermind takes no arguments. Wounding is
+      // not a fight, so it never opens the Enigma guess picker and never sends Excessive Violence.
+      props.submitMove('woundMastermind', {});
+    }
+
     return {
+      showWoundCount,
+      showWoundButton,
+      gateForWound,
+      woundTitle,
+      onWound,
+      mastermindFightCost,
       enigmaGuessFight,
       enigmaPickerKey,
       onEnigmaGuess,
@@ -393,8 +501,9 @@ export default defineComponent({
       @click="onFight"
     >
       <!-- why: disabled-state tooltip precedence locked at EC-132 §3
-           (stage → resource → structural). Reason text is bound from
-           useTurnActions / useCardCostGating + the structural "all
+           (stage → resource → structural), except Killmonger's lock, which
+           sits before the resource gate (WP-771 / D-24602). Reason text is bound
+           from useTurnActions / useCardCostGating + the structural "all
            tactics defeated" override. -->
       <!-- why: WP-750 / D-24574 — the frame is the badge's positioning context, so
            the Fight N badge sits at the bottom of the CARD art. Pinning it to the
@@ -449,6 +558,17 @@ export default defineComponent({
     >
       Haunting an HQ Hero — exorcise it to fight
     </span>
+    <!-- why: WP-771 / D-24602 — the Wounds on the Mastermind (−1 Attack each; fightCost already
+         reflects them). Hidden once vanquished: woundCount persists after a Final Blow award. -->
+    <span
+      v-if="showWoundCount()"
+      class="mastermind-wounds"
+      data-testid="play-mastermind-wounds"
+      :data-count="mastermind.woundCount"
+      role="status"
+    >
+      Wounds: {{ mastermind.woundCount }}
+    </span>
     <!-- why: D-24819 — Fortify puts the Villain near the Mastermind (rules v23 L1454). A
          sibling of the Fight button (a button cannot hold a button), under it in normal
          flow, never over the card. -->
@@ -461,6 +581,23 @@ export default defineComponent({
       :economy="economy"
       :submit-move="submitMove"
     />
+    <!-- why: WP-771 / D-24602 — Killmonger's "spend [attack] equal to his [attack] to Wound him
+         and get +1 [recruit]". A sibling of the Fight button in normal flow, shown only while the
+         engine projects woundable. CrossedSwordsIcon is an inline SVG: font-independent, never
+         a Unicode glyph. -->
+    <button
+      v-if="showWoundButton()"
+      type="button"
+      class="mastermind-wound"
+      data-testid="play-mastermind-wound"
+      :disabled="!gateForWound().allowed"
+      :aria-disabled="!gateForWound().allowed ? 'true' : undefined"
+      :title="woundTitle()"
+      @click="onWound"
+    >
+      <CrossedSwordsIcon class="mastermind-wound-icon" />
+      <span class="mastermind-wound-label">Wound him — spend {{ mastermindFightCost() }} → +1 Recruit</span>
+    </button>
     <!-- why: WP-738 / D-24561 — the "Fight using Excessive Violence" affordance
          against the Mastermind. A SEPARATE opt-in button (the normal Fight click
          above is unchanged); shown only when the fight is allowed AND the player
@@ -681,6 +818,50 @@ export default defineComponent({
   color: #fff;
   font-size: 0.72rem;
   font-weight: 700;
+}
+
+/* why: WP-771 / D-24602 — the Wounds count on the Mastermind, a dark-red pill. */
+.mastermind-wounds {
+  align-self: flex-start;
+  padding: 0.1rem 0.45rem;
+  border-radius: 0.75rem;
+  background: #7f1d1d;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+/* why: WP-771 / D-24602 — the "Wound him" button. Two classes (0,2,0) so it outranks
+   `.mastermind-tile button` (0,1,1, column flex): the icon sits beside the label. The
+   max-width wraps the label to two lines instead of widening the tile, because the desktop
+   adversary band does not wrap. */
+.mastermind-tile .mastermind-wound {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.25rem;
+  align-self: flex-start;
+  max-width: 8.5rem;
+  margin-top: 0.2rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid #7a2818;
+  border-radius: 0.35rem;
+  background: linear-gradient(180deg, #b91c1c 0%, #7f1d1d 100%);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.mastermind-tile .mastermind-wound:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.mastermind-wound-icon {
+  flex: 0 0 auto;
+  font-size: 0.85rem;
 }
 
 /* why: WP-738 / D-24561, graphic fix-forward 2026-09-22 — the "Fight using

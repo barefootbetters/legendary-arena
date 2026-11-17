@@ -688,3 +688,26 @@ describe('useTurnActions — canExorciseHauntedHero (WP-759 / D-24587)', () => {
     assert.deepEqual(healed, { allowed: true, reason: null });
   });
 });
+
+describe('useTurnActions — canWoundMastermind (WP-771 / D-24602)', () => {
+  test('gates on the viewer\'s turn, then the main stage', () => {
+    const offTurn = useTurnActions('main', false).canWoundMastermind();
+    assert.deepEqual(offTurn, { allowed: false, reason: 'It is not your turn.' });
+    for (const stage of ['start', 'cleanup']) {
+      const blocked = useTurnActions(stage, true).canWoundMastermind();
+      assert.equal(blocked.allowed, false);
+      assert.equal(blocked.reason, `Only available during the Main (Play / Recruit / Fight) step (current: ${stage}).`);
+    }
+    const atMain = useTurnActions('main', true).canWoundMastermind();
+    assert.deepEqual(atMain, { allowed: true, reason: null });
+  });
+
+  test('is not blocked by the heal lock: wounding is not a fight', () => {
+    // why: rules v23 L2240-2244 — the engine's woundMastermind has no heal lock, so a player
+    // who healed this turn may still wound Killmonger (canFightMastermind is blocked).
+    const noPendingFlags = [false, false, false, false, false, false, false, false, false, false] as const;
+    const healed = useTurnActions('main', true, ...noPendingFlags, false, false, true);
+    assert.deepEqual(healed.canWoundMastermind(), { allowed: true, reason: null });
+    assert.equal(healed.canFightMastermind().allowed, false);
+  });
+});

@@ -63,6 +63,10 @@ export type UiMoveName =
   // recipientPlayerId }`; the engine (exorciseHauntedHero) validates and decides.
   | 'exorciseHauntedHero'
   | 'fightMastermind'
+  // why: WP-771 / D-24602 — Killmonger's "spend [attack] equal to his [attack] to Wound him and
+  // get +1 [recruit]". Dispatched with an empty payload; the engine move takes no arguments and
+  // decides availability, cost and the Wound source (it is not a fight).
+  | 'woundMastermind'
   | 'resolveHeroChoice'
   | 'resolveKoHeroChoice'
   // why: WP-470 / D-24282 — unblocks the Doombot scry-KO prompt (pick which of the
