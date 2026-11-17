@@ -111,7 +111,7 @@ Now his tile works like this:
   - Hash oracles are unchanged. Revert proofs 5/5.
   - Sanctioned pin edit: WP-745 case 2's residual pin now expects no grant on the 9th physical play after a KO'd-out card, and a true-8th sibling grants.
 - **Hash / replay.** The field is absent until a played card leaves play, so hash oracles do not move. This is a runtime change: a stored match that KOs a played card out of play and then reads the view may re-execute differently (D-24856 §10).
-- **Live-verify (D-24026) pending.** On an operator match: Dr. Octopus as the true 8th card grants and as the 9th physical card does not, after a KO'd-out card; First Strike played second after a KO'd-out first card is blocked.
+- **Live-verify (D-24026) PASS 2026-11-16.** Operator match `l4OOO53JBjr` on server `293255f4` (the #3429 merge): after a played Agent was KO'd out of play, First Strike played next was blocked (1.2.10), Eighth Time's a Charm granted +2 as the true 8th card (1.2.17) and was blocked as the 9th physical play, "it was card number 9" (3.2.15).
 - **Residuals / follow-ups.**
   - The coach sequence teacher (`apps/server/src/coach/sequenceTeacher.logic.ts`) and the bot's `isFirstHeroCardPlayableFirst` still read raw `inPlay` (D-24856 §8). The teacher's follow-up rides WP-900.
   - WP-901 (Undercover-from-play) records its in-play exit through `recordPlayedCardLeftPlay`.
