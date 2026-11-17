@@ -2756,6 +2756,17 @@
       "date": "2026-11-16",
       "evidence": "",
       "note": "Live check (NEW operator match created after the deploy with Elektra): play a card, KO it with \"Move a card\" -> KO pile, then play First Strike second; it logs [blocked] (\"it needs to be the first Hero you played this turn\") and grants no +1. D-24856."
+    },
+    {
+      "key": "mastermind:bkpt/killmonger|wound-him",
+      "kind": "mastermind",
+      "card": "Killmonger",
+      "ability": "While Killmonger has more than 0 Attack, you cannot fight him. Instead, you may spend Attack equal to his Attack to Wound him and get +1 Recruit. Master Strike: Each player must reveal 4 different Hero Classes or gain one of the Wounds on Killmonger. Any player who can't do either must discard down to 4 cards. (+ tactics A Scar for Every Kill, Rite of Challenge, Throw from the Waterfall)",
+      "wp": "WP-769",
+      "state": "pending",
+      "date": "2026-11-16",
+      "evidence": "",
+      "note": "Live check (NEW Killmonger match after the deploy): the Mastermind Fight button is disabled with \"Killmonger can't be fought while he has more than 0 Attack. Spend Attack equal to his Attack to Wound him and get +1 Recruit.\" while his Attack is above 0; a bot / autoplay seat logs \"spent N Attack to Wound Killmonger and got +1 Recruit\" with his Attack falling 5 -> 0, then takes a Tactic, after which \"Killmonger's N Wound(s) returned to the Wound Stack.\"; a Master Strike logs \"[Killmonger Master Strike]\"; Play Diagnostics shows mastermind.woundCount, mastermind.woundable and mastermind.fortifiedReason. D-24602."
     }
   ]
 }

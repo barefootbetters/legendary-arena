@@ -149,7 +149,14 @@ import { cardCountsAsShieldHero } from '../hero/effectiveTeams.logic.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
 import { computeFinalScores, isVictoryPileBystander } from '../scoring/scoring.logic.js';
 import { WOUND_EXT_ID } from '../setup/buildInitialGameState.js';
-import { isFinalBlowAvailable } from '../mastermind/mastermind.logic.js';
+import { isFinalBlowAvailable, countMastermindWounds } from '../mastermind/mastermind.logic.js';
+// why: WP-769 / D-24602 — Killmonger's lock reason and wound affordance read the same predicates
+// the fightMastermind lock, the woundMastermind move and the bot read.
+import {
+  KILLMONGER_ATTACK_LOCK_REASON,
+  canWoundMastermind,
+  isKillmongerLockShown,
+} from '../mastermind/killmonger.logic.js';
 import { isMastermindHaunting } from '../board/haunt.logic.js';
 import { SHIELD_OFFICER_EXT_ID, SIDEKICK_EXT_ID } from '../setup/pilesInit.js';
 // why: WP-885 / D-24836 — the spare-a-Wound count lives in the gain-wound-reward grant leaf, which
@@ -844,6 +851,12 @@ function buildFortifyProjection(gameState: LegendaryGameState, activePlayerId: s
   if (mastermindFortifiedReason === null && isIndestructibleManLockShown(gameState)) {
     mastermindFortifiedReason = INDESTRUCTIBLE_MAN_ATTACK_LOCK_REASON;
   }
+  // why: WP-769 / D-24602 — Killmonger's lock ("you cannot fight him" while his Attack is above
+  // 0) rides the same channel, after the guard and Indestructible Man reasons, while a Tactic or
+  // the Final Blow is left (dropped once he is vanquished). The live tile disables Fight with it.
+  if (mastermindFortifiedReason === null && isKillmongerLockShown(gameState, activePlayerId)) {
+    mastermindFortifiedReason = KILLMONGER_ATTACK_LOCK_REASON;
+  }
   return { fortifiers, mastermindFortifiedReason, sidekickStackFortifiedReason };
 }
 
@@ -1278,6 +1291,13 @@ export function buildUIState(
     ...(isIndestructibleMan(gameState)
       ? { shuffleFight: buildShuffleFightProjection(gameState, ctx.currentPlayer) }
       : {}),
+    // why: WP-769 / D-24602 — omit-when-absent: the Wound count while ≥ 1 is held (any
+    // Mastermind), and the wound affordance from the same canWoundMastermind gate the move and
+    // the bot read, for the active player (the only one who can wound).
+    ...(countMastermindWounds(gameState.mastermind) > 0
+      ? { woundCount: countMastermindWounds(gameState.mastermind) }
+      : {}),
+    ...(canWoundMastermind(gameState, ctx.currentPlayer) ? { woundable: true as const } : {}),
   };
 
   // --- 6. Project scheme — derive twist count ---

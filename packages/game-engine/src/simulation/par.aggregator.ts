@@ -91,6 +91,7 @@ import { fightVillain } from '../moves/fightVillain.js';
 import { recruitHero } from '../moves/recruitHero.js';
 import { exorciseHauntedHero } from '../moves/exorciseHauntedHero.js';
 import { attemptHeist } from '../moves/attemptHeist.js';
+import { woundMastermind } from '../moves/woundMastermind.js';
 import { fightMastermind } from '../moves/fightMastermind.js';
 // why: WP-286 — same reason as simulation.runner.ts: One-Hit Wonder parks a draw-or-empowered
 // choice unconditionally, so any getLegalMoves-driven loop (this PAR aggregator included) that
@@ -512,6 +513,9 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // why: WP-878 / D-24826 — getLegalMoves step 4c emits attemptHeist when the bot's Heist odds
   // favor it; a missing dispatch entry would spin the per-turn loop (pinned by the drift guard).
   attemptHeist: (context) => attemptHeist(context as never),
+  // why: WP-769 / D-24602 — getLegalMoves step 4d emits woundMastermind against Killmonger; a
+  // missing dispatch entry would spin the per-turn loop (pinned by the drift guard).
+  woundMastermind: (context) => woundMastermind(context as never),
   // why: WP-830 / D-24763 — pass the args through: the Enigma Code guess rides on them.
   fightMastermind: (context, args) => fightMastermind(context as never, args as never),
   // why: WP-286 — must be dispatchable (One-Hit Wonder parks a draw-or-empowered choice

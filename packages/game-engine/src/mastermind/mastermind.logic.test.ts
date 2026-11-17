@@ -7,7 +7,18 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { defeatTopTactic, areAllTacticsDefeated, transformMastermind } from './mastermind.logic.js';
+import {
+  defeatTopTactic,
+  areAllTacticsDefeated,
+  transformMastermind,
+  countMastermindWounds,
+  hasAvailableWound,
+  takeWoundForMastermind,
+  takeWoundFromMastermind,
+  returnMastermindWounds,
+} from './mastermind.logic.js';
+import type { LegendaryGameState } from '../types.js';
+import type { CardExtId } from '../state/zones.types.js';
 import type { MastermindState } from './mastermind.types.js';
 import { makeMastermindState } from '../test/fixtureBuilders.js';
 
@@ -166,5 +177,83 @@ describe('transformMastermind (WP-669 / D-24483)', () => {
     };
     const result = transformMastermind(plain);
     assert.strictEqual(result, plain, 'no alternateFaceId → returns the input unchanged');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Generic Mastermind Wounds (WP-769 / D-24602)
+// ---------------------------------------------------------------------------
+
+describe('Mastermind Wound helpers (WP-769 / D-24602)', () => {
+  const WOUND = 'pile-wound' as CardExtId;
+
+  /** A narrow G: a Mastermind, a KO pile, a Wound Stack. */
+  function makeWoundG(ko: CardExtId[], stack: CardExtId[], held?: CardExtId[]): LegendaryGameState {
+    const mastermind = held === undefined ? makeMastermindState() : { ...makeMastermindState(), wounds: held };
+    return { mastermind, ko, piles: { wounds: stack } } as unknown as LegendaryGameState;
+  }
+
+  it('counts held Wounds and finds an available one in the KO pile or the stack', () => {
+    assert.equal(countMastermindWounds(makeMastermindState()), 0);
+    assert.equal(countMastermindWounds({ ...makeMastermindState(), wounds: [WOUND, WOUND] }), 2);
+    assert.equal(hasAvailableWound(makeWoundG([], [])), false);
+    assert.equal(hasAvailableWound(makeWoundG(['hero' as CardExtId, WOUND], [])), true);
+    assert.equal(hasAvailableWound(makeWoundG([], [WOUND])), true);
+  });
+
+  it('takeWoundForMastermind takes the KO pile first, then the stack top; never aliases; null with neither', () => {
+    const G = makeWoundG(['hero' as CardExtId, WOUND], ['stack-top' as CardExtId, WOUND]);
+    const koBefore = G.ko;
+    const mastermindBefore = G.mastermind;
+    assert.equal(takeWoundForMastermind(G), WOUND);
+    assert.deepEqual(G.ko, ['hero']);
+    assert.deepEqual(koBefore, ['hero', WOUND], 'the old KO array is not mutated');
+    assert.equal('wounds' in mastermindBefore, false, 'the old MastermindState is not mutated');
+    assert.equal(takeWoundForMastermind(G), 'stack-top');
+    assert.deepEqual(G.piles.wounds, [WOUND]);
+    assert.deepEqual(G.mastermind.wounds, [WOUND, 'stack-top']);
+    assert.equal(takeWoundForMastermind(makeWoundG([], [])), null);
+  });
+
+  it('a KO-pile Wound from before the turn snapshot keeps "KO\'d this turn" exact (D-24568)', () => {
+    // why: the Hero at index 2 was KO'd this turn (snapshot 2); the Wound at index 0 predates it.
+    const G = makeWoundG([WOUND, 'old-hero' as CardExtId, 'new-hero' as CardExtId], []);
+    G.koPileLengthAtTurnStart = 2;
+    takeWoundForMastermind(G);
+    assert.equal(G.koPileLengthAtTurnStart, 1);
+    assert.deepEqual(G.ko.slice(G.koPileLengthAtTurnStart), ['new-hero'], 'the KO\'d-this-turn window still holds the Hero');
+
+    const thisTurn = makeWoundG(['old-hero' as CardExtId, WOUND], []);
+    thisTurn.koPileLengthAtTurnStart = 1;
+    takeWoundForMastermind(thisTurn);
+    assert.equal(thisTurn.koPileLengthAtTurnStart, 1, 'a Wound KO\'d this turn leaves the snapshot');
+
+    const absent = makeWoundG([WOUND], []);
+    takeWoundForMastermind(absent);
+    assert.equal('koPileLengthAtTurnStart' in absent, false, 'the field is never created');
+  });
+
+  it('takeWoundFromMastermind removes the first; the field is deleted when empty, never []', () => {
+    const G = makeWoundG([], [], [WOUND, 'second' as CardExtId]);
+    const heldBefore = G.mastermind.wounds;
+    assert.equal(takeWoundFromMastermind(G), WOUND);
+    assert.deepEqual(G.mastermind.wounds, ['second']);
+    assert.deepEqual(heldBefore, [WOUND, 'second'], 'not aliased');
+    assert.equal(takeWoundFromMastermind(G), 'second');
+    assert.equal('wounds' in G.mastermind, false);
+    assert.equal(takeWoundFromMastermind(G), null);
+  });
+
+  it('returnMastermindWounds appends to the stack bottom and deletes the field; 0 and no change when none', () => {
+    const G = makeWoundG([], ['top' as CardExtId], [WOUND, WOUND]);
+    const stackBefore = G.piles.wounds;
+    assert.equal(returnMastermindWounds(G), 2);
+    assert.deepEqual(G.piles.wounds, ['top', WOUND, WOUND]);
+    assert.deepEqual(stackBefore, ['top'], 'not aliased');
+    assert.equal('wounds' in G.mastermind, false);
+    const none = makeWoundG([], ['top' as CardExtId]);
+    const mastermindBefore = none.mastermind;
+    assert.equal(returnMastermindWounds(none), 0);
+    assert.equal(none.mastermind, mastermindBefore, 'untouched');
   });
 });

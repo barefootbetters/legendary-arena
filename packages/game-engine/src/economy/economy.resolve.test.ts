@@ -322,6 +322,41 @@ describe('resolveMastermindFightCost', () => {
   });
 });
 
+describe('resolveMastermindFightCost — Mastermind Wounds (WP-769 / D-24602)', () => {
+  const PORTALS = 'core/portals-to-the-dark-dimension';
+
+  /** A Killmonger-like G: printed 5, `woundCount` Wounds, optional Dark Portal and Storm reduction. */
+  function makeWoundedG(woundCount: number, portalCount = 0, reduction = 0): LegendaryGameState {
+    const wounds: CardExtId[] = [];
+    for (let woundIndex = 0; woundIndex < woundCount; woundIndex++) {
+      wounds.push('pile-wound' as CardExtId);
+    }
+    const G = {
+      cardStats: { 'mm-base': { fightCost: 5, fightCostMode: 'static', fightCostBase: 0 } },
+      mastermind: woundCount > 0 ? { baseCardId: 'mm-base', wounds } : { baseCardId: 'mm-base' },
+      selection: { schemeId: portalCount > 0 ? PORTALS : 'core/midtown-bank-robbery' },
+      counters: { [DARK_PORTAL_COUNT]: portalCount },
+    } as unknown as LegendaryGameState;
+    if (reduction > 0) {
+      G.turnEconomy = addFightCostReduction(makeTurnEconomy(), 'mastermind', reduction);
+    }
+    return G;
+  }
+
+  it('T6: -1 per Wound, floored at 0; an unwounded Mastermind is unchanged', () => {
+    assert.equal(resolveMastermindFightCost(makeWoundedG(0)), 5);
+    assert.equal(resolveMastermindFightCost(makeWoundedG(2)), 3);
+    assert.equal(resolveMastermindFightCost(makeWoundedG(5)), 0);
+    assert.equal(resolveMastermindFightCost(makeWoundedG(7)), 0, 'floored');
+  });
+
+  it('T6: combines with a Dark Portal (+1) and Storm\'s -2', () => {
+    assert.equal(resolveMastermindFightCost(makeWoundedG(2, 1)), 4);
+    assert.equal(resolveMastermindFightCost(makeWoundedG(2, 1, 2)), 2);
+    assert.equal(resolveMastermindFightCost(makeWoundedG(4, 0, 2)), 0);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // darkPortalLocations — the single-source portal→location mapping (WP-728 / D-24549)
 // ---------------------------------------------------------------------------

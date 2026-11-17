@@ -79,6 +79,7 @@ import { dodgeCard } from './moves/dodgeCard.js';
 import { phaseCard } from './moves/phaseCard.js';
 import { useRitualArtifact } from './moves/ritualArtifact.js';
 import { attemptHeist } from './moves/attemptHeist.js';
+import { woundMastermind } from './moves/woundMastermind.js';
 import {
   operatorSetSupplyCount,
   operatorMoveToDeckTop,
@@ -613,6 +614,12 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // CORE_MOVE_NAMES. WP-878 / D-24826 — getLegalMoves step 4c emits it for a bot when the
     // card-count odds favor a Heist, and both simulation MOVE_MAPs dispatch it.
     attemptHeist: { move: attemptHeist, client: false },
+    // why: WP-769 / D-24602 — woundMastermind is Killmonger's "spend Attack equal to his Attack to
+    // Wound him and get +1 Recruit": a non-core, internally-stage-gated move (the attemptHeist
+    // pattern), NOT a fight. Server-only (client: false) per D-10008 — it mutates real G
+    // (turnEconomy, the KO pile / Wound Stack, G.mastermind.wounds). Not in CORE_MOVE_NAMES.
+    // getLegalMoves step 4d emits it for a bot, and both simulation MOVE_MAPs dispatch it.
+    woundMastermind: { move: woundMastermind, client: false },
     // why: WP-502 / D-24306 — endMatchEarly is the player-initiated "End Game"
     // control: it latches the MATCH_ENDED_EARLY endgame counter so the match ends
     // (endedEarly tie) for every seat via the top-level endIf. Server-only
@@ -1085,7 +1092,8 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
             delete G.ambushVillainPlayedThisTurn;
           }
           // why: WP-745 / D-24568 — Rage's "If a Hero was put into the KO pile this turn" reads
-          // the KO pile's tail past this snapshot (the pile is append-only). Taken here, before
+          // the KO pile's tail past this snapshot (every KO appends; WP-769 / D-24602's one removal
+          // keeps the snapshot exact). Taken here, before
           // any move of the turn and before the onTurnStart rule hooks, so a KO during this turn's
           // villain reveal counts as this turn. GATED: written only when a hook reads the
           // condition, so a match without Rage is byte-unchanged; applyOnBeginParity mirrors it.

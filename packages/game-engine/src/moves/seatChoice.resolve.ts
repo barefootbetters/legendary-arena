@@ -114,6 +114,8 @@ import {
   readMonarchsDecreeSelectedMode,
   MONARCHS_DECREE_MODE_KIND,
   MONARCHS_DISCARD_KIND,
+  KILLMONGER_WATERFALL_DISCARD_KIND,
+  applyKillmongerWaterfallDiscard,
   VANISHING_ILLUSIONS_KO_KIND,
   FALLEN_IDOLS_DISCARD_KIND,
   // why: WP-821 / D-24754 — Arnim Zola's three seat-choice tactics: the kinds, their
@@ -755,6 +757,12 @@ function applySeatChoiceByKind(
   // why: WP-821 / D-24754 — Arnim Zola's tactics: Computer-Uploaded Genius' discard (the
   // Fallen Idols body), Dominate the Weak's gain, and both Crush Pacifist Resistance picks
   // (one applier). None draws, so none needs the shuffle context.
+  // why: WP-769 / D-24602 — Killmonger's Throw from the Waterfall discard (the Fallen Idols body;
+  // atomic, ascending seats). Also the timeout path's applier (default index 0).
+  if (choice.kind === KILLMONGER_WATERFALL_DISCARD_KIND) {
+    applyKillmongerWaterfallDiscard(G, choice);
+    return;
+  }
   if (choice.kind === COMPUTER_UPLOADED_GENIUS_DISCARD_KIND) {
     applyComputerUploadedGeniusDiscard(G, choice);
     return;

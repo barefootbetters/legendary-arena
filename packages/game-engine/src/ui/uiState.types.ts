@@ -850,12 +850,23 @@ export interface UIMastermindState {
   // guard it): the engine-written reason it can't be fought, which the tile shows as the
   // Fight button's tooltip. WP-768 / D-24601 widens it to "the reason a plain Fight is
   // refused": it also carries Indestructible Man's attack lock while he can still be fought
-  // (a guard reason wins). Public; omit-when-absent.
+  // (a guard reason wins). WP-769 / D-24602 adds Killmonger's lock ("can't be fought while he
+  // has more than 0 Attack") after both. Public; omit-when-absent.
   fortifiedReason?: string;
   // why: WP-768 / D-24601 — present only when the Mastermind is Indestructible Man, read for the
   // active player: the Elite Assassins the WP-770 chooser offers for his shuffle-fight. Public
   // (Victory Piles are public); the filter MUST pass it through (the EC-206 drop).
   shuffleFight?: UIShuffleFightState;
+  // why: WP-769 / D-24602 — how many Wounds are on the Mastermind (−1 Attack each; `fightCost`
+  // already reflects them). Present only while ≥ 1 Wound is held (any Mastermind); it persists
+  // after a Final Blow award (the game is won), so WP-771 hides its badge once vanquished.
+  // Public; the filter MUST pass it through (the EC-206 drop).
+  woundCount?: number;
+  // why: WP-769 / D-24602 — present only while the woundMastermind board gates pass for the
+  // active player (Killmonger, his Attack above 0, a Tactic or the Final Blow left, a Wound in
+  // the KO pile or Wound Stack). The client applies the attack, stage and pending-choice gates
+  // (attack against `fightCost`), exactly as for a plain Fight. Public; omit-when-absent.
+  woundable?: true;
 }
 
 /**

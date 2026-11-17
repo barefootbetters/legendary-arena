@@ -229,6 +229,24 @@
       "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveUnveilProjectFour",
       "wp": "WP-768",
       "decision": "D-24601"
+    },
+    "bkpt-mastermind-killmonger-a-scar-for-every-kill": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveAScarForEveryKill",
+      "wp": "WP-769",
+      "decision": "D-24602"
+    },
+    "bkpt-mastermind-killmonger-rite-of-challenge": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveRiteOfChallenge",
+      "wp": "WP-769",
+      "decision": "D-24602"
+    },
+    "bkpt-mastermind-killmonger-throw-from-the-waterfall": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveThrowFromTheWaterfall",
+      "wp": "WP-769",
+      "decision": "D-24602"
     }
   }
 }

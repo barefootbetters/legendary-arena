@@ -32,13 +32,18 @@ import { discardFromHand } from '../moves/discardFromHand.js';
 import { koCard } from '../board/ko.logic.js';
 import { recordOwnedCardKoed } from '../hero/deferredConditionalGrants.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
-import { gainWoundWithOutcome } from '../board/wounds.logic.js';
+import { gainWoundWithOutcome, gainHeldWoundWithOutcome } from '../board/wounds.logic.js';
 import { seatsInTurnOrderFrom } from '../turn/seatOrder.logic.js';
 import type { WoundGainOutcome } from '../board/wounds.logic.js';
 import { formatCardRef, resolveCardName } from '../log/logDisplay.js';
 // why: WP-669 / D-24483 — the Mastermind Transform flip primitive; resolveGeneralRossStrike
 // swaps the boss face on a Master Strike.
-import { transformMastermind } from '../mastermind/mastermind.logic.js';
+import { transformMastermind, takeWoundFromMastermind } from '../mastermind/mastermind.logic.js';
+// why: WP-769 / D-24602 — Killmonger's id and the reveal-pool class count. Both are read only
+// inside function bodies (killmonger.logic and heroConditions.evaluate sit in the runtime-safe
+// import cycle through economy.resolve; the D-24601 item-13 rule).
+import { KILLMONGER_MASTERMIND_ID } from '../mastermind/killmonger.logic.js';
+import { countDistinctHeroClassesYouHave } from '../hero/heroConditions.evaluate.js';
 // why: WP-577 / D-24386 — Red Skull's strike parks a hand-scoped interactive
 // ko-hero choice for the current player, reusing the same eligibility helpers the
 // villain ko-hero effect + the UIState projection use (one source, D-24007).
@@ -1556,6 +1561,109 @@ function resolveGeneralRossStrike(gameState: LegendaryGameState): void {
   );
 }
 
+// why: "Each player must reveal 4 different Hero Classes" — printed on Killmonger's strike.
+/** How many different Hero Classes a player must reveal to avoid Killmonger's Master Strike. */
+const KILLMONGER_STRIKE_CLASS_COUNT = 4;
+
+/**
+ * Resolves Killmonger's Master Strike (WP-769 / D-24602): "Each player must reveal 4 different
+ * Hero Classes or gain one of the Wounds on Killmonger. Any player who can't do either must
+ * discard down to 4 cards."
+ *
+ * Each player (current player first, then clockwise; D-24780): 4 different classes revealed →
+ * unaffected; else, while Killmonger holds a Wound, gains one of his Wounds; else discards down
+ * to 4 (the Magneto shape: the current player picks, the others auto-pick the cheapest).
+ * Never throws.
+ *
+ * @param gameState - The game state to mutate.
+ * @param currentPlayer - The active player (null in stub contexts → sorted order, all auto-pick).
+ */
+function resolveKillmongerStrike(
+  gameState: LegendaryGameState,
+  currentPlayer: string | null,
+): void {
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780); with a
+  // finite pool of Wounds on Killmonger, order decides who gains one.
+  const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), currentPlayer);
+  for (const playerId of playerIds) {
+    // why: rules v23 "Revealing a Card" (L3185-3195): a card in hand or played this turn can be
+    // revealed (D-24651), so the pool is the "Heroes you have" count: hand (dual / split cards
+    // give both classes), cards still in play, and controlled Artifacts (D-24794).
+    if (countDistinctHeroClassesYouHave(gameState, playerId) >= KILLMONGER_STRIKE_CLASS_COUNT) {
+      pushLog(gameState,
+        `[Killmonger Master Strike] Player ${playerId} revealed ${String(KILLMONGER_STRIKE_CLASS_COUNT)} different Hero Classes — no effect.`,
+      );
+      gameState.notableEvents.push({
+        type: 'strikeBlocked',
+        playerId,
+        threatKind: 'masterStrike',
+        narrative: composeStrikeBlockedNarrative('masterStrike'),
+      });
+      continue;
+    }
+    const woundCardId = takeWoundFromMastermind(gameState);
+    if (woundCardId !== null) {
+      const woundOutcome = gainHeldWoundWithOutcome(gameState, playerId, woundCardId);
+      pushLog(gameState,
+        `[Killmonger Master Strike] Player ${playerId} could not reveal ${String(KILLMONGER_STRIKE_CLASS_COUNT)} different Hero Classes and ${describeStrikeWound(woundOutcome)} from Killmonger.`,
+      );
+      continue;
+    }
+    discardDownForKillmongerStrike(gameState, playerId, currentPlayer);
+  }
+}
+
+/**
+ * Discards one player down to 4 cards for Killmonger's Master Strike (the Magneto shape).
+ *
+ * @param gameState - The game state to mutate.
+ * @param playerId - The player who could do neither.
+ * @param currentPlayer - The active player, who picks interactively; null → everyone auto-picks.
+ */
+function discardDownForKillmongerStrike(
+  gameState: LegendaryGameState,
+  playerId: string,
+  currentPlayer: string | null,
+): void {
+  const playerZones = gameState.playerZones[playerId]!;
+  const startingHandSize = playerZones.hand.length;
+  if (startingHandSize <= MAGNETO_HAND_SIZE_LIMIT) {
+    pushLog(gameState,
+      `[Killmonger Master Strike] Player ${playerId} could do neither and already has ${String(startingHandSize)} card(s) in hand — no discard.`,
+    );
+    return;
+  }
+  // why: WP-476 / D-24284 — the current player discards interactively (a parked
+  // discard-to-limit choice); the pending-choice architecture is current-player-scoped, so the
+  // others auto-pick deterministically.
+  if (currentPlayer !== null && playerId === currentPlayer) {
+    if (!gameState.pendingDiscardChoices) {
+      gameState.pendingDiscardChoices = [];
+    }
+    gameState.pendingDiscardChoices.push({
+      choiceType: 'discard-to-limit',
+      playerID: playerId,
+      limit: MAGNETO_HAND_SIZE_LIMIT,
+    });
+    pushLog(gameState,
+      `[Killmonger Master Strike] Player ${playerId} could do neither and must discard down to ${String(MAGNETO_HAND_SIZE_LIMIT)} — choose which cards to discard.`,
+    );
+    return;
+  }
+  // why: selectDiscardToLimitCards takes the number of cards to DISCARD, not the hand limit.
+  const cardsToDiscard = selectDiscardToLimitCards(
+    gameState,
+    playerZones.hand,
+    startingHandSize - MAGNETO_HAND_SIZE_LIMIT,
+  );
+  for (const cardExtId of cardsToDiscard) {
+    discardCardFromHand(gameState, playerId, cardExtId);
+  }
+  pushLog(gameState,
+    `[Killmonger Master Strike] Player ${playerId} could do neither and discarded ${String(cardsToDiscard.length)} card(s) down to ${String(MAGNETO_HAND_SIZE_LIMIT)}.`,
+  );
+}
+
 /**
  * Mastermind strike handler dispatcher.
  *
@@ -1660,6 +1768,10 @@ export function mastermindStrikeHandler(
       resolveCurrentPlayer(strikeContext),
       resolveShuffleFunction(strikeContext),
     );
+  } else if (mastermindId === KILLMONGER_MASTERMIND_ID) {
+    // why: WP-769 / D-24602 — "Each player must reveal 4 different Hero Classes or gain one of
+    // the Wounds on Killmonger. Any player who can't do either must discard down to 4 cards."
+    resolveKillmongerStrike(gameState, resolveCurrentPlayer(strikeContext));
   } else {
     // why: WP-867 / D-24810 — no per-Mastermind arm was reached, so the printed
     // strike is hollow (the D-24033 reachability rule: an arm that resolves

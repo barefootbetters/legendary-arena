@@ -10,6 +10,18 @@
 
 ## Current State
 
+### WP-769 / EC-806 — Killmonger: Wound him down to 0 before you can fight him (D-24602) (2026-11-16)
+
+**User-visible on `play.legendary-arena.com` after deploy, in a match created after the deploy.** Killmonger was fought at a flat 5 per tactic (~20 Attack where the printed rule asks ~60). Now, while his Attack is above 0, the Mastermind Fight button is disabled with "Killmonger can't be fought while he has more than 0 Attack. Spend Attack equal to his Attack to Wound him and get +1 Recruit." Each Wound costs his current Attack (5, 4, 3, 2, 1) and gives +1 Recruit; at 0 he is fought for a Tactic and his Wounds go back to the Wound Stack. **Humans get the "Wound him" button with WP-771; until it deploys, a human-only Killmonger match can take no Tactic** (bots and server autoplay wound him).
+
+- **Engine.** Generic omit-when-empty `MastermindState.wounds` (contract) with helpers in `mastermind.logic.ts` (KO pile first, then the Wound Stack; returned to the stack bottom after every Tactic, after its Fight; D-24568's KO window kept exact). `resolveMastermindFightCost` subtracts the Wounds. New `mastermind/killmonger.logic.ts` (lock / wound predicates) and the `woundMastermind` move (not a fight: no Haunt / guard / Enigma / Healing lock). Killmonger Wounds go through the shared Diving Block / Flying Shield Block interception. Strike: 4 classes in the reveal pool, else one of his Wounds (turn order), else discard to 4. Tactics: Scar, Rite (before the return), Waterfall (draw 2, draw-lock aware, a multi-seat discard); Altar a reachable-only hollow. Excessive Violence now reads the pre-defeat figure (Negablast Grenades' +3 can't pay the EV extra).
+- **Projection.** `UIMastermindState.woundCount` / `woundable` (five-step); `fortifiedReason` carries his lock after the guard and Indestructible Man reasons.
+- **Bot.** Step 4d wounds him (Tactics left; never the last Wound of a Wound-Stack loss scheme), score 110; full new-move lockstep (56 → 57).
+- **Feeds.** Tactic + strike provenance rows; effect index executable 873 → 877, unmarked 1650 → 1646; one pending `live-verify.json` row.
+- **Tests.** game-engine 7378 → 7422 / 0 (+44; rebased on `b714d2199`); every other package unchanged, 0 fail; `pnpm -r build` 0; every feed `:check` 0; hash oracles + local-spike `initialStateHash` unchanged. Sanctioned pin edits only (move count 56 → 57 ×2; strike overlay parity 16 → 17). Real data (engine-runner, 1p, 5 games): `winRate 1 / averageTurns 10.8` → `1 / 19`.
+- **Hash / replay.** Pre-WP-769 Killmonger ranked matches won't re-execute from `initialState + log` (their fights at Attack 5 are now refused); D-24602 §14.
+- **Follow-ups.** WP-771 next (button + badge; reconcile to `woundCount` / `woundable`, hide the badge once vanquished, the lock ahead of the cost gate); Altar + Killmonger's League villain Wounds; the bkpt "Wound the Mastermind" heroes; the block-reveal +1 Attack residual; a fail-closed ranked policy for pre-deploy Killmonger matches. Papercut seen in passing: WP-770's WORK_INDEX row still says "BLOCKED on WP-768 (pending)" though WP-768 is done.
+
 ### WP-900 / EC-938 — The coach's play-order tip never moves a card whose own bonus depends on play order (D-24857) (2026-11-16)
 
 **User-visible on `play.legendary-arena.com` after deploy, on coach reports first generated after the deploy.** The Legendary Pass coach card's play-order tip ("Next time, play X before Y") stops naming an X that loses by being played earlier: KGB Training, Four of a Kind, Eighth Time's a Charm, Devouring Drool, Shenanigans, Oddball and other cards whose own bonus depends on what was played before them, or on board or present state. Tips whose enabler is unconditional, or gated only on a wait-and-see condition or "first Hero you played this turn", are unchanged. Reports already cached keep their tips.
@@ -35,7 +47,7 @@
   - `playedCardIdsThisTurn` unions it, Penumbra-expanded and never de-duplicated, before the Sidekick / Out of Time / Ritual ledgers. No reader changed.
   - Transform is not recorded: the second form stands in for the play.
   - A drift pin locks the 13 functions that write `inPlay`, with their dispositions, and the two record sites.
-- **Tests.** game-engine 7343 → 7363 / 0 (+20). Every other package is unchanged and has 0 failures: arena-client 2726, server 1853 (1646 pass, 207 DB-gated skips), dashboard 622, registry 313, registry-viewer 354, legends-board 138, lagn-spec 108, preplan 52, engine-runner 20, vue-sfc-loader 11, replay-producer 4.
+- **Tests.** game-engine 7343 → 7363 / 0 (+20). Every other package is unchanged and has 0 failures: arena-client 2726, server 1864 (207 DB-gated skips), dashboard 622, registry 313, registry-viewer 354, legends-board 138, lagn-spec 108, preplan 52, engine-runner 20, vue-sfc-loader 11, replay-producer 4.
   - `pnpm -r build` 0.
   - `sim:runtime-observed:check`, `sim:coverage --check` and `effect-index:check` are 0, and no feed moved.
   - Hash oracles are unchanged. Revert proofs 5/5.

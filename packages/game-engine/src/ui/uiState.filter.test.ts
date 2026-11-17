@@ -4402,3 +4402,76 @@ describe('WP-768 / D-24601 — Indestructible Man shuffleFight + attack lock pro
     }
   });
 });
+
+describe('WP-769 / D-24602 — Killmonger woundCount + woundable + attack lock projection (T11)', () => {
+  const KILLMONGER_LOCK_REASON =
+    "Killmonger can't be fought while he has more than 0 Attack. Spend Attack equal to his Attack to Wound him and get +1 Recruit.";
+
+  /**
+   * A game state with Killmonger (printed Attack 5) as the Mastermind and two tactics left.
+   *
+   * @param mastermindId - The selected Mastermind.
+   * @returns The game state.
+   */
+  function createKillmongerState(mastermindId = 'bkpt/killmonger'): LegendaryGameState {
+    const baseState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    const gameState: LegendaryGameState = { ...baseState, selection: { ...baseState.selection, mastermindId } };
+    gameState.mastermind = { ...gameState.mastermind, tacticsDeck: ['tactic-a', 'tactic-b'] as CardExtId[] };
+    gameState.cardStats[gameState.mastermind.baseCardId] = makeCardStatEntry({ fightCost: 5 });
+    return gameState;
+  }
+
+  it('buildUIState projects the lock and woundable; woundCount follows the Wounds; all survive every audience', () => {
+    const gameState = createKillmongerState();
+    gameState.mastermind = { ...gameState.mastermind, wounds: [WOUND_EXT_ID, WOUND_EXT_ID] };
+    const uiState = buildUIState(gameState, mockCtx);
+    // why: five-step step 2 — buildUIState alone carries the fields, before any filter.
+    assert.equal(uiState.mastermind.fortifiedReason, KILLMONGER_LOCK_REASON);
+    assert.equal(uiState.mastermind.woundable, true);
+    assert.equal(uiState.mastermind.woundCount, 2);
+    assert.equal(uiState.mastermind.fightCost, 3, 'fightCost reflects the Wounds');
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const filtered = filterUIStateForAudience(uiState, audience);
+      const label = JSON.stringify(audience);
+      assert.equal(filtered.mastermind.woundCount, 2, `${label}: mastermind.woundCount`);
+      assert.equal(filtered.mastermind.woundable, true, `${label}: mastermind.woundable`);
+      assert.equal(filtered.mastermind.fortifiedReason, KILLMONGER_LOCK_REASON, `${label}: mastermind.fortifiedReason`);
+    }
+  });
+
+  it('at Attack 0 the lock and woundable drop; a guard reason wins; vanquished drops both; no Wound anywhere drops woundable', () => {
+    const atZero = createKillmongerState();
+    atZero.mastermind = { ...atZero.mastermind, wounds: [WOUND_EXT_ID, WOUND_EXT_ID, WOUND_EXT_ID, WOUND_EXT_ID, WOUND_EXT_ID] };
+    const atZeroUi = buildUIState(atZero, mockCtx);
+    assert.equal('fortifiedReason' in atZeroUi.mastermind, false);
+    assert.equal('woundable' in atZeroUi.mastermind, false);
+    assert.equal(atZeroUi.mastermind.woundCount, 5);
+    assert.equal(atZeroUi.mastermind.fightCost, 0);
+
+    const guarded = createKillmongerState();
+    guarded.villainsBesideMastermind = ['co2e-villain-brotherhood-of-mutants-the-blob-00' as CardExtId];
+    const guardedUi = buildUIState(guarded, mockCtx);
+    assert.notEqual(guardedUi.mastermind.fortifiedReason, KILLMONGER_LOCK_REASON, 'the Blob reason wins');
+    assert.equal(guardedUi.mastermind.woundable, true, 'wounding is not a fight: a guard does not block it');
+
+    const vanquished = createKillmongerState();
+    vanquished.mastermind = { ...vanquished.mastermind, tacticsDeck: [] };
+    const vanquishedUi = buildUIState(vanquished, mockCtx);
+    assert.equal('fortifiedReason' in vanquishedUi.mastermind, false);
+    assert.equal('woundable' in vanquishedUi.mastermind, false);
+
+    const noWound = createKillmongerState();
+    noWound.piles = { ...noWound.piles, wounds: [] };
+    noWound.ko = [];
+    assert.equal('woundable' in buildUIState(noWound, mockCtx).mastermind, false);
+  });
+
+  it('another Mastermind projects none of the three; an unwounded Mastermind has no woundCount key', () => {
+    const other = buildUIState(createKillmongerState('test-mastermind-001'), mockCtx);
+    assert.equal('woundCount' in other.mastermind, false);
+    assert.equal('woundable' in other.mastermind, false);
+    assert.equal('fortifiedReason' in other.mastermind, false);
+    const unwounded = buildUIState(createKillmongerState(), mockCtx);
+    assert.equal('woundCount' in unwounded.mastermind, false);
+  });
+});

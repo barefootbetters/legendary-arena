@@ -684,3 +684,43 @@ describe('WP-882 Corrupted Spirit discard-down builder (D-24833)', () => {
     assert.ok(JSON.stringify(uiState).includes('zarathos-corrupted-spirit'), 'the choice itself is projected (the test is live)');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-769 / D-24602 — Killmonger's Throw from the Waterfall discard
+// ---------------------------------------------------------------------------
+
+import {
+  applyKillmongerWaterfallDiscard,
+  buildKillmongerWaterfallDiscardChoice,
+  KILLMONGER_WATERFALL_DISCARD_KIND,
+} from './seatChoiceTactics.js';
+
+describe('WP-769 Throw from the Waterfall discard — atomic multi-seat (D-24602)', () => {
+  it('T9: builds one option per hand card (default 0) and discards each chosen card in ascending seat order', () => {
+    const G = makeState({
+      '1': { hand: ['h1a', 'h1b'] },
+      '2': { hand: ['h2a'] },
+    });
+    const choice = buildKillmongerWaterfallDiscardChoice(G, ['1', '2'])!;
+    assert.equal(choice.kind, KILLMONGER_WATERFALL_DISCARD_KIND);
+    assert.equal(choice.kind, 'killmonger-waterfall-discard');
+    assert.equal(choice.defaultOptionIndex, 0);
+    assert.deepEqual(choice.addressedSeats, ['1', '2']);
+    submit(choice, '2', 0);
+    submit(choice, '1', 1);
+    applyKillmongerWaterfallDiscard(G, choice);
+    assert.deepEqual(G.playerZones['1']!.hand, ['h1a']);
+    assert.deepEqual(G.playerZones['1']!.discard, ['h1b']);
+    assert.deepEqual(G.playerZones['2']!.discard, ['h2a']);
+    assert.deepEqual(
+      G.messages.map((entry) => entry.text),
+      ['Player 1 discarded h1b (Throw from the Waterfall).', 'Player 2 discarded h2a (Throw from the Waterfall).'],
+    );
+  });
+
+  it('T9: builds nothing when no given seat holds a card', () => {
+    const G = makeState({ '1': { hand: [] } });
+    assert.equal(buildKillmongerWaterfallDiscardChoice(G, ['1']), undefined);
+  });
+});
+
