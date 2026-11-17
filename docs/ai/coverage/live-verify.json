@@ -2741,9 +2741,9 @@
       "card": "Dr. Octopus",
       "ability": "Eighth Time's a Charm: If this is the eighth card you played this turn, you get +2 Attack.",
       "wp": "WP-899",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-16",
-      "evidence": "",
+      "evidence": "Operator match l4OOO53JBjr (2p, core Red Skull / Midtown Bank Robbery; Dr. Octopus, Elektra, Black Widow, Captain America, Hulk), server `293255f4` (the #3429 merge), created after the deploy, cards staged with the operator setters. Turn 1: a S.H.I.E.L.D. Agent was played and moved from the play area to the KO pile (1.2.7-1.2.8), then six more cards were played; Eighth Time's a Charm, the true 8th card played with 7 in play, gained +2 (1.2.16-1.2.17; attack 2 -> 8 = printed 4 + 2). Turn 3: eight cards played, one Agent KO'd out of play (3.2.13), then Eighth Time's a Charm as the 9th physical play (8 played before, 7 in play) logged \"it needs to be card number 8 you played this turn — it was card number 9\" (3.2.15) with no grant (attack 3 -> 7).",
       "note": "Live check (NEW operator match created after the deploy with Dr. Octopus): play a card, KO it with \"Move a card\" -> KO pile, then play Eighth Time's a Charm as the true 8th card played (grants +2) and, in another turn, as the 9th physical card (logs \"it was card number 9\", no grant). D-24856."
     },
     {
@@ -2752,9 +2752,9 @@
       "card": "Elektra",
       "ability": "First Strike: If this is the first card you played this turn, you get +1 Attack",
       "wp": "WP-899",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-16",
-      "evidence": "",
+      "evidence": "Operator match l4OOO53JBjr, server `293255f4` (the #3429 merge), created after the deploy: a S.H.I.E.L.D. Agent was played and moved from the play area to the KO pile (1.2.7-1.2.8), leaving the play area empty; First Strike played next logged \"did not activate — it needs to be the first Hero you played this turn\" (1.2.10) and gave only its printed 1 Attack.",
       "note": "Live check (NEW operator match created after the deploy with Elektra): play a card, KO it with \"Move a card\" -> KO pile, then play First Strike second; it logs [blocked] (\"it needs to be the first Hero you played this turn\") and grants no +1. D-24856."
     }
   ]
