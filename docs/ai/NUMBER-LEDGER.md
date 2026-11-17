@@ -539,7 +539,7 @@ high-water: 422
 - WP-898 — villain-setup-walk-fold (one shared enumerator for the five villain setup registry walks in villainDefeatRequirement.setup.ts; decides the G.villainAttackPerCaptured -> G.villainVariableAttack table fold, D-24774 §8-9. reserved 2026-11-15, claude/wp898-villain-setup-walk-fold-reserve; LANDED 2026-11-15)
 - WP-899 — played-this-turn-left-play (the "cards you played this turn" view counts a card that left play mid-turn, exactly once per physical play; WP-745 follow-up E, retires the D-24798 §5 / D-24568 §2 residual. reserved 2026-11-16, claude/wp899-played-left-play-reserve; LANDED 2026-11-16)
 - WP-900 — coach-order-safe-enabler (the sequence teacher qualifies an enabler only when every hook condition is an engine-classified order-safe type; WP-745 follow-up F, amends D-24533. reserved 2026-11-16, claude/wp-coach-order-safe-enabler; LANDED 2026-11-16)
-- WP-901 — undercover-your-hero (bkwd "send one of your (other) Heroes Undercover" from hand or play, with a decline; Weave a Web of Spies draw gate; WP-745 follow-up G, extends D-24494. reserved 2026-11-16, claude/wp-undercover-your-hero)
+- WP-901 — undercover-your-hero (bkwd "send one of your (other) Heroes Undercover" from hand or play, with a decline; Weave a Web of Spies draw gate; WP-745 follow-up G, extends D-24494. reserved 2026-11-16, claude/wp-undercover-your-hero; LANDED 2026-11-16)
 
 ## EC
 
@@ -1041,7 +1041,7 @@ high-water: 457
 - EC-936 — villain-setup-walk-fold (WP-898. reserved 2026-11-15, claude/wp898-villain-setup-walk-fold-reserve; LANDED 2026-11-15)
 - EC-937 — played-this-turn-left-play (WP-899. reserved 2026-11-16, claude/wp899-played-left-play-reserve; LANDED 2026-11-16)
 - EC-938 — coach-order-safe-enabler (WP-900. reserved 2026-11-16, claude/wp-coach-order-safe-enabler; LANDED 2026-11-16)
-- EC-939 — undercover-your-hero (WP-901. reserved 2026-11-16, claude/wp-undercover-your-hero)
+- EC-939 — undercover-your-hero (WP-901. reserved 2026-11-16, claude/wp-undercover-your-hero; LANDED 2026-11-16)
 
 ## D
 
@@ -1677,4 +1677,4 @@ section below) and the allocation protocol in
 - D-24855 — villain-setup-walk-fold (WP-898; the shared villain setup enumerator and the attack-per-captured table-fold verdict. reserved 2026-11-15, claude/wp898-villain-setup-walk-fold-reserve; LANDED 2026-11-15)
 - D-24856 — played-this-turn-left-play (WP-899; where played-this-turn history is recorded, multiset semantics, hash posture, transform verdict. reserved 2026-11-16, claude/wp899-played-left-play-reserve; LANDED 2026-11-16)
 - D-24857 — coach-order-safe-enabler (WP-900; fail-closed enabler rule, engine-owned ORDER_SAFE_ENABLER_CONDITION_TYPES, cached reports keep their tips. reserved 2026-11-16, claude/wp-coach-order-safe-enabler; LANDED 2026-11-16)
-- D-24858 — undercover-your-hero (WP-901; new Undercover source shape over hand + in-play Heroes, "other" excludes the source, declinable choice, PendingUndercoverChoice widened. reserved 2026-11-16, claude/wp-undercover-your-hero)
+- D-24858 — undercover-your-hero (WP-901; new Undercover source shape over hand + in-play Heroes, "other" excludes the source, declinable choice, PendingUndercoverChoice widened. reserved 2026-11-16, claude/wp-undercover-your-hero; LANDED 2026-11-16)
