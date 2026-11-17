@@ -528,6 +528,34 @@ describe('MastermindTile — Excessive Violence affordance (WP-738 / D-24561)', 
     assert.equal(calls.length, 1);
     assert.deepEqual(calls[0]!.args, {});
   });
+
+  // why: `.mastermind-tile button` (0,1,1) makes every tile button a column flex box. A
+  // single-class rule (0,1,0) on the EV or Wound button loses to it, and the icon, label and
+  // "+1" pill stack vertically (the EV button rendered 141×60 px that way). jsdom computes no
+  // CSS, so the selectors themselves are pinned: each button's layout rule must carry two
+  // classes and lay out as a row.
+  test('the EV and Wound buttons lay out as a row: their rules outrank `.mastermind-tile button`', () => {
+    const source = readFileSync(new URL('./MastermindTile.vue', import.meta.url), 'utf8');
+    const style = source.slice(source.indexOf('<style'));
+    const rules = [...style.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((match) => ({
+      selector: match[1]!.replace(/\/\*[\s\S]*?\*\//g, '').trim(),
+      body: match[2]!,
+    }));
+    const columnRule = rules.find((rule) => rule.selector === '.mastermind-tile button');
+    assert.ok(columnRule !== undefined && columnRule.body.includes('flex-direction: column'), 'the column rule the buttons must outrank is present');
+
+    for (const buttonClass of ['mastermind-ev-fight', 'mastermind-wound']) {
+      const buttonSelector = new RegExp(`\\.${buttonClass}(?![\\w-])`);
+      const buttonRules = rules.filter((rule) => buttonSelector.test(rule.selector));
+      assert.ok(buttonRules.length > 0, `${buttonClass} has style rules`);
+      for (const rule of buttonRules) {
+        assert.ok(rule.selector.startsWith(`.mastermind-tile .${buttonClass}`), `"${rule.selector}" must be scoped as .mastermind-tile .${buttonClass} to outrank .mastermind-tile button`);
+      }
+      const layoutRule = buttonRules.find((rule) => rule.selector === `.mastermind-tile .${buttonClass}`);
+      assert.ok(layoutRule !== undefined && layoutRule.body.includes('flex-direction: row'), `.mastermind-tile .${buttonClass} lays out as a row`);
+      assert.ok(layoutRule.body.includes('align-items: center'), `.mastermind-tile .${buttonClass} centers its row`);
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
