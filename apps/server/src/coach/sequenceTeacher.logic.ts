@@ -5,7 +5,7 @@
  * `computeSequenceTips` turns a same-turn SEQUENCING miss into one forward
  * "opportunity" tip per seat: when a seat's Hero card carried a snapshot-gate
  * conditional clause (`heroClassMatch` / `requiresTeam` / `requiresKeyword`) that came
- * up empty, and an UNCONDITIONAL same-class/team/keyword hero was played LATER the same
+ * up empty, and an ORDER-SAFE same-class/team/keyword hero was played LATER the same
  * turn, moving that enabler earlier would have assembled the clause at zero cost.
  *
  * Design (see WP-710 / EC-747):
@@ -14,10 +14,13 @@
  *   predicate — never a reordered re-simulation (that would diverge on RNG). The engine
  *   stays the sole authority on condition semantics (D-20105); this module re-implements
  *   none of them.
- * - **Net-gain, never net-zero:** the enabler MUST be unconditional (no snapshot-gate
- *   clause of its own), else moving it earlier just moves the whiff to the enabler (a
- *   mutually-enabling pair). A size-changing/copy-powers card makes the predicate return
- *   `unsupported`, and the whiff is skipped (never a wrong tip).
+ * - **Net-gain, never net-zero (WP-900 / D-24857, amending D-24533):** the enabler MUST be
+ *   order-safe: every one of its hooks passes the engine's `isOrderSafeEnablerHook` (every
+ *   condition on the engine's order-safe allowlist; no effect that reads turn or board state
+ *   the move can change). Otherwise moving it earlier costs the enabler its own bonus (a
+ *   mutually-enabling pair, a play-history gate, a count). The rule is fail-closed: a new
+ *   condition type costs a tip, never the player a bonus. A size-changing/copy-powers card
+ *   makes the predicate return `unsupported`, and the whiff is skipped (never a wrong tip).
  * - Opportunity voice only — never "whiff" / "failed" / "missed"; at most one tip per seat.
  *
  * No `boardgame.io`, no DB, no I/O. Pure over the captured plays + the reduced final state.
@@ -27,6 +30,7 @@ import type { LegendaryGameState, CardExtId, HeroConditionCardData } from '@lege
 import {
   getHooksForCard,
   heroConditionHoldsForInPlay,
+  isOrderSafeEnablerHook,
   SEQUENCE_GATE_CONDITION_TYPES,
 } from '@legendary-arena/game-engine';
 import type { CapturedHeroPlay } from '../replay/matchReplay.logic.js';
@@ -39,27 +43,24 @@ interface HookCondition {
 }
 
 /**
- * Whether a card is an UNCONDITIONAL enabler — it carries no on-play hook condition
- * whose type is a snapshot gate (WP-710 / D-24533).
+ * Whether a card is an ORDER-SAFE enabler: playing it earlier costs it nothing
+ * (WP-900 / D-24857, amending WP-710 / D-24533).
  *
- * why: the net-gain rule. An enabler with its own snapshot-gate clause is one half of a
- * mutually-enabling pair — moving it before the whiffed card merely moves the whiff to
- * it (net-zero). `playedThisTurn` is unproduced by any card parser today, and
- * `firstHeroPlayedThisTurn` is net-safe as an enabler (moving it earlier only helps its
- * own "first Hero" gate), so gating on `SEQUENCE_GATE_CONDITION_TYPES` alone is correct
- * for the current corpus.
+ * why: WP-900 / D-24857 — the net-gain rule, fail-closed and engine-classified. The old
+ * check rejected only a class / team / keyword gate, so once D-24746 / D-24568 produced
+ * play-history gates it named enablers like KGB Training or Eighth Time's a Charm, whose
+ * own bonus needs the late position. The engine (D-20105) decides order safety per hook;
+ * a card qualifies only when every hook passes, whatever the hook's timing.
  *
  * @param finalState - The reduced final match state (for `heroAbilityHooks`).
  * @param cardId - The candidate enabler card.
- * @returns Whether the card has no snapshot-gate condition.
+ * @returns Whether every one of the card's hooks is order-safe.
  */
-function isUnconditionalEnabler(finalState: LegendaryGameState, cardId: CardExtId): boolean {
+function isOrderSafeEnabler(finalState: LegendaryGameState, cardId: CardExtId): boolean {
   const hooks = finalState.heroAbilityHooks ? getHooksForCard(finalState.heroAbilityHooks, cardId) : [];
   for (const hook of hooks) {
-    for (const condition of (hook.conditions ?? []) as readonly HookCondition[]) {
-      if (SEQUENCE_GATE_CONDITION_TYPES.includes(condition.type)) {
-        return false;
-      }
+    if (!isOrderSafeEnablerHook(hook)) {
+      return false;
     }
   }
   return true;
@@ -84,7 +85,7 @@ function formatSequenceTip(enablerName: string, cardName: string, gate: HookCond
  * Computes at most one play-order "opportunity" tip per seat (WP-710 / D-24533).
  *
  * For each seat's hero plays in log order, finds the first card whose snapshot-gate
- * clause came up empty at its play position but which an UNCONDITIONAL same-gate hero,
+ * clause came up empty at its play position but which an ORDER-SAFE same-gate hero,
  * played later the same turn, would have assembled — and emits one forward tip.
  *
  * @param heroPlays - The per-play `{ seat, turn, cardId, inPlay }` captured from the replay.
@@ -131,7 +132,7 @@ export function computeSequenceTips(
  *
  * @param seatPlays - The seat's hero plays in log order.
  * @param cardData - The setup-static card-data slice.
- * @param finalState - The reduced final state (for the unconditional-enabler check).
+ * @param finalState - The reduced final state (for the order-safe enabler check).
  * @param resolveCardName - Card id → display name.
  * @returns The tip, or `null` when no net-gain reorder exists.
  */
@@ -156,7 +157,7 @@ function firstTeachableTip(
         if (heroConditionHoldsForInPlay(condition, played.cardId, played.inPlay, cardData) !== 'fails') {
           continue;
         }
-        const enabler = findUnconditionalEnabler(seatPlays, index, condition, cardData, finalState);
+        const enabler = findOrderSafeEnabler(seatPlays, index, condition, cardData, finalState);
         if (enabler !== null) {
           // why: D-24579 — tip text names the cards as players see them: the
           // per-copy ids resolve through the match's own cardDisplayData first.
@@ -173,8 +174,8 @@ function firstTeachableTip(
 }
 
 /**
- * Finds an UNCONDITIONAL hero played LATER the same turn that satisfies the whiffed gate
- * (WP-710 / D-24533), or `null`.
+ * Finds an ORDER-SAFE hero played LATER the same turn that satisfies the whiffed gate
+ * (WP-710 / D-24533; order safety per WP-900 / D-24857), or `null`.
  *
  * @param seatPlays - The seat's plays in log order.
  * @param whiffedIndex - The index of the whiffed play.
@@ -183,7 +184,7 @@ function firstTeachableTip(
  * @param finalState - The reduced final state.
  * @returns The enabling play, or `null`.
  */
-function findUnconditionalEnabler(
+function findOrderSafeEnabler(
   seatPlays: readonly CapturedHeroPlay[],
   whiffedIndex: number,
   gate: HookCondition,
@@ -197,7 +198,7 @@ function findUnconditionalEnabler(
     if (candidate.turn !== whiffed.turn) {
       continue;
     }
-    if (!isUnconditionalEnabler(finalState, candidate.cardId)) {
+    if (!isOrderSafeEnabler(finalState, candidate.cardId)) {
       continue;
     }
     // why: does this single enabler satisfy the whiffed gate for the played card? A
