@@ -149,6 +149,8 @@
     "hunt-for-victims": { "wp": "WP-884", "decision": "D-24835" },
     "conqueror": { "wp": "WP-886", "decision": "D-24837" },
     "hunt-for-victims-rescue": { "wp": "WP-884", "decision": "D-24835" },
+    "undercover-your-hero": { "wp": "WP-901", "decision": "D-24858" },
+    "undercover-your-other-hero": { "wp": "WP-901", "decision": "D-24858" },
     "ko-wound-reward": { "wp": "WP-382", "decision": "D-24183" },
     "discard-to-play": { "wp": "WP-383", "decision": "D-24184" },
     "return-on-discard": { "wp": "WP-498", "decision": "D-24301" },

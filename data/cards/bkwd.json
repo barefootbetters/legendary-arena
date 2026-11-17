@@ -60,7 +60,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Dodge]",
-            "If you drew any cards this turn, you may send one of your other Heroes [keyword:Undercover]."
+            "If you drew any cards this turn, you may send one of your other Heroes [keyword:Undercover]. [keyword:undercover-your-other-hero] [keyword:draw-threshold:1]"
           ]
         },
         {
@@ -75,7 +75,7 @@
           "attack": "4+",
           "recruit": null,
           "abilities": [
-            "You may send one of your Heroes [keyword:Undercover].",
+            "You may send one of your Heroes [keyword:Undercover]. [keyword:undercover-your-hero]",
             "You get +3[icon:attack] if you have at least 4 Bystanders and/or Undercover Heroes in your Victory Pile."
           ]
         }
@@ -286,7 +286,7 @@
           "abilities": [
             "[keyword:When Recruited]: Send this [keyword:Undercover].",
             "When a Master Strike is completed or any player fights the Mastermind, you may [keyword:Unleash] this card from [keyword:Undercover].",
-            "[hc:covert]: You may send one of your other Heroes [keyword:Undercover]."
+            "[hc:covert]: You may send one of your other Heroes [keyword:Undercover]. [keyword:undercover-your-other-hero]"
           ]
         },
         {

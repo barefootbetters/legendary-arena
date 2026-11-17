@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 887,
+    "totalRows": 891,
     "byStatus": {
-      "executable": 505,
+      "executable": 508,
       "deferred": 16,
-      "condition": 87,
+      "condition": 88,
       "unsupported": 254,
       "unmarked": 22,
       "subsystem": 3
     },
-    "distinctMechanics": 188
+    "distinctMechanics": 190
   },
   "rows": [
     {
@@ -2284,6 +2284,22 @@
       "extId": "bkwd/black-widow",
       "heroName": "Black Widow",
       "set": "bkwd",
+      "mechanic": "draw-threshold",
+      "status": "condition",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "weave-a-web-of-spies",
+          "name": "Weave a Web of Spies"
+        }
+      ]
+    },
+    {
+      "extId": "bkwd/black-widow",
+      "heroName": "Black Widow",
+      "set": "bkwd",
       "mechanic": "undercover",
       "status": "deferred",
       "wp": "WP-282",
@@ -2294,6 +2310,38 @@
           "slug": "infiltrate-the-conspiracy",
           "name": "Infiltrate the Conspiracy"
         },
+        {
+          "slug": "weave-a-web-of-spies",
+          "name": "Weave a Web of Spies"
+        }
+      ]
+    },
+    {
+      "extId": "bkwd/black-widow",
+      "heroName": "Black Widow",
+      "set": "bkwd",
+      "mechanic": "undercover-your-hero",
+      "status": "executable",
+      "wp": "WP-901",
+      "decision": "D-24858",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover-your-hero",
+      "designs": [
+        {
+          "slug": "infiltrate-the-conspiracy",
+          "name": "Infiltrate the Conspiracy"
+        }
+      ]
+    },
+    {
+      "extId": "bkwd/black-widow",
+      "heroName": "Black Widow",
+      "set": "bkwd",
+      "mechanic": "undercover-your-other-hero",
+      "status": "executable",
+      "wp": "WP-901",
+      "decision": "D-24858",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover-your-other-hero",
+      "designs": [
         {
           "slug": "weave-a-web-of-spies",
           "name": "Weave a Web of Spies"
@@ -2461,6 +2509,22 @@
         {
           "slug": "sleeper-agent",
           "name": "Sleeper Agent"
+        }
+      ]
+    },
+    {
+      "extId": "bkwd/red-guardian",
+      "heroName": "Red Guardian",
+      "set": "bkwd",
+      "mechanic": "undercover-your-other-hero",
+      "status": "executable",
+      "wp": "WP-901",
+      "decision": "D-24858",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover-your-other-hero",
+      "designs": [
+        {
+          "slug": "death-was-only-a-ruse",
+          "name": "Death Was Only a Ruse"
         }
       ]
     },

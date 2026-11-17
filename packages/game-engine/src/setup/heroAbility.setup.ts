@@ -1464,6 +1464,12 @@ function parseAbilityText(
   // not block the play on "another shield Hero played this turn" (live bug: Pure Fury blocked
   // whenever no shield Hero preceded it — 2p Red Skull / Midtown match yqj7YblJCt4).
   const lineHasPureFury = abilityText.includes('[keyword:pure-fury]');
+  // why: WP-901 / D-24858 — on a line carrying a your-hero Undercover source marker ("You may
+  // send one of your [other] Heroes [keyword:Undercover]."), the printed [keyword:Undercover] is
+  // descriptive: the source marker carries the effect. Step 2 skips the bare `undercover`
+  // keyword on that line so the hook holds only the handled keyword (no honest-hollow beside it;
+  // the size-changing / investigate descriptive-token pattern). Other bare-token lines unchanged.
+  const lineHasUndercoverYourHeroMarker = UNDERCOVER_YOUR_HERO_MARKER_PATTERN.test(abilityText);
   // why: D-24628 — when a line opens with an explicit gate prefix of [hc:X] / [team:X] tokens
   // and a colon ("[hc:strength]: Return a [team:shield] Hero…"), that prefix IS the play gate;
   // a [team:Y] after the colon names a target or criterion, not "another Y Hero played this
@@ -1757,6 +1763,10 @@ function parseAbilityText(
       // what another Hero gains, so this card records no `size-changing` keyword (Step 1a drops
       // its [hc:tech] the same way). D-24806 — likewise on a Size-Changing reveal-criterion line
       // it names what the revealed card must have.
+    } else if (normalizedKeyword === 'undercover' && lineHasUndercoverYourHeroMarker) {
+      // why: WP-901 / D-24858 — the bare printed token is descriptive on a your-hero source-marker
+      // line (see lineHasUndercoverYourHeroMarker); the marker's own keyword is pushed by the
+      // generic arm below. Intentional no push.
     } else if (normalizedKeyword === 'investigate') {
       // why: WP-564 / D-24373 — investigate IS a HeroKeyword, but its keyword + descriptor
       // are recorded ONLY when a static criterion resolves. A deferred form (choose-first,
@@ -3921,6 +3931,9 @@ const ATTACK_PER_COUNT_MARKER_PATTERN = /\[keyword:attack-per-count:([a-z][a-z-]
 // why: WP-679 / D-24495 — the two Undercover source-shape option markers (WP-678 keywords).
 const UNDERCOVER_HAND_MARKER_PATTERN = /\[keyword:undercover-hand-shield-hero\]/;
 const UNDERCOVER_OFFICER_MARKER_PATTERN = /\[keyword:undercover-officer-stack\]/;
+// why: WP-901 / D-24858 — either your-hero Undercover source marker; its presence makes the
+// line's bare [keyword:Undercover] descriptive (see lineHasUndercoverYourHeroMarker).
+const UNDERCOVER_YOUR_HERO_MARKER_PATTERN = /\[keyword:undercover-your-(?:other-)?hero\]/;
 
 // why: D-24696 — the two single-line choose-one option markers of ca75 Spy Network ("Choose
 // one: Gain a S.H.I.E.L.D. Officer, or you get +2[icon:attack]."): a gain-an-Officer option

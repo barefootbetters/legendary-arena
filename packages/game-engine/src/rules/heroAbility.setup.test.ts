@@ -625,6 +625,8 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'undercover', // why: WP-678 / D-24494 (supersedes D-24060) — Undercover descriptive token; bare form is an honest hollow (no source zone → no handler)
       'undercover-hand-shield-hero', // why: WP-678 / D-24494 — "send a [team:shield] Hero from your hand Undercover" → Victory Pile (1 VP)
       'undercover-officer-stack', // why: WP-678 / D-24494 — "send a card from the S.H.I.E.L.D. Officer Stack Undercover" → Victory Pile (1 VP)
+      'undercover-your-hero', // why: WP-901 / D-24858 — "You may send one of your Heroes Undercover" (hand + in play, declinable)
+      'undercover-your-other-hero', // why: WP-901 / D-24858 — "You may send one of your other Heroes Undercover" (the triggering card left out)
       'conditional',
       'victory-villain-attack', // why: D-24068 / WP-285 — victory-pile villain-pick mechanic
       'draw-or-empowered', // why: D-24069 / WP-286 — draw-or-empowered choose-one mechanic
@@ -704,8 +706,8 @@ describe('HERO_KEYWORDS drift-detection', () => {
 
     assert.equal(
       HERO_KEYWORDS.length,
-      101,
-      'HERO_KEYWORDS must have exactly 101 entries (WP-884 / D-24835 hunt-for-victims + hunt-for-victims-rescue appended last; WP-883 / D-24834 gain-wound-reward; WP-876 / D-24823 the three Heist payload keywords appended last; WP-866 / D-24809 next-hand-extra-draw; WP-865 / D-24808 heist; D-24801 microscopic-size-changing after size-changing; feast, WP-857 / D-24793, after WP-860 / D-24796 discard-artifact-or-three-then-ko; hq-hero-gains-size-changing-tech, WP-862 / D-24804, appended last)',
+      103,
+      'HERO_KEYWORDS must have exactly 103 entries (WP-901 / D-24858 undercover-your-hero + undercover-your-other-hero after undercover-officer-stack; WP-884 / D-24835 hunt-for-victims + hunt-for-victims-rescue appended last; WP-883 / D-24834 gain-wound-reward; WP-876 / D-24823 the three Heist payload keywords appended last; WP-866 / D-24809 next-hand-extra-draw; WP-865 / D-24808 heist; D-24801 microscopic-size-changing after size-changing; feast, WP-857 / D-24793, after WP-860 / D-24796 discard-artifact-or-three-then-ko; hq-hero-gains-size-changing-tech, WP-862 / D-24804, appended last)',
     );
 
     assert.deepStrictEqual(

@@ -745,8 +745,9 @@
       "label": "Draw Threshold",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 5,
+      "cardCount": 6,
       "cardIds": [
+        "bkwd/black-widow",
         "co2e/hawkeye",
         "dkcy/wolverine",
         "mgtg/gamora",
@@ -2525,6 +2526,29 @@
       "hidden": true
     },
     {
+      "slug": "undercover-your-hero",
+      "label": "Undercover Your Hero",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "bkwd/black-widow"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "undercover-your-other-hero",
+      "label": "Undercover Your Other Hero",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 2,
+      "cardIds": [
+        "bkwd/black-widow",
+        "bkwd/red-guardian"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "unleash",
       "label": "Unleash",
       "scope": "hero",
@@ -3056,7 +3080,10 @@
       "mechanics": [
         "dark-memories",
         "dodge",
-        "undercover"
+        "draw-threshold",
+        "undercover",
+        "undercover-your-hero",
+        "undercover-your-other-hero"
       ]
     },
     "bkwd/falcon-winter-soldier": {
@@ -3074,6 +3101,7 @@
         "attack-per-count",
         "draw",
         "undercover",
+        "undercover-your-other-hero",
         "unleash",
         "when-recruited"
       ]
