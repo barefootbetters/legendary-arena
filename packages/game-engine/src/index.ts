@@ -324,6 +324,10 @@ export {
 } from "./hero/heroConditions.evaluate.js";
 export type { HeroConditionCardData } from "./hero/heroConditions.evaluate.js";
 export {
+  ORDER_SAFE_ENABLER_CONDITION_TYPES,
+  isOrderSafeEnablerHook,
+} from "./hero/orderSafeEnabler.js";
+export {
   parseCardStatValue,
   buildCardStats,
   getAvailableAttack,

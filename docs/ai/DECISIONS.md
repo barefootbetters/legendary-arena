@@ -51847,4 +51847,30 @@ Protect this file.
 **Packet:** WP-899 / EC-937. **Reserved by:** NUMBER-LEDGER D-24856 (#3423). Related: D-24568, D-24798, D-24816, D-24619, D-24692, D-24776, D-24794, D-24789, D-24791, D-24713, D-24795, D-24823, D-24746, D-24372, D-24857, D-24858, D-24119, D-24026.
 
 ---
+
+### D-24857 — The sequence teacher's enabler rule is fail-closed and engine-classified: a card is a play-order tip enabler only when every hook passes `isOrderSafeEnablerHook` (amends D-24533) (Active 2026-11-16 — WP-900 / EC-938)
+
+**Context.** D-24533's net-gain rule rejected an enabler only when one of its hook conditions was a class / team / keyword gate. D-24746 made the parser produce `playedThisTurn`, and D-24568 added the play-history gates, so the deny-list let order-dependent cards through: the coach could say "play KGB Training (or Four of a Kind, Eighth Time's a Charm) before X", which costs that card its own Attack. Its `// why:` still said `playedThisTurn` was unproduced. Pre-flight and copilot review found the same harm inside effect descriptors (Devouring Drool's `bothCondition`, count sources, Digest, Empowered, day / night) and in Shenanigans' draw lock.
+
+**Decision.**
+1. **Engine-owned classification (D-20105).** A new Runtime-Safe module `packages/game-engine/src/hero/orderSafeEnabler.ts` exports `ORDER_SAFE_ENABLER_CONDITION_TYPES` (the 13 `WAIT_AND_SEE_CONDITION_TYPES`, then `firstHeroPlayedThisTurn`) and `isOrderSafeEnablerHook(hook)`, both on the `.` surface. It lives outside `heroConditions.evaluate.ts` because `deferredConditionalGrants.ts` imports that module (cycle). The server keeps no condition-type or count-source literal.
+2. **Why these are order-safe.** A wait-and-see gate is re-checked for the rest of the turn after it fails, and its edge-triggered counters only count events after the card is in play, so an earlier play sees at least as many. `firstHeroPlayedThisTurn` passes only with no earlier card, so moving earlier only helps.
+3. **Rule (fail-closed).** A later same-turn card is a tip enabler only when every one of its hooks, whatever the hook's timing, passes: every hook condition type on the allowlist; no `primitiveEffects`; and every effect, recursively through `digestEffects`, `indigestionEffects`, `excessiveViolenceEffects` and `heistEffects`, free of a `countSource`, a `count-scaled` choose option, a `bothCondition` or `attackRestriction.widenToMastermindWhen` condition off the allowlist, `digestThreshold`, `empoweredClass` / `empoweredClasses`, non-empty `sunlightEffects` / `moonlightEffects`, `rewardComposition`, `nonGreyHeroKoAttack`, and `type: 'no-more-draws'`. The whiff side (`SEQUENCE_GATE_CONDITION_TYPES` + `heroConditionHoldsForInPlay`) and the tip wording are unchanged.
+4. **Forward rule.** A new condition type is not order-safe until the engine adds it to the allowlist with a reason. A new wait-and-see type joins through `WAIT_AND_SEE_CONDITION_TYPES` (correct: a whole-turn re-check is order-safe) and also changes the explicit 14-literal drift pin, so the addition is reviewed. A new `HeroEffectDescriptor` or `HeroAbilityHook` field fails `tsc` until it is classified in the module's two `Record<keyof Required<…>>` tables (`ORDER_SAFETY_FIELD_TABLES`, a module export, not barrel-exported); a keyset test ties every `'rejected'` / `'recursed'` field to a test case.
+5. **Accepted loss.** 637 of 1370 hero first copies qualify as enablers (765 did before). Unconditional count-scaled cards (Perfect Teamwork, Avengers Assemble, Oddball), Digest, Empowered and day / night cards, reward compositions (Violent Conditioning) and Shenanigans stop being named. A lost tip, never a lost bonus.
+6. **Cached reports.** `legendary.coach_reports` rows generated before the deploy keep their tips (one paid call per match); no backfill.
+7. **API catalog.** No row change: the `/api/me/scores/:replayHash/coach` row's "deterministic server-computed play-order opportunity tips" sentence and the matches row's "same shape" stay true; shape, auth and status are unchanged.
+8. **Residuals (follow-ups).**
+   - Effect keywords whose handler reads present state at resolve, with no descriptor field the structural test sees. On qualifying cards at execution (probe over `data/cards` first copies): `reveal` 18, `investigate` 8, `feast` 3, `reveal-three-assign` 2, `shuffle-discard-empty-reward` 2, `put-bottom-hq-icon-reward` 2, `pure-fury` 2, `victory-villain-attack` 1, `reveal-from-hand` 1, `reveal-top-may-ko` 1, `reveal-herodeck-attack` 1. Deck and hand reads can go either way; a per-keyword classification is a follow-up.
+   - Enabler effects other than `no-more-draws` that change the turn for the cards they now precede, and displaced-card losses (moving X earlier pushes the whiffed card and the cards between one position later: an exact-ordinal or first-Hero gate there can lose).
+   - The rule reads the match's setup-time hooks (`finalState.heroAbilityHooks` from the replay's `initialState`), so a match created before a parser change is judged on its older hooks.
+   - Teaching tips for play-history gates ("play Winter Soldier later, after 7 other cards") is a different tip shape and voice.
+
+**Invariants.** Display-only (NG-1): never score, PAR or grade. No engine behaviour, `G`, hash or card-data change; `finalStateHash` and every pin unchanged. Layer boundary held: the engine classifies, the server calls.
+
+**Gates.** game-engine 7363 → 7378 / 0 fail (+15); server 1853 → 1864 (1657 pass, 207 DB-gated skips, 0 fail) (+11); every other package 0 fail; `pnpm -r build` 0. Revert proof: with the server check restored to the `SEQUENCE_GATE` deny-list the nine order-dependent real-card cases fail (24 / 15 pass / 9 fail), restored 24 / 24.
+
+**Packet:** WP-900 / EC-938 (WP-745 follow-up F). **Reserved by:** NUMBER-LEDGER D-24857 (#3424). Related: D-24533 (amended), D-20105, D-24746, D-24568, D-24377, D-24467, D-24798, D-24529, D-24552 (Shenanigans), D-24555 (Digest both), D-24598 (day / night), D-24026.
+
+---
 Protect this file.

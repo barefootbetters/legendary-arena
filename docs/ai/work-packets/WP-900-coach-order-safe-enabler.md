@@ -1,6 +1,6 @@
 # WP-900 — The coach's play-order tip never moves a card whose own bonus depends on play order (Server + one engine export)
 
-**Status:** Draft 2026-11-16 (EC-938; D-24857 reserved (#3424)). Gates: pre-flight READY TO EXECUTE (round 3); copilot CONFIRM (round 3); lint PASS (run 2).
+**Status:** Done 2026-11-16 (EC-938; D-24857 Active). Drafted 2026-11-16 (#3428). Gates: pre-flight READY TO EXECUTE (round 3); copilot CONFIRM (round 3); lint PASS (run 2).
 **Layer:** Server (`apps/server/src/coach/sequenceTeacher.logic.ts`) plus one new Runtime-Safe engine export (`packages/game-engine/src/hero/orderSafeEnabler.ts`, barrel-exported from `index.ts`)
 **User-Visible Surface:** play.legendary-arena.com (the post-match coach card, Legendary Pass)
 **Risk Tier:** LOW — a paid-feature advice text narrows (fewer tips, never different ones); no `G` write, gameplay rule, hash, card data, client, auth, money or persistence change; reports already cached keep their tips

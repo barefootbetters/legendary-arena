@@ -17,11 +17,15 @@
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { computeSequenceTips } from './sequenceTeacher.logic.js';
 import type { CapturedHeroPlay } from '../replay/matchReplay.logic.js';
-import type { LegendaryGameState } from '@legendary-arena/game-engine';
+import type { LegendaryGameState, MatchConfiguration } from '@legendary-arena/game-engine';
 import type { HeroAbilityHook } from '@legendary-arena/game-engine';
+import { buildHeroAbilityHooks } from '@legendary-arena/game-engine';
 
 // why: the copy-lint — the player/coach voice never uses these words (two-vocabulary rule).
 const FORBIDDEN_WORDS = ['whiff', 'failed', 'error', 'missed', 'wasted'];
@@ -355,4 +359,198 @@ describe('computeSequenceTips (WP-710 / D-24533)', () => {
       "Next time, play Repulsor Rays before Arc Reactor — you'd have landed its tech synergy bonus.",
     ]);
   });
+});
+
+// ---------------------------------------------------------------------------
+// WP-900 / D-24857 — order-safe enablers, over the committed card data
+// ---------------------------------------------------------------------------
+
+/** One real card under test, and what its hooks must carry. */
+interface RealEnablerCard {
+  setAbbr: string;
+  heroSlug: string;
+  cardSlug: string;
+  /** Asserts the parsed hooks carry the order-dependent structure under test. */
+  assertStructure: (hooks: readonly HeroAbilityHook[]) => void;
+}
+
+/** The parsed first copy of a real card, plus its printed class, team and name. */
+interface ParsedRealCard {
+  cardId: string;
+  heroClass: string;
+  team: string | null;
+  displayName: string;
+  hooks: HeroAbilityHook[];
+}
+
+// why: WP-900 / D-24857 — hooks are parsed from the COMMITTED data/cards JSON (the
+// hero/firstCardPlayed.test.ts reader), so these cases prove the shipped parse, not a
+// hand-typed literal. Resolved from this test's own location to the repo root.
+const CARD_DATA_DIRECTORY = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..', 'data', 'cards');
+
+/** The hand-built card whose class gate whiffs when played first. */
+const GATED_TEST_CARD = 'test/gated/class-gated#0';
+
+/**
+ * Parses one real card's first copy from the committed set file.
+ *
+ * @param card - The card under test.
+ * @returns Its id, printed class / team / name, and parsed hooks.
+ */
+function parseRealCard(card: RealEnablerCard): ParsedRealCard {
+  const setData = JSON.parse(readFileSync(join(CARD_DATA_DIRECTORY, `${card.setAbbr}.json`), 'utf8'));
+  const registry = { listCards: () => [], getSet: (abbr: string) => (abbr === card.setAbbr ? setData : undefined) };
+  const config = { heroDeckIds: [`${card.setAbbr}/${card.heroSlug}`] } as unknown as MatchConfiguration;
+  const cardId = `${card.setAbbr}/${card.heroSlug}/${card.cardSlug}#0`;
+  const hooks = buildHeroAbilityHooks(registry, config).filter((cardHook) => cardHook.cardId === cardId);
+  const hero = setData.heroes.find((entry: { slug: string }) => entry.slug === card.heroSlug);
+  const printed = hero.cards.find((entry: { slug: string }) => entry.slug === card.cardSlug);
+  assert.ok(hooks.length > 0, `${cardId} must parse to at least one hook`);
+  return { cardId, heroClass: printed.hc, team: hero.team ?? null, displayName: printed.displayName, hooks };
+}
+
+/**
+ * Builds the reduced final state for "the gated test card whiffs, then the real card is played".
+ *
+ * @param realCard - The parsed real card.
+ * @param isRealCardHooksKept - False drops the real card's hooks (the in-file control).
+ * @returns The final-state slice the teacher reads.
+ */
+function makeRealCardFinalState(realCard: ParsedRealCard, isRealCardHooksKept: boolean): LegendaryGameState {
+  const gatedHook = hook({ cardId: GATED_TEST_CARD, conditions: [{ type: 'heroClassMatch', value: realCard.heroClass }] });
+  const heroAbilityHooks = isRealCardHooksKept ? [gatedHook, ...realCard.hooks] : [gatedHook];
+  return {
+    ...makeFinalState({
+      cardTraits: {
+        [GATED_TEST_CARD]: { heroClass: 'grey', team: null },
+        [realCard.cardId]: { heroClass: realCard.heroClass, team: realCard.team },
+      },
+      heroAbilityHooks,
+    }),
+    cardDisplayData: {
+      [GATED_TEST_CARD]: { name: 'Gated Test Card' },
+      [realCard.cardId]: { name: realCard.displayName },
+    },
+  } as unknown as LegendaryGameState;
+}
+
+/**
+ * The two plays: the gated card first (alone, so its class gate whiffs), the real card later.
+ *
+ * @param realCard - The parsed real card.
+ * @returns The captured plays.
+ */
+function makeRealCardPlays(realCard: ParsedRealCard): CapturedHeroPlay[] {
+  return [
+    { seat: '0', turn: 1, cardId: GATED_TEST_CARD, inPlay: [GATED_TEST_CARD] },
+    { seat: '0', turn: 1, cardId: realCard.cardId, inPlay: [GATED_TEST_CARD, realCard.cardId] },
+  ];
+}
+
+/**
+ * Builds a structure assertion: some hook carries a condition of the given type.
+ *
+ * @param conditionType - The expected condition type.
+ * @returns The structure assertion.
+ */
+function hasConditionType(conditionType: string): (hooks: readonly HeroAbilityHook[]) => void {
+  return (hooks) => {
+    const isPresent = hooks.some((cardHook) =>
+      (cardHook.conditions ?? []).some((condition) => condition.type === conditionType),
+    );
+    assert.ok(isPresent, `expected a ${conditionType} condition`);
+  };
+}
+
+/**
+ * Builds a structure assertion: some hook carries an effect matching the predicate.
+ *
+ * @param description - What the effect must carry (for the failure message).
+ * @param isMatch - The effect predicate.
+ * @returns The structure assertion.
+ */
+function hasEffect(
+  description: string,
+  isMatch: (effect: NonNullable<HeroAbilityHook['effects']>[number]) => boolean,
+): (hooks: readonly HeroAbilityHook[]) => void {
+  return (hooks) => {
+    assert.ok(hooks.some((cardHook) => (cardHook.effects ?? []).some(isMatch)), `expected ${description}`);
+  };
+}
+
+const ORDER_DEPENDENT_CARDS: readonly RealEnablerCard[] = [
+  { setAbbr: 'ca75', heroSlug: 'winter-soldier', cardSlug: 'kgb-training', assertStructure: hasConditionType('playedThisTurn') },
+  { setAbbr: 'vill', heroSlug: 'dr-octopus', cardSlug: 'eighth-times-a-charm', assertStructure: hasConditionType('cardPlayOrdinalEquals') },
+  { setAbbr: 'ff04', heroSlug: 'invisible-woman', cardSlug: 'four-of-a-kind', assertStructure: hasConditionType('otherCardOfCostPlayedThisTurn') },
+  { setAbbr: 'mdns', heroSlug: 'blade-daywalker', cardSlug: 'hunt-high-and-low', assertStructure: hasConditionType('patrolSpaceEmpty') },
+  {
+    setAbbr: 'ca75',
+    heroSlug: 'captain-america-falcon',
+    cardSlug: 'winged-salvation',
+    assertStructure: hasConditionType('bystandersInVictoryAtLeast'),
+  },
+  {
+    setAbbr: 'core',
+    heroSlug: 'deadpool',
+    cardSlug: 'oddball',
+    assertStructure: hasEffect('a count-scaled effect', (effect) => effect.countSource !== undefined),
+  },
+  {
+    setAbbr: 'xmen',
+    heroSlug: 'legion',
+    cardSlug: 'bend-steel',
+    assertStructure: (hooks) => {
+      assert.ok(hooks.some((cardHook) => (cardHook.primitiveEffects ?? []).length > 0), 'expected a composition primitive');
+    },
+  },
+  {
+    setAbbr: 'vnom',
+    heroSlug: 'venom',
+    cardSlug: 'devouring-drool',
+    assertStructure: hasEffect(
+      'a digest effect with a bothCondition',
+      (effect) => effect.bothCondition !== undefined && effect.digestThreshold !== undefined,
+    ),
+  },
+  {
+    setAbbr: 'vnom',
+    heroSlug: 'venompool',
+    cardSlug: 'shenanigans',
+    assertStructure: hasEffect('a no-more-draws effect', (effect) => effect.type === 'no-more-draws'),
+  },
+];
+
+const ORDER_SAFE_CARDS: readonly RealEnablerCard[] = [
+  { setAbbr: 'core', heroSlug: 'thor', cardSlug: 'surge-of-power', assertStructure: hasConditionType('recruitMadeThisTurnAtLeast') },
+  { setAbbr: 'dkcy', heroSlug: 'elektra', cardSlug: 'first-strike', assertStructure: hasConditionType('firstHeroPlayedThisTurn') },
+];
+
+describe('computeSequenceTips — order-safe enablers over real card data (WP-900 / D-24857)', () => {
+  for (const card of ORDER_DEPENDENT_CARDS) {
+    test(`no tip names ${card.cardSlug}, whose own bonus depends on play order`, () => {
+      const realCard = parseRealCard(card);
+      card.assertStructure(realCard.hooks);
+
+      const tips = computeSequenceTips(makeRealCardPlays(realCard), makeRealCardFinalState(realCard, true), identityName);
+      assert.deepEqual(tips, [], `${realCard.displayName} must not be named as an enabler`);
+
+      // why: WP-900 / D-24857 — the in-file control. With its hooks removed the real card is an
+      // unconditional same-class enabler, so the same plays must tip; the no-tip above therefore
+      // comes from order safety, not from a drifted fixture.
+      const controlTips = computeSequenceTips(makeRealCardPlays(realCard), makeRealCardFinalState(realCard, false), identityName);
+      assert.equal(controlTips.length, 1, `the hookless control for ${realCard.displayName} must tip`);
+    });
+  }
+
+  for (const card of ORDER_SAFE_CARDS) {
+    test(`an order-safe ${card.cardSlug} is still named as the enabler`, () => {
+      const realCard = parseRealCard(card);
+      card.assertStructure(realCard.hooks);
+
+      const tips = computeSequenceTips(makeRealCardPlays(realCard), makeRealCardFinalState(realCard, true), identityName);
+      assert.deepEqual(tips, [
+        `Next time, play ${realCard.displayName} before Gated Test Card — you'd have landed its ${realCard.heroClass} synergy bonus.`,
+      ]);
+    });
+  }
 });
