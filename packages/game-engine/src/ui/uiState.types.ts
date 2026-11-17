@@ -1997,6 +1997,20 @@ export interface UIPendingUndercoverChoice {
   playerID: string;
   /** The eligible hand-Hero ext_ids the player may send Undercover. */
   eligibleTargets: string[];
+  // why: WP-901 / D-24858 — a 'your-hero' pick ("you may send one of your [other] Heroes
+  // Undercover") names its targets: the snapshotted hand Heroes STILL in hand, with display data,
+  // so the chooser sees names, never ext ids, and never a button the resolve would refuse.
+  // Present only for a 'your-hero' front entry; absent for a hand-shield entry. Chooser-only.
+  /** Named hand targets ('your-hero' entries only). */
+  eligibleHand?: UIEligibleKoHeroCard[];
+  // why: WP-901 / D-24858 — the snapshotted in-play Heroes still in play ("your Heroes" = hand +
+  // played this turn, rules v23 glossary). Present only for a 'your-hero' front entry. Chooser-only.
+  /** Named in-play targets ('your-hero' entries only). */
+  eligibleInPlay?: UIEligibleKoHeroCard[];
+  // why: WP-901 / D-24858 — the "Don't send" option. Write rule: always `true` on a 'your-hero'
+  // projection, never written on a hand-shield one, never `false`; read `=== true`.
+  /** Whether the chooser may decline ('your-hero' entries only). */
+  canDecline?: boolean;
 }
 
 /**

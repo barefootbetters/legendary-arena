@@ -33,6 +33,7 @@ import type {
   UIDisplayEntry,
   UIKoPileState,
   UIDeckCardStat,
+  UIEligibleKoHeroCard,
 } from './uiState.types.js';
 import type { UIAudience } from './uiAudience.types.js';
 // why: WP-258 — the filtered hollow-effect records are the engine's canonical
@@ -52,6 +53,21 @@ const REDACTED_ECONOMY: UITurnEconomyState = {
   piercing: 0,
   woundsDrawn: 0,
 };
+
+/**
+ * Copies the named targets of a 'your-hero' Undercover pick (WP-901 / D-24858), entry by
+ * entry with a display spread, so the filtered UIState never aliases the input.
+ *
+ * @param targets - The built projection's named targets for one zone.
+ * @returns A copy of the entries.
+ */
+function copyUndercoverTargets(targets: UIEligibleKoHeroCard[]): UIEligibleKoHeroCard[] {
+  const copies: UIEligibleKoHeroCard[] = [];
+  for (const entry of targets) {
+    copies.push({ zone: entry.zone, cardId: entry.cardId, display: { ...entry.display } });
+  }
+  return copies;
+}
 
 /**
  * Copies the restricted-attack projection entries (WP-790 / D-24652), each with
@@ -1503,6 +1519,19 @@ export function filterUIStateForAudience(
       playerID: uiState.pendingUndercoverChoice.playerID,
       eligibleTargets: [...uiState.pendingUndercoverChoice.eligibleTargets],
     };
+    // why: WP-901 / D-24858 — a 'your-hero' pick's named hand / in-play targets and its decline,
+    // passed through field by field, entry by entry (the optional-KO copy pattern), on the same
+    // chooser-only branch. Omitted when absent (a hand-shield pick), so it projects no new keys.
+    // Missing this drops the fields at the whitelist and the client shows no "Don't send" — a freeze.
+    if (uiState.pendingUndercoverChoice.eligibleHand !== undefined) {
+      result.pendingUndercoverChoice.eligibleHand = copyUndercoverTargets(uiState.pendingUndercoverChoice.eligibleHand);
+    }
+    if (uiState.pendingUndercoverChoice.eligibleInPlay !== undefined) {
+      result.pendingUndercoverChoice.eligibleInPlay = copyUndercoverTargets(uiState.pendingUndercoverChoice.eligibleInPlay);
+    }
+    if (uiState.pendingUndercoverChoice.canDecline === true) {
+      result.pendingUndercoverChoice.canDecline = true;
+    }
   }
 
   // why: WP-684 / D-24501 — PER-SEAT redaction of the non-active/multi-seat pending choice.

@@ -273,6 +273,32 @@ function resolveDisplay(
   return { ...UNKNOWN_DISPLAY_PLACEHOLDER, extId, heroClass, team };
 }
 
+/**
+ * Builds the named targets of a 'your-hero' Undercover pick for one zone (WP-901 / D-24858):
+ * each snapshotted id still present in the live zone, in snapshot order, with a fresh display.
+ *
+ * @param snapshotIds - The ids the pending entry snapshotted for this zone.
+ * @param liveZone - The chooser's live zone array.
+ * @param zone - The zone label carried on each entry.
+ * @param gameState - Supplies display data.
+ * @returns The named, still-present targets.
+ */
+function buildLiveUndercoverTargets(
+  snapshotIds: readonly string[],
+  liveZone: readonly string[],
+  zone: 'hand' | 'inPlay',
+  gameState: LegendaryGameState,
+): UIEligibleKoHeroCard[] {
+  const targets: UIEligibleKoHeroCard[] = [];
+  for (const cardId of snapshotIds) {
+    if (!liveZone.includes(cardId)) {
+      continue;
+    }
+    targets.push({ zone, cardId, display: { ...resolveDisplay(cardId, gameState) } });
+  }
+  return targets;
+}
+
 // why: WP-128 / D-12805 — produce a per-entry shallow-copied
 // `UIDisplayEntry` array from a CardExtId list. Aliasing-defense per
 // WP-111 D-11105: every entry is a fresh `{ extId, display }` object
@@ -2275,6 +2301,22 @@ export function buildUIState(
       playerID: frontUndercover.playerID,
       eligibleTargets: [...frontUndercover.eligibleTargets],
     };
+    // why: WP-901 / D-24858 — a 'your-hero' front entry also projects its named hand / in-play
+    // targets and the decline. Only snapshot ids STILL in their zone are listed (another queue may
+    // have moved one first; the resolve refuses a stale target), each with a fresh display spread.
+    // A hand-shield entry projects no new keys (write rule: never written there).
+    if (frontUndercover.source === 'your-hero') {
+      const chooserZones = gameState.playerZones[frontUndercover.playerID];
+      pendingUndercoverChoice.eligibleHand = buildLiveUndercoverTargets(
+        frontUndercover.eligibleTargets, chooserZones?.hand ?? [], 'hand', gameState,
+      );
+      pendingUndercoverChoice.eligibleInPlay = buildLiveUndercoverTargets(
+        frontUndercover.eligibleInPlayTargets ?? [], chooserZones?.inPlay ?? [], 'inPlay', gameState,
+      );
+      if (frontUndercover.canDecline === true) {
+        pendingUndercoverChoice.canDecline = true;
+      }
+    }
   }
 
   // why: WP-684 / D-24501 — project G.pendingSeatChoice (the single open non-active/multi-seat

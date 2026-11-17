@@ -2100,6 +2100,30 @@
       "cardSlug": "captain-americas-legacy",
       "abilityIndex": 0,
       "markupToken": "[keyword:attack-per-count:distinct-hero-classes-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "black-widow",
+      "cardSlug": "weave-a-web-of-spies",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:undercover-your-other-hero]"
+    },
+    {
+      "heroSlug": "black-widow",
+      "cardSlug": "weave-a-web-of-spies",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:draw-threshold:1]"
+    },
+    {
+      "heroSlug": "black-widow",
+      "cardSlug": "infiltrate-the-conspiracy",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:undercover-your-hero]"
+    },
+    {
+      "heroSlug": "red-guardian",
+      "cardSlug": "death-was-only-a-ruse",
+      "abilityIndex": 2,
+      "markupToken": "[keyword:undercover-your-other-hero]"
     }
   ],
   "dead": [

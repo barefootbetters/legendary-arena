@@ -51904,3 +51904,37 @@ Protect this file.
 
 ---
 Protect this file.
+
+### D-24858 — "You may send one of your [other] Heroes Undercover" is a third Undercover source shape: hand + in-play Heroes, always declinable, `PendingUndercoverChoice` widened with `source: 'your-hero'` (Active 2026-11-16 — WP-901 / EC-939)
+
+**Status:** Active 2026-11-16. Reserved 2026-11-16 (#3426); drafted and gated (#3430: 01.4 READY TO EXECUTE, 01.7 CONFIRM, 00.3 PASS). Extends D-24494. Live-verify (D-24026) pending.
+
+**Context.** Three bkwd lines (Black Widow's Weave a Web of Spies line 1, draw-gated, and Infiltrate the Conspiracy line 0; Red Guardian's Death Was Only a Ruse line 2, Covert-gated) parsed to the bare `[keyword:Undercover]` token, an honest hollow with no handler (WP-678), so playing them did nothing. Rules v23 §Undercover: "send one of your other Heroes Undercover" means put that Hero into your Victory Pile, worth 1 VP. The glossary ("Your Heroes", ~L3436-3445) makes "your Heroes" the cards in your hand plus the cards you played this turn. WP-745 follow-up G.
+
+**Decision.**
+1. **Two handler-bearing keywords** `undercover-your-hero` (the triggering card included) and `undercover-your-other-hero` (the triggering copy left out, by its per-copy ext id), markers `[keyword:undercover-your-hero]` / `[keyword:undercover-your-other-hero]`. One handler, `heroEffectUndercoverYourHero`, reads `effect.type`. Both are in `HANDLED_KEYWORDS` and `NO_MAGNITUDE_KEYWORDS`. A Hero is any card but `WOUND_EXT_ID` / `BYSTANDER_EXT_ID`.
+2. **Bare token descriptive on a source-marker line.** The parser line flag `lineHasUndercoverYourHeroMarker` skips the bare `undercover` keyword on a line holding either marker. The ~53 other bare-token lines are unchanged.
+3. **Always park, always declinable.** Unlike the hand-shield shape (D-24494: 1 eligible auto-sends, no decline), "you may" is a real choice: a sent Hero is gone for the game. With anything eligible the handler parks `{ playerID, cardId, source: 'your-hero', eligibleTargets: <hand>, eligibleInPlayTargets: <in play>, canDecline: true }`; with nothing it logs "Player N had no [other] Hero to send Undercover for <card>." and parks nothing.
+4. **Contract (amends D-24494).** `PendingUndercoverChoice.source: 'hand-shield-hero' | 'your-hero'`; optional `eligibleInPlayTargets?: CardExtId[]` and `canDecline?: boolean`. Write rule: on a `'your-hero'` entry both are always written (`eligibleInPlayTargets` possibly `[]`, `canDecline` always `true`); on a hand-shield entry neither exists. `canDecline` is never `false` and is read `=== true` (D-24600). `UIPendingUndercoverChoice` gains `eligibleHand?` / `eligibleInPlay?` (`UIEligibleKoHeroCard[]`, built from the snapshot ids still in their zone) and `canDecline?`, chooser-only, under the same rule.
+5. **Resolve args are an XOR union** `{ decline: true } | { targetExtId; zone?: 'hand' | 'inPlay' }` (absent `zone` = hand, so WP-678 callers are unchanged; both forms present → refused, no pop). Decline needs `canDecline === true`. A `'your-hero'` target must be in its zone's snapshot and still in that zone, else the move returns without popping (the player picks another card or declines). A hand-shield entry refuses decline and `zone: 'inPlay'` and keeps today's path (snapshot check, send or no-op, pop), so it never freezes.
+6. **Log.** `moveCardUndercover` (exported, no log) is extracted from `sendCardUndercover`, whose raw-id line stays byte-identical, so older shld / 2099 Undercover replays keep their hashes. Only the `'your-hero'` send logs the card through `formatCardRef`; decline logs "Player N chose not to send a Hero Undercover." Naming the card on the older shapes is a follow-up (it re-hashes their replays, a D-24616 §5 call).
+7. **Bot.** `selectDefaultUndercoverYourHeroTarget(front, { hand, inPlay })` sends the first S.H.I.E.L.D. Agent / Trooper still in play, else still in hand, else declines (rules v23: "This can help get your starting S.H.I.E.L.D. Agents and Troopers out of your deck"). It reads the live zones, so `getLegalMoves` never offers a move the resolve refuses. The hand-shield front keeps `eligibleTargets[0]`.
+8. **Draw gate.** Weave carries `[keyword:draw-threshold:1]` → `cardsDrawnThisTurnAtLeast:1` (D-24476, wait-and-see). Played before any draw it logs the waiting line and parks from `resolveDeferredHeroGrants` after the drawing move (the D-24792 precedent); with no draw that turn it never parks.
+9. **Leaving play.** An in-play send removes the card from `inPlay` (the in-play KO precedent); its resources stay. Per D-24856 §6 it calls `recordPlayedCardLeftPlay` in `resolveUndercoverChoice`, so the card still counts as played this turn; `playedCardLeftPlay.test.ts` gains the row in both locked tables (EC-939 Amendment A).
+
+**Execution (2026-11-16).** Baseline `origin/main` `c328925b8` (after WP-769 #3434). EC-939 ``cdb60cc39``.
+
+**Gates.**
+- game-engine 7422 → 7450 / 0 (+28: 25 in the new `hero/undercoverYourHero.test.ts`, 3 in `uiState.filter.test.ts`); arena-client 2726 → 2732 / 0 (+6 in `UndercoverChoicePrompt.test.ts`).
+- `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail; arena-client `typecheck` 0.
+- Every feed `:check` 0. Runtime-observed `no-handler` 521 → 480.
+- Hash oracles, sentinels and the local-spike `initialStateHash` (`495e9cc2`) unchanged. WP-678 / WP-679 tests unedited. Lockstep pins +2 keywords (101 → 103) / +2 handlers (80 → 82).
+
+**Hash / replay.** No new `G` key; the new fields exist only on `'your-hero'` entries. Replays of pre-WP-901 matches that played these three cards diverge on re-execution (the hollow parked nothing); matches that sent a card Undercover through the shld / 2099 shapes do not. Stored `competitive_scores` rows stay frozen (D-24616 §5). Hooks are built in `Game.setup`, so in-flight matches keep the old hooks.
+
+**Out of scope / follow-ups.** Infiltrate line 1's "+3 if 4 Bystanders and/or Undercover Heroes" gate (follow-up H; today an unconditional +3); Unleash from Undercover; the discard-source shape (Yelena Belova's Destroy the Red Room); "Send this Undercover" self-sends; naming the card in the shared Undercover log.
+
+**Packet:** WP-901 / EC-939. **Reserved by:** NUMBER-LEDGER D-24858 (#3426). Related: D-24494, D-24495, D-24476, D-24377, D-24792, D-24791, D-24600, D-24568, D-24798, D-24856, D-24616, D-12803, D-24372, D-24026.
+
+---
+Protect this file.

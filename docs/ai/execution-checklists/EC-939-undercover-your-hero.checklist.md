@@ -91,6 +91,19 @@
       EC_INDEX Done, mindmap ✅ + `pnpm roadmap:counts:write`; `roadmap:counts:check` → 0, NUMBER-LEDGER LANDED, 01.6 post-mortem.
 - [ ] Live-on-surface (D-24026) in its own `SPEC:` PR after the deploy, or operator-pending in STATUS.
 
+## Amendments
+
+- **Amendment A (2026-11-16, execution; the "WP-899 landed" branch).** WP-899 / D-24856 landed before execution
+  (`293255f4b`, #3429). Three edits, one extra file:
+  1. `moves/undercover.resolve.ts` `resolveUndercoverChoice` calls
+     `G.turnEconomy = recordPlayedCardLeftPlay(G.turnEconomy, targetExtId)` right after an in-play send.
+  2. `hero/playedCardLeftPlay.test.ts` gains **two** rows, not one: `LOCKED_LEFT_PLAY_RECORD_TABLE`
+     `'moves/undercover.resolve.ts#resolveUndercoverChoice recordPlayedCardLeftPlay': 1` (the scanner's key format), and
+     `LOCKED_IN_PLAY_WRITE_TABLE` `'moves/undercover.resolve.ts#resolveUndercoverChoice': 1`. The EC assumed T15's literal
+     `.inPlay` write scan could not see the send; it can, because the send assigns `zones.inPlay = moveCardUndercover(…)`.
+  3. `hero/undercoverYourHero.test.ts` tests the record directly (an in-play send leaves `leftPlayPlayedCardIds = [target]`;
+     a hand send writes no ledger).
+
 ## Common Failure Smells
 - Prompt never opens — keyword missing from `NO_MAGNITUDE_KEYWORDS`, or the bare `undercover` still the only keyword.
 - Weave opens with no draw — the draw-threshold marker not on ability 1, or appended to the wrong index.

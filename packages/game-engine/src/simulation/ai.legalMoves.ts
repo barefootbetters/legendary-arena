@@ -91,7 +91,7 @@ import {
   isSplitFaceBindable,
 } from '../moves/splitFaceChoice.resolve.js';
 import { hasPendingCountScaledChoice } from '../moves/countScaledChoice.resolve.js';
-import { hasPendingUndercoverChoice } from '../moves/undercover.resolve.js';
+import { hasPendingUndercoverChoice, selectDefaultUndercoverYourHeroTarget } from '../moves/undercover.resolve.js';
 import {
   hasPendingReturnZeroCostDiscard,
   getEligibleZeroCostDiscardCards,
@@ -680,6 +680,19 @@ export function getLegalMoves(
   // snapshot is deterministic). Returns a list of length EXACTLY 1.
   if (hasPendingUndercoverChoice(gameState)) {
     const front = gameState.pendingUndercoverChoice![0]!;
+    // why: WP-901 / D-24858 — a 'your-hero' pick sends a starting S.H.I.E.L.D. Agent / Trooper
+    // (played first, read from the LIVE zones so the move is never one the resolve refuses) or
+    // declines; a hand-shield pick keeps the WP-678 first-eligible default.
+    if (front.source === 'your-hero') {
+      const chooserZones = gameState.playerZones[front.playerID];
+      const choice = chooserZones === undefined
+        ? null
+        : selectDefaultUndercoverYourHeroTarget(front, { hand: chooserZones.hand, inPlay: chooserZones.inPlay });
+      if (choice === null) {
+        return [{ name: 'resolveUndercoverChoice', args: { decline: true } }];
+      }
+      return [{ name: 'resolveUndercoverChoice', args: { targetExtId: choice.targetExtId, zone: choice.zone } }];
+    }
     return [{ name: 'resolveUndercoverChoice', args: { targetExtId: front.eligibleTargets[0]! } }];
   }
   // why: WP-676 / D-24492 — a Smash discard-for-attack choice blocks every other move; the

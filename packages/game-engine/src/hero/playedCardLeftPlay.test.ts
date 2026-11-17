@@ -385,16 +385,19 @@ const LOCKED_IN_PLAY_WRITE_TABLE: Record<string, number> = {
   'moves/recruitSidekick.ts#returnPlayedSidekick': 1, // own count (sidekicksReturnedThisTurn)
   'moves/ritualArtifact.ts#useRitualArtifact': 2, // own ledger (ritualUsedPlayedCardIds)
   'moves/splitFaceChoice.resolve.ts#resolveSplitFaceChoice': 1, // relabel, not an exit
+  'moves/undercover.resolve.ts#resolveUndercoverChoice': 1, // WP-901 / D-24858: an in-play Undercover send, recorded through recordPlayedCardLeftPlay
   'villain/villainEffects.execute.ts#koOneHeroForPlayer': 2, // KO: recorded through recordOwnedCardKoed
   'villain/villainEffects.execute.ts#villainEffectKoHeroesCurrentByTrait': 1, // KO: recorded through recordOwnedCardKoed
 };
 
 // why: WP-899 / D-24856 — the record calls by function (definitions excluded): exactly the two
 // write sites, and the operator helper's two calls (deck-top and general branch).
+// why: WP-901 / D-24858 — a third site: resolveUndercoverChoice records an in-play Undercover send.
 const LOCKED_LEFT_PLAY_RECORD_TABLE: Record<string, number> = {
   'hero/deferredConditionalGrants.ts#recordOwnedCardKoed recordPlayedCardLeftPlay': 1,
   'moves/operatorSetters.ts#recordOperatorLeftPlay recordPlayedCardLeftPlay': 1,
   'moves/operatorSetters.ts#moveBetweenPlayerZones recordOperatorLeftPlay': 2,
+  'moves/undercover.resolve.ts#resolveUndercoverChoice recordPlayedCardLeftPlay': 1,
 };
 
 /**

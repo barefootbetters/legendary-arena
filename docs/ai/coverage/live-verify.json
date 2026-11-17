@@ -2767,6 +2767,39 @@
       "date": "2026-11-17",
       "evidence": "Solo autoplay on server c328925b (the #3434 merge, built 2026-11-17T03:42Z), match created after the deploy (Killmonger / Midtown Bank Robbery; Killmonger's League; Doombot Legion; Captain America, Hulk, Thor). 9QywYy_nmSv: snapshot mastermind.fortifiedReason \"Killmonger can't be fought while he has more than 0 Attack. Spend Attack equal to his Attack to Wound him and get +1 Recruit.\", mastermind.woundable true, mastermind.woundCount 1..5 with fightCost 5 -> 0; the Mastermind Fight button disabled with that title while locked (\"Needs N attack\" when short, the known cost-first tile order) and enabled only at 0. Wounds: 6.2.10 \"Player 0 spent 5 Attack to Wound Killmonger and got +1 Recruit; he has 1 Wound(s) and 4 Attack now.\" through 8.2.8 (\"... 5 Wound(s) and 0 Attack now.\"), then 8.2.9 fought Killmonger and defeated \"Rite of Challenge\" (8.2.10 no player gained a Wound), 8.2.11 \"Killmonger's 5 Wound(s) returned to the Wound Stack.\". All four tactics fell the same way: Throw from the Waterfall 11.2.15 (11.2.16 drew 2, 11.2.17 solo no discard), Altar of Resurrection 17.2.12 (17.2.13 the villain-wound hollow, cardType mastermind), A Scar for Every Kill 22.2.9 (22.2.10 +3 Recruit for 3 non-Henchman Villains); each followed by the Wound return. Master Strikes 7.1.4 / 13.1.1 / 20.1.4 \"could not reveal 4 different Hero Classes and gained a Wound from Killmonger\" (his Attack rose by 1); 15.1.1 \"would gain a Wound — Diving Block can prevent it from Killmonger\", 15.1.3 declined. Heroes win turn 22 (all tactics defeated). Not observed live (unit-tested): the 4-class reveal and the discard-to-4 strike branches, Rite giving out a Wound in multi-seat.",
       "note": "Live check (NEW Killmonger match after the deploy): the Mastermind Fight button is disabled with \"Killmonger can't be fought while he has more than 0 Attack. Spend Attack equal to his Attack to Wound him and get +1 Recruit.\" while his Attack is above 0; a bot / autoplay seat logs \"spent N Attack to Wound Killmonger and got +1 Recruit\" with his Attack falling 5 -> 0, then takes a Tactic, after which \"Killmonger's N Wound(s) returned to the Wound Stack.\"; a Master Strike logs \"[Killmonger Master Strike]\"; Play Diagnostics shows mastermind.woundCount, mastermind.woundable and mastermind.fortifiedReason. D-24602."
+    },
+    {
+      "key": "bkwd/black-widow|undercover-your-hero",
+      "kind": "hero",
+      "card": "Black Widow",
+      "ability": "Infiltrate the Conspiracy: You may send one of your Heroes Undercover.",
+      "wp": "WP-901",
+      "state": "pending",
+      "date": "2026-11-16",
+      "evidence": "",
+      "note": "Live check (NEW operator match created after the deploy with bkwd Black Widow and Red Guardian): playing Infiltrate the Conspiracy opens \"You may send one of your Heroes Undercover\" with no gate, listing \"From your hand\" and \"Played this turn\" (the card itself included) by name plus \"Don't send\" (uiStateSnapshot.pendingUndercoverChoice.canDecline === true, eligibleInPlay present); sending puts the Hero in the Victory Pile (+1 VP, \"Player N sent <Name> (<extId>) Undercover\"); \"Don't send\" logs \"chose not to send a Hero Undercover.\" and changes no zone. D-24858."
+    },
+    {
+      "key": "bkwd/black-widow|undercover-your-other-hero",
+      "kind": "hero",
+      "card": "Black Widow",
+      "ability": "Weave a Web of Spies: If you drew any cards this turn, you may send one of your other Heroes Undercover.",
+      "wp": "WP-901",
+      "state": "pending",
+      "date": "2026-11-16",
+      "evidence": "",
+      "note": "Live check (NEW operator match created after the deploy with bkwd Black Widow and Red Guardian): Weave a Web of Spies played before any draw logs \"... is waiting — it needs 1 or more cards drawn this turn — you have drawn 0.\"; after a draw that turn the Undercover prompt opens without Weave itself among the targets; with no draw all turn it never opens. D-24858."
+    },
+    {
+      "key": "bkwd/red-guardian|undercover-your-other-hero",
+      "kind": "hero",
+      "card": "Red Guardian",
+      "ability": "Death Was Only a Ruse: [hc:covert]: You may send one of your other Heroes Undercover.",
+      "wp": "WP-901",
+      "state": "pending",
+      "date": "2026-11-16",
+      "evidence": "",
+      "note": "Live check (NEW operator match created after the deploy with bkwd Black Widow and Red Guardian): Death Was Only a Ruse opens the Undercover prompt only after another Covert Hero was played this turn, never listing itself; without a Covert Hero it logs the blocked line and parks nothing. D-24858."
     }
   ]
 }

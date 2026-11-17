@@ -247,6 +247,12 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // 'undercover' token is NOT here — it is an honest hollow, no source zone → no handler.)
   'undercover-hand-shield-hero',
   'undercover-officer-stack',
+  // why: WP-901 / D-24858 — the third Undercover source shape, "you may send one of your
+  // [other] Heroes Undercover". One HERO_EFFECT_HANDLERS entry (heroEffectUndercoverYourHero)
+  // serves both; it parks a declinable PendingUndercoverChoice over hand + in-play Heroes. Both
+  // carry NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
+  'undercover-your-hero',
+  'undercover-your-other-hero',
   // why: WP-683 / D-24500 — Deadpool's Here, Hold This for a Second ("A Villain of your
   // choice captures a Bystander."); has a HERO_EFFECT_HANDLERS entry (heroEffectHereHoldThis)
   // that attaches via attachBystanderToVillain (Mastermind fallback at 0 Villains, empty-supply
@@ -670,6 +676,11 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // time, so the magnitude pre-gate must not drop them, or the send never fires / the pick never parks.
   'undercover-hand-shield-hero',
   'undercover-officer-stack',
+  // why: WP-901 / D-24858 — the two your-hero Undercover keywords carry NO magnitude ("send
+  // one of your Heroes" — always one card, or none); the eligible set is read from G when the
+  // effect fires, so the magnitude pre-gate must not drop them, or the pick never parks.
+  'undercover-your-hero',
+  'undercover-your-other-hero',
   // why: WP-683 / D-24500 — here-hold-this carries NO magnitude (it attaches exactly one
   // Bystander to the chosen Villain); the eligible City set is computed from G at play time,
   // so the magnitude pre-gate must not drop it, or the capture / pick never fires.
@@ -3367,13 +3378,44 @@ export function sendCardUndercover(
 ): CardExtId[] {
   const zones = G.playerZones[playerID];
   if (!zones) { return fromZone; }
+  if (!fromZone.includes(cardId)) { return fromZone; }
+  const remaining = moveCardUndercover(G, playerID, cardId, fromZone);
+  // why: WP-901 / D-24858 — this line is hashed into every match that sent a card Undercover
+  // (computeStateHash covers `messages`), so it stays byte-identical, raw ext id included; only
+  // the 'your-hero' resolve names the card (it logs its own line around moveCardUndercover).
+  pushLog(G, `Player ${playerID} sent ${cardId} Undercover (into the Victory Pile, +1 VP).`);
+  return remaining;
+}
+
+/**
+ * Moves one card Undercover with no log line (WP-901 / D-24858): `sendCardUndercover` minus its
+ * log. Moves `cardId` from `fromZone` into the acting player's Victory Pile and appends it to
+ * the `undercover` tracker (1 VP each). A card not in `fromZone` (or a missing player) is a
+ * no-op that returns `fromZone` unchanged.
+ *
+ * why: WP-901 / D-24858 — extracted so the 'your-hero' send can log the card by name while the
+ * shared sendCardUndercover line stays byte-identical (older Undercover replays keep their hashes).
+ *
+ * @param G - Game state (mutates the player's `victory` + `undercover`).
+ * @param playerID - The acting player.
+ * @param cardId - The card to send Undercover.
+ * @param fromZone - The source array the card is removed from (hand, inPlay, or G.piles.officers).
+ * @returns The new source array with `cardId` removed.
+ */
+export function moveCardUndercover(
+  G: LegendaryGameState,
+  playerID: string,
+  cardId: CardExtId,
+  fromZone: CardExtId[],
+): CardExtId[] {
+  const zones = G.playerZones[playerID];
+  if (!zones) { return fromZone; }
   const moveResult = moveCardFromZone(fromZone, zones.victory, cardId);
   if (!moveResult.found) { return fromZone; }
   zones.victory = moveResult.to;
   // why: `?? []` guards a reconstructed/legacy state that predates the tracker (see the
   // scoring guard); a live match always has it (playerInit).
   zones.undercover = [...(zones.undercover ?? []), cardId];
-  pushLog(G, `Player ${playerID} sent ${cardId} Undercover (into the Victory Pile, +1 VP).`);
   return moveResult.from;
 }
 
@@ -3455,6 +3497,74 @@ function heroEffectUndercoverOfficerStack(
   // why: the Officer Stack is homogeneous (identical S.H.I.E.L.D. Officers), so "a card"
   // is deterministically the top one — no interactive choice.
   G.piles.officers = sendCardUndercover(G, playerID, officers[0]!, officers);
+}
+
+/**
+ * Whether a card counts as one of "your Heroes" for a your-hero Undercover send (WP-901 /
+ * D-24858): anything but a Wound or a Bystander (S.H.I.E.L.D. Agents, Troopers, Officers and
+ * Sidekicks are Heroes; the WP-767 / WP-828 / WP-856 filter).
+ *
+ * @param cardId - The card to test.
+ * @returns true when the card is a Hero.
+ */
+function isYourHeroUndercoverCandidate(cardId: CardExtId): boolean {
+  return cardId !== WOUND_EXT_ID && cardId !== BYSTANDER_EXT_ID;
+}
+
+/**
+ * "You may send one of your [other] Heroes Undercover" (WP-901 / D-24858). Eligible targets
+ * are the Heroes in the player's hand and the Heroes they have in play; the
+ * `undercover-your-other-hero` form leaves out the triggering card. With anything eligible it
+ * parks a declinable PendingUndercoverChoice (source 'your-hero') resolved by
+ * resolveUndercoverChoice; with nothing eligible it logs why and parks nothing.
+ *
+ * @param G - Game state (mutated).
+ * @param _ctx - Unused (framework parity).
+ * @param playerID - The acting player.
+ * @param cardId - The triggering (played) card.
+ * @param effect - Its type picks the "other" form.
+ */
+function heroEffectUndercoverYourHero(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  const zones = G.playerZones[playerID];
+  if (!zones) { return; }
+  // why: rules v23 glossary — "your Heroes" are the cards in your hand and the cards you played
+  // this turn (deck and discard never count). "Other" leaves out the triggering copy, matched by
+  // its per-copy ext id, so a second copy of the same card stays eligible.
+  const isOtherForm = effect.type === 'undercover-your-other-hero';
+  const eligibleHand: CardExtId[] = [];
+  for (const handCardId of zones.hand) {
+    if (isYourHeroUndercoverCandidate(handCardId)) { eligibleHand.push(handCardId); }
+  }
+  const eligibleInPlay: CardExtId[] = [];
+  for (const inPlayCardId of zones.inPlay) {
+    if (isOtherForm && inPlayCardId === cardId) { continue; }
+    if (isYourHeroUndercoverCandidate(inPlayCardId)) { eligibleInPlay.push(inPlayCardId); }
+  }
+  if (eligibleHand.length === 0 && eligibleInPlay.length === 0) {
+    const heroPhrase = isOtherForm ? 'no other Hero' : 'no Hero';
+    pushLog(G, `Player ${playerID} had ${heroPhrase} to send Undercover for ${formatCardRef(G.cardDisplayData, cardId)}.`);
+    return;
+  }
+  // why: always park, even with one eligible card, and always offer a decline: "you may" is a
+  // real choice because a sent Hero is gone for the game (unlike D-24494's hand-shield auto-send).
+  // Write rule (D-24858): a 'your-hero' entry always carries canDecline: true and
+  // eligibleInPlayTargets (possibly []); a hand-shield entry carries neither. Lazy-init here.
+  if (!G.pendingUndercoverChoice) { G.pendingUndercoverChoice = []; }
+  const pending: PendingUndercoverChoice = {
+    playerID,
+    cardId,
+    source: 'your-hero',
+    eligibleTargets: eligibleHand,
+    eligibleInPlayTargets: eligibleInPlay,
+    canDecline: true,
+  };
+  G.pendingUndercoverChoice.push(pending);
 }
 
 /**
@@ -7678,6 +7788,11 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // parks a PendingUndercoverChoice (≥2 eligible); 'undercover-officer-stack' is deterministic.
   'undercover-hand-shield-hero': heroEffectUndercoverHandShieldHero,
   'undercover-officer-stack': heroEffectUndercoverOfficerStack,
+  // why: WP-901 / D-24858 — "you may send one of your [other] Heroes Undercover": one handler
+  // for both keywords (it reads effect.type to leave out the triggering card for the "other"
+  // form); parks a declinable PendingUndercoverChoice resolved by resolveUndercoverChoice.
+  'undercover-your-hero': heroEffectUndercoverYourHero,
+  'undercover-your-other-hero': heroEffectUndercoverYourHero,
   // why: WP-683 / D-24500 — Deadpool's Here, Hold This for a Second ("A Villain of your
   // choice captures a Bystander."): attaches via attachBystanderToVillain (Mastermind
   // fallback at 0 Villains, empty-supply no-op, 1 → auto, ≥2 → active-scoped PendingSeatChoice

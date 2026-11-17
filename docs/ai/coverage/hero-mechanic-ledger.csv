@@ -119,7 +119,10 @@ bkpt/white-wolf,White Wolf,bkpt,wound-each-villain-and-the-mastermind,unsupporte
 bkpt/white-wolf,White Wolf,bkpt,wound-the-mastermind,unsupported,,,,reflective-vibranium-armor|secret-assignment
 bkwd/black-widow,Black Widow,bkwd,dark-memories,unsupported,,,,widows-bite
 bkwd/black-widow,Black Widow,bkwd,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts,evasive-acrobatics|weave-a-web-of-spies|widows-bite
+bkwd/black-widow,Black Widow,bkwd,draw-threshold,condition,,,,weave-a-web-of-spies
 bkwd/black-widow,Black Widow,bkwd,undercover,deferred,WP-282,D-24060,,infiltrate-the-conspiracy|weave-a-web-of-spies
+bkwd/black-widow,Black Widow,bkwd,undercover-your-hero,executable,WP-901,D-24858,packages/game-engine/src/hero/heroEffects.execute.ts#undercover-your-hero,infiltrate-the-conspiracy
+bkwd/black-widow,Black Widow,bkwd,undercover-your-other-hero,executable,WP-901,D-24858,packages/game-engine/src/hero/heroEffects.execute.ts#undercover-your-other-hero,weave-a-web-of-spies
 bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,captain-americas-legacy
 bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,dark-memories,unsupported,,,,atone|captain-americas-legacy
 bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,discard-threshold,condition,,,,new-wings
@@ -129,6 +132,7 @@ bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,draw,executable,WP-022,D
 bkwd/red-guardian,Red Guardian,bkwd,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,champion-of-the-winter-guard
 bkwd/red-guardian,Red Guardian,bkwd,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,sleeper-agent
 bkwd/red-guardian,Red Guardian,bkwd,undercover,deferred,WP-282,D-24060,,champion-of-the-winter-guard|death-was-only-a-ruse|magnetic-shield|sleeper-agent
+bkwd/red-guardian,Red Guardian,bkwd,undercover-your-other-hero,executable,WP-901,D-24858,packages/game-engine/src/hero/heroEffects.execute.ts#undercover-your-other-hero,death-was-only-a-ruse
 bkwd/red-guardian,Red Guardian,bkwd,unleash,unsupported,,,,champion-of-the-winter-guard|death-was-only-a-ruse|magnetic-shield|sleeper-agent
 bkwd/red-guardian,Red Guardian,bkwd,when-recruited,unsupported,,,,champion-of-the-winter-guard|death-was-only-a-ruse|magnetic-shield|sleeper-agent
 bkwd/white-tiger,White Tiger,bkwd,dark-memories,unsupported,,,,dark-influence-of-the-hand|shadowed-resurrection

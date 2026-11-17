@@ -1461,6 +1461,8 @@ export interface PendingCountScaledChoice {
  * entry). Appended to G.pendingUndercoverChoice[] (FIFO queue). Removed
  * (front-popped) by resolveUndercoverChoice after the player (or bot) picks a target.
  * Must be undefined or empty at every turn-end (enforced by the block-all guards).
+ * WP-901 / D-24858 adds the 'your-hero' source (an `undercover-your-hero` /
+ * `undercover-your-other-hero` effect): hand + in-play targets, always declinable.
  *
  * // why: D-24494 — the deterministic officer-stack source never parks (it always
  * sends the top Officer); only the hand source with ≥2 eligible targets is an
@@ -1468,14 +1470,29 @@ export interface PendingCountScaledChoice {
  * the chosen target against it.
  */
 export interface PendingUndercoverChoice {
-  /** The player who must pick which eligible hand Hero to send Undercover. */
+  /** The player who must pick which eligible Hero to send Undercover. */
   playerID: string;
   /** The triggering (played) card's ext_id — recorded for logging/attribution. */
   cardId: string;
-  /** The source shape (only the hand shape parks; kept for extensibility). */
-  source: 'hand-shield-hero';
+  /**
+   * The source shape. 'hand-shield-hero' (D-24494) parks at ≥2 eligible hand Heroes and has no
+   * decline; 'your-hero' (WP-901 / D-24858, "you may send one of your [other] Heroes
+   * Undercover") parks whenever anything is eligible, over hand AND in-play Heroes, declinable.
+   */
+  source: 'hand-shield-hero' | 'your-hero';
   /** The eligible hand-Hero ext_ids the player may choose from (snapshot at park time). */
   eligibleTargets: CardExtId[];
+  // why: WP-901 / D-24858 — the in-play Heroes a 'your-hero' entry may send (rules v23 glossary:
+  // "your Heroes" = hand + played this turn). Write rule: ALWAYS written on a 'your-hero' entry
+  // (possibly []), NEVER on a hand-shield entry, so a hand-shield entry (and every older replay)
+  // serializes byte-identically.
+  /** The eligible in-play Hero ext_ids (snapshot at park time); 'your-hero' entries only. */
+  eligibleInPlayTargets?: CardExtId[];
+  // why: WP-901 / D-24858 — "you may": a 'your-hero' pick can be declined. Write rule: ALWAYS
+  // `true` on a 'your-hero' entry, NEVER written on a hand-shield entry, never written `false`;
+  // read `=== true` (the D-24600 koHeroesOnly precedent).
+  /** Whether the pick may be declined (resolveUndercoverChoice({ decline: true })). */
+  canDecline?: boolean;
 }
 
 /**

@@ -3,17 +3,17 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2891,
+    "totalEntries": 2895,
     "byScope": {
-      "hero": 887,
+      "hero": 891,
       "villain": 773,
       "mastermind": 567,
       "scheme": 664
     },
     "byStatus": {
-      "executable": 877,
+      "executable": 880,
       "deferred": 19,
-      "condition": 87,
+      "condition": 88,
       "unsupported": 255,
       "unmarked": 1646,
       "subsystem": 7
@@ -5423,6 +5423,23 @@
       "name": "Black Widow",
       "set": "bkwd",
       "scope": "hero",
+      "mechanic": "draw-threshold",
+      "status": "condition",
+      "handler": "",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "weave-a-web-of-spies",
+          "name": "Weave a Web of Spies"
+        }
+      ]
+    },
+    {
+      "extId": "bkwd/black-widow",
+      "name": "Black Widow",
+      "set": "bkwd",
+      "scope": "hero",
       "mechanic": "undercover",
       "status": "deferred",
       "handler": "",
@@ -5433,6 +5450,40 @@
           "slug": "infiltrate-the-conspiracy",
           "name": "Infiltrate the Conspiracy"
         },
+        {
+          "slug": "weave-a-web-of-spies",
+          "name": "Weave a Web of Spies"
+        }
+      ]
+    },
+    {
+      "extId": "bkwd/black-widow",
+      "name": "Black Widow",
+      "set": "bkwd",
+      "scope": "hero",
+      "mechanic": "undercover-your-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover-your-hero",
+      "wp": "WP-901",
+      "decision": "D-24858",
+      "designs": [
+        {
+          "slug": "infiltrate-the-conspiracy",
+          "name": "Infiltrate the Conspiracy"
+        }
+      ]
+    },
+    {
+      "extId": "bkwd/black-widow",
+      "name": "Black Widow",
+      "set": "bkwd",
+      "scope": "hero",
+      "mechanic": "undercover-your-other-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover-your-other-hero",
+      "wp": "WP-901",
+      "decision": "D-24858",
+      "designs": [
         {
           "slug": "weave-a-web-of-spies",
           "name": "Weave a Web of Spies"
@@ -5609,6 +5660,23 @@
         {
           "slug": "sleeper-agent",
           "name": "Sleeper Agent"
+        }
+      ]
+    },
+    {
+      "extId": "bkwd/red-guardian",
+      "name": "Red Guardian",
+      "set": "bkwd",
+      "scope": "hero",
+      "mechanic": "undercover-your-other-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover-your-other-hero",
+      "wp": "WP-901",
+      "decision": "D-24858",
+      "designs": [
+        {
+          "slug": "death-was-only-a-ruse",
+          "name": "Death Was Only a Ruse"
         }
       ]
     },
@@ -40605,7 +40673,10 @@
       "mechanics": [
         "dark-memories",
         "dodge",
-        "undercover"
+        "draw-threshold",
+        "undercover",
+        "undercover-your-hero",
+        "undercover-your-other-hero"
       ]
     },
     "bkwd/falcon-winter-soldier": {
@@ -40625,6 +40696,7 @@
         "attack-per-count",
         "draw",
         "undercover",
+        "undercover-your-other-hero",
         "unleash",
         "when-recruited"
       ]

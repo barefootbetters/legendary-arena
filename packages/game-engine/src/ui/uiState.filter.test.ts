@@ -1442,6 +1442,68 @@ describe('filterUIStateForAudience — pendingUndercoverChoice redaction (D-2449
 });
 
 // ---------------------------------------------------------------------------
+// WP-901 / D-24858 — the 'your-hero' Undercover pick's named targets + decline (chooser-only)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where player '0' owes a 'your-hero' Undercover pick: one Hero in hand, one in
+ * play, and a snapshotted hand id that has since left the hand (stale).
+ */
+function createYourHeroUndercoverUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+  const zones = gameState.playerZones['0']!;
+  zones.hand = ['starting-shield-agent' as CardExtId];
+  zones.inPlay = ['starting-shield-trooper' as CardExtId, 'weave#0' as CardExtId];
+  gameState.pendingUndercoverChoice = [{
+    playerID: '0',
+    cardId: 'weave#0',
+    source: 'your-hero',
+    eligibleTargets: ['starting-shield-agent' as CardExtId, 'stale-hand-card#0' as CardExtId],
+    eligibleInPlayTargets: ['starting-shield-trooper' as CardExtId],
+    canDecline: true,
+  }];
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — your-hero pendingUndercoverChoice (WP-901 / D-24858)', () => {
+  it('the chooser sees eligibleHand / eligibleInPlay (live ids only) and canDecline', () => {
+    const uiState = createYourHeroUndercoverUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    const pending = result.pendingUndercoverChoice;
+    assert.ok(pending !== undefined, 'chooser sees the Undercover pick');
+    assert.deepEqual(
+      pending.eligibleHand!.map((entry) => [entry.zone, entry.cardId]),
+      [['hand', 'starting-shield-agent']],
+      'the stale snapshot id is not projected',
+    );
+    assert.deepEqual(
+      pending.eligibleInPlay!.map((entry) => [entry.zone, entry.cardId]),
+      [['inPlay', 'starting-shield-trooper']],
+    );
+    assert.equal(typeof pending.eligibleHand![0]!.display.name, 'string', 'each target carries display data');
+    assert.equal(pending.canDecline, true);
+    assert.notEqual(pending.eligibleHand, uiState.pendingUndercoverChoice!.eligibleHand, 'filter copies, never aliases');
+    assert.notEqual(pending.eligibleHand![0], uiState.pendingUndercoverChoice!.eligibleHand![0]);
+  });
+
+  it('opponents and spectators see no pendingUndercoverChoice', () => {
+    const uiState = createYourHeroUndercoverUIState();
+    assert.equal(filterUIStateForAudience(uiState, PLAYER_1).pendingUndercoverChoice, undefined);
+    assert.equal(filterUIStateForAudience(uiState, SPECTATOR).pendingUndercoverChoice, undefined);
+  });
+
+  it('a hand-shield entry projects no new keys (write rule)', () => {
+    const uiState = createUndercoverChoiceUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.deepEqual(Object.keys(result.pendingUndercoverChoice!).sort(), ['eligibleTargets', 'playerID']);
+    assert.deepEqual(Object.keys(uiState.pendingUndercoverChoice!).sort(), ['eligibleTargets', 'playerID']);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-684 / D-24501 — pendingSeatChoice per-seat redaction (non-active / multi-seat)
 // ---------------------------------------------------------------------------
 
