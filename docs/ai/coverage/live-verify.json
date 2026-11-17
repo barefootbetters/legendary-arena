@@ -2800,6 +2800,17 @@
       "date": "2026-11-16",
       "evidence": "",
       "note": "Live check (NEW operator match created after the deploy with bkwd Black Widow and Red Guardian): Death Was Only a Ruse opens the Undercover prompt only after another Covert Hero was played this turn, never listing itself; without a Covert Hero it logs the blocked line and parks nothing. D-24858."
+    },
+    {
+      "key": "mastermind:bkpt/killmonger|wound-him-button",
+      "kind": "mastermind",
+      "card": "Killmonger",
+      "ability": "While Killmonger has more than 0 Attack, you cannot fight him. Instead, you may spend Attack equal to his Attack to Wound him and get +1 Recruit. (client: the Mastermind tile's Wound him button and Wounds badge)",
+      "wp": "WP-771",
+      "state": "pending",
+      "date": "2026-11-17",
+      "evidence": "",
+      "note": "Live check (NEW human Killmonger match after the deploy, Workshop operator or manual guest; autoplay seats are bots): the tile shows \"Wound him — spend 5 → +1 Recruit\" while he is locked, disabled off-turn / outside Main / when short (\"Needs 5 attack, you have N.\"); each click logs \"spent N Attack to Wound Killmonger and got +1 Recruit\", his Attack falls 5 -> 0 and the \"Wounds: n\" badge counts; the Fight button shows the lock reason even when short and enables only at 0, then takes a Tactic. D-24602 (WP-771)."
     }
   ]
 }

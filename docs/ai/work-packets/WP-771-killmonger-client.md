@@ -1,6 +1,6 @@
 # WP-771 — Killmonger client: "Wound him" button + wounds badge (Arena Client)
 
-**Status:** Draft 2026-09-26; **reconciled + re-gated 2026-11-17** against WP-769 as shipped (#3434, merge `c328925b8`; live-verify PASS #3435, match `9QywYy_nmSv`). Ready to execute once this re-gate lands.
+**Status:** **Done 2026-11-17** (live-verify D-24026 pending). Draft 2026-09-26; reconciled + re-gated 2026-11-17 (#3437) against WP-769 as shipped (#3434, merge `c328925b8`; live-verify PASS #3435, match `9QywYy_nmSv`).
 **Primary Layer:** App (`apps/arena-client`)
 **Dependencies:**
 - **WP-769 / D-24602** ✅ (Done 2026-11-16, live-verified 2026-11-17)
@@ -89,7 +89,7 @@ Verified on `e3091635f`. If any item is false, this packet is **BLOCKED**.
 - **Stand-up lift stays off.** Keep `mastermind-tile--fortified` keyed on any `fortifiedReason`: under Killmonger's lock it turns the WP-854 lift off, which keeps the lifted card from rising over the Wound button.
 - **Absent `woundable`, `woundCount` and the Killmonger reason** → MastermindTile renders exactly as today; existing tests pass unedited.
 - **Icons.** No Unicode attack glyph. Reuse `CrossedSwordsIcon`.
-- **Layout.** The Wound button and the badge are siblings of the Fight button in normal flow, never over the card. Insertion point: the badge right after the Haunting badge, the Wound button right after `<FortifiedVillains>` and before the EV button. The button lays out as a row with a selector that strictly outranks `.mastermind-tile button` (0,1,1, column flex, `align-items: flex-start`): `.mastermind-tile .mastermind-wound` (0,2,0) with `flex-direction: row; align-items: center`, `font-size: 0.7rem` (the EV precedent) and `max-width: 9rem` with normal wrapping, so the label wraps to two lines instead of widening the tile (the desktop adversary band is `flex-wrap: nowrap`). The tile is no wider with the Wound button showing than with the EV button showing, on the 1280×720 mat and PlayMobile.
+- **Layout.** The Wound button and the badge are siblings of the Fight button in normal flow, never over the card. Insertion point: the badge right after the Haunting badge, the Wound button right after `<FortifiedVillains>` and before the EV button. The button lays out as a row with a selector that strictly outranks `.mastermind-tile button` (0,1,1, column flex, `align-items: flex-start`): `.mastermind-tile .mastermind-wound` (0,2,0) with `flex-direction: row; align-items: center`, `font-size: 0.7rem` (the EV precedent) and `max-width: 8.5rem` (9rem at the gate; tightened at execution, see the post-mortem §7) with normal wrapping, so the label wraps to two lines instead of widening the tile (the desktop adversary band is `flex-wrap: nowrap`). The tile is no wider with the Wound button showing than with the EV button showing, on the 1280×720 mat and PlayMobile.
 
 ## Locked Values
 
@@ -218,3 +218,5 @@ Verified on `e3091635f`. If any item is false, this packet is **BLOCKED**.
 - **01.7 copilot: CONFIRM.** All rounds' fixes re-verified against the code (engine refuses on the lock before cost, `fightMastermind.ts:214` then `:230`; cost and attack parity; the selector wins after scoping; the 9rem Wound button cannot widen a tile whose Fight button already sets it; Wound and EV never show together; `--fortified` is always on with the Wound button). Nits applied: `gateForFight` ends `:254`; `useCardCostGating` `:198-214`; the EC preview line repeats the tile-width check.
 
 **Re-gate result:** 01.4 READY TO EXECUTE (round 1; Empirical Scaffold not required, observed baseline 2732 / 0 fail) · 01.7 CONFIRM (round 4) · 00.3 PASS (round 3; round-4 edits changed two anchors and one EC line only).
+
+**Execution (2026-11-17):** `EC-808:` code commit; arena-client 2732 → 2745 / 0; revert proofs a-e each fail their AC. One execution-time adjustment: the Wound button's `max-width` 9rem → 8.5rem, because at 9rem it measured 3 px wider than the EV button and widened the tile (post-mortem §7).
