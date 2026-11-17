@@ -175,6 +175,10 @@ export default defineComponent({
         // Bystander holder; no decline (the rules text has no "may").
         case 'villain-hunt-for-victims':
           return "Hunt for Victims: choose which Bystander is KO'd";
+        // why: WP-771 / D-24602 — Killmonger's Throw from the Waterfall ("each other player
+        // discards a card"): each addressed seat's own concurrent discard pick.
+        case 'killmonger-waterfall-discard':
+          return 'Throw from the Waterfall — choose a card to discard';
         default:
           return 'Your choice';
       }
