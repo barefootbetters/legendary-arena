@@ -167,6 +167,10 @@ export { recruitSidekick, returnPlayedSidekick, SIDEKICK_RECRUIT_COST, SIDEKICK_
 // consume verbatim: the exorcise move + args and the three haunt helpers.
 export { exorciseHauntedHero } from "./moves/exorciseHauntedHero.js";
 export type { ExorciseHauntedHeroArgs, ExorciseOutcome } from "./moves/exorciseHauntedHero.js";
+// why: WP-769 / D-24602 — the Killmonger contract WP-771 (client) consumes: the wound move, the
+// lock reason and his id.
+export { woundMastermind } from "./moves/woundMastermind.js";
+export { KILLMONGER_MASTERMIND_ID, KILLMONGER_ATTACK_LOCK_REASON } from "./mastermind/killmonger.logic.js";
 // why: WP-795 / D-24664 — the Spinning Cyclone answer payload, so the arena-client prompt submits a
 // type-checked { fromCityIndex, toCityIndex } | { decline: true } (type-only; no runtime export).
 export type { ResolveMoveVillainChoiceArgs } from "./moves/moveVillainChoice.resolve.js";

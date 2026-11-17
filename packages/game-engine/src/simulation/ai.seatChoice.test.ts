@@ -793,3 +793,21 @@ describe('WP-839 bot-ally pick for the every-player any-card discard (D-24772)',
     assert.equal(choosePlayingSeatChoiceOption(G, '0'), 1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-769 / D-24602 — Killmonger's Throw from the Waterfall discard for a playing seat
+// ---------------------------------------------------------------------------
+
+import { buildKillmongerWaterfallDiscardChoice } from '../moves/seatChoiceTactics.js';
+
+describe('WP-769 bot-ally pick for the Throw from the Waterfall discard (D-24602)', () => {
+  it('T9: discards the Wound, the same least-valuable pick as Fallen Idols', () => {
+    const G = makeState({ '0': [], '1': ['hero-cost-5#0', WOUND_EXT_ID] }, {
+      cardStats: { 'hero-cost-5#0': { cost: 5 } },
+    });
+    withChoice(G, buildKillmongerWaterfallDiscardChoice(G, ['1']));
+    assert.equal(G.pendingSeatChoice?.kind, 'killmonger-waterfall-discard');
+    assert.equal(choosePlayingSeatChoiceOption(G, '1'), 1);
+  });
+});
+

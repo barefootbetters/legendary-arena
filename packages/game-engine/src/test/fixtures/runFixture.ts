@@ -65,6 +65,7 @@ import { resolvePutCardsOnDeckChoice } from '../../moves/putCardsOnDeckChoice.re
 import { resolveSeatChoice } from '../../moves/seatChoice.resolve.js';
 import { exorciseHauntedHero } from '../../moves/exorciseHauntedHero.js';
 import { attemptHeist } from '../../moves/attemptHeist.js';
+import { woundMastermind } from '../../moves/woundMastermind.js';
 import { resolveHeroChoice } from '../../moves/heroChoice.resolve.js';
 import { resolveKoHeroChoice } from '../../moves/koHeroChoice.resolve.js';
 import { resolveScryKoChoice } from '../../moves/scryKoChoice.resolve.js';
@@ -266,6 +267,8 @@ const MOVE_MAP: Record<string, MoveDispatch> = {
   exorciseHauntedHero: (context, args) =>
     exorciseHauntedHero(context as never, args as never),
   attemptHeist: (context) => attemptHeist(context as never),
+  // why: WP-769 / D-24602 — a sim capture can contain a bot woundMastermind (step 4d).
+  woundMastermind: (context) => woundMastermind(context as never),
   resolveHeroChoice: (context, args) => resolveHeroChoice(context as never, args as never),
   resolveKoHeroChoice: (context, args) => resolveKoHeroChoice(context as never, args as never),
   resolveScryKoChoice: (context, args) => resolveScryKoChoice(context as never, args as never),

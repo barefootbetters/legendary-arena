@@ -83,6 +83,8 @@ export const VANISHING_ILLUSIONS_KO_KIND = 'vanishing-illusions-ko';
 export const FALLEN_IDOLS_DISCARD_KIND = 'fallen-idols-discard';
 /** Discriminant for Arnim Zola's Computer-Uploaded Genius multi-seat discard (WP-821 / D-24754). */
 export const COMPUTER_UPLOADED_GENIUS_DISCARD_KIND = 'computer-uploaded-genius-discard';
+/** Discriminant for Killmonger's Throw from the Waterfall multi-seat discard (WP-769 / D-24602). */
+export const KILLMONGER_WATERFALL_DISCARD_KIND = 'killmonger-waterfall-discard';
 /** Discriminant for Arnim Zola's Dominate the Weak active-seat "Player N gains <Hero>" choice. */
 export const DOMINATE_THE_WEAK_GAIN_KIND = 'dominate-the-weak-gain';
 /** Discriminant for Crush Pacifist Resistance's first active-seat KO pick. */
@@ -450,6 +452,35 @@ export function applyComputerUploadedGeniusDiscard(
   choice: PendingSeatChoice,
 ): void {
   applyHandDiscard(G, choice, 'Computer-Uploaded Genius');
+}
+
+/**
+ * Builds Killmonger's Throw from the Waterfall multi-seat discard choice (WP-769 / D-24602), or
+ * undefined when no given seat holds a card to discard.
+ *
+ * The Fallen Idols shape: one "Discard <card>" option per hand card; default index 0 (the bot and
+ * the timeout path). The caller passes every seat except the defeating player, ascending.
+ *
+ * @param G - The game state (read for hands + card display names).
+ * @param seats - The other seats (ascending).
+ * @returns The pending discard choice, or undefined when no seat can discard.
+ */
+export function buildKillmongerWaterfallDiscardChoice(
+  G: LegendaryGameState,
+  seats: readonly string[],
+): PendingSeatChoice | undefined {
+  return buildHandDiscardChoice(G, seats, KILLMONGER_WATERFALL_DISCARD_KIND);
+}
+
+/**
+ * Applies a fully-submitted Throw from the Waterfall discard atomically, in ascending seat order,
+ * through the enforced discardFromHand chokepoint (WP-769 / D-24602).
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param choice - The fully-submitted pending choice (kind 'killmonger-waterfall-discard').
+ */
+export function applyKillmongerWaterfallDiscard(G: LegendaryGameState, choice: PendingSeatChoice): void {
+  applyHandDiscard(G, choice, 'Throw from the Waterfall');
 }
 
 /**

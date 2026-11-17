@@ -270,9 +270,9 @@ describe('mastermindStrikeHandler — unresolved Master Strike is a hollow effec
     }
     // why: 11 executable + General Ross deferred, plus Fin Fang Foom (WP-864 / D-24807,
     // on main at execution) = 13, plus The Mandarin (WP-875 / D-24822) = 14, plus Zarathos
-    // (WP-758 / D-24588) = 15, plus Indestructible Man (WP-768 / D-24601) = 16. A misspelled
-    // status filter would check fewer.
-    assert.equal(checkedCount, 16);
+    // (WP-758 / D-24588) = 15, plus Indestructible Man (WP-768 / D-24601) = 16, plus Killmonger
+    // (WP-769 / D-24602) = 17. A misspelled status filter would check fewer.
+    assert.equal(checkedCount, 17);
   });
 
   it('logs the hollow line, then the strike-count line, once the pipeline applies the returned effects', () => {

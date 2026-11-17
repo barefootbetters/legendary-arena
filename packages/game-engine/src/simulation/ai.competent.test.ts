@@ -684,3 +684,36 @@ describe('WP-878 competent policy — attemptHeist scores 175 (D-24826 §4)', ()
     assert.equal(intent.move.name, 'fightMastermind', 'fightMastermind (1500) outranks attemptHeist (175)');
   });
 });
+
+describe('WP-769 competent policy — woundMastermind scores 110 (D-24602)', () => {
+  const WOUND_MASTERMIND: LegalMove = { name: 'woundMastermind', args: {} };
+
+  test('a wound outranks a plain fight-villain, recruit, exorcise and advance', () => {
+    const villain: UICityCard = { ...makeUICityCard(), extId: 'villain-plain', type: 'villain', keywords: [] };
+    const view = buildSyntheticUIState([null, villain, null, null, null]);
+    const policy = createCompetentHeuristicPolicy('wound-vs-spend-seed');
+    const intent = policy.decideTurn(view, [
+      { name: 'fightVillain', args: { cityIndex: 1 } },
+      { name: 'recruitHero', args: { hqIndex: 0 } },
+      { name: 'advanceStage', args: {} },
+      WOUND_MASTERMIND,
+    ]);
+    assert.deepStrictEqual(intent.move, WOUND_MASTERMIND);
+    assert.equal(intent.decisionLog?.[0], '[Bot] Chose: woundMastermind (score 110)');
+  });
+
+  test('playing a card and the Mastermind fight still go first', () => {
+    const view = buildSyntheticUIState([null, null, null, null, null]);
+    const played = createCompetentHeuristicPolicy('wound-vs-play-seed').decideTurn(view, [
+      WOUND_MASTERMIND,
+      { name: 'playCard', args: { cardId: 'hero-card#0' } },
+    ]);
+    assert.equal(played.move.name, 'playCard');
+    const fought = createCompetentHeuristicPolicy('wound-vs-mastermind-seed').decideTurn(view, [
+      WOUND_MASTERMIND,
+      { name: 'fightMastermind', args: {} },
+    ]);
+    assert.equal(fought.move.name, 'fightMastermind');
+  });
+});
+

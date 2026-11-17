@@ -19,7 +19,7 @@ import { resolveRecruitCost } from '../hero/sizeChanging.logic.js';
 import { citySpaceNameForIndex } from '../board/citySpaceNames.js';
 import type { AttackTargetName } from '../economy/economy.types.js';
 import { UNNAMED_CITY_SPACE_TARGET } from '../economy/economy.types.js';
-import { resolveFightPrice, resolveMastermindFightPrice } from '../economy/economy.resolve.js';
+import { resolveFightPrice, resolveMastermindFightCost, resolveMastermindFightPrice } from '../economy/economy.resolve.js';
 import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic.js';
 import { isHqSlotHaunted, isMastermindHaunting } from '../board/haunt.logic.js';
 import { listFortifications } from '../board/fortify.logic.js';
@@ -31,6 +31,10 @@ import {
   isIndestructibleMan,
   selectLowestVpAssassins,
 } from '../mastermind/indestructibleMan.logic.js';
+// why: WP-769 / D-24602 — Killmonger's lock and wound gates, the move's own predicates (D-24364).
+// Read only inside function bodies (the runtime-safe cycle through economy.resolve).
+import { canWoundMastermind, isKillmongerAttackLocked } from '../mastermind/killmonger.logic.js';
+import { isSchemeLossPile } from '../rules/schemeResourceLoss.js';
 import {
   getDefeatRequirement,
   playerMeetsDefeatRequirement,
@@ -272,6 +276,10 @@ export const SIMULATION_MOVE_NAMES = [
   // "unknown move name" (the WP-289 / D-24073 within-turn hang). Asserted by
   // simulation.moveDispatch.drift.test.ts.
   'attemptHeist',
+  // why: WP-769 / D-24602 — getLegalMoves step 4d emits woundMastermind against Killmonger, so it
+  // MUST be dispatchable in both sim MOVE_MAPs or the per-turn loop spins on "unknown move name".
+  // Asserted by simulation.moveDispatch.drift.test.ts.
+  'woundMastermind',
 ] as const;
 
 // why: type is exported implicitly via the const array above; external
@@ -475,6 +483,10 @@ function selectDoOverDefault(gameState: LegendaryGameState): { accept: true } | 
  *      affordable Haunted slot (WP-757 / D-24587; empty without a Haunt)
  *   4c. attemptHeist — one entry (if stage === 'main' and
  *      shouldBotAttemptHeist passes; WP-878 / D-24826)
+ *   4d. woundMastermind — one entry against Killmonger (if stage === 'main',
+ *      tactics remain, the wound gates pass, attack covers his Attack, and it
+ *      would not take the last Wound of a Wound-Stack loss scheme;
+ *      WP-769 / D-24602)
  *   5. revealVillainCard — one entry if stage === 'start'
  *   6. advanceStage — one entry if stage !== 'cleanup'
  *   7. endTurn — one entry if stage === 'cleanup'
@@ -1287,6 +1299,9 @@ export function getLegalMoves(
         }
       }
     }
+  } else if (isMastermindFightable && isKillmongerAttackLocked(gameState, activePlayer)) {
+    // why: WP-769 / D-24602 — mirrors the move's Killmonger lock: no plain intent while his Attack
+    // is above 0 (step 4d wounds him instead). At 0 the plain branch below fights him.
   } else if (isMastermindFightable) {
     // why: D-24802 — mirror fightMastermind: the Size-Changing price.
     const mastermindFightCost = resolveMastermindFightPrice(gameState, activePlayer);
@@ -1337,6 +1352,25 @@ export function getLegalMoves(
     legalMoves.push({ name: 'attemptHeist', args: {} });
   }
 
+  // 4d. woundMastermind — one entry when the bot can wound Killmonger.
+  // why: WP-769 / D-24602 — the move's own gates (canWoundMastermind, the 'mastermind' spendable
+  // figure against his Attack, stage main; pending choices already returned above), D-24364. The
+  // bot is deliberately stricter than the move, which is FAULT-safe: it needs a Tactic left
+  // (step 4 never emits the Final Blow fight, so wounding then would sink Attack), and it never
+  // takes the last Wound of a Wound-Stack loss scheme. Evaluated left to right so the scheme read
+  // runs only after canWoundMastermind's guarded Killmonger check. Appended after 4c so the
+  // locked order of the earlier steps is unchanged.
+  if (
+    stage === 'main' &&
+    gameState.mastermind.tacticsDeck.length > 0 &&
+    canWoundMastermind(gameState, activePlayer) &&
+    getSpendableAttackForTarget(gameState.turnEconomy, 'mastermind') >=
+      resolveMastermindFightCost(gameState, activePlayer) &&
+    !isLastLossPileWound(gameState)
+  ) {
+    legalMoves.push({ name: 'woundMastermind', args: {} });
+  }
+
   // 5. revealVillainCard — one entry if stage === 'start' AND the once-per-turn
   //    reveal allowance has not been consumed. The !villainRevealedThisTurn
   //    guard mirrors the move-level guard in villainDeck.reveal.ts so a bot
@@ -1371,4 +1405,24 @@ export function getLegalMoves(
   // why: ordering locked by pre-flight RS-13 for deterministic seeded
   // selection; reordering silently flips every seeded decision output.
   return legalMoves;
+}
+
+/**
+ * Reports whether wounding the Mastermind now would take the last Wound of a scheme that loses
+ * when the Wound Stack runs out (Legacy Virus), with no Wound in the KO pile to take instead.
+ *
+ * // why: WP-769 / D-24602 — the wound takes the KO pile first, so only an empty KO pile makes it
+ * draw on the stack; a bot that empties a loss pile hands the scheme the game.
+ *
+ * @param gameState - The game state (read-only).
+ * @returns True when the bot must not wound now.
+ */
+function isLastLossPileWound(gameState: LegendaryGameState): boolean {
+  if (!isSchemeLossPile(gameState, 'wounds')) {
+    return false;
+  }
+  if (gameState.ko.includes(WOUND_EXT_ID)) {
+    return false;
+  }
+  return gameState.piles.wounds.length <= 1;
 }

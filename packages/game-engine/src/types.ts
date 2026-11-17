@@ -3227,9 +3227,10 @@ export interface LegendaryGameState {
   ambushVillainPlayedThisTurn?: boolean;
 
   // why: WP-745 / D-24568 — the KO pile's length when the current turn began, read by Rage's
-  // "If a Hero was put into the KO pile this turn" wait-and-see condition. The KO pile is
-  // append-only (every write appends; no site removes from it), so the cards KO'd this turn
-  // are exactly G.ko[koPileLengthAtTurnStart..]. Written GATED at the play-phase turn onBegin
+  // "If a Hero was put into the KO pile this turn" wait-and-see condition. Every KO appends to
+  // the KO pile, so the cards KO'd this turn are exactly G.ko[koPileLengthAtTurnStart..]. The
+  // one removal (WP-769 / D-24602: a Wound put on the Mastermind from the KO pile) decrements
+  // this snapshot when it takes a card from before it, so the window stays exact. Written GATED at the play-phase turn onBegin
   // and its applyOnBeginParity mirror — only when some hero hook in the match reads that
   // condition — and overwritten every turn start, so a game without Rage carries no such key
   // and both hash oracles stay byte-unchanged (the D-24467 lazy-field posture).

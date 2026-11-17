@@ -1133,8 +1133,9 @@ function isHeroCardId(G: LegendaryGameState, cardId: CardExtId): boolean {
 /**
  * Whether a Hero entered the KO pile this turn (`heroPutIntoKoPileThisTurn`, Rage).
  *
- * // why: the KO pile is append-only, so the cards KO'd this turn are exactly the tail past the
- * turn-start snapshot. An absent snapshot (a match whose hooks never read this condition, or a
+ * // why: every KO appends to the KO pile, so the cards KO'd this turn are exactly the tail past
+ * the turn-start snapshot (WP-769 / D-24602: the one removal, a Mastermind Wound taken from the
+ * KO pile, decrements the snapshot when it takes a card from before it). An absent snapshot (a match whose hooks never read this condition, or a
  * fixture that skipped turn start) reads false rather than counting the whole pile.
  *
  * @param G - Current game state (read-only).

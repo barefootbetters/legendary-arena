@@ -65,6 +65,7 @@ import { healWounds } from '../moves/healWounds.js';
 import { phaseCard } from '../moves/phaseCard.js';
 import { useRitualArtifact } from '../moves/ritualArtifact.js';
 import { attemptHeist } from '../moves/attemptHeist.js';
+import { woundMastermind } from '../moves/woundMastermind.js';
 import { endMatchEarly } from '../moves/endMatchEarly.js';
 import { resolveHeroChoice } from '../moves/heroChoice.resolve.js';
 import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
@@ -219,6 +220,9 @@ const MOVE_MAP: Record<string, MoveFn> = {
   phaseCard: (context, args) => phaseCard(context as never, args as never),
   useRitualArtifact: (context, args) => useRitualArtifact(context as never, args as never),
   attemptHeist: (context) => attemptHeist(context as never),
+  // why: WP-769 / D-24602 — Killmonger's wound move (human and bot); without it a replay that
+  // wounded him would skip the spend and the Wound.
+  woundMastermind: (context) => woundMastermind(context as never),
   endMatchEarly: (context) => endMatchEarly(context as never),
   resolveHeroChoice: (context, args) => resolveHeroChoice(context as never, args as never),
   resolveKoHeroChoice: (context, args) => resolveKoHeroChoice(context as never, args as never),

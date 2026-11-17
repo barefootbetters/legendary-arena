@@ -838,3 +838,25 @@ describe('WP-882 resolveSeatChoice — Corrupted Spirit discard-down rounds (D-2
     assert.equal(G.pendingSeatChoice, undefined);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-769 / D-24602 — the Waterfall discard through applySeatChoiceByKind (timeout path)
+// ---------------------------------------------------------------------------
+
+import { buildKillmongerWaterfallDiscardChoice } from './seatChoiceTactics.js';
+
+describe('WP-769 Throw from the Waterfall discard resolves through the seat-choice applier', () => {
+  it('T9: the timeout default discards each outstanding seat\'s first hand card and clears the choice', () => {
+    const G = makeState(undefined);
+    G.playerZones['1']!.hand = ['h1a', 'h1b'];
+    G.playerZones['2']!.hand = ['h2a'];
+    (G as unknown as { cardDisplayData: Record<string, unknown> }).cardDisplayData = {};
+    G.pendingSeatChoice = buildKillmongerWaterfallDiscardChoice(G, ['1', '2'])!;
+    resolveSeatChoice(makeContext(G, '1'), { optionIndex: 1 });
+    applySeatChoiceTimeoutDefault(G, ['2']);
+    assert.equal(hasPendingSeatChoice(G), false);
+    assert.deepEqual(G.playerZones['1']!.discard, ['h1b']);
+    assert.deepEqual(G.playerZones['2']!.discard, ['h2a']);
+  });
+});
+

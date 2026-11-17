@@ -43,7 +43,13 @@ import {
   dispatchDefeatWithBystanderTarget,
 } from '../moves/defeatChoice.resolve.js';
 import { formatCardRef } from '../log/logDisplay.js';
-import { gainWoundWithOutcome } from '../board/wounds.logic.js';
+import { gainWoundWithOutcome, gainHeldWoundWithOutcome } from '../board/wounds.logic.js';
+import type { WoundGainOutcome } from '../board/wounds.logic.js';
+// why: WP-769 / D-24602 — the generic Mastermind Wound helpers and Killmonger's tactic prefix.
+// killmonger.logic sits in the runtime-safe cycle through economy.resolve, so its prefix is read
+// only inside function bodies and the four tactic ids below stay string literals.
+import { takeWoundFromMastermind } from '../mastermind/mastermind.logic.js';
+import { KILLMONGER_TACTIC_ID_PREFIX } from '../mastermind/killmonger.logic.js';
 import { seatsInTurnOrderFrom } from '../turn/seatOrder.logic.js';
 import { addResources } from '../economy/economy.logic.js';
 import { drawCardsIntoHand, HAND_SIZE } from '../moves/drawCards.logic.js';
@@ -74,6 +80,8 @@ import {
   buildMonarchsDecreeModeChoice,
   buildVanishingIllusionsChoice,
   buildFallenIdolsDiscardChoice,
+  // why: WP-769 / D-24602 — Killmonger's Throw from the Waterfall discard.
+  buildKillmongerWaterfallDiscardChoice,
   // why: WP-821 / D-24754 — the free HQ gain moved to the pure seatChoiceTactics module
   // (Dominate the Weak's apply shares it), plus Arnim Zola's tactic builders.
   gainHqHeroToDiscard,
@@ -157,6 +165,15 @@ const SECRETS_OF_INDESTRUCTIBILITY_KO_LIMIT = 2;
 // why: the shared clause prints "If this is not the last Tactic, play two cards from the
 // Villain Deck".
 const INDESTRUCTIBLE_MAN_TACTIC_PLAY_COUNT = 2;
+// why: WP-769 / D-24602 — bkpt Killmonger's four tactic ext_ids
+// (`${setAbbr}-mastermind-${slug}-${tacticSlug}`, data/cards/bkpt.json). String literals, never
+// built from KILLMONGER_TACTIC_ID_PREFIX at module top level (the import-cycle rule).
+const KILLMONGER_SCAR_TACTIC_ID: CardExtId = 'bkpt-mastermind-killmonger-a-scar-for-every-kill';
+const KILLMONGER_RITE_TACTIC_ID: CardExtId = 'bkpt-mastermind-killmonger-rite-of-challenge';
+const KILLMONGER_WATERFALL_TACTIC_ID: CardExtId = 'bkpt-mastermind-killmonger-throw-from-the-waterfall';
+const KILLMONGER_ALTAR_TACTIC_ID: CardExtId = 'bkpt-mastermind-killmonger-altar-of-resurrection';
+// why: Throw from the Waterfall prints "Draw two cards".
+const WATERFALL_DRAW_COUNT = 2;
 // why: International Arms Dealer prints "Gain a [hc:tech] Hero from the HQ".
 const ARMS_DEALER_FILTER: GiveHqHeroFilter = { kind: 'hero-class', values: ['tech'] };
 // why: Unveil Project Four discards each card with a "4" printed on it (operator decision
@@ -1827,6 +1844,25 @@ export function dispatchTacticOnFight(
     recordMadMonkHollow(G, ctx, defeatedTacticId);
     return;
   }
+  // why: WP-769 / D-24602 — Killmonger's tactics. Scar, Rite and the Waterfall resolve; Altar of
+  // Resurrection (a Victory-Pile Villain re-enters the city with a Wound) is a recorded hollow.
+  // Every tactic defeat then returns his Wounds (defeatMastermindTacticCore, after this dispatch).
+  if (defeatedTacticId === KILLMONGER_SCAR_TACTIC_ID) {
+    resolveAScarForEveryKill(G, currentPlayer);
+    return;
+  }
+  if (defeatedTacticId === KILLMONGER_RITE_TACTIC_ID) {
+    resolveRiteOfChallenge(G, currentPlayer);
+    return;
+  }
+  if (defeatedTacticId === KILLMONGER_WATERFALL_TACTIC_ID) {
+    resolveThrowFromTheWaterfall(G, events, currentPlayer, shuffleContext);
+    return;
+  }
+  if (defeatedTacticId === KILLMONGER_ALTAR_TACTIC_ID) {
+    recordAltarOfResurrectionHollow(G, ctx, currentPlayer, defeatedTacticId);
+    return;
+  }
 }
 
 /**
@@ -2923,4 +2959,257 @@ function recordMadMonkHollow(G: LegendaryGameState, ctx: unknown, cardId: CardEx
     reason: 'unsupported-keyword',
     turn: readTacticTurn(ctx),
   });
+}
+
+/**
+ * Counts the non-Henchman Villains in a Victory Pile (WP-769 / D-24602).
+ *
+ * // why: G.villainDeckCardTypes classifies every Villain-Deck card at setup and persists after a
+ * defeat; 'villain' excludes Henchmen, Bystanders, Scheme Twists and Master Strikes, and tactics
+ * (never Villain-Deck cards) have no entry.
+ *
+ * @param G - The game state (read-only).
+ * @param victoryPile - The Victory Pile to scan.
+ * @returns How many cards in it are non-Henchman Villains.
+ */
+function countVictoryPileNonHenchmanVillains(G: LegendaryGameState, victoryPile: readonly CardExtId[]): number {
+  let villainCount = 0;
+  for (const cardId of victoryPile) {
+    if (G.villainDeckCardTypes?.[cardId] === 'villain') {
+      villainCount += 1;
+    }
+  }
+  return villainCount;
+}
+
+/**
+ * Resolves Killmonger's "A Scar for Every Kill" (WP-769 / D-24602): "Fight: You get +1[icon:recruit]
+ * for each non-Henchman Villain in your Victory Pile."
+ *
+ * @param G - The game state, mutated in place (turnEconomy).
+ * @param currentPlayer - The defeating player.
+ */
+function resolveAScarForEveryKill(G: LegendaryGameState, currentPlayer: string): void {
+  const playerZones = G.playerZones[currentPlayer];
+  if (!playerZones) {
+    return;
+  }
+  const villainCount = countVictoryPileNonHenchmanVillains(G, playerZones.victory);
+  if (villainCount === 0) {
+    pushLog(G,
+      `Fight effect: Player ${currentPlayer} has no non-Henchman Villain in their Victory Pile, so gets no Recruit (A Scar for Every Kill).`,
+      'neutral',
+    );
+    return;
+  }
+  G.turnEconomy = addResources(G.turnEconomy, 0, villainCount);
+  pushLog(G,
+    `Fight effect: Player ${currentPlayer} gets +${String(villainCount)} Recruit, one for each non-Henchman Villain in their Victory Pile (A Scar for Every Kill).`,
+    'applied',
+  );
+}
+
+/**
+ * Describes one Killmonger Wound a player gained, honest about a pending Diving Block (D-24673).
+ *
+ * @param outcome - The gainHeldWoundWithOutcome result ('gained' or 'diving-block-pending').
+ * @returns The log tail.
+ */
+function describeKillmongerWound(outcome: WoundGainOutcome): string {
+  if (outcome === 'diving-block-pending') {
+    return 'would gain a Wound that was on Killmonger — Diving Block can prevent it';
+  }
+  return 'gained a Wound that was on Killmonger';
+}
+
+/**
+ * Resolves Killmonger's "Rite of Challenge" (WP-769 / D-24602): "Fight: Each player with no
+ * Killmonger Tactics in their Victory Pile gains a Wound that was on Killmonger. (You have this
+ * Tactic, so you won't gain a Wound.)"
+ *
+ * // why: runs from dispatchTacticOnFight, BEFORE defeatMastermindTacticCore returns the rest of
+ * his Wounds to the Wound Stack. Players go in turn order from the current player (rules v23
+ * L2247, D-24780); the defeater holds this tactic, so the pass effectively starts after them.
+ * With a finite pool of Wounds, order decides who gains one.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The defeating player.
+ */
+function resolveRiteOfChallenge(G: LegendaryGameState, currentPlayer: string): void {
+  const seatOrder = seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer);
+  let gainedCount = 0;
+  for (const seat of seatOrder) {
+    const zones = G.playerZones[seat]!;
+    // why: the prefix also matches Killmonger's base card, which reaches a Victory Pile only on
+    // the Final Blow award; no Tactic is left then, so Rite can't fire.
+    const hasKillmongerTactic = zones.victory.some((cardId) => cardId.startsWith(KILLMONGER_TACTIC_ID_PREFIX));
+    if (hasKillmongerTactic) {
+      continue;
+    }
+    const woundCardId = takeWoundFromMastermind(G);
+    if (woundCardId === null) {
+      pushLog(G,
+        `Fight effect: Player ${seat} has no Killmonger Tactic, but no Wound is left on Killmonger (Rite of Challenge).`,
+        'neutral',
+      );
+      continue;
+    }
+    const outcome = gainHeldWoundWithOutcome(G, seat, woundCardId);
+    gainedCount += 1;
+    pushLog(G,
+      `Fight effect: Player ${seat} has no Killmonger Tactic and ${describeKillmongerWound(outcome)} (Rite of Challenge).`,
+      'applied',
+    );
+  }
+  if (gainedCount === 0) {
+    pushLog(G,
+      'Fight effect: no player gained a Wound (Rite of Challenge).',
+      'neutral',
+    );
+  }
+}
+
+/**
+ * Resolves Killmonger's "Throw from the Waterfall" (WP-769 / D-24602): "Fight: Draw two cards.
+ * Then each other player discards a card."
+ *
+ * @param G - The game state, mutated in place.
+ * @param events - The move's events (stage-ride admission for the other seats); optional.
+ * @param currentPlayer - The defeating player.
+ * @param shuffleContext - Carries `random.Shuffle` for the empty-deck reshuffle.
+ */
+function resolveThrowFromTheWaterfall(
+  G: LegendaryGameState,
+  events: TacticSeatChoiceEvents | undefined,
+  currentPlayer: string,
+  shuffleContext: ShuffleProvider,
+): void {
+  drawForThrowFromTheWaterfall(G, currentPlayer, shuffleContext);
+  // why: the discard is simultaneous and its apply re-sorts, so seats go ascending (the
+  // buildHandDiscardChoice contract), not clockwise.
+  const otherSeats = Object.keys(G.playerZones)
+    .filter((seat) => seat !== currentPlayer)
+    .sort();
+  if (otherSeats.length === 0) {
+    pushLog(G,
+      'Fight effect: there is no other player to discard a card (Throw from the Waterfall).',
+      'neutral',
+    );
+    return;
+  }
+  const discardChoice = buildKillmongerWaterfallDiscardChoice(G, otherSeats);
+  if (discardChoice === undefined) {
+    pushLog(G,
+      'Fight effect: no other player has a card to discard (Throw from the Waterfall).',
+      'neutral',
+    );
+    return;
+  }
+  parkSeatChoice(G, events, discardChoice);
+  pushLog(G,
+    'Fight effect: each other player must discard a card (Throw from the Waterfall).',
+    'neutral',
+  );
+}
+
+/**
+ * The "Draw two cards" half of Throw from the Waterfall.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The defeating player.
+ * @param shuffleContext - Carries `random.Shuffle` for the empty-deck reshuffle.
+ */
+function drawForThrowFromTheWaterfall(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  shuffleContext: ShuffleProvider,
+): void {
+  const playerZones = G.playerZones[currentPlayer];
+  if (!playerZones) {
+    return;
+  }
+  // why: WP-731 / D-24552 — Venompool's "you can't draw any more cards this turn" blocks this
+  // draw (the hero draw-effect precedent, heroEffects.execute.ts); the discard still happens.
+  if (G.turnEconomy.drawsLocked === true) {
+    pushLog(G,
+      `Fight effect: Player ${currentPlayer} can't draw ${String(WATERFALL_DRAW_COUNT)} card(s) — no more draws this turn (Throw from the Waterfall).`,
+      'blocked',
+    );
+    return;
+  }
+  const handBefore = playerZones.hand.length;
+  drawCardsIntoHand(playerZones, WATERFALL_DRAW_COUNT, shuffleContext);
+  // why: report what was actually drawn (an empty deck and discard stop the draw early), and
+  // count it as the defeating player's extra draws this turn (the D-24732 HYDRA Conspiracy shape).
+  const drawn = playerZones.hand.length - handBefore;
+  G.turnEconomy.cardsDrawn += drawn;
+  pushLog(G,
+    `Fight effect: Player ${currentPlayer} drew ${String(drawn)} card(s) (Throw from the Waterfall).`,
+    'applied',
+  );
+}
+
+/**
+ * Records Altar of Resurrection's unimplemented Fight as a hollow effect (WP-769 / D-24602):
+ * "The player on your left chooses a non-Henchman Villain from their Victory Pile. It enters the
+ * city with a Wound on it. Then the player on your right does the same effect. (In solo, you do
+ * both.)"
+ *
+ * // why: a Villain with a Wound on it needs the per-City-Villain Wound map and −Attack term the
+ * Killmonger's League follow-up adds, so the Fight is recorded hollow through the one seam. Per
+ * D-24033 reachability it records only when the left or right player (solo: the defeater) holds
+ * a non-Henchman Villain to choose; otherwise the printed effect does nothing.
+ *
+ * @param G - The game state (hollow channel appended).
+ * @param ctx - The bare boardgame.io ctx (for the turn number).
+ * @param currentPlayer - The defeating player.
+ * @param cardId - The defeated tactic's ext_id.
+ */
+function recordAltarOfResurrectionHollow(
+  G: LegendaryGameState,
+  ctx: unknown,
+  currentPlayer: string,
+  cardId: CardExtId,
+): void {
+  if (!isAltarOfResurrectionReachable(G, currentPlayer)) {
+    pushLog(G,
+      'Fight effect: no player who would choose has a non-Henchman Villain in their Victory Pile (Altar of Resurrection).',
+      'neutral',
+    );
+    return;
+  }
+  recordHollowEffect(G, {
+    cardId,
+    cardType: 'mastermind',
+    timing: 'onFight',
+    mechanic: 'villain-wound',
+    reason: 'unsupported-keyword',
+    turn: readTacticTurn(ctx),
+  });
+}
+
+/**
+ * Reports whether Altar of Resurrection would do anything: the player on the defeater's left
+ * (the next seat clockwise) or right (the previous seat), or the defeater in solo, holds a
+ * non-Henchman Villain in their Victory Pile.
+ *
+ * @param G - The game state (read-only).
+ * @param currentPlayer - The defeating player.
+ * @returns True when a choosing player has a Villain to choose.
+ */
+function isAltarOfResurrectionReachable(G: LegendaryGameState, currentPlayer: string): boolean {
+  const seatOrder = seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer);
+  const choosingSeats: string[] = [];
+  if (seatOrder.length <= 1) {
+    choosingSeats.push(currentPlayer);
+  } else {
+    choosingSeats.push(seatOrder[1]!, seatOrder[seatOrder.length - 1]!);
+  }
+  for (const seat of choosingSeats) {
+    const zones = G.playerZones[seat];
+    if (zones !== undefined && countVictoryPileNonHenchmanVillains(G, zones.victory) > 0) {
+      return true;
+    }
+  }
+  return false;
 }

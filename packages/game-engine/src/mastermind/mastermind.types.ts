@@ -111,4 +111,15 @@ export interface MastermindState {
   // and NO state-hash oracle re-pins.
   /** Final Blow: the last Tactic fell but the Mastermind card is not yet won (5th fight required). */
   finalBlowPending?: boolean;
+
+  // why: WP-769 / D-24602 — the Wounds on the Mastermind ("Wound the Mastermind", keywords
+  // "Wound": −1 Attack each; rules v23 L2213-2246). Real Wound card ids moved from the KO pile
+  // or the Wound Stack; they return to the bottom of the Wound Stack after every Tactic is
+  // fought. Generic (any Mastermind), though only Killmonger's `woundMastermind` adds them today.
+  //
+  // why: OPTIONAL and omit-when-empty (deleted, never `[]`; the finalBlowPending? precedent), so
+  // every match that never wounds a Mastermind — every committed sentinel / golden fixture —
+  // serializes byte-identically and NO state-hash oracle re-pins.
+  /** Wound cards on the Mastermind (−1 Attack each); absent when none. */
+  wounds?: CardExtId[];
 }

@@ -170,6 +170,16 @@ const SCORE_PLAY_WOUND = -1;
  */
 const SCORE_ATTEMPT_HEIST = 175;
 
+/**
+ * Score for wounding Killmonger (WP-769 / D-24602).
+ *
+ * // why: each Wound costs his current Attack, brings him 1 closer to a fightable 0, and returns
+ * 1 Recruit, so it ranks above a plain fight-villain (100) and below every bonus fight and the
+ * Mastermind fight (1500), which wins the Tactic once he is at 0. The trade-off (plain villains
+ * may go unfought while the bot wounds) is recorded in D-24602.
+ */
+const SCORE_WOUND_MASTERMIND_BASE = 110;
+
 /** Base score for drawing a card at start or main stage. */
 const SCORE_DRAW_CARDS_BASE = 150;
 
@@ -395,6 +405,9 @@ function scoreOneMove(move: LegalMove, view: UIState): number {
   }
   if (move.name === 'attemptHeist') {
     return SCORE_ATTEMPT_HEIST;
+  }
+  if (move.name === 'woundMastermind') {
+    return SCORE_WOUND_MASTERMIND_BASE;
   }
   if (move.name === 'playCard') {
     return scorePlayCard(move, view);

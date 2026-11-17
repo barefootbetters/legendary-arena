@@ -241,6 +241,28 @@ describe('simulation move-dispatch drift guard — attemptHeist (WP-878 / D-2482
   });
 });
 
+describe('simulation move-dispatch drift guard — woundMastermind (WP-769 / D-24602)', () => {
+  it('woundMastermind is emittable AND dispatchable in BOTH maps, the replay map and runFixture', () => {
+    // why: getLegalMoves step 4d emits woundMastermind against Killmonger; a missing MOVE_MAP
+    // entry would make the loop dispatch "unknown move name", re-pick the same move and burn the
+    // per-turn step budget, and a missing replay / runFixture entry would skip the spend.
+    assert.ok(
+      SIMULATION_MOVE_NAMES.includes('woundMastermind'),
+      'woundMastermind must be in SIMULATION_MOVE_NAMES (getLegalMoves emits it)',
+    );
+    assert.ok(
+      SIMULATION_RUNNER_MOVE_NAMES.includes('woundMastermind'),
+      'woundMastermind must be a simulation.runner MOVE_MAP key',
+    );
+    assert.ok(
+      PAR_AGGREGATOR_MOVE_NAMES.includes('woundMastermind'),
+      'woundMastermind must be a par.aggregator MOVE_MAP key',
+    );
+    assert.ok(REPLAY_MOVE_NAMES.includes('woundMastermind'), 'woundMastermind must be a replay MOVE_MAP key');
+    assert.ok(RUN_FIXTURE_MOVE_NAMES.includes('woundMastermind'), 'woundMastermind must be a runFixture MOVE_MAP key');
+  });
+});
+
 /**
  * Returns every move name the game registers: the top-level LegendaryGame.moves plus the lobby
  * phase moves (setPlayerReady, startMatchIfReady), which are registered on the phase, not the game.

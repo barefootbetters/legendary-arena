@@ -55,6 +55,7 @@ import {
   MONARCHS_DISCARD_KIND,
   VANISHING_ILLUSIONS_KO_KIND,
   FALLEN_IDOLS_DISCARD_KIND,
+  KILLMONGER_WATERFALL_DISCARD_KIND,
   COMPUTER_UPLOADED_GENIUS_DISCARD_KIND,
   CRUSH_PACIFIST_RESISTANCE_KO_KIND,
   CRUSH_PACIFIST_RESISTANCE_LAST_KO_KIND,
@@ -217,6 +218,8 @@ function chooseByKind(
     choice.kind === VILLAIN_EFFECT_ANY_CARD_DISCARD_KIND ||
     choice.kind === FALLEN_IDOLS_DISCARD_KIND ||
     choice.kind === COMPUTER_UPLOADED_GENIUS_DISCARD_KIND ||
+    // why: WP-769 / D-24602 — Throw from the Waterfall's any-card discard drops the least valuable card.
+    choice.kind === KILLMONGER_WATERFALL_DISCARD_KIND ||
     choice.kind === ZARATHOS_CORRUPTED_SPIRIT_DISCARD_DOWN_KIND
   ) {
     return indexOfLeastValuableCard(G, options);

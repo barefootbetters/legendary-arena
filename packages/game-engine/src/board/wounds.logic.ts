@@ -86,16 +86,72 @@ export function gainWoundForPlayer(
   const woundCardId = result.playerDiscard[result.playerDiscard.length - 1]!;
   G.piles.wounds = result.woundsPile;
   playerZones.discard = result.playerDiscard;
-  // why: WP-682 / D-24499 — the reactive interception runs AFTER the Wound landed,
-  // so a reveal undoes THIS Wound (return to supply + draw). Offered to the wound
-  // recipient (may be a non-active seat) via the WP-684 seat-choice wave.
-  // why: WP-827 / D-24760 — Flying Shield Block (any seat may reveal) is offered only when the
-  // recipient's own Diving Block was not; a declined Diving Block offers it then
-  // (applyDivingBlockResolvedSeatChoice), so one Wound never has two open interceptions.
+  offerWoundInterception(G, playerID, woundCardId);
+  return woundCardId;
+}
+
+/**
+ * Offers the reactive interceptions for a Wound that just landed in a player's discard pile:
+ * Diving Block, else Flying Shield Block.
+ *
+ * // why: WP-769 / D-24602 — extracted (two callers, ahead of the third-copy rule) so every
+ * Wound a player gains, from the supply or from a Mastermind, gets the same interceptions. The
+ * WP-769 draft called checkDivingBlock alone and would have skipped Flying Shield Block.
+ * // why: WP-682 / D-24499 — the reactive interception runs AFTER the Wound landed,
+ * so a reveal undoes THIS Wound (return to supply + draw). Offered to the wound
+ * recipient (may be a non-active seat) via the WP-684 seat-choice wave.
+ * // why: WP-827 / D-24760 — Flying Shield Block (any seat may reveal) is offered only when the
+ * recipient's own Diving Block was not; a declined Diving Block offers it then
+ * (applyDivingBlockResolvedSeatChoice), so one Wound never has two open interceptions.
+ *
+ * @param G - The game state, mutated in place (the pending interception queues).
+ * @param playerID - The player who just gained the Wound.
+ * @param woundCardId - The Wound card now in the player's discard pile.
+ */
+function offerWoundInterception(
+  G: LegendaryGameState,
+  playerID: string,
+  woundCardId: CardExtId,
+): void {
   if (!checkDivingBlock(G, playerID, woundCardId)) {
     checkFlyingShieldBlock(G, playerID, woundCardId);
   }
-  return woundCardId;
+}
+
+/**
+ * Gains a Wound the caller already took off a Mastermind (Killmonger's Wounds, WP-769 /
+ * D-24602): lands it in the player's discard pile and offers the same interceptions as
+ * gainWoundForPlayer. Mutates G in place; never throws.
+ *
+ * // why: the outcome mirrors gainWoundWithOutcome exactly (D-24673): only a pending Diving
+ * Block reads 'diving-block-pending'. A reveal returns the Wound to the Wound Stack, not back
+ * onto the Mastermind (named residual in D-24602).
+ *
+ * @param G - The game state, mutated in place (player discard; or the Wound Stack when the
+ *   player has no zones, so the Wound is never dropped).
+ * @param playerID - The player gaining the Wound (may be a non-active seat).
+ * @param woundCardId - The Wound card already removed from its source.
+ * @returns 'no-wound' when the player has no zones, else 'gained' or 'diving-block-pending'.
+ */
+export function gainHeldWoundWithOutcome(
+  G: LegendaryGameState,
+  playerID: string,
+  woundCardId: CardExtId,
+): WoundGainOutcome {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) {
+    // why: the caller already removed the Wound from the Mastermind; put it on the bottom of
+    // the Wound Stack rather than lose it (rules v23 L2244-2246).
+    G.piles.wounds = [...G.piles.wounds, woundCardId];
+    return 'no-wound';
+  }
+  const pendingBefore = countPendingDivingBlockWounds(G, playerID);
+  playerZones.discard = [...playerZones.discard, woundCardId];
+  offerWoundInterception(G, playerID, woundCardId);
+  if (countPendingDivingBlockWounds(G, playerID) > pendingBefore) {
+    return 'diving-block-pending';
+  }
+  return 'gained';
 }
 
 /**

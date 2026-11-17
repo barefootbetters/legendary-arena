@@ -3,9 +3,22 @@
  *
  * Pure functions for tactics deck manipulation and victory detection.
  * No boardgame.io imports. No .reduce(). No throws.
+ *
+ * WP-769 / D-24602 adds the generic Mastermind Wound helpers at the end of this file. Two are
+ * pure reads; `takeWoundForMastermind`, `takeWoundFromMastermind` and `returnMastermindWounds`
+ * MUTATE G in place (the board/wounds.logic.ts shape) and never throw. They always reassign
+ * `G.mastermind`, `G.ko` and `G.piles.wounds` from new arrays, never `.push` / `.splice` a held
+ * one, so an old and a new MastermindState that share an array through a spread never alias.
  */
 
 import type { MastermindState } from './mastermind.types.js';
+import type { LegendaryGameState } from '../types.js';
+import type { CardExtId } from '../state/zones.types.js';
+// why: WP-769 / D-24602 — both are leaf modules (zoneOps imports only types; pilesInit only the
+// import-free shuffle module), so these runtime imports add no cycle to economy.resolve, which
+// reads countMastermindWounds from here.
+import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { moveCardFromZone } from '../moves/zoneOps.js';
 
 /**
  * Defeats the top tactic card from the tactics deck.
@@ -157,4 +170,110 @@ export function transformMastermind(
     alternateFaceId: currentFace,
     gameText: nextGameText,
   };
+}
+
+/**
+ * Counts the Wounds on the Mastermind (WP-769 / D-24602).
+ *
+ * @param mastermindState - Current mastermind state.
+ * @returns How many Wounds are on the Mastermind; 0 when the field is absent.
+ */
+export function countMastermindWounds(mastermindState: MastermindState): number {
+  return mastermindState.wounds?.length ?? 0;
+}
+
+/**
+ * Reports whether a Wound is available to put on the Mastermind: one in the KO pile or the
+ * Wound Stack (keywords "Wound": "from the Wound Stack or KO pile").
+ *
+ * @param G - Game state (read-only).
+ * @returns True when the KO pile or the Wound Stack holds a Wound.
+ */
+export function hasAvailableWound(G: LegendaryGameState): boolean {
+  return G.ko.includes(WOUND_EXT_ID) || G.piles.wounds.length > 0;
+}
+
+/**
+ * Puts one Wound on the Mastermind: the first Wound in the KO pile, else the top of the
+ * Wound Stack (WP-769 / D-24602). Mutates G in place; never throws.
+ *
+ * // why: operator default (2026-11-16) — rules v23 L2217-2219 give the player "the Wound
+ * Stack or the KO pile" with no order. KO-pile-first never hastens a Wound-Stack loss
+ * (Legacy Virus, D-24320) and the returned Wounds refill the stack anyway.
+ *
+ * @param G - Game state (mutated: G.ko or G.piles.wounds, G.mastermind, maybe G.koPileLengthAtTurnStart).
+ * @returns The Wound card id put on the Mastermind, or null when none was available.
+ */
+export function takeWoundForMastermind(G: LegendaryGameState): CardExtId | null {
+  const koIndex = G.ko.indexOf(WOUND_EXT_ID);
+  let woundCardId: CardExtId;
+  if (koIndex >= 0) {
+    woundCardId = G.ko[koIndex]!;
+    G.ko = moveCardFromZone(G.ko, [], woundCardId).from;
+    // why: D-24568 — this is the first removal from the KO pile, whose "KO'd this turn"
+    // window is G.ko[koPileLengthAtTurnStart..]. Taking a card from before the snapshot
+    // shifts the window left by one, so the snapshot moves with it (never created here).
+    if (G.koPileLengthAtTurnStart !== undefined && koIndex < G.koPileLengthAtTurnStart) {
+      G.koPileLengthAtTurnStart = G.koPileLengthAtTurnStart - 1;
+    }
+  } else if (G.piles.wounds.length > 0) {
+    woundCardId = G.piles.wounds[0]!;
+    G.piles.wounds = G.piles.wounds.slice(1);
+  } else {
+    return null;
+  }
+  G.mastermind = { ...G.mastermind, wounds: [...(G.mastermind.wounds ?? []), woundCardId] };
+  return woundCardId;
+}
+
+/**
+ * Takes one Wound off the Mastermind (the first held), deleting the field when it empties
+ * (WP-769 / D-24602). Mutates G in place; never throws.
+ *
+ * @param G - Game state (mutated: G.mastermind).
+ * @returns The Wound card id taken, or null when the Mastermind holds none.
+ */
+export function takeWoundFromMastermind(G: LegendaryGameState): CardExtId | null {
+  const heldWounds = G.mastermind.wounds;
+  if (heldWounds === undefined || heldWounds.length === 0) {
+    return null;
+  }
+  const woundCardId = heldWounds[0]!;
+  const remainingWounds = heldWounds.slice(1);
+  if (remainingWounds.length === 0) {
+    G.mastermind = copyWithoutWounds(G.mastermind);
+  } else {
+    G.mastermind = { ...G.mastermind, wounds: remainingWounds };
+  }
+  return woundCardId;
+}
+
+/**
+ * Returns every Wound on the Mastermind to the bottom of the Wound Stack and deletes the field
+ * (WP-769 / D-24602; rules v23 L2236-2246). Mutates G in place; never throws.
+ *
+ * @param G - Game state (mutated: G.piles.wounds, G.mastermind).
+ * @returns How many Wounds were returned; 0 (and no change) when none were held.
+ */
+export function returnMastermindWounds(G: LegendaryGameState): number {
+  const heldWounds = G.mastermind.wounds;
+  if (heldWounds === undefined) {
+    return 0;
+  }
+  // why: rules v23 L2244-2246 — returned Wounds go on the bottom of the stack (index 0 is the top).
+  G.piles.wounds = [...G.piles.wounds, ...heldWounds];
+  G.mastermind = copyWithoutWounds(G.mastermind);
+  return heldWounds.length;
+}
+
+/**
+ * Copies a MastermindState without its `wounds` key (omit-when-empty, never `[]`).
+ *
+ * @param mastermindState - The state to copy.
+ * @returns A copy with no `wounds` key.
+ */
+function copyWithoutWounds(mastermindState: MastermindState): MastermindState {
+  const copy: MastermindState = { ...mastermindState };
+  delete copy.wounds;
+  return copy;
 }

@@ -747,6 +747,13 @@ export function filterUIStateForAudience(
           },
         }
         : {}),
+      // why: WP-769 / D-24602 — the Mastermind's Wound count and Killmonger's wound affordance are
+      // public shared-board information for every audience; both are optional, so they MUST be
+      // passed through here or they are silently dropped (the EC-206 class). Omit-when-absent.
+      ...(uiState.mastermind.woundCount !== undefined
+        ? { woundCount: uiState.mastermind.woundCount }
+        : {}),
+      ...(uiState.mastermind.woundable === true ? { woundable: true as const } : {}),
     },
     scheme: {
       id: uiState.scheme.id,

@@ -33,6 +33,7 @@ import {
   areAllTacticsDefeated,
   isFinalBlowAvailable,
   setFinalBlowPending,
+  returnMastermindWounds,
 } from '../mastermind/mastermind.logic.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { composeMastermindDefeatedNarrative } from '../events/notableEvents.compose.js';
@@ -83,6 +84,9 @@ import {
   shuffleIntoVillainDeck,
   formatAssassinList,
 } from '../mastermind/indestructibleMan.logic.js';
+// why: WP-769 / D-24602 — Killmonger's lock predicate; the move, its getLegalMoves mirror and the
+// projection all read it. Read only inside function bodies (the D-24601 item-13 cycle rule).
+import { isKillmongerAttackLocked } from '../mastermind/killmonger.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -203,6 +207,14 @@ export function fightMastermind(
     }
   }
 
+  // why: WP-769 / D-24602 — "While Killmonger has more than 0 [attack], you cannot fight him."
+  // A step-1 return like the Indestructible Man lock above (the lock reason rides
+  // fortifiedReason). The spendable check below would not cover it: 5 Attack pays a cost of 5.
+  // At Attack 0 (five Wounds, or reductions) he is fought normally; that fight grants no Recruit.
+  if (isKillmongerAttackLocked(G, ctx.currentPlayer)) {
+    return;
+  }
+
   // why: baseCardId is the canonical stats key; fightCost is the fight
   // requirement field per WP-018 D-1805; never use G.mastermind.id or
   // any tactic card ID for stat lookup
@@ -317,9 +329,10 @@ export function fightMastermind(
   // why: the normal path reuses the shared mastermind-tactic defeat-core (WP-486 /
   // D-24291); then spend attack + mark acted (shared by both branches). Both are
   // EXCLUDED from the shared core and stay here in the fight move: Silent Sniper's
-  // defeat spends no attack and is a card play, not a fight. The tactic defeat
-  // fires NO onFight ability, so nothing between reads G.turnEconomy or
-  // G.hasActedThisTurn — the unmodified fightMastermind tests are the oracle.
+  // defeat spends no attack and is a card play, not a fight.
+  // why: WP-769 / D-24602 — the core DOES fire the defeated tactic's Fight ability (WP-497), and
+  // one may grant resources (Negablast Grenades +3 Attack, A Scar for Every Kill's Recruit), so
+  // the Excessive Violence check below reads the step-1 spendable figure, not a re-read.
   // why: D-24802 — a Size-Changing note ONLY when the discount changed the price, logged
   // before the fight's own lines, so every full-price fight's log is byte-identical.
   if (requiredFightCost !== mastermindAttack) {
@@ -345,11 +358,13 @@ export function fightMastermind(
   // why: WP-736 / D-24556 / D-24557 — Excessive Violence opt-in overspend, evaluated on the
   // PRE-spend economy: the caller asked for it AND one extra [attack] beyond the fight cost is
   // affordable AND EV has not already been used this turn (once per turn). A false result fights
-  // normally (validation-phase silent decline; moves never throw). The tactic defeat / final blow
-  // does not touch attack/recruit spendable, so reading the spendable figure here is still pre-spend.
+  // normally (validation-phase silent decline; moves never throw).
+  // why: WP-769 / D-24602 — affordability reads `spendableAttack`, captured in step 1 BEFORE the
+  // tactic defeat: the defeated tactic's Fight ability can grant Attack or Recruit (WP-497), and
+  // the extra 1 must be affordable when the fight is declared, not paid from the fight's reward.
   const isExcessiveViolenceActive =
     useExcessiveViolence === true &&
-    getSpendableAttackForTarget(G.turnEconomy, 'mastermind') >= requiredFightCost + 1 &&
+    spendableAttack >= requiredFightCost + 1 &&
     G.turnEconomy.excessiveViolenceUsedThisTurn !== true;
   // why: WP-580 / D-24389 + WP-790 / D-24652 — spendFightCostForTarget debits eligible
   // restricted attack first (narrowest-first), then plain attack, then unspent recruit when the
@@ -626,6 +641,18 @@ export function defeatMastermindTacticCore(
 
   if (allTacticsDefeatedMessage !== null) {
     pushLog(G, allTacticsDefeatedMessage);
+  }
+
+  // why: WP-769 / D-24602 — rules v23 L2236-2242: "all of the Mastermind's Wounds return to the
+  // Wound Stack after a Mastermind Tactic is fought". The LAST step of the shared core, after the
+  // tactic's Fight ability, so Rite of Challenge hands out the Wounds first; every defeat path
+  // (the fight, Indestructible Man's shuffle-fight, Silent Sniper / Pure Fury) runs it. A
+  // Mastermind with no Wounds is untouched and logs nothing (byte-identical).
+  const returnedWoundCount = returnMastermindWounds(G);
+  if (returnedWoundCount > 0) {
+    pushLog(G,
+      `${mastermindDisplayName}'s ${String(returnedWoundCount)} Wound(s) returned to the Wound Stack.`,
+    );
   }
 
   // why: WP-732 / D-24553 — the D-24518 pending-choice drop is RELOCATED from this

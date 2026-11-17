@@ -97,6 +97,12 @@
       "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveIndestructibleManStrike",
       "wp": "WP-768",
       "decision": "D-24601"
+    },
+    "bkpt-mastermind-killmonger-master-strike": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/mastermindHandlers.ts#resolveKillmongerStrike",
+      "wp": "WP-769",
+      "decision": "D-24602"
     }
   }
 }

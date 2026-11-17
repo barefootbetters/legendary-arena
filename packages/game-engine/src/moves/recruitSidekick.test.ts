@@ -352,11 +352,12 @@ describe('playing a Sidekick (WP-842 / D-24776)', () => {
 // ---------------------------------------------------------------------------
 
 describe('recruitSidekick wiring (WP-842 / D-24776)', () => {
-  it('T15: registered on LegendaryGame (56 moves), not a core move, not a simulation move', () => {
+  it('T15: registered on LegendaryGame (57 moves), not a core move, not a simulation move', () => {
     const moveNames = Object.keys(LegendaryGame.moves ?? {});
     // why: WP-858 / D-24794 added useRitualArtifact (54 → 55).
     // why: WP-865 / D-24808 added attemptHeist (55 → 56).
-    assert.equal(moveNames.length, 56, 'LegendaryGame defines 56 moves');
+    // why: WP-769 / D-24602 added woundMastermind (56 → 57).
+    assert.equal(moveNames.length, 57, 'LegendaryGame defines 57 moves');
     assert.equal(moveNames.includes('recruitSidekick'), true, 'recruitSidekick is registered');
     assert.equal((CORE_MOVE_NAMES as readonly string[]).includes('recruitSidekick'), false, 'not a CORE_MOVE_NAME');
     assert.equal((SIMULATION_MOVE_NAMES as readonly string[]).includes('recruitSidekick'), false, 'not a simulation move');
