@@ -10,6 +10,16 @@
 
 ## Current State
 
+### WP-900 / EC-938 — The coach's play-order tip never moves a card whose own bonus depends on play order (D-24857) (2026-11-16)
+
+**User-visible on `play.legendary-arena.com` after deploy, on coach reports first generated after the deploy.** The Legendary Pass coach card's play-order tip ("Next time, play X before Y") stops naming an X that loses by being played earlier: KGB Training, Four of a Kind, Eighth Time's a Charm, Devouring Drool, Shenanigans, Oddball and other cards whose own bonus depends on what was played before them, or on board or present state. Tips whose enabler is unconditional, or gated only on a wait-and-see condition or "first Hero you played this turn", are unchanged. Reports already cached keep their tips.
+
+- **Engine:** new Runtime-Safe `hero/orderSafeEnabler.ts` (`ORDER_SAFE_ENABLER_CONDITION_TYPES`, `isOrderSafeEnablerHook`; compile-checked field tables); two barrel exports.
+- **Server:** `sequenceTeacher.logic.ts` qualifies enablers only through the engine predicate (`isOrderSafeEnabler` / `findOrderSafeEnabler`).
+- **Tests:** game-engine 7363 → 7378 / 0 (+15); server 1853 → 1864 / 0 fail, 207 DB-gated skips (+11, real-card cases with in-file controls); every other package 0 fail; hash pins unchanged.
+- **Live-verify (D-24026):** pending; needs a coach report first generated after the deploy on a staged operator match (WP-900 §Verification Steps), or `n/a` by Operator decision.
+- **Follow-ups (D-24857 §8):** state-reading effect keywords, displaced-card losses, play-history teaching tips.
+
 ### WP-899 / EC-937 — "Cards you played this turn" keeps a card that left play mid-turn (D-24856) (2026-11-16)
 
 **User-visible on `play.legendary-arena.com` after deploy, in a match created after the deploy.** A played card KO'd out of play still counts as one of the cards you played this turn (rules v23 L3441-3453). Before this, it dropped out of the count:
