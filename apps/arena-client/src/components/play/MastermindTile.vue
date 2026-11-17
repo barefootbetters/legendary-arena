@@ -869,12 +869,17 @@ export default defineComponent({
    so it reads as a deliberate, costly extra-attack fight distinct from the normal
    Fight click — not as card ability-text (the earlier subtle outline + a
    non-rendering U+2694 glyph made operators miss it). The crossed-swords SVG and
-   the "+1" cost badge spell out the extra-attack price on the button itself. */
-.mastermind-ev-fight {
-  display: inline-flex;
+   the "+1" cost badge spell out the extra-attack price on the button itself.
+   Two classes (0,2,0) so it outranks `.mastermind-tile button` (0,1,1, column flex):
+   a single-class rule lost to it and the icon, label and "+1" stacked into a 141x60
+   column. The max-width wraps the label to two lines instead of widening the tile
+   past the Fight button, because the desktop adversary band does not wrap. */
+.mastermind-tile .mastermind-ev-fight {
+  flex-direction: row;
   align-items: center;
   gap: 0.25rem;
   align-self: flex-start;
+  max-width: 8.5rem;
   margin-top: 0.2rem;
   padding: 0.2rem 0.5rem;
   border: 1px solid #7a2818;
@@ -884,25 +889,29 @@ export default defineComponent({
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.02em;
+  text-align: left;
+  white-space: normal;
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(122, 40, 24, 0.45);
 }
 
-.mastermind-ev-fight:hover {
+.mastermind-tile .mastermind-ev-fight:hover {
   background: linear-gradient(180deg, #d85336 0%, #b53d24 100%);
 }
 
-.mastermind-ev-fight:active {
+.mastermind-tile .mastermind-ev-fight:active {
   transform: translateY(1px);
 }
 
 .mastermind-ev-fight-icon {
+  flex: 0 0 auto;
   font-size: 0.85rem;
 }
 
 /* why: the "+1" attack-cost badge — a lighter inset pill so the price of the
    overspend is unmistakable without a separate tooltip read. */
 .mastermind-ev-fight-cost {
+  flex: 0 0 auto;
   padding: 0 0.25rem;
   border-radius: 0.25rem;
   background: rgba(0, 0, 0, 0.28);
