@@ -541,6 +541,7 @@ high-water: 422
 - WP-900 — coach-order-safe-enabler (the sequence teacher qualifies an enabler only when every hook condition is an engine-classified order-safe type; WP-745 follow-up F, amends D-24533. reserved 2026-11-16, claude/wp-coach-order-safe-enabler; LANDED 2026-11-16)
 - WP-901 — undercover-your-hero (bkwd "send one of your (other) Heroes Undercover" from hand or play, with a decline; Weave a Web of Spies draw gate; WP-745 follow-up G, extends D-24494. reserved 2026-11-16, claude/wp-undercover-your-hero; LANDED 2026-11-16)
 - WP-902 — elite-assassins-villain-abilities (Game Engine + card data. bkwd Elite Assassins: villain Dark Memories Attack bonus, Black Lotus / Snapdragon / Iron Maiden / Blue Talon Ambush + Fight lines incl. villain-driven Undercover and Unleash. reserved 2026-11-19, claude/hopeful-curie-a31721)
+- WP-904 — infiltrate-undercover-attack-gate (Game Engine + card data. bkwd Infiltrate the Conspiracy line 1 "+3 Attack if you have at least 4 Bystanders and/or Undercover Heroes in your Victory Pile" gated through a curated marker → new on-play condition counting bystanders + undercover∩victory; WP-901 follow-up H, phantom-grant family. Skipped WP-903: doubly-contended by open reserve PRs #3449/#3450. reserved 2026-11-19, claude/wp-h-infiltrate-gate-fe8441)
 
 ## EC
 
@@ -1044,6 +1045,7 @@ high-water: 457
 - EC-938 — coach-order-safe-enabler (WP-900. reserved 2026-11-16, claude/wp-coach-order-safe-enabler; LANDED 2026-11-16)
 - EC-939 — undercover-your-hero (WP-901. reserved 2026-11-16, claude/wp-undercover-your-hero; LANDED 2026-11-16)
 - EC-940 — elite-assassins-villain-abilities (WP-902. reserved 2026-11-19, claude/hopeful-curie-a31721)
+- EC-942 — infiltrate-undercover-attack-gate (WP-904. reserved 2026-11-19, claude/wp-h-infiltrate-gate-fe8441)
 
 ## D
 
@@ -1681,3 +1683,4 @@ section below) and the allocation protocol in
 - D-24857 — coach-order-safe-enabler (WP-900; fail-closed enabler rule, engine-owned ORDER_SAFE_ENABLER_CONDITION_TYPES, cached reports keep their tips. reserved 2026-11-16, claude/wp-coach-order-safe-enabler; LANDED 2026-11-16)
 - D-24858 — undercover-your-hero (WP-901; new Undercover source shape over hand + in-play Heroes, "other" excludes the source, declinable choice, PendingUndercoverChoice widened. reserved 2026-11-16, claude/wp-undercover-your-hero; LANDED 2026-11-16)
 - D-24859 — elite-assassins-villain-abilities (WP-902; villain Dark Memories fight-cost term + the Elite Assassin Ambush/Fight primitives. reserved 2026-11-19, claude/hopeful-curie-a31721)
+- D-24861 — infiltrate-undercover-attack-gate (WP-904; unmarked "+N Attack if you have at least 4 Bystanders and/or Undercover Heroes in your Victory Pile" gates through a curated marker → new on-play condition bystandersOrUndercoverInVictoryAtLeast counting bystanders + (victory ∩ undercover); same-play parked Undercover send is NOT counted (on-play present-state, Reading A). reserved 2026-11-19, claude/wp-h-infiltrate-gate-fe8441)
