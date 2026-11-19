@@ -1,6 +1,6 @@
 # WP-770 — Indestructible Man client: Elite Assassin chooser + shuffle-fight (Arena Client)
 
-**Status:** Draft 2026-09-26; **reconciled 2026-11-18** against WP-768 as shipped (#3419, live-verified 2026-11-16) and the MastermindTile that WP-759, WP-771 (#3438) and #3440 left, on `origin/main` `9ff09d0e3`. Re-gate recorded below.
+**Status:** **Done 2026-11-18** (live-verify D-24026 pending). Draft 2026-09-26; **reconciled 2026-11-18** against WP-768 as shipped (#3419, live-verified 2026-11-16) and the MastermindTile that WP-759, WP-771 (#3438) and #3440 left, on `origin/main` `9ff09d0e3`. Re-gate recorded below.
 **Primary Layer:** App (`apps/arena-client`)
 **Dependencies:**
 - **WP-768 / D-24601** ✅ (Done 2026-11-16, live-verified 2026-11-16)
@@ -128,7 +128,7 @@ Verified on `9ff09d0e3`. If any item is false, this packet is **BLOCKED**.
   - The label wraps (a `.mastermind-tile .mastermind-shuffle-fight` (0,2,0) row selector with `flex-direction: row; align-items: center; align-self: flex-start; font-size: 0.7rem; max-width: 8.5rem`, `CrossedSwordsIcon` before the label), so the tile never widens past its EV-button width. Unlike EV, it shows on every turn, so Verification 3 also compares the tile's height and the board's fit scale.
 - **Chooser.** New `components/play/AssassinShuffleChooser.vue`, `defineComponent({ setup })` (D-6512). It is a **modal dialog that MastermindTile teleports to `document.body`** (Assumes 5; the WP-830 precedent on this tile), never drawn inside the tile.
   - Props: `assassins: UIDisplayEntry[]` and `requiredCount: number`.
-  - One toggle button per entry, in projected order, each with the card's art (`CardTile`, size `sm`, label shown) and name.
+  - One toggle button per entry, in projected order, each with the card's art (`CardTile`, size `md`, label shown; `sm` at the gate, widened at execution, see the post-mortem §7) and name.
   - Toggles are unrestricted: picking more than `requiredCount` is allowed and disables Confirm.
   - Confirm is enabled only at exactly `requiredCount` selections. It emits `choose(ids)`, with the ids in projected order.
   - Cancel, Escape (document listener while mounted) and a backdrop click emit `close`. Clicks inside the panel never close it.
@@ -299,6 +299,8 @@ Verified on `9ff09d0e3`. If any item is false, this packet is **BLOCKED**.
 - The chooser moves from in-flow to a body-level dialog, the WP-830 precedent on this same tile (Assumes 5).
 - An Enigma Code hand-off is added: the engine requires `enigmaGuess` on the shuffle-fight, and without it IM + Enigma Code is unwinnable.
 - Anchors are refreshed after WP-771 and #3440, and a Risk Tier is added.
+
+**Execution (2026-11-18):** `EC-807:` code commit. arena-client 2746 → 2763 / 0; revert proofs a-f each fail their AC. One execution-time adjustment: the chooser's cards are `md`, not `sm` (post-mortem §7).
 
 **2026-11-18 re-gate:** rounds recorded below.
 

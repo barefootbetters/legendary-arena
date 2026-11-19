@@ -490,7 +490,7 @@ mindmap
         ["WP-767 ✅ Snarling Fangs Moonlight game engine plus card data plus arena-client EC-804 D-24600 Active DONE 2026-09-26. Whenever you defeat a Villain or Mastermind this turn you may KO one of your Heroes, hand and played cards only, no Wounds"]
         ["WP-768 ✅ Indestructible Man can no longer be fought with Attack, once per turn a player shuffles two chosen Elite Assassins into the Villain Deck to fight him, his strike and three tactics resolve, EC-805 D-24601. Closes a free ranked win"]
         ["WP-769 ✅ Killmonger can no longer be fought above 0 Attack, players spend his Attack to Wound him for +1 Recruit down to 0, Mastermind Wounds return after each tactic, his strike and three tactics resolve, EC-806 D-24602"]
-        ["WP-770 📝 Indestructible Man client Elite Assassin chooser arena-client DRAFTED 2026-09-26 EC-807 BLOCKED on WP-768"]
+        ["WP-770 ✅ Humans can fight Indestructible Man from the Mastermind tile, Shuffle 2 Elite Assassins button opens an Assassin chooser that sends the shuffle-fight, his lock reason shows instead of an attack shortfall, EC-807 consumes D-24601"]
         ["WP-771 ✅ Humans can Wound Killmonger from the Mastermind tile, Wound him button spends his Attack for +1 Recruit, a Wounds badge counts them, his lock reason shows before the attack shortfall, EC-808 consumes D-24602"]
         ["WP-772 ✅ Divided Card off-play traits a split hero counts as both halves until played game engine EC-809 D-24604 Active DONE 2026-09-26. Off play both classes and summed printed numbers, in play the chosen half, face-b replay offers the choice again"]
         ["WP-780 ✅ Penumbra play both sides of a Divided Card game engine plus card data EC-817 D-24619 Active DONE 2026-09-26. After Penumbra a later split card skips the picker, face a then face b, one in-play card that counts as two played cards"]
@@ -1070,7 +1070,7 @@ mindmap
 | Legends Public Scoreboard | 2/2 | — |
 | Villain Deck Pipeline | 5/5 | — |
 | Villain & Henchman Effects | 21/21 | — |
-| Hero Ability Coverage & Markup Pipeline | 255/264 | 9 open |
+| Hero Ability Coverage & Markup Pipeline | 256/264 | 8 open |
 | Notable Events & Overlays | 6/6 | — |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
 | Dashboard & Operator Analytics | 55/55 | — |
@@ -1091,9 +1091,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 4/4 | — |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **883/898 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 14 open |
+| **Total** | **884/898 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 13 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 15):** WP-849 open; WP-822 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-770 open; WP-764 open; WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 14):** WP-849 open; WP-822 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-764 open; WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

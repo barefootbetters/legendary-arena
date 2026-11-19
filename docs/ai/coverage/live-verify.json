@@ -2811,6 +2811,17 @@
       "date": "2026-11-17",
       "evidence": "Operator 2p match (1 bot ally) OeeK49E424t, client c66d04c (the #3438 merge, version.json) on server e3091635 (Killmonger / Midtown Bank Robbery; Killmonger's League + Enemies of Wakanda; Doombot Legion; Hulk, Thor, Wolverine, Captain America, Black Widow), driven by the human seat 0 with real clicks. Start step: the Wound button \"Wound him — spend 5 → +1 Recruit\" disabled with the stage reason. Main at 0 / 2 Attack: Fight disabled with the Killmonger lock reason (not \"Needs 5 attack\"), Wound disabled \"Needs 5 attack, you have 2.\". Turn 6 (he was at 4 after a bot Wound): \"Wounds: 1\" badge, \"Fight 4\" badge not loud, Wound enabled; the click logged 6.2.11 \"Player 0 spent 4 Attack to Wound Killmonger and got +1 Recruit; he has 2 Wound(s) and 3 Attack now.\" (Attack 5 -> 1, Recruit 2 -> 3, badge \"Wounds: 2\", label \"spend 3\"). Turn 10 (at 2 after a bot Wound): 10.2.9 \"spent 2 Attack ... 4 Wound(s) and 1 Attack now.\", 10.2.10 \"spent 1 Attack ... 5 Wound(s) and 0 Attack now.\"; at 0 the Wound button and woundable / fortifiedReason were gone, badge \"Wounds: 5\", Fight enabled; Fight clicked: 10.2.11 \"fought Killmonger and defeated the tactic \\\"Altar of Resurrection\\\"\", 10.2.13 \"Killmonger's 5 Wound(s) returned to the Wound Stack.\"; then the badge was gone, the Wound button back at \"spend 5\" and the lock reason restored. Not observed live (unit-tested): the Throw from the Waterfall seat-choice heading, the heal-lock exemption, the Enigma bypass, the post-Final-Blow badge hide.",
       "note": "Live check (NEW human Killmonger match after the deploy, Workshop operator or manual guest; autoplay seats are bots): the tile shows \"Wound him — spend 5 → +1 Recruit\" while he is locked, disabled off-turn / outside Main / when short (\"Needs 5 attack, you have N.\"); each click logs \"spent N Attack to Wound Killmonger and got +1 Recruit\", his Attack falls 5 -> 0 and the \"Wounds: n\" badge counts; the Fight button shows the lock reason even when short and enables only at 0, then takes a Tactic. D-24602 (WP-771)."
+    },
+    {
+      "key": "mastermind:bkwd/indestructible-man|shuffle-fight-chooser",
+      "kind": "mastermind",
+      "card": "Indestructible Man",
+      "ability": "You can't use Attack to fight Indestructible Man. Once during each of your turns, you may shuffle two Elite Assassins from your Victory Pile into the Villain Deck. If you do, fight Indestructible Man. (client: the Mastermind tile's Shuffle 2 Elite Assassins button and the Assassin chooser)",
+      "wp": "WP-770",
+      "state": "pending",
+      "date": "2026-11-18",
+      "evidence": "",
+      "note": "Live check (NEW human Indestructible Man match after the deploy, Workshop operator match with Elite Assassins in the Victory Pile; autoplay seats are bots): the Fight button shows the lock reason whatever the Attack; \"Shuffle 2 Elite Assassins → Fight\" is disabled with \"Needs 2 Elite Assassins in your Victory Pile.\" until two are banked; the chooser lists them with art, Confirm enables at exactly two, and the click logs \"shuffled <A> and <B> from their Victory Pile into the Villain Deck to fight Indestructible Man.\" and defeats a Tactic; then the button says \"You've already shuffled Assassins this turn.\". D-24601 (WP-770)."
     }
   ]
 }
