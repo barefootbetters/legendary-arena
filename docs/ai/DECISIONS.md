@@ -51801,7 +51801,7 @@ Protect this file.
 
 ### D-24856 — "Cards you played this turn" keeps a card that left play mid-turn: an exit-side multiset ledger `G.turnEconomy.leftPlayPlayedCardIds`, written by `recordOwnedCardKoed` for a KO from play and by the operator move, unioned into `playedCardIdsThisTurn` (Active 2026-11-16 — WP-899 / EC-937)
 
-**Status:** Active 2026-11-16. Reserved 2026-11-16 (#3423); drafted and gated (#3427: 01.4 READY TO EXECUTE, 01.7 CONFIRM, 00.3 PASS). Live-verify (D-24026) pending.
+**Status:** Active 2026-11-16. Reserved 2026-11-16 (#3423); drafted and gated (#3427: 01.4 READY TO EXECUTE, 01.7 CONFIRM, 00.3 PASS). Live-verify (D-24026) **PASS 2026-11-16** (server `293255f4`, the #3429 merge; operator match l4OOO53JBjr, created after the deploy): after a played S.H.I.E.L.D. Agent was KO'd out of play with the operator move, First Strike played next was blocked (1.2.10), Eighth Time's a Charm as the true 8th card granted +2 (1.2.17), and as the 9th physical play it was blocked with "it was card number 9" (3.2.15).
 
 **Context.** Rules v23 L3441-3453: a card you played this turn that moved somewhere else still counts as one of "the cards you played this turn", but not as "your Heroes" / "Heroes you have" (L3443-3447). The one played view, `playedCardIdsThisTurn`, already kept Out of Time cards (D-24692), returned Sidekicks (D-24776) and used Ritual Artifacts (D-24794); any other exit (a KO from play) dropped the card. Every reader undercounted. The first-card gates over-granted, Dr. Octopus's exact ordinal erred both ways, and Squirrel Girl became fightable. D-24798 §5, D-24568 §2 and D-24816 §4 recorded this as an accepted residual (WP-745 Out of Scope E).
 
