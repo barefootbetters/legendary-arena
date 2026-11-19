@@ -4,8 +4,10 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { mount } from '@vue/test-utils';
+import { nextTick } from 'vue';
 import MastermindTile from './MastermindTile.vue';
 import EnigmaGuessPicker from './EnigmaGuessPicker.vue';
+import AssassinShuffleChooser from './AssassinShuffleChooser.vue';
 import type {
   UIFortifier,
   UIMastermindState,
@@ -1313,5 +1315,300 @@ describe('MastermindTile — Killmonger Wound him + Wounds badge (WP-771 / D-246
       });
       assert.equal(vanquished.find(woundsBadge).exists(), false, `isGameOver ${isGameOver}`);
     }
+  });
+});
+
+const INDESTRUCTIBLE_MAN_LOCK =
+  "You can't use Attack to fight Indestructible Man. Shuffle two Elite Assassins from your Victory Pile into the Villain Deck to fight him.";
+
+/**
+ * One projected Elite Assassin, as `shuffleFight.eligibleAssassins` carries it.
+ *
+ * @param slug - The card slug and copy suffix.
+ * @param name - The card name.
+ * @returns A display entry with art.
+ */
+function eliteAssassin(slug: string, name: string): { extId: string; display: UIMastermindState['display'] } {
+  const extId = `bkwd-villain-elite-assassins-${slug}`;
+  return { extId, display: { extId, name, imageUrl: `https://images.legendary-arena.com/${slug}.webp`, cost: null } };
+}
+
+const ELIGIBLE_ASSASSINS = [
+  eliteAssassin('snapdragon-01', 'Snapdragon'),
+  eliteAssassin('black-lotus-00', 'Black Lotus'),
+  eliteAssassin('snapdragon-02', 'Snapdragon'),
+];
+
+/**
+ * Indestructible Man as WP-768 projects him: the attack lock in fortifiedReason and the
+ * shuffle-fight state for the active player.
+ *
+ * @param shuffle - Overrides for the shuffleFight projection.
+ * @param over - Overrides for the Mastermind.
+ * @returns The projected Mastermind.
+ */
+function indestructibleMan(
+  shuffle: Partial<NonNullable<UIMastermindState['shuffleFight']>> = {},
+  over: Partial<UIMastermindState> = {},
+): UIMastermindState {
+  return mastermindLive({
+    id: 'bkwd/indestructible-man',
+    display: { extId: 'bkwd-mastermind-indestructible-man', name: 'Indestructible Man', imageUrl: 'https://images.legendary-arena.com/im.webp', cost: 4 },
+    fightCost: 5,
+    fortifiedReason: INDESTRUCTIBLE_MAN_LOCK,
+    shuffleFight: {
+      requiredCount: 2,
+      isUsedThisTurn: false,
+      isAvailable: true,
+      eligibleAssassins: ELIGIBLE_ASSASSINS,
+      ...shuffle,
+    },
+    ...over,
+  });
+}
+
+/**
+ * The same Mastermind with no engine reason (the engine drops it once he is vanquished).
+ *
+ * @param mastermind - The projected Mastermind.
+ * @returns A copy without fortifiedReason.
+ */
+function withoutFortifiedReason(mastermind: UIMastermindState): UIMastermindState {
+  const copy = { ...mastermind };
+  delete copy.fortifiedReason;
+  return copy;
+}
+
+/**
+ * The open Assassin chooser. It is teleported to document.body, so findComponent follows the
+ * component tree to it.
+ */
+function assassinChooser(wrapper: ReturnType<typeof mount>): ReturnType<ReturnType<typeof mount>['findComponent']> {
+  return wrapper.findComponent(AssassinShuffleChooser);
+}
+
+/**
+ * Picks the first two Assassins in the open chooser and confirms.
+ *
+ * @param wrapper - The mounted tile with the chooser open.
+ */
+async function chooseFirstTwoAssassins(wrapper: ReturnType<typeof mount>): Promise<void> {
+  const options = assassinChooser(wrapper).findAll('[data-testid="play-assassin-option"]');
+  await options[0]!.trigger('click');
+  await options[1]!.trigger('click');
+  await assassinChooser(wrapper).find('[data-testid="play-assassin-confirm"]').trigger('click');
+}
+
+describe('MastermindTile — Indestructible Man shuffle-fight (WP-770 / D-24601)', () => {
+  const shuffleButton = '[data-testid="play-mastermind-shuffle-fight"]';
+  const richEconomy = economy({ attack: 12, availableAttack: 12, excessiveViolenceAvailable: true });
+
+  test('AC 1: without shuffleFight there is no shuffle button, even under another lock', () => {
+    const { submitMove } = recorder();
+    for (const mastermind of [mastermindLive(), mastermindLive({ fortifiedReason: 'Colleen Wing fortifies the Mastermind.' })]) {
+      const wrapper = mount(MastermindTile, { props: { mastermind, currentStage: 'main', economy: richEconomy, submitMove } });
+      assert.equal(wrapper.find(shuffleButton).exists(), false);
+      assert.equal(wrapper.findComponent(AssassinShuffleChooser).exists(), false);
+    }
+  });
+
+  test('AC 2: Fight keeps the card but never fights; no Fight N badge and no Excessive Violence', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: { mastermind: indestructibleMan(), currentStage: 'main', economy: richEconomy, submitMove },
+    });
+    const fight = wrapper.find('[data-testid="play-mastermind-button"]');
+    assert.equal(fight.attributes('disabled'), '');
+    assert.equal(fight.attributes('title'), INDESTRUCTIBLE_MAN_LOCK);
+    const cardTile = fight.find('[data-testid="card-tile"]');
+    assert.ok(cardTile.exists(), 'the Mastermind card art still renders');
+    assert.equal(cardTile.classes('card-tile--interactive'), false, 'the card is not interactive');
+    assert.match(wrapper.find('[data-testid="play-mastermind-tactics-remaining"]').text(), /Tactics remaining: 4/);
+    assert.equal(wrapper.find('[data-testid="play-mastermind-fight-cost"]').exists(), false, 'no Fight N badge');
+    assert.equal(wrapper.find('[data-testid="play-mastermind-ev"]').exists(), false, 'no Excessive Violence');
+    (wrapper.vm as unknown as { onFight: () => void }).onFight();
+    await nextTick();
+    assert.equal(calls.length, 0, 'even a direct onFight() submits nothing');
+  });
+
+  test('AC 3: the Fight title is the lock reason, never the turn, stage or cost reason', () => {
+    const { submitMove } = recorder();
+    const cases = [
+      { isViewerTurn: false, currentStage: 'main', economy: richEconomy },
+      { isViewerTurn: true, currentStage: 'start', economy: richEconomy },
+      { isViewerTurn: true, currentStage: 'main', economy: economy({ attack: 1, availableAttack: 1 }) },
+    ];
+    for (const props of cases) {
+      const wrapper = mount(MastermindTile, { props: { mastermind: indestructibleMan(), submitMove, ...props } });
+      assert.equal(wrapper.find('[data-testid="play-mastermind-button"]').attributes('title'), INDESTRUCTIBLE_MAN_LOCK, JSON.stringify(props));
+    }
+    const noReason = mount(MastermindTile, {
+      props: { mastermind: withoutFortifiedReason(indestructibleMan()), currentStage: 'main', economy: richEconomy, submitMove },
+    });
+    assert.equal(noReason.find('[data-testid="play-mastermind-button"]').attributes('title'), "Indestructible Man can't be fought right now.");
+  });
+
+  test('AC 4: the shuffle button shows its label; hidden once vanquished or game over; shown for a Final Blow', () => {
+    const { submitMove } = recorder();
+    const live = mount(MastermindTile, { props: { mastermind: indestructibleMan(), currentStage: 'main', economy: richEconomy, submitMove } });
+    assert.equal(live.find(shuffleButton).text(), 'Shuffle 2 Elite Assassins → Fight');
+    assert.ok(live.find(shuffleButton).find('svg').exists(), 'the crossed-swords SVG icon');
+    const vanquished = mount(MastermindTile, {
+      props: { mastermind: withoutFortifiedReason(indestructibleMan({ isAvailable: false }, { tacticsRemaining: 0 })), currentStage: 'main', economy: richEconomy, submitMove },
+    });
+    assert.equal(vanquished.find(shuffleButton).exists(), false);
+    assert.match(vanquished.find('[data-testid="play-mastermind-button"]').attributes('title')!, /All tactics defeated/);
+    const over = mount(MastermindTile, { props: { mastermind: indestructibleMan(), currentStage: 'main', economy: richEconomy, submitMove, isGameOver: true } });
+    assert.equal(over.find(shuffleButton).exists(), false);
+    const finalBlow = mount(MastermindTile, {
+      props: { mastermind: indestructibleMan({}, { tacticsRemaining: 0, finalBlowPending: true }), currentStage: 'main', economy: richEconomy, submitMove },
+    });
+    assert.equal(finalBlow.find(shuffleButton).attributes('disabled'), undefined);
+  });
+
+  test('AC 5a: the shuffle button is gated on turn, stage, then the heal lock; disabled clicks open nothing', async () => {
+    const { submitMove } = recorder();
+    const offTurn = mount(MastermindTile, { props: { mastermind: indestructibleMan(), currentStage: 'main', isViewerTurn: false, economy: richEconomy, submitMove } });
+    assert.equal(offTurn.find(shuffleButton).attributes('title'), 'It is not your turn.');
+    const start = mount(MastermindTile, { props: { mastermind: indestructibleMan(), currentStage: 'start', economy: richEconomy, submitMove } });
+    assert.match(start.find(shuffleButton).attributes('title')!, /Only available during the Main/);
+    const healed = mount(MastermindTile, { props: { mastermind: indestructibleMan(), currentStage: 'main', hasHealedThisTurn: true, economy: richEconomy, submitMove } });
+    assert.match(healed.find(shuffleButton).attributes('title')!, /cannot recruit or fight after healing this turn/);
+    for (const wrapper of [offTurn, start, healed]) {
+      assert.equal(wrapper.find(shuffleButton).attributes('disabled'), '');
+      await wrapper.find(shuffleButton).trigger('click');
+      assert.equal(assassinChooser(wrapper).exists(), false);
+    }
+  });
+
+  test('AC 5b: then once per turn, the eligible count, the haunt, and the engine isAvailable', () => {
+    const { submitMove } = recorder();
+    const titleFor = (mastermind: UIMastermindState): string | undefined =>
+      mount(MastermindTile, { props: { mastermind, currentStage: 'main', economy: richEconomy, submitMove } }).find(shuffleButton).attributes('title');
+    assert.equal(titleFor(indestructibleMan({ isUsedThisTurn: true, isAvailable: false })), "You've already shuffled Assassins this turn.");
+    assert.equal(titleFor(indestructibleMan({ eligibleAssassins: [ELIGIBLE_ASSASSINS[0]!], isAvailable: false })), 'Needs 2 Elite Assassins in your Victory Pile.');
+    assert.equal(titleFor(indestructibleMan({ isAvailable: false }, { isHaunting: true })), 'The Mastermind is haunting a Hero in the HQ. Exorcise that Hero first.');
+    const guardReason = 'The Blob guards the Mastermind. Defeat The Blob first.';
+    assert.equal(titleFor(indestructibleMan({ isAvailable: false }, { fortifiedReason: guardReason })), guardReason);
+    const open = mount(MastermindTile, { props: { mastermind: indestructibleMan(), currentStage: 'main', economy: economy(), submitMove } });
+    assert.equal(open.find(shuffleButton).attributes('disabled'), undefined, 'enabled at 0 Attack: Attack is never spent');
+    assert.match(open.find(shuffleButton).attributes('title')!, /to fight Indestructible Man \(once per turn\)/);
+  });
+
+  test('AC 6: clicking opens the chooser as a dialog under document.body, listing the eligible Assassins', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MastermindTile, { props: { mastermind: indestructibleMan(), currentStage: 'main', economy: richEconomy, submitMove } });
+    await wrapper.find(shuffleButton).trigger('click');
+    const dialog = assassinChooser(wrapper).find('[data-testid="play-assassin-chooser"]');
+    assert.equal(dialog.attributes('role'), 'dialog');
+    assert.ok(document.body.contains(dialog.element), 'mounted in the document');
+    assert.equal(dialog.element.closest('[data-testid="play-mastermind-tile"]'), null, 'outside the tile');
+    const options = assassinChooser(wrapper).findAll('[data-testid="play-assassin-option"]');
+    assert.deepEqual(options.map((option) => option.attributes('data-ext-id')), ELIGIBLE_ASSASSINS.map((entry) => entry.extId));
+    assert.match(options[1]!.text(), /Black Lotus/);
+    assert.equal(calls.length, 0, 'opening submits nothing');
+    wrapper.unmount();
+  });
+
+  test('AC 7: Confirm needs exactly 2 and submits fightMastermind with the shuffleAssassinIds', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MastermindTile, { props: { mastermind: indestructibleMan(), currentStage: 'main', economy: richEconomy, submitMove } });
+    await wrapper.find(shuffleButton).trigger('click');
+    const options = assassinChooser(wrapper).findAll('[data-testid="play-assassin-option"]');
+    const confirm = (): ReturnType<typeof wrapper.find> => assassinChooser(wrapper).find('[data-testid="play-assassin-confirm"]');
+    for (const option of options) {
+      await option.trigger('click');
+    }
+    assert.equal(confirm().attributes('disabled'), '', '3 chosen');
+    await options[0]!.trigger('click');
+    assert.equal(options[0]!.attributes('aria-pressed'), 'false');
+    assert.equal(confirm().attributes('disabled'), undefined, '2 chosen');
+    await confirm().trigger('click');
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]!.name, 'fightMastermind');
+    assert.deepEqual(calls[0]!.args, { shuffleAssassinIds: [ELIGIBLE_ASSASSINS[1]!.extId, ELIGIBLE_ASSASSINS[2]!.extId] });
+    assert.equal(assassinChooser(wrapper).exists(), false, 'the chooser closes');
+    wrapper.unmount();
+  });
+
+  test('AC 8: Escape, Cancel and a backdrop click close without fighting, and focus returns to the shuffle button', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      attachTo: document.body,
+      props: { mastermind: indestructibleMan(), currentStage: 'main', economy: richEconomy, submitMove },
+    });
+    const closers: Array<() => Promise<void>> = [
+      async () => {
+        document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape' }));
+      },
+      async () => assassinChooser(wrapper).find('[data-testid="play-assassin-cancel"]').trigger('click'),
+      async () => assassinChooser(wrapper).find('[data-testid="play-assassin-backdrop"]').trigger('click'),
+    ];
+    for (const close of closers) {
+      await wrapper.find(shuffleButton).trigger('click');
+      await assassinChooser(wrapper).find('[data-testid="play-assassin-chooser"]').trigger('click');
+      assert.ok(assassinChooser(wrapper).exists(), 'a click inside the panel keeps it open');
+      await close();
+      await nextTick();
+      await nextTick();
+      assert.equal(assassinChooser(wrapper).exists(), false);
+      assert.equal(document.activeElement, wrapper.find(shuffleButton).element, 'focus returns to the shuffle button');
+    }
+    assert.equal(calls.length, 0);
+    wrapper.unmount();
+  });
+
+  test('AC 9: with an Enigma code the guess comes next, and is sent with the Assassins', async () => {
+    const enigmaCode = { isRevealed: false, cards: [{ peekedBy: [] }] };
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      attachTo: document.body,
+      props: { mastermind: indestructibleMan(), currentStage: 'main', economy: richEconomy, submitMove, enigmaCode },
+    });
+    await wrapper.find(shuffleButton).trigger('click');
+    await chooseFirstTwoAssassins(wrapper);
+    assert.equal(calls.length, 0, 'no fight before the guess');
+    assert.equal(assassinChooser(wrapper).exists(), false);
+    await guessPicker(wrapper).find('[data-testid="play-enigma-guess-cancel"]').trigger('click');
+    await nextTick();
+    await nextTick();
+    assert.equal(guessPicker(wrapper).exists(), false);
+    assert.equal(calls.length, 0, 'cancel fights nothing');
+    assert.equal(document.activeElement, wrapper.find(shuffleButton).element, 'focus returns to the shuffle button');
+
+    await wrapper.find(shuffleButton).trigger('click');
+    await chooseFirstTwoAssassins(wrapper);
+    await guessPicker(wrapper).find('[data-testid="play-enigma-guess-0-grey"]').trigger('click');
+    await guessPicker(wrapper).find('[data-testid="play-enigma-guess-submit"]').trigger('click');
+    assert.equal(calls.length, 1);
+    assert.deepEqual(calls[0]!.args, {
+      shuffleAssassinIds: [ELIGIBLE_ASSASSINS[0]!.extId, ELIGIBLE_ASSASSINS[1]!.extId],
+      enigmaGuess: ['grey'],
+    });
+    wrapper.unmount();
+  });
+
+  test('AC 10: an open chooser, and the hand-off Enigma picker, close when the shuffle-fight is no longer possible', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MastermindTile, { props: { mastermind: indestructibleMan(), currentStage: 'main', economy: richEconomy, submitMove } });
+    await wrapper.find(shuffleButton).trigger('click');
+    await wrapper.setProps({ isViewerTurn: false });
+    assert.equal(assassinChooser(wrapper).exists(), false, 'the turn passed');
+    await wrapper.setProps({ isViewerTurn: true });
+    await wrapper.find(shuffleButton).trigger('click');
+    assert.ok(assassinChooser(wrapper).exists(), 'reopened');
+    await wrapper.setProps({ isGameOver: true });
+    assert.equal(assassinChooser(wrapper).exists(), false, 'the game ended');
+
+    const enigmaCode = { isRevealed: false, cards: [{ peekedBy: [] }] };
+    const withCode = mount(MastermindTile, { props: { mastermind: indestructibleMan(), currentStage: 'main', economy: richEconomy, submitMove, enigmaCode } });
+    await withCode.find(shuffleButton).trigger('click');
+    await chooseFirstTwoAssassins(withCode);
+    assert.ok(guessPicker(withCode).exists(), 'the hand-off picker is open');
+    await withCode.setProps({ isViewerTurn: false });
+    assert.equal(guessPicker(withCode).exists(), false, 'the hand-off picker closes when the turn passes');
+    assert.equal(calls.length, 0);
+    wrapper.unmount();
+    withCode.unmount();
   });
 });

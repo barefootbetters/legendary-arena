@@ -10,6 +10,35 @@
 
 ## Current State
 
+### WP-770 / EC-807 — Indestructible Man client: a "Shuffle 2 Elite Assassins → Fight" button and an Assassin chooser on the Mastermind tile (consumes D-24601) (2026-11-18)
+
+**User-visible on `play.legendary-arena.com` after deploy.** Since WP-768 a human could not fight Indestructible Man at all. Checked on 2026-11-18, the live client (`9ff09d0`) never sent `shuffleAssassinIds`, so only bots and autoplay could defeat his Tactics.
+
+Now his tile works like this:
+- The Mastermind card stays, but its Fight button always says why Attack can't fight him (never "Needs N attack" or "It is not your turn."), with no "Fight N" badge and no Excessive Violence.
+- A teal **"Shuffle 2 Elite Assassins → Fight"** button opens a dialog listing the Elite Assassins in your Victory Pile, with art. Pick exactly two and press "Shuffle and fight".
+- Under The Unbreakable Enigma Code, the guess comes next and is sent with the Assassins.
+- The button explains itself when it can't be used: not your turn or step, after a Heal, "You've already shuffled Assassins this turn.", "Needs 2 Elite Assassins in your Victory Pile.", while he haunts a Hero, or the guard reason when a Villain guards him.
+
+- **Client.** `MastermindTile.vue`:
+  - a top `gateForFight` arm (the lock or vanquished reason whenever `shuffleFight` is projected);
+  - the badge hide and the `onFight` guard;
+  - the shuffle button, gated turn / stage → heal → used → count → haunt → the engine's `isAvailable`;
+  - the teleported chooser, and the Enigma hand-off (`{ shuffleAssassinIds, enigmaGuess }`);
+  - the close watch keyed on the shuffle gate for him.
+
+  New `AssassinShuffleChooser.vue`: a body-level dialog, unrestricted toggles, Confirm at exactly `requiredCount`, ids in projected order, Escape / Cancel / backdrop close, focus returned to the button.
+- **Tests.** arena-client 2746 → 2763 / 0 (+17). Every other package is unchanged with 0 fail: game-engine 7450; server 1864 (207 DB-gated skips); dashboard 622; registry-viewer 354; registry 313; legends-board 138; lagn-spec 108; preplan 52; engine-runner 20; vue-sfc-loader 11; replay-producer 4. `pnpm -r build` 0; typecheck 0; revert proofs 6/6; no existing test edited.
+- **Preview** at 1280×720 and 375×812:
+  - the tile is no wider than with the EV button;
+  - it is 15 px taller (three-line label), so the desktop board's fit scale goes 0.600 → 0.591 in his matches;
+  - the chooser's cards are `md` (the gated `sm` truncated the names).
+- **Live-verify (D-24026)** pending: a NEW human Indestructible Man match after the deploy.
+- **Follow-ups.**
+  - Export `UIShuffleFightState` from the engine root (cosmetic).
+  - Split the 62-line `gateForFight` (pre-existing).
+  - Mad Monk's tactic-becomes-a-Villain substrate and Epic Indestructible Man (WP-768 follow-ups).
+
 ### WP-771 / EC-808 — Killmonger client: a "Wound him" button and a Wounds badge on the Mastermind tile (consumes D-24602) (2026-11-17)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Since WP-769 a human could not Wound Killmonger, so a human-only Killmonger match could take no Tactic. Now, while his Attack is above 0, the Mastermind tile shows **"Wound him — spend N → +1 Recruit"** (N = his current Attack): a click spends that Attack, puts a Wound on him (−1 Attack) and gives +1 Recruit. A **"Wounds: n"** pill counts them until he is vanquished. The disabled Fight button now explains the lock ("Killmonger can't be fought while he has more than 0 Attack…") even when you are short on Attack, instead of "Needs N attack", and its "Fight N" badge no longer turns red under the lock. At 0 Attack the button goes away and Fight enables. The Throw from the Waterfall discard prompt is titled "Throw from the Waterfall — choose a card to discard".

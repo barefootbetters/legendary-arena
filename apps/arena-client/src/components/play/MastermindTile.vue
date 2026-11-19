@@ -1,6 +1,7 @@
 <script lang="ts">
-import { defineComponent, ref, watch, type PropType } from 'vue';
+import { defineComponent, nextTick, ref, watch, type PropType } from 'vue';
 import type {
+  UIDisplayEntry,
   UIEnigmaCodeState,
   UIFortifier,
   UIMastermindState,
@@ -9,12 +10,23 @@ import type {
 import { KILLMONGER_ATTACK_LOCK_REASON } from '@legendary-arena/game-engine';
 import { useTurnActions, healLockGate } from '../../composables/useTurnActions';
 import { useCardCostGating, type GatingResult } from '../../composables/useCardCostGating';
+import AssassinShuffleChooser from './AssassinShuffleChooser.vue';
 import CardTile from './CardTile.vue';
 import DarkPortalMarker from './DarkPortalMarker.vue';
 import CrossedSwordsIcon from './CrossedSwordsIcon.vue';
 import EnigmaGuessPicker from './EnigmaGuessPicker.vue';
 import FortifiedVillains from './FortifiedVillains.vue';
 import type { SubmitMove } from './uiMoveName.types';
+
+// why: WP-770 — the engine does not export UIShuffleFightState, so the tile names it through the
+// exported UIMastermindState (a type-only read; no engine change).
+type ShuffleFightState = NonNullable<UIMastermindState['shuffleFight']>;
+
+const HAUNTING_REASON = 'The Mastermind is haunting a Hero in the HQ. Exorcise that Hero first.';
+const VANQUISHED_REASON =
+  'All tactics defeated — the Mastermind is vanquished and victory is assured. Finish your turn, then End Turn to win.';
+// why: WP-770 — shown only if the engine ever omits its own reason; every live case carries one.
+const SHUFFLE_FIGHT_FALLBACK_REASON = "Indestructible Man can't be fought right now.";
 
 /**
  * Mastermind tile — renders the mastermind id + tactics-remaining counter
@@ -40,9 +52,16 @@ import type { SubmitMove } from './uiMoveName.types';
  * predate the field. A `Fight N` badge shows the projected cost whenever it
  * differs from the printed one. Disabled-state tooltip precedence locked at
  * EC-132 §3 (stage → resource → structural; "all tactics defeated" is the
- * structural lock), with one exception: Killmonger's attack lock (WP-771 /
+ * structural lock), with two exceptions: Killmonger's attack lock (WP-771 /
  * D-24602) is shown ahead of the resource gate, because it refuses the fight at
- * any attack.
+ * any attack; and Indestructible Man's lock (WP-770 / D-24601) is shown ahead of
+ * every gate, stage included, because Attack can never fight him.
+ *
+ * Indestructible Man (WP-770 / D-24601): while the engine projects
+ * `shuffleFight`, the Fight button stays (it holds the card art) but never
+ * fights; a "Shuffle 2 Elite Assassins → Fight" button opens the
+ * AssassinShuffleChooser dialog, which submits `fightMastermind` with the two
+ * chosen `shuffleAssassinIds` (after the Enigma guess, when the code holds a card).
  *
  * Killmonger (WP-771 / D-24602): while the engine projects `woundable`, a
  * "Wound him" button submits `woundMastermind` (spend his Attack, +1 Recruit);
@@ -59,7 +78,7 @@ import type { SubmitMove } from './uiMoveName.types';
  */
 export default defineComponent({
   name: 'MastermindTile',
-  components: { CardTile, DarkPortalMarker, CrossedSwordsIcon, EnigmaGuessPicker, FortifiedVillains },
+  components: { AssassinShuffleChooser, CardTile, DarkPortalMarker, CrossedSwordsIcon, EnigmaGuessPicker, FortifiedVillains },
   emits: ['read'],
   props: {
     mastermind: {
@@ -131,8 +150,12 @@ export default defineComponent({
   },
   setup(props, { emit }) {
     // why: WP-830 / D-24763 — null while no guess is being made; otherwise whether the fight the
-    // guess starts uses Excessive Violence.
-    const enigmaGuessFight = ref<null | { useExcessiveViolence: boolean }>(null);
+    // guess starts uses Excessive Violence. WP-770 / D-24601: an Indestructible Man shuffle-fight
+    // also holds the chosen Assassins here, because the engine takes the guess with them.
+    const enigmaGuessFight = ref<null | { useExcessiveViolence: boolean; shuffleAssassinIds?: string[] }>(null);
+    // why: WP-770 / D-24601 — whether the Elite Assassin chooser dialog is open.
+    const isAssassinChooserOpen = ref(false);
+    const shuffleFightButton = ref<HTMLButtonElement | null>(null);
 
     /**
      * Whether a Mastermind fight needs an Enigma Code guess first.
@@ -164,10 +187,29 @@ export default defineComponent({
      * @param guess - One color per Enigma card, in code order.
      */
     function onEnigmaGuess(guess: string[]): void {
-      const useExcessiveViolence = enigmaGuessFight.value?.useExcessiveViolence === true;
+      const pendingFight = enigmaGuessFight.value;
       enigmaGuessFight.value = null;
-      // why: the client submits INTENT; the engine reveals the code and decides.
-      props.submitMove('fightMastermind', useExcessiveViolence ? { enigmaGuess: guess, useExcessiveViolence: true } : { enigmaGuess: guess });
+      // why: the client submits INTENT; the engine reveals the code and decides. WP-770 /
+      // D-24601: the shuffle-fight sends its Assassins with the guess (the engine shuffles them
+      // in first, then settles the guess), and never Excessive Violence.
+      if (pendingFight?.shuffleAssassinIds !== undefined) {
+        props.submitMove('fightMastermind', { shuffleAssassinIds: pendingFight.shuffleAssassinIds, enigmaGuess: guess });
+      } else if (pendingFight?.useExcessiveViolence === true) {
+        props.submitMove('fightMastermind', { enigmaGuess: guess, useExcessiveViolence: true });
+      } else {
+        props.submitMove('fightMastermind', { enigmaGuess: guess });
+      }
+    }
+
+    /** Closes the Enigma guess picker without fighting. */
+    function onEnigmaCancel(): void {
+      const wasShuffleFight = enigmaGuessFight.value?.shuffleAssassinIds !== undefined;
+      enigmaGuessFight.value = null;
+      // why: WP-770 — the chooser that opened this picker is gone, so focus would fall to the
+      // page; return it to the shuffle button, as the chooser's own close does.
+      if (wasShuffleFight) {
+        focusShuffleFightButton();
+      }
     }
 
     function mastermindFightCost(): number | null {
@@ -212,6 +254,11 @@ export default defineComponent({
     }
 
     function hasFightCostBadge(): boolean {
+      // why: WP-770 / D-24601 — Indestructible Man is never fought with Attack, so his
+      // projected fightCost is not a price anyone pays; a "Fight N" badge would mislead.
+      if (isShuffleFightMastermind()) {
+        return false;
+      }
       // why: WP-750 / D-24574 — players see the number the engine will actually
       // charge, only when it differs from the printed cost. Never rendered from the
       // fallback: an absent fightCost (an old snapshot or fixture) shows no badge.
@@ -221,12 +268,39 @@ export default defineComponent({
       return props.mastermind.fightCost !== props.mastermind.display.cost;
     }
 
+    /**
+     * Whether the Mastermind is fought only by the Indestructible Man shuffle-fight.
+     *
+     * @returns true while the engine projects `shuffleFight` (WP-768 / D-24601).
+     */
+    function isShuffleFightMastermind(): boolean {
+      return props.mastermind.shuffleFight !== undefined;
+    }
+
+    /**
+     * The plain Fight button's gate for Indestructible Man: always refused.
+     *
+     * @returns blocked with the vanquished reason, or the engine's lock reason.
+     */
+    function gateForAttackLockedFight(): GatingResult {
+      if (isVanquished()) {
+        return { allowed: false, reason: VANQUISHED_REASON };
+      }
+      return { allowed: false, reason: props.mastermind.fortifiedReason ?? SHUFFLE_FIGHT_FALLBACK_REASON };
+    }
+
     function gateForFight(): GatingResult {
       // why: disabled-state tooltip precedence per EC-132 §3 — stage →
       // resource → structural. Stage gate first; then cost gate (consumes
       // WP-128 economy.availableAttack); finally the structural-lock
-      // "all tactics defeated" check. One exception (WP-771 / D-24602, "the
-      // cost-before-lock tile order"): Killmonger's lock sits before the cost gate.
+      // "all tactics defeated" check. Two exceptions: Killmonger's lock sits before
+      // the cost gate (WP-771 / D-24602, "the cost-before-lock tile order"), and
+      // Indestructible Man's sits before every gate (WP-770 / D-24601): Attack can
+      // never fight him, so a stage or "Needs N attack" reason would be false advice.
+      // This arm also hides the Excessive Violence button and the Enigma path.
+      if (isShuffleFightMastermind()) {
+        return gateForAttackLockedFight();
+      }
       const stage = useTurnActions(props.currentStage, props.isViewerTurn).canFightMastermind();
       if (!stage.allowed) {
         return stage;
@@ -253,10 +327,7 @@ export default defineComponent({
       // would be a WP-750 / D-24574 dead button. Every submit path (plain, Excessive
       // Violence, the Enigma picker) goes through this gate, so one arm covers them all.
       if (props.mastermind.isHaunting === true) {
-        return {
-          allowed: false,
-          reason: 'The Mastermind is haunting a Hero in the HQ. Exorcise that Hero first.',
-        };
+        return { allowed: false, reason: HAUNTING_REASON };
       }
       // why: WP-873 / D-24818 — while a Villain fortifies the Mastermind (Colleen Wing) the
       // engine's fightMastermind refuses (isMastermindFortified). A structural lock, so it sits
@@ -276,34 +347,182 @@ export default defineComponent({
         if (props.mastermind.finalBlowPending === true) {
           return { allowed: true, reason: null };
         }
-        return {
-          allowed: false,
-          reason: 'All tactics defeated — the Mastermind is vanquished and victory is assured. Finish your turn, then End Turn to win.',
-        };
+        return { allowed: false, reason: VANQUISHED_REASON };
       }
       return { allowed: true, reason: null };
     }
 
-    // why: WP-830 / D-24763 — an open picker closes once the fight is no longer possible (the turn
-    // ended or left the main stage, the Attack is gone, the game is over), so it never lingers
-    // into another turn.
+    /**
+     * Gates the Indestructible Man shuffle-fight button (WP-770 / D-24601).
+     *
+     * @returns allowed, or blocked with a full-sentence reason.
+     */
+    function gateForShuffleFight(): GatingResult {
+      const shuffleFight = props.mastermind.shuffleFight;
+      if (shuffleFight === undefined) {
+        return { allowed: false, reason: SHUFFLE_FIGHT_FALLBACK_REASON };
+      }
+      const stage = useTurnActions(props.currentStage, props.isViewerTurn).canFightMastermind();
+      if (!stage.allowed) {
+        return stage;
+      }
+      // why: the shuffle-fight is a fight, so the D-24180 heal lock refuses it, as in gateForFight
+      // (the tile's useTurnActions call does not pass the heal flag).
+      const healLock = healLockGate(props.hasHealedThisTurn);
+      if (!healLock.allowed) {
+        return healLock;
+      }
+      return gateForShuffleFightBoard(shuffleFight);
+    }
+
+    /**
+     * The board arms of the shuffle-fight gate, all read from the engine's projection.
+     *
+     * // why: the engine owns eligibility. These arms only pick the clearest reason; `isAvailable`
+     * (unused, enough Assassins, a fight target left, not haunting, not guarded) is the final word,
+     * so the button is never enabled while the engine would refuse.
+     *
+     * @param shuffleFight - The projected shuffle-fight state.
+     * @returns allowed, or blocked with a full-sentence reason.
+     */
+    function gateForShuffleFightBoard(shuffleFight: ShuffleFightState): GatingResult {
+      if (shuffleFight.isUsedThisTurn) {
+        return { allowed: false, reason: "You've already shuffled Assassins this turn." };
+      }
+      if (shuffleFight.eligibleAssassins.length < shuffleFight.requiredCount) {
+        return { allowed: false, reason: `Needs ${shuffleFight.requiredCount} Elite Assassins in your Victory Pile.` };
+      }
+      if (props.mastermind.isHaunting === true) {
+        return { allowed: false, reason: HAUNTING_REASON };
+      }
+      if (!shuffleFight.isAvailable) {
+        // why: by here the only cause left is a guard (Colleen Wing, The Blob), whose reason the
+        // projection puts in fortifiedReason ahead of the attack lock.
+        return { allowed: false, reason: props.mastermind.fortifiedReason ?? SHUFFLE_FIGHT_FALLBACK_REASON };
+      }
+      return { allowed: true, reason: null };
+    }
+
+    /**
+     * Whether a fight that a dialog started can still happen.
+     *
+     * @returns the shuffle gate for Indestructible Man, else the plain Fight gate; false once over.
+     */
+    function isFightPossible(): boolean {
+      if (props.isGameOver) {
+        return false;
+      }
+      if (isShuffleFightMastermind()) {
+        return gateForShuffleFight().allowed;
+      }
+      return gateForFight().allowed;
+    }
+
+    // why: WP-830 / D-24763 — an open Enigma picker closes once the fight is no longer possible
+    // (the turn ended or left the main stage, the Attack is gone, the game is over), so it never
+    // lingers into another turn. WP-770 / D-24601: for Indestructible Man the shuffle gate decides
+    // (the plain Fight gate is always closed for him), and the Assassin chooser closes too.
     watch(
-      () => gateForFight().allowed && !props.isGameOver,
-      (isFightPossible) => {
-        if (!isFightPossible) {
+      () => isFightPossible(),
+      (isStillPossible) => {
+        if (!isStillPossible) {
           enigmaGuessFight.value = null;
+          isAssassinChooserOpen.value = false;
         }
       },
     );
 
     function onFight(): void {
+      // why: WP-770 / D-24601 — Indestructible Man is fought only through the shuffle button;
+      // the disabled Fight button never submits for him, even if this is called directly.
+      if (isShuffleFightMastermind()) {
+        return;
+      }
       if (needsEnigmaGuess()) {
         enigmaGuessFight.value = { useExcessiveViolence: false };
         return;
       }
-      // why: empty-object payload — fightMastermind takes no arguments by
-      // engine design. The move always defeats the top tactic.
+      // why: empty-object payload — a plain fight sends no options (no Excessive Violence, no
+      // Enigma guess, no Assassins). The move defeats the top tactic.
       props.submitMove('fightMastermind', {});
+    }
+
+    /**
+     * Whether the shuffle-fight button shows: Indestructible Man, not vanquished, game running.
+     *
+     * @returns true while the shuffle-fight can still be offered.
+     */
+    function showShuffleFight(): boolean {
+      return isShuffleFightMastermind() && !isVanquished() && !props.isGameOver;
+    }
+
+    /**
+     * The shuffle-fight button's label.
+     *
+     * @returns "Shuffle 2 Elite Assassins → Fight".
+     */
+    function shuffleFightLabel(): string {
+      return `Shuffle ${props.mastermind.shuffleFight?.requiredCount ?? 0} Elite Assassins → Fight`;
+    }
+
+    /**
+     * The shuffle-fight button's tooltip.
+     *
+     * @returns the gate reason when disabled, otherwise what the shuffle-fight does.
+     */
+    function shuffleFightTitle(): string {
+      const gate = gateForShuffleFight();
+      if (!gate.allowed && gate.reason !== null) {
+        return gate.reason;
+      }
+      return `Shuffle ${props.mastermind.shuffleFight?.requiredCount ?? 0} Elite Assassins from your Victory Pile into the Villain Deck to fight Indestructible Man (once per turn).`;
+    }
+
+    /**
+     * The Assassins the chooser offers.
+     *
+     * @returns the engine's eligible list (empty outside the branch).
+     */
+    function eligibleAssassins(): UIDisplayEntry[] {
+      return props.mastermind.shuffleFight?.eligibleAssassins ?? [];
+    }
+
+    /** Opens the Assassin chooser when the shuffle-fight is allowed. */
+    function onShuffleFight(): void {
+      if (!gateForShuffleFight().allowed) {
+        return;
+      }
+      isAssassinChooserOpen.value = true;
+    }
+
+    /** Moves focus back to the shuffle-fight button after a dialog closes. */
+    function focusShuffleFightButton(): void {
+      void nextTick(() => {
+        shuffleFightButton.value?.focus();
+      });
+    }
+
+    /** Closes the Assassin chooser without fighting. */
+    function onAssassinChooserClose(): void {
+      isAssassinChooserOpen.value = false;
+      focusShuffleFightButton();
+    }
+
+    /**
+     * Fights with the chosen Assassins, after the Enigma guess when the code holds a card.
+     *
+     * @param assassinIds - The chosen Elite Assassins' ext_ids, in projected order.
+     */
+    function onAssassinsChosen(assassinIds: string[]): void {
+      isAssassinChooserOpen.value = false;
+      // why: WP-770 / D-24601 — the engine requires the Enigma guess on the shuffle-fight (it
+      // shuffles the Assassins in first, then settles the guess), so the guess comes next.
+      if (needsEnigmaGuess()) {
+        enigmaGuessFight.value = { useExcessiveViolence: false, shuffleAssassinIds: assassinIds };
+        return;
+      }
+      // why: the client submits INTENT; the engine validates the two ids and resolves the fight.
+      props.submitMove('fightMastermind', { shuffleAssassinIds: assassinIds });
     }
 
     function onRead(): void {
@@ -433,6 +652,17 @@ export default defineComponent({
     }
 
     return {
+      isAssassinChooserOpen,
+      shuffleFightButton,
+      showShuffleFight,
+      shuffleFightLabel,
+      shuffleFightTitle,
+      gateForShuffleFight,
+      eligibleAssassins,
+      onShuffleFight,
+      onAssassinChooserClose,
+      onAssassinsChosen,
+      onEnigmaCancel,
       showWoundCount,
       showWoundButton,
       gateForWound,
@@ -502,7 +732,9 @@ export default defineComponent({
     >
       <!-- why: disabled-state tooltip precedence locked at EC-132 §3
            (stage → resource → structural), except Killmonger's lock, which
-           sits before the resource gate (WP-771 / D-24602). Reason text is bound
+           sits before the resource gate (WP-771 / D-24602), and Indestructible
+           Man's, which sits before every gate: the button stays for his card art
+           but never fights (WP-770 / D-24601). Reason text is bound
            from useTurnActions / useCardCostGating + the structural "all
            tactics defeated" override. -->
       <!-- why: WP-750 / D-24574 — the frame is the badge's positioning context, so
@@ -581,6 +813,24 @@ export default defineComponent({
       :economy="economy"
       :submit-move="submitMove"
     />
+    <!-- why: WP-770 / D-24601 — Indestructible Man's only fight: "Once during each of your
+         turns, you may shuffle two Elite Assassins from your Victory Pile into the Villain
+         Deck. If you do, fight Indestructible Man." A sibling of the Fight button in normal
+         flow; it opens the Assassin chooser. Gated by the engine's shuffleFight projection. -->
+    <button
+      v-if="showShuffleFight()"
+      ref="shuffleFightButton"
+      type="button"
+      class="mastermind-shuffle-fight"
+      data-testid="play-mastermind-shuffle-fight"
+      :disabled="!gateForShuffleFight().allowed"
+      :aria-disabled="!gateForShuffleFight().allowed ? 'true' : undefined"
+      :title="shuffleFightTitle()"
+      @click="onShuffleFight"
+    >
+      <CrossedSwordsIcon class="mastermind-shuffle-fight-icon" />
+      <span class="mastermind-shuffle-fight-label">{{ shuffleFightLabel() }}</span>
+    </button>
     <!-- why: WP-771 / D-24602 — Killmonger's "spend [attack] equal to his [attack] to Wound him
          and get +1 [recruit]". A sibling of the Fight button in normal flow, shown only while the
          engine projects woundable. CrossedSwordsIcon is an inline SVG: font-independent, never
@@ -626,7 +876,18 @@ export default defineComponent({
         :key="enigmaPickerKey()"
         :enigma-code="enigmaCode"
         @submit="onEnigmaGuess"
-        @cancel="enigmaGuessFight = null"
+        @cancel="onEnigmaCancel"
+      />
+    </Teleport>
+    <!-- why: WP-770 / D-24601 — the Assassin chooser is a body-level dialog, like the Enigma
+         picker above: drawn inside the tile it would be tiny and tilted on the scaled board
+         (Jeff feedback on the in-tile Enigma picker, 2026-10-31). -->
+    <Teleport v-if="isAssassinChooserOpen && mastermind.shuffleFight !== undefined" to="body">
+      <AssassinShuffleChooser
+        :assassins="eligibleAssassins()"
+        :required-count="mastermind.shuffleFight.requiredCount"
+        @choose="onAssassinsChosen"
+        @close="onAssassinChooserClose"
       />
     </Teleport>
     <!-- why: the full card + Master-Strike / special rules open in the shared
@@ -860,6 +1121,40 @@ export default defineComponent({
 }
 
 .mastermind-wound-icon {
+  flex: 0 0 auto;
+  font-size: 0.85rem;
+}
+
+/* why: WP-770 / D-24601 — the Indestructible Man shuffle-fight button. Two classes (0,2,0) so
+   it outranks `.mastermind-tile button` (0,1,1, column flex): the icon sits beside the label.
+   The max-width wraps the label instead of widening the tile, because the desktop adversary
+   band does not wrap (the EV / Wound precedent). Deep teal, distinct from the red attack
+   buttons: it spends Assassins, not Attack. */
+.mastermind-tile .mastermind-shuffle-fight {
+  flex-direction: row;
+  align-items: center;
+  align-self: flex-start;
+  gap: 0.25rem;
+  max-width: 8.5rem;
+  margin-top: 0.2rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid #134e4a;
+  border-radius: 0.35rem;
+  background: linear-gradient(180deg, #0f766e 0%, #115e59 100%);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.mastermind-tile .mastermind-shuffle-fight:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.mastermind-shuffle-fight-icon {
   flex: 0 0 auto;
   font-size: 0.85rem;
 }
