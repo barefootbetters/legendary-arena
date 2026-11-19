@@ -3,9 +3,9 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2895,
+    "totalEntries": 2896,
     "byScope": {
-      "hero": 891,
+      "hero": 892,
       "villain": 773,
       "mastermind": 567,
       "scheme": 664
@@ -13,7 +13,7 @@
     "byStatus": {
       "executable": 880,
       "deferred": 19,
-      "condition": 88,
+      "condition": 89,
       "unsupported": 255,
       "unmarked": 1646,
       "subsystem": 7
@@ -5375,6 +5375,23 @@
       "handler": "",
       "wp": "",
       "decision": ""
+    },
+    {
+      "extId": "bkwd/black-widow",
+      "name": "Black Widow",
+      "set": "bkwd",
+      "scope": "hero",
+      "mechanic": "bystanders-or-undercover-threshold",
+      "status": "condition",
+      "handler": "",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "infiltrate-the-conspiracy",
+          "name": "Infiltrate the Conspiracy"
+        }
+      ]
     },
     {
       "extId": "bkwd/black-widow",
@@ -40671,6 +40688,7 @@
     "bkwd/black-widow": {
       "scope": "hero",
       "mechanics": [
+        "bystanders-or-undercover-threshold",
         "dark-memories",
         "dodge",
         "draw-threshold",

@@ -76,7 +76,7 @@
           "recruit": null,
           "abilities": [
             "You may send one of your Heroes [keyword:Undercover]. [keyword:undercover-your-hero]",
-            "You get +3[icon:attack] if you have at least 4 Bystanders and/or Undercover Heroes in your Victory Pile."
+            "You get +3[icon:attack] if you have at least 4 Bystanders and/or Undercover Heroes in your Victory Pile. [keyword:bystanders-or-undercover-threshold:4]"
           ]
         }
       ],

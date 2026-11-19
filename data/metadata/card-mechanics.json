@@ -215,6 +215,17 @@
       "hidden": true
     },
     {
+      "slug": "bystanders-or-undercover-threshold",
+      "label": "Bystanders Or Undercover Threshold",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 1,
+      "cardIds": [
+        "bkwd/black-widow"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "bystanders-threshold",
       "label": "Bystanders Threshold",
       "scope": "hero",
@@ -3078,6 +3089,7 @@
     },
     "bkwd/black-widow": {
       "mechanics": [
+        "bystanders-or-undercover-threshold",
         "dark-memories",
         "dodge",
         "draw-threshold",
