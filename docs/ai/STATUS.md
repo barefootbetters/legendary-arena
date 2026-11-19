@@ -33,7 +33,13 @@ Now his tile works like this:
   - the tile is no wider than with the EV button;
   - it is 15 px taller (three-line label), so the desktop board's fit scale goes 0.600 → 0.591 in his matches;
   - the chooser's cards are `md` (the gated `sm` truncated the names).
-- **Live-verify (D-24026)** pending: a NEW human Indestructible Man match after the deploy.
+- **Live-verify (D-24026) PASS 2026-11-19.** Operator 2p match `5O59pcTtXIS` (1 bot ally) on client `bf3d54e` (the #3444 merge), human seat driven by real clicks:
+  - At Start the shuffle button was disabled with the stage reason.
+  - With 20 Attack and no Assassins, Fight stayed disabled with the lock reason (no badge), and the shuffle read "Needs 2 Elite Assassins in your Victory Pile.".
+  - After Iron Maiden (2.2.4) and Black Lotus (4.2.2) were fought, the chooser opened as a body-level dialog with both cards' art. It read "0 of 2 chosen" with Confirm disabled, "1 of 2" was still disabled, and Confirm enabled at "2 of 2".
+  - "Shuffle and fight" logged 4.2.4 "Player 0 shuffled Iron Maiden … and Black Lotus … from their Victory Pile into the Villain Deck to fight Indestructible Man." and 4.2.5 "defeated the tactic \"Secrets of Indestructibility\"" (Tactics 4 → 3).
+  - The button then read "You've already shuffled Assassins this turn.".
+  - Not seen live (unit-tested): the Enigma hand-off, the haunt / guard reasons, Escape / backdrop close.
 - **Follow-ups.**
   - Export `UIShuffleFightState` from the engine root (cosmetic).
   - Split the 62-line `gateForFight` (pre-existing).
