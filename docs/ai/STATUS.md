@@ -52,7 +52,7 @@
 - **Engine:** new Runtime-Safe `hero/orderSafeEnabler.ts` (`ORDER_SAFE_ENABLER_CONDITION_TYPES`, `isOrderSafeEnablerHook`; compile-checked field tables); two barrel exports.
 - **Server:** `sequenceTeacher.logic.ts` qualifies enablers only through the engine predicate (`isOrderSafeEnabler` / `findOrderSafeEnabler`).
 - **Tests:** game-engine 7363 → 7378 / 0 (+15); server 1853 → 1864 / 0 fail, 207 DB-gated skips (+11, real-card cases with in-file controls); every other package 0 fail; hash pins unchanged.
-- **Live-verify (D-24026):** pending; needs a coach report first generated after the deploy on a staged operator match (WP-900 §Verification Steps), or `n/a` by Operator decision.
+- **Live-verify (D-24026) PASS 2026-11-18.** Server `e3091635`, client `09259e9`; operator 2p match `d9Zysg6EHkj` (1 bot ally), created after the deploy. One turn: Ninjitsu played first whiffed its Covert bonus (log "needs another Covert Hero played this turn"), then KGB Training and First Strike (both Covert) played after. The coach's single play-order tip for the seat read "Next time, play First Strike before Ninjitsu — you'd have landed its covert synergy bonus." — naming the order-safe First Strike, not the earlier-played KGB Training (order-unsafe `playedThisTurn`) the old deny-list would have named. Re-read `wasCached: true` (one paid call). `GET /api/me/matches/d9Zysg6EHkj/coach`, model sonnet-5.
 - **Follow-ups (D-24857 §8):** state-reading effect keywords, displaced-card losses, play-history teaching tips.
 
 ### WP-899 / EC-937 — "Cards you played this turn" keeps a card that left play mid-turn (D-24856) (2026-11-16)
