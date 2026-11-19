@@ -1,6 +1,6 @@
 # WP-770 — Indestructible Man client: Elite Assassin chooser + shuffle-fight (Arena Client)
 
-**Status:** **Done 2026-11-18** (live-verify D-24026 pending). Draft 2026-09-26; **reconciled 2026-11-18** against WP-768 as shipped (#3419, live-verified 2026-11-16) and the MastermindTile that WP-759, WP-771 (#3438) and #3440 left, on `origin/main` `9ff09d0e3`. Re-gate recorded below.
+**Status:** **Done 2026-11-18** (live-verify D-24026 PASS 2026-11-19, operator match `5O59pcTtXIS`). Draft 2026-09-26; **reconciled 2026-11-18** against WP-768 as shipped (#3419, live-verified 2026-11-16) and the MastermindTile that WP-759, WP-771 (#3438) and #3440 left, on `origin/main` `9ff09d0e3`. Re-gate recorded below.
 **Primary Layer:** App (`apps/arena-client`)
 **Dependencies:**
 - **WP-768 / D-24601** ✅ (Done 2026-11-16, live-verified 2026-11-16)
