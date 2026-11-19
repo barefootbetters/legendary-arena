@@ -1,0 +1,71 @@
+# EC-941 — Taskmaster's Thunderbolts do what they print: Jester, Joystick, Jack O'Lantern and Bullseye villain lines (Execution Checklist)
+
+**Source:** docs/ai/work-packets/WP-903-taskmasters-thunderbolts-villain-abilities.md
+**Layer:** Game Engine (five no-param villain primitives: a villain-deck reveal-and-play fire-site bridge, a Henchman-to-City pick on the D-24817 queue, an inline conditional per-player Escape Wound, a Hero-Deck-top icon-guess capture, an Escape KO-of-captured-Hero fire-site bridge) + card data (bkwd villain markers)
+**Risk Tier:** MEDIUM — gameplay rules on four bkwd villains (seven hollow lines start working); reuses the shipped capture structure (`G.villainAttachedHeroes`), the dynamic "N+" fight-cost, the D-24817 fight-pick queue and the villain-deck reveal bridge; no new `G` key; `finalStateHash` sentinels byte-identical; no auth, money, persistence or server surface
+
+## Before Starting
+- [ ] Scope lock: the target file set is `## Files to Produce`; any edit outside it is a FAIL — surface it as an amendment.
+- [ ] Baseline `origin/main` at or after the WP-903 reserve merge (#3449); WP-450 / 431 / 838 / 522 / 447 / 872 / 469 all shipped; D-24657 / 24608 / 24490 / 24780 in force.
+- [ ] `pnpm -r build` then `pnpm -r --no-bail test` exit 0; record per-package totals (engine at draft: 7450 / 0, 1683 suites).
+- [ ] Re-observe at HEAD: the eight Thunderbolts lines (WP §Assumes); `VILLAIN_EFFECT_PRIMITIVES.length` and its last entry (64 / `put-self-beside-mastermind` at draft, 70 if WP-902 landed first); in `rules/villainAbility.types.test.ts` the eleven `length` pins, the ordered list, "appended last" and the `unionMembers` keyset; the `villain/ambushNarrative.keywordless.test.ts` keyword-less-Ambush pin (21 at draft, 24 if WP-902 landed first) and `DELIBERATE_NO_OP_VILLAIN_PRIMITIVES` (`villainEffects.execute.ts` ~L1005); the `PendingVillainFightPick.primitive` union (3 members); `G.villainAttachedHeroes` (non-optional, `types.ts` L3100), `resolveBaseFightCost`'s dynamic branch + the variable-attack short-circuit (L473-478), the escape-site `moveAttachedHeroesToEscapedPile` call (L610, no-op on a missing entry). A difference is a STOP.
+
+## Locked Values (do not re-derive; verify at HEAD)
+- **Markers** (`villain-effect-markers.json` → `villains.bkwd.taskmasters-thunderbolts`, exact; keep Jester's shipped Ambush):
+  `"jester": { "ambush": ["captureBystander"], "fight": ["reveal-four-play-henchmen-current"] }`,
+  `"joystick": { "ambush": ["enter-city-henchman-from-any-victory-pile-current"] }`,
+  `"jack-olantern": { "fight": ["enter-city-henchman-from-any-victory-pile-current"], "escape": ["gain-wound-under-two-henchmen-each-player"] }`,
+  `"bullseye": { "ambush": ["capture-hero-deck-top-by-icon-guess"], "fight": ["gain-attached-hero"], "escape": ["ko-captured-heroes-on-escape"] }`.
+- **Primitives** appended to `VILLAIN_EFFECT_PRIMITIVES` (engine union + array AND the script's local array) in this relative order, after the array's current last entry: `reveal-four-play-henchmen-current`, `enter-city-henchman-from-any-victory-pile-current`, `gain-wound-under-two-henchmen-each-player`, `capture-hero-deck-top-by-icon-guess`, `ko-captured-heroes-on-escape`. Pins move by +5 from the HEAD count; "appended last" → `ko-captured-heroes-on-escape`. Bullseye Fight reuses the SHIPPED `gain-attached-hero` (no new primitive); Jester Ambush keeps `captureBystander`.
+- **No-op set:** `reveal-four-play-henchmen-current` and `ko-captured-heroes-on-escape` join `DELIBERATE_NO_OP_VILLAIN_PRIMITIVES` (`villainEffects.execute.ts` ~L1005) so their executor trace reads `no-op` (the bridges do the work); the other three are NOT in the set (they mutate `G`).
+- **Keyword-less Ambush narration (D-24854):** `villain/ambushNarrative.keywordless.test.ts` pin 21 → 23 (or HEAD + 2) — insert `'capture-hero-deck-top-by-icon-guess'` (alphabetically between `capture-bystanders-plus-per-hq-hero-by-trait` and `capture-hq-heroes-cost-lte`) and `'enter-city-henchman-from-any-victory-pile-current'` (right after `enter-city-from-victory-pile`); update the `it('…21…')` title + a sanctioned-pin-change `// why:`. Each onAmbush handler returns a non-empty `narrativeClause`: Bullseye `captures <name> from the Hero Deck (+<cost> Attack)` / `reveals <name> from the Hero Deck — no Attack icon, not captured` / empty-deck; Joystick/Jack `chooses a Henchman from a Victory Pile to enter the City`.
+- **Fight-pick:** `PendingVillainFightPick.primitive` += `'enter-city-henchman-from-any-victory-pile-current'`; kind `ENTER_CITY_HENCHMAN_FROM_VICTORY_KIND = 'villain-fight-enter-city-henchman-from-victory'` (in `VILLAIN_FIGHT_PICK_KINDS` + `isVillainFightPickKind`, carrying `villainFightPick: { sourceCardId, fighterSeat }`); `defaultOptionIndex: 0`.
+- **Henchman filter:** `G.villainDeckCardTypes[id] === 'henchman'` (the `convertedVillainOrigins[id] === 'killbot'` exclusion applied, per `getEligibleVictoryVillains`). Option label `Send <name> into the City (from Player <N>'s Victory Pile)`; option order ascending City Attack, ties in seat order then pile order (index 0 = least threatening = default); none → log `No Henchman in any Victory Pile to enter the City (<formatCardRef(sourceCardId)>).`, park nothing. Apply (in `chainVillainFightPick`): `moveCardFromZone(G.playerZones[owner].victory, …, cardId)` then `resolveVillainCityEntry(G, context, DEFAULT_IMPLEMENTATION_MAP, cardId, 'chosen from a Victory Pile and entered the city')`; a stale card → `blocked` log.
+- **Jester reveal (fight-site bridge, `fightVillain.ts` `runVillainFightFireSiteBridges`):** peek `G.villainDeck.deck.slice(0, 4)`; in revealed order remove each Henchman and `resolveVillainCityEntry(G, context, implementationMap, henchmanId, 'revealed and entered the city')`; write the non-Henchman remainder back on the deck top in **revealed order** (no interactive reorder); short deck → take what exists; empty → logged no-op.
+- **Jack O'Lantern Escape (inline handler, Viper skeleton):** for each seat in `seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)`, count `zones.victory` cards with `villainDeckCardTypes === 'henchman'`; `< 2` → `gainWoundWithOutcome(G, seat)`; current player's `G.turnEconomy.woundsDrawn += 1` only when it gains one; log per seat; `{ targets: [] }`. No D-24750 FIFO.
+- **Bullseye Ambush (inline handler):** blind icon = `[icon:attack]` (D-24860); read `G.heroDeck[0]`; empty → `blocked` log; `G.cardStats[heroId]?.hasAttackIcon === true` → slice it off `G.heroDeck` + `attachCapturedHero(G, cardId, heroId)`; else log `revealed <name>; no Attack icon — not captured.`. Bullseye NEVER in `villainVariableAttack` / `villainAttackPerCaptured`.
+- **Bullseye Escape (escape-site bridge, `villainDeck.reveal.ts` ~L610):** when the escaping villain has a `ko-captured-heroes-on-escape` onEscape descriptor, `koCard(G.ko, heroId)` for each `G.villainAttachedHeroes[escapedCardId]` and delete the entry, **instead of** `moveAttachedHeroesToEscapedPile(G, escapedCardId)`; no attached Hero → no-op. Only this card diverts; every other attached-hero escape keeps the D-24657 default.
+- **Live-verify keys** (pending): `bkwd-villain-taskmasters-thunderbolts-<slug>|<primitive>` for the seven lines in WP §Verification Steps.
+- **D-24860** (lands at execution) — text per WP §Reserved Decision; provenance rows `{ "wp": "WP-903", "decision": "D-24860" }` (Bullseye Fight's `gain-attached-hero` keeps WP-450 / D-24270; Jester Ambush keeps WP-185).
+
+## Guardrails
+- No new move, `CORE_MOVE_NAMES` entry, phase, stage or `G` key; `G.villainAttachedHeroes` / `G.pendingVillainFightPicks` are shipped and lazy.
+- Shipped shapes unchanged: HQ captures, `gain-attached-hero` / `awardAttachedHeroes`, `moveAttachedHeroesToEscapedPile` (still the default for every non-Bullseye attached-hero escape), the WP-872 pick kinds and the Ymir `enter-city-from-victory-pile` behave and log byte-identically; their tests pass unedited.
+- Bullseye's "4+" grows only through `G.villainAttachedHeroes`; never register it in a variable-attack table (that short-circuits the captured-cost sum, `economy.resolve.ts` L473-478).
+- The City-entry apply and the Jester reveal run with the move's `random` through the chain / fire site; moves, applies and bridges never throw; ascending seat order for simultaneous applies; no `.reduce()`; no `splice` for zone rebuilds; runtime pins, not `satisfies` (D-24372).
+- Keyword-less onAmbush handlers return a non-empty `narrativeClause` (no "see the log" fallback); bridge-fired executor no-ops join `DELIBERATE_NO_OP_VILLAIN_PRIMITIVES` (trace `no-op`, not `fired`) — else `sim:runtime-observed:check` diverges.
+- `bkwd.json` regenerated from the marker map only; zero-diff re-run. No parser change beyond the JSDoc list. Handlers / bridges read descriptors, never card names.
+- A sentinel, `finalStateHash` or the spike bundle's `initialStateHash` moving is a STOP, never a re-pin.
+
+## Required `// why:` Comments
+- Each new primitive in the types array (WP-903 / D-24860, the card and line) and the script's local copy.
+- Jester: the reorder collapses to revealed order (D-24860: no look-ahead benefit); henchmen enter in revealed order doing their own Ambush.
+- Henchman-to-City pick: one primitive for both timings (the executor runs for onAmbush + onFight); ascending-threat option order (option 0 is every default); the apply belongs in `chainVillainFightPick` (needs `random` + `DEFAULT_IMPLEMENTATION_MAP`).
+- Jack O'Lantern Escape: inline, not the D-24750 FIFO (no discard choice); current-player-first order (D-24780); the `woundsDrawn` bump.
+- Bullseye Ambush: the blind-icon collapse to attack (D-24860, the self-interested villain choice); `hasAttackIcon` presence (D-24490); never in a variable-attack table (the "4+" default sum).
+- Bullseye Escape: the KO overrides the D-24657 Escape-Pile default for this card; the generic move is suppressed so the Hero is not double-moved.
+- Bullseye Fight: the shipped `gain-attached-hero` no-op + generic `awardAttachedHeroes` to the fighter (the D-24335 collapse of "the player of your choice").
+- The two keyword-less onAmbush handlers' `narrativeClause` (D-24854, so the overlay names the effect); the two bridge-fired no-ops' `DELIBERATE_NO_OP_VILLAIN_PRIMITIVES` membership (trace `no-op`); the sanctioned `ambushNarrative.keywordless` 21 → 23 pin change.
+
+## Files to Produce
+- `packages/game-engine/src/{rules/villainAbility.types,setup/villainAbility.setup,villain/villainEffects.execute,types,moves/villainFightPick.logic,moves/seatChoice.resolve,moves/fightVillain,villainDeck/villainDeck.reveal}.ts` — modified (`villainAbility.setup.ts`: JSDoc only).
+- Tests: `villain/taskmastersThunderbolts.test.ts` (new); `rules/villainAbility.types.test.ts` (pins +5) and `villain/ambushNarrative.keywordless.test.ts` (pin +2) — the only sanctioned test edits.
+- `scripts/convert-cards/apply-effect-markers.mjs`, `scripts/convert-cards/inputs/villain-effect-markers.json` — modified; `data/cards/bkwd.json` — generated.
+- Generated / provenance: villain ledger `{json,csv}`, `effect-implementation-index.json`, `mechanic-provenance.json`, `live-verify.json` (pending rows), `featuredSetupBundle.json` (data only if its regen moves it; hash unchanged); `card-mechanics.json`, `runtime-observed-hollows.json`, `hero-effect-coverage.baseline.json` only if their regen moves them.
+- Close: `STATUS.md`, `DECISIONS.md` (D-24860), `WORK_INDEX.md`, `EC_INDEX.md`, `05-ROADMAP-MINDMAP.md`, `NUMBER-LEDGER.md`, `docs/ai/post-mortems/01.6-WP-903-taskmasters-thunderbolts-villain-abilities.md`.
+
+## After Completing
+- [ ] `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail (per-package totals); sentinels and spike hash unchanged.
+- [ ] Provenance + pending live-verify rows added BEFORE the regen chain `pnpm -r build && pnpm ledger:villains && pnpm effect-index && pnpm mechanics:metadata && pnpm sim:runtime-observed`; then 0: `cards:check`, `ledger:villains:check`, `ledger:heroes:check`, `effect-index:check`, `mechanics:metadata:check`, `sim:runtime-observed:check`, `sim:coverage --check`, `node scripts/build-local-spike-bundle.mjs --check`.
+- [ ] `EC-941:` commit (code + data), then `SPEC:` close: D-24860 Active, STATUS, WORK_INDEX `[x]` + `[live-verify: pending]`, EC_INDEX Done, mindmap ✅ + `pnpm roadmap:counts:write`; `roadmap:counts:check`, `workindex:rows:check`, `workindex:liveverify:check`, `workindex:executed:check`, `check-number-ledger.mjs --check` → 0; NUMBER-LEDGER LANDED; 01.6.
+- [ ] Live-on-surface (D-24026) in its own `SPEC:` PR after the deploy, or operator-pending in STATUS.
+
+## Common Failure Smells
+- Breadcrumb still fires — a primitive missing from the script's local array (marker regen loud-fails) or from the engine array.
+- Turn frozen after Joystick / Jack O'Lantern — the pick kind missing from `isVillainFightPickKind` or `applySeatChoiceByKind`, or the arm placed after the Remaker fall-through.
+- Bullseye's City Attack does not grow on capture — the Hero not attached to `G.villainAttachedHeroes`, or Bullseye wrongly in a variable-attack table.
+- The captured Hero both KO'd and escape-piled — the generic `moveAttachedHeroesToEscapedPile` not suppressed for the `ko-captured-heroes-on-escape` card.
+- Jester plays non-Henchmen, or reorders interactively — the type filter wrong, or a reorder choice parked instead of revealed-order return.
+- Jack O'Lantern Wounds the wrong seats — the count not restricted to `=== 'henchman'`, or the order not current-player-first.
+- Bullseye / Joystick Ambush overlay reads "its Ambush effect resolved (see the log)" — a missing `narrativeClause`; the `ambushNarrative.keywordless` pin fails (21 not bumped to 23).
+- `sim:runtime-observed:check` diverges — a bridge-fired no-op (`reveal-four-play-henchmen-current`, `ko-captured-heroes-on-escape`) missing from `DELIBERATE_NO_OP_VILLAIN_PRIMITIVES`, so its trace reads `fired`.
