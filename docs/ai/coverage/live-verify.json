@@ -2774,10 +2774,10 @@
       "card": "Black Widow",
       "ability": "Infiltrate the Conspiracy: You may send one of your Heroes Undercover.",
       "wp": "WP-901",
-      "state": "pending",
-      "date": "2026-11-16",
-      "evidence": "",
-      "note": "Live check (NEW operator match created after the deploy with bkwd Black Widow and Red Guardian): playing Infiltrate the Conspiracy opens \"You may send one of your Heroes Undercover\" with no gate, listing \"From your hand\" and \"Played this turn\" (the card itself included) by name plus \"Don't send\" (uiStateSnapshot.pendingUndercoverChoice.canDecline === true, eligibleInPlay present); sending puts the Hero in the Victory Pile (+1 VP, \"Player N sent <Name> (<extId>) Undercover\"); \"Don't send\" logs \"chose not to send a Hero Undercover.\" and changes no zone. D-24858."
+      "state": "verified",
+      "date": "2026-11-18",
+      "evidence": "Operator 2p match (1 bot ally) DURAFYbku0s, client 09259e9 (version.json) on server e3091635 (the WP-901 merge #3436; Loki / Midtown Bank Robbery; HYDRA + Skrulls; Hand Ninjas; bkwd Black Widow, Red Guardian, Falcon & Winter Soldier, Yelena Belova, White Tiger; isDebugMatch true), driven by the human seat 0 (jefferyjjensen), 2026-11-18. Turn 1: Infiltrate the Conspiracy (bkwd/black-widow/infiltrate-the-conspiracy#0) played with no gate opened the prompt; uiStateSnapshot.pendingUndercoverChoice.canDecline === true, eligibleInPlay = [Weave#2, New Plan#0, Infiltrate#0] (the card itself included -- self-inclusive), eligibleHand 7; log 1.2.18 \"played Infiltrate the Conspiracy (...) You may send one of your Heroes Undercover.\". Send (from the earlier Weave prompt) 1.2.14 \"Player 0 sent S.H.I.E.L.D. Agent (starting-shield-agent) Undercover (into the Victory Pile, +1 VP).\", Victory Pile 0 -> 1 card / 1 VP. \"Don't send\" on Infiltrate 1.2.20 \"Player 0 chose not to send a Hero Undercover.\", Victory Pile unchanged (1/1). Client UndercoverChoicePrompt.vue: heading \"You may send one of your Heroes Undercover\", groups \"From your hand\" / \"Played this turn\", undercover-choice-decline (\"Don't send\"). Pre-existing/out of scope (follow-up H): Infiltrate line 1 \"+3 attack\" fires unconditionally (1.2.19).",
+      "note": "Live check PASS (NEW operator match DURAFYbku0s after the deploy): Infiltrate the Conspiracy opens \"You may send one of your Heroes Undercover\" with no gate; uiStateSnapshot.pendingUndercoverChoice.canDecline === true and eligibleInPlay lists the hand + in-play Heroes with the card itself included (self-inclusive); sending puts the Hero in the Victory Pile (+1 VP, \"Player N sent <Name> (<extId>) Undercover (into the Victory Pile, +1 VP).\"); \"Don't send\" logs \"chose not to send a Hero Undercover.\" and changes no zone. D-24858."
     },
     {
       "key": "bkwd/black-widow|undercover-your-other-hero",
@@ -2785,10 +2785,10 @@
       "card": "Black Widow",
       "ability": "Weave a Web of Spies: If you drew any cards this turn, you may send one of your other Heroes Undercover.",
       "wp": "WP-901",
-      "state": "pending",
-      "date": "2026-11-16",
-      "evidence": "",
-      "note": "Live check (NEW operator match created after the deploy with bkwd Black Widow and Red Guardian): Weave a Web of Spies played before any draw logs \"... is waiting — it needs 1 or more cards drawn this turn — you have drawn 0.\"; after a draw that turn the Undercover prompt opens without Weave itself among the targets; with no draw all turn it never opens. D-24858."
+      "state": "verified",
+      "date": "2026-11-18",
+      "evidence": "Operator 2p match (1 bot ally) DURAFYbku0s, client 09259e9 (version.json) on server e3091635 (the WP-901 merge #3436; Loki / Midtown Bank Robbery; HYDRA + Skrulls; Hand Ninjas; bkwd Black Widow, Red Guardian, Falcon & Winter Soldier, Yelena Belova, White Tiger; isDebugMatch true), driven by the human seat 0 (jefferyjjensen), 2026-11-18. Turn 1: Weave a Web of Spies (bkwd/black-widow/weave-a-web-of-spies#2) played with 0 draws parked nothing (pendingUndercoverChoice null) and logged 1.2.10 \"Player 0's Weave a Web of Spies (...) ability is waiting -- it needs 1 or more cards drawn this turn -- you have drawn 0. It will apply if you reach it this turn.\"; then New Plan (bkwd/falcon-winter-soldier/new-plan#0, the draw-two face of New Wings) drew 2 and the deferred grant parked the pick: canDecline === true, eligibleInPlay = [New Plan#0] with Weave#2 excluded (the \"other\" rule), eligibleHand 8. Hand send 1.2.14 \"Player 0 sent S.H.I.E.L.D. Agent (starting-shield-agent) Undercover (into the Victory Pile, +1 VP).\" (Victory Pile 0 -> 1). The in-play send path was additionally confirmed via Red Guardian's prompt: 3.2.22 Magnetic Shield sent from in-play, Victory Pile +1, card left inPlay.",
+      "note": "Live check PASS (NEW operator match DURAFYbku0s after the deploy): Weave a Web of Spies played before any draw logs \"... is waiting -- it needs 1 or more cards drawn this turn -- you have drawn 0. It will apply if you reach it this turn.\" and parks nothing; after a card is drawn that turn the deferred grant opens the Undercover prompt with the card itself left out of the targets (undercover-your-other-hero); sending a Hero adds it to the Victory Pile (+1 VP). D-24858."
     },
     {
       "key": "bkwd/red-guardian|undercover-your-other-hero",
@@ -2796,10 +2796,10 @@
       "card": "Red Guardian",
       "ability": "Death Was Only a Ruse: [hc:covert]: You may send one of your other Heroes Undercover.",
       "wp": "WP-901",
-      "state": "pending",
-      "date": "2026-11-16",
-      "evidence": "",
-      "note": "Live check (NEW operator match created after the deploy with bkwd Black Widow and Red Guardian): Death Was Only a Ruse opens the Undercover prompt only after another Covert Hero was played this turn, never listing itself; without a Covert Hero it logs the blocked line and parks nothing. D-24858."
+      "state": "verified",
+      "date": "2026-11-18",
+      "evidence": "Operator 2p match (1 bot ally) DURAFYbku0s, client 09259e9 (version.json) on server e3091635 (the WP-901 merge #3436; Loki / Midtown Bank Robbery; HYDRA + Skrulls; Hand Ninjas; bkwd Black Widow, Red Guardian, Falcon & Winter Soldier, Yelena Belova, White Tiger; isDebugMatch true), driven by the human seat 0 (jefferyjjensen), 2026-11-18. Turn 3 (fresh, no Covert Hero played): Death Was Only a Ruse (bkwd/red-guardian/death-was-only-a-ruse#1) played first parked nothing (pendingUndercoverChoice null) and logged 3.2.14 \"Player 0's Death Was Only a Ruse (...) did not activate one of its abilities -- it needs another Covert Hero played this turn.\"; then Magnetic Shield (covert) and a 2nd Ruse (#2) were played and the prompt opened: canDecline === true, eligibleInPlay = [Ruse#1, Magnetic Shield#3] with Ruse#2 (the trigger) excluded, eligibleHand 6. In-play send 3.2.22 \"Player 0 sent Magnetic Shield (bkwd/red-guardian/magnetic-shield#3) Undercover (into the Victory Pile, +1 VP).\", Victory Pile 1 -> 2, Magnetic Shield left inPlay. Pre-existing/out of scope (WP-901 Out of Scope): the card's bare [keyword:Undercover] \"Send this Undercover\" / \"Unleash from Undercover\" lines emit no-handler diagnostics (3.2.12/13/20/21); the your-other-hero line is handled.",
+      "note": "Live check PASS (NEW operator match DURAFYbku0s after the deploy): Death Was Only a Ruse opens the Undercover prompt only after another Covert Hero was played this turn (played with no Covert it logs \"... did not activate one of its abilities -- it needs another Covert Hero played this turn.\" and parks nothing), never listing itself among the targets; sending a Hero adds it to the Victory Pile (+1 VP). D-24858."
     },
     {
       "key": "mastermind:bkpt/killmonger|wound-him-button",
