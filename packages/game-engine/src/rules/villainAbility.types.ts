@@ -430,7 +430,19 @@ export type VillainEffectPrimitive =
   // why: WP-840 / D-24773 — co2e The Blob's Ambush "Put The Blob to the left of the
   // Mastermind space": a keyword-less executor handler that moves him out of the City into
   // G.villainsBesideMastermind (no params).
-  | 'put-self-beside-mastermind';
+  | 'put-self-beside-mastermind'
+  // why: WP-902 / D-24859 — the bkwd Elite Assassins lines, appended at positions 65-70, all
+  // no-param and keyword-less: Black Lotus's Ambush zero-cost discard, Snapdragon's Ambush
+  // non-grey discard + draw, Iron Maiden's Ambush non-grey Undercover send, Snapdragon's Fight
+  // "send one of your Heroes Undercover", Blue Talon's Fight "send a Hero from your discard pile
+  // Undercover", and Iron Maiden's Fight "each player may Unleash from Undercover". The marker
+  // script's hand-synced copy appends them at the same positions.
+  | 'discard-zero-cost-card-each-player'
+  | 'discard-non-grey-hero-then-draw-each-player'
+  | 'undercover-non-grey-hero-each-player'
+  | 'undercover-your-hero-current'
+  | 'undercover-hero-from-discard-current'
+  | 'unleash-undercover-hero-each-player';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -691,6 +703,16 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   // (`put-self-beside-mastermind`, no param), a keyword-less executor handler. The marker
   // script's hand-synced copy appends it at the same position.
   'put-self-beside-mastermind',
+  // why: WP-902 / D-24859 — appended at positions 65-70, the bkwd Elite Assassins lines (Black
+  // Lotus / Snapdragon / Iron Maiden Ambushes, Snapdragon / Blue Talon / Iron Maiden Fights), all
+  // no-param, keyword-less executor handlers. The marker script's hand-synced copy appends them at
+  // the same positions.
+  'discard-zero-cost-card-each-player',
+  'discard-non-grey-hero-then-draw-each-player',
+  'undercover-non-grey-hero-each-player',
+  'undercover-your-hero-current',
+  'undercover-hero-from-discard-current',
+  'unleash-undercover-hero-each-player',
 ] as const;
 
 /**

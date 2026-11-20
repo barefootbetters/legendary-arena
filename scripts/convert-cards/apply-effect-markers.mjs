@@ -298,6 +298,13 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'reveal-villain-deck-top-swap-self',
   'enter-city-from-victory-pile',
   'put-self-beside-mastermind',
+  // why: WP-902 / D-24859 — positions 65-70, the bkwd Elite Assassins no-param primitives.
+  'discard-zero-cost-card-each-player',
+  'discard-non-grey-hero-then-draw-each-player',
+  'undercover-non-grey-hero-each-player',
+  'undercover-your-hero-current',
+  'undercover-hero-from-discard-current',
+  'unleash-undercover-hero-each-player',
 ];
 
 // why: WP-836 / D-24769 — hand-synced local copy of the engine's HERO_CLASSES

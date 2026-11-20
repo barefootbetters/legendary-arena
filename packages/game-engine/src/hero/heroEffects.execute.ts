@@ -3504,11 +3504,62 @@ function heroEffectUndercoverOfficerStack(
  * D-24858): anything but a Wound or a Bystander (S.H.I.E.L.D. Agents, Troopers, Officers and
  * Sidekicks are Heroes; the WP-767 / WP-828 / WP-856 filter).
  *
+ * why: WP-902 / D-24859 — exported (body unchanged) so the villain Elite Assassins call sites
+ * (the Iron Maiden / Blue Talon fight picks, the Iron Maiden Ambush builder, and the Snapdragon
+ * Fight handler) share the one Hero predicate instead of copying it (00.6 Rule 1, third use).
+ *
  * @param cardId - The card to test.
  * @returns true when the card is a Hero.
  */
-function isYourHeroUndercoverCandidate(cardId: CardExtId): boolean {
+export function isYourHeroUndercoverCandidate(cardId: CardExtId): boolean {
   return cardId !== WOUND_EXT_ID && cardId !== BYSTANDER_EXT_ID;
+}
+
+/**
+ * Returns one Hero from Undercover to its owner's hand — the rules v23 "Unleash from Undercover"
+ * (WP-902 / D-24859: Iron Maiden's Fight). The card leaves both the Victory Pile and the
+ * `undercover` tracker (−1 VP) and enters the hand; the player may play it this turn.
+ *
+ * Refuses (no write, returns false) when the card is not in BOTH `zones.undercover` and
+ * `zones.victory` — a tracker entry whose card already left the Victory Pile is never Unleashed.
+ * The move goes through the `moveCardFromZone` zone-op; the `undercover` tracker is rebuilt as a
+ * new array without its first matching entry (no `splice`).
+ *
+ * @param G - Game state (mutates the player's `hand`, `victory` and `undercover`).
+ * @param playerID - The owner of the Undercover Hero.
+ * @param cardId - The Undercover Hero to return to hand.
+ * @returns true when the Hero was Unleashed, false when it could not be.
+ */
+export function returnUndercoverHeroToHand(
+  G: LegendaryGameState,
+  playerID: string,
+  cardId: CardExtId,
+): boolean {
+  const zones = G.playerZones[playerID];
+  if (!zones) { return false; }
+  const undercover = zones.undercover ?? [];
+  // why: WP-902 / D-24859 — Unleash returns the Hero from the Victory Pile, so it must still be in
+  // BOTH the tracker and the Victory Pile; a card another effect already moved out is refused.
+  if (!undercover.includes(cardId) || !zones.victory.includes(cardId)) {
+    return false;
+  }
+  const moveResult = moveCardFromZone(zones.victory, zones.hand, cardId);
+  if (!moveResult.found) { return false; }
+  zones.victory = moveResult.from;
+  zones.hand = moveResult.to;
+  // why: 00.6 — rebuild the tracker without its first matching entry (no `splice`), dropping one
+  // instance so a second Undercover copy of the same card stays tracked.
+  const rebuilt: CardExtId[] = [];
+  let isRemoved = false;
+  for (const entryCardId of undercover) {
+    if (!isRemoved && entryCardId === cardId) {
+      isRemoved = true;
+      continue;
+    }
+    rebuilt.push(entryCardId);
+  }
+  zones.undercover = rebuilt;
+  return true;
 }
 
 /**

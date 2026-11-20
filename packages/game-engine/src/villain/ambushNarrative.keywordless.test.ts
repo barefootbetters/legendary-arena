@@ -460,8 +460,11 @@ describe('the keyword-less Ambush set in the card data (WP-897 RS-5)', () => {
   // join the set, 16 → 18 (a sanctioned pin change). WP-839 / D-24772 — Green Goblin's
   // `move-self-to-city-space` and Ymir's `enter-city-from-victory-pile` join it, 18 → 20 (Speed
   // Demon's `charge` is already listed). WP-840 / D-24773 — The Blob's
-  // `put-self-beside-mastermind` joins it, 20 → 21 (a sanctioned pin change).
-  it('the real parser finds exactly the 21 keyword-less Ambush primitives, in printed order', () => {
+  // `put-self-beside-mastermind` joins it, 20 → 21 (a sanctioned pin change). WP-902 / D-24859 —
+  // Black Lotus's `discard-zero-cost-card-each-player`, Snapdragon's
+  // `discard-non-grey-hero-then-draw-each-player` and Iron Maiden's
+  // `undercover-non-grey-hero-each-player` join it, 21 → 24 (a sanctioned pin change).
+  it('the real parser finds exactly the 24 keyword-less Ambush primitives, in printed order', () => {
     const primitives = new Set<string>();
     const descriptorsByCard = new Map<string, { isLegacy: boolean; primitive: string; isConditional: boolean }[]>();
     for (const hook of buildAllHooks()) {
@@ -502,6 +505,8 @@ describe('the keyword-less Ambush set in the card data (WP-897 RS-5)', () => {
       'discard-hand-matching-hq-card-names-each-player',
       'discard-hero-each-player-by-trait',
       'discard-hero-or-wound-each-player-by-trait',
+      'discard-non-grey-hero-then-draw-each-player',
+      'discard-zero-cost-card-each-player',
       'enter-city-from-victory-pile',
       'haunt-hq-hero',
       'hq-heroes-cost-change',
@@ -512,6 +517,7 @@ describe('the keyword-less Ambush set in the card data (WP-897 RS-5)', () => {
       'reveal-or-wound',
       'stack-cards-enter-city-as-villains',
       'swap-two-city-villains',
+      'undercover-non-grey-hero-each-player',
       'villain-hunt-for-victims',
     ]);
     // why: the overlay lists keyword clauses before keyword-less ones, which equals printed order

@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "cardType": "villain",
   "summary": {
-    "totalRows": 773,
+    "totalRows": 777,
     "byStatus": {
-      "executable": 278,
+      "executable": 285,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 490,
+      "unmarked": 487,
       "subsystem": 4
     },
-    "distinctMechanics": 73
+    "distinctMechanics": 79
   },
   "rows": [
     {
@@ -1019,11 +1019,22 @@
       "cardName": "Black Lotus",
       "set": "bkwd",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "discard-zero-cost-card-each-player",
+      "status": "executable",
+      "wp": "WP-902",
+      "decision": "D-24859",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#discard-zero-cost-card-each-player"
+    },
+    {
+      "extId": "bkwd-villain-elite-assassins-black-lotus",
+      "cardName": "Black Lotus",
+      "set": "bkwd",
+      "cardType": "villain",
+      "mechanic": "gain-recruit-current",
+      "status": "executable",
+      "wp": "WP-541",
+      "decision": "D-24350",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current"
     },
     {
       "extId": "bkwd-villain-elite-assassins-blue-talon",
@@ -1035,6 +1046,17 @@
       "wp": "WP-469",
       "decision": "D-24281",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
+    },
+    {
+      "extId": "bkwd-villain-elite-assassins-blue-talon",
+      "cardName": "Blue Talon",
+      "set": "bkwd",
+      "cardType": "villain",
+      "mechanic": "undercover-hero-from-discard-current",
+      "status": "executable",
+      "wp": "WP-902",
+      "decision": "D-24859",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#undercover-hero-from-discard-current"
     },
     {
       "extId": "bkwd-villain-taskmasters-thunderbolts-bullseye",
@@ -1052,11 +1074,22 @@
       "cardName": "Iron Maiden",
       "set": "bkwd",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "undercover-non-grey-hero-each-player",
+      "status": "executable",
+      "wp": "WP-902",
+      "decision": "D-24859",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#undercover-non-grey-hero-each-player"
+    },
+    {
+      "extId": "bkwd-villain-elite-assassins-iron-maiden",
+      "cardName": "Iron Maiden",
+      "set": "bkwd",
+      "cardType": "villain",
+      "mechanic": "unleash-undercover-hero-each-player",
+      "status": "executable",
+      "wp": "WP-902",
+      "decision": "D-24859",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#unleash-undercover-hero-each-player"
     },
     {
       "extId": "bkwd-villain-taskmasters-thunderbolts-jack-olantern",
@@ -1096,11 +1129,22 @@
       "cardName": "Snapdragon",
       "set": "bkwd",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "discard-non-grey-hero-then-draw-each-player",
+      "status": "executable",
+      "wp": "WP-902",
+      "decision": "D-24859",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#discard-non-grey-hero-then-draw-each-player"
+    },
+    {
+      "extId": "bkwd-villain-elite-assassins-snapdragon",
+      "cardName": "Snapdragon",
+      "set": "bkwd",
+      "cardType": "villain",
+      "mechanic": "undercover-your-hero-current",
+      "status": "executable",
+      "wp": "WP-902",
+      "decision": "D-24859",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#undercover-your-hero-current"
     },
     {
       "extId": "ca75-villain-masters-of-evil-wwii-black-knight",

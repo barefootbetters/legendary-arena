@@ -55,7 +55,18 @@ import {
   listEligibleHandCardsByTrait,
   formatEligibleCostList,
 } from '../moves/villainDefeatRequirement.logic.js';
-import { offPlayCardStats } from '../hero/splitCard.logic.js';
+import { offPlayCardStats, matchesGreyHeroFilter } from '../hero/splitCard.logic.js';
+// why: WP-902 / D-24859 — the zero-cost filter reads a Wound as cost 0 (D-24583, a Wound has no
+// stats entry); the Snapdragon draw goes through the one draw helper; Iron Maiden's Undercover
+// send reuses the shared Undercover move and Hero predicate, and records an in-play send.
+import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { drawCardsIntoHand } from '../moves/drawCards.logic.js';
+import type { ShuffleProvider } from '../setup/shuffle.js';
+// why: WP-902 / D-24859 — the heroEffects imports are read only inside function bodies, closing a
+// runtime-safe cycle (this module → heroEffects.execute → … → seatChoice.resolve → this module),
+// safe for the same reason as the parkSeatChoice cycle above (the L32-41 precedent).
+import { moveCardUndercover, isYourHeroUndercoverCandidate } from '../hero/heroEffects.execute.js';
+import { recordPlayedCardLeftPlay } from '../economy/economy.logic.js';
 // why: WP-837 / D-24770 — Frost Giant Warrior's Wounds go through the Wound chokepoint.
 // This closes a fourth function-body-only cycle (wounds.logic → divingBlock.logic →
 // seatChoice.resolve → this module), runtime-safe for the same reason as the three above.
@@ -79,6 +90,12 @@ export const VILLAIN_EFFECT_TRAIT_DISCARD_KIND = 'villain-effect-trait-discard';
 
 /** The seat-choice kind for an owed every-player discard of any one hand card (WP-839 / D-24772). */
 export const VILLAIN_EFFECT_ANY_CARD_DISCARD_KIND = 'villain-effect-any-card-discard';
+
+/** The seat-choice kind for Snapdragon's every-player non-grey discard + draw (WP-902 / D-24859). */
+export const VILLAIN_EFFECT_NON_GREY_DISCARD_THEN_DRAW_KIND = 'villain-effect-non-grey-discard-then-draw';
+
+/** The seat-choice kind for Iron Maiden's mandatory non-grey Undercover send (WP-902 / D-24859). */
+export const VILLAIN_EFFECT_UNDERCOVER_EACH_PLAYER_KIND = 'villain-effect-undercover-each-player';
 
 // why: rules v23 L561 — "the escaping Villain KOs a Hero that costs 6 or less from the HQ".
 // A Hero costing 7 or more is never offered or KO'd.
@@ -364,8 +381,15 @@ export function openEscapeEffectDiscardIfNeeded(
     // trait discard; every other entry routes to WP-817's cost builder exactly as before.
     // why: WP-839 / D-24772 — an any-card entry (co2e Speed Demon) builds the unfiltered discard;
     // the field is presence-tested, so a trait or cost entry routes exactly as before.
+    // why: WP-902 / D-24859 — Snapdragon's non-grey-discard-then-draw and Iron Maiden's
+    // non-grey Undercover send ride the same FIFO, routed by presence before the shipped arms
+    // (the D-24772 F3 precedent); an entry without either field routes exactly as before.
     let choice: PendingSeatChoice | undefined;
-    if (entry.anyHandCard !== undefined) {
+    if (entry.nonGreyHeroDiscardThenDraw !== undefined) {
+      choice = buildNonGreyHeroDiscardThenDrawChoice(G, currentPlayer);
+    } else if (entry.nonGreyHeroUndercover !== undefined) {
+      choice = buildNonGreyHeroUndercoverChoice(G);
+    } else if (entry.anyHandCard !== undefined) {
       choice = buildVillainEffectAnyCardDiscardChoice(G, entry);
     } else if (entry.traitFilter !== undefined) {
       choice = prepareVillainEffectTraitDiscardChoice(G, entry.traitFilter, currentPlayer);
@@ -732,6 +756,10 @@ export function buildVillainEffectAnyCardDiscardChoice(
   entry: PendingEscapeEffectDiscard,
 ): PendingSeatChoice | undefined {
   const effectLabel = entry.anyHandCard?.effectLabel ?? 'Ambush';
+  // why: WP-902 / D-24859 — Black Lotus's Ambush ("each player discards a card that costs 0")
+  // reuses this any-card kind with a cost-0 filter; read `=== true` so a Speed Demon entry
+  // (no zeroCostOnly) keeps its full-hand choice byte-identical (the D-24600 koHeroesOnly precedent).
+  const zeroCostOnly = entry.anyHandCard?.zeroCostOnly === true;
   const addressedSeats: string[] = [];
   const seatPrompts: PendingSeatChoice['seatPrompts'] = {};
   // why: D-24780 §6 / D-24501 — the builder of one simultaneous prompt stays ascending (as WP-817's
@@ -739,12 +767,16 @@ export function buildVillainEffectAnyCardDiscardChoice(
   // log label and apply (D-24772).
   for (const seat of Object.keys(G.playerZones).sort()) {
     const hand = G.playerZones[seat]?.hand ?? [];
-    if (hand.length === 0) {
-      pushLog(G, `${effectLabel} effect: Player ${seat} has no card to discard.`, 'blocked');
+    const eligible = zeroCostOnly ? hand.filter((cardId) => isZeroCostCard(G, cardId)) : hand;
+    if (eligible.length === 0) {
+      // why: the unfiltered (Speed Demon) no-eligible line is byte-identical to the shipped text;
+      // the cost-0 (Black Lotus) line names the cost filter.
+      const reason = zeroCostOnly ? 'has no card that costs 0 to discard' : 'has no card to discard';
+      pushLog(G, `${effectLabel} effect: Player ${seat} ${reason}.`, 'blocked');
       continue;
     }
     const options: SeatChoiceOption[] = [];
-    for (const cardId of hand) {
+    for (const cardId of eligible) {
       options.push({ label: resolveCardName(G.cardDisplayData, cardId), cardId });
     }
     addressedSeats.push(seat);
@@ -845,4 +877,307 @@ function applyChosenTraitDiscardWound(G: LegendaryGameState, seat: string, curre
     pushLog(G, `Player ${seat} gained a Wound instead of discarding (Villain effect).`, 'applied');
   }
   countCurrentPlayerVillainWound(G, seat, currentPlayer);
+}
+
+/**
+ * Whether a card costs 0 for Black Lotus's Ambush (WP-902 / D-24859).
+ *
+ * // why: D-24583 — a Wound reads as cost 0 (it has no stats entry, so the off-play cost would be
+ * undefined); a Bystander never counts (it has no stats entry and is not a Wound).
+ *
+ * @param G - The game state (read-only).
+ * @param cardId - The card to test.
+ * @returns true when the card's off-play cost is 0, or it is a Wound.
+ */
+function isZeroCostCard(G: LegendaryGameState, cardId: CardExtId): boolean {
+  if (cardId === WOUND_EXT_ID) {
+    return true;
+  }
+  return offPlayCardStats(G, cardId)?.cost === 0;
+}
+
+/** One eligible non-grey Hero for an Elite Assassins every-player choice. */
+interface EligibleNonGreyHero {
+  cardId: CardExtId;
+  cost: number;
+  /** 0 = hand (listed before play on a cost tie), 1 = in play (Iron Maiden only). */
+  zoneRank: number;
+  /** The card's index within its own zone (ties within a zone keep zone order). */
+  indexInZone: number;
+}
+
+/**
+ * Sorts a seat's eligible non-grey Heroes cheapest first, ties hand-before-play then zone order
+ * (WP-902 / D-24859), so option 0 is the cheapest — the default every automation takes.
+ *
+ * @param eligible - The seat's eligible Heroes (mutated in place by the sort).
+ */
+function sortEligibleNonGreyHeroes(eligible: EligibleNonGreyHero[]): void {
+  eligible.sort((heroA, heroB) => {
+    if (heroA.cost !== heroB.cost) {
+      return heroA.cost - heroB.cost;
+    }
+    if (heroA.zoneRank !== heroB.zoneRank) {
+      return heroA.zoneRank - heroB.zoneRank;
+    }
+    return heroA.indexInZone - heroB.indexInZone;
+  });
+}
+
+/**
+ * Builds Snapdragon's every-player non-grey-Hero discard choice (WP-902 / D-24859): every seat
+ * (ascending) with a non-grey Hero in hand is addressed, one `Discard <name>` option per such
+ * card, cheapest first with ties in hand order; a seat with none is logged.
+ *
+ * The draw ("Then each player draws a card") runs in the apply, which has the move's `{ random }`.
+ * When no seat can discard, a one-option choice for the current player (else the lowest seat)
+ * carries the draw so it still has a shuffle source — the opener itself never draws (it has no
+ * `random`). Returns undefined only when there is no seat at all (a degenerate state that never
+ * occurs in a real match); the fallback otherwise always addresses one seat.
+ *
+ * @param G - The game state (read for hands, costs and names; the log is appended).
+ * @param currentPlayer - The active player id, or undefined.
+ * @returns The pending discard choice, the one-option draw choice, or undefined with no seats.
+ */
+export function buildNonGreyHeroDiscardThenDrawChoice(
+  G: LegendaryGameState,
+  currentPlayer?: string,
+): PendingSeatChoice | undefined {
+  const addressedSeats: string[] = [];
+  const seatPrompts: PendingSeatChoice['seatPrompts'] = {};
+  for (const seat of Object.keys(G.playerZones).sort()) {
+    const hand = G.playerZones[seat]?.hand ?? [];
+    const eligible: EligibleNonGreyHero[] = [];
+    for (let index = 0; index < hand.length; index++) {
+      const cardId = hand[index]!;
+      if (matchesGreyHeroFilter(G, cardId, 'non-grey')) {
+        eligible.push({ cardId, cost: offPlayCardStats(G, cardId)?.cost ?? 0, zoneRank: 0, indexInZone: index });
+      }
+    }
+    if (eligible.length === 0) {
+      pushLog(G, `Ambush effect: Player ${seat} has no non-grey Hero to discard.`, 'blocked');
+      continue;
+    }
+    sortEligibleNonGreyHeroes(eligible);
+    const options: SeatChoiceOption[] = [];
+    for (const hero of eligible) {
+      options.push({ label: `Discard ${resolveCardName(G.cardDisplayData, hero.cardId)}`, cardId: hero.cardId });
+    }
+    addressedSeats.push(seat);
+    seatPrompts[seat] = { options };
+  }
+  if (addressedSeats.length > 0) {
+    return {
+      kind: VILLAIN_EFFECT_NON_GREY_DISCARD_THEN_DRAW_KIND,
+      addressedSeats,
+      seatPrompts,
+      submissions: {},
+      // why: cheapest first (above), so the sim / autoplay + disconnect default (index 0) discards
+      // the cheapest Hero — D-24859 point 7.
+      defaultOptionIndex: 0,
+    };
+  }
+  // why: no seat can discard, but "Then each player draws a card" still runs; park a one-option
+  // choice so the apply (which holds `{ random }`) still draws. The opener never draws (no random).
+  const fallbackSeat = currentPlayer ?? Object.keys(G.playerZones).sort()[0];
+  if (fallbackSeat === undefined) {
+    return undefined;
+  }
+  return {
+    kind: VILLAIN_EFFECT_NON_GREY_DISCARD_THEN_DRAW_KIND,
+    addressedSeats: [fallbackSeat],
+    seatPrompts: { [fallbackSeat]: { options: [{ label: 'No player has a non-grey Hero to discard — each player draws a card' }] } },
+    submissions: {},
+    defaultOptionIndex: 0,
+  };
+}
+
+/**
+ * Applies Snapdragon's non-grey discard + draw ATOMICALLY (WP-902 / D-24859): every addressed seat
+ * (ascending) discards its chosen Hero through `discardFromHand`, then every seat draws one card.
+ *
+ * The one-option fallback choice carries no `cardId`, so the discard loop is a no-op there and only
+ * the draw runs. Without a shuffle context, no seat draws (a `blocked` log) — the opener never
+ * reaches here with one missing.
+ *
+ * @param G - The game state, mutated in place.
+ * @param choice - The fully-submitted choice (kind 'villain-effect-non-grey-discard-then-draw').
+ * @param shuffleContext - The live move's shuffle source, or undefined (timeout path).
+ * @param currentPlayer - The active player id, or undefined.
+ */
+export function applyVillainEffectNonGreyDiscardThenDraw(
+  G: LegendaryGameState,
+  choice: PendingSeatChoice,
+  shuffleContext: ShuffleProvider | undefined,
+  currentPlayer?: string,
+): void {
+  // why: D-24780 §6 / D-24501 — a simultaneous seat-choice apply discards in ascending seat order.
+  const seatsInApplyOrder = [...choice.addressedSeats].sort();
+  for (const seat of seatsInApplyOrder) {
+    const submission = choice.submissions[seat];
+    if (submission === undefined) {
+      continue;
+    }
+    const cardId = choice.seatPrompts[seat]?.options[submission.optionIndex]?.cardId;
+    if (cardId === undefined) {
+      continue;
+    }
+    if (discardFromHand(G, seat, cardId)) {
+      pushLog(G, `Player ${seat} discarded ${formatCardRef(G.cardDisplayData, cardId)} (Ambush effect).`, 'applied');
+    }
+  }
+  drawCardForEverySeat(G, shuffleContext, currentPlayer);
+}
+
+/**
+ * "Then each player draws a card" for Snapdragon's Ambush (WP-902 / D-24859).
+ *
+ * // why: D-24780 — the draw runs current player first, then clockwise. D-24552 — the current
+ * player's draw is skipped while `drawsLocked` is set (the D-24602 Throw from the Waterfall
+ * precedent); every other seat always draws. D-24732 — the current player's `cardsDrawn` rises by
+ * the cards actually drawn (the hand-length delta, never `drawCardsIntoHand`'s reshuffle-count
+ * return). Without a shuffle context no seat draws (a `blocked` log); the opener never reaches here
+ * with one missing.
+ *
+ * @param G - The game state, mutated in place.
+ * @param shuffleContext - The live move's shuffle source, or undefined.
+ * @param currentPlayer - The active player id, or undefined.
+ */
+function drawCardForEverySeat(
+  G: LegendaryGameState,
+  shuffleContext: ShuffleProvider | undefined,
+  currentPlayer: string | undefined,
+): void {
+  if (shuffleContext === undefined) {
+    pushLog(G, 'Ambush effect: no shuffle source is available, so no player drew a card.', 'blocked');
+    return;
+  }
+  for (const seat of seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)) {
+    const zones = G.playerZones[seat];
+    if (zones === undefined) {
+      continue;
+    }
+    if (seat === currentPlayer && G.turnEconomy.drawsLocked === true) {
+      // why: D-24552 — a draw lock skips only the current player's draw; other seats still draw.
+      pushLog(G, `Player ${seat} could not draw a card — drawing is locked this turn.`, 'blocked');
+      continue;
+    }
+    const handBefore = zones.hand.length;
+    drawCardsIntoHand(zones, 1, shuffleContext);
+    const drawn = zones.hand.length - handBefore;
+    if (seat === currentPlayer) {
+      // why: D-24732 — count the cards the current player actually drew (0 when deck and discard
+      // are both empty), never drawCardsIntoHand's reshuffle-count return.
+      G.turnEconomy.cardsDrawn += drawn;
+    }
+    pushLog(G, `Player ${seat} drew ${String(drawn)} card (Ambush effect).`, 'applied');
+  }
+}
+
+/**
+ * Builds Iron Maiden's every-player non-grey Undercover send (WP-902 / D-24859): every seat
+ * (ascending) with a non-grey Hero in hand or in play is addressed, one `Send <name> Undercover
+ * (from your hand)` / `(played this turn)` option per such card, cheapest first with ties
+ * hand-before-play then zone order; a seat with none is logged. No decline ("must"), so a seat
+ * with a Hero always sends one. Returns undefined when no seat is addressed.
+ *
+ * @param G - The game state (read for hands, play, costs and names; the log is appended).
+ * @returns The pending Undercover choice, or undefined when no seat is addressed.
+ */
+export function buildNonGreyHeroUndercoverChoice(G: LegendaryGameState): PendingSeatChoice | undefined {
+  const addressedSeats: string[] = [];
+  const seatPrompts: PendingSeatChoice['seatPrompts'] = {};
+  for (const seat of Object.keys(G.playerZones).sort()) {
+    const zones = G.playerZones[seat];
+    if (zones === undefined) {
+      continue;
+    }
+    const eligible: EligibleNonGreyHero[] = [];
+    for (let index = 0; index < zones.hand.length; index++) {
+      const cardId = zones.hand[index]!;
+      if (matchesGreyHeroFilter(G, cardId, 'non-grey')) {
+        eligible.push({ cardId, cost: offPlayCardStats(G, cardId)?.cost ?? 0, zoneRank: 0, indexInZone: index });
+      }
+    }
+    for (let index = 0; index < zones.inPlay.length; index++) {
+      const cardId = zones.inPlay[index]!;
+      // why: WP-902 / D-24859 — matchesGreyHeroFilter is read over an IN-PLAY card too. Its
+      // off-play view only widens a split card's classes (never narrows), so whether a card is
+      // non-grey is unaffected; the cost ordering uses the same off-play cost for both zones.
+      if (matchesGreyHeroFilter(G, cardId, 'non-grey')) {
+        eligible.push({ cardId, cost: offPlayCardStats(G, cardId)?.cost ?? 0, zoneRank: 1, indexInZone: index });
+      }
+    }
+    if (eligible.length === 0) {
+      pushLog(G, `Ambush effect: Player ${seat} has no non-grey Hero to send Undercover.`, 'blocked');
+      continue;
+    }
+    sortEligibleNonGreyHeroes(eligible);
+    const options: SeatChoiceOption[] = [];
+    for (const hero of eligible) {
+      const zoneLabel = hero.zoneRank === 0 ? 'from your hand' : 'played this turn';
+      options.push({
+        label: `Send ${resolveCardName(G.cardDisplayData, hero.cardId)} Undercover (${zoneLabel})`,
+        cardId: hero.cardId,
+        sourceZone: hero.zoneRank === 0 ? 'hand' : 'inPlay',
+      });
+    }
+    addressedSeats.push(seat);
+    seatPrompts[seat] = { options };
+  }
+  if (addressedSeats.length === 0) {
+    return undefined;
+  }
+  return {
+    kind: VILLAIN_EFFECT_UNDERCOVER_EACH_PLAYER_KIND,
+    addressedSeats,
+    seatPrompts,
+    submissions: {},
+    // why: cheapest first (above), so the sim / autoplay + disconnect default (index 0) sends the
+    // cheapest Hero — D-24859 point 7 (there is no decline; the send is mandatory).
+    defaultOptionIndex: 0,
+  };
+}
+
+/**
+ * Applies Iron Maiden's every-player Undercover send ATOMICALLY (WP-902 / D-24859): every addressed
+ * seat (ascending) sends its chosen Hero Undercover from the option's zone (+1 VP). A card no
+ * longer in that zone is skipped with a `blocked` log. An in-play send is a mid-turn exit from
+ * play, so it is recorded (WP-899 / D-24856, the resolveUndercoverChoice precedent).
+ *
+ * @param G - The game state, mutated in place.
+ * @param choice - The fully-submitted choice (kind 'villain-effect-undercover-each-player').
+ */
+export function applyVillainEffectUndercoverEachPlayer(G: LegendaryGameState, choice: PendingSeatChoice): void {
+  // why: D-24780 §6 / D-24501 — a simultaneous seat-choice apply sends in ascending seat order.
+  const seatsInApplyOrder = [...choice.addressedSeats].sort();
+  for (const seat of seatsInApplyOrder) {
+    const submission = choice.submissions[seat];
+    if (submission === undefined) {
+      continue;
+    }
+    const option = choice.seatPrompts[seat]?.options[submission.optionIndex];
+    const cardId = option?.cardId;
+    const zones = G.playerZones[seat];
+    if (option === undefined || cardId === undefined || zones === undefined) {
+      continue;
+    }
+    if (option.sourceZone === 'inPlay') {
+      if (!zones.inPlay.includes(cardId)) {
+        pushLog(G, `Player ${seat} could not send ${formatCardRef(G.cardDisplayData, cardId)} Undercover — it is no longer in play.`, 'blocked');
+        continue;
+      }
+      zones.inPlay = moveCardUndercover(G, seat, cardId, zones.inPlay);
+      // why: WP-899 / D-24856 — a played card that leaves play mid-turn still counts as played this
+      // turn; record the exit so the play-history gates keep seeing it (resolveUndercoverChoice).
+      G.turnEconomy = recordPlayedCardLeftPlay(G.turnEconomy, cardId);
+    } else {
+      if (!zones.hand.includes(cardId)) {
+        pushLog(G, `Player ${seat} could not send ${formatCardRef(G.cardDisplayData, cardId)} Undercover — it is no longer in their hand.`, 'blocked');
+        continue;
+      }
+      zones.hand = moveCardUndercover(G, seat, cardId, zones.hand);
+    }
+    pushLog(G, `Player ${seat} sent ${formatCardRef(G.cardDisplayData, cardId)} Undercover (into the Victory Pile, +1 VP).`, 'applied');
+  }
 }

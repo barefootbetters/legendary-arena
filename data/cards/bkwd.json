@@ -857,7 +857,7 @@
           "abilities": [
             "[keyword:Dark Memories]",
             "Ambush: Each player reveals a [hc:ranged] Hero or gains a Wound. [effect:reveal-or-wound:hc:ranged]",
-            "Fight: You may send a Hero from your discard pile [keyword:Undercover]."
+            "Fight: You may send a Hero from your discard pile [keyword:Undercover]. [effect:undercover-hero-from-discard-current]"
           ],
           "copies": 2
         },
@@ -869,8 +869,8 @@
           "imageUrl": "https://images.legendary-arena.com/bkwd/bkwd-vi-elite-assassins-iron-maiden.webp",
           "abilities": [
             "[keyword:Dark Memories]",
-            "Ambush: Each player must send one of their non-grey Heroes [keyword:Undercover].",
-            "Fight: Each player may [keyword:Unleash] one of their Heroes from [keyword:Undercover]."
+            "Ambush: Each player must send one of their non-grey Heroes [keyword:Undercover]. [effect:undercover-non-grey-hero-each-player]",
+            "Fight: Each player may [keyword:Unleash] one of their Heroes from [keyword:Undercover]. [effect:unleash-undercover-hero-each-player]"
           ],
           "copies": 2
         },
@@ -881,8 +881,8 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/bkwd/bkwd-vi-elite-assassins-snapdragon.webp",
           "abilities": [
-            "Ambush: Each player discards a non-grey Hero. Then each player draws a card.",
-            "Fight: You may send one of your Heroes [keyword:Undercover]."
+            "Ambush: Each player discards a non-grey Hero. Then each player draws a card. [effect:discard-non-grey-hero-then-draw-each-player]",
+            "Fight: You may send one of your Heroes [keyword:Undercover]. [effect:undercover-your-hero-current]"
           ],
           "copies": 2
         },
@@ -893,8 +893,8 @@
           "vAttack": "6",
           "imageUrl": "https://images.legendary-arena.com/bkwd/bkwd-vi-elite-assassins-black-lotus.webp",
           "abilities": [
-            "Ambush: Each player discards a card that costs 0.",
-            "Fight: You get +3[icon:recruit]."
+            "Ambush: Each player discards a card that costs 0. [effect:discard-zero-cost-card-each-player]",
+            "Fight: You get +3[icon:recruit]. [effect:gain-recruit-current:3]"
           ],
           "copies": 2
         }
