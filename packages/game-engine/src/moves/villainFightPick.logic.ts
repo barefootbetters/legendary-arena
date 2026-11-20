@@ -63,6 +63,15 @@ import { recordVillainDefeated } from '../economy/economy.logic.js';
 import { matchHasFightRestrictionKind } from './villainDefeatRequirement.logic.js';
 import { routeDefeatedVillainCard, resolveVillainDeckDefeatFightEffect } from './fightVillain.js';
 import { readTurnNumber } from '../villain/villainEffects.execute.js';
+// why: WP-902 / D-24859 — Blue Talon's discard-pile Undercover send and Iron Maiden's Unleash
+// reuse the shared Undercover move / return and the one Hero predicate; read only inside function
+// bodies, closing a runtime-safe cycle (heroEffects.execute → … → seatChoice.resolve → this
+// module), safe for the same reason as the parkSeatChoice cycle above.
+import {
+  isYourHeroUndercoverCandidate,
+  moveCardUndercover,
+  returnUndercoverHeroToHand,
+} from '../hero/heroEffects.execute.js';
 
 /** Liar: the fighter picks which other player's deck to look at (two or more other seats). */
 export const LIAR_TARGET_SEAT_CHOICE_KIND = 'liar-target';
@@ -76,6 +85,10 @@ export const NIGHTBRINGER_DEFEAT_SEAT_CHOICE_KIND = 'nightbringer-defeat';
 export const NIGHTBRINGER_ORDER_SEAT_CHOICE_KIND = 'nightbringer-order';
 /** Remaker: the fighter may give a hand or discard card to the player on their right. */
 export const REMAKER_GIVE_SEAT_CHOICE_KIND = 'remaker-give';
+/** Blue Talon: the fighter may send a Hero from their discard pile Undercover (WP-902 / D-24859). */
+export const VILLAIN_FIGHT_UNDERCOVER_FROM_DISCARD_KIND = 'villain-fight-undercover-from-discard';
+/** Iron Maiden: each player may Unleash one of their Heroes from Undercover (WP-902 / D-24859). */
+export const VILLAIN_FIGHT_UNLEASH_KIND = 'villain-fight-unleash';
 
 // why: option index = permutation index; index 0 keeps the order as revealed (the default).
 /** Every order of two put-back cards, as indexes into the revealed list. */
@@ -85,15 +98,20 @@ export const PERMUTATIONS_OF_THREE: readonly (readonly number[])[] = [
   [0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0],
 ];
 
-/** The six seat-choice kinds this module owns. */
+/** The eight seat-choice kinds this module owns (WP-902 / D-24859 added the last two). */
 const VILLAIN_FIGHT_PICK_KINDS: readonly string[] = [
   'liar-target', 'liar-claim', 'liar-decide', 'nightbringer-defeat', 'nightbringer-order', 'remaker-give',
+  VILLAIN_FIGHT_UNDERCOVER_FROM_DISCARD_KIND, VILLAIN_FIGHT_UNLEASH_KIND,
 ];
 
 /** Liar's primitive (the queue key). */
 const LIAR_PRIMITIVE: PendingVillainFightPick['primitive'] = 'look-other-player-deck-top-claim-current';
 /** Nightbringer's primitive (the queue key). */
 const NIGHTBRINGER_PRIMITIVE: PendingVillainFightPick['primitive'] = 'reveal-villain-deck-defeat-low-vp-current';
+/** Blue Talon's primitive (the queue key, WP-902 / D-24859). */
+const BLUE_TALON_PRIMITIVE: PendingVillainFightPick['primitive'] = 'undercover-hero-from-discard-current';
+/** Iron Maiden's Unleash primitive (the queue key, WP-902 / D-24859). */
+const IRON_MAIDEN_UNLEASH_PRIMITIVE: PendingVillainFightPick['primitive'] = 'unleash-undercover-hero-each-player';
 
 /** The most printed VP a Villain may have for Nightbringer to defeat it. */
 const NIGHTBRINGER_MAX_VICTORY_POINTS = 2;
@@ -231,6 +249,14 @@ function buildFirstStepChoice(G: LegendaryGameState, entry: PendingVillainFightP
   }
   if (entry.primitive === NIGHTBRINGER_PRIMITIVE) {
     return buildNightbringerRevealStep(G, entry.playerID, entry.sourceCardId);
+  }
+  // why: WP-902 / D-24859 — the two Elite Assassins arms placed BEFORE the Remaker fall-through,
+  // so a new primitive never falls through to buildRemakerGiveChoice.
+  if (entry.primitive === BLUE_TALON_PRIMITIVE) {
+    return buildBlueTalonUndercoverFromDiscardChoice(G, entry.playerID, entry.sourceCardId);
+  }
+  if (entry.primitive === IRON_MAIDEN_UNLEASH_PRIMITIVE) {
+    return buildIronMaidenUnleashChoice(G, entry.playerID, entry.sourceCardId);
   }
   if (entry.targetSeat === undefined) {
     return undefined;
@@ -530,6 +556,108 @@ function zoneLabel(sourceZone: 'hand' | 'inPlay' | 'discard' | undefined): strin
 }
 
 /**
+ * The distinct ids of a zone's cards passing the Undercover Hero predicate, in first-seen order
+ * (WP-902 / D-24859: the appendRemakerZoneOptions dedupe, so eight S.H.I.E.L.D. Agents are one
+ * option).
+ *
+ * @param zoneCards - The zone's cards in order.
+ * @returns Each distinct Hero id once, in first-seen order.
+ */
+function distinctUndercoverHeroes(zoneCards: readonly CardExtId[]): CardExtId[] {
+  const listed: CardExtId[] = [];
+  for (const cardId of zoneCards) {
+    if (isYourHeroUndercoverCandidate(cardId) && !listed.includes(cardId)) {
+      listed.push(cardId);
+    }
+  }
+  return listed;
+}
+
+/**
+ * Builds Blue Talon's Fight pick (WP-902 / D-24859): "You may send a Hero from your discard pile
+ * Undercover." One option per distinct Hero id in the fighter's discard pile (first-seen order),
+ * with "Don't send a Hero Undercover" at index 0 (the "may" default). No Hero → a logged no-op.
+ *
+ * @param G - The game state (logs pushed).
+ * @param fighterSeat - The defeating player.
+ * @param sourceCardId - The defeated Blue Talon copy.
+ * @returns The 'villain-fight-undercover-from-discard' choice, or undefined (logged).
+ */
+function buildBlueTalonUndercoverFromDiscardChoice(
+  G: LegendaryGameState,
+  fighterSeat: string,
+  sourceCardId: CardExtId,
+): PendingSeatChoice | undefined {
+  const discard = G.playerZones[fighterSeat]?.discard ?? [];
+  const heroes = distinctUndercoverHeroes(discard);
+  if (heroes.length === 0) {
+    const source = formatCardRef(G.cardDisplayData, sourceCardId);
+    pushLog(G, `Player ${fighterSeat} has no Hero in their discard pile to send Undercover (${source}).`, 'blocked', sourceCardId);
+    return undefined;
+  }
+  // why: D-24859 point 7 — "You may": the decline is option 0, so every default (timeout / sim /
+  // PAR / bot-ally) keeps the Hero.
+  const options: SeatChoiceOption[] = [{ label: `Don't send a Hero Undercover` }];
+  for (const cardId of heroes) {
+    options.push({ label: `Send ${resolveCardName(G.cardDisplayData, cardId)} Undercover`, cardId, sourceZone: 'discard' });
+  }
+  return buildPickChoice(VILLAIN_FIGHT_UNDERCOVER_FROM_DISCARD_KIND, fighterSeat, options, { sourceCardId, fighterSeat });
+}
+
+/**
+ * Builds Iron Maiden's Fight pick (WP-902 / D-24859): "Each player may Unleash one of their Heroes
+ * from Undercover." Every seat (ascending) whose `undercover` tracker holds a Hero still in its
+ * Victory Pile is addressed, with "Don't Unleash" at index 0 and one `Unleash <name>` option per
+ * distinct eligible id in first-seen tracker order. No eligible seat → a logged no-op. A multi-seat
+ * choice (each addressed seat answers), so the apply loops every addressed seat itself.
+ *
+ * @param G - The game state (logs pushed).
+ * @param fighterSeat - The defeating player.
+ * @param sourceCardId - The defeated Iron Maiden copy.
+ * @returns The 'villain-fight-unleash' choice, or undefined (logged).
+ */
+function buildIronMaidenUnleashChoice(
+  G: LegendaryGameState,
+  fighterSeat: string,
+  sourceCardId: CardExtId,
+): PendingSeatChoice | undefined {
+  const addressedSeats: string[] = [];
+  const seatPrompts: PendingSeatChoice['seatPrompts'] = {};
+  for (const seat of Object.keys(G.playerZones).sort()) {
+    const zones = G.playerZones[seat];
+    if (zones === undefined) {
+      continue;
+    }
+    const victory = zones.victory;
+    const eligible = distinctUndercoverHeroes(zones.undercover ?? []).filter((cardId) => victory.includes(cardId));
+    if (eligible.length === 0) {
+      continue;
+    }
+    // why: D-24859 point 7 — "may": the decline is option 0, every default keeps the Hero.
+    const options: SeatChoiceOption[] = [{ label: `Don't Unleash` }];
+    for (const cardId of eligible) {
+      options.push({ label: `Unleash ${resolveCardName(G.cardDisplayData, cardId)}`, cardId });
+    }
+    addressedSeats.push(seat);
+    seatPrompts[seat] = { options };
+  }
+  if (addressedSeats.length === 0) {
+    const source = formatCardRef(G.cardDisplayData, sourceCardId);
+    pushLog(G, `No player has a Hero Undercover to Unleash (${source}).`, 'blocked', sourceCardId);
+    return undefined;
+  }
+  return {
+    kind: VILLAIN_FIGHT_UNLEASH_KIND,
+    addressedSeats,
+    seatPrompts,
+    submissions: {},
+    // why: every default is option 0, the decline (D-24859 point 7).
+    defaultOptionIndex: 0,
+    villainFightPick: { sourceCardId, fighterSeat },
+  };
+}
+
+/**
  * The option a seat chose on a fully-submitted one-seat pick choice.
  *
  * @param choice - The resolved choice.
@@ -580,6 +708,77 @@ export function applyVillainFightPickResolvedSeatChoice(
     applyNightbringerOrder(G, payload, chosen.index);
   } else if (choice.kind === REMAKER_GIVE_SEAT_CHOICE_KIND) {
     applyRemakerGive(G, payload, chosen.option);
+  } else if (choice.kind === VILLAIN_FIGHT_UNDERCOVER_FROM_DISCARD_KIND) {
+    applyBlueTalonUndercoverFromDiscard(G, payload, chosen.option);
+  } else if (choice.kind === VILLAIN_FIGHT_UNLEASH_KIND) {
+    // why: WP-902 / D-24859 — a multi-seat pick: every addressed seat answers, so the apply loops
+    // them itself (readChosenOption reads only addressedSeats[0]).
+    applyIronMaidenUnleash(G, choice);
+  }
+}
+
+/**
+ * 'villain-fight-undercover-from-discard': Blue Talon sends the chosen Hero from the fighter's
+ * discard pile Undercover (or declines). A card no longer in the discard pile is refused with a log.
+ *
+ * @param G - The game state, mutated in place.
+ * @param payload - The applied choice's payload (fighterSeat + sourceCardId).
+ * @param option - The chosen option (option 0 has no cardId: don't send).
+ */
+function applyBlueTalonUndercoverFromDiscard(
+  G: LegendaryGameState,
+  payload: VillainFightPickPayload,
+  option: SeatChoiceOption,
+): void {
+  const fighterSeat = payload.fighterSeat;
+  const source = formatCardRef(G.cardDisplayData, payload.sourceCardId);
+  const cardId = option.cardId;
+  if (cardId === undefined) {
+    pushLog(G, `Player ${fighterSeat} chose not to send a Hero Undercover (${source}).`, 'neutral', payload.sourceCardId);
+    return;
+  }
+  const zones = G.playerZones[fighterSeat];
+  if (zones === undefined || !zones.discard.includes(cardId)) {
+    pushLog(G, `The chosen Hero is no longer in Player ${fighterSeat}'s discard pile; nothing is sent Undercover (${source}).`, 'blocked', payload.sourceCardId);
+    return;
+  }
+  // why: moveCardUndercover moves the first matching instance from the discard pile into the
+  // Victory Pile and the undercover tracker (+1 VP), the shared Undercover move (D-24858).
+  zones.discard = moveCardUndercover(G, fighterSeat, cardId, zones.discard);
+  pushLog(G, `Player ${fighterSeat} sent ${formatCardRef(G.cardDisplayData, cardId)} Undercover (into the Victory Pile, +1 VP).`, 'applied', cardId);
+}
+
+/**
+ * 'villain-fight-unleash': every addressed seat Unleashes its chosen Hero from Undercover back to
+ * its hand (or declines). Loops every addressed seat in ascending id order; a Hero that left the
+ * Victory Pile is refused with a log.
+ *
+ * @param G - The game state, mutated in place.
+ * @param choice - The fully-submitted multi-seat choice (kind 'villain-fight-unleash').
+ */
+function applyIronMaidenUnleash(G: LegendaryGameState, choice: PendingSeatChoice): void {
+  // why: D-24780 §6 / D-24501 — a simultaneous seat-choice apply loops in ascending seat order.
+  const seatsInApplyOrder = [...choice.addressedSeats].sort();
+  for (const seat of seatsInApplyOrder) {
+    const submission = choice.submissions[seat];
+    if (submission === undefined) {
+      continue;
+    }
+    const option = choice.seatPrompts[seat]?.options[submission.optionIndex];
+    if (option === undefined) {
+      continue;
+    }
+    const cardId = option.cardId;
+    if (cardId === undefined) {
+      pushLog(G, `Player ${seat} chose not to Unleash a Hero.`, 'neutral');
+      continue;
+    }
+    if (returnUndercoverHeroToHand(G, seat, cardId)) {
+      pushLog(G, `Player ${seat} Unleashed ${formatCardRef(G.cardDisplayData, cardId)} from Undercover (back to their hand).`, 'applied', cardId);
+    } else {
+      // why: the Hero left the Victory Pile under the choice; Unleash is refused with a log.
+      pushLog(G, `Player ${seat} could not Unleash ${formatCardRef(G.cardDisplayData, cardId)} — it is no longer in their Victory Pile.`, 'blocked', cardId);
+    }
   }
 }
 

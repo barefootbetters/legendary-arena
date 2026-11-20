@@ -163,6 +163,12 @@ import {
   VILLAIN_EFFECT_TRAIT_DISCARD_KIND,
   VILLAIN_EFFECT_ANY_CARD_DISCARD_KIND,
   applyVillainEffectAnyCardDiscard,
+  // why: WP-902 / D-24859 — Snapdragon's non-grey discard + draw and Iron Maiden's non-grey
+  // Undercover send apply here (same runtime-safe cycle: function-body references only).
+  VILLAIN_EFFECT_NON_GREY_DISCARD_THEN_DRAW_KIND,
+  VILLAIN_EFFECT_UNDERCOVER_EACH_PLAYER_KIND,
+  applyVillainEffectNonGreyDiscardThenDraw,
+  applyVillainEffectUndercoverEachPlayer,
 } from '../villainDeck/villainEscapeProcedure.js';
 // why: WP-793 / D-24656 — a non-active seat's return-on-discard apply. resolveReturnOnDiscard
 // imports parkSeatChoice from this module: the same runtime-safe cycle (function bodies only).
@@ -843,6 +849,19 @@ function applySeatChoiceByKind(
   // goes through discardFromHand.
   if (choice.kind === VILLAIN_EFFECT_ANY_CARD_DISCARD_KIND) {
     applyVillainEffectAnyCardDiscard(G, choice);
+    return;
+  }
+  // why: WP-902 / D-24859 — Snapdragon's Ambush discards each holder's non-grey Hero, then draws
+  // every seat a card; the draw needs the shuffle context and the current player (cardsDrawn,
+  // D-24732; draw lock, D-24552).
+  if (choice.kind === VILLAIN_EFFECT_NON_GREY_DISCARD_THEN_DRAW_KIND) {
+    applyVillainEffectNonGreyDiscardThenDraw(G, choice, shuffleContext, currentPlayer);
+    return;
+  }
+  // why: WP-902 / D-24859 — Iron Maiden's Ambush sends each seat's chosen non-grey Hero Undercover
+  // (no draw, so no shuffle context); an in-play send is recorded as a mid-turn exit from play.
+  if (choice.kind === VILLAIN_EFFECT_UNDERCOVER_EACH_PLAYER_KIND) {
+    applyVillainEffectUndercoverEachPlayer(G, choice);
     return;
   }
   if (choice.kind === RETURN_ON_DISCARD_SEAT_CHOICE_KIND) {

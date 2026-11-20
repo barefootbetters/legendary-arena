@@ -2833,6 +2833,83 @@
       "date": "2026-11-19",
       "evidence": "Operator 2p match (1 bot ally) 5O59pcTtXIS, client bf3d54e (the #3444 merge, version.json) on server e3091635 (Indestructible Man / Corrupt the Spy Agencies; Elite Assassins + Taskmaster's Thunderbolts; Doombot Legion; Black Widow, Yelena Belova, Red Guardian, White Tiger, Falcon & Winter Soldier), driven by the human seat 0 with real clicks. Start step: the shuffle button disabled with the stage reason. Main with +20 operator Attack and no Assassins banked: Fight disabled with the lock reason (no Fight N badge), shuffle disabled \"Needs 2 Elite Assassins in your Victory Pile.\". Fought Iron Maiden (2.2.4), then Black Lotus (4.2.2; staged by Villain-deck move-to-top): shuffle enabled, titled \"...to fight Indestructible Man (once per turn).\". Click opened the body-level chooser \"Choose 2 Elite Assassins\" listing Iron Maiden and Black Lotus with art, first option focused; \"0 of 2 chosen\" / \"1 of 2 chosen\" Confirm disabled, \"2 of 2 chosen\" Confirm enabled. \"Shuffle and fight\" logged 4.2.4 \"Player 0 shuffled Iron Maiden (bkwd-villain-elite-assassins-iron-maiden-00) and Black Lotus (bkwd-villain-elite-assassins-black-lotus-01) from their Victory Pile into the Villain Deck to fight Indestructible Man.\" and 4.2.5 \"Player 0 fought Indestructible Man and defeated the tactic \\\"Secrets of Indestructibility\\\".\" (tactics 4 -> 3); the chooser closed and the button read \"You've already shuffled Assassins this turn.\". Not observed live (unit-tested): the Enigma hand-off, haunt / guard reasons, heal lock, Escape / Cancel / backdrop close.",
       "note": "Live check (NEW human Indestructible Man match after the deploy, Workshop operator match with Elite Assassins in the Victory Pile; autoplay seats are bots): the Fight button shows the lock reason whatever the Attack; \"Shuffle 2 Elite Assassins → Fight\" is disabled with \"Needs 2 Elite Assassins in your Victory Pile.\" until two are banked; the chooser lists them with art, Confirm enables at exactly two, and the click logs \"shuffled <A> and <B> from their Victory Pile into the Villain Deck to fight Indestructible Man.\" and defeats a Tactic; then the button says \"You've already shuffled Assassins this turn.\". D-24601 (WP-770)."
+    },
+    {
+      "key": "bkwd-villain-elite-assassins-blue-talon|undercover-hero-from-discard-current",
+      "kind": "villain",
+      "card": "Blue Talon",
+      "ability": "Fight: You may send a Hero from your discard pile Undercover.",
+      "wp": "WP-902",
+      "state": "pending",
+      "date": "2026-11-20",
+      "evidence": "",
+      "note": "Live check (NEW Indestructible Man match after the deploy with bkwd/elite-assassins; Villain deck -> Move villain card to top, then fight Blue Talon): the fighter is offered 'Don't send a Hero Undercover' plus one option per distinct Hero in their discard pile; a send moves one copy into the Victory Pile and the undercover tracker (+1 VP); no Hero in the discard -> a logged no-op. D-24859."
+    },
+    {
+      "key": "bkwd-villain-elite-assassins-iron-maiden|undercover-non-grey-hero-each-player",
+      "kind": "villain",
+      "card": "Iron Maiden",
+      "ability": "Ambush: Each player must send one of their non-grey Heroes Undercover.",
+      "wp": "WP-902",
+      "state": "pending",
+      "date": "2026-11-20",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy; reveal Iron Maiden): every player with a non-grey Hero in hand or play sends exactly one Undercover (no decline; cheapest offered first); seats with none are logged; an in-play send leaves play (+1 VP). D-24859."
+    },
+    {
+      "key": "bkwd-villain-elite-assassins-iron-maiden|unleash-undercover-hero-each-player",
+      "kind": "villain",
+      "card": "Iron Maiden",
+      "ability": "Fight: Each player may Unleash one of their Heroes from Undercover.",
+      "wp": "WP-902",
+      "state": "pending",
+      "date": "2026-11-20",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy; fight Iron Maiden with Heroes Undercover): every player with an Undercover Hero gets 'Don't Unleash' plus one option per distinct Hero id; Unleash returns the Hero to hand and out of the Victory Pile and tracker; a decline changes nothing. D-24859."
+    },
+    {
+      "key": "bkwd-villain-elite-assassins-snapdragon|discard-non-grey-hero-then-draw-each-player",
+      "kind": "villain",
+      "card": "Snapdragon",
+      "ability": "Ambush: Each player discards a non-grey Hero. Then each player draws a card.",
+      "wp": "WP-902",
+      "state": "pending",
+      "date": "2026-11-20",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy; reveal Snapdragon): holders of a non-grey Hero each discard one (cheapest offered first); then every seat draws one, current player first; with no holder, a one-option prompt still draws everyone. D-24859."
+    },
+    {
+      "key": "bkwd-villain-elite-assassins-snapdragon|undercover-your-hero-current",
+      "kind": "villain",
+      "card": "Snapdragon",
+      "ability": "Fight: You may send one of your Heroes Undercover.",
+      "wp": "WP-902",
+      "state": "pending",
+      "date": "2026-11-20",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy; fight Snapdragon): the WP-901 Undercover prompt opens over the fighter's hand + played Heroes with a 'Don't send' option; a send moves the Hero into the Victory Pile (+1 VP). D-24859."
+    },
+    {
+      "key": "bkwd-villain-elite-assassins-black-lotus|discard-zero-cost-card-each-player",
+      "kind": "villain",
+      "card": "Black Lotus",
+      "ability": "Ambush: Each player discards a card that costs 0.",
+      "wp": "WP-902",
+      "state": "pending",
+      "date": "2026-11-20",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy; reveal Black Lotus): only seats holding a cost-0 card (a Wound counts, a Bystander does not) are prompted, and each discards its pick; a seat with none is logged. D-24859."
+    },
+    {
+      "key": "bkwd-villain-elite-assassins-black-lotus|gain-recruit-current",
+      "kind": "villain",
+      "card": "Black Lotus",
+      "ability": "Fight: You get +3 Recruit.",
+      "wp": "WP-902",
+      "state": "pending",
+      "date": "2026-11-20",
+      "evidence": "",
+      "note": "Live check (NEW match after the deploy; fight Black Lotus): the Fight logs +3 Recruit and the recruit total rises by 3. D-24859 (the shipped gain-recruit-current handler, WP-541 / D-24350)."
     }
   ]
 }

@@ -32,6 +32,10 @@ import { CITY_SPACE_NAMES, citySpaceNameForIndex } from '../board/citySpaceNames
 // why: WP-760 / D-24589 — villain Blood Frenzy reuses WP-765's shared distinct-VP
 // helper (D-24598), so villain and hero Blood Frenzy can never count differently.
 import { countDistinctVictoryPointValues } from './bloodFrenzy.logic.js';
+// why: WP-902 / D-24859 — villain Dark Memories counts Hero Classes over the fighter's discard
+// pile; the off-play trait view (a split card counts both faces) and the engine's class list.
+import { offPlayCardTraits } from '../hero/splitCard.logic.js';
+import { HERO_CLASSES } from '../content/content.schemas.js';
 // why: WP-794 / D-24663 — the only read site of TurnEconomy.fightCostReductions is the
 // shared summing helper, called from the two resolvers below.
 import { getFightCostReduction } from './economy.logic.js';
@@ -128,6 +132,10 @@ export function resolveFightCost(
     darkPortalVillainBonus(G, villainCardId) +
     bystanderVillainAttackBonus(G, villainCardId) +
     villainBloodFrenzyBonus(G, villainCardId, fightingPlayerId) +
+    // why: WP-902 / D-24859 — villain Dark Memories ("+1 Attack for each Hero Class among the
+    // cards in your discard pile"), read here in this single authority over the FIGHTER's discard
+    // pile, so the fight move, the bot and the City projection agree; 0 without a fighter or flag.
+    villainDarkMemoriesBonus(G, villainCardId, fightingPlayerId) +
     villainAbominationBonus(G, villainCardId) +
     villainVariableAttackBonus(G, villainCardId) +
     // why: WP-838 / D-24771 — "+1 Attack for each Hero / Bystander he has" (co2e Venom,
@@ -275,6 +283,75 @@ function villainBloodFrenzyBonus(
     return 0;
   }
   return countDistinctVictoryPointValues(G, fightingPlayerId);
+}
+
+/**
+ * The Dark Memories attack bonus for a villain (WP-902 / D-24859).
+ *
+ * A villain flagged in G.villainDarkMemories gets +1 attack for each different Hero Class among
+ * the cards in the fighting player's discard pile (rules v23 ~L1267-1297). Grey cards (and Wounds
+ * / Bystanders) carry no class and add none; a dual-class or split card counts each of its
+ * classes once. Unflagged villains, and any call without a fighting player, get 0.
+ *
+ * @param G - Game state (read-only).
+ * @param villainCardId - The villain zone-instance ext_id.
+ * @param fightingPlayerId - The player who would fight, if known.
+ * @returns The distinct Hero Class count in the fighter's discard pile, or 0.
+ */
+function villainDarkMemoriesBonus(
+  G: LegendaryGameState,
+  villainCardId: CardExtId,
+  fightingPlayerId: string | undefined,
+): number {
+  // why: Dark Memories reads the FIGHTER's discard pile, so the term needs a player (the Blood
+  // Frenzy convention); every pre-WP-902 caller and test stays byte-identical.
+  if (fightingPlayerId === undefined) {
+    return 0;
+  }
+  if (G.villainDarkMemories?.[villainCardId] !== true) {
+    return 0;
+  }
+  return countDistinctDiscardHeroClasses(G, fightingPlayerId);
+}
+
+/**
+ * Counts the distinct Hero Classes among the cards in a player's discard pile (WP-902 / D-24859).
+ *
+ * Reads the off-play trait view of each discard card (a split card counts both faces); collects
+ * every `heroClass` / `heroClass2` that is one of the five HERO_CLASSES. Grey cards, Wounds and
+ * Bystanders have no class and add none; a repeated class counts once.
+ *
+ * @param G - Game state (read-only).
+ * @param playerID - The player whose discard pile is counted.
+ * @returns The number of distinct Hero Classes, 0 for an empty or class-less pile.
+ */
+function countDistinctDiscardHeroClasses(G: LegendaryGameState, playerID: string): number {
+  const discard = G.playerZones?.[playerID]?.discard ?? [];
+  const classes = new Set<string>();
+  for (const cardId of discard) {
+    const traits = offPlayCardTraits(G, cardId);
+    if (traits === undefined) {
+      continue;
+    }
+    addHeroClassIfValid(classes, traits.heroClass);
+    addHeroClassIfValid(classes, traits.heroClass2);
+  }
+  return classes.size;
+}
+
+/**
+ * Adds a Hero Class to the set when it is one of the five canonical HERO_CLASSES (WP-902 / D-24859).
+ *
+ * @param classes - The accumulating set of distinct classes (mutated).
+ * @param heroClass - A card's `heroClass` or `heroClass2`, possibly null or undefined.
+ */
+function addHeroClassIfValid(classes: Set<string>, heroClass: string | null | undefined): void {
+  if (typeof heroClass !== 'string' || heroClass.length === 0) {
+    return;
+  }
+  if ((HERO_CLASSES as readonly string[]).includes(heroClass)) {
+    classes.add(heroClass);
+  }
 }
 
 /**

@@ -1871,7 +1871,12 @@ export interface PendingVillainFightPick {
   primitive:
     | 'look-other-player-deck-top-claim-current'
     | 'reveal-villain-deck-defeat-low-vp-current'
-    | 'give-card-to-right-player-current';
+    | 'give-card-to-right-player-current'
+    // why: WP-902 / D-24859 — Blue Talon's "send a Hero from your discard pile Undercover" (a
+    // one-seat pick) and Iron Maiden's "each player may Unleash one of their Heroes from
+    // Undercover" (a multi-seat pick) ride the same queue; the opener builds their seat choices.
+    | 'undercover-hero-from-discard-current'
+    | 'unleash-undercover-hero-each-player';
   /** The defeating player (the fighter). */
   playerID: string;
   /** The defeated Mandarin's Rings copy that owes the pick (for the log). */
@@ -1988,6 +1993,16 @@ export interface PendingEscapeEffectDiscard {
   // before (presence-tested, Operator fork F3).
   /** Present on an every-player discard of any one hand card; absent otherwise. */
   anyHandCard?: PendingEffectDiscardAnyHandCard;
+  // why: WP-902 / D-24859 — Snapdragon's Ambush "each player discards a non-grey Hero, then each
+  // player draws a card" rides the same FIFO, marked by this field (with `eligibleCosts: []`);
+  // presence-tested, so a cost / trait / any-card entry routes exactly as before (D-24772 F3).
+  /** Present on an every-player non-grey-Hero discard whose apply then draws every seat a card. */
+  nonGreyHeroDiscardThenDraw?: { effectLabel: 'Ambush' };
+  // why: WP-902 / D-24859 — Iron Maiden's Ambush "each player must send one of their non-grey
+  // Heroes Undercover" rides the same FIFO, marked by this field (with `eligibleCosts: []`);
+  // presence-tested, so every other entry routes exactly as before (D-24772 F3).
+  /** Present on an every-player mandatory non-grey-Hero Undercover send; absent otherwise. */
+  nonGreyHeroUndercover?: { effectLabel: 'Ambush' };
 }
 
 /**
@@ -2000,6 +2015,11 @@ export interface PendingEscapeEffectDiscard {
 export interface PendingEffectDiscardAnyHandCard {
   /** The timing label of the effect that owes the discard. */
   effectLabel: 'Ambush';
+  // why: WP-902 / D-24859 — Black Lotus's Ambush ("each player discards a card that costs 0")
+  // reuses this any-card entry with a cost-0 filter. Written only as `true`; read `=== true` so a
+  // Speed Demon entry (field absent) keeps its full-hand choice byte-identical (D-24600 precedent).
+  /** When true, only cost-0 cards (a Wound included, a Bystander not) are eligible to discard. */
+  zeroCostOnly?: true;
 }
 
 /**
@@ -3449,6 +3469,16 @@ export interface LegendaryGameState {
   // a cost modifier, not City-structural (patrol / ambush / guard).
   /** Blood Frenzy villain instances. Built at setup, read-only; absent when none. */
   villainBloodFrenzy?: Record<CardExtId, true>;
+
+  // why: WP-902 / D-24859 — per-villain-instance Dark Memories flag ("+1 Attack for each Hero
+  // Class among the cards in your discard pile"; bkwd Blue Talon / Iron Maiden and rvlt Cancer /
+  // Chemistro / Madam Masque print the bare [keyword:Dark Memories] line). Read by resolveFightCost
+  // only, over the FIGHTER's discard pile. Built once at setup from the whole-line bare keyword,
+  // keyed by copy-suffixed instance ext_id. OMITTED ENTIRELY when no Dark Memories villain is in
+  // the match, so every other match keeps a byte-identical G (hash oracles). Not a BoardKeyword:
+  // Dark Memories is a cost modifier, not City-structural (the Blood Frenzy precedent).
+  /** Dark Memories villain instances. Built at setup, read-only; absent when none. */
+  villainDarkMemories?: Record<CardExtId, true>;
 
   // why: WP-815 / D-24747 — per-card Abomination kind. Villain copies (Abomination /
   // Double Abomination) are keyed by copy-suffixed instance ext_id; the Mastermind

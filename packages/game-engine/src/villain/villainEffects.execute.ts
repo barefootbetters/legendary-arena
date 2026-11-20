@@ -16,7 +16,7 @@
  * attachBystanderToVillain, awardAttachedBystanders.
  */
 
-import type { LegendaryGameState, PendingKoHeroChoice, PendingGiveHqHeroChoice, PendingMelterKoChoice, MelterRevealedTop, PendingKoDiscardChoice, PendingRevealTopDispose, RevealedTopEntry, PendingReorderChoice } from '../types.js';
+import type { LegendaryGameState, PendingKoHeroChoice, PendingGiveHqHeroChoice, PendingMelterKoChoice, MelterRevealedTop, PendingKoDiscardChoice, PendingRevealTopDispose, RevealedTopEntry, PendingReorderChoice, PendingUndercoverChoice, PendingEscapeEffectDiscard } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type { CardTraitEntry } from '../state/cardTraits.types.js';
 import {
@@ -115,6 +115,10 @@ import { queueNextHandFromPlayPick } from '../moves/nextHandFromPlay.logic.js';
 // runtime-safe cycle, because every binding on both sides is read only inside a function body
 // (the WP-828 hero-executor shape), never at module evaluation.
 import { queueVillainFightPick, rightNeighborSeat } from '../moves/villainFightPick.logic.js';
+// why: WP-902 / D-24859 — Snapdragon's Fight ("send one of your Heroes Undercover") parks a
+// 'your-hero' PendingUndercoverChoice; the shared Hero predicate is read only inside the handler
+// body, closing a runtime-safe cycle through moves/seatChoice.resolve (the queueVillainFightPick shape).
+import { isYourHeroUndercoverCandidate } from '../hero/heroEffects.execute.js';
 // why: WP-817 / D-24750 — Captain Zolandia counts Hero Classes with the hero side's one
 // counter, and Primus's Escape narrates its costs with the shared cost-list formatter.
 import { countDistinctHeroClassesYouHave } from '../hero/heroConditions.evaluate.js';
@@ -5434,6 +5438,174 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
 // WP-544 (D-24353 — core radiation Maestro "For each of your [hc:strength] Heroes, KO one of
 // your Heroes"). Distinct from `ko-heroes-current-by-trait`, which KOs the MATCHING Heroes.
 /** Villain effect handlers keyed by primitive. Single dispatch source. */
+/**
+ * Records an owed every-player Ambush effect on the WP-817 FIFO and narrates it (WP-902 / D-24859).
+ *
+ * Shared by the three Elite Assassins Ambush handlers (Black Lotus, Snapdragon, Iron Maiden). The
+ * executor has no `events`, so like Primus's Escape (D-24750) it records the owed effect and the
+ * turn.onMove opener parks it after the move; one FIFO keeps rule order. Logs the clause and
+ * returns it as the narrative (D-24854 §6).
+ *
+ * @param G - The game state (mutated: the lazy queue and the hash-excluded log).
+ * @param cardId - The Villain whose Ambush owes the effect.
+ * @param timing - The timing that fired.
+ * @param entryFields - The variant field(s) to merge onto the queue entry.
+ * @param clause - The self-narration clause (also the narrative, D-24854 §6).
+ * @returns `{ targets: [], narrativeClause: clause }`.
+ */
+function recordOwedEliteAssassinsAmbush(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  entryFields: Partial<Pick<PendingEscapeEffectDiscard, 'anyHandCard' | 'nonGreyHeroDiscardThenDraw' | 'nonGreyHeroUndercover'>>,
+  clause: string,
+): VillainEffectApplication {
+  if (G.pendingEscapeEffectDiscards === undefined) {
+    G.pendingEscapeEffectDiscards = [];
+  }
+  G.pendingEscapeEffectDiscards.push({ escapedCardId: cardId, eligibleCosts: [], ...entryFields });
+  pushLog(G, `${villainEffectTimingLabel(timing)} effect: ${clause}.`, 'applied');
+  // why: WP-897 / D-24854 §6 — the narrative clause is the logged clause.
+  return { targets: [], narrativeClause: clause };
+}
+
+/**
+ * discard-zero-cost-card-each-player primitive — Black Lotus's Ambush "Each player discards a card
+ * that costs 0." (WP-902 / D-24859). Records the owed any-card discard with a cost-0 filter; the
+ * escape opener parks it. Keyword-less, self-narrating.
+ */
+function villainEffectDiscardZeroCostCardEachPlayer(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+): VillainEffectApplication {
+  return recordOwedEliteAssassinsAmbush(
+    G,
+    cardId,
+    timing,
+    { anyHandCard: { effectLabel: 'Ambush', zeroCostOnly: true } },
+    'each player must discard a card that costs 0',
+  );
+}
+
+/**
+ * discard-non-grey-hero-then-draw-each-player primitive — Snapdragon's Ambush "Each player discards
+ * a non-grey Hero. Then each player draws a card." (WP-902 / D-24859). Records the owed effect; the
+ * apply discards then draws (it holds the move's `{ random }`). Keyword-less, self-narrating.
+ */
+function villainEffectDiscardNonGreyHeroThenDrawEachPlayer(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+): VillainEffectApplication {
+  return recordOwedEliteAssassinsAmbush(
+    G,
+    cardId,
+    timing,
+    { nonGreyHeroDiscardThenDraw: { effectLabel: 'Ambush' } },
+    'each player must discard a non-grey Hero, then each player draws a card',
+  );
+}
+
+/**
+ * undercover-non-grey-hero-each-player primitive — Iron Maiden's Ambush "Each player must send one
+ * of their non-grey Heroes Undercover." (WP-902 / D-24859). Records the owed mandatory send; the
+ * escape opener parks it. Keyword-less, self-narrating.
+ */
+function villainEffectUndercoverNonGreyHeroEachPlayer(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+): VillainEffectApplication {
+  return recordOwedEliteAssassinsAmbush(
+    G,
+    cardId,
+    timing,
+    { nonGreyHeroUndercover: { effectLabel: 'Ambush' } },
+    'each player must send one of their non-grey Heroes Undercover',
+  );
+}
+
+/**
+ * undercover-your-hero-current primitive — Snapdragon's Fight "You may send one of your Heroes
+ * Undercover." (WP-902 / D-24859). The second copy of the WP-901 'your-hero' park (duplicate-first,
+ * 00.6 Rule 1), attributed to the Snapdragon copy: eligible = the current player's hand + in-play
+ * Heroes; none → a log and no park; else a declinable 'your-hero' PendingUndercoverChoice the
+ * shipped resolveUndercoverChoice drains.
+ */
+function villainEffectUndercoverYourHeroCurrent(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+): VillainEffectApplication {
+  const zones = G.playerZones[currentPlayer];
+  if (zones === undefined) {
+    return { targets: [] };
+  }
+  const eligibleHand: CardExtId[] = [];
+  for (const handCardId of zones.hand) {
+    if (isYourHeroUndercoverCandidate(handCardId)) {
+      eligibleHand.push(handCardId);
+    }
+  }
+  const eligibleInPlay: CardExtId[] = [];
+  for (const inPlayCardId of zones.inPlay) {
+    if (isYourHeroUndercoverCandidate(inPlayCardId)) {
+      eligibleInPlay.push(inPlayCardId);
+    }
+  }
+  if (eligibleHand.length === 0 && eligibleInPlay.length === 0) {
+    pushLog(G, `Player ${currentPlayer} had no Hero to send Undercover for ${formatCardRef(G.cardDisplayData, cardId)}.`);
+    return { targets: [] };
+  }
+  // why: WP-901 / D-24858 write rule — a 'your-hero' entry ALWAYS carries canDecline: true and
+  // eligibleInPlayTargets (possibly []); lazy-init here, never in Game.setup.
+  if (G.pendingUndercoverChoice === undefined) {
+    G.pendingUndercoverChoice = [];
+  }
+  const pending: PendingUndercoverChoice = {
+    playerID: currentPlayer,
+    cardId,
+    source: 'your-hero',
+    eligibleTargets: eligibleHand,
+    eligibleInPlayTargets: eligibleInPlay,
+    canDecline: true,
+  };
+  G.pendingUndercoverChoice.push(pending);
+  return { targets: [] };
+}
+
+/**
+ * undercover-hero-from-discard-current primitive — Blue Talon's Fight "You may send a Hero from
+ * your discard pile Undercover." (WP-902 / D-24859). Queues the owed pick on the D-24817 queue; the
+ * play-phase onMove opener builds the fighter's one-seat choice. Keyword-less, self-narrating.
+ */
+function villainEffectUndercoverHeroFromDiscardCurrent(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+): VillainEffectApplication {
+  queueVillainFightPick(G, { primitive: 'undercover-hero-from-discard-current', playerID: currentPlayer, sourceCardId: cardId });
+  return { targets: [] };
+}
+
+/**
+ * unleash-undercover-hero-each-player primitive — Iron Maiden's Fight "Each player may Unleash one
+ * of their Heroes from Undercover." (WP-902 / D-24859). Queues the owed pick on the D-24817 queue;
+ * the onMove opener builds the multi-seat choice. Keyword-less, self-narrating.
+ */
+function villainEffectUnleashUndercoverHeroEachPlayer(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+): VillainEffectApplication {
+  queueVillainFightPick(G, { primitive: 'unleash-undercover-hero-each-player', playerID: currentPlayer, sourceCardId: cardId });
+  return { targets: [] };
+}
+
 const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandler> = {
   'ko-hero': villainEffectKoHero,
   'gain-wound': villainEffectGainWound,
@@ -5542,6 +5714,16 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   // why: WP-840 / D-24773 — position 64, co2e The Blob: the executor moves him out of the City
   // to the left of the Mastermind and sets its narrative clause (D-24854).
   'put-self-beside-mastermind': villainEffectPutSelfBesideMastermind,
+  // why: WP-902 / D-24859 — positions 65-70, the bkwd Elite Assassins lines. The three Ambush
+  // primitives record an owed every-player effect on the D-24750 FIFO (opened after the move) and
+  // self-narrate (D-24854 §6); Snapdragon's Fight parks the D-24858 'your-hero' Undercover entry;
+  // Blue Talon's and Iron Maiden's Fights queue a D-24817 pick. All keyword-less.
+  'discard-zero-cost-card-each-player': villainEffectDiscardZeroCostCardEachPlayer,
+  'discard-non-grey-hero-then-draw-each-player': villainEffectDiscardNonGreyHeroThenDrawEachPlayer,
+  'undercover-non-grey-hero-each-player': villainEffectUndercoverNonGreyHeroEachPlayer,
+  'undercover-your-hero-current': villainEffectUndercoverYourHeroCurrent,
+  'undercover-hero-from-discard-current': villainEffectUndercoverHeroFromDiscardCurrent,
+  'unleash-undercover-hero-each-player': villainEffectUnleashUndercoverHeroEachPlayer,
 };
 
 /**

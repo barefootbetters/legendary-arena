@@ -86,6 +86,7 @@ import {
   buildVillainAttackPerCaptured,
 } from './villainDefeatRequirement.setup.js';
 import { buildVillainBloodFrenzy } from './buildVillainBloodFrenzy.js';
+import { buildVillainDarkMemories } from './buildVillainDarkMemories.js';
 import { buildCardAbomination } from './buildCardAbomination.js';
 import { buildFightSizeChanging } from './buildFightSizeChanging.js';
 import { buildCardKeywords } from './buildCardKeywords.js';
@@ -519,6 +520,13 @@ export function buildInitialGameState(
   // scanned once at setup from the selected villain groups and read only by
   // resolveFightCost. Narrow test mocks → empty record (omitted below).
   const villainBloodFrenzy = buildVillainBloodFrenzy(registry as unknown, villainBuildConfig);
+
+  // why: WP-902 / D-24859 — Dark Memories villain instances (bkwd Blue Talon / Iron Maiden, rvlt
+  // Cancer / Chemistro / Madam Masque), scanned once at setup from the selected villain groups and
+  // read only by resolveFightCost over the fighter's discard pile. Narrow test mocks → empty
+  // record (omitted below). villainBuildConfig carries the scheme-effective villain groups (the
+  // buildVillainBloodFrenzy precedent).
+  const villainDarkMemories = buildVillainDarkMemories(registry as unknown, villainBuildConfig);
 
   // why: scheme setup runs after base construction, before first turn.
   // Instructions configure the board (counters, keywords, city state).
@@ -1041,6 +1049,10 @@ export function buildInitialGameState(
     // ONLY when a selected villain group prints Blood Frenzy, so every other match keeps
     // a byte-identical finalStateHash.
     ...(Object.keys(villainBloodFrenzy).length > 0 ? { villainBloodFrenzy } : {}),
+    // why: WP-902 / D-24859 — same hash-stability discipline (the villainBloodFrenzy precedent):
+    // villainDarkMemories is on G ONLY when a selected villain group prints the bare Dark Memories
+    // line, so every other match keeps a byte-identical finalStateHash.
+    ...(Object.keys(villainDarkMemories).length > 0 ? { villainDarkMemories } : {}),
     // why: WP-815 / D-24747 — same hash-stability discipline (the villainBloodFrenzy
     // precedent): cardAbomination is on G ONLY when a selected villain or the mastermind
     // prints Abomination, so every other match keeps a byte-identical finalStateHash.

@@ -90,14 +90,18 @@ bkpt-villain-enemies-of-wakanda-reverend-achebe,Reverend Achebe,bkpt,villain,(un
 bkpt-villain-enemies-of-wakanda-tetu,Tetu,bkpt,villain,(unmarked),unmarked,,,
 bkpt-villain-killmongers-league-venomm,Venomm,bkpt,villain,(unmarked),unmarked,,,
 bkpt-villain-enemies-of-wakanda-zenzi,Zenzi,bkpt,villain,(unmarked),unmarked,,,
-bkwd-villain-elite-assassins-black-lotus,Black Lotus,bkwd,villain,(unmarked),unmarked,,,
+bkwd-villain-elite-assassins-black-lotus,Black Lotus,bkwd,villain,discard-zero-cost-card-each-player,executable,WP-902,D-24859,packages/game-engine/src/villain/villainEffects.execute.ts#discard-zero-cost-card-each-player
+bkwd-villain-elite-assassins-black-lotus,Black Lotus,bkwd,villain,gain-recruit-current,executable,WP-541,D-24350,packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current
 bkwd-villain-elite-assassins-blue-talon,Blue Talon,bkwd,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
+bkwd-villain-elite-assassins-blue-talon,Blue Talon,bkwd,villain,undercover-hero-from-discard-current,executable,WP-902,D-24859,packages/game-engine/src/villain/villainEffects.execute.ts#undercover-hero-from-discard-current
 bkwd-villain-taskmasters-thunderbolts-bullseye,Bullseye,bkwd,villain,(unmarked),unmarked,,,
-bkwd-villain-elite-assassins-iron-maiden,Iron Maiden,bkwd,villain,(unmarked),unmarked,,,
+bkwd-villain-elite-assassins-iron-maiden,Iron Maiden,bkwd,villain,undercover-non-grey-hero-each-player,executable,WP-902,D-24859,packages/game-engine/src/villain/villainEffects.execute.ts#undercover-non-grey-hero-each-player
+bkwd-villain-elite-assassins-iron-maiden,Iron Maiden,bkwd,villain,unleash-undercover-hero-each-player,executable,WP-902,D-24859,packages/game-engine/src/villain/villainEffects.execute.ts#unleash-undercover-hero-each-player
 bkwd-villain-taskmasters-thunderbolts-jack-olantern,Jack O'Lantern,bkwd,villain,(unmarked),unmarked,,,
 bkwd-villain-taskmasters-thunderbolts-jester,Jester,bkwd,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
 bkwd-villain-taskmasters-thunderbolts-joystick,Joystick,bkwd,villain,(unmarked),unmarked,,,
-bkwd-villain-elite-assassins-snapdragon,Snapdragon,bkwd,villain,(unmarked),unmarked,,,
+bkwd-villain-elite-assassins-snapdragon,Snapdragon,bkwd,villain,discard-non-grey-hero-then-draw-each-player,executable,WP-902,D-24859,packages/game-engine/src/villain/villainEffects.execute.ts#discard-non-grey-hero-then-draw-each-player
+bkwd-villain-elite-assassins-snapdragon,Snapdragon,bkwd,villain,undercover-your-hero-current,executable,WP-902,D-24859,packages/game-engine/src/villain/villainEffects.execute.ts#undercover-your-hero-current
 ca75-villain-masters-of-evil-wwii-black-knight,Black Knight,ca75,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
 ca75-villain-masters-of-evil-wwii-black-knight,Black Knight,ca75,villain,ko-hero,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 ca75-villain-zolas-creations-captain-zolandia,Captain Zolandia,ca75,villain,gain-recruit-current-per-hero-class,executable,WP-817,D-24750,packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current-per-hero-class

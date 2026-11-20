@@ -76,7 +76,10 @@
     },
     "bkwd": {
       "elite-assassins": {
-        "blue-talon": { "ambush": ["reveal-or-wound:hc:ranged"] }
+        "blue-talon": { "ambush": ["reveal-or-wound:hc:ranged"], "fight": ["undercover-hero-from-discard-current"] },
+        "iron-maiden": { "ambush": ["undercover-non-grey-hero-each-player"], "fight": ["unleash-undercover-hero-each-player"] },
+        "snapdragon": { "ambush": ["discard-non-grey-hero-then-draw-each-player"], "fight": ["undercover-your-hero-current"] },
+        "black-lotus": { "ambush": ["discard-zero-cost-card-each-player"], "fight": ["gain-recruit-current:3"] }
       },
       "taskmasters-thunderbolts": {
         "jester": { "ambush": ["captureBystander"] }

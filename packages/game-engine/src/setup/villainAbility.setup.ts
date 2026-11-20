@@ -1249,9 +1249,12 @@ function parseUngatedEffect(
   if (primitiveToken === 'enter-city-from-victory-pile') {
     return parseEnterCityFromVictoryPileEffect(parts);
   }
-  // why: hero-deck-top-to-escape, gain-officer-current, and the other no-param
-  // primitives take no params; reject any trailing colon-separated tokens so a
-  // malformed marker does not silently collapse to a param-less descriptor.
+  // why: hero-deck-top-to-escape, gain-officer-current, the WP-902 / D-24859 Elite Assassins
+  // primitives (`discard-zero-cost-card-each-player`, `discard-non-grey-hero-then-draw-each-player`,
+  // `undercover-non-grey-hero-each-player`, `undercover-your-hero-current`,
+  // `undercover-hero-from-discard-current`, `unleash-undercover-hero-each-player`) and the other
+  // no-param primitives take no params; reject any trailing colon-separated tokens so a malformed
+  // marker does not silently collapse to a param-less descriptor.
   if (parts.length === 1) {
     return { primitive: primitiveToken };
   }

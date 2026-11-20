@@ -386,6 +386,7 @@ const LOCKED_IN_PLAY_WRITE_TABLE: Record<string, number> = {
   'moves/ritualArtifact.ts#useRitualArtifact': 2, // own ledger (ritualUsedPlayedCardIds)
   'moves/splitFaceChoice.resolve.ts#resolveSplitFaceChoice': 1, // relabel, not an exit
   'moves/undercover.resolve.ts#resolveUndercoverChoice': 1, // WP-901 / D-24858: an in-play Undercover send, recorded through recordPlayedCardLeftPlay
+  'villainDeck/villainEscapeProcedure.ts#applyVillainEffectUndercoverEachPlayer': 1, // WP-902 / D-24859: an in-play Undercover send (Iron Maiden Ambush), recorded through recordPlayedCardLeftPlay
   'villain/villainEffects.execute.ts#koOneHeroForPlayer': 2, // KO: recorded through recordOwnedCardKoed
   'villain/villainEffects.execute.ts#villainEffectKoHeroesCurrentByTrait': 1, // KO: recorded through recordOwnedCardKoed
 };
@@ -398,6 +399,7 @@ const LOCKED_LEFT_PLAY_RECORD_TABLE: Record<string, number> = {
   'moves/operatorSetters.ts#recordOperatorLeftPlay recordPlayedCardLeftPlay': 1,
   'moves/operatorSetters.ts#moveBetweenPlayerZones recordOperatorLeftPlay': 2,
   'moves/undercover.resolve.ts#resolveUndercoverChoice recordPlayedCardLeftPlay': 1,
+  'villainDeck/villainEscapeProcedure.ts#applyVillainEffectUndercoverEachPlayer recordPlayedCardLeftPlay': 1,
 };
 
 /**
