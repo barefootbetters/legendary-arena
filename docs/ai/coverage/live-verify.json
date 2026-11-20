@@ -2780,6 +2780,17 @@
       "note": "Live check PASS (NEW operator match DURAFYbku0s after the deploy): Infiltrate the Conspiracy opens \"You may send one of your Heroes Undercover\" with no gate; uiStateSnapshot.pendingUndercoverChoice.canDecline === true and eligibleInPlay lists the hand + in-play Heroes with the card itself included (self-inclusive); sending puts the Hero in the Victory Pile (+1 VP, \"Player N sent <Name> (<extId>) Undercover (into the Victory Pile, +1 VP).\"); \"Don't send\" logs \"chose not to send a Hero Undercover.\" and changes no zone. D-24858."
     },
     {
+      "key": "bkwd/black-widow|bystanders-or-undercover-threshold",
+      "kind": "hero",
+      "card": "Black Widow",
+      "ability": "Infiltrate the Conspiracy (line 1): You get +3 Attack if you have at least 4 Bystanders and/or Undercover Heroes in your Victory Pile.",
+      "wp": "WP-904",
+      "state": "pending",
+      "date": "2026-11-19",
+      "evidence": "",
+      "note": "Live check (NEW operator match created AFTER the deploy with bkwd Black Widow): play Infiltrate the Conspiracy below 4 qualifying cards and confirm NO +3 Attack is granted (the coach's \"ability did not apply\" line reads \"it needs 4 Bystanders and/or Undercover Heroes in your Victory Pile — you have N\"); then at >= 4 Bystanders and/or Undercover Heroes in the Victory Pile confirm the +3 Attack IS granted. READING-A BOUNDARY (accepted, D-24861): with exactly 3 qualifying cards going into the play, line 0's send of a 4th Hero Undercover on the SAME play does NOT retroactively grant the +3 — the count is read on play (present-state), before the parked Undercover choice resolves. The strictly-faithful deferred re-evaluation (Reading B) is documented but not implemented; this boundary is the one accepted fidelity gap. D-24861."
+    },
+    {
       "key": "bkwd/black-widow|undercover-your-other-hero",
       "kind": "hero",
       "card": "Black Widow",

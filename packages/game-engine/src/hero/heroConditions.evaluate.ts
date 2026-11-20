@@ -473,6 +473,19 @@ export function evaluateCondition(
       return bystanderCount >= threshold;
     }
 
+    case 'bystandersOrUndercoverInVictoryAtLeast': {
+      // why: WP-904 / D-24861 — Infiltrate the Conspiracy gates its +3 Attack on ">= N Bystanders
+      // and/or Undercover Heroes in your Victory Pile", the Savior / bystandersInVictoryAtLeast
+      // present-state count (D-24464) widened to also count Undercover Heroes. ON-PLAY present-state
+      // read: a static on-play grant cannot see the same-card line-0 Undercover send, which parks
+      // and resolves after commit (Reading A, D-24568 §1). A NaN threshold reads false (safe skip).
+      const threshold = parseInt(condition.value, 10);
+      if (Number.isNaN(threshold)) {
+        return false;
+      }
+      return countBystandersOrUndercoverInVictory(G, playerID) >= threshold;
+    }
+
     case 'cheapOrSizeChangingAtLeast': {
       // why: D-24464 — Antics gates on >= N cards (hand + in-play) that cost 1-2
       // and/or are Size-Changing; each qualifying card counts ONCE. A CONDITION
@@ -986,6 +999,38 @@ function countBystandersInVictory(G: LegendaryGameState, playerID: string): numb
   return count;
 }
 
+/**
+ * Counts the Bystanders AND Undercover Heroes in a player's Victory Pile — a card counts if it
+ * is a Bystander (a supply Bystander or a rescued villain-deck Bystander) OR an Undercover Hero
+ * (a Victory-Pile card whose id is also in the player's `undercover` tracker). Mirrors the
+ * `bystandersOrUndercoverInVictoryAtLeast` gate (WP-904 / D-24861).
+ *
+ * why: count by MEMBERSHIP IN `victory`, never `undercover.length` — the `undercover` tracker is
+ * append-only (Unleash from Undercover has no removal site), so a Hero later Unleashed out of the
+ * Victory Pile leaves `victory` and stops counting even though its id lingers in the tracker.
+ * A Bystander and an Undercover Hero are disjoint id spaces (bystander ids never appear in
+ * `undercover`), so a single Victory-Pile card can never satisfy both branches — no double count.
+ *
+ * @param G - Current game state (read-only).
+ * @param playerID - Active player ID.
+ * @returns How many Victory-Pile cards are Bystanders and/or Undercover Heroes.
+ */
+function countBystandersOrUndercoverInVictory(G: LegendaryGameState, playerID: string): number {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) {
+    return 0;
+  }
+  const undercover = new Set<CardExtId>(playerZones.undercover ?? []);
+  let count = 0;
+  for (const cardId of playerZones.victory) {
+    const extId = cardId as string;
+    if (extId === BYSTANDER_EXT_ID || extId.startsWith('bystander-villain-deck-') || undercover.has(cardId)) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
 // ---------------------------------------------------------------------------
 // Play-history and KO-pile helpers (WP-745 / D-24568)
 // ---------------------------------------------------------------------------
@@ -1326,6 +1371,13 @@ export function describeFailedCondition(
     case 'bystandersInVictoryAtLeast': {
       const count = countBystandersInVictory(G, playerID);
       return `it needs ${condition.value} Bystanders in your Victory Pile — you have ${count}`;
+    }
+
+    case 'bystandersOrUndercoverInVictoryAtLeast': {
+      // why: WP-904 / D-24861 — quotes the same victory ∩ (bystanders ∪ undercover) count the gate
+      // compared, so the coach's "ability did not apply" line names the running total.
+      const count = countBystandersOrUndercoverInVictory(G, playerID);
+      return `it needs ${condition.value} Bystanders and/or Undercover Heroes in your Victory Pile — you have ${count}`;
     }
 
     case 'cheapOrSizeChangingAtLeast': {

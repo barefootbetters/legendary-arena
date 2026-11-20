@@ -756,8 +756,13 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // excessive-kindness 91 -> 93, excessive-violence 162 -> 164, triggered-artifact 6 -> 8, focus
   // 927 -> 926 (its baseline peak). totalObs 8717 -> 8741 (+24); resolvedObs unchanged at 1213, so
   // percentResolved stays 13.9 (1213 / 8741). A feed re-pin, not a behavior change.
+  // why: WP-904 / D-24861 (2026-11-19) — Infiltrate the Conspiracy's +3 Attack line now gates on
+  // the bystandersOrUndercoverInVictoryAtLeast condition, so the sweep's bot games play out
+  // differently (feed regenerated: +3 raw observations above the baseline peaks). totalObs
+  // 8741 -> 8744; resolvedObs unchanged at 1213, so percentResolved stays 13.9 (1213 / 8744).
+  // A feed re-pin, not a behavior change.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8741);
+  assert.equal(view.totalObs.value, 8744);
   assert.equal(view.resolvedObs.value, 1213);
   assert.equal(view.percentResolved.value, 13.9);
   assert.ok(view.remaining.value.length > 0);

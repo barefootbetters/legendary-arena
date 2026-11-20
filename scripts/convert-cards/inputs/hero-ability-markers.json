@@ -2120,6 +2120,12 @@
       "markupToken": "[keyword:undercover-your-hero]"
     },
     {
+      "heroSlug": "black-widow",
+      "cardSlug": "infiltrate-the-conspiracy",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:bystanders-or-undercover-threshold:4]"
+    },
+    {
       "heroSlug": "red-guardian",
       "cardSlug": "death-was-only-a-ruse",
       "abilityIndex": 2,

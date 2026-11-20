@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 891,
+    "totalRows": 892,
     "byStatus": {
       "executable": 508,
       "deferred": 16,
-      "condition": 88,
+      "condition": 89,
       "unsupported": 254,
       "unmarked": 22,
       "subsystem": 3
     },
-    "distinctMechanics": 190
+    "distinctMechanics": 191
   },
   "rows": [
     {
@@ -2237,6 +2237,22 @@
         {
           "slug": "secret-assignment",
           "name": "Secret Assignment"
+        }
+      ]
+    },
+    {
+      "extId": "bkwd/black-widow",
+      "heroName": "Black Widow",
+      "set": "bkwd",
+      "mechanic": "bystanders-or-undercover-threshold",
+      "status": "condition",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "infiltrate-the-conspiracy",
+          "name": "Infiltrate the Conspiracy"
         }
       ]
     },

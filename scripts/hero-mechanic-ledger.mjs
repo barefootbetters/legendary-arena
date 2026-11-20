@@ -224,6 +224,11 @@ const KNOWN_CONDITIONS = {
   'played-other-distinct-heroes': 'otherDistinctNonGreyHeroesPlayedThisTurnAtLeast', // Warriors Three
   'hero-koed-this-turn': 'heroPutIntoKoPileThisTurn',             // Rage: a Hero KO'd this turn
   'bystanders-threshold': 'bystandersInVictoryAtLeast',           // Black Widow: ≥N Bystanders in VP
+  // why: WP-904 / D-24861 — Infiltrate the Conspiracy gates its +3 Attack on the shipped on-play
+  // bystandersOrUndercoverInVictoryAtLeast condition (the bystanders-threshold sibling widened to
+  // count Undercover Heroes), so its row reads `condition`, not a false `unsupported`. Registered
+  // here at landing to avoid the honesty-gauge drag the sibling entries above document.
+  'bystanders-or-undercover-threshold': 'bystandersOrUndercoverInVictoryAtLeast', // Black Widow: ≥N Bystanders and/or Undercover Heroes in VP
   'discard-threshold': 'cardsDiscardedThisTurnAtLeast',          // ≥N cards discarded this turn
   // why: WP-681 / D-24498 — Deadpool "Hey, Can I Get a Do-Over?": the discard-and-redraw gates
   // on this being the FIRST Hero played this turn (a shipped condition, the D-24055 posture),

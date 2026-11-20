@@ -117,6 +117,7 @@ bkpt/white-wolf,White Wolf,bkpt,villain-or-mastermind-has-any-wounds,unsupported
 bkpt/white-wolf,White Wolf,bkpt,wound-a-villain,unsupported,,,,cloaking-tech-ambush
 bkpt/white-wolf,White Wolf,bkpt,wound-each-villain-and-the-mastermind,unsupported,,,,reflective-vibranium-armor
 bkpt/white-wolf,White Wolf,bkpt,wound-the-mastermind,unsupported,,,,reflective-vibranium-armor|secret-assignment
+bkwd/black-widow,Black Widow,bkwd,bystanders-or-undercover-threshold,condition,,,,infiltrate-the-conspiracy
 bkwd/black-widow,Black Widow,bkwd,dark-memories,unsupported,,,,widows-bite
 bkwd/black-widow,Black Widow,bkwd,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts,evasive-acrobatics|weave-a-web-of-spies|widows-bite
 bkwd/black-widow,Black Widow,bkwd,draw-threshold,condition,,,,weave-a-web-of-spies

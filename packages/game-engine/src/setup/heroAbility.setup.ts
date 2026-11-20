@@ -469,6 +469,11 @@ export const HERO_PARSER_RECOGNIZED_MARKER_NAMES: readonly string[] = [
   'played-other-distinct-heroes',
   'hero-koed-this-turn',
   'bystanders-threshold',
+  // why: WP-904 / D-24861 — Infiltrate the Conspiracy's "Bystanders and/or Undercover Heroes in
+  // your Victory Pile" gate; its parseAbilityText arm pushes the on-play
+  // bystandersOrUndercoverInVictoryAtLeast condition. Listed so the coverage probe reads the
+  // marker as parser-recognized (no false hollow for bkwd Black Widow).
+  'bystanders-or-undercover-threshold',
   'teleport',
   'x-gene',
   // why: D-24696 — the Spy Network choose-one option marker; consumed by the count-scaled-choose
@@ -2183,6 +2188,18 @@ function parseAbilityText(
       const bystanderThreshold = keywordMatch[2];
       if (bystanderThreshold !== undefined) {
         conditions.push({ type: 'bystandersInVictoryAtLeast', value: bystanderThreshold });
+      }
+    } else if (normalizedKeyword === 'bystanders-or-undercover-threshold') {
+      // why: WP-904 / D-24861 — Black Widow's Infiltrate the Conspiracy "If you have at least 4
+      // Bystanders and/or Undercover Heroes in your Victory Pile": the Savior / bystanders-threshold
+      // present-state precedent (D-24568 §1) widened to also count Undercover Heroes (victory ∩
+      // undercover). ON-PLAY (a present-state "have", not a "this turn" window): a static grant
+      // cannot read the same-card line-0 Undercover send, which parks and resolves after commit
+      // (Reading A). The +N[icon:attack] grant stays via Step 2b; this marker adds only the gate.
+      // Same :N guard and placement as the bystanders-threshold arm above.
+      const bystandersOrUndercoverThreshold = keywordMatch[2];
+      if (bystandersOrUndercoverThreshold !== undefined) {
+        conditions.push({ type: 'bystandersOrUndercoverInVictoryAtLeast', value: bystandersOrUndercoverThreshold });
       }
     } else if (normalizedKeyword === 'first-hero-condition') {
       // why: WP-681 / D-24498 — Deadpool's "Hey, Can I Get a Do-Over?" gates its
