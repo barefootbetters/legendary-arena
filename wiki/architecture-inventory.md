@@ -11,7 +11,7 @@ tags:
 
 # Architecture & Library Adoption Inventory
 
-_Generated 2026-11-14 by `scripts/architecture-inventory.mjs`._
+_Generated 2026-11-16 by `scripts/architecture-inventory.mjs`._
 
 This is a deterministic snapshot of installed dependencies,
 their actual import usage across the workspace, and SaaS /
@@ -64,7 +64,7 @@ Canonical source: `docs/ops/domains.json`. Ops runbook: `docs/ops/DOMAINS.md`.
 | `play.legendary-arena.com` | apps/arena-client | Cloudflare Pages | live |
 | `cards.legendary-arena.com` | apps/registry-viewer | Cloudflare Pages | live |
 | `wiki.legendary-arena.com` | TBD - separate Hugo site (not yet authored) | Cloudflare Pages | planned |
-| `ewiki.legendary-arena.com` | apps/wiki-viewer (Hugo build of docs/wiki/); Worker legendary-arena-wiki | Cloudflare Workers + Cloudflare Access | live |
+| `ewiki.legendary-arena.com` | apps/wiki-viewer (Hugo build of wiki/); Worker legendary-arena-wiki | Cloudflare Workers + Cloudflare Access | live |
 | `legendary-arena-wiki.onrender.com` | none — Render static site legendary-arena-wiki, retired by D-24690 | Render | live |
 | `legends.legendary-arena.com` | apps/legends-board | Cloudflare Pages | live |
 | `dashboard.legendary-arena.com` | apps/dashboard | Cloudflare Workers + Cloudflare Access | live |
@@ -293,12 +293,12 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 
 | Language | Files |
 |---|---:|
-| TypeScript | 1600 |
+| TypeScript | 1607 |
 | Vue SFC | 208 |
 | JavaScript | 161 |
-| Markdown | 122 |
+| Markdown | 123 |
 | JSON | 116 |
-| HTML | 45 |
+| HTML | 47 |
 | CSS | 16 |
 | PowerShell | 14 |
 | TOML | 2 |
@@ -308,12 +308,12 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 
 | Extension | Files |
 |---|---:|
-| `.ts` | 1595 |
+| `.ts` | 1602 |
 | `.vue` | 208 |
-| `.md` | 122 |
+| `.md` | 123 |
 | `.mjs` | 118 |
 | `.json` | 116 |
-| `.html` | 45 |
+| `.html` | 47 |
 | `.js` | 41 |
 | `.css` | 16 |
 | `.ps1` | 14 |
