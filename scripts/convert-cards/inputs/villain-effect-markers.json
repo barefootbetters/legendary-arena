@@ -82,7 +82,10 @@
         "black-lotus": { "ambush": ["discard-zero-cost-card-each-player"], "fight": ["gain-recruit-current:3"] }
       },
       "taskmasters-thunderbolts": {
-        "jester": { "ambush": ["captureBystander"] }
+        "jester": { "ambush": ["captureBystander"], "fight": ["reveal-four-play-henchmen-current"] },
+        "joystick": { "ambush": ["enter-city-henchman-from-any-victory-pile-current"] },
+        "jack-olantern": { "fight": ["enter-city-henchman-from-any-victory-pile-current"], "escape": ["gain-wound-under-two-henchmen-each-player"] },
+        "bullseye": { "ambush": ["capture-hero-deck-top-by-icon-guess"], "fight": ["gain-attached-hero"], "escape": ["ko-captured-heroes-on-escape"] }
       }
     },
     "ca75": {

@@ -1050,6 +1050,12 @@ const DELIBERATE_NO_OP_VILLAIN_PRIMITIVES: ReadonlySet<VillainEffectPrimitive> =
     // moves the card in the executor.
     'reveal-villain-deck-top-swap-self',
     'enter-city-from-victory-pile',
+    // why: WP-903 / D-24860 — Jester's Fight reveal-and-play and Bullseye's Escape KO mutate nothing
+    // in the executor: the Fight bridge (runVillainFightFireSiteBridges) reveals and plays the
+    // Henchmen, and the escape-site bridge (villainDeck.reveal.ts) KOs the captured Hero instead of
+    // moving it to the Escape Pile. Both traces must read `no-op`, not `fired`.
+    'reveal-four-play-henchmen-current',
+    'ko-captured-heroes-on-escape',
   ]);
 
 /**
@@ -1145,6 +1151,8 @@ export function recordVillainSecondarySiteTrace(
   // the charge runs at the Ambush bridge, before the executor.
   // why: WP-839 / D-24772 — Boomerang's swap (the Fight bridge) and Ymir's Victory-Pile entry (the
   // Ambush bridge) appended under the same D-24824 §7 rule.
+  // why: WP-903 / D-24860 — Jester's Fight reveal-and-play (the Fight bridge) appended under the
+  // same D-24824 §7 rule.
   effect:
     | 'play-villain-deck-cards'
     | 'reenter-sewers-if-villain-deck-top'
@@ -1152,7 +1160,8 @@ export function recordVillainSecondarySiteTrace(
     | 'gain-one-attached-hero-rest-to-bottom'
     | 'charge'
     | 'reveal-villain-deck-top-swap-self'
-    | 'enter-city-from-victory-pile',
+    | 'enter-city-from-victory-pile'
+    | 'reveal-four-play-henchmen-current',
   handler:
     | 'playTopVillainDeckCards'
     | 'reenterSewersOnVillainDeckReveal'
@@ -1160,7 +1169,8 @@ export function recordVillainSecondarySiteTrace(
     | 'awardOneAttachedHeroRestToBottom'
     | 'chargeAmbushVillain'
     | 'swapFoughtVillainWithVillainDeckTop'
-    | 'enterCityFromVictoryPile',
+    | 'enterCityFromVictoryPile'
+    | 'runJesterRevealFourPlayHenchmen',
   fireSite: 'villain-fight-bridge' | 'villain-ambush-bridge',
   params: Record<string, string | number | boolean>,
   turn: number,
@@ -5606,6 +5616,228 @@ function villainEffectUnleashUndercoverHeroEachPlayer(
   return { targets: [] };
 }
 
+/**
+ * reveal-four-play-henchmen-current primitive — Jester's Fight "Reveal the top four cards of the
+ * Villain Deck. Play all the Henchmen you find. Put the rest back in any order." (WP-903 / D-24860).
+ *
+ * A DELIBERATE NO-OP here (the D-24351 executor-no-op + fire-site-bridge pattern): the reveal and
+ * each revealed Henchman's City entry (which may push a card out through the escape procedure) need
+ * a RevealContext + implementationMap the executor does not receive, so the work runs in the Fight
+ * fire-site bridge (runVillainFightFireSiteBridges), read through findVillainHookDescriptor. Listed
+ * in DELIBERATE_NO_OP_VILLAIN_PRIMITIVES so its executor trace reads `no-op`, not `fired`; the
+ * bridge narrates.
+ *
+ * @returns `{ targets: [] }` always.
+ */
+function villainEffectRevealFourPlayHenchmenCurrent(): VillainEffectApplication {
+  return { targets: [] };
+}
+
+/**
+ * enter-city-henchman-from-any-victory-pile-current primitive — Joystick's Ambush and Jack
+ * O'Lantern's Fight "Choose a Henchman from any player's Victory Pile to enter the city." (WP-903 /
+ * D-24860). One handler serves both timings: the villain executor runs for onAmbush and onFight, so
+ * the shared primitive queues one owed pick on the D-24817 fight-pick queue, and the play-phase
+ * onMove opener parks the one-step seat choice (a Henchman from any Victory Pile, ascending City
+ * Attack). Keyword-less; returns a non-empty narrativeClause (D-24854) so the Ambush overlay
+ * (Joystick) names the queued pick rather than falling back to "see the log" (harmless at the Jack
+ * O'Lantern Fight timing, which has no overlay).
+ *
+ * @param G - Game state (mutated: G.pendingVillainFightPicks appended, lazily created).
+ * @param currentPlayer - The active player (the fighter who owns the pick).
+ * @param cardId - The Villain whose line fires (Joystick or Jack O'Lantern).
+ * @returns `{ targets: [], narrativeClause }`.
+ */
+function villainEffectEnterCityHenchmanFromAnyVictoryPileCurrent(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+): VillainEffectApplication {
+  // why: WP-903 / D-24860 — the pick needs a RevealContext (the Henchman's City entry may push a
+  // card out through the escape procedure), which the executor lacks, so it is queued here and the
+  // onMove opener parks it; the apply enters the City in chainVillainFightPick (D-24817).
+  queueVillainFightPick(G, {
+    primitive: 'enter-city-henchman-from-any-victory-pile-current',
+    playerID: currentPlayer,
+    sourceCardId: cardId,
+  });
+  // why: WP-897 / D-24854 — the clause the Ambush overlay shows for Joystick (no log line is pushed
+  // here; the queued pick logs at the opener), so the overlay names the effect, not "see the log".
+  return { targets: [], narrativeClause: 'chooses a Henchman from a Victory Pile to enter the City' };
+}
+
+/**
+ * gain-wound-under-two-henchmen-each-player primitive — Jack O'Lantern's Escape "Each player with
+ * fewer than two Henchmen in their Victory Pile gains a Wound." (WP-903 / D-24860).
+ *
+ * Inline, the Viper `gain-wound-unless-victory-villain-group` skeleton (NOT the D-24750 discard
+ * FIFO, which is only for escape effects that park a discard choice): for each seat current player
+ * first then clockwise (D-24780), count the `henchman`-typed cards in its Victory Pile and, when
+ * fewer than two, gain one Wound through the gainWoundWithOutcome chokepoint (so Diving Block sees
+ * the source, WP-682). The current player's `woundsDrawn` rises only for its own Wound (UI economy
+ * parity, D-24732). Keyword-less, self-narrates; `{ targets: [] }`.
+ *
+ * @param G - Game state (mutated: wounds, discards, messages, turnEconomy).
+ * @param currentPlayer - The active player; the loop starts with them (D-24780).
+ * @param _cardId - Unused.
+ * @param timing - The timing that fired (names the "<Escape> effect:" line).
+ * @returns `{ targets: [] }` always.
+ */
+function villainEffectGainWoundUnderTwoHenchmenEachPlayer(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+): VillainEffectApplication {
+  const label = villainEffectTimingLabel(timing);
+  const woundedPlayerIds: string[] = [];
+  const gainedPlayerIds: string[] = [];
+  const divingBlockPendingPlayerIds: string[] = [];
+  const emptySupplyPlayerIds: string[] = [];
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780).
+  for (const playerId of seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)) {
+    const zones = G.playerZones[playerId];
+    if (!zones) {
+      continue;
+    }
+    let henchmanCount = 0;
+    for (const victoryCardId of zones.victory) {
+      if (G.villainDeckCardTypes?.[victoryCardId] === 'henchman') {
+        henchmanCount += 1;
+      }
+    }
+    if (henchmanCount >= 2) {
+      // why: the seat holds two or more Henchmen in its Victory Pile — no Wound.
+      continue;
+    }
+    // why: fewer than two Henchmen — gain one Wound. An empty supply is a reachable no-op (the
+    // player is NOT counted as wounded, and is tracked so the narration says the supply ran out).
+    if (G.piles.wounds.length === 0) {
+      emptySupplyPlayerIds.push(playerId);
+      continue;
+    }
+    // why: WP-682 / D-24499 / D-24673 — route through the gainWoundWithOutcome chokepoint so Diving
+    // Block sees this Wound source (NON-active recipients via the WP-684 wave); a seat whose Diving
+    // Block reveal is pending has NOT gained the Wound yet, so the narration must not claim it did
+    // (the Viper honest-colour contract, WP-434).
+    if (gainWoundWithOutcome(G, playerId) === 'diving-block-pending') {
+      divingBlockPendingPlayerIds.push(playerId);
+    } else {
+      gainedPlayerIds.push(playerId);
+    }
+    if (playerId === currentPlayer) {
+      // why: the active player can never have a Diving Block pending (the WP-684 wave is for
+      // non-active recipients), so its Wound always lands. woundsDrawn projects the CURRENT player's
+      // wounds only (UI economy) — parity with the Viper each-player wound (D-24732).
+      G.turnEconomy.woundsDrawn += 1;
+    }
+    woundedPlayerIds.push(playerId);
+  }
+  const emptySupplyClause = composeEmptyWoundSupplyClause(emptySupplyPlayerIds);
+  if (divingBlockPendingPlayerIds.length > 0) {
+    // why: D-24673 — at least one Diving Block reveal is pending, so word the outcome per seat.
+    pushLog(
+      G,
+      `${label} effect: ${String(woundedPlayerIds.length)} player(s) had fewer than two Henchmen in their Victory Pile: ${composeWoundOutcomeClause(gainedPlayerIds, divingBlockPendingPlayerIds)}${emptySupplyClause}.`,
+      'applied',
+    );
+  } else if (woundedPlayerIds.length > 0) {
+    const names = woundedPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
+    pushLog(
+      G,
+      `${label} effect: ${String(woundedPlayerIds.length)} player(s) had fewer than two Henchmen in their Victory Pile and gained a Wound (${names})${emptySupplyClause}.`,
+      'applied',
+    );
+  } else if (emptySupplyPlayerIds.length > 0) {
+    // why: D-24686 — the supply is empty; do not claim every player was safe.
+    const names = emptySupplyPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
+    pushLog(
+      G,
+      `${label} effect: the Wound supply is empty, so no Wound was gained (${names} had fewer than two Henchmen in their Victory Pile).`,
+      'blocked',
+    );
+  } else {
+    pushLog(
+      G,
+      `${label} effect: every player had two or more Henchmen in their Victory Pile.`,
+      'blocked',
+    );
+  }
+  return { targets: [] };
+}
+
+/**
+ * capture-hero-deck-top-by-icon-guess primitive — Bullseye's Ambush "Choose [icon:recruit] or
+ * [icon:attack], then reveal the top card of the Hero Deck. If it has that icon, Bullseye captures
+ * it and gets +[icon:attack] equal to that Hero's cost." (WP-903 / D-24860).
+ *
+ * Inline. The blind icon choice (no look-ahead) collapses to `[icon:attack]` — the self-interested
+ * villain choice, Attack being the more common Hero icon (D-24860, the D-24335 dominated-option
+ * philosophy). If the Hero Deck top has an Attack icon (`hasAttackIcon`, raw-value presence per
+ * D-24490), it is sliced off the Hero Deck and attached to this Bullseye copy via attachCapturedHero;
+ * Bullseye's dynamic "4+" Attack then grows by that Hero's cost automatically (Bullseye is NEVER
+ * registered in G.villainVariableAttack / G.villainAttackPerCaptured, which would short-circuit the
+ * captured-cost sum). Keyword-less; returns a non-empty narrativeClause (D-24854) naming the capture,
+ * the miss, or the empty-deck case.
+ *
+ * @param G - Game state (mutated: heroDeck, villainAttachedHeroes, messages).
+ * @param _currentPlayer - Unused.
+ * @param cardId - The capturing Bullseye copy's zone-instance ext_id.
+ * @param timing - The timing that fired.
+ * @returns `{ targets: [], narrativeClause }`.
+ */
+function villainEffectCaptureHeroDeckTopByIconGuess(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+): VillainEffectApplication {
+  const label = villainEffectTimingLabel(timing);
+  const heroId = G.heroDeck[0];
+  if (heroId === undefined) {
+    const emptyClause = 'the Hero Deck is empty, so nothing was captured';
+    pushLog(G, `${label} effect: ${emptyClause}.`, 'blocked');
+    // why: WP-897 / D-24854 — the narrative clause is the logged clause.
+    return { targets: [], narrativeClause: emptyClause };
+  }
+  const heroName = resolveCardDisplayName(G, heroId);
+  // why: WP-903 / D-24860 — the blind icon choice collapses to [icon:attack] (the self-interested
+  // villain maximizes the capture chance; Attack is the more common Hero icon). D-24490: an icon
+  // counts as present when its raw value is non-null, so a "0+" Attack Hero still matches.
+  if (G.cardStats[heroId]?.hasAttackIcon !== true) {
+    const missClause = `reveals ${heroName} from the Hero Deck — no Attack icon, not captured`;
+    pushLog(G, `${label} effect: ${missClause}.`, 'blocked');
+    // why: WP-897 / D-24854 — the narrative clause is the logged clause.
+    return { targets: [], narrativeClause: missClause };
+  }
+  const heroCost = G.cardStats[heroId]?.cost ?? 0;
+  G.heroDeck = G.heroDeck.slice(1);
+  // why: WP-903 / D-24860 — attaching the Hero to G.villainAttachedHeroes is exactly "+Attack equal
+  // to that Hero's cost": resolveBaseFightCost's dynamic "4+" branch sums the costs of the captured
+  // Heroes, so Bullseye's City Attack grows by heroCost with no variable-attack table entry.
+  attachCapturedHero(G, cardId, heroId);
+  const captureClause = `captures ${heroName} from the Hero Deck (+${String(heroCost)} Attack)`;
+  pushLog(G, `${label} effect: ${captureClause}.`, 'threat');
+  // why: WP-897 / D-24854 — the narrative clause is the logged clause.
+  return { targets: [], narrativeClause: captureClause };
+}
+
+/**
+ * ko-captured-heroes-on-escape primitive — Bullseye's Escape "KO that Hero." (WP-903 / D-24860).
+ *
+ * A DELIBERATE NO-OP here (the D-24351 executor-no-op + fire-site-bridge pattern): KO-ing each
+ * captured Hero and suppressing the generic Escape-Pile move need the escape fire site, so the work
+ * runs in villainDeck.reveal.ts at the escape site, read through findVillainHookDescriptor, which KOs
+ * each attached Hero via koCard and clears the entry INSTEAD OF moveAttachedHeroesToEscapedPile —
+ * overriding the D-24657 Escape-Pile default for this card only. Listed in
+ * DELIBERATE_NO_OP_VILLAIN_PRIMITIVES so its executor trace reads `no-op`, not `fired`.
+ *
+ * @returns `{ targets: [] }` always.
+ */
+function villainEffectKoCapturedHeroesOnEscape(): VillainEffectApplication {
+  return { targets: [] };
+}
+
 const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandler> = {
   'ko-hero': villainEffectKoHero,
   'gain-wound': villainEffectGainWound,
@@ -5724,6 +5956,15 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'undercover-your-hero-current': villainEffectUndercoverYourHeroCurrent,
   'undercover-hero-from-discard-current': villainEffectUndercoverHeroFromDiscardCurrent,
   'unleash-undercover-hero-each-player': villainEffectUnleashUndercoverHeroEachPlayer,
+  // why: WP-903 / D-24860 — positions 71-75, the bkwd Taskmaster's Thunderbolts lines. Jester's
+  // Fight (reveal-and-play) and Bullseye's Escape (KO the captured Hero) are deliberate no-ops whose
+  // fire-site bridges act; the Henchman-to-City pick queues a D-24817 pick and self-narrates; Jack
+  // O'Lantern's Escape Wound and Bullseye's Ambush capture run inline and self-narrate.
+  'reveal-four-play-henchmen-current': villainEffectRevealFourPlayHenchmenCurrent,
+  'enter-city-henchman-from-any-victory-pile-current': villainEffectEnterCityHenchmanFromAnyVictoryPileCurrent,
+  'gain-wound-under-two-henchmen-each-player': villainEffectGainWoundUnderTwoHenchmenEachPlayer,
+  'capture-hero-deck-top-by-icon-guess': villainEffectCaptureHeroDeckTopByIconGuess,
+  'ko-captured-heroes-on-escape': villainEffectKoCapturedHeroesOnEscape,
 };
 
 /**

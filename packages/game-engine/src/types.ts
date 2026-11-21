@@ -1876,7 +1876,11 @@ export interface PendingVillainFightPick {
     // one-seat pick) and Iron Maiden's "each player may Unleash one of their Heroes from
     // Undercover" (a multi-seat pick) ride the same queue; the opener builds their seat choices.
     | 'undercover-hero-from-discard-current'
-    | 'unleash-undercover-hero-each-player';
+    | 'unleash-undercover-hero-each-player'
+    // why: WP-903 / D-24860 — Joystick's Ambush and Jack O'Lantern's Fight share one Henchman-to-
+    // City pick: choose a Henchman from any player's Victory Pile to enter the City. The opener
+    // builds its one-step seat choice (`villain-fight-enter-city-henchman-from-victory`).
+    | 'enter-city-henchman-from-any-victory-pile-current';
   /** The defeating player (the fighter). */
   playerID: string;
   /** The defeated Mandarin's Rings copy that owes the pick (for the log). */

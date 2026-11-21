@@ -78,6 +78,9 @@ import {
   playTopVillainDeckCards,
   enterStackCardsAsVillains,
   swapFoughtVillainWithVillainDeckTop,
+  // why: WP-903 / D-24860 — Jester's Fight reveal-and-play bridge enters each revealed Henchman
+  // into the City through this shared City-entry (push, escape, its own Ambush).
+  resolveVillainCityEntry,
 } from '../villainDeck/villainDeck.reveal.js';
 // why: WP-542 / D-24351 — the STATIC handler map performVillainReveal needs. The fight move
 // does not receive an implementationMap (only the reveal move + scheme resolvers thread one),
@@ -1148,6 +1151,94 @@ export function runVillainFightFireSiteBridges(
     );
     swapFoughtVillainWithVillainDeckTop(G, swapRevealContext, DEFAULT_IMPLEMENTATION_MAP, cardId, currentPlayer);
   }
+
+  // why: WP-903 / D-24860 — Jester's Fight "Reveal the top four cards of the Villain Deck. Play all
+  // the Henchmen you find. Put the rest back in any order." The executor's
+  // reveal-four-play-henchmen-current handler is a deliberate no-op (the D-24351 executor-no-op plus
+  // fire-site-bridge pattern), so the reveal and each Henchman's City entry run HERE as the last
+  // step, after the defeat has fully settled, with a RevealContext built as the sibling bridges
+  // build one. Henchmen enter in revealed order doing their own Ambush; the "put the rest back in
+  // any order" reorder collapses to revealed order (D-24860: no look-ahead benefit, so no
+  // interactive 4-card reorder).
+  if (findVillainHookDescriptor(G, cardId, 'onFight', 'reveal-four-play-henchmen-current') !== null) {
+    runJesterRevealFourPlayHenchmen(G, ctx, cardId, shuffleContext, currentPlayer);
+  }
+}
+
+/**
+ * Jester's Fight reveal-and-play (WP-903 / D-24860): reveals the top four Villain Deck cards, plays
+ * (enters the City) every Henchman among them in revealed order, and returns the non-Henchman
+ * remainder to the deck top in revealed order. A short deck takes what exists; an empty deck is a
+ * logged no-op.
+ *
+ * // why: the top four are removed FIRST, then the Henchmen are played, then the non-Henchman
+ * remainder is returned to the deck top — so a played Henchman's own Ambush (which may reveal the
+ * deck) never sees a card that is about to be put back, and the returned cards sit above the
+ * untouched deck in revealed order.
+ *
+ * @param G - The game state, mutated in place (Villain Deck, City, messages).
+ * @param ctx - The live move's ctx (narrowed for the turn number).
+ * @param cardId - The defeated Jester copy (the log source).
+ * @param shuffleContext - ShuffleProvider for the City entries' RevealContext.
+ * @param currentPlayer - The defeating player.
+ */
+function runJesterRevealFourPlayHenchmen(
+  G: LegendaryGameState,
+  ctx: unknown,
+  cardId: CardExtId,
+  shuffleContext: ShuffleProvider,
+  currentPlayer: string,
+): void {
+  const revealed = G.villainDeck.deck.slice(0, 4);
+  if (revealed.length === 0) {
+    pushLog(
+      G,
+      `Fight effect: ${formatCardRef(G.cardDisplayData, cardId)} reveals the top of the Villain Deck, but it is empty.`,
+      'blocked',
+    );
+    return;
+  }
+  // why: remove the revealed cards from the deck before playing any Henchman, so a played Henchman's
+  // Ambush never reveals a card that is still pending a return to the deck top.
+  G.villainDeck.deck = G.villainDeck.deck.slice(revealed.length);
+  const revealedNames = revealed.map((revealedCardId) => formatCardRef(G.cardDisplayData, revealedCardId)).join(', ');
+  pushLog(
+    G,
+    `Fight effect: ${formatCardRef(G.cardDisplayData, cardId)} reveals the top ${String(revealed.length)} card(s) of the Villain Deck (${revealedNames}).`,
+    'threat',
+  );
+  const revealContext: RevealContext = {
+    random: shuffleContext.random,
+    ctx: { currentPlayer, turn: readTurnNumber(ctx) },
+  };
+  const nonHenchmen: CardExtId[] = [];
+  const playedHenchmen: CardExtId[] = [];
+  for (const revealedCardId of revealed) {
+    if (G.villainDeckCardTypes?.[revealedCardId] === 'henchman') {
+      playedHenchmen.push(revealedCardId);
+      resolveVillainCityEntry(G, revealContext, DEFAULT_IMPLEMENTATION_MAP, revealedCardId, 'revealed and entered the city');
+    } else {
+      nonHenchmen.push(revealedCardId);
+    }
+  }
+  // why: WP-903 / D-24860 — "put the rest back in any order" collapses to revealed order; the
+  // non-Henchman remainder returns to the deck top ahead of the untouched deck.
+  if (nonHenchmen.length > 0) {
+    G.villainDeck.deck = [...nonHenchmen, ...G.villainDeck.deck];
+    const remainderNames = nonHenchmen.map((remainderCardId) => formatCardRef(G.cardDisplayData, remainderCardId)).join(', ');
+    pushLog(G, `Fight effect: returned ${remainderNames} to the top of the Villain Deck.`, 'neutral');
+  }
+  // why: WP-877 / D-24824 — the executor traced this reveal `no-op`; record where it really fires.
+  recordVillainSecondarySiteTrace(
+    G,
+    cardId,
+    'onFight',
+    'reveal-four-play-henchmen-current',
+    'runJesterRevealFourPlayHenchmen',
+    'villain-fight-bridge',
+    { magnitude: playedHenchmen.length },
+    readTurnNumber(ctx),
+  );
 }
 
 /**

@@ -3,19 +3,19 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2900,
+    "totalEntries": 2904,
     "byScope": {
       "hero": 892,
-      "villain": 777,
+      "villain": 781,
       "mastermind": 567,
       "scheme": 664
     },
     "byStatus": {
-      "executable": 887,
+      "executable": 894,
       "deferred": 19,
       "condition": 89,
       "unsupported": 255,
-      "unmarked": 1643,
+      "unmarked": 1640,
       "subsystem": 7
     }
   },
@@ -5381,22 +5381,55 @@
       "name": "Bullseye",
       "set": "bkwd",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "capture-hero-deck-top-by-icon-guess",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-hero-deck-top-by-icon-guess",
+      "wp": "WP-903",
+      "decision": "D-24860"
+    },
+    {
+      "extId": "bkwd-villain-taskmasters-thunderbolts-bullseye",
+      "name": "Bullseye",
+      "set": "bkwd",
+      "scope": "villain",
+      "mechanic": "gain-attached-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero",
+      "wp": "WP-450",
+      "decision": "D-24270"
+    },
+    {
+      "extId": "bkwd-villain-taskmasters-thunderbolts-bullseye",
+      "name": "Bullseye",
+      "set": "bkwd",
+      "scope": "villain",
+      "mechanic": "ko-captured-heroes-on-escape",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-captured-heroes-on-escape",
+      "wp": "WP-903",
+      "decision": "D-24860"
     },
     {
       "extId": "bkwd-villain-taskmasters-thunderbolts-jack-olantern",
       "name": "Jack O'Lantern",
       "set": "bkwd",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "enter-city-henchman-from-any-victory-pile-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#enter-city-henchman-from-any-victory-pile-current",
+      "wp": "WP-903",
+      "decision": "D-24860"
+    },
+    {
+      "extId": "bkwd-villain-taskmasters-thunderbolts-jack-olantern",
+      "name": "Jack O'Lantern",
+      "set": "bkwd",
+      "scope": "villain",
+      "mechanic": "gain-wound-under-two-henchmen-each-player",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound-under-two-henchmen-each-player",
+      "wp": "WP-903",
+      "decision": "D-24860"
     },
     {
       "extId": "bkwd-villain-taskmasters-thunderbolts-jester",
@@ -5410,15 +5443,26 @@
       "decision": "D-18506"
     },
     {
+      "extId": "bkwd-villain-taskmasters-thunderbolts-jester",
+      "name": "Jester",
+      "set": "bkwd",
+      "scope": "villain",
+      "mechanic": "reveal-four-play-henchmen-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-four-play-henchmen-current",
+      "wp": "WP-903",
+      "decision": "D-24860"
+    },
+    {
       "extId": "bkwd-villain-taskmasters-thunderbolts-joystick",
       "name": "Joystick",
       "set": "bkwd",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "enter-city-henchman-from-any-victory-pile-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#enter-city-henchman-from-any-victory-pile-current",
+      "wp": "WP-903",
+      "decision": "D-24860"
     },
     {
       "extId": "bkwd/black-widow",
@@ -40712,25 +40756,29 @@
     "bkwd-villain-taskmasters-thunderbolts-bullseye": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "capture-hero-deck-top-by-icon-guess",
+        "gain-attached-hero",
+        "ko-captured-heroes-on-escape"
       ]
     },
     "bkwd-villain-taskmasters-thunderbolts-jack-olantern": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "enter-city-henchman-from-any-victory-pile-current",
+        "gain-wound-under-two-henchmen-each-player"
       ]
     },
     "bkwd-villain-taskmasters-thunderbolts-jester": {
       "scope": "villain",
       "mechanics": [
-        "captureBystander"
+        "captureBystander",
+        "reveal-four-play-henchmen-current"
       ]
     },
     "bkwd-villain-taskmasters-thunderbolts-joystick": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "enter-city-henchman-from-any-victory-pile-current"
       ]
     },
     "bkwd/black-widow": {

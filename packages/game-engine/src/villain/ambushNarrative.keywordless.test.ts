@@ -463,8 +463,11 @@ describe('the keyword-less Ambush set in the card data (WP-897 RS-5)', () => {
   // `put-self-beside-mastermind` joins it, 20 → 21 (a sanctioned pin change). WP-902 / D-24859 —
   // Black Lotus's `discard-zero-cost-card-each-player`, Snapdragon's
   // `discard-non-grey-hero-then-draw-each-player` and Iron Maiden's
-  // `undercover-non-grey-hero-each-player` join it, 21 → 24 (a sanctioned pin change).
-  it('the real parser finds exactly the 24 keyword-less Ambush primitives, in printed order', () => {
+  // `undercover-non-grey-hero-each-player` join it, 21 → 24 (a sanctioned pin change). WP-903 /
+  // D-24860 — Bullseye's Ambush `capture-hero-deck-top-by-icon-guess` and the shared Joystick Ambush
+  // / Jack O'Lantern Fight `enter-city-henchman-from-any-victory-pile-current` join it, 24 → 26 (a
+  // sanctioned pin change).
+  it('the real parser finds exactly the 26 keyword-less Ambush primitives, in printed order', () => {
     const primitives = new Set<string>();
     const descriptorsByCard = new Map<string, { isLegacy: boolean; primitive: string; isConditional: boolean }[]>();
     for (const hook of buildAllHooks()) {
@@ -497,6 +500,7 @@ describe('the keyword-less Ambush set in the card data (WP-897 RS-5)', () => {
     assert.deepEqual([...primitives].sort(), [
       'capture-bystander-each-victory-pile',
       'capture-bystanders-plus-per-hq-hero-by-trait',
+      'capture-hero-deck-top-by-icon-guess',
       'capture-hq-heroes-cost-lte',
       'capture-pile-hero',
       'charge',
@@ -508,6 +512,7 @@ describe('the keyword-less Ambush set in the card data (WP-897 RS-5)', () => {
       'discard-non-grey-hero-then-draw-each-player',
       'discard-zero-cost-card-each-player',
       'enter-city-from-victory-pile',
+      'enter-city-henchman-from-any-victory-pile-current',
       'haunt-hq-hero',
       'hq-heroes-cost-change',
       'hq-heroes-to-hero-deck-bottom',
