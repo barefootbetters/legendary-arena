@@ -2840,10 +2840,10 @@
       "card": "Blue Talon",
       "ability": "Fight: You may send a Hero from your discard pile Undercover.",
       "wp": "WP-902",
-      "state": "pending",
-      "date": "2026-11-20",
-      "evidence": "",
-      "note": "Live check (NEW Indestructible Man match after the deploy with bkwd/elite-assassins; Villain deck -> Move villain card to top, then fight Blue Talon): the fighter is offered 'Don't send a Hero Undercover' plus one option per distinct Hero in their discard pile; a send moves one copy into the Victory Pile and the undercover tracker (+1 VP); no Hero in the discard -> a logged no-op. D-24859."
+      "state": "verified",
+      "date": "2026-11-21",
+      "evidence": "post-deploy operator matches ssoMQmSRU9V, EkdrcNvzyAW and dtspq1pKL (client/server a39c2cc, built 2026-11-20T18:36:48Z; 2p + 1 bot ally; Indestructible Man / Corrupt the Spy Agencies; Elite Assassins + Taskmaster's Thunderbolts; Doombot Legion; bkwd Black Widow, Yelena Belova, Red Guardian, White Tiger, Falcon & Winter Soldier), driven by the human seat 0, 2026-11-21. No WP-902 villain line recorded an unmarked-ability breadcrumb in any match. Blue Talon Fight (send a Hero from your discard pile Undercover) fired as printed: EkdrcNvzyAW 8.2.11-12 sent a discard S.H.I.E.L.D. Agent Undercover (+1 VP); 16.2.9-10 and 18.2.19-20 the \"chose not to send a Hero Undercover\" decline. Blue Talon's unchanged reveal-or-wound Ambush (WP-469) also still fired (EkdrcNvzyAW 7.1.2-4, 15.1.2, 18.1.2). Dark Memories note (D-24859, recorded here per WP §Verification): the setup-scan flag and the resolveFightCost term are unit-tested (eliteAssassins.test.ts AC 8) and wired into the single fight-cost authority the City fightCost projection reads (a Doombot tile rendered fightCost correctly in the dtspq1pKL capture). The Dark Memories City-Attack NUMBER was not separately captured with an Elite Assassin on the board (operator added +20 Attack each fight and all three diagnostics snapshots held no Elite Assassin in the City); landed without the numeric live-capture per the operator decision 2026-11-21.",
+      "note": "Live check PASS: Blue Talon Fight -- send a discard-pile Hero Undercover or decline; reveal-or-wound Ambush unchanged. Dark Memories number not live-captured (unit-tested + wired). D-24859."
     },
     {
       "key": "bkwd-villain-elite-assassins-iron-maiden|undercover-non-grey-hero-each-player",
@@ -2851,10 +2851,10 @@
       "card": "Iron Maiden",
       "ability": "Ambush: Each player must send one of their non-grey Heroes Undercover.",
       "wp": "WP-902",
-      "state": "pending",
-      "date": "2026-11-20",
-      "evidence": "",
-      "note": "Live check (NEW match after the deploy; reveal Iron Maiden): every player with a non-grey Hero in hand or play sends exactly one Undercover (no decline; cheapest offered first); seats with none are logged; an in-play send leaves play (+1 VP). D-24859."
+      "state": "verified",
+      "date": "2026-11-21",
+      "evidence": "post-deploy operator matches ssoMQmSRU9V, EkdrcNvzyAW and dtspq1pKL (client/server a39c2cc, built 2026-11-20T18:36:48Z; 2p + 1 bot ally; Indestructible Man / Corrupt the Spy Agencies; Elite Assassins + Taskmaster's Thunderbolts; Doombot Legion; bkwd Black Widow, Yelena Belova, Red Guardian, White Tiger, Falcon & Winter Soldier), driven by the human seat 0, 2026-11-21. No WP-902 villain line recorded an unmarked-ability breadcrumb in any match. Iron Maiden Ambush fired as printed: ssoMQmSRU9V 2.1.2-4 both players had only grey starters so both were logged \"no non-grey Hero\" (the non-grey filter correctly excludes grey S.H.I.E.L.D.); 14.1.2-4 and 25.1.2-4 both players sent one non-grey Hero Undercover (mandatory, no decline, +1 VP). EkdrcNvzyAW 12.1.2-4 and 24.1.2-4 the same. Dark Memories note (D-24859, recorded here per WP §Verification): the setup-scan flag and the resolveFightCost term are unit-tested (eliteAssassins.test.ts AC 8) and wired into the single fight-cost authority the City fightCost projection reads (a Doombot tile rendered fightCost correctly in the dtspq1pKL capture). The Dark Memories City-Attack NUMBER was not separately captured with an Elite Assassin on the board (operator added +20 Attack each fight and all three diagnostics snapshots held no Elite Assassin in the City); landed without the numeric live-capture per the operator decision 2026-11-21.",
+      "note": "Live check PASS: Iron Maiden Ambush -- every seat with a non-grey Hero sends one Undercover (no decline); grey-only seats logged. Dark Memories number not live-captured (unit-tested + wired). D-24859."
     },
     {
       "key": "bkwd-villain-elite-assassins-iron-maiden|unleash-undercover-hero-each-player",
@@ -2862,10 +2862,10 @@
       "card": "Iron Maiden",
       "ability": "Fight: Each player may Unleash one of their Heroes from Undercover.",
       "wp": "WP-902",
-      "state": "pending",
-      "date": "2026-11-20",
-      "evidence": "",
-      "note": "Live check (NEW match after the deploy; fight Iron Maiden with Heroes Undercover): every player with an Undercover Hero gets 'Don't Unleash' plus one option per distinct Hero id; Unleash returns the Hero to hand and out of the Victory Pile and tracker; a decline changes nothing. D-24859."
+      "state": "verified",
+      "date": "2026-11-21",
+      "evidence": "post-deploy operator matches ssoMQmSRU9V, EkdrcNvzyAW and dtspq1pKL (client/server a39c2cc, built 2026-11-20T18:36:48Z; 2p + 1 bot ally; Indestructible Man / Corrupt the Spy Agencies; Elite Assassins + Taskmaster's Thunderbolts; Doombot Legion; bkwd Black Widow, Yelena Belova, Red Guardian, White Tiger, Falcon & Winter Soldier), driven by the human seat 0, 2026-11-21. No WP-902 villain line recorded an unmarked-ability breadcrumb in any match. Iron Maiden Fight (Unleash) fired as printed, multi-seat: ssoMQmSRU9V 4.2.15 no-op when nobody has one; 14.2.11-12 and 26.2.9-10 one seat Unleashed a Hero (back to hand, out of the Victory Pile) while the other \"chose not to Unleash\". EkdrcNvzyAW 12.2.9-10 and 24.2.12-13 the same. Cross-feature: a Hero sent Undercover by WP-901 (Infiltrate / Destroy the Red Room) was Unleashable here. Dark Memories note (D-24859, recorded here per WP §Verification): the setup-scan flag and the resolveFightCost term are unit-tested (eliteAssassins.test.ts AC 8) and wired into the single fight-cost authority the City fightCost projection reads (a Doombot tile rendered fightCost correctly in the dtspq1pKL capture). The Dark Memories City-Attack NUMBER was not separately captured with an Elite Assassin on the board (operator added +20 Attack each fight and all three diagnostics snapshots held no Elite Assassin in the City); landed without the numeric live-capture per the operator decision 2026-11-21.",
+      "note": "Live check PASS: Iron Maiden Fight -- each seat may Unleash one Hero from Undercover (back to hand) or decline. Dark Memories number not live-captured (unit-tested + wired). D-24859."
     },
     {
       "key": "bkwd-villain-elite-assassins-snapdragon|discard-non-grey-hero-then-draw-each-player",
@@ -2873,10 +2873,10 @@
       "card": "Snapdragon",
       "ability": "Ambush: Each player discards a non-grey Hero. Then each player draws a card.",
       "wp": "WP-902",
-      "state": "pending",
-      "date": "2026-11-20",
-      "evidence": "",
-      "note": "Live check (NEW match after the deploy; reveal Snapdragon): holders of a non-grey Hero each discard one (cheapest offered first); then every seat draws one, current player first; with no holder, a one-option prompt still draws everyone. D-24859."
+      "state": "verified",
+      "date": "2026-11-21",
+      "evidence": "post-deploy operator matches ssoMQmSRU9V, EkdrcNvzyAW and dtspq1pKL (client/server a39c2cc, built 2026-11-20T18:36:48Z; 2p + 1 bot ally; Indestructible Man / Corrupt the Spy Agencies; Elite Assassins + Taskmaster's Thunderbolts; Doombot Legion; bkwd Black Widow, Yelena Belova, Red Guardian, White Tiger, Falcon & Winter Soldier), driven by the human seat 0, 2026-11-21. No WP-902 villain line recorded an unmarked-ability breadcrumb in any match. Snapdragon Ambush fired as printed: EkdrcNvzyAW 4.1.2-6 -- Player 1 had no non-grey Hero (logged), Player 0 discarded Unveil Identity, then BOTH players drew 1 (current player first). 10.2.16-21 -- neither player held a non-grey Hero (both logged) and both still drew 1, confirming the draw runs for every seat regardless.",
+      "note": "Live check PASS: Snapdragon Ambush -- holders discard a non-grey Hero, then every seat draws one (current player first); non-holders still draw. D-24859."
     },
     {
       "key": "bkwd-villain-elite-assassins-snapdragon|undercover-your-hero-current",
@@ -2884,10 +2884,10 @@
       "card": "Snapdragon",
       "ability": "Fight: You may send one of your Heroes Undercover.",
       "wp": "WP-902",
-      "state": "pending",
-      "date": "2026-11-20",
-      "evidence": "",
-      "note": "Live check (NEW match after the deploy; fight Snapdragon): the WP-901 Undercover prompt opens over the fighter's hand + played Heroes with a 'Don't send' option; a send moves the Hero into the Victory Pile (+1 VP). D-24859."
+      "state": "verified",
+      "date": "2026-11-21",
+      "evidence": "post-deploy operator matches ssoMQmSRU9V, EkdrcNvzyAW and dtspq1pKL (client/server a39c2cc, built 2026-11-20T18:36:48Z; 2p + 1 bot ally; Indestructible Man / Corrupt the Spy Agencies; Elite Assassins + Taskmaster's Thunderbolts; Doombot Legion; bkwd Black Widow, Yelena Belova, Red Guardian, White Tiger, Falcon & Winter Soldier), driven by the human seat 0, 2026-11-21. No WP-902 villain line recorded an unmarked-ability breadcrumb in any match. Snapdragon Fight parked the WP-901 your-hero Undercover prompt: EkdrcNvzyAW 4.2.7-8 (sent S.H.I.E.L.D. Trooper Undercover, +1 VP) and 10.2.26-27 (sent S.H.I.E.L.D. Agent Undercover, +1 VP).",
+      "note": "Live check PASS: Snapdragon Fight opens the WP-901 your-hero Undercover prompt; send -> Victory Pile +1 VP. D-24859."
     },
     {
       "key": "bkwd-villain-elite-assassins-black-lotus|discard-zero-cost-card-each-player",
@@ -2895,10 +2895,10 @@
       "card": "Black Lotus",
       "ability": "Ambush: Each player discards a card that costs 0.",
       "wp": "WP-902",
-      "state": "pending",
-      "date": "2026-11-20",
-      "evidence": "",
-      "note": "Live check (NEW match after the deploy; reveal Black Lotus): only seats holding a cost-0 card (a Wound counts, a Bystander does not) are prompted, and each discards its pick; a seat with none is logged. D-24859."
+      "state": "verified",
+      "date": "2026-11-21",
+      "evidence": "post-deploy operator matches ssoMQmSRU9V, EkdrcNvzyAW and dtspq1pKL (client/server a39c2cc, built 2026-11-20T18:36:48Z; 2p + 1 bot ally; Indestructible Man / Corrupt the Spy Agencies; Elite Assassins + Taskmaster's Thunderbolts; Doombot Legion; bkwd Black Widow, Yelena Belova, Red Guardian, White Tiger, Falcon & Winter Soldier), driven by the human seat 0, 2026-11-21. No WP-902 villain line recorded an unmarked-ability breadcrumb in any match. Black Lotus Ambush fired as printed: ssoMQmSRU9V 6.1.2-4 both players discarded a S.H.I.E.L.D. Agent; 21.1.2-4 Player 0 discarded a Wound (pile-wound) and Player 1 a S.H.I.E.L.D. Agent -- confirms a Wound counts as cost-0 (D-24583) on the live surface. EkdrcNvzyAW 5.1, 8.1, 10.1 (S.H.I.E.L.D. Trooper, also cost-0), 11.1, 16.1 all addressed only cost-0 holders.",
+      "note": "Live check PASS: Black Lotus Ambush addresses only cost-0 holders; a Wound counts, each discards its pick. D-24859."
     },
     {
       "key": "bkwd-villain-elite-assassins-black-lotus|gain-recruit-current",
@@ -2906,10 +2906,10 @@
       "card": "Black Lotus",
       "ability": "Fight: You get +3 Recruit.",
       "wp": "WP-902",
-      "state": "pending",
-      "date": "2026-11-20",
-      "evidence": "",
-      "note": "Live check (NEW match after the deploy; fight Black Lotus): the Fight logs +3 Recruit and the recruit total rises by 3. D-24859 (the shipped gain-recruit-current handler, WP-541 / D-24350)."
+      "state": "verified",
+      "date": "2026-11-21",
+      "evidence": "post-deploy operator matches ssoMQmSRU9V, EkdrcNvzyAW and dtspq1pKL (client/server a39c2cc, built 2026-11-20T18:36:48Z; 2p + 1 bot ally; Indestructible Man / Corrupt the Spy Agencies; Elite Assassins + Taskmaster's Thunderbolts; Doombot Legion; bkwd Black Widow, Yelena Belova, Red Guardian, White Tiger, Falcon & Winter Soldier), driven by the human seat 0, 2026-11-21. No WP-902 villain line recorded an unmarked-ability breadcrumb in any match. Black Lotus Fight logged \"gained +3 recruit\": ssoMQmSRU9V 6.2.11, 21.2.15 (both players); EkdrcNvzyAW 6.2.12, 8.2.17, 10.2.9, 12.2.20, 18.2.16. The shipped gain-recruit-current:3 handler (WP-541 / D-24350).",
+      "note": "Live check PASS: Black Lotus Fight adds +3 Recruit. D-24859 (shipped gain-recruit-current, WP-541 / D-24350)."
     }
   ]
 }
