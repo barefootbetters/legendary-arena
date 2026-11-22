@@ -37,6 +37,7 @@ import type { MatchSetupConfig } from '@legendary-arena/game-engine';
 import { summarizeLoadout } from '../lib/loadoutSummary';
 import { planSavedLoadoutLaunch } from '../lib/savedLoadoutLaunch';
 import BillingSection from '../components/BillingSection.vue';
+import FeedbackSection from '../components/FeedbackSection.vue';
 import FriendsSection from '../components/FriendsSection.vue';
 import MatchInvitesSection from '../components/MatchInvitesSection.vue';
 import { useAuthStore } from '../stores/auth';
@@ -326,7 +327,7 @@ function canPlayLeg(
 
 export default defineComponent({
   name: 'MyProfilePage',
-  components: { BillingSection, FriendsSection, MatchInvitesSection },
+  components: { BillingSection, FeedbackSection, FriendsSection, MatchInvitesSection },
   setup() {
     const state = ref<LoadState>('loading');
     // why: cast to the locally-extended view type so the template can
@@ -1999,6 +2000,14 @@ export default defineComponent({
       <section class="profile-billing">
         <BillingSection :auth-token="readAuthToken()" />
       </section>
+
+      <!-- why: WP-813 / D-24721 — the player's "Send feedback" front door for
+           the D-24414 feedback system, mounted on the signed-in profile and
+           threaded the owner authToken the same way BillingSection is. Text
+           only; writes one item and shows a receipt (no status, D-24416). -->
+      <section class="profile-feedback">
+        <FeedbackSection :auth-token="readAuthToken()" />
+      </section>
     </template>
   </article>
 </template>
@@ -2066,7 +2075,8 @@ export default defineComponent({
 .profile-loadouts,
 .profile-gauntlets,
 .profile-friends,
-.profile-billing {
+.profile-billing,
+.profile-feedback {
   padding: 1.25rem;
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 0.5rem;

@@ -97,7 +97,7 @@ authority split are in place. The pipeline still has no front door.
 | **Decision: build vs buy** | ✅ Decided — build custom | Postgres + Hanko + Dashboard | D-24414 (Active 2026-08-25) |
 | **Intake store** (`feedback_item`, `feedback_vote`) | ✅ Shipped | `legendary.*` schema, `apps/server/src/feedback/` | WP-604 / EC-639 (#1642) |
 | **Intake API** — `POST /api/feedback` (bug / enhancement / review) | ✅ Shipped | `api.legendary-arena.com` | WP-604; [API catalog](../docs/ai/REFERENCE/api-endpoints.md) |
-| **Player submission UI** (in-app widget or `www` form) | ❌ **Not built** | — | No client calls `POST /api/feedback` (arena-client, dashboard, registry-viewer, and `www` all checked) |
+| **Player submission UI** (in-app widget or `www` form) | ✅ **Shipped** | `play.legendary-arena.com` `?route=me` **Send feedback** section | WP-813 / EC-850, D-24721 (the play client's signed-in profile is the intake surface; `components/FeedbackSection.vue` posts to `POST /api/feedback`) |
 | **Tracking: operator triage** — status + Declined reason | ✅ Shipped | `dashboard.legendary-arena.com/feedback` | WP-605 / EC-640, D-24416 (dashboard is the **sole** status writer) |
 | **Voting** — one account, one vote, unweighted | ✅ Shipped | `POST`/`DELETE /api/feedback/:id/vote` + the `www` board | WP-604 (API), marketing WP-045 (UI, 2026-08-26) |
 | **Public roadmap board** — Planned / In progress / Shipped | ✅ Live, **but empty** | [`www.legendary-arena.com/roadmap/`](https://www.legendary-arena.com/roadmap/) | Marketing WP-043 (2026-08-25). `GET /api/feedback` returned `{"items":[]}` on 2026-10-14 |
@@ -407,7 +407,8 @@ wrong one own a piece of the truth. The split:
 
 | Surface | Role | Writes | Reads |
 |---|---|---|---|
-| **Public intake + roadmap board** (`www.legendary-arena.com/roadmap/`, JS-capable) | Where players submit and vote. *Board and voting are live; submission is not built yet.* | Players (identity-gated) | Everyone |
+| **Player intake** (`play.legendary-arena.com` `?route=me` **Send feedback** section) | Where signed-in players submit a bug / feature idea / review. *Live (WP-813 / D-24721); text only, no status view.* | Players (identity-gated) | The submitting player only (one item, then a receipt) |
+| **Public roadmap board** (`www.legendary-arena.com/roadmap/`, JS-capable) | Where everyone reads the roadmap and votes on feature ideas. *Board and voting are live.* | Voters (identity-gated) | Everyone |
 | **`dashboard.legendary-arena.com/feedback`** ([Dashboard](dashboard.md)) | Operator triage: review the queue, assign status, move items to terminal states, watch vote trends. *Live (WP-605).* | Operator only | Operator only |
 | **WP / EC / [DECISIONS.md](../docs/ai/DECISIONS.md) / git** | The build record — what actually shipped | The engineering loop | — |
 
@@ -573,11 +574,9 @@ player "no."
 *Resolved since the 2026-08-25 draft:* build-vs-buy → **build custom**
 (D-24414). Where the board renders → **`www.legendary-arena.com/roadmap/`**
 (marketing WP-043). Who may set status → **the dashboard only** (D-24416).
-
-- **Where players submit.** Options: an in-app "Send feedback" control in the
-  play client (which can attach a [Play Diagnostics](play-diagnostics.md)
-  payload to a bug), a form on `www/roadmap/`, or both. The API already accepts
-  all three types. This is the missing front door and the next WP to draft.
+Where players submit → **the play client's signed-in profile** (`?route=me`
+**Send feedback** section, WP-813 / D-24721); v1 is text only, no diagnostics
+payload (the WP-604 API has no field for one).
 - **Seeding the board.** The operator can post enhancement items through
   `POST /api/feedback` from their own account and then move them to Planned or
   In progress in triage. Decide whether to seed from the *Legendary Arena
