@@ -87,6 +87,7 @@ import {
 } from './villainDefeatRequirement.setup.js';
 import { buildVillainBloodFrenzy } from './buildVillainBloodFrenzy.js';
 import { buildVillainDarkMemories } from './buildVillainDarkMemories.js';
+import { buildVillainCapturedHeroCost } from './buildVillainCapturedHeroCost.js';
 import { buildCardAbomination } from './buildCardAbomination.js';
 import { buildFightSizeChanging } from './buildFightSizeChanging.js';
 import { buildCardKeywords } from './buildCardKeywords.js';
@@ -527,6 +528,13 @@ export function buildInitialGameState(
   // record (omitted below). villainBuildConfig carries the scheme-effective villain groups (the
   // buildVillainBloodFrenzy precedent).
   const villainDarkMemories = buildVillainDarkMemories(registry as unknown, villainBuildConfig);
+
+  // why: WP-905 / D-24862 — the captured-Hero cost opt-in flags (the four Skrull capturers,
+  // WP-903 Bullseye), scanned once at setup from the selected villain groups' Hero-capture
+  // ability markers and read only by resolveBaseFightCost. Narrow test mocks → empty record
+  // (omitted below). villainBuildConfig carries the scheme-effective villain groups (the
+  // buildVillainBloodFrenzy precedent).
+  const villainCapturedHeroCost = buildVillainCapturedHeroCost(registry as unknown, villainBuildConfig);
 
   // why: scheme setup runs after base construction, before first turn.
   // Instructions configure the board (counters, keywords, city state).
@@ -1053,6 +1061,11 @@ export function buildInitialGameState(
     // villainDarkMemories is on G ONLY when a selected villain group prints the bare Dark Memories
     // line, so every other match keeps a byte-identical finalStateHash.
     ...(Object.keys(villainDarkMemories).length > 0 ? { villainDarkMemories } : {}),
+    // why: WP-905 / D-24862 — same hash-stability discipline (the villainBloodFrenzy precedent):
+    // villainCapturedHeroCost is on G ONLY when a selected villain carries a Hero-capture marker
+    // and no own variable-Attack term, so every match without a cost-capturing villain keeps a
+    // byte-identical finalStateHash.
+    ...(Object.keys(villainCapturedHeroCost).length > 0 ? { villainCapturedHeroCost } : {}),
     // why: WP-815 / D-24747 — same hash-stability discipline (the villainBloodFrenzy
     // precedent): cardAbomination is on G ONLY when a selected villain or the mastermind
     // prints Abomination, so every other match keeps a byte-identical finalStateHash.

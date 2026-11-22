@@ -133,6 +133,11 @@ function registerHero(G: LegendaryGameState, cardId: CardExtId, name: string, co
 /** Registers Bullseye as a dynamic "4+" villain (base 4, grows by captured-Hero cost). */
 function registerBullseyeDynamic(G: LegendaryGameState): void {
   (G.cardStats as Record<string, unknown>)[BULLSEYE] = { attack: 4, recruit: 0, cost: 0, fightCost: 4, fightCostBase: 4, fightCostMode: 'dynamic' };
+  // why: WP-905 / D-24862 — Bullseye's printed Attack adds each captured Hero's cost, so it opts
+  // into the captured-Hero cost term. In a real match buildVillainCapturedHeroCost sets this from
+  // Bullseye's [effect:capture-hero-deck-top-by-icon-guess] marker; this hand-built fixture sets it
+  // directly so resolveFightCost adds the captured cost (base 4 + captured cost), as before.
+  (G as { villainCapturedHeroCost?: Record<string, true> }).villainCapturedHeroCost = { [BULLSEYE]: true };
 }
 
 /** A deterministic shuffle context. */

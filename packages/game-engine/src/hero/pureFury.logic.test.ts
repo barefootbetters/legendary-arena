@@ -414,6 +414,10 @@ describe('buildPureFuryTargets reads the current Attack (D-24741)', () => {
       },
     });
     G.villainAttachedHeroes = { 'villain-dyn': ['captured-hero' as CardExtId] };
+    // why: WP-905 / D-24862 — villain-dyn prints "+cost", so it opts into the captured-Hero cost
+    // term. Without the flag its Attack would resolve to base 1 (< 3) and it would enter the
+    // Pure Fury targets, breaking the [] assertion.
+    G.villainCapturedHeroCost = { 'villain-dyn': true };
     assert.deepStrictEqual(buildPureFuryTargets(G, '0'), [], 'base 1 + captured cost 2 = 3, not below 3');
   });
 

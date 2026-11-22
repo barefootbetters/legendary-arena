@@ -27,6 +27,7 @@ import {
   buildVillainFightRestrictions,
   buildVillainVariableAttack,
 } from './villainDefeatRequirement.setup.js';
+import { buildVillainCapturedHeroCost } from './buildVillainCapturedHeroCost.js';
 
 /**
  * Creates a valid mock MatchSetupConfig for shape tests.
@@ -668,6 +669,44 @@ describe('buildInitialGameState — shape', () => {
     assert.deepStrictEqual(markedState.villainAttackPerCaptured, {
       'core-villain-brotherhood-greedy-villain-00': { kind: 'hero', attackPerCard: 1 },
       'core-villain-brotherhood-greedy-villain-01': { kind: 'hero', attackPerCard: 1 },
+    });
+  });
+
+  it('T31 (WP-905): G has no villainCapturedHeroCost key without a capturing villain (omit-when-empty)', () => {
+    const plainState = buildInitialGameState(
+      createTestConfig(),
+      createMockRegistry(),
+      makeMockCtx({ numPlayers: 2 }),
+    );
+    assert.equal(Object.prototype.hasOwnProperty.call(plainState, 'villainCapturedHeroCost'), false);
+    assert.deepStrictEqual(buildVillainCapturedHeroCost(createMockRegistry(), createTestConfig()), {});
+    // why: the shared fixture's marked villain (Hydro-Man) prints a variable-Attack term and no
+    // capture marker, so it does NOT opt in — the key stays absent.
+    const unmarkedFixtureState = buildInitialGameState(
+      buildShapeFixtureConfig(),
+      buildShapeFixtureRegistry(),
+      makeMockCtx({ numPlayers: 2 }),
+    );
+    assert.equal(Object.prototype.hasOwnProperty.call(unmarkedFixtureState, 'villainCapturedHeroCost'), false);
+  });
+
+  it('T31b (WP-905): a Hero-capturing villain lands in G.villainCapturedHeroCost, one entry per copy (wiring)', () => {
+    // why: a local copy of the shared fixture with one capturing villain added, so the other shape
+    // tests keep their fixture; it proves the buildVillainCapturedHeroCost call and spread are wired.
+    const registry = buildShapeFixtureRegistry();
+    const setData = registry.getSet('core') as { villains: Array<{ cards: unknown[] }> };
+    setData.villains[0]!.cards.push({
+      slug: 'skrull-capturer',
+      vAttack: '1+',
+      copies: 2,
+      abilities: [
+        "Ambush: Skrull Capturer captures the rightmost Hero. It gets +[icon:attack] equal to that Hero's cost. [effect:captureHqHeroRightmost]",
+      ],
+    });
+    const markedState = buildInitialGameState(buildShapeFixtureConfig(), registry, makeMockCtx({ numPlayers: 2 }));
+    assert.deepStrictEqual(markedState.villainCapturedHeroCost, {
+      'core-villain-brotherhood-skrull-capturer-00': true,
+      'core-villain-brotherhood-skrull-capturer-01': true,
     });
   });
 });
