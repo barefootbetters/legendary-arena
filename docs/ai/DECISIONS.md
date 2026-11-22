@@ -52026,4 +52026,27 @@ Protect this file.
 **Packet:** WP-902 / EC-940. **Reserved by:** NUMBER-LEDGER D-24859 (#3446). Related: D-24589, D-24750, D-24770, D-24772, D-24817, D-24858, D-24501, D-24684, D-24678, D-24769, D-24856, D-24583, D-24552, D-24732, D-24780, D-24854, D-24266, D-24350, D-24616, D-24372, D-24026.
 
 ---
+
+### D-24721 — The player feedback intake surface is the play client's signed-in profile (`?route=me` "Send feedback" section), text only (Active 2026-11-22 — WP-813 / EC-850)
+
+**Status:** Active 2026-11-22. Reserved 2026-10-14 (#2795). Landed by WP-813 / EC-850.
+
+**Context.** The D-24414 feedback system shipped every part but the front door: WP-604 built `POST /api/feedback` and the intake store, WP-605 built the operator triage dashboard, and marketing WP-043/045 put a read-only board + voting at `www.legendary-arena.com/roadmap/`. Nothing called `POST /api/feedback` from any client, so the public board had been empty since 2026-08-25 (ewiki audit 2026-10-14). The open question was where players submit: an in-app control in the play client, a form on `www`, or both.
+
+**Decision.** The player intake surface lives in the **play client's signed-in profile** (`play.legendary-arena.com/?route=me`, a "Send feedback" section), not on `www`. Reasons:
+
+1. **The play client already holds the player's session and a profile-section pattern.** It threads the Hanko bearer the same way `FriendsSection` / `BillingSection` do, so submission is identity-gated on the existing authenticated session with no new identity or account field. The author is the session account, never the request body.
+2. **It keeps `www` a read-only projection plus voting** (the WP-043 posture): the marketing site renders the triaged roadmap and collects votes, and the authenticated write stays on the play client.
+3. **v1 posts text only.** The WP-604 API has three keys (`type`, `title`, `description`) and no diagnostics field, so no Play Diagnostics payload or attachment is attached to a bug report. A diagnostics field is a separate server follow-on.
+4. **Players never see or set status** (D-24416): the section writes one item and shows a receipt; it does not list a player's submissions or show their status. A "my feedback" read route is a follow-on (no API returns a player's own items today).
+
+Unthrottled intake is accepted for v1: every item passes operator triage before anything reaches the public board, and the account requirement plus the operator gate contain the spam risk. A per-account rate limit on `POST /api/feedback`, a review match-having gate, and operator redaction of published idea text are named server follow-ons.
+
+**Scope.** Client-only (`apps/arena-client`): `lib/api/feedbackApi.ts` (submit client + pure `validateFeedbackDraft`, the submit-path error codes and 200/5000 length bounds hand-mirrored from the server feedback logic module and pinned by runtime tests — never imported, layer boundary) and `components/FeedbackSection.vue` (`defineComponent`/`setup`, D-6512), mounted on `MyProfilePage` after the billing section. No server, engine, dashboard, or `www` change; the WP-604 `POST /api/feedback` contract is consumed unchanged.
+
+**Hash / replay.** N/A — no engine, `G`, `ctx`, snapshot, or hash surface; no scoring, PAR, replay, or card-data change.
+
+**Packet:** WP-813 / EC-850. **Reserved by:** #2795. Related: D-24414, D-24416, D-24026, D-6512.
+
+---
 Protect this file.
