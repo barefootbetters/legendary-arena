@@ -72,6 +72,19 @@ export const LAGN_VERSION_1_5_0 = '1.5.0'
 export const LAGN_VERSION_1_6_0 = '1.6.0'
 
 /**
+ * Adds one optional, engine-bound block — `replay.execution` (WP-808) — carrying
+ * the seed, the ordered engine moves, the engine version/build, a data-version
+ * marker, and the expected final-state hash a server reducer needs to re-execute
+ * a completed match and prove it. Strict superset of 1.6.0.
+ *
+ * why: 1.7.0 and not 1.6.0 — 1.6.0 is already allocated to `setup.final_blow`
+ * (D-24517), which must survive untouched. The new block is additive-optional, so
+ * every prior document is already a structurally valid 1.7.0 document (the
+ * migration is a pure restamp).
+ */
+export const LAGN_VERSION_1_7_0 = '1.7.0'
+
+/**
  * The version this build stamps on documents it writes.
  *
  * why: 1.6.0 as of WP-698 — the loadout LAGN emitter now carries
@@ -114,7 +127,8 @@ export const LAGN_SUPPORTED_VERSIONS = [
   LAGN_VERSION_1_3_0,
   LAGN_VERSION_1_4_0,
   LAGN_VERSION_1_5_0,
-  LAGN_VERSION_1_6_0
+  LAGN_VERSION_1_6_0,
+  LAGN_VERSION_1_7_0
 ] as const
 
 export type LagnVersion = (typeof LAGN_SUPPORTED_VERSIONS)[number]
@@ -570,8 +584,92 @@ const TurnSchema = z.object({
   ).optional()
 })
 
+// ============================================================================
+// Re-Executable Replay (Optional, 1.7.0+)
+// ============================================================================
+
+// why: WP-808 / D-24714 — `replay.execution` is an ENGINE-BOUND, re-executable
+// replay. Unlike the narrated `replay.turns` log above (which cannot be
+// re-run), it carries exactly what the D-24119 server reducer needs to rebuild
+// any position in a completed match and prove it: the match seed, the ordered
+// engine moves, the engine version/build, a data-version marker, and the
+// expected final-state hash. This is a deliberate, SCOPED exception to the
+// declarative-LAGN principle — re-execution needs the engine's own move
+// vocabulary — recorded in D-24714; the rest of LAGN stays declarative.
+//
+// why: seed, NOT initial state. `G` is runtime-only and holds hidden
+// information, so it is never exported in a LAGN. The seed plus the Tier-1
+// `setup` plus `player_count` rebuild the same initial state through the
+// engine's own `InitializeGame`. Re-execution targets the D-24119 server
+// reducer, never the D-0205 determinism-only engine harness (that harness
+// ignores the seed, so it cannot reproduce a specific match).
+
+/**
+ * One re-executable engine move: its position in the whole-match sequence, the
+ * acting seat, the move name, and its positional args, plus the descriptive
+ * live turn/phase stamps.
+ *
+ * why: `seat` is an integer mirroring `players[].seat` so the two join, and the
+ * re-executor dispatches each move as `MAKE_MOVE { playerID: String(seat) }`. It
+ * is NEVER named `player_id`: LAGN already defines that name as a public handle
+ * (00.2 §7d), and a second meaning would collide. Its range is keyed on
+ * `player_count` by Gate B below; the `.max(4)` here is the absolute ceiling
+ * (seats run 0..4 because `player_count` caps at 5).
+ *
+ * why: `move_name`, `args`, and `phase` stay a loose string / `unknown[]` /
+ * nullable string rather than enums. lagn-spec cannot import the engine, the
+ * move set grows over time, an unknown move is rejected by the reducer at
+ * re-execution and surfaces as a hash divergence, and `turn` / `phase` are
+ * descriptive log stamps never read during re-execution.
+ */
+const ReplayExecutionMoveSchema = z.object({
+  seq: z.number().int().min(0),
+  seat: z.number().int().min(0).max(4),
+  move_name: z.string().min(1),
+  args: z.array(z.unknown()),
+  turn: z.number().int().min(1).optional(),
+  phase: z.string().nullable().optional()
+})
+
+/**
+ * The re-executable replay block: everything the D-24119 server reducer needs to
+ * re-run a completed match and detect divergence.
+ *
+ * why: `engine: 'legendary-arena'` is the engine-bound marker — a third party
+ * can validate this block's SHAPE, but only this engine can RUN it (D-24714).
+ *
+ * why: `engine_version` is the game-engine `CURRENT_ENGINE_VERSION_VALUE` as
+ * `major.minor.patch`, read by the producer via `getCurrentEngineVersion()` /
+ * `formatEngineVersion()`. It is rarely bumped (unchanged across many gameplay
+ * packets), so a MATCHING engine_version does NOT imply re-executability — only
+ * `final_state_hash` (and `engine_build`, when present) decides.
+ *
+ * why: `data_version` is the D-0801 data-axis value naming the wire format of
+ * the exported `moves[].args` (WP-137 bumped it to 2 for the `#copyIndex` arg
+ * reshape). A later data-axis bump lets a re-executor migrate exported args
+ * forward using the engine's OWN migration; lagn-spec validates the integer only
+ * and never migrates args, because it cannot import the engine.
+ *
+ * why: `final_state_hash` is the non-cryptographic 32-bit djb2 `computeStateHash`
+ * of the final `G`, as lowercase hex. It is a DIVERGENCE check, not
+ * tamper-proofing: a different engine build, registry content, or lossy setup
+ * produces a different hash, which the re-executor reports and never "corrects".
+ * The 1–8 hex-character bound matches `(hash >>> 0).toString(16)` — an unsigned
+ * 32-bit value is at most 8 hex digits and is NOT zero-padded.
+ */
+const ReplayExecutionSchema = z.object({
+  engine: z.literal('legendary-arena'),
+  engine_version: z.string().regex(/^\d+\.\d+\.\d+$/),
+  engine_build: z.string().min(1).optional(),
+  data_version: z.number().int().min(1),
+  seed: z.string().min(1),
+  moves: z.array(ReplayExecutionMoveSchema).min(1),
+  final_state_hash: z.string().regex(/^[0-9a-f]{1,8}$/)
+})
+
 const ReplaySchema = z.object({
-  turns: z.array(TurnSchema).optional()
+  turns: z.array(TurnSchema).optional(),
+  execution: ReplayExecutionSchema.optional()
 })
 
 // Validate seq constraint: strictly increasing by 1, no gaps, no duplicates
@@ -865,6 +963,19 @@ export const lagnSchema = z.object({
     message: `setup.final_blow requires lagn_version ${LAGN_VERSION_1_6_0} or later — an earlier document cannot carry the Final Blow flag`,
     path: ['setup', 'final_blow']
   }
+).refine(
+  // why: WP-808 — same silent-strip hazard the support_pools, hero_alternates,
+  // players/scoring_profile, battle_plan, and final_blow gates guard against.
+  // `lagnSchema` is not `.strict()`, so a `replay.execution` block written into a
+  // pre-1.7.0 document would be STRIPPED on parse — the re-executable replay would
+  // vanish with no error, and the document would look clean. Rejecting loudly is
+  // the only honest option. Ordinal (D-24211) so every version from 1.7.0 onward
+  // carries it.
+  (data) => isLagnVersionAtLeast(data.lagn_version, LAGN_VERSION_1_7_0) || data.replay?.execution === undefined,
+  {
+    message: `replay.execution requires lagn_version 1.7.0 or later — an earlier document cannot carry a re-executable replay`,
+    path: ['replay', 'execution']
+  }
 ).superRefine((data, ctx) => {
   // why: JSON Schema cannot express any of these — a count comparison against a
   // sibling field, a per-seat range keyed on that sibling, or uniqueness within
@@ -909,6 +1020,40 @@ export const lagnSchema = z.object({
       })
     }
     seenPlayerIds.add(participant.player_id)
+  }
+}).superRefine((data, ctx) => {
+  // why: WP-808 — JSON Schema has no positional arithmetic across array items and
+  // no cross-field comparison, so neither of these is expressible by derivation.
+  // A NEW node, deliberately NOT folded into the `players` superRefine above:
+  // folding would leave one refinement node where there are two documented
+  // constraints, and EXPECTED_REFINEMENT_COUNT would read 13 instead of 14.
+  if (data.replay?.execution === undefined) {
+    return
+  }
+  const moves = data.replay.execution.moves
+  for (let index = 0; index < moves.length; index++) {
+    const move = moves[index]
+    // why: whole-match numbering from 0 with no gaps or duplicates — unlike
+    // `replay.turns`, whose per-turn `seq` may start at any value. One issue per
+    // failing move so every offending index is named, not just the first.
+    if (move.seq !== index) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['replay', 'execution', 'moves'],
+        message: `replay.execution.moves[${index}] has seq ${move.seq} but must have seq ${index} — moves are numbered from 0 with no gaps or duplicates`
+      })
+    }
+    // why: the per-move seat range is keyed on the sibling root `player_count`,
+    // which JSON Schema cannot reach. The re-executor dispatches
+    // `playerID: String(seat)`, so a seat beyond the seat count names a player
+    // the rebuilt match does not have.
+    if (move.seat > data.player_count - 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['replay', 'execution', 'moves'],
+        message: `replay.execution.moves[${index}] names seat ${move.seat} but player_count is ${data.player_count} — seats run 0 to ${data.player_count - 1}`
+      })
+    }
   }
 })
 
@@ -1080,6 +1225,23 @@ export const UNEXPRESSIBLE_CONSTRAINTS = [
     constraint: `setup.final_blow requires lagn_version ${LAGN_VERSION_1_6_0}; an earlier document may not carry it.`,
     reason:
       'Cross-field dependency between the root version and a nested optional field. Expressible as a deeply-nested if/then, but only by hand-writing exactly the duplicate structure this derivation exists to eliminate.'
+  },
+  {
+    // why: WP-808 — Gate A. One UNEXPRESSIBLE_CONSTRAINTS entry per refinement
+    // node; this records the ordinal version gate on replay.execution so
+    // EXPECTED_REFINEMENT_COUNT (= this array's length) stays in step.
+    path: 'lagn_version / replay.execution',
+    constraint: `replay.execution requires lagn_version ${LAGN_VERSION_1_7_0}; an earlier document may not carry it.`,
+    reason:
+      'Cross-field dependency between the root version and a nested optional block. Expressible as a deeply-nested if/then, but only by hand-writing exactly the duplicate structure this derivation exists to eliminate.'
+  },
+  {
+    // why: WP-808 — Gate B. The new root superRefine over replay.execution.moves.
+    path: 'replay.execution.moves / player_count',
+    constraint:
+      'replay.execution.moves are numbered by seq from 0 with no gaps or duplicates, and each move seat is in 0..player_count-1.',
+    reason:
+      'An index-keyed sequence rule and a per-item range keyed on a root sibling field. JSON Schema has no positional arithmetic across array items and no cross-field comparison.'
   }
 ] as const
 

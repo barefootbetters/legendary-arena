@@ -21,6 +21,7 @@ import {
   LAGN_VERSION_1_4_0,
   LAGN_VERSION_1_5_0,
   LAGN_VERSION_1_6_0,
+  LAGN_VERSION_1_7_0,
   type LagnVersion
 } from './validator.js'
 
@@ -140,13 +141,33 @@ const migrate_1_5_0_to_1_6_0: LagnMigrationFn = (payload) => ({
   lagn_version: LAGN_VERSION_1_6_0
 })
 
+/**
+ * 1.6.0 -> 1.7.0 is a pure restamp.
+ *
+ * why: 1.7.0 adds exactly one optional block (`replay.execution`, WP-808), so
+ * every 1.6.0 document is already a structurally valid 1.7.0 document. Like its
+ * predecessors it synthesizes nothing — a document with no re-executable replay
+ * has none after migration (and that block is a SERVER producer's concern, never
+ * a migration's: lagn-spec cannot import the engine to build one).
+ *
+ * why: REGISTERED BUT NOT REACHABLE in this packet. migrateToCurrent() targets
+ * LAGN_VERSION, which stays **1.6.0** here (the writer flip is the follow-on
+ * producer packet), so no caller can reach this step. It lands now so that flip
+ * is a one-line change, not a new migration.
+ */
+const migrate_1_6_0_to_1_7_0: LagnMigrationFn = (payload) => ({
+  ...payload,
+  lagn_version: LAGN_VERSION_1_7_0
+})
+
 const migrationRegistry: Readonly<Record<LagnMigrationKey, LagnMigrationFn>> = Object.freeze({
   [buildLagnMigrationKey(LAGN_VERSION_1_0_0, LAGN_VERSION_1_1_0)]: migrate_1_0_0_to_1_1_0,
   [buildLagnMigrationKey(LAGN_VERSION_1_1_0, LAGN_VERSION_1_2_0)]: migrate_1_1_0_to_1_2_0,
   [buildLagnMigrationKey(LAGN_VERSION_1_2_0, LAGN_VERSION_1_3_0)]: migrate_1_2_0_to_1_3_0,
   [buildLagnMigrationKey(LAGN_VERSION_1_3_0, LAGN_VERSION_1_4_0)]: migrate_1_3_0_to_1_4_0,
   [buildLagnMigrationKey(LAGN_VERSION_1_4_0, LAGN_VERSION_1_5_0)]: migrate_1_4_0_to_1_5_0,
-  [buildLagnMigrationKey(LAGN_VERSION_1_5_0, LAGN_VERSION_1_6_0)]: migrate_1_5_0_to_1_6_0
+  [buildLagnMigrationKey(LAGN_VERSION_1_5_0, LAGN_VERSION_1_6_0)]: migrate_1_5_0_to_1_6_0,
+  [buildLagnMigrationKey(LAGN_VERSION_1_6_0, LAGN_VERSION_1_7_0)]: migrate_1_6_0_to_1_7_0
 })
 
 export interface LagnMigrationResult {
