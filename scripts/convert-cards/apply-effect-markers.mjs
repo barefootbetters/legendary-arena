@@ -305,6 +305,12 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'undercover-your-hero-current',
   'undercover-hero-from-discard-current',
   'unleash-undercover-hero-each-player',
+  // why: WP-903 / D-24860 — positions 71-75, the bkwd Taskmaster's Thunderbolts no-param primitives.
+  'reveal-four-play-henchmen-current',
+  'enter-city-henchman-from-any-victory-pile-current',
+  'gain-wound-under-two-henchmen-each-player',
+  'capture-hero-deck-top-by-icon-guess',
+  'ko-captured-heroes-on-escape',
 ];
 
 // why: WP-836 / D-24769 — hand-synced local copy of the engine's HERO_CLASSES

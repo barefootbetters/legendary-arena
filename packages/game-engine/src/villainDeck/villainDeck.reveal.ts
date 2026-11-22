@@ -32,6 +32,9 @@ import { applyEscapedPileResourceLoss } from '../rules/schemeResourceLoss.js';
 import { settleWwiiConquest } from '../rules/changeTheOutcomeOfWwii.logic.js';
 import { hasAmbush } from '../board/boardKeywords.logic.js';
 import { moveAttachedHeroesToEscapedPile } from '../board/heroCapture.logic.js';
+// why: WP-903 / D-24860 — Bullseye's Escape KOs its captured Hero instead of moving it to the
+// Escape Pile (overriding the D-24657 default for this card).
+import { koCard } from '../board/ko.logic.js';
 // why: WP-793 / D-24656 — the escape records the rulebook HQ KO + Bystander discard it owes.
 // villainEscapeProcedure → phaseCard → playVillainTop.resolve → this module is a
 // runtime-safe import cycle: enqueueEscapeProcedure is referenced only inside a function
@@ -606,8 +609,16 @@ export function resolveVillainEscape(
       `Escape effect: ${composeEffectResultLogLine(resolvedEscapeResults)}.`,
     );
   }
-  // why: D-24657 — captured heroes stay in the Escape Pile with their captor (rules v23)
-  moveAttachedHeroesToEscapedPile(G, escapedCardId);
+  // why: D-24657 — captured heroes default to the Escape Pile with their captor (rules v23). WP-903
+  // / D-24860 overrides this for Bullseye's Escape ("KO that Hero"): the ko-captured-heroes-on-escape
+  // executor handler is a deliberate no-op, so the KO runs HERE instead of the generic Escape-Pile
+  // move, and the Hero is never double-moved (this card diverts; every other attached-hero escape
+  // keeps the default).
+  if (findVillainHookDescriptor(G, escapedCardId, 'onEscape', 'ko-captured-heroes-on-escape') !== null) {
+    koCapturedHeroesOnEscape(G, escapedCardId);
+  } else {
+    moveAttachedHeroesToEscapedPile(G, escapedCardId);
+  }
 
   // why: WP-481 / D-24287 — Mystique's "Escape: … becomes a Scheme Twist that
   // takes effect immediately." The executor's become-scheme-twist handler is a
@@ -666,6 +677,31 @@ export function resolveVillainEscape(
   // PAR / fixture loops and replay all count it the same way, and a third capital latches before
   // the escape-procedure opener runs. No-op until a country has been invaded.
   settleWwiiConquest(G);
+}
+
+/**
+ * Bullseye's Escape KO (WP-903 / D-24860): KOs each Hero captured by the escaping Bullseye copy and
+ * clears its attached-hero entry, INSTEAD OF moveAttachedHeroesToEscapedPile — overriding the
+ * D-24657 Escape-Pile default for this card only. A Bullseye with no captured Hero is a reachable
+ * no-op. Only reached when the escaping card carries a ko-captured-heroes-on-escape onEscape
+ * descriptor, so the generic Escape-Pile move never also fires on it.
+ *
+ * @param G - The game state, mutated in place (KO pile, villainAttachedHeroes, messages).
+ * @param escapedCardId - The escaping Bullseye copy.
+ */
+function koCapturedHeroesOnEscape(G: LegendaryGameState, escapedCardId: CardExtId): void {
+  const capturedHeroes = G.villainAttachedHeroes[escapedCardId];
+  if (capturedHeroes === undefined || capturedHeroes.length === 0) {
+    return;
+  }
+  const koedNames: string[] = [];
+  for (const heroId of capturedHeroes) {
+    G.ko = koCard(G.ko, heroId);
+    koedNames.push(formatCardRef(G.cardDisplayData, heroId));
+  }
+  // why: D-21401 — the attached-hero entry exists only while non-empty; delete it, never set it [].
+  delete G.villainAttachedHeroes[escapedCardId];
+  pushLog(G, `Escape effect: KO'd the captured Hero(es) ${koedNames.join(', ')}.`, 'applied');
 }
 
 /**

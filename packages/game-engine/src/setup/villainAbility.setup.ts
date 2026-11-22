@@ -680,7 +680,10 @@ function parseLocationGatedEffect(
  *     `gain-recruit-current-per-hero-class` (D-24750) |
  *     `discard-hand-matching-hq-card-names-each-player` |
  *     `hq-heroes-to-hero-deck-bottom` (D-24770) |
- *     `reveal-top-may-ko-current` | `next-hand-from-play-zero-cost-current` (D-24815)  (no params)
+ *     `reveal-top-may-ko-current` | `next-hand-from-play-zero-cost-current` (D-24815) |
+ *     `reveal-four-play-henchmen-current` | `enter-city-henchman-from-any-victory-pile-current` |
+ *     `gain-wound-under-two-henchmen-each-player` | `capture-hero-deck-top-by-icon-guess` |
+ *     `ko-captured-heroes-on-escape` (the bkwd Taskmaster's Thunderbolts lines, D-24860)  (no params)
  *
  * @param value - The ungated marker value (the text inside `[effect:…]` minus
  *   any `@<space>` suffix).

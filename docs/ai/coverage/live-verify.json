@@ -2910,6 +2910,83 @@
       "date": "2026-11-21",
       "evidence": "post-deploy operator matches ssoMQmSRU9V, EkdrcNvzyAW and dtspq1pKL (client/server a39c2cc, built 2026-11-20T18:36:48Z; 2p + 1 bot ally; Indestructible Man / Corrupt the Spy Agencies; Elite Assassins + Taskmaster's Thunderbolts; Doombot Legion; bkwd Black Widow, Yelena Belova, Red Guardian, White Tiger, Falcon & Winter Soldier), driven by the human seat 0, 2026-11-21. No WP-902 villain line recorded an unmarked-ability breadcrumb in any match. Black Lotus Fight logged \"gained +3 recruit\": ssoMQmSRU9V 6.2.11, 21.2.15 (both players); EkdrcNvzyAW 6.2.12, 8.2.17, 10.2.9, 12.2.20, 18.2.16. The shipped gain-recruit-current:3 handler (WP-541 / D-24350).",
       "note": "Live check PASS: Black Lotus Fight adds +3 Recruit. D-24859 (shipped gain-recruit-current, WP-541 / D-24350)."
+    },
+    {
+      "key": "bkwd-villain-taskmasters-thunderbolts-jester|reveal-four-play-henchmen-current",
+      "kind": "villain",
+      "card": "Jester",
+      "ability": "Fight: Reveal the top four cards of the Villain Deck. Play all the Henchmen you find. Put the rest back in any order.",
+      "wp": "WP-903",
+      "state": "pending",
+      "date": "2026-11-21",
+      "evidence": "",
+      "note": "Live check: Jester's Fight reveals the top four Villain Deck cards; every revealed Henchman enters the City (doing its Ambush) and the non-Henchman remainder returns to the deck top in revealed order; no unmarked-ability breadcrumb. D-24860."
+    },
+    {
+      "key": "bkwd-villain-taskmasters-thunderbolts-joystick|enter-city-henchman-from-any-victory-pile-current",
+      "kind": "villain",
+      "card": "Joystick",
+      "ability": "Ambush: Choose a Henchman from any player's Victory Pile to enter the city.",
+      "wp": "WP-903",
+      "state": "pending",
+      "date": "2026-11-21",
+      "evidence": "",
+      "note": "Live check: Joystick's Ambush opens the one-step pick of a Henchman from any Victory Pile (ascending City Attack); the chosen Henchman leaves its Victory Pile and enters the City; no unmarked-ability breadcrumb. D-24860."
+    },
+    {
+      "key": "bkwd-villain-taskmasters-thunderbolts-jack-olantern|enter-city-henchman-from-any-victory-pile-current",
+      "kind": "villain",
+      "card": "Jack O'Lantern",
+      "ability": "Fight: Choose a Henchman from any player's Victory Pile to enter the city.",
+      "wp": "WP-903",
+      "state": "pending",
+      "date": "2026-11-21",
+      "evidence": "",
+      "note": "Live check: Jack O'Lantern's Fight opens the same Henchman-to-City pick (shared kind); the chosen Henchman enters the City; no unmarked-ability breadcrumb. D-24860."
+    },
+    {
+      "key": "bkwd-villain-taskmasters-thunderbolts-jack-olantern|gain-wound-under-two-henchmen-each-player",
+      "kind": "villain",
+      "card": "Jack O'Lantern",
+      "ability": "Escape: Each player with fewer than two Henchmen in their Victory Pile gains a Wound.",
+      "wp": "WP-903",
+      "state": "pending",
+      "date": "2026-11-21",
+      "evidence": "",
+      "note": "Live check: Jack O'Lantern's Escape Wounds every seat with fewer than two Henchmen in its Victory Pile, current player first; a seat with two or more is skipped. D-24860."
+    },
+    {
+      "key": "bkwd-villain-taskmasters-thunderbolts-bullseye|capture-hero-deck-top-by-icon-guess",
+      "kind": "villain",
+      "card": "Bullseye",
+      "ability": "Ambush: Choose [icon:recruit] or [icon:attack], then reveal the top card of the Hero Deck. If it has that icon, Bullseye captures it and gets +[icon:attack] equal to that Hero's cost.",
+      "wp": "WP-903",
+      "state": "pending",
+      "date": "2026-11-21",
+      "evidence": "",
+      "note": "Live check: Bullseye's Ambush reveals the Hero Deck top and, when it has an Attack icon, captures it so Bullseye's City Attack grows by that Hero's cost; no Attack icon captures nothing; no unmarked-ability breadcrumb. D-24860."
+    },
+    {
+      "key": "bkwd-villain-taskmasters-thunderbolts-bullseye|gain-attached-hero",
+      "kind": "villain",
+      "card": "Bullseye",
+      "ability": "Fight: The player of your choice gains the captured Hero.",
+      "wp": "WP-903",
+      "state": "pending",
+      "date": "2026-11-21",
+      "evidence": "",
+      "note": "Live check: Bullseye's Fight hands the captured Hero to the fighter's discard (the shipped gain-attached-hero award) and Bullseye's Attack reverts to 4. D-24860 (shipped gain-attached-hero, WP-450 / D-24270)."
+    },
+    {
+      "key": "bkwd-villain-taskmasters-thunderbolts-bullseye|ko-captured-heroes-on-escape",
+      "kind": "villain",
+      "card": "Bullseye",
+      "ability": "Escape: KO that Hero.",
+      "wp": "WP-903",
+      "state": "pending",
+      "date": "2026-11-21",
+      "evidence": "",
+      "note": "Live check: when Bullseye escapes, its captured Hero is KO'd (not sent to the Escape Pile); a Bullseye with no captured Hero is a no-op. D-24860 (overrides the D-24657 Escape-Pile default for this card)."
     }
   ]
 }

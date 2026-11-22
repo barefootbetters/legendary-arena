@@ -425,6 +425,10 @@ const LOCKED_TABLE: Record<string, KoSiteCounts> = {
   'villain/villainEffects.execute.ts#koOneHeroForPlayer': { koSites: 2, ownedRecords: 2 },
   'villain/villainEffects.execute.ts#koHeroesFromZoneForPlayer': { koSites: 1, ownedRecords: 1 },
   'villain/villainEffects.execute.ts#koSingleTarget': { koSites: 1, ownedRecords: 1 },
+  // why: WP-903 / D-24860 — Bullseye's Escape KOs its captured Hero (held in G.villainAttachedHeroes,
+  // no player owns it) instead of moving it to the Escape Pile, so no owned-KO record (The Big Score
+  // / Finding Zemo precedent).
+  'villainDeck/villainDeck.reveal.ts#koCapturedHeroesOnEscape': { koSites: 1, ownedRecords: 0 },
   'villainDeck/villainEscapeProcedure.ts#koHqHeroForEscape': { koSites: 1, ownedRecords: 0 },
 };
 

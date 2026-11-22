@@ -94,12 +94,16 @@ bkwd-villain-elite-assassins-black-lotus,Black Lotus,bkwd,villain,discard-zero-c
 bkwd-villain-elite-assassins-black-lotus,Black Lotus,bkwd,villain,gain-recruit-current,executable,WP-541,D-24350,packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current
 bkwd-villain-elite-assassins-blue-talon,Blue Talon,bkwd,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 bkwd-villain-elite-assassins-blue-talon,Blue Talon,bkwd,villain,undercover-hero-from-discard-current,executable,WP-902,D-24859,packages/game-engine/src/villain/villainEffects.execute.ts#undercover-hero-from-discard-current
-bkwd-villain-taskmasters-thunderbolts-bullseye,Bullseye,bkwd,villain,(unmarked),unmarked,,,
+bkwd-villain-taskmasters-thunderbolts-bullseye,Bullseye,bkwd,villain,capture-hero-deck-top-by-icon-guess,executable,WP-903,D-24860,packages/game-engine/src/villain/villainEffects.execute.ts#capture-hero-deck-top-by-icon-guess
+bkwd-villain-taskmasters-thunderbolts-bullseye,Bullseye,bkwd,villain,gain-attached-hero,executable,WP-450,D-24270,packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero
+bkwd-villain-taskmasters-thunderbolts-bullseye,Bullseye,bkwd,villain,ko-captured-heroes-on-escape,executable,WP-903,D-24860,packages/game-engine/src/villain/villainEffects.execute.ts#ko-captured-heroes-on-escape
 bkwd-villain-elite-assassins-iron-maiden,Iron Maiden,bkwd,villain,undercover-non-grey-hero-each-player,executable,WP-902,D-24859,packages/game-engine/src/villain/villainEffects.execute.ts#undercover-non-grey-hero-each-player
 bkwd-villain-elite-assassins-iron-maiden,Iron Maiden,bkwd,villain,unleash-undercover-hero-each-player,executable,WP-902,D-24859,packages/game-engine/src/villain/villainEffects.execute.ts#unleash-undercover-hero-each-player
-bkwd-villain-taskmasters-thunderbolts-jack-olantern,Jack O'Lantern,bkwd,villain,(unmarked),unmarked,,,
+bkwd-villain-taskmasters-thunderbolts-jack-olantern,Jack O'Lantern,bkwd,villain,enter-city-henchman-from-any-victory-pile-current,executable,WP-903,D-24860,packages/game-engine/src/villain/villainEffects.execute.ts#enter-city-henchman-from-any-victory-pile-current
+bkwd-villain-taskmasters-thunderbolts-jack-olantern,Jack O'Lantern,bkwd,villain,gain-wound-under-two-henchmen-each-player,executable,WP-903,D-24860,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound-under-two-henchmen-each-player
 bkwd-villain-taskmasters-thunderbolts-jester,Jester,bkwd,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
-bkwd-villain-taskmasters-thunderbolts-joystick,Joystick,bkwd,villain,(unmarked),unmarked,,,
+bkwd-villain-taskmasters-thunderbolts-jester,Jester,bkwd,villain,reveal-four-play-henchmen-current,executable,WP-903,D-24860,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-four-play-henchmen-current
+bkwd-villain-taskmasters-thunderbolts-joystick,Joystick,bkwd,villain,enter-city-henchman-from-any-victory-pile-current,executable,WP-903,D-24860,packages/game-engine/src/villain/villainEffects.execute.ts#enter-city-henchman-from-any-victory-pile-current
 bkwd-villain-elite-assassins-snapdragon,Snapdragon,bkwd,villain,discard-non-grey-hero-then-draw-each-player,executable,WP-902,D-24859,packages/game-engine/src/villain/villainEffects.execute.ts#discard-non-grey-hero-then-draw-each-player
 bkwd-villain-elite-assassins-snapdragon,Snapdragon,bkwd,villain,undercover-your-hero-current,executable,WP-902,D-24859,packages/game-engine/src/villain/villainEffects.execute.ts#undercover-your-hero-current
 ca75-villain-masters-of-evil-wwii-black-knight,Black Knight,ca75,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander

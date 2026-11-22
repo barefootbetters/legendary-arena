@@ -442,7 +442,21 @@ export type VillainEffectPrimitive =
   | 'undercover-non-grey-hero-each-player'
   | 'undercover-your-hero-current'
   | 'undercover-hero-from-discard-current'
-  | 'unleash-undercover-hero-each-player';
+  | 'unleash-undercover-hero-each-player'
+  // why: WP-903 / D-24860 — the bkwd Taskmaster's Thunderbolts lines, appended at positions 71-75,
+  // all no-param and keyword-less: Jester's Fight reveals the top four Villain Deck cards and plays
+  // the Henchmen (a deliberate executor no-op; the Fight fire-site bridge does the work), the shared
+  // Joystick Ambush / Jack O'Lantern Fight Henchman-to-City pick from any Victory Pile (the D-24817
+  // queue), Jack O'Lantern's Escape under-two-Henchmen each-player Wound (inline, the Viper
+  // skeleton), Bullseye's Ambush Hero-Deck-top icon-guess capture (inline), and Bullseye's Escape
+  // KO of its captured Hero (a deliberate executor no-op; the Escape fire-site bridge KOs it,
+  // overriding the D-24657 Escape-Pile default). The marker script's hand-synced copy appends them
+  // at the same positions.
+  | 'reveal-four-play-henchmen-current'
+  | 'enter-city-henchman-from-any-victory-pile-current'
+  | 'gain-wound-under-two-henchmen-each-player'
+  | 'capture-hero-deck-top-by-icon-guess'
+  | 'ko-captured-heroes-on-escape';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -713,6 +727,17 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'undercover-your-hero-current',
   'undercover-hero-from-discard-current',
   'unleash-undercover-hero-each-player',
+  // why: WP-903 / D-24860 — appended at positions 71-75, the bkwd Taskmaster's Thunderbolts lines
+  // (Jester's Fight reveal-and-play, the shared Joystick Ambush / Jack O'Lantern Fight Henchman-to-
+  // City pick, Jack O'Lantern's Escape under-two-Henchmen Wound, Bullseye's Ambush capture and
+  // Bullseye's Escape KO), all no-param, keyword-less. Jester's Fight and Bullseye's Escape are
+  // deliberate executor no-ops bridged at the Fight and Escape fire sites. The marker script's
+  // hand-synced copy appends them at the same positions.
+  'reveal-four-play-henchmen-current',
+  'enter-city-henchman-from-any-victory-pile-current',
+  'gain-wound-under-two-henchmen-each-player',
+  'capture-hero-deck-top-by-icon-guess',
+  'ko-captured-heroes-on-escape',
 ] as const;
 
 /**

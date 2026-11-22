@@ -169,6 +169,11 @@
     "undercover-non-grey-hero-each-player": { "wp": "WP-902", "decision": "D-24859" },
     "undercover-your-hero-current": { "wp": "WP-902", "decision": "D-24859" },
     "undercover-hero-from-discard-current": { "wp": "WP-902", "decision": "D-24859" },
-    "unleash-undercover-hero-each-player": { "wp": "WP-902", "decision": "D-24859" }
+    "unleash-undercover-hero-each-player": { "wp": "WP-902", "decision": "D-24859" },
+    "reveal-four-play-henchmen-current": { "wp": "WP-903", "decision": "D-24860" },
+    "enter-city-henchman-from-any-victory-pile-current": { "wp": "WP-903", "decision": "D-24860" },
+    "gain-wound-under-two-henchmen-each-player": { "wp": "WP-903", "decision": "D-24860" },
+    "capture-hero-deck-top-by-icon-guess": { "wp": "WP-903", "decision": "D-24860" },
+    "ko-captured-heroes-on-escape": { "wp": "WP-903", "decision": "D-24860" }
   }
 }

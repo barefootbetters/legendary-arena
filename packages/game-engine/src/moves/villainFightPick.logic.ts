@@ -63,6 +63,14 @@ import { recordVillainDefeated } from '../economy/economy.logic.js';
 import { matchHasFightRestrictionKind } from './villainDefeatRequirement.logic.js';
 import { routeDefeatedVillainCard, resolveVillainDeckDefeatFightEffect } from './fightVillain.js';
 import { readTurnNumber } from '../villain/villainEffects.execute.js';
+// why: WP-903 / D-24860 — the Joystick / Jack O'Lantern Henchman-to-City pick enters the City
+// through resolveVillainCityEntry with the STATIC DEFAULT_IMPLEMENTATION_MAP, ordered by
+// resolveFightCost (the City Attack). Read only inside function bodies, so the villainDeck.reveal
+// edge resolves by call time (the same runtime-safe discipline as the fightVillain import above).
+import { resolveVillainCityEntry } from '../villainDeck/villainDeck.reveal.js';
+import type { RevealContext } from '../villainDeck/villainDeck.reveal.js';
+import { DEFAULT_IMPLEMENTATION_MAP } from '../rules/ruleRuntime.impl.js';
+import { resolveFightCost } from '../economy/economy.resolve.js';
 // why: WP-902 / D-24859 — Blue Talon's discard-pile Undercover send and Iron Maiden's Unleash
 // reuse the shared Undercover move / return and the one Hero predicate; read only inside function
 // bodies, closing a runtime-safe cycle (heroEffects.execute → … → seatChoice.resolve → this
@@ -89,6 +97,8 @@ export const REMAKER_GIVE_SEAT_CHOICE_KIND = 'remaker-give';
 export const VILLAIN_FIGHT_UNDERCOVER_FROM_DISCARD_KIND = 'villain-fight-undercover-from-discard';
 /** Iron Maiden: each player may Unleash one of their Heroes from Undercover (WP-902 / D-24859). */
 export const VILLAIN_FIGHT_UNLEASH_KIND = 'villain-fight-unleash';
+/** Joystick / Jack O'Lantern: choose a Henchman from any Victory Pile to enter the City (WP-903 / D-24860). */
+export const ENTER_CITY_HENCHMAN_FROM_VICTORY_KIND = 'villain-fight-enter-city-henchman-from-victory';
 
 // why: option index = permutation index; index 0 keeps the order as revealed (the default).
 /** Every order of two put-back cards, as indexes into the revealed list. */
@@ -98,10 +108,14 @@ export const PERMUTATIONS_OF_THREE: readonly (readonly number[])[] = [
   [0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0],
 ];
 
-/** The eight seat-choice kinds this module owns (WP-902 / D-24859 added the last two). */
+/**
+ * The nine seat-choice kinds this module owns (WP-902 / D-24859 added the two Elite Assassins kinds;
+ * WP-903 / D-24860 added the Taskmaster's Thunderbolts Henchman-to-City kind).
+ */
 const VILLAIN_FIGHT_PICK_KINDS: readonly string[] = [
   'liar-target', 'liar-claim', 'liar-decide', 'nightbringer-defeat', 'nightbringer-order', 'remaker-give',
   VILLAIN_FIGHT_UNDERCOVER_FROM_DISCARD_KIND, VILLAIN_FIGHT_UNLEASH_KIND,
+  ENTER_CITY_HENCHMAN_FROM_VICTORY_KIND,
 ];
 
 /** Liar's primitive (the queue key). */
@@ -112,6 +126,8 @@ const NIGHTBRINGER_PRIMITIVE: PendingVillainFightPick['primitive'] = 'reveal-vil
 const BLUE_TALON_PRIMITIVE: PendingVillainFightPick['primitive'] = 'undercover-hero-from-discard-current';
 /** Iron Maiden's Unleash primitive (the queue key, WP-902 / D-24859). */
 const IRON_MAIDEN_UNLEASH_PRIMITIVE: PendingVillainFightPick['primitive'] = 'unleash-undercover-hero-each-player';
+/** Joystick's Ambush / Jack O'Lantern's Fight shared Henchman-to-City primitive (the queue key, WP-903 / D-24860). */
+const ENTER_CITY_HENCHMAN_PRIMITIVE: PendingVillainFightPick['primitive'] = 'enter-city-henchman-from-any-victory-pile-current';
 
 /** The most printed VP a Villain may have for Nightbringer to defeat it. */
 const NIGHTBRINGER_MAX_VICTORY_POINTS = 2;
@@ -257,6 +273,11 @@ function buildFirstStepChoice(G: LegendaryGameState, entry: PendingVillainFightP
   }
   if (entry.primitive === IRON_MAIDEN_UNLEASH_PRIMITIVE) {
     return buildIronMaidenUnleashChoice(G, entry.playerID, entry.sourceCardId);
+  }
+  // why: WP-903 / D-24860 — Joystick's Ambush and Jack O'Lantern's Fight share one Henchman-to-City
+  // pick, placed BEFORE the Remaker fall-through so a new primitive never builds a Remaker choice.
+  if (entry.primitive === ENTER_CITY_HENCHMAN_PRIMITIVE) {
+    return buildEnterCityHenchmanFromVictoryChoice(G, entry.playerID, entry.sourceCardId);
   }
   if (entry.targetSeat === undefined) {
     return undefined;
@@ -658,6 +679,64 @@ function buildIronMaidenUnleashChoice(
 }
 
 /**
+ * Builds Joystick's Ambush / Jack O'Lantern's Fight pick (WP-903 / D-24860): "Choose a Henchman from
+ * any player's Victory Pile to enter the city." One option per Henchman across ALL players' Victory
+ * Piles (`G.villainDeckCardTypes[id] === 'henchman'`, the killbot-origin exclusion applied, as
+ * getEligibleVictoryVillains does), ordered by ascending City Attack (resolveFightCost) so option 0
+ * — every default (timeout / sim / PAR / bot-ally) — re-enters the least threatening Henchman (a
+ * re-entering Henchman is a drawback and the line is mandatory). No eligible Henchman → a logged
+ * no-op. The chosen option carries the Henchman (cardId) and its owning seat (recipientSeat); the
+ * apply in chainVillainFightPick moves it out of that Victory Pile and into the City.
+ *
+ * @param G - The game state (logs pushed).
+ * @param fighterSeat - The defeating player (the pick is addressed to them).
+ * @param sourceCardId - The defeated Joystick / Jack O'Lantern copy.
+ * @returns The 'villain-fight-enter-city-henchman-from-victory' choice, or undefined (logged).
+ */
+function buildEnterCityHenchmanFromVictoryChoice(
+  G: LegendaryGameState,
+  fighterSeat: string,
+  sourceCardId: CardExtId,
+): PendingSeatChoice | undefined {
+  const candidates: { cardId: CardExtId; owner: string; attack: number }[] = [];
+  // why: WP-903 / D-24860 — scan every seat's Victory Pile in turn order from the fighter, then pile
+  // order, so the stable sort below keeps that (seat, pile) order for City-Attack ties.
+  for (const seat of seatsInTurnOrderFrom(Object.keys(G.playerZones), fighterSeat)) {
+    const victory = G.playerZones[seat]?.victory ?? [];
+    for (const cardId of victory) {
+      // why: a defeated Killbot is typed 'villain' but counts as a Bystander, never a Villain
+      // (getEligibleVictoryVillains, rules v23 L2341), so it is never an eligible Henchman.
+      if (G.convertedVillainOrigins?.[cardId] === 'killbot') {
+        continue;
+      }
+      if (G.villainDeckCardTypes?.[cardId] === 'henchman') {
+        candidates.push({ cardId, owner: seat, attack: resolveFightCost(G, cardId) });
+      }
+    }
+  }
+  if (candidates.length === 0) {
+    const source = formatCardRef(G.cardDisplayData, sourceCardId);
+    pushLog(G, `No Henchman in any Victory Pile to enter the City (${source}).`, 'blocked', sourceCardId);
+    return undefined;
+  }
+  // why: WP-903 / D-24860 — ascending City Attack so option 0 is the least threatening Henchman.
+  // Array.prototype.sort is stable, so equal-attack Henchmen keep their (seat turn order, pile
+  // order) insertion order.
+  candidates.sort((left, right) => left.attack - right.attack);
+  const options: SeatChoiceOption[] = [];
+  for (const candidate of candidates) {
+    options.push({
+      label: `Send ${resolveCardName(G.cardDisplayData, candidate.cardId)} into the City (from Player ${candidate.owner}'s Victory Pile)`,
+      cardId: candidate.cardId,
+      // why: recipientSeat carries the owning seat so the apply knows which Victory Pile to move it
+      // out of (the general "seat this option refers to" use, as buildLiarTargetChoice does).
+      recipientSeat: candidate.owner,
+    });
+  }
+  return buildPickChoice(ENTER_CITY_HENCHMAN_FROM_VICTORY_KIND, fighterSeat, options, { sourceCardId, fighterSeat });
+}
+
+/**
  * The option a seat chose on a fully-submitted one-seat pick choice.
  *
  * @param choice - The resolved choice.
@@ -715,6 +794,9 @@ export function applyVillainFightPickResolvedSeatChoice(
     // them itself (readChosenOption reads only addressedSeats[0]).
     applyIronMaidenUnleash(G, choice);
   }
+  // why: WP-903 / D-24860 — the ENTER_CITY_HENCHMAN_FROM_VICTORY_KIND apply is NOT here: the City
+  // entry needs the RevealContext + implementationMap this ctx-free apply lacks (a Henchman's entry
+  // may push a card out through the escape procedure), so the whole step runs in chainVillainFightPick.
 }
 
 /**
@@ -1074,10 +1156,61 @@ export function chainVillainFightPick(
     nextChoice = chainAfterNightbringerDefeat(G, payload, ctx, random);
   } else if (appliedChoice.kind === NIGHTBRINGER_ORDER_SEAT_CHOICE_KIND) {
     runNightbringerFightEffect(G, payload, ctx, random);
+  } else if (appliedChoice.kind === ENTER_CITY_HENCHMAN_FROM_VICTORY_KIND) {
+    runEnterCityHenchmanFromVictory(G, appliedChoice, ctx, random);
   }
   if (nextChoice !== undefined) {
     parkSeatChoice(G, events, nextChoice, ctx?.currentPlayer);
   }
+}
+
+/**
+ * Enters the chosen Henchman into the City in the live move context (WP-903 / D-24860): it leaves
+ * its owner's Victory Pile and enters the City through resolveVillainCityEntry (push, any escape, its
+ * own Ambush), which needs the RevealContext + the STATIC DEFAULT_IMPLEMENTATION_MAP this chain holds.
+ * A Henchman no longer in that Victory Pile → a blocked log and no entry.
+ *
+ * @param G - The game state, mutated in place.
+ * @param appliedChoice - The applied 'villain-fight-enter-city-henchman-from-victory' choice.
+ * @param ctx - The live move's ctx (the active player + turn), or undefined.
+ * @param random - The live move's random (the City entry's shuffle source), or undefined.
+ */
+function runEnterCityHenchmanFromVictory(
+  G: LegendaryGameState,
+  appliedChoice: PendingSeatChoice,
+  ctx: { currentPlayer?: string; turn?: number } | undefined,
+  random: ShuffleProvider['random'] | undefined,
+): void {
+  const payload = appliedChoice.villainFightPick;
+  const chosen = readChosenOption(appliedChoice);
+  // why: resolveSeatChoice always holds random live; a context without one (never live) enters no
+  // City rather than build a RevealContext that would throw (moves never throw).
+  if (payload === undefined || chosen === undefined || random === undefined) {
+    return;
+  }
+  const cardId = chosen.option.cardId;
+  const owner = chosen.option.recipientSeat;
+  const source = formatCardRef(G.cardDisplayData, payload.sourceCardId);
+  if (cardId === undefined || owner === undefined) {
+    return;
+  }
+  const zones = G.playerZones[owner];
+  const removal = moveCardFromZone(zones?.victory ?? [], [], cardId);
+  if (zones === undefined || !removal.found) {
+    pushLog(
+      G,
+      `The chosen Henchman is no longer in Player ${owner}'s Victory Pile; nothing enters the City (${source}).`,
+      'blocked',
+      payload.sourceCardId,
+    );
+    return;
+  }
+  zones.victory = removal.from;
+  const context: RevealContext = {
+    random,
+    ctx: { currentPlayer: payload.fighterSeat, turn: readTurnNumber(ctx) },
+  };
+  resolveVillainCityEntry(G, context, DEFAULT_IMPLEMENTATION_MAP, cardId, 'chosen from a Victory Pile and entered the city');
 }
 
 /**
