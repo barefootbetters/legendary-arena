@@ -554,6 +554,19 @@ function resolveBaseFightCost(
     return base;
   }
 
+  // why: WP-905 / D-24862 — the captured-Hero cost term is OPT-IN, keyed on the villain's
+  // real Hero-capture ability (G.villainCapturedHeroCost), not inferred from the `+` / `*`
+  // display glyph: that glyph only marks "variable Attack", and the specific rule differs per
+  // card (Dark Memories, Blood Frenzy, a variable-Attack passive). Only the four Skrull
+  // capturers and WP-903 Bullseye print "+Attack equal to that Hero's cost", so without an
+  // opt-in flag a dynamic villain returns base even when it has captured Heroes. The
+  // villainVariableAttack / villainAttackPerCaptured carve-outs above stay FIRST as
+  // defence-in-depth. (The core Skrull `*` clause prints "equal to that Hero's VP"; Hero VP is
+  // not in card data, so WP-214's captured-Hero cost proxy is retained — see WP-905 §Assumes.)
+  if (G.villainCapturedHeroCost?.[villainCardId] !== true) {
+    return base;
+  }
+
   // why: reads CardStatEntry.cost (hero recruit cost), NOT fightCost
   // (which is the villain's own fight requirement, always 0 for heroes).
   // G.villainAttachedHeroes[v] is undefined (not []) when no heroes are

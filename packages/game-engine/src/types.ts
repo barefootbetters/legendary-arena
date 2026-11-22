@@ -3484,6 +3484,17 @@ export interface LegendaryGameState {
   /** Dark Memories villain instances. Built at setup, read-only; absent when none. */
   villainDarkMemories?: Record<CardExtId, true>;
 
+  // why: WP-905 / D-24862 — per-villain-instance opt-in for the captured-Hero cost Attack
+  // term ("this Villain's Attack gains the recruit cost of each Hero it has captured"; the
+  // four Skrull capturers and WP-903 Bullseye). Read by resolveBaseFightCost ONLY. The `+` /
+  // `*` display glyph no longer implies the cost rule — this flag does, keyed on the villain's
+  // real Hero-capture ability marker (the villainBloodFrenzy precedent: a cost modifier, not
+  // a BoardKeyword). Built once at setup, keyed by copy-suffixed instance ext_id, never written
+  // by a move. OMITTED ENTIRELY when no cost-capturing villain is in the match, so every other
+  // match keeps a byte-identical G (hash oracles).
+  /** Captured-Hero cost opt-in villain instances. Built at setup, read-only; absent when none. */
+  villainCapturedHeroCost?: Record<CardExtId, true>;
+
   // why: WP-815 / D-24747 — per-card Abomination kind. Villain copies (Abomination /
   // Double Abomination) are keyed by copy-suffixed instance ext_id; the Mastermind
   // (Ultimate / Double Highest Abomination) by G.mastermind.baseCardId. Read only by

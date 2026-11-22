@@ -28,10 +28,15 @@ import { KILLBOT_TWISTS_NEXT_TO_SCHEME, DARK_PORTAL_COUNT } from '../types.js';
 function makeG(options: {
   cardStats?: Record<string, { fightCost: number; fightCostMode: 'static' | 'dynamic'; fightCostBase: number; cost?: number }>;
   villainAttachedHeroes?: Record<string, CardExtId[]>;
+  // why: WP-905 / D-24862 — the captured-Hero cost term is opt-in; a dynamic villain adds its
+  // captured Heroes' cost only when flagged here. Omitted (undefined) → the field is absent, so
+  // every pre-WP-905 case that asserted base-only stays byte-identical.
+  villainCapturedHeroCost?: Record<string, true>;
 }): LegendaryGameState {
   return {
     cardStats: options.cardStats ?? {},
     villainAttachedHeroes: options.villainAttachedHeroes ?? {},
+    ...(options.villainCapturedHeroCost ? { villainCapturedHeroCost: options.villainCapturedHeroCost } : {}),
   } as unknown as LegendaryGameState;
 }
 
@@ -71,15 +76,31 @@ describe('resolveFightCost — static villain', () => {
 // ---------------------------------------------------------------------------
 
 describe('resolveFightCost — dynamic villain (vAttack: "*")', () => {
-  it('returns captured hero recruit cost for vAttack "*" with one hero', () => {
+  it('returns captured hero recruit cost for vAttack "*" with one hero (opted in)', () => {
     const G = makeG({
       cardStats: {
         'villain-skrull': { fightCost: 0, fightCostMode: 'dynamic', fightCostBase: 0, cost: 0 },
         'hero-spider-man': { fightCost: 0, fightCostMode: 'static', fightCostBase: 0, cost: 5 },
       },
       villainAttachedHeroes: { 'villain-skrull': ['hero-spider-man' as CardExtId] },
+      // why: WP-905 / D-24862 — a core Skrull `*` capturer opts into the captured-Hero cost term,
+      // so its Attack is the captured Hero's cost (the retained WP-214 proxy; Hero VP is not in data).
+      villainCapturedHeroCost: { 'villain-skrull': true },
     });
     assert.equal(resolveFightCost(G, 'villain-skrull' as CardExtId), 5);
+  });
+
+  it('WP-905: a dynamic "*" villain with a captured hero but NO opt-in flag returns base (latent trap)', () => {
+    // why: D-24862 — the `+` / `*` glyph no longer implies the captured-Hero cost rule. A dynamic
+    // villain that captures a Hero but whose printed rule is NOT "+cost" adds nothing.
+    const G = makeG({
+      cardStats: {
+        'villain-keyword': { fightCost: 0, fightCostMode: 'dynamic', fightCostBase: 0, cost: 0 },
+        'hero-spider-man': { fightCost: 0, fightCostMode: 'static', fightCostBase: 0, cost: 5 },
+      },
+      villainAttachedHeroes: { 'villain-keyword': ['hero-spider-man' as CardExtId] },
+    });
+    assert.equal(resolveFightCost(G, 'villain-keyword' as CardExtId), 0);
   });
 
   it('returns 0 for vAttack "*" with no captured heroes', () => {
@@ -110,7 +131,22 @@ describe('resolveFightCost — dynamic villain (vAttack: "*")', () => {
 // ---------------------------------------------------------------------------
 
 describe('resolveFightCost — dynamic villain (vAttack: "N+")', () => {
-  it('returns base + captured hero cost for vAttack "N+"', () => {
+  it('returns base + captured hero cost for vAttack "N+" (opted in)', () => {
+    const G = makeG({
+      cardStats: {
+        'villain-np': { fightCost: 4, fightCostMode: 'dynamic', fightCostBase: 4, cost: 0 },
+        'hero-a': { fightCost: 0, fightCostMode: 'static', fightCostBase: 0, cost: 3 },
+      },
+      villainAttachedHeroes: { 'villain-np': ['hero-a' as CardExtId] },
+      // why: WP-905 / D-24862 — a co2e Skrull `N+` capturer opts in, so base + captured cost.
+      villainCapturedHeroCost: { 'villain-np': true },
+    });
+    assert.equal(resolveFightCost(G, 'villain-np' as CardExtId), 7);
+  });
+
+  it('WP-905: a dynamic "N+" villain with a captured hero but NO opt-in flag returns base (latent trap)', () => {
+    // why: D-24862 — a Dark Memories / Blood Frenzy `N+` villain given a capture line must NOT add
+    // the captured Hero's cost; its `+` marks a different term, resolved by its own bonus.
     const G = makeG({
       cardStats: {
         'villain-np': { fightCost: 4, fightCostMode: 'dynamic', fightCostBase: 4, cost: 0 },
@@ -118,7 +154,7 @@ describe('resolveFightCost — dynamic villain (vAttack: "N+")', () => {
       },
       villainAttachedHeroes: { 'villain-np': ['hero-a' as CardExtId] },
     });
-    assert.equal(resolveFightCost(G, 'villain-np' as CardExtId), 7);
+    assert.equal(resolveFightCost(G, 'villain-np' as CardExtId), 4);
   });
 
   it('returns base when no heroes captured (vAttack "N+" with empty)', () => {
@@ -147,6 +183,8 @@ describe('resolveFightCost — multiple captured heroes', () => {
       villainAttachedHeroes: {
         'villain-skrull': ['hero-1' as CardExtId, 'hero-2' as CardExtId, 'hero-3' as CardExtId],
       },
+      // why: WP-905 / D-24862 — an opted-in capturer sums every captured Hero's cost.
+      villainCapturedHeroCost: { 'villain-skrull': true },
     });
     assert.equal(resolveFightCost(G, 'villain-skrull' as CardExtId), 10);
   });
@@ -161,6 +199,8 @@ describe('resolveFightCost — multiple captured heroes', () => {
       villainAttachedHeroes: {
         'villain-skrull': ['hero-known' as CardExtId, 'hero-unknown' as CardExtId],
       },
+      // why: WP-905 / D-24862 — opted in; a missing cardStats row for a captured Hero counts 0.
+      villainCapturedHeroCost: { 'villain-skrull': true },
     });
     const cost = resolveFightCost(G, 'villain-skrull' as CardExtId);
     assert.equal(cost, 4);
@@ -482,6 +522,9 @@ describe('resolveFightCost — Midtown Bank Robbery family Bystander bonus (WP-7
       city: [null, null, null, null, 'v'],
       counters: {},
       attachedBystanders: { v: ['bystander-0'] },
+      // why: WP-905 / D-24862 — `v` prints "+cost", so it opts into the captured-Hero cost term;
+      // the Bystander bonus still stacks on top (base 2 + captured 4 + 1 Bystander).
+      villainCapturedHeroCost: { v: true },
     } as unknown as LegendaryGameState;
     assert.equal(resolveFightCost(gameState, 'v' as CardExtId), 2 + 4 + 1);
   });
@@ -962,7 +1005,10 @@ describe('resolveFightCost — villain variable-Attack passives (WP-841)', () =>
     assert.equal(resolveFightCost(G, HYDRO_MAN as CardExtId), 0);
   });
 
-  it('T9: an entry replaces the captured-Hero cost sum; a villain with no entry keeps it', () => {
+  it('T9: a variable-Attack entry returns base; an opted-in capturer adds the captured-Hero cost (WP-905)', () => {
+    // why: WP-905 / D-24862 — the captured-Hero cost term is now opt-in. SUPER_SKRULL's
+    // villainVariableAttack entry returns base (its carve-out stays first); OTHER_DYNAMIC adds the
+    // cost ONLY because it is flagged in villainCapturedHeroCost — the `+` glyph no longer implies it.
     const OTHER_DYNAMIC = 'core-villain-other-dynamic-00';
     const G = {
       cardStats: {
@@ -974,6 +1020,7 @@ describe('resolveFightCost — villain variable-Attack passives (WP-841)', () =>
       city: [SUPER_SKRULL, OTHER_DYNAMIC, null, null, null],
       hq: [null, null, null, null, null],
       villainVariableAttack: { [SUPER_SKRULL]: { source: 'per-hq-hero-class', attackPerUnit: 1 } },
+      villainCapturedHeroCost: { [OTHER_DYNAMIC]: true },
     } as unknown as LegendaryGameState;
     assert.equal(resolveFightCost(G, SUPER_SKRULL as CardExtId), 2);
     assert.equal(resolveFightCost(G, OTHER_DYNAMIC as CardExtId), 3 + 5);
@@ -1002,7 +1049,7 @@ describe('resolveFightCost — villain variable-Attack passives (WP-841)', () =>
     assert.equal(resolveFightCost(makeGatedG(2), GATED as CardExtId), 1 + 3);
   });
 
-  it('T11: a villain with no entry, or a G with no table, resolves exactly as before', () => {
+  it('T11: a villain with no villainVariableAttack entry, or a G with no table, resolves as before', () => {
     const G = makeG({
       cardStats: {
         'villain-static': { fightCost: 7, fightCostMode: 'static', fightCostBase: 0 },
@@ -1010,6 +1057,10 @@ describe('resolveFightCost — villain variable-Attack passives (WP-841)', () =>
         'captured-hero': { fightCost: 0, fightCostMode: 'static', fightCostBase: 0, cost: 4 },
       },
       villainAttachedHeroes: { 'villain-dynamic': ['captured-hero' as CardExtId] },
+      // why: WP-905 / D-24862 — villain-dynamic opts into the captured-Hero cost so this test still
+      // exercises the base-3 + captured-4 path; the point here is that the villainVariableAttack
+      // table's absence (and a later unrelated entry) does not change its cost.
+      villainCapturedHeroCost: { 'villain-dynamic': true },
     });
     assert.equal(resolveFightCost(G, 'villain-static' as CardExtId), 7);
     assert.equal(resolveFightCost(G, 'villain-dynamic' as CardExtId), 7);
@@ -1043,6 +1094,9 @@ describe('WP-838 resolveFightCost — attack per captured card (D-24771)', () =>
     attachedHeroes?: string[];
     attachedBystanders?: string[];
     schemeId?: string;
+    // why: WP-905 / D-24862 — opt the villain into the captured-Hero cost term (the default sum
+    // is no longer inferred from the `+` / `*` glyph).
+    capturedHeroCost?: boolean;
   }): LegendaryGameState {
     return {
       cardStats: {
@@ -1060,6 +1114,7 @@ describe('WP-838 resolveFightCost — attack per captured card (D-24771)', () =>
       ...(options.attackPerCaptured === undefined
         ? {}
         : { villainAttackPerCaptured: { [options.villainId]: options.attackPerCaptured } }),
+      ...(options.capturedHeroCost ? { villainCapturedHeroCost: { [options.villainId]: true } } : {}),
       ...(options.schemeId === undefined ? {} : { selection: { schemeId: options.schemeId } }),
       city: [null, null, null, null, options.villainId],
       counters: {},
@@ -1077,8 +1132,11 @@ describe('WP-838 resolveFightCost — attack per captured card (D-24771)', () =>
       attachedHeroes: attached,
     });
     assert.equal(resolveFightCost(flagged, VENOM as CardExtId), 8);
-    const unflagged = makeCapturedG({ villainId: VENOM, stats: DYNAMIC_FIVE, attachedHeroes: attached });
-    assert.equal(resolveFightCost(unflagged, VENOM as CardExtId), 11, 'unflagged keeps the cost sum');
+    // why: WP-905 / D-24862 — the contrast villain has no attackPerCaptured entry; opted into the
+    // captured-Hero cost term it keeps the cost sum (base 5 + 2 + 2 + 2 = 11), proving the
+    // attackPerCaptured entry (not the `+` glyph) is what replaces it.
+    const costSum = makeCapturedG({ villainId: VENOM, stats: DYNAMIC_FIVE, attachedHeroes: attached, capturedHeroCost: true });
+    assert.equal(resolveFightCost(costSum, VENOM as CardExtId), 11, 'opted-in villain keeps the cost sum');
   });
 
   it('T26: a bystander-kind entry adds +1 per Bystander and replaces the cost sum too', () => {

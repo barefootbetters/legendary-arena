@@ -636,6 +636,10 @@ describe('getLegalMoves — dynamic villain fight cost uses resolveFightCost (bo
       'captured-hero': { attack: 0, recruit: 0, cost: 5, fightCost: 0 },
     } as unknown as LegendaryGameState['cardStats'];
     gameState.villainAttachedHeroes = { 'dyn-villain': ['captured-hero' as CardExtId] };
+    // why: WP-905 / D-24862 — the captured-Hero cost term is opt-in; dyn-villain prints "+cost", so
+    // it is flagged here. Without the flag its resolved cost would drop to base 0 and the fight
+    // would be affordable, defeating this affordability regression.
+    gameState.villainCapturedHeroCost = { 'dyn-villain': true };
     return gameState;
   }
 
