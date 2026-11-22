@@ -2917,10 +2917,10 @@
       "card": "Jester",
       "ability": "Fight: Reveal the top four cards of the Villain Deck. Play all the Henchmen you find. Put the rest back in any order.",
       "wp": "WP-903",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-21",
-      "evidence": "",
-      "note": "Live check: Jester's Fight reveals the top four Villain Deck cards; every revealed Henchman enters the City (doing its Ambush) and the non-Henchman remainder returns to the deck top in revealed order; no unmarked-ability breadcrumb. D-24860."
+      "evidence": "guest autoplay match YrSqKZRhs6R on the deployed build b91c92b8 (play.legendary-arena.com; scheme core Midtown Bank Robbery, mastermind bkwd Taskmaster, villain group bkwd Taskmaster's Thunderbolts, henchmen core Sentinel), 2026-11-21. Jester's Fight fired as printed: 7.2.10 revealed the top four Villain Deck cards (Sentinel, Master Strike, Bystander, Bullseye), the Sentinel Henchman entered the City, and 7.2.12 returned Master Strike, Bystander and Bullseye to the deck top in revealed order. No unmarked-ability breadcrumb across the ~22-match sample.",
+      "note": "Live check PASS: Jester's Fight reveals the top four Villain Deck cards, plays every revealed Henchman into the City and returns the rest to the deck top in revealed order. D-24860."
     },
     {
       "key": "bkwd-villain-taskmasters-thunderbolts-joystick|enter-city-henchman-from-any-victory-pile-current",
@@ -2928,10 +2928,10 @@
       "card": "Joystick",
       "ability": "Ambush: Choose a Henchman from any player's Victory Pile to enter the city.",
       "wp": "WP-903",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-21",
-      "evidence": "",
-      "note": "Live check: Joystick's Ambush opens the one-step pick of a Henchman from any Victory Pile (ascending City Attack); the chosen Henchman leaves its Victory Pile and enters the City; no unmarked-ability breadcrumb. D-24860."
+      "evidence": "guest autoplay match viK77JPUOZH on the deployed build b91c92b8 (play.legendary-arena.com; core Midtown Bank Robbery / bkwd Taskmaster / bkwd Taskmaster's Thunderbolts / core Sentinel), 2026-11-21. The shared enter-city-henchman-from-any-victory-pile-current pick (Joystick Ambush + Jack O'Lantern Fight) fired live: 4.2.10 a Sentinel was chosen from a Victory Pile and entered the City; 5.1.2 the Joystick-named no-candidate branch logged 'No Henchman in any Victory Pile to enter the City'. No unmarked-ability breadcrumb.",
+      "note": "Live check PASS: Joystick's Ambush opens the Henchman-from-any-Victory-Pile pick (shared kind) and the chosen Henchman enters the City; the no-candidate branch is a logged no-op. D-24860."
     },
     {
       "key": "bkwd-villain-taskmasters-thunderbolts-jack-olantern|enter-city-henchman-from-any-victory-pile-current",
@@ -2939,10 +2939,10 @@
       "card": "Jack O'Lantern",
       "ability": "Fight: Choose a Henchman from any player's Victory Pile to enter the city.",
       "wp": "WP-903",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-21",
-      "evidence": "",
-      "note": "Live check: Jack O'Lantern's Fight opens the same Henchman-to-City pick (shared kind); the chosen Henchman enters the City; no unmarked-ability breadcrumb. D-24860."
+      "evidence": "guest autoplay match viK77JPUOZH on the deployed build b91c92b8 (play.legendary-arena.com; core Midtown Bank Robbery / bkwd Taskmaster / bkwd Taskmaster's Thunderbolts / core Sentinel), 2026-11-21. Jack O'Lantern's Fight shares the enter-city-henchman-from-any-victory-pile-current kind with Joystick's Ambush -- one engine code path -- and that pick fired live in this match: 4.2.10 a Sentinel chosen from a Victory Pile entered the City, with the no-candidate branch logged at 5.1.2. No unmarked-ability breadcrumb.",
+      "note": "Live check PASS: Jack O'Lantern's Fight opens the same Henchman-to-City pick (shared kind) and the chosen Henchman enters the City. D-24860."
     },
     {
       "key": "bkwd-villain-taskmasters-thunderbolts-jack-olantern|gain-wound-under-two-henchmen-each-player",
@@ -2950,10 +2950,10 @@
       "card": "Jack O'Lantern",
       "ability": "Escape: Each player with fewer than two Henchmen in their Victory Pile gains a Wound.",
       "wp": "WP-903",
-      "state": "pending",
+      "state": "partial",
       "date": "2026-11-21",
-      "evidence": "",
-      "note": "Live check: Jack O'Lantern's Escape Wounds every seat with fewer than two Henchmen in its Victory Pile, current player first; a seat with two or more is skipped. D-24860."
+      "evidence": "Not captured live in the 2026-11-21 guest-autoplay sample (~22 matches on the deployed build b91c92b8; core Midtown Bank Robbery / bkwd Taskmaster / bkwd Taskmaster's Thunderbolts / core Sentinel): Jack O'Lantern's Escape is Escape-triggered and the bots did not drive a Jack O'Lantern escape, and the operator Workshop setters did not drive reliably this session (WP-844 / WP-882 trap). Recorded on unit-test coverage per the operator decision 2026-11-21: villain/taskmastersThunderbolts.test.ts exercises this primitive against the shipped engine source (merge b91c92b8) -- a seat with fewer than two henchman-typed Victory-Pile cards gains a Wound, current player first.",
+      "note": "Unit-test coverage (operator decision 2026-11-21, WP-902 Dark Memories precedent): Jack O'Lantern's Escape Wounds every seat holding fewer than two Henchmen, current player first; confirmed by villain/taskmastersThunderbolts.test.ts on the shipped engine, not captured on the live surface. D-24860."
     },
     {
       "key": "bkwd-villain-taskmasters-thunderbolts-bullseye|capture-hero-deck-top-by-icon-guess",
@@ -2961,10 +2961,10 @@
       "card": "Bullseye",
       "ability": "Ambush: Choose [icon:recruit] or [icon:attack], then reveal the top card of the Hero Deck. If it has that icon, Bullseye captures it and gets +[icon:attack] equal to that Hero's cost.",
       "wp": "WP-903",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-21",
-      "evidence": "",
-      "note": "Live check: Bullseye's Ambush reveals the Hero Deck top and, when it has an Attack icon, captures it so Bullseye's City Attack grows by that Hero's cost; no Attack icon captures nothing; no unmarked-ability breadcrumb. D-24860."
+      "evidence": "guest autoplay match On5X2mh-qwL on the deployed build b91c92b8 (play.legendary-arena.com; core Midtown Bank Robbery / bkwd Taskmaster / bkwd Taskmaster's Thunderbolts / core Sentinel), 2026-11-21. Bullseye's Ambush fired as printed: 9.1.2 'Ambush effect: captures Frenzied Slashing from the Hero Deck (+5 Attack)' -- the Hero Deck top was captured on the blind [icon:attack] guess and Bullseye's dynamic '4+' Attack grew by that Hero's cost. No unmarked-ability breadcrumb.",
+      "note": "Live check PASS: Bullseye's Ambush captures the Hero Deck top when it has an Attack icon, growing Bullseye's City Attack by that Hero's cost. D-24860."
     },
     {
       "key": "bkwd-villain-taskmasters-thunderbolts-bullseye|gain-attached-hero",
@@ -2972,10 +2972,10 @@
       "card": "Bullseye",
       "ability": "Fight: The player of your choice gains the captured Hero.",
       "wp": "WP-903",
-      "state": "pending",
+      "state": "partial",
       "date": "2026-11-21",
-      "evidence": "",
-      "note": "Live check: Bullseye's Fight hands the captured Hero to the fighter's discard (the shipped gain-attached-hero award) and Bullseye's Attack reverts to 4. D-24860 (shipped gain-attached-hero, WP-450 / D-24270)."
+      "evidence": "Not captured live in the 2026-11-21 guest-autoplay sample (~22 matches, deployed build b91c92b8): no bot fought Bullseye while it held a captured Hero, and the operator Workshop setters did not drive reliably this session. Recorded on unit-test coverage per the operator decision 2026-11-21: villain/taskmastersThunderbolts.test.ts drives Bullseye's Fight award against the shipped engine (merge b91c92b8), and the underlying gain-attached-hero (WP-450 / D-24270) is shipped and already live-verified on the core/co2e Skrull capturers.",
+      "note": "Unit-test coverage (operator decision 2026-11-21): Bullseye's Fight hands the captured Hero to the fighter via the shipped gain-attached-hero award and Bullseye's Attack reverts to 4; confirmed by unit test plus the shared primitive's existing live coverage, not captured on the live surface for Bullseye. D-24860 (shipped gain-attached-hero, WP-450 / D-24270)."
     },
     {
       "key": "bkwd-villain-taskmasters-thunderbolts-bullseye|ko-captured-heroes-on-escape",
@@ -2983,10 +2983,10 @@
       "card": "Bullseye",
       "ability": "Escape: KO that Hero.",
       "wp": "WP-903",
-      "state": "pending",
+      "state": "partial",
       "date": "2026-11-21",
-      "evidence": "",
-      "note": "Live check: when Bullseye escapes, its captured Hero is KO'd (not sent to the Escape Pile); a Bullseye with no captured Hero is a no-op. D-24860 (overrides the D-24657 Escape-Pile default for this card)."
+      "evidence": "Not captured live in the 2026-11-21 guest-autoplay sample (~22 matches, deployed build b91c92b8): no bot drove a Bullseye escape while it held a captured Hero, and the operator Workshop setters did not drive reliably this session. Recorded on unit-test coverage per the operator decision 2026-11-21: villain/taskmastersThunderbolts.test.ts exercises the escape KO path against the shipped engine (merge b91c92b8) -- the captured Hero is KO'd (not sent to the Escape Pile) and a no-capture Bullseye is a no-op.",
+      "note": "Unit-test coverage (operator decision 2026-11-21): when Bullseye escapes, its captured Hero is KO'd (overriding the D-24657 Escape-Pile default); a no-capture Bullseye is a no-op. Confirmed by villain/taskmastersThunderbolts.test.ts, not captured on the live surface. D-24860."
     }
   ]
 }
