@@ -218,10 +218,10 @@ as a single authoritative Zod schema. The schema:
 | | 1.0.0 | 1.1.0 | 1.2.0 | 1.3.0 | 1.4.0 | 1.5.0 | 1.6.0 | 1.7.0 |
 |---|---|---|---|---|---|---|---|---|
 | Read | accepted | accepted | accepted | accepted | accepted | accepted | accepted | accepted |
-| Written | no | no | no | no | no | no | **yes — `LAGN_VERSION`** | no |
+| Written | no | no | no | no | no | no | no | **yes — `LAGN_VERSION`** |
 | Adds | — | optional `setup.support_pools` | optional card-metadata provenance | optional `setup.hero_alternates` | optional `players` + `scoring_profile` | optional `battle_plan` + `result.score` | optional `setup.final_blow` | optional `replay.execution` |
 
-**Readers accept all eight; writers emit only `LAGN_VERSION` (still `1.6.0`).** That asymmetry
+**Readers accept all eight; writers emit only `LAGN_VERSION` (now `1.7.0`).** That asymmetry
 is deliberate and is what keeps stored records readable without a migration
 pass. `LAGN_SUPPORTED_VERSIONS` is the read set; `LAGN_VERSION` is the single
 version this build stamps.
@@ -420,12 +420,13 @@ is **version-gated** — a pre-1.6.0 document carrying it is rejected, not silen
 stripped (ordinal per D-24211). The 1.5.0 → 1.6.0 migration step is a pure restamp,
 and bumping the writer was safe because every version gate is ordinal.
 
-**1.7.0 (WP-808 / D-24714) — shipped as a reader contract; readers accept it,
-writers do not emit it yet.** Adds one optional block, `replay.execution`, so a
-1.7.0 document can describe a completed match completely enough to **re-execute**
-it and rebuild any board position on demand — the "open this LAGN at turn N" goal.
-Today's `replay.turns` is a narrated log that cannot be re-run; `replay.execution`
-is the opposite.
+**1.7.0 (WP-808 / D-24714 reader; WP-810 / D-24716 producer + writer flip).** Adds
+one optional block, `replay.execution`, so a 1.7.0 document can describe a completed
+match completely enough to **re-execute** it and rebuild any board position on
+demand — the "open this LAGN at turn N" goal. Today's `replay.turns` is a narrated
+log that cannot be re-run; `replay.execution` is the opposite. WP-808 shipped the
+reader contract; **WP-810 ships the producer** (`GET /api/match/:matchId/replay-lagn`)
+and **flips the writer to `1.7.0`**.
 
 | Block | Location | Carries |
 |---|---|---|
@@ -473,8 +474,28 @@ is the opposite.
 is rejected, not silently stripped, ordinal per D-24211), and its `moves` are
 **numbered by `seq` from 0 with no gaps or duplicates, each `seat` in
 `0..player_count-1`** (Gate B — a new root `superRefine`, not folded into the
-`players` one). The **1.6.0 → 1.7.0 migration step is registered but unreachable**
-(the writer stays 1.6.0); the producer packet flips the writer.
+`players` one). The **1.6.0 → 1.7.0 migration step is now reachable** — WP-810
+flipped `LAGN_VERSION` to `1.7.0`, so `migrateToCurrent` walks the full chain to
+`1.7.0`.
+
+**The producer (WP-810 / D-24716).** `GET /api/match/:matchId/replay-lagn` is the
+guest-readable emitter: a completed, non-operator match becomes a re-executable
+LAGN 1.7.0 document — the `/result-lagn` content plus the `replay.execution` block.
+It reads the match's **durable `bgio.replay_artifacts` copy** (never the live row —
+the reaper deletes that about an hour after gameover; an artifact exists only for a
+finished match), under the D-24716 replay-export carve-out. It **verifies before it
+emits**: the serving build re-executes the moves from `{ ...LegendaryGame, seed }` +
+the emitted Tier-1 `setup` and requires the resulting `computeStateHash` to equal a
+**fresh** faithful reduction of the same artifact (never the capture-time hash,
+which engine-fidelity drift moves legitimately). So every document handed out is
+proven re-executable on the build that served it — the guarantee catches every
+**setup-time** divergence (lossy setup data, pre-WP-805 matches, registry/setup
+drift). It does **not** detect a tampered log or move-processing drift since
+capture: both sides share the moves and the serving build (the meaning of
+`engine_build`). Refusals: `404 replay_not_found` (no artifact), `422 operator_match`
+(an operator board), `422 not_reexecutable` (a lossy / misshaped artifact, a setup
+the registry rejects, or a hash mismatch); it is rate-limited 10/min per client
+(`429`) and bounded by a 4000 moves/min process budget (`503`).
 
 ### TypeScript Types
 
@@ -599,14 +620,13 @@ The open-source publication surface (WP-244 Gate 1):
   matches the registry's `CardExtId` type.
 - **Replay Producer — not a LAGN emitter.** [`apps/replay-producer`](../apps/replay-producer)
   emits the engine's `ReplaySnapshotSequence` (a versioned array of per-move
-  `UIState` projections, D-6303), **not** LAGN Tier 3. Nothing in `apps/` or
-  `packages/` writes a Tier 3 `replay` block today; the only Tier 3 documents are
-  the `packages/lagn-spec/examples` fixtures. `replay.turns` is also a narrated
-  action log with no seed or engine move list, so a reader cannot re-execute it to
-  rebuild board state. The 1.7.0 `replay.execution` block (above) **is**
-  re-executable, but WP-808 is the reader contract only — no producer emits it yet;
-  the follow-on packet adds `GET /api/match/:matchId/replay-lagn`, the D-24095
-  seed/log export carve-out, and the writer flip to 1.7.0.
+  `UIState` projections, D-6303), **not** LAGN Tier 3. `replay.turns` (the narrated
+  Tier 3 log) has no seed or engine move list, so a reader cannot re-execute it to
+  rebuild board state — and nothing writes a `replay.turns` block today. The 1.7.0
+  `replay.execution` block (above) **is** re-executable, and **WP-810 ships its
+  producer**: `GET /api/match/:matchId/replay-lagn` emits a completed, non-operator
+  match as a re-executable LAGN 1.7.0 document under the D-24716 replay-export
+  carve-out, verified-before-emit, with the writer flipped to 1.7.0.
 - **Third-party tools.** LAGN enables external bot frameworks, analysis
   pipelines, and replay viewers to validate and process Legendary Arena
   game data without importing engine code.

@@ -226,8 +226,8 @@ function buildLagnObject(
   // OMITTED when off (parity with the support_pools / hero_alternates spreads and the
   // setup-envelope finalBlow, WP-686). Emitted here in buildLagnObject — not in
   // compositionToLagnSetup, which receives only the composition slice, never the draft.
-  // The unconditional `lagn_version: LAGN_VERSION` stamp is now 1.6.0, the version the
-  // final_blow gate requires; a non-Final-Blow loadout stamps 1.6.0 too, which is safe
+  // The unconditional `lagn_version: LAGN_VERSION` stamp follows the current writer
+  // (1.7.0 as of WP-810); a non-Final-Blow loadout stamps it too, which is safe
   // because every version gate is ordinal (D-24211).
   const setup: LAGN["setup"] =
     draft.finalBlow === true ? { ...baseSetup, final_blow: true } : baseSetup;

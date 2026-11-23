@@ -99,6 +99,11 @@ function deps(): MatchLagnRouteDependencies {
  * identities for the result-lagn route). `gameover` and `identities` default to
  * the "no result data" case, so the setup-route tests below need not supply them.
  */
+/** The seam `buildVerifiedReplayExecution` return — a verified block or refusal. */
+type VerifiedSeam =
+  | { isVerified: true; execution: Record<string, unknown>; gameover: unknown }
+  | { isVerified: false; reason: 'operator_match' | 'not_reexecutable' };
+
 function logicSeam(options: {
   configuration:
     | { matchConfiguration: MatchLagnComposition; numPlayers: number }
@@ -109,6 +114,12 @@ function logicSeam(options: {
   battlePlan?: BattlePlanRecord | null;
   replayHash?: string | null;
   score?: CompetitiveScoreRecord | null;
+  // why: the WP-810 replay-lagn seam. The artifact + verify defaults keep every
+  // existing setup/result-lagn case unchanged (they never reach the new handler).
+  replayArtifact?: { initialState: unknown; log: readonly unknown[] } | null;
+  verified?: VerifiedSeam;
+  buildId?: string;
+  onVerify?: () => void;
 }): MatchLagnLogic {
   return {
     readMatchConfigurationForLagn: async () => options.configuration,
@@ -121,6 +132,12 @@ function logicSeam(options: {
     readBattlePlan: async () => options.battlePlan ?? null,
     readReplayHashByMatchId: async () => options.replayHash ?? null,
     findCompetitiveScore: async () => options.score ?? null,
+    readReplayArtifactByHash: async () => options.replayArtifact ?? null,
+    buildVerifiedReplayExecution: (() => {
+      options.onVerify?.();
+      return (options.verified ?? { isVerified: false, reason: 'not_reexecutable' });
+    }) as unknown as MatchLagnLogic['buildVerifiedReplayExecution'],
+    getBuildId: () => options.buildId ?? 'build-sha',
   };
 }
 
@@ -753,5 +770,290 @@ describe('registerMatchLagnRoutes — operator matches (D-24717)', () => {
 
     assert.equal(context.status, 404);
     assert.deepEqual(context.body, { error: 'not_found' });
+  });
+});
+
+// ============================================================================
+// Replay-LAGN producer route (WP-810 / EC-847 / D-24716)
+// ============================================================================
+
+function replayHandlerOf(router: FakeRouter): Handler {
+  const handler = router.handlers.get('GET /api/match/:matchId/replay-lagn');
+  assert.ok(handler, 'route GET /api/match/:matchId/replay-lagn is registered');
+  return handler;
+}
+
+/** A context with a chosen `cf-connecting-ip`, so distinct keys hit distinct per-client buckets. */
+function makeContextWithIp(matchId: string, ip: string): FakeContext {
+  const context = makeContext(matchId);
+  context.req.headers['cf-connecting-ip'] = ip;
+  return context;
+}
+
+/** deps with an injected constant clock, so the token buckets are deterministic. */
+function depsWithClock(now: () => number): MatchLagnRouteDependencies {
+  return { registry: EMPTY_REGISTRY, now };
+}
+
+/** A well-formed initial state the shape check accepts: valid composition + seat count + seed. */
+const VALID_INITIAL_STATE = {
+  G: { matchConfiguration: VALID_COMPOSITION },
+  ctx: { numPlayers: 2 },
+  plugins: { random: { data: { seed: 'seed-xyz' } } },
+};
+
+/** A minimal valid `replay.execution` block (so the final `validate()` passes). */
+const STUB_EXECUTION = {
+  engine: 'legendary-arena',
+  engine_version: '1.0.0',
+  data_version: 2,
+  seed: 'seed-xyz',
+  moves: [{ seq: 0, seat: 0, move_name: 'setPlayerReady', args: [] }],
+  final_state_hash: 'abc123',
+};
+
+/** An artifact log with `moveCount` MAKE_MOVE entries, for the budget test. */
+function stubLog(moveCount: number): unknown[] {
+  return Array.from({ length: moveCount }, (_unused, index) => ({
+    action: { type: 'MAKE_MOVE', payload: { type: 'advanceStage', args: [], playerID: '0' } },
+    _stateID: index,
+    turn: 2,
+    phase: 'play',
+  }));
+}
+
+const CONSTANT_NOW = (): number => 1_000_000;
+
+describe('registerMatchLagnRoutes — replay-lagn producer', () => {
+  test('registers the GET /api/match/:matchId/replay-lagn route', () => {
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(router, FAKE_DB, deps());
+    assert.ok(router.handlers.has('GET /api/match/:matchId/replay-lagn'));
+  });
+
+  test('AC-6: 200 { lagn } with a replay.execution block and result.outcome from the verdict', async () => {
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(
+      router,
+      FAKE_DB,
+      deps(),
+      logicSeam({
+        configuration: null,
+        seats: [{ playerId: '0', accountId: 'account-ana' as AccountId }],
+        replayHash: 'sha256:deadbeef',
+        replayArtifact: { initialState: VALID_INITIAL_STATE, log: stubLog(3) },
+        verified: { isVerified: true, execution: STUB_EXECUTION, gameover: { outcome: 'heroes-win' } },
+        identities: identitiesOf({ 'account-ana': ['ana-handle', 'Ana'] }),
+      }),
+    );
+    const context = makeContext('finished-match');
+    await replayHandlerOf(router)(context);
+
+    assert.equal(context.status, 200);
+    assert.equal(context.headers['Cache-Control'], 'no-store');
+    const body = context.body as { lagn: Record<string, unknown> };
+    assert.deepEqual(Object.keys(body), ['lagn']);
+    assert.equal(validate(body.lagn).valid, true);
+    assert.equal(body.lagn.lagn_version, LAGN_VERSION);
+    assert.deepEqual((body.lagn.replay as Record<string, unknown>).execution, STUB_EXECUTION);
+    assert.deepEqual(body.lagn.result, { outcome: 'victory' });
+  });
+
+  test('AC-6: 404 not_found for an empty matchId', async () => {
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(router, FAKE_DB, deps(), logicSeam({ configuration: null, seats: [] }));
+    const context = makeContext('');
+    await replayHandlerOf(router)(context);
+    assert.equal(context.status, 404);
+    assert.deepEqual(context.body, { error: 'not_found' });
+    assert.equal(context.headers['Cache-Control'], 'no-store');
+  });
+
+  test('AC-6: 404 replay_not_found when no artifact exists (null hash)', async () => {
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(router, FAKE_DB, deps(), logicSeam({ configuration: null, seats: [], replayHash: null }));
+    const context = makeContext('uncaptured-match');
+    await replayHandlerOf(router)(context);
+    assert.equal(context.status, 404);
+    assert.deepEqual(context.body, { error: 'replay_not_found' });
+  });
+
+  test('AC-6: 404 replay_not_found when the hash resolves but the artifact is gone', async () => {
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(
+      router,
+      FAKE_DB,
+      deps(),
+      logicSeam({ configuration: null, seats: [], replayHash: 'sha256:deadbeef', replayArtifact: null }),
+    );
+    const context = makeContext('hash-without-artifact');
+    await replayHandlerOf(router)(context);
+    assert.equal(context.status, 404);
+    assert.deepEqual(context.body, { error: 'replay_not_found' });
+  });
+
+  test('AC-6: 422 operator_match from the verify seam', async () => {
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(
+      router,
+      FAKE_DB,
+      deps(),
+      logicSeam({
+        configuration: null,
+        seats: [],
+        replayHash: 'sha256:deadbeef',
+        replayArtifact: { initialState: VALID_INITIAL_STATE, log: stubLog(3) },
+        verified: { isVerified: false, reason: 'operator_match' },
+      }),
+    );
+    const context = makeContext('operator-match');
+    await replayHandlerOf(router)(context);
+    assert.equal(context.status, 422);
+    assert.deepEqual(context.body, { error: 'operator_match' });
+    assert.equal(context.headers['Cache-Control'], 'no-store');
+  });
+
+  test('AC-6: 422 not_reexecutable from the verify seam', async () => {
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(
+      router,
+      FAKE_DB,
+      deps(),
+      logicSeam({
+        configuration: null,
+        seats: [],
+        replayHash: 'sha256:deadbeef',
+        replayArtifact: { initialState: VALID_INITIAL_STATE, log: stubLog(3) },
+        verified: { isVerified: false, reason: 'not_reexecutable' },
+      }),
+    );
+    const context = makeContext('divergent-match');
+    await replayHandlerOf(router)(context);
+    assert.equal(context.status, 422);
+    assert.deepEqual(context.body, { error: 'not_reexecutable' });
+  });
+
+  test('AC-6: a misshaped composition is 422 not_reexecutable BEFORE the verify seam (0 verify calls)', async () => {
+    let verifyCalls = 0;
+    // heroDeckIds missing → shape check fails
+    const missingHeroes = { G: { matchConfiguration: { ...VALID_COMPOSITION, heroDeckIds: undefined } }, ctx: { numPlayers: 2 }, plugins: { random: { data: { seed: 'seed-xyz' } } } };
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(
+      router,
+      FAKE_DB,
+      deps(),
+      logicSeam({
+        configuration: null,
+        seats: [],
+        replayHash: 'sha256:deadbeef',
+        replayArtifact: { initialState: missingHeroes, log: stubLog(3) },
+        verified: { isVerified: true, execution: STUB_EXECUTION, gameover: null },
+        onVerify: () => { verifyCalls += 1; },
+      }),
+    );
+    const context = makeContext('misshaped-match');
+    await replayHandlerOf(router)(context);
+    assert.equal(context.status, 422);
+    assert.deepEqual(context.body, { error: 'not_reexecutable' });
+    assert.equal(verifyCalls, 0);
+  });
+
+  test('AC-6: a null matchConfiguration is 422 not_reexecutable BEFORE the verify seam (0 verify calls)', async () => {
+    let verifyCalls = 0;
+    const nullConfig = { G: { matchConfiguration: null }, ctx: { numPlayers: 2 }, plugins: { random: { data: { seed: 'seed-xyz' } } } };
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(
+      router,
+      FAKE_DB,
+      deps(),
+      logicSeam({
+        configuration: null,
+        seats: [],
+        replayHash: 'sha256:deadbeef',
+        replayArtifact: { initialState: nullConfig, log: stubLog(3) },
+        verified: { isVerified: true, execution: STUB_EXECUTION, gameover: null },
+        onVerify: () => { verifyCalls += 1; },
+      }),
+    );
+    const context = makeContext('null-config-match');
+    await replayHandlerOf(router)(context);
+    assert.equal(context.status, 422);
+    assert.deepEqual(context.body, { error: 'not_reexecutable' });
+    assert.equal(verifyCalls, 0);
+  });
+
+  test('AC-6: 429 rate_limited on the 11th request in one window for one key', async () => {
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(
+      router,
+      FAKE_DB,
+      depsWithClock(CONSTANT_NOW),
+      // replayHash null → the first 10 are 404 replay_not_found, isolating the limiter
+      logicSeam({ configuration: null, seats: [], replayHash: null }),
+    );
+    for (let request = 0; request < 10; request += 1) {
+      const context = makeContextWithIp('m', '203.0.113.7');
+      await replayHandlerOf(router)(context);
+      assert.equal(context.status, 404, `request ${request} should be 404`);
+    }
+    const eleventh = makeContextWithIp('m', '203.0.113.7');
+    await replayHandlerOf(router)(eleventh);
+    assert.equal(eleventh.status, 429);
+    assert.deepEqual(eleventh.body, { error: 'rate_limited' });
+    assert.equal(eleventh.headers['Cache-Control'], 'no-store');
+  });
+
+  test('AC-6: 503 at_capacity once the move-weighted process budget is spent', async () => {
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(
+      router,
+      FAKE_DB,
+      depsWithClock(CONSTANT_NOW),
+      logicSeam({
+        configuration: null,
+        seats: [],
+        replayHash: 'sha256:deadbeef',
+        // 2000 moves per request; budget 4000 → requests 1-2 succeed, the 3rd is 503
+        replayArtifact: { initialState: VALID_INITIAL_STATE, log: stubLog(2000) },
+        verified: { isVerified: true, execution: STUB_EXECUTION, gameover: { outcome: 'heroes-win' } },
+      }),
+    );
+    // three distinct cf-connecting-ip keys so the per-client 10/min limiter never trips
+    const first = makeContextWithIp('m', '203.0.113.1');
+    await replayHandlerOf(router)(first);
+    assert.equal(first.status, 200);
+    const second = makeContextWithIp('m', '203.0.113.2');
+    await replayHandlerOf(router)(second);
+    assert.equal(second.status, 200);
+    const third = makeContextWithIp('m', '203.0.113.3');
+    await replayHandlerOf(router)(third);
+    assert.equal(third.status, 503);
+    assert.deepEqual(third.body, { error: 'at_capacity' });
+    assert.equal(third.headers['Cache-Control'], 'no-store');
+  });
+
+  test('AC-6: 500 lagn_projection_failed when the built document is invalid', async () => {
+    const router = new FakeRouter();
+    // why: the shape check passes (valid composition + seat count + seed) and the
+    // verify seam succeeds, but the emitted execution block is malformed
+    // (non-hex final_state_hash), so the step-7 validate() rejects the document.
+    const badExecution = { ...STUB_EXECUTION, final_state_hash: 'NOT-HEX!!' };
+    registerMatchLagnRoutes(
+      router,
+      FAKE_DB,
+      deps(),
+      logicSeam({
+        configuration: null,
+        seats: [],
+        replayHash: 'sha256:deadbeef',
+        replayArtifact: { initialState: VALID_INITIAL_STATE, log: stubLog(3) },
+        verified: { isVerified: true, execution: badExecution, gameover: null },
+      }),
+    );
+    const context = makeContext('bad-projection');
+    await replayHandlerOf(router)(context);
+    assert.equal(context.status, 500);
+    assert.deepEqual(context.body, { error: 'lagn_projection_failed' });
+    assert.equal(context.headers['Cache-Control'], 'no-store');
   });
 });
