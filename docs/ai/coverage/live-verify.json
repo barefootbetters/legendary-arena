@@ -2994,10 +2994,10 @@
       "card": "Midnight Massacre",
       "ability": "A Blade Hero's 14 cards are Switchblade Villains in the Villain Deck (attack = printed cost); defeating one = KO it or give it to a player; each Twist KOs 3 per Switchblade (City + Escape Pile) from the Hero Deck then plays one more Villain Deck card; Evil Wins on Hero or Villain Deck runout.",
       "wp": "WP-764",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-11-23",
-      "evidence": "",
-      "note": "Pending post-deploy (D-24596 / D-24026). To verify in a live Midnight Massacre match on play.legendary-arena.com: Switchblades appear from the Villain Deck; a Switchblade fights for its printed cost; defeating one offers KO or give-to-a-player; a Twist burns 3 Hero-Deck cards per Switchblade and plays another Villain Deck card; the game never ends on twist count (only on Hero/Villain Deck runout). Sunlight/Moonlight is deferred (villain-side day/night follow-up)."
+      "evidence": "PASS 2026-11-23 on the deployed prod build db34219e (/api/version gitSha db34219e, built 18:34:49Z, the #3465 merge), two guest-autoplay solo Midnight Massacre matches (Lilith / Lilin). Match MOwpMrNeBzH game log: setup line 'Midnight Massacre: Blade's 14 cards are shuffled into the Villain Deck as Switchblade Villains.'; Switchblades reveal and enter the City ('Stalk the Prey (dkcy/blade/stalk-the-prey#3) revealed and entered the city', attack = printed cost 3); defeating one offers the choice ('4.2.12 Player 0 defeated the Switchblade Stalk the Prey ... and must KO it or give it to a player' -> '4.2.13 Player 0 gains the Switchblade ... as a Hero', again at 5.2.17/5.2.18); the Twist burns 3 per Switchblade EXACTLY (7.1.2-7.1.5: '1 Switchblade(s) ... 3 card(s) KO'd from the Hero Deck'; 10.1.2-10.1.8: '2 Switchblade(s) ... 6 card(s) KO'd') and a 0-Switchblade Twist still plays another Villain Deck card (1.1.2, 6.1.2); the game ran through twists 1-12 of 11 without a twist-count loss (match QXsbooyiTg7 ran 182 verified moves to a clean Mastermind victory, result-lagn outcome 'victory'). The switchblade-day-night hollow is recorded at each defeat and shown in the live Play Diagnostics Hollow-effects panel.",
+      "note": "D-24596 / D-24026. The explicit KO option (vs gain) was not exercised by the random bot, which always chose gain; the choice IS offered live ('must KO it or give it to a player') and the KO apply is unit-test-covered (setup/midnightMassacre.integration.test.ts). Villain-side Sunlight/Moonlight stays deferred (WP-765 follow-up) and records switchblade-day-night."
     }
   ]
 }
