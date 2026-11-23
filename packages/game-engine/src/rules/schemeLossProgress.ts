@@ -371,6 +371,12 @@ function escapedConvertedKind(origin: ConvertedVillainOrigin): SchemeLossKind {
       return 'escaped-pile';
     case 'officer-stack-villain':
       return 'escaped-pile';
+    // why: WP-764 / D-24596 — no scheme counts escaped Switchblades by origin (Midnight Massacre's
+    // Evil Wins is a pile runout, not an escape tally), so the generic escaped kind is the honest
+    // label if one ever does — the Micro-Sized precedent. This also keeps the exhaustive switch
+    // compiling, with no new SchemeLossKind and no client lockstep.
+    case 'switchblade':
+      return 'escaped-pile';
   }
 }
 

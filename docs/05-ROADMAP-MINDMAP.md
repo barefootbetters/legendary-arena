@@ -488,7 +488,7 @@ mindmap
         ["WP-750 ✅ Client Fight gating reads the engine projected fight cost arena-client plus game-engine UIState EC-787 D-24574 Active DONE 2026-09-26. City and Mastermind Fight gate on the projected cost not printed cost, a Fight N badge on mismatch, unblocks WP-748 and WP-760"]
         ["WP-762 ✅ Fill the missing printed attack values converter drops Mastermind-level and henchman vAttack card-data EC-799 D-24594 Active DONE 2026-09-25. 14 Masterminds (13 ranked) and 32 henchman groups stop fighting for 0, prerequisite of WP-750"]
         ["WP-763 ✅ Scheme Evil Wins fidelity game engine plus arena-client EC-800 D-24595 Active DONE 2026-09-25. 27 printed twist thresholds, 15 deck or stack runout losses with a Villain Deck pile, 25 compound schemes keep a last-twist clock; every other scheme loses at its last twist, labelled Twists approximate on the danger meter. Core 8 byte-identical"]
-        ["WP-764 📝 Midnight Massacre Blade Switchblades Hero Deck burn twist deck-runout Evil Wins game engine plus card-data DRAFTED 2026-09-25 EC-801 D-24596 reserved; WP-763 dependency done"]
+        ["WP-764 ✅ Midnight Massacre Blade Switchblades Hero Deck burn twist deck-runout Evil Wins game engine plus card-data DONE 2026-11-23 EC-801 D-24596 Active game-engine 7551 of 7551 plus 26 Midnight Massacre tests whole-repo build 0 cards:check 0 only Daywalker counts diff sim and ledger checks 0 runtime-observed regenerated finalStateHash sentinels and PAR pins byte-unchanged core untouched. A Blade hero dkcy/blade else mdns/blade-daywalker 14 cards become switchblade-origin Villains in the Villain Deck attack equals printed cost defeating one parks a KO-or-give-to-a-player seat choice each twist KOs 3 per Switchblade in City plus Escape Pile from the Hero Deck then always plays one more Villain Deck card Evil Wins on Hero or Villain Deck runout. Sunlight Moonlight deferred as recorded hollow villain-side day/night follow-up per WP-765. Fixes mdns/blade-daywalker 16 to 14 card-count defect. standard two-session lane User-Visible Surface play.legendary-arena.com D-24026 live-verify pending. WP-763 EC-801 D-24596"]
         ["WP-765 ✅ Sunlight Moonlight day-night rule gated hero lines hero Blood Frenzy game engine plus card-data EC-802 D-24598 Active DONE 2026-09-25. Every Sunlight and Moonlight hero line stops firing unconditionally, shared Blood Frenzy helper"]
         ["WP-766 ✅ Day Night badge on the play HUD arena-client EC-803 DONE 2026-09-26. Sunlight Moonlight Neither badge beside the Danger Meter, renders the engine projection"]
         ["WP-767 ✅ Snarling Fangs Moonlight game engine plus card data plus arena-client EC-804 D-24600 Active DONE 2026-09-26. Whenever you defeat a Villain or Mastermind this turn you may KO one of your Heroes, hand and played cards only, no Wounds"]
@@ -1074,7 +1074,7 @@ mindmap
 | Legends Public Scoreboard | 2/2 | — |
 | Villain Deck Pipeline | 5/5 | — |
 | Villain & Henchman Effects | 21/21 | — |
-| Hero Ability Coverage & Markup Pipeline | 260/268 | 8 open |
+| Hero Ability Coverage & Markup Pipeline | 261/268 | 7 open |
 | Notable Events & Overlays | 6/6 | — |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
 | Dashboard & Operator Analytics | 55/55 | — |
@@ -1095,9 +1095,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 4/4 | — |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **891/902 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 10 open |
+| **Total** | **892/902 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 9 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 11):** WP-849 open; WP-822 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-764 open; WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 10):** WP-849 open; WP-822 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

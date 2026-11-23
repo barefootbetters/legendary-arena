@@ -155,6 +155,9 @@ export type SchemeTwistResolverId =
   // why: WP-832 / D-24765 — Change the Outcome of WWII: each Twist invades the next country
   // (contract change recorded in D-24765).
   | 'change-the-outcome-of-wwii'
+  // why: WP-764 / D-24596 — Midnight Massacre: each Twist KOs 3 Hero-Deck cards per Switchblade in
+  // the City + Escape Pile, then always plays one more Villain Deck card.
+  | 'midnight-massacre'
   | 'counter-only';
 
 /**

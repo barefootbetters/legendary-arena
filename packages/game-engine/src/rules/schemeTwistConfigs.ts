@@ -653,7 +653,10 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
     'mdns/midnight-massacre',
     {
       schemeId: 'mdns/midnight-massacre',
-      resolverId: 'counter-only',
+      // why: WP-764 / D-24596 — the real twist (burn the Hero Deck per Switchblade, play one more
+      // Villain Deck card) replaces WP-763's placeholder 'counter-only'. The pile-runout Evil Wins
+      // (D-24595) is unchanged.
+      resolverId: 'midnight-massacre',
       params: {},
       resourceLossCondition: { kind: 'pile-depleted', piles: ['heroDeck', 'villainDeck'] },
     },

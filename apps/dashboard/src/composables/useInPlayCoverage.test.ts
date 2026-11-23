@@ -761,8 +761,14 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // differently (feed regenerated: +3 raw observations above the baseline peaks). totalObs
   // 8741 -> 8744; resolvedObs unchanged at 1213, so percentResolved stays 13.9 (1213 / 8744).
   // A feed re-pin, not a behavior change.
+  // why: WP-764 / D-24596 (2026-11-23) — Midnight Massacre is now a playable scheme, so the sweep
+  // samples its games (mdns heroes): patrol-any-city-space's live hitCount rose 38 -> 40, above its
+  // frozen baseline peak of 36, so its peakObs 38 -> 40. totalObs 8744 -> 8746 (+2, this one mechanic);
+  // resolvedObs unchanged at 1213 (patrol-any-city-space is unresolved), so percentResolved stays
+  // 13.9 (1213 / 8746). A feed re-pin, not a behavior change; the committed baseline high-water-mark
+  // is correctly absorbed by max() and needs no refresh.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8744);
+  assert.equal(view.totalObs.value, 8746);
   assert.equal(view.resolvedObs.value, 1213);
   assert.equal(view.percentResolved.value, 13.9);
   assert.ok(view.remaining.value.length > 0);

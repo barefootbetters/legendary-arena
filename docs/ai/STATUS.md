@@ -10,6 +10,18 @@
 
 ## Current State
 
+### WP-764 / EC-801 — Midnight Massacre: Blade Switchblades, the Hero-Deck-burn twist, deck-runout Evil Wins (D-24596) (2026-11-23)
+
+**User-visible on `play.legendary-arena.com` after deploy.** `mdns/midnight-massacre` now plays as printed except for its deferred Sunlight/Moonlight fight modifiers. WP-763 had wired only the pile-runout Evil Wins with a placeholder `counter-only` twist; this makes the scheme real.
+
+- **Setup.** A Blade Hero's 14 cards become **Switchblade Villains** shuffled into the Villain Deck (the Secret Invasion Skrull-conversion template). The Blade is `dkcy/blade` by default, `mdns/blade-daywalker` when `dkcy/blade` is a selected Hero, and neither (a logged no-op) when both are selected. The Blade is an **extra Hero** outside the loadout: it is fed to the stats / traits / display / hook builders only (a new `dataConfig` feed in `buildInitialGameState`), so a gained Switchblade plays as a Hero, but it never enters the Hero Deck or HQ.
+- **Fighting.** A Switchblade costs its **printed cost** exactly (a Skrull is +2; a Switchblade adds nothing). Defeating one — by a fight **or** a Silent Sniper free defeat — parks a seat choice for the active player: **KO it**, **gain it yourself**, or **give it to another player** (who gains it as a Hero to their discard). The timeout/bot default gains to self. No VP (a Switchblade is a Hero). The card lives only in the pending choice until the apply.
+- **Twist.** Each twist KOs `3 × (Switchblades in the City + Escape Pile)` from the top of the Hero Deck, then **always** plays one more Villain Deck card (even at zero Switchblades). A Hero Deck emptied by the burn is caught by WP-763's per-move pile-runout check (Evil Wins); the twist never ends the game itself.
+- **Deferred, recorded.** The Sunlight 3-Recruit surcharge and Moonlight Blood Frenzy are villain-side day/night (WP-765 shipped hero-side only, naming villain-side a follow-up), so they stay unmodeled and record a `switchblade-day-night` hollow at every Switchblade defeat.
+- **Data fix.** `mdns/blade-daywalker` was a 16-card deck (Ride by Moonlight wrongly 5); corrected to the printed 5/5/3/1 = 14 via `hero-card-counts.json` (and its `mdns.patch.json` `_skipPair` companion for D-13901 cluster coverage). The only `mdns.json` diff is Daywalker's counts.
+- **Engine + one card-data fix only — no client or server change** (the choice rides the generic `PendingSeatChoicePrompt`).
+- **Gates.** game-engine → **7551 / 0 fail** (+26 Midnight Massacre tests); `pnpm -r build` 0; `cards:check` 0; `sim:coverage --check` / `ledger:heroes:check` 0; `sim:runtime-observed:check` 0 (artifact regenerated); `finalStateHash` sentinels, `PRE_WP080_HASH`, goldens and PAR pins byte-unchanged (core untouched). **Live-verify (D-24026): pending** post-deploy. See [WP-764](work-packets/WP-764-midnight-massacre-scheme.md) + [EC-801](execution-checklists/EC-801-midnight-massacre-scheme.checklist.md).
+
 ### WP-810 / EC-847 — Replay-LAGN producer: `GET /api/match/:matchId/replay-lagn` + the LAGN writer flip to 1.7.0 (D-24716) (2026-11-22)
 
 **No user-observable change — infrastructure only (new guest API endpoint).** The follow-on to WP-808: a completed, non-operator match becomes downloadable as a **re-executable LAGN 1.7.0 document**. The new guest-readable `GET /api/match/:matchId/replay-lagn` returns the `/result-lagn` content built from the **durable** replay artifact **plus** the WP-808 `replay.execution` block (seed, ordered engine moves, engine version/build, `data_version`, `final_state_hash`). The writer flips **1.6.0 → 1.7.0**, so every emitter now stamps 1.7.0.

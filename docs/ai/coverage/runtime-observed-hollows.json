@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 68,
-    "totalObservations": 7309,
+    "totalObservations": 7303,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 477,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 6832
+      "parse-unrecognized": 6826
     }
   },
   "byMechanic": {
@@ -1327,16 +1327,16 @@
       ]
     },
     "moonlight": {
-      "hitCount": 21,
+      "hitCount": 22,
       "lastSeenTurn": 24,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 21
+        "parse-unrecognized": 22
       },
       "examples": [
         {
-          "cardId": "nmut/wolfsbane/night-vision#0",
+          "cardId": "mdns/werewolf-by-night/track-the-captives#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -1368,22 +1368,22 @@
       ]
     },
     "patrol-any-city-space": {
-      "hitCount": 38,
+      "hitCount": 40,
       "lastSeenTurn": 26,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 38
+        "parse-unrecognized": 40
       },
       "examples": [
         {
-          "cardId": "ssw2/beast/upside-down-thinking#0",
+          "cardId": "mdns/elsa-bloodstone/vengeance-of-the-bloodstone-gem#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "ssw2/beast/upside-down-thinking#0",
+          "cardId": "mdns/elsa-bloodstone/vengeance-of-the-bloodstone-gem#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -1409,12 +1409,12 @@
       ]
     },
     "patrol-the-sewers": {
-      "hitCount": 16,
-      "lastSeenTurn": 20,
+      "hitCount": 7,
+      "lastSeenTurn": 19,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 16
+        "parse-unrecognized": 7
       },
       "examples": [
         {

@@ -83,7 +83,10 @@ export type ConvertedVillainOrigin =
   | 'shield-officer'
   | 'micro-sized'
   | 'bystander-stack-villain'
-  | 'officer-stack-villain';
+  | 'officer-stack-villain'
+  // why: WP-764 / D-24596 — a Midnight Massacre Switchblade: a Blade Hero card shuffled into the
+  // Villain Deck as a demonically-possessed Villain with Attack equal to its printed cost.
+  | 'switchblade';
 
 // why: D-24802 — a Villain or Mastermind's printed Size-Changing fight discount. `classes`
 // are the "Size-Changing [Class]" classes (2 less each when a matching card was played this

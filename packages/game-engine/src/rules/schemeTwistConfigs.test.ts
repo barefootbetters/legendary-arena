@@ -220,6 +220,9 @@ function configPiles(schemeId: string): readonly string[] {
 // (still asserted below) but no longer uses the counter-only resolver. Each exception is named.
 const AUDIT_PURE_RESOLVER_EXCEPTIONS: Record<string, string> = {
   'ca75/go-back-in-time-to-slay-heroes-ancestors': 'go-back-in-time',
+  // why: WP-764 / D-24596 — Midnight Massacre keeps its heroDeck/villainDeck pile-runout Evil Wins
+  // (D-24595) but its Twist now burns the Hero Deck and plays a card, so it leaves 'counter-only'.
+  'mdns/midnight-massacre': 'midnight-massacre',
 };
 
 // why: WP-830 / D-24763 — a printed-count scheme whose Twist now does something keeps its printed N

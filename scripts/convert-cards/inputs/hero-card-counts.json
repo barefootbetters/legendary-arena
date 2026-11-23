@@ -914,9 +914,9 @@
   },
   "mdns": {
     "blade-daywalker": {
-      "Hunt High and Low": 3,
+      "Hunt High And Low": 5,
       "Where Monsters Lurk": 5,
-      "Ride by Moonlight": 5,
+      "Ride by Moonlight": 3,
       "Creature of Dawn and Dusk": 1
     },
     "elsa-bloodstone": {
