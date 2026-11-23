@@ -52052,7 +52052,7 @@ Unthrottled intake is accepted for v1: every item passes operator triage before 
 
 ### D-24714 — LAGN 1.7.0 `replay.execution`: an opt-in, engine-bound re-executable replay (Active 2026-11-22 — WP-808 / EC-845)
 
-**Status:** Active 2026-11-22. Reserved 2026-10-13 (#2771). Landed by WP-808 / EC-845 (reader contract only).
+**Status:** Active 2026-11-22. Reserved 2026-10-13 (#2771). Landed by WP-808 / EC-845 (reader contract only). **Amended by D-24716 §3** (the `data_version` producer clause — WP-810).
 
 **Decision.** LAGN's replay tier gains an optional `replay.execution` block (seed, ordered `MAKE_MOVE`s, engine version/build, a `data_version` marker, and the expected final-state hash) at 1.7.0, gated ordinally. Re-execution targets the D-24119 server reducer, never the D-0205 determinism-only engine harness (which ignores the seed).
 
@@ -52079,6 +52079,53 @@ Unthrottled intake is accepted for v1: every item passes operator triage before 
 **Hash / replay.** No engine, `G`, `ctx`, snapshot, or `computeStateHash` surface changes. The block names `computeStateHash` output as data (shape-validated hex), but computes nothing and runs no game — lagn-spec reads no clock and sources no RNG.
 
 **Packet:** WP-808 / EC-845. **Reserved by:** #2771. Related: D-24119, D-24124, D-24095, D-24517, D-24452, D-24211, D-24689, D-5301, D-24126, D-0205, D-0801, D-24715 (seed hardening), D-24716 (the producer follow-on).
+
+---
+
+### D-24716 — Replay-LAGN producer: the replay-export carve-out, verify-before-emit, and the 1.7.0 writer (Active 2026-11-22 — WP-810 / EC-847)
+
+**Status:** Active 2026-11-22. Reserved 2026-10-13 (#2778). Landed by WP-810 / EC-847 (the producer + the writer flip).
+
+1. **Carve-out (extends D-24095).** A server-layer read MAY read a **completed** match's `bgio.replay_artifacts` `initialState` and `log`, and re-execute them through boardgame.io's reducer (D-24119). The read covers:
+   - `initialState`: `G.matchConfiguration`, `G.isDebugMatch`, `ctx.numPlayers`, `plugins.random.data.seed`;
+   - `log`: the `MAKE_MOVE` actions and their `turn` / `phase` stamps;
+   - the re-executed final `ctx.gameover`.
+
+   The reference re-execution reduces the full `initialState + log` (the D-24119 reconstruction). Producer code **reads** only the listed fields, the two final-`G` `computeStateHash` values, and the rebuild's final `ctx.gameover`.
+
+   Its sole purposes are to emit and verify a LAGN 1.7.0 `replay.execution` block and the document's `result` outcome. It is a derived, read-only export:
+   - never the `bgio.matches` row (its `state` / `metadata`);
+   - never written back;
+   - never cached across requests;
+   - never a save-game;
+   - never a scoring, credit, ranking, or verification input.
+
+   The ARCHITECTURE.md §Persistence Boundary clause carries the verbatim carve-out text; `.claude/rules/architecture.md` §Persistence Boundary lists it as the **sixth** carve-out.
+2. **Verify-before-emit.**
+   - **What runs.** The block is emitted only when the re-execution from the seed hashes equal to a fresh `reduceMatchToFinalState` of the artifact on the serving build. The setup data comes from the emitted Tier-1 `setup`.
+   - **What it proves.** The emitted block re-executes on that build to a final `G` whose `computeStateHash` (a 32-bit djb2 over the canonical JSON of `G`, `diagnostics` excluded) equals that of the stored match's fresh reduction. It catches every setup-time divergence: lossy setup data, pre-WP-805 matches, and registry or setup drift. Setup throws become refusals.
+   - **What it does not prove.** It does not detect a tampered stored log, or move-processing changes since capture. Both sides share the moves and the build.
+   - **What it never compares to.** The capture-time `replay_hash`.
+3. **Amends D-24714's `data_version` producer clause.**
+   - No per-match data-version record exists.
+   - Every stored artifact postdates the data-version 2 bump: WP-137, 2026-05-07, before durable storage began with WP-309 on 2026-07-05. So `data_version = CURRENT_DATA_VERSION.version` is accurate today.
+   - **Binding:** a future data-axis bump must either migrate stored artifacts or make this producer refuse artifacts captured before the bump. The hash does **not** detect a stale `args` shape.
+   - `engine_build` is the **verifying** (serving) build's sha, omitted when unknown.
+4. **The writer is 1.7.0.** Every emitter stamps 1.7.0. This is safe because every gate is ordinal (D-24211). WP-808's 1.7.0 reader must be deployed on the bundled viewers (cards + legends) first.
+5. **Abuse bound.** The endpoint is guest and CPU-bound: two synchronous reductions per request, measured at about 0.7 ms per move each on trivial moves. Long matches block the event loop for about 0.5–2 s. It therefore has two limits, both route-local token buckets with an injected clock:
+   - 10/min per client → `429`;
+   - a process-wide budget of **4000 moves/min**, spent per request as its `MAKE_MOVE` count after the artifact read → `503 at_capacity`.
+
+   The budget bounds CPU, not request count. At about 0.75 ms × 2 reductions per move, it is about 6 s of synchronous work per minute.
+
+   **Execution measurement (WP-810, local, 2026-11-22).** The server runs TypeScript under `tsx` in production (there is no built `dist`), so the measurement used the same runtime. A manufactured 20-turn match (83 `MAKE_MOVE` entries, the realistic 14-card-per-hero fixture) was run through `reduceMatchToFinalState` warm (30 warm-up folds, then 100 timed): **0.70 ms per move, single reduction**. STOP check: `0.70 × 2 × 4000 = 5620 ms ≤ 6000 ms` — **passes**. No manufactured match approached 4000 moves (a full 80-turn match is ~323 moves). A JIT-cold measurement (no warm-up) reads ~1 ms/move; the serving reducer path is JIT-warm after the first requests, so the warm figure is the representative one, matching the draft scaffold's 0.7–0.85 ms. The real-prod-artifact confirmation on the serving droplet rides the operator deploy smoke test.
+6. **Binding — shared seeds.** No surface shares a seed across matches by design today. Any future surface that reuses a seed across matches (for example, the DESIGN-SEED-CHALLENGES shared-seed challenges) must make this producer refuse, or embargo until the challenge closes, any match whose seed is shared. Otherwise one entrant's export publishes the deck order and a full move solution to every other entrant.
+
+**Scope.** Server (`apps/server`): the new pure `match/replayLagn.logic.ts` (extract / map / re-execute / verify), the `GET /api/match/:matchId/replay-lagn` handler (the locked order, two route-local buckets, the `now` dep), the seam members (`readReplayArtifactByHash`, `buildVerifiedReplayExecution`, `getBuildId`), and doc-only touch-ups to `matchLagn.logic.ts`. Shared Tooling: the `LAGN_VERSION` 1.6.0 → 1.7.0 flip + `package.json` (EC-422 lockstep), no `migrate.ts` change. Comment-only: the registry-viewer loadout export. Governance lockstep: ARCHITECTURE.md + `.claude/rules/architecture.md` (the carve-out), `api-endpoints.md` (1 new row + 3 whole-row), `wiki/lagn-v1.md`, `00.2` §7f/§7g.
+
+**Hash / layers.** No engine, `G`, `ctx`, snapshot, `computeStateHash`, or replay-pipeline behaviour changes. Re-execution is boardgame.io's seeded reducer (D-24119), unchanged; the producer reads `G` only within the carve-out and interprets nothing beyond it. Nothing is written back, persisted, or cached across requests.
+
+**Packet:** WP-810 / EC-847. **Reserved by:** #2778. Related: D-24714 (amends §3), D-24119, D-24124, D-24095, D-24153, D-24169, D-24187, D-24689, D-24700, D-24211, D-24517, D-24453, D-5301, D-24126, D-0205, D-0801, D-24715, D-11804, D-24026.
 
 ---
 Protect this file.
