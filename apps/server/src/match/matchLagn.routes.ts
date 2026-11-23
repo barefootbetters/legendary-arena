@@ -12,6 +12,17 @@
  *     (WP-406), Hall-of-Legends material. When `lagn.result` is omitted, the
  *     envelope also carries `resultOmittedReason` (`'tie'`, `'ended-early'` or
  *     `'unknown'`) beside `lagn` (WP-812 / D-24720).
+ *   * `GET /api/match/:matchId/replay-lagn` — a COMPLETED, non-operator match as
+ *     a re-executable LAGN 1.7.0 document (WP-810): the result-LAGN content PLUS
+ *     a `replay.execution` block the serving build re-executed from the seed and
+ *     verified against a fresh faithful reduction before emit. Guest-readable,
+ *     rate-limited 10/min per client (`429`) and bounded by a 4000 moves/min
+ *     process budget (`503`). Refusals: `404 replay_not_found`, `422
+ *     operator_match` / `not_reexecutable`. Unlike the two setup/result routes,
+ *     this handler reaches boardgame.io's reducer and the engine's version
+ *     exports — through the pure `replayLagn.logic.ts` helpers (`buildVerified
+ *     ReplayExecution`), never directly — which is the SERVER-only replay edge
+ *     the D-24716 carve-out authorizes.
  *
  * Access: NO session gate and NO participant gate (D-24446). The setup LAGN is
  * non-secret game setup (scheme / mastermind / villains / heroes / supply) with
@@ -60,11 +71,16 @@ import {
   toResultScore,
   DEFAULT_SCORING_PROFILE,
 } from './matchLagn.logic.js';
+import type { MatchLagnComposition } from './matchLagn.logic.js';
 import { readBattlePlan } from './battlePlan.persistence.js';
 import { readSeatAccounts } from './seatAccount.logic.js';
+import { buildVerifiedReplayExecution } from './replayLagn.logic.js';
+import { readArtifactSeed } from './replayLagn.logic.js';
+import { createTokenBucketRateLimiter, resolveRateLimitKey } from './tokenBucketRateLimiter.mjs';
 
 import { findCompetitiveScore } from '../competition/competition.logic.js';
-import { readReplayHashByMatchId } from '../replay/matchReplay.logic.js';
+import { readReplayHashByMatchId, readReplayArtifactByHash } from '../replay/matchReplay.logic.js';
+import { getVersionInfo } from '../version.mjs';
 
 import type { DatabaseClient } from '../identity/identity.types.js';
 
@@ -76,6 +92,13 @@ import type { DatabaseClient } from '../identity/identity.types.js';
  */
 export interface MatchLagnRouteDependencies {
   readonly registry: CardRegistry;
+  /**
+   * Optional injected clock for the replay-LAGN route's two route-local token
+   * buckets (the per-client limiter and the move-weighted process budget).
+   * Production omits it — the field defaults to `Date.now`, so `server.mjs` is
+   * unchanged — and tests pass a constant to make the limits deterministic.
+   */
+  readonly now?: () => number;
 }
 
 /**
@@ -90,7 +113,11 @@ export interface MatchLagnLogic {
   readonly readAccountPublicIdentities: typeof readAccountPublicIdentities;
   readonly readBattlePlan: typeof readBattlePlan;
   readonly readReplayHashByMatchId: typeof readReplayHashByMatchId;
+  readonly readReplayArtifactByHash: typeof readReplayArtifactByHash;
+  readonly buildVerifiedReplayExecution: typeof buildVerifiedReplayExecution;
   readonly findCompetitiveScore: typeof findCompetitiveScore;
+  /** The serving build's short git sha (or `'unknown'`), for `engine_build`. */
+  readonly getBuildId: () => string;
 }
 
 const PRODUCTION_MATCH_LAGN_LOGIC: MatchLagnLogic = {
@@ -100,7 +127,12 @@ const PRODUCTION_MATCH_LAGN_LOGIC: MatchLagnLogic = {
   readAccountPublicIdentities,
   readBattlePlan,
   readReplayHashByMatchId,
+  readReplayArtifactByHash,
+  buildVerifiedReplayExecution,
   findCompetitiveScore,
+  // why: the VERIFYING (serving) build's sha — both sides of the hash check run
+  // on this build, so the emitted block is faithful to it (D-24716 §3).
+  getBuildId: () => getVersionInfo().gitSha,
 };
 
 /**
@@ -147,6 +179,17 @@ export function registerMatchLagnRoutes(
   // why: build the ext_id → display-name resolver ONCE at registration (the
   // registry is frozen for the process lifetime), not per request.
   const resolveName = buildNameResolver(deps.registry);
+
+  // why: the replay-LAGN route is guest and CPU-bound (two synchronous
+  // reductions per request), so it carries two route-local token buckets with an
+  // injected clock (`now` defaults to `Date.now`, so production needs no wiring).
+  // Per-client 10/min caps one caller; the move-weighted process budget is the
+  // HARD bound, because keys rotate under carrier NAT and are unverified
+  // (D-24635 §3 + follow-up). The budget is spent in MOVES, not requests, so it
+  // bounds CPU, not count (D-24716 §5).
+  const now = deps.now ?? (() => Date.now());
+  const rateLimiter = createTokenBucketRateLimiter({ capacity: 10, windowMs: 60_000, now });
+  const exportBudget = createTokenBucketRateLimiter({ capacity: 4000, windowMs: 60_000, now });
 
   router.get('/api/match/:matchId/lagn', async (koaContext) => {
     // why: Cache-Control MUST be the first statement (WP-115 D-11504) so it is
@@ -340,4 +383,274 @@ export function registerMatchLagnRoutes(
       koaContext.body = { error: 'internal_error' };
     }
   });
+
+  // why: the REPLAY-LAGN producer (WP-810 / D-24716). A completed, non-operator
+  // match becomes a re-executable LAGN 1.7.0 document: the result-LAGN content
+  // from the durable replay artifact PLUS a `replay.execution` block the serving
+  // build re-executed from the seed and verified against a FRESH faithful
+  // reduction (`reduceMatchToFinalState`) before emit. Guest-readable (a finished
+  // match is public), rate-limited per client and bounded by the process budget.
+  // why: durable source — the WP-327 reaper deletes the live row about an hour
+  // after gameover, so the producer reads the artifact copy, which persists; an
+  // artifact exists only for a finished match (D-24716, D-24719).
+  router.get('/api/match/:matchId/replay-lagn', async (koaContext) => {
+    // why: Cache-Control MUST be the first statement (WP-115 D-11504) so it is
+    // set on every response path, including the limiter 429 and the catch 500.
+    koaContext.set('Cache-Control', 'no-store');
+
+    // why: per-client limiter FIRST, before any read or the matchId check — the
+    // limiter has no refund, so spending the process budget first would let an
+    // over-limit client drain the global bound (D-24716 §5).
+    const { key } = resolveRateLimitKey(koaContext);
+    if (rateLimiter.consume(key, 1) === false) {
+      koaContext.status = 429;
+      koaContext.body = { error: 'rate_limited' };
+      return;
+    }
+
+    const matchId = koaContext.params.matchId;
+    if (typeof matchId !== 'string' || matchId === '') {
+      // why: `@koa/router` always supplies a non-empty `:matchId`; defensive —
+      // an absent id is an unknown match (fail closed).
+      koaContext.status = 404;
+      koaContext.body = { error: 'not_found' };
+      return;
+    }
+
+    try {
+      // Step 1 — resolve the durable artifact. A finished match has exactly one
+      // artifact (keyed by replay hash); an unknown, unfinished, or not-yet
+      // -captured match (the harvester runs about every 5 min) has none.
+      const replayHash = await matchLagnLogic.readReplayHashByMatchId(matchId, database);
+      if (replayHash === null) {
+        koaContext.status = 404;
+        koaContext.body = { error: 'replay_not_found' };
+        return;
+      }
+      const artifact = await matchLagnLogic.readReplayArtifactByHash(replayHash, database);
+      if (artifact === null) {
+        koaContext.status = 404;
+        koaContext.body = { error: 'replay_not_found' };
+        return;
+      }
+
+      // why: spend the process budget AFTER the artifact read, so cheap 404s
+      // never drain it; the cost is the move count (at least 1), since each move
+      // is two reductions of synchronous CPU (D-24716 §5).
+      const moveCount = countMakeMoveEntries(artifact.log);
+      if (exportBudget.consume('process', moveCount) === false) {
+        koaContext.status = 503;
+        koaContext.body = { error: 'at_capacity' };
+        return;
+      }
+
+      // Step 2 — shape-check the composition + seat count + seed BEFORE any
+      // build, so a malformed artifact is a 422, never a 500 at `validate()` or a
+      // TypeError. This runs before the verify seam, so a misshaped composition
+      // never reaches re-execution.
+      const projection = toReexecutableComposition(artifact.initialState);
+      if (projection === null) {
+        koaContext.status = 422;
+        koaContext.body = { error: 'not_reexecutable' };
+        return;
+      }
+
+      // Step 3 — the Tier-1 base. Its `.setup` is the setup that gets verified
+      // (re-executed from) and emitted.
+      const base = buildMatchLagn(
+        matchId,
+        projection.composition,
+        projection.numPlayers,
+        resolveName,
+      );
+
+      // Step 4 — verify-before-emit. The seam re-executes from the seed and the
+      // emitted setup, and requires hash-equality with a fresh reduction; a
+      // failure is a typed 422 (`operator_match` or `not_reexecutable`).
+      const verified = matchLagnLogic.buildVerifiedReplayExecution(
+        artifact,
+        base.setup,
+        projection.numPlayers,
+        matchLagnLogic.getBuildId(),
+      );
+      if (verified.isVerified === false) {
+        koaContext.status = 422;
+        koaContext.body = { error: verified.reason };
+        return;
+      }
+
+      // Step 5 — the same domain reads `/result-lagn` makes, reusing the step-1
+      // replay hash (the artifact exists, so the score read is unconditional).
+      const seats = await matchLagnLogic.readSeatAccounts(matchId, database);
+      const identities = await matchLagnLogic.readAccountPublicIdentities(
+        seats.map((seat) => seat.accountId),
+        database,
+      );
+      const players = buildResultPlayers(seats, identities);
+      const battlePlanRecord = await matchLagnLogic.readBattlePlan(matchId, database);
+      const battlePlan = toBattlePlanBlock(battlePlanRecord);
+      const scoreRecord = await matchLagnLogic.findCompetitiveScore(replayHash, database);
+      const score = scoreRecord === null ? undefined : toResultScore(scoreRecord);
+
+      // Step 6 — build the result document from the re-executed verdict, then
+      // attach the verified execution block.
+      const lagn = buildResultMatchLagn(
+        matchId,
+        projection.composition,
+        projection.numPlayers,
+        resolveName,
+        players,
+        toLagnResult((verified.gameover ?? null) as Parameters<typeof toLagnResult>[0]),
+        DEFAULT_SCORING_PROFILE,
+        battlePlan,
+        score,
+      );
+      lagn.replay = { execution: verified.execution };
+
+      // Step 7 — validate EXACTLY once before the 200.
+      const validation = validate(lagn);
+      if (validation.valid !== true) {
+        // why: a verified, well-formed match should always project to a valid
+        // 1.7.0 document; a failure here is a projection regression (the writer
+        // flip missing would reject `replay.execution`), never a client error.
+        koaContext.status = 500;
+        koaContext.body = { error: 'lagn_projection_failed' };
+        return;
+      }
+
+      koaContext.status = 200;
+      koaContext.body = { lagn };
+    } catch (caughtError) {
+      // why: never re-throw — mirror the sibling routes' fail-closed 500.
+      void caughtError;
+      koaContext.status = 500;
+      koaContext.body = { error: 'internal_error' };
+    }
+  });
+}
+
+/**
+ * Count the player `MAKE_MOVE` entries in a persisted log — the move-weighted
+ * cost the process export budget spends, floored at 1.
+ *
+ * why: the budget bounds CPU (two reductions per move), so a long match costs
+ * more than a short one; the floor keeps a (degenerate) zero-move artifact from
+ * being free. Non-`MAKE_MOVE` entries (framework events) are not re-executed.
+ *
+ * @param log The persisted ordered log entries (already-parsed jsonb).
+ * @returns The `MAKE_MOVE` count, at least 1.
+ */
+function countMakeMoveEntries(log: readonly unknown[]): number {
+  let count = 0;
+  for (const entry of log) {
+    if (entry === null || typeof entry !== 'object' || !('action' in entry)) {
+      continue;
+    }
+    const action = (entry as { action?: unknown }).action;
+    if (
+      action !== null &&
+      typeof action === 'object' &&
+      (action as { type?: unknown }).type === 'MAKE_MOVE'
+    ) {
+      count += 1;
+    }
+  }
+  return count < 1 ? 1 : count;
+}
+
+/** The composition + seat count a re-executable artifact must carry. */
+interface ReexecutableComposition {
+  readonly composition: MatchLagnComposition;
+  readonly numPlayers: number;
+}
+
+/**
+ * Shape-check a persisted initial state and project its composition + seat
+ * count, or `null` when any field is malformed.
+ *
+ * why: runs before the verify seam so a malformed composition is a `422
+ * not_reexecutable`, never a `500` from a later `validate()` or a TypeError on a
+ * null composition. Checks all nine composition fields, the optional Final Blow
+ * flag, the seat count range, and a non-empty seed.
+ *
+ * @param initialState The persisted initial state (already-parsed jsonb).
+ * @returns The composition + seat count, or `null` when not re-executable.
+ */
+function toReexecutableComposition(initialState: unknown): ReexecutableComposition | null {
+  if (initialState === null || typeof initialState !== 'object') {
+    return null;
+  }
+  const blob = initialState as { G?: { matchConfiguration?: unknown }; ctx?: { numPlayers?: unknown } };
+  const composition = blob.G?.matchConfiguration;
+  if (composition === null || typeof composition !== 'object') {
+    return null;
+  }
+  const config = composition as Record<string, unknown>;
+  if (!isNonEmptyString(config.schemeId) || !isNonEmptyString(config.mastermindId)) {
+    return null;
+  }
+  if (
+    !isNonEmptyStringArray(config.villainGroupIds) ||
+    !isNonEmptyStringArray(config.henchmanGroupIds) ||
+    !isNonEmptyStringArray(config.heroDeckIds)
+  ) {
+    return null;
+  }
+  if (
+    !isNonNegativeInteger(config.bystandersCount) ||
+    !isNonNegativeInteger(config.woundsCount) ||
+    !isNonNegativeInteger(config.officersCount) ||
+    !isNonNegativeInteger(config.sidekicksCount)
+  ) {
+    return null;
+  }
+  if (config.finalBlow !== undefined && typeof config.finalBlow !== 'boolean') {
+    return null;
+  }
+  const numPlayers = blob.ctx?.numPlayers;
+  if (!Number.isInteger(numPlayers) || (numPlayers as number) < 1 || (numPlayers as number) > 5) {
+    return null;
+  }
+  if (readArtifactSeed(initialState) === null) {
+    return null;
+  }
+  return { composition: composition as MatchLagnComposition, numPlayers: numPlayers as number };
+}
+
+/**
+ * Whether a value is a non-empty string.
+ *
+ * @param value The candidate value.
+ * @returns True when the value is a string of length ≥ 1.
+ */
+function isNonEmptyString(value: unknown): boolean {
+  return typeof value === 'string' && value !== '';
+}
+
+/**
+ * Whether a value is an array of non-empty strings with at least one entry.
+ *
+ * @param value The candidate value.
+ * @returns True when every entry is a non-empty string and the array is non-empty.
+ */
+function isNonEmptyStringArray(value: unknown): boolean {
+  if (!Array.isArray(value) || value.length === 0) {
+    return false;
+  }
+  for (const entry of value) {
+    if (!isNonEmptyString(entry)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Whether a value is an integer ≥ 0.
+ *
+ * @param value The candidate value.
+ * @returns True when the value is a non-negative integer.
+ */
+function isNonNegativeInteger(value: unknown): boolean {
+  return Number.isInteger(value) && (value as number) >= 0;
 }

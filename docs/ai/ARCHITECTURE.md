@@ -385,7 +385,13 @@ Shared Tooling (orthogonal):
 > that is `true` (the admin's whole-board read of an operator match — never written
 > back, never persisted, never a save-game, never round-tripped into gameplay state,
 > never a source of competitive or derived features, and refused (409) for any other
-> match). All other application reads of the blob or a match's live state remain
+> match) — **and** the D-24716 replay-export carve-out: a server-layer read MAY read a completed
+> match's `bgio.replay_artifacts` `initialState` (`G.matchConfiguration`, `G.isDebugMatch`, `ctx.numPlayers`,
+> `plugins.random.data.seed`) and `log` (`MAKE_MOVE` actions + their `turn`/`phase` stamps),
+> re-execute them through boardgame.io's reducer (the reference reduces the full `initialState + log`; producer code reads only those fields,
+> the two final-`G` hashes, and the rebuild's final `ctx.gameover`), solely to emit and verify a LAGN 1.7.0
+> `replay.execution` block and the document's `result` outcome (a derived, read-only export — never the `bgio.matches` row (its `state` / `metadata`), never written back, never cached across requests, never a save-game, never a scoring/credit/ranking/verification input).
+> All other application reads of the blob or a match's live state remain
 > forbidden. Snapshots remain counts-only.
 
 #### Enforcement Rule

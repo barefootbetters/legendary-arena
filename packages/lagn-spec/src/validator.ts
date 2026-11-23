@@ -87,16 +87,24 @@ export const LAGN_VERSION_1_7_0 = '1.7.0'
 /**
  * The version this build stamps on documents it writes.
  *
- * why: 1.6.0 as of WP-698 — the loadout LAGN emitter now carries
- * `setup.final_blow`, which the WP-698 version gate rejects on any pre-1.6.0
- * document, so the writer must stamp 1.6.0 for a Final-Blow loadout to be a legal
- * write. Bumping the default also restamps the server result-LAGN emitter; that
- * is safe because every version gate is ORDINAL (`isLagnVersionAtLeast`, never
- * `=== version`), so a 1.6.0 document clears every existing minimum. Readers
+ * why: 1.7.0 as of WP-810 — the replay-LAGN producer
+ * (`GET /api/match/:matchId/replay-lagn`) now emits the `replay.execution` block,
+ * which the WP-808 version gate rejects on any pre-1.7.0 document, so the writer
+ * must stamp 1.7.0 for a re-executable replay to be a legal write. Bumping the
+ * default also restamps the setup, result-LAGN, and loadout emitters; that is
+ * safe because every version gate is ORDINAL (`isLagnVersionAtLeast`, never
+ * `=== version`), so a 1.7.0 document clears every existing minimum. Readers
  * still accept every version back to 1.0.0 (`LAGN_SUPPORTED_VERSIONS`), so no
- * stored record migrates. `package.json` is bumped in lockstep (the EC-422
- * manifest lock) in this same commit, so the validator constant and the manifest
- * never briefly advertise different versions.
+ * stored record migrates. WP-808's 1.7.0 reader must be deployed on the bundled
+ * viewers (cards + legends) before this writer flips, so a deployed bundle never
+ * rejects the 1.7.0 output of `/lagn` and `/result-lagn` (D-24716 §4).
+ * `package.json` is bumped in lockstep (the EC-422 manifest lock) in this same
+ * commit, so the validator constant and the manifest never briefly advertise
+ * different versions.
+ *
+ * why (historical, pre-WP-810): 1.6.0 as of WP-698 — the loadout LAGN emitter
+ * carried `setup.final_blow`, which the WP-698 version gate rejects on any
+ * pre-1.6.0 document. The bump was safe for the same ordinal-gate reason.
  *
  * why (historical, pre-WP-698): 1.5.0 as of WP-641 — the result-LAGN producer
  * (`GET /api/match/:matchId/result-lagn`) now emits `battle_plan` and
@@ -111,7 +119,7 @@ export const LAGN_VERSION_1_7_0 = '1.7.0'
  * validator constant and the manifest never briefly advertise different
  * versions.
  */
-export const LAGN_VERSION = LAGN_VERSION_1_6_0
+export const LAGN_VERSION = LAGN_VERSION_1_7_0
 
 /**
  * Every version this build can read, oldest first.

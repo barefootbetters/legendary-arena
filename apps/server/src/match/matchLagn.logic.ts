@@ -31,11 +31,13 @@
  * registry display name or the ext_id verbatim.
  *
  * Layer-boundary contract: this module imports the pure `@legendary-arena/lagn`
- * validator (a zod schema, no upward edge) and the `@legendary-arena/registry`
- * `CardRegistry` **type** for name lookup. It imports no engine, game-framework,
- * pre-planning, or UI / client package (the server layer-boundary set — see
- * `.claude/rules/architecture.md`). The `pg` driver is reachable only through the
- * supplied `DatabaseClient`.
+ * validator (a zod schema, no upward edge), the `@legendary-arena/registry`
+ * `CardRegistry` **type** for name lookup, and the engine's pure
+ * `gradeForFinalScore` from its Runtime-Safe surface (WP-641 — a report-card
+ * grade is a deterministic scoring function, which the server MAY import). It
+ * imports no game-framework, pre-planning, or UI / client package (the server
+ * layer-boundary set — see `.claude/rules/architecture.md`). The `pg` driver is
+ * reachable only through the supplied `DatabaseClient`.
  *
  * Authority: WP-361 / EC-391; D-24153 (endpoint + carve-out extension);
  * D-24095 / D-24119 (the blob-read carve-out this extends); D-24719 (the
@@ -729,9 +731,9 @@ export function toBattlePlanBlock(
  *
  * **Construction-only**: like `buildMatchLagn`, this never calls `validate()` —
  * the route validates the built document exactly once before returning it. It
- * stamps `LAGN_VERSION` (1.6.0 since WP-698 / D-24517; WP-641 first raised it
- * to 1.5.0 for these blocks), so `players[]`, `battle_plan`, and `result.score`
- * all clear the WP-405 / WP-640 version gates, which are ordinal.
+ * stamps `LAGN_VERSION` (the current writer; WP-641 first raised it to 1.5.0 for
+ * these blocks, WP-810 to 1.7.0), so `players[]`, `battle_plan`, and
+ * `result.score` all clear the WP-405 / WP-640 version gates, which are ordinal.
  *
  * why: `result.score` rides ONLY when `result` rides — the schema nests it under
  * `result`, whose `outcome` is required, and the endpoint only runs for finished

@@ -450,7 +450,7 @@ test("#1542 bench heroes resolve through the resolver like setup.heroes, never b
 
 // ── Final Blow through LAGN export (WP-698 / D-24517) ───────────────────────
 
-test("WP-698 a Final-Blow draft exports setup.final_blow: true and validates at 1.6.0", () => {
+test("WP-698 a Final-Blow draft exports setup.final_blow: true and validates at the current writer", () => {
   const draft = ref(createValidDraft());
   draft.value.finalBlow = true;
   const api = useLoadoutLagnExport(draft);
@@ -459,7 +459,8 @@ test("WP-698 a Final-Blow draft exports setup.final_blow: true and validates at 
   const parsed = JSON.parse(built.file);
   assert.equal(parsed.setup.final_blow, true, "the exported setup carries final_blow");
   // why: the final_blow gate requires lagn_version >= 1.6.0; the writer stamps
-  // LAGN_VERSION (now 1.6.0), so the document is a legal write.
+  // LAGN_VERSION (1.7.0 as of WP-810; ordinal gates, D-24211), so the document is
+  // a legal write.
   assert.equal(parsed.lagn_version, LAGN_VERSION, "stamped at the current version");
   assert(api.isValid.value, "the Final-Blow document should pass validate()");
 });
