@@ -2987,6 +2987,17 @@
       "date": "2026-11-21",
       "evidence": "Not captured live in the 2026-11-21 guest-autoplay sample (~22 matches, deployed build b91c92b8): no bot drove a Bullseye escape while it held a captured Hero, and the operator Workshop setters did not drive reliably this session. Recorded on unit-test coverage per the operator decision 2026-11-21: villain/taskmastersThunderbolts.test.ts exercises the escape KO path against the shipped engine (merge b91c92b8) -- the captured Hero is KO'd (not sent to the Escape Pile) and a no-capture Bullseye is a no-op.",
       "note": "Unit-test coverage (operator decision 2026-11-21): when Bullseye escapes, its captured Hero is KO'd (overriding the D-24657 Escape-Pile default); a no-capture Bullseye is a no-op. Confirmed by villain/taskmastersThunderbolts.test.ts, not captured on the live surface. D-24860."
+    },
+    {
+      "key": "scheme:mdns/midnight-massacre|switchblades-twist-evilwins",
+      "kind": "scheme",
+      "card": "Midnight Massacre",
+      "ability": "A Blade Hero's 14 cards are Switchblade Villains in the Villain Deck (attack = printed cost); defeating one = KO it or give it to a player; each Twist KOs 3 per Switchblade (City + Escape Pile) from the Hero Deck then plays one more Villain Deck card; Evil Wins on Hero or Villain Deck runout.",
+      "wp": "WP-764",
+      "state": "pending",
+      "date": "2026-11-23",
+      "evidence": "",
+      "note": "Pending post-deploy (D-24596 / D-24026). To verify in a live Midnight Massacre match on play.legendary-arena.com: Switchblades appear from the Villain Deck; a Switchblade fights for its printed cost; defeating one offers KO or give-to-a-player; a Twist burns 3 Hero-Deck cards per Switchblade and plays another Villain Deck card; the game never ends on twist count (only on Hero/Villain Deck runout). Sunlight/Moonlight is deferred (villain-side day/night follow-up)."
     }
   ]
 }
