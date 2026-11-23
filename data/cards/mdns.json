@@ -10,7 +10,8 @@
       "team": "midnight-sons",
       "cardCounts": {
         "Where Monsters Lurk": 5,
-        "Ride by Moonlight": 5,
+        "Ride by Moonlight": 3,
+        "Hunt High And Low": 5,
         "Creature of Dawn and Dusk": 1
       },
       "cards": [
@@ -98,7 +99,7 @@
         },
         {
           "id": "p3",
-          "count": 5,
+          "count": 3,
           "imageUrl": "https://images.legendary-arena.com/mdns/mdns-hr-blade-daywalker-ride-by-moonlight.webp",
           "sides": [
             "ride-by-moonlight"

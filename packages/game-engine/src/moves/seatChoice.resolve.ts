@@ -147,6 +147,10 @@ import {
   ZARATHOS_IMPRISON_KIND,
   ZARATHOS_DEMONIC_ESSENCE_FIRST_KIND,
   ZARATHOS_DEMONIC_ESSENCE_LAST_KIND,
+  // why: WP-764 / D-24596 — Midnight Massacre's "KO it or give it to a player" Switchblade defeat
+  // choice: the kind and its applier.
+  applyMidnightMassacreSwitchbladeResolvedSeatChoice,
+  MIDNIGHT_MASSACRE_SWITCHBLADE_SEAT_CHOICE_KIND,
 } from './seatChoiceTactics.js';
 // why: WP-793 / D-24656 — the rulebook escape procedure's two kind-specific applies (HQ KO,
 // Bystander discard). villainEscapeProcedure imports parkSeatChoice from this module, so the
@@ -709,6 +713,11 @@ function applySeatChoiceByKind(
   // why: WP-863 / D-24805 — the chosen player gains the defeated Micro-Sized Villain as a Hero.
   if (choice.kind === MICRO_SIZED_GAIN_SEAT_CHOICE_KIND) {
     applyMicroSizedGainResolvedSeatChoice(G, choice);
+    return;
+  }
+  // why: WP-764 / D-24596 — a defeated Switchblade is KO'd, or gained as a Hero by the chosen player.
+  if (choice.kind === MIDNIGHT_MASSACRE_SWITCHBLADE_SEAT_CHOICE_KIND) {
+    applyMidnightMassacreSwitchbladeResolvedSeatChoice(G, choice);
     return;
   }
   // why: WP-828 / D-24761 — the chosen hand Hero gains Man Out of Time this turn.

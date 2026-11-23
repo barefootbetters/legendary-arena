@@ -510,6 +510,14 @@ function resolveBaseFightCost(
     return G.cardStats[villainCardId]?.cost ?? 0;
   }
 
+  // why: WP-764 / D-24596 — a Midnight Massacre Switchblade (a Blade Hero card in the Villain Deck)
+  // has "[attack] equal to [its] printed cost": the Hero's cost from G.cardStats, EXACTLY — unlike a
+  // Skrull (+2), a Switchblade adds nothing. Checked OVERLAY-FIRST beside the Skrull / Micro-Sized
+  // branches, because a Hero's fightCost row is 0.
+  if (G.convertedVillainOrigins?.[villainCardId] === 'switchblade') {
+    return G.cardStats[villainCardId]?.cost ?? 0;
+  }
+
   // why: WP-823 / D-24756 — a Brainwash the Military Officer's Attack "is 3 plus the
   // number of Twists stacked next to this Scheme" (the Traitor Battalion). Checked
   // OVERLAY-FIRST, beside the Killbot / Skrull branches, because a converted Officer

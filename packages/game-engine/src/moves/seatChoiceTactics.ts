@@ -1453,3 +1453,101 @@ function readSeatOption(choice: PendingSeatChoice, seat: string): SeatChoiceOpti
   }
   return choice.seatPrompts[seat]?.options[submission.optionIndex];
 }
+
+/** The seat-choice kind for a defeated Midnight Massacre Switchblade: KO it, or give it to a player. */
+export const MIDNIGHT_MASSACRE_SWITCHBLADE_SEAT_CHOICE_KIND = 'midnight-massacre-switchblade';
+
+/**
+ * Builds the defeater's "KO it or choose a player to gain it" choice for a defeated Switchblade
+ * (WP-764 / D-24596).
+ *
+ * // why: the Switchblade's Fight ability is "Either KO this card or choose a player to gain it as a
+ * Hero." The KO option carries no recipientSeat (the apply reads its absence as the KO); each gain
+ * option carries the recipient. The active player is the only addressed seat, and the timeout /
+ * disconnect / bot default gains the card to that player (index 1) — so a dropped choice keeps the
+ * Switchblade in play as a Hero rather than losing it. The card lives ONLY in these options until
+ * the apply: it has already left the City and is in no zone.
+ *
+ * @param G - The game state (read for seats and the display name).
+ * @param currentPlayer - The defeater: the only addressed seat and the self-gain recipient.
+ * @param cardId - The defeated Switchblade.
+ * @returns The pending seat choice (default index 1: the defeater gains it).
+ */
+export function buildMidnightMassacreSwitchbladeChoice(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+): PendingSeatChoice {
+  const switchbladeName = resolveCardName(G.cardDisplayData, cardId);
+  const otherSeats = Object.keys(G.playerZones)
+    .filter((seat) => seat !== currentPlayer)
+    .sort();
+  const options: SeatChoiceOption[] = [];
+  // why: order is locked — KO (0), self-gain (1), then each other seat ascending. The KO option
+  // omits recipientSeat; every gain option carries it.
+  options.push({ label: `KO ${switchbladeName}`, cardId });
+  options.push({ label: `Gain ${switchbladeName} (You)`, cardId, recipientSeat: currentPlayer });
+  for (const seat of otherSeats) {
+    options.push({ label: `Give ${switchbladeName} to Player ${seat}`, cardId, recipientSeat: seat });
+  }
+  return {
+    kind: MIDNIGHT_MASSACRE_SWITCHBLADE_SEAT_CHOICE_KIND,
+    addressedSeats: [currentPlayer],
+    seatPrompts: { [currentPlayer]: { options } },
+    submissions: {},
+    defaultOptionIndex: 1,
+  };
+}
+
+/**
+ * Applies a resolved Switchblade defeat choice (WP-764 / D-24596): KO the card, or put it in the
+ * chosen player's discard, where it plays as a Hero thereafter.
+ *
+ * // why: the Switchblade lived only in the pending choice, so the apply places it straight from the
+ * option's cardId — never re-locating it in a zone. The converted-villain overlay is deleted either
+ * way (it is no longer a Switchblade). No VP: a Switchblade is a Hero, never a Victory Pile.
+ *
+ * @param G - The game state, mutated in place.
+ * @param choice - The fully-submitted pending choice (kind 'midnight-massacre-switchblade').
+ */
+export function applyMidnightMassacreSwitchbladeResolvedSeatChoice(
+  G: LegendaryGameState,
+  choice: PendingSeatChoice,
+): void {
+  const holderSeat = choice.addressedSeats[0];
+  if (holderSeat === undefined) {
+    return;
+  }
+  const submission = choice.submissions[holderSeat];
+  const optionIndex = submission?.optionIndex ?? choice.defaultOptionIndex;
+  const option = choice.seatPrompts[holderSeat]?.options[optionIndex];
+  if (option === undefined) {
+    return;
+  }
+  const cardId = option.cardId;
+  if (cardId === undefined) {
+    return;
+  }
+  if (G.convertedVillainOrigins !== undefined) {
+    delete G.convertedVillainOrigins[cardId];
+  }
+  const switchbladeName = resolveCardName(G.cardDisplayData, cardId);
+  const recipientSeat = option.recipientSeat;
+  if (recipientSeat === undefined) {
+    // why: the KO option — the card goes to the top-level KO pile.
+    G.ko = koCard(G.ko, cardId);
+    pushLog(G, `Player ${holderSeat} KO'd the Switchblade ${switchbladeName} (Midnight Massacre).`, 'applied', cardId);
+    return;
+  }
+  const recipientZones = G.playerZones[recipientSeat];
+  if (recipientZones === undefined) {
+    return;
+  }
+  recipientZones.discard.push(cardId);
+  pushLog(
+    G,
+    `Player ${recipientSeat} gains the Switchblade ${switchbladeName} as a Hero (Midnight Massacre).`,
+    'applied',
+    cardId,
+  );
+}

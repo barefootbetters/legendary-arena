@@ -57,8 +57,16 @@ import {
 } from '../villainDeck/villainDeck.setup.js';
 import { initializeCity, fillHqFromDeck } from '../board/city.logic.js';
 import { buildCardStats, resetTurnEconomy } from '../economy/economy.logic.js';
-import { buildHeroDeck, buildTransformSideDeck, buildTransformTargets, buildSplitFaces, buildSplitFaceAlternateOnLeft } from './buildHeroDeck.js';
+import { buildHeroDeck, buildHeroDeckCards, buildTransformSideDeck, buildTransformTargets, buildSplitFaces, buildSplitFaceAlternateOnLeft } from './buildHeroDeck.js';
 import { convertHeroesToSkrulls } from './convertHeroesToSkrulls.js';
+// why: WP-764 / D-24596 — Midnight Massacre's Blade → Switchblade conversion: the deterministic
+// Blade pick, the Villain Deck conversion, and the two setup messages.
+import {
+  selectBladeHero,
+  convertBladeToSwitchblades,
+  describeSwitchbladeConversion,
+  describeNoBladeAvailable,
+} from './convertBladeToSwitchblades.js';
 // why: WP-863 / D-24805 — Trap Heroes in the Microverse's setup pieces (the trapped Hero, its
 // Villain Deck conversion, its color Size-Changing entries, the setup message).
 import {
@@ -449,10 +457,28 @@ export function buildInitialGameState(
     ? { [KILLBOT_TWISTS_NEXT_TO_SCHEME]: 3 }
     : {};
 
+  // why: WP-764 / D-24596 — Midnight Massacre converts an EXTRA Blade Hero (normally OUTSIDE the
+  // player-selected heroDeckIds) into Switchblade Villains. That Blade therefore has no stats,
+  // traits, display or hooks unless it is fed to those builders — without the feed a gained
+  // Switchblade could not play as a Hero (no art, no cost). So the stats / traits / hooks / display
+  // builders below read `dataVillainBuildConfig` / `dataConfig`, which add the Blade to heroDeckIds;
+  // the Hero Deck build, the transform / split side decks, matchConfiguration and the loss-pile
+  // sizing keep the ORIGINAL ids, so the Blade never enters the Hero Deck or HQ. For every other
+  // scheme (and for the both-Blades-selected no-op) bladeHeroId is undefined and the data configs
+  // are the ORIGINAL objects, so those games are byte-identical.
+  const bladeSelection = selectBladeHero(config.schemeId, config.heroDeckIds);
+  const bladeHeroId = bladeSelection.bladeHeroId;
+  const dataHeroDeckIds =
+    bladeHeroId !== undefined ? [...config.heroDeckIds, bladeHeroId] : config.heroDeckIds;
+  const dataConfig: MatchSetupConfig =
+    bladeHeroId !== undefined ? { ...config, heroDeckIds: dataHeroDeckIds } : config;
+  const dataVillainBuildConfig: MatchConfiguration =
+    bladeHeroId !== undefined ? { ...villainBuildConfig, heroDeckIds: dataHeroDeckIds } : villainBuildConfig;
+
   // why: cardStats extracted to local variable so buildMastermindState
   // can add the mastermind base card entry to it. buildMastermindState
   // MUST execute after buildCardStats (ordering invariant — EC-019).
-  const cardStats = buildCardStats(registry as unknown, villainBuildConfig);
+  const cardStats = buildCardStats(registry as unknown, dataVillainBuildConfig);
 
   // why: card keywords resolved at setup from registry so moves never query
   // registry at runtime — same pattern as G.cardStats (WP-018) and
@@ -461,12 +487,16 @@ export function buildInitialGameState(
 
   // why: WP-179 — categorical traits (heroClass, team) resolved at setup from
   // registry. Same sibling-snapshot pattern as cardStats/cardKeywords/cardDisplayData.
-  const cardTraits = buildCardTraits(registry as unknown, villainBuildConfig);
+  // why: WP-764 / D-24596 — the Midnight Massacre Blade feed (dataVillainBuildConfig) so a
+  // Switchblade carries its Hero traits (its class drives log / UI once gained).
+  const cardTraits = buildCardTraits(registry as unknown, dataVillainBuildConfig);
 
   // why: D-24801 — hero ability hooks are hoisted to a local so the Size-Changing
   // snapshots can be derived from them (the parser parked the classes on
   // hook.sizeChangingClasses / microscopicSizeChangingClasses). Built once at setup.
-  const heroAbilityHooks = buildHeroAbilityHooks(registry, config);
+  // why: WP-764 / D-24596 — the Midnight Massacre Blade feed (dataConfig) so a gained Switchblade
+  // has its Hero ability hooks and plays as a Hero.
+  const heroAbilityHooks = buildHeroAbilityHooks(registry, dataConfig);
 
   // why: D-24801 — collapse the per-hook Size-Changing classes and Microscopic icons into
   // card-keyed snapshots (siblings to cardTraits), read by the sizeChanging.logic.ts recruit-
@@ -604,7 +634,9 @@ export function buildInitialGameState(
   // substitute `config.bystandersCount` (that sizes the rescue-pile
   // supply in `G.sharedPiles.bystanders`, a different domain — see the
   // `numPlayers` @param JSDoc in `buildCardDisplayData.ts`).
-  const cardDisplayData = buildCardDisplayData(registry as unknown, villainBuildConfig, numPlayers);
+  // why: WP-764 / D-24596 — the Midnight Massacre Blade feed (dataVillainBuildConfig) so each
+  // Switchblade has display data (name, art, cost); without it a Switchblade would show no art.
+  const cardDisplayData = buildCardDisplayData(registry as unknown, dataVillainBuildConfig, numPlayers);
   // why: D-24668 — Killbot-converted villain-deck Bystanders display as "Killbot", so the
   // log, City card and Victory Pile name them as the Villains they are. A no-op for every
   // scheme without Killbots.
@@ -778,6 +810,29 @@ export function buildInitialGameState(
       describeTrappedHero(readTrappedHeroName(registry, trappedHeroSplit.trappedHeroDeckId), trappedCardIds.length),
     );
   }
+  // why: WP-764 / D-24596 — the selected Blade Hero's 14 card instances join the Villain Deck as
+  // Switchblade Villains, re-shuffled once AFTER the Skrull and Micro-Sized steps (both passthroughs
+  // here), so this is the LAST random draw in setup. The ids come from buildHeroDeckCards (the same
+  // emitter the data feed above matched), never from the Hero Deck reservoir. A passthrough with no
+  // draw for every other scheme, and for the both-Blades-selected no-op (bladeHeroId undefined).
+  const bladeInstanceIds =
+    bladeHeroId !== undefined ? buildHeroDeckCards([bladeHeroId], registry) : [];
+  const switchbladeConversion = convertBladeToSwitchblades(
+    config.schemeId,
+    bladeInstanceIds,
+    microSizedConversion.villainDeckState,
+    microSizedConversion.villainDeckCardTypes,
+    microSizedConversion.convertedOrigins,
+    context,
+  );
+  if (bladeHeroId !== undefined && bladeInstanceIds.length > 0) {
+    // why: readTrappedHeroName is a generic `getSet(abbr).heroes[].name` reader (not Micro-Sized
+    // specific), so it names the Blade Hero for the setup log; cardDisplayData is keyed by card
+    // INSTANCE ids, not the hero id, so it cannot.
+    setupMessages.push(describeSwitchbladeConversion(readTrappedHeroName(registry, bladeHeroId), bladeInstanceIds.length));
+  } else if (bladeSelection.bothBladesSelected) {
+    setupMessages.push(describeNoBladeAvailable());
+  }
   // why: D-24805 — each trapped card's "Size-Changing for its card color" is a setup-time fight
   // discount merged into the D-24802 map (Hero ids never collide with villain or mastermind ids),
   // so the omit-when-empty spread below still omits it for every other scheme.
@@ -785,13 +840,13 @@ export function buildInitialGameState(
     ...fightSizeChanging,
     ...buildMicroSizedFightSizeChanging(trappedCardIds, cardTraits),
   };
-  const convertedVillainOrigins = microSizedConversion.convertedOrigins;
+  const convertedVillainOrigins = switchbladeConversion.convertedOrigins;
   // why: D-24736 — lift the Monster Pit out of the shuffled villain deck (Clash only;
   // a passthrough with monsterPit undefined for every other scheme). Keeping the
   // Monsters' relative deck order gives a shuffled Pit with no extra random draw.
   const monsterPitSplit = splitMonsterPitFromVillainDeck(
     config.schemeId,
-    microSizedConversion.villainDeckState,
+    switchbladeConversion.villainDeckState,
   );
   const hasConvertedVillains = Object.keys(convertedVillainOrigins).length > 0;
   const filledHqResult = fillHqFromDeck(skrullConversion.heroReservoir, HQ_SLOT_COUNT);
@@ -885,7 +940,9 @@ export function buildInitialGameState(
     // (12 Heroes injected as 'villain'-typed Skrulls); passthrough for every other
     // scheme (byte-identical to villainDeckResult.state / .cardTypes).
     villainDeck: monsterPitSplit.villainDeckState,
-    villainDeckCardTypes: microSizedConversion.villainDeckCardTypes,
+    // why: WP-764 / D-24596 — read the Switchblade conversion's card-type map so the injected Blade
+    // cards are typed 'villain'; a passthrough of microSizedConversion's map for every other scheme.
+    villainDeckCardTypes: switchbladeConversion.villainDeckCardTypes,
     // why: D-24736 — omit-when-absent: only a Clash game carries a Monster Pit, so
     // every other game's state hash is unchanged (the convertedVillainOrigins pattern).
     ...(monsterPitSplit.monsterPit !== undefined ? { monsterPit: monsterPitSplit.monsterPit } : {}),

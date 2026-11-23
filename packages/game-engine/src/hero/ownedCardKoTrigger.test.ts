@@ -404,10 +404,17 @@ const LOCKED_TABLE: Record<string, KoSiteCounts> = {
   // from hand or cards in play (owned, the Crush Pacifist Resistance precedent).
   'moves/seatChoiceTactics.ts#applyZarathosImprison': { koSites: 1, ownedRecords: 0 },
   'moves/seatChoiceTactics.ts#applyZarathosDemonicEssence': { koSites: 1, ownedRecords: 1 },
+  // why: WP-764 / D-24596 — a defeated Midnight Massacre Switchblade KO'd by the defeater's choice is
+  // a Villain-Deck-origin card no player owns, so no owned-KO record (the Vanishing Illusions / Imprison
+  // precedent, x/0).
+  'moves/seatChoiceTactics.ts#applyMidnightMassacreSwitchbladeResolvedSeatChoice': { koSites: 1, ownedRecords: 0 },
   'moves/operatorSetters.ts#koFromPlayerZone': { koSites: 1, ownedRecords: 1 },
   'rules/mastermindHandlers.ts#resolveRedSkullStrike': { koSites: 1, ownedRecords: 1 },
   'rules/mastermindHandlers.ts#resolveBaronZemoStrike': { koSites: 1, ownedRecords: 0 },
   'rules/schemeTwistResolvers.ts#koFromHq': { koSites: 1, ownedRecords: 0 },
+  // why: WP-764 / D-24596 — the Midnight Massacre Twist KOs cards from the top of the Hero Deck, the
+  // shared supply no player owns, so no owned-KO record (the koFromHq precedent, x/0).
+  'rules/schemeTwistResolvers.ts#midnightMassacre': { koSites: 1, ownedRecords: 0 },
   'rules/tacticHandlers.ts#resolveWhispersAndLies': { koSites: 1, ownedRecords: 0 },
   'rules/tacticHandlers.ts#resolveFindingZemo': { koSites: 1, ownedRecords: 0 },
   // why: WP-768 / D-24601 — Secrets of Indestructibility KOs the defeating player's own Wounds

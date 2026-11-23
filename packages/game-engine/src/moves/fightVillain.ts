@@ -116,7 +116,7 @@ import { hasPendingDiscardToPlay } from './resolveDiscardToPlay.js';
 import { hasPendingReturnOnDiscard } from './resolveReturnOnDiscard.js';
 import { hasPendingGiveHqHeroChoice } from './giveHqHeroChoice.resolve.js';
 import { hasPendingCopyPowersChoice } from './copyPowersChoice.resolve.js';
-import { hasPendingSeatChoice } from './seatChoice.resolve.js';
+import { hasPendingSeatChoice, parkSeatChoice } from './seatChoice.resolve.js';
 import { hasHealedThisTurn } from './healWounds.js';
 import {
   composeFightNarrative,
@@ -128,6 +128,10 @@ import type { LogOutcome } from '../log/logOutcome.types.js';
 import { queueEnigmaPeekOffer } from '../rules/enigmaCode.logic.js';
 // why: WP-863 / D-24805 — the Micro-Sized Villain defeat route (gain + the recipient seat choice).
 import { gainDefeatedMicroSizedHero } from '../rules/trapHeroesInTheMicroverse.logic.js';
+// why: WP-764 / D-24596 — the Midnight Massacre Switchblade defeat choice builder, and the hollow
+// record for the deferred Sunlight/Moonlight fight modifiers.
+import { buildMidnightMassacreSwitchbladeChoice } from './seatChoiceTactics.js';
+import { recordHollowEffect } from '../diagnostics/hollowEffect.record.js';
 // why: WP-873 / D-24818 — the fortifier fight. fortifyFight.ts imports buildFightSizeChangingLine
 // back from this module; the cycle is runtime-safe (bindings are read only inside functions).
 import type { FortifyPlace } from '../board/fortify.types.js';
@@ -943,6 +947,43 @@ export function routeDefeatedVillainCard(
     const microSizedGain = gainDefeatedMicroSizedHero(G, currentPlayer, cardId);
     microSizedGained = microSizedGain.gainedOutright;
     gainedHeroLogLine = { message: microSizedGain.logMessage, outcome: microSizedGain.logOutcome, card: cardId };
+  } else if (G.convertedVillainOrigins?.[cardId] === 'switchblade') {
+    // why: WP-764 / D-24596 — a defeated Switchblade is "Either KO this card or choose a player to
+    // gain it as a Hero." The card has already left the City and is pushed to NO zone: it lives only
+    // in the pending seat choice until the apply KOs it or puts it in a player's discard (and deletes
+    // the overlay then). So the narrative gain clause stays off here — the recipient is undecided.
+    // The Sunlight/Moonlight fight modifiers and Moonlight Blood Frenzy are deferred and recorded as
+    // a hollow at EVERY Switchblade defeat (so /coverage shows them); this adds no fight-cost term.
+    recordHollowEffect(G, {
+      cardId,
+      cardType: 'villain',
+      timing: 'onFight',
+      mechanic: 'switchblade-day-night',
+      reason: 'unsupported-keyword',
+      turn: G.logMeta?.turn ?? 0,
+    });
+    const switchbladeName = formatCardRef(G.cardDisplayData, cardId);
+    if (G.pendingSeatChoice !== undefined) {
+      // why: WP-860 posture — at most one seat choice is open at a time (a Nightbringer Villain Deck
+      // defeat whose own choice is still open). The park would overwrite it, so instead the default
+      // applies here: the defeater gains the Switchblade as a Hero, and the overlay is cleared now.
+      delete G.convertedVillainOrigins[cardId];
+      G.playerZones[currentPlayer]!.discard.push(cardId);
+      gainedHeroLogLine = {
+        message: `Player ${currentPlayer} gained the Switchblade ${switchbladeName} as a Hero — another choice is open, so no other player could be chosen (Midnight Massacre).`,
+        outcome: 'blocked',
+        card: cardId,
+      };
+    } else {
+      // why: the active seat's own choice needs no stage ride, so events is undefined (the
+      // heroEffects.execute park precedent). The overlay is deleted at the apply, not here.
+      parkSeatChoice(G, undefined, buildMidnightMassacreSwitchbladeChoice(G, currentPlayer, cardId), currentPlayer);
+      gainedHeroLogLine = {
+        message: `Player ${currentPlayer} defeated the Switchblade ${switchbladeName} and must KO it or give it to a player (Midnight Massacre).`,
+        outcome: 'neutral',
+        card: cardId,
+      };
+    }
   } else if (G.convertedVillainOrigins?.[cardId] === 'skrull') {
     skrullGained = true;
     G.playerZones[currentPlayer]!.discard.push(cardId);

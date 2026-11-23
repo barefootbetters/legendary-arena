@@ -1139,6 +1139,91 @@ function counterOnly(): void {
 }
 
 /**
+ * Counts the Midnight Massacre Switchblades currently in the City and the Escape Pile.
+ *
+ * // why: WP-764 / D-24596 — the twist burns the Hero Deck "For each Switchblade Villain in the
+ * city and/or Escape Pile." A Switchblade is any card still carrying the `'switchblade'` origin
+ * that sits in one of those two zones; a defeated one has left the City and lives only in its
+ * pending seat choice, so it is not here and is not counted.
+ *
+ * @param gameState - The game state (read-only).
+ * @returns How many Switchblades are in the City plus the Escape Pile.
+ */
+function countMidnightMassacreSwitchblades(gameState: LegendaryGameState): number {
+  const origins = gameState.convertedVillainOrigins;
+  if (origins === undefined) {
+    return 0;
+  }
+  let switchbladeCount = 0;
+  for (const cityCardId of gameState.city) {
+    if (cityCardId !== null && cityCardId !== undefined && origins[cityCardId] === 'switchblade') {
+      switchbladeCount = switchbladeCount + 1;
+    }
+  }
+  for (const escapedCardId of gameState.escapedPile) {
+    if (origins[escapedCardId] === 'switchblade') {
+      switchbladeCount = switchbladeCount + 1;
+    }
+  }
+  return switchbladeCount;
+}
+
+/**
+ * Midnight Massacre twist (WP-764 / D-24596): "For each Switchblade Villain in the city and/or
+ * Escape Pile, KO the top three cards of the Hero Deck. No matter how many there were, play
+ * another card from the Villain Deck."
+ *
+ * KOs `3 × count` cards from the top of the Hero Deck (`heroDeck[0]`, matching refillHqSlot),
+ * breaking when the deck empties, then ALWAYS plays one more Villain Deck card — even at zero
+ * Switchblades. A Hero Deck emptied here is caught by WP-763's per-move `pile-depleted` check
+ * (Evil Wins); the twist itself never ends the game.
+ *
+ * @param gameState - The game state, mutated in place (Hero Deck, KO pile, Villain Deck, log).
+ * @param context - The reveal context threaded into the extra Villain Deck play.
+ * @param implementationMap - Handler map threaded into the extra play.
+ * @param _params - Unused (no resolver params).
+ * @param _twistCardId - Unused (the twist pushes its own log lines, not a schemeTwistResolved event).
+ */
+function midnightMassacre(
+  gameState: LegendaryGameState,
+  context: RevealContext,
+  implementationMap: ImplementationMap,
+  _params: Record<string, unknown>,
+  _twistCardId?: CardExtId,
+): void {
+  const switchbladeCount = countMidnightMassacreSwitchblades(gameState);
+  const cardsToKo = switchbladeCount * 3;
+  // why: WP-764 / D-24596 — KO the top of the Hero Deck (heroDeck[0]) one at a time, breaking the
+  // moment the deck is empty, so the loop never reads past the end. koCard is append-only, so the
+  // card is removed from the deck first (the enigma-code top-of-deck precedent).
+  let cardsKoed = 0;
+  for (let koIndex = 0; koIndex < cardsToKo; koIndex++) {
+    const topCard = gameState.heroDeck[0];
+    if (topCard === undefined) {
+      break;
+    }
+    gameState.heroDeck = gameState.heroDeck.slice(1);
+    gameState.ko = koCard(gameState.ko, topCard);
+    cardsKoed = cardsKoed + 1;
+    pushLog(
+      gameState,
+      `[Midnight Massacre] Twist: ${resolveCardName(gameState, topCard)} is KO'd from the top of the Hero Deck.`,
+      'threat',
+      topCard,
+    );
+  }
+  pushLog(
+    gameState,
+    `[Midnight Massacre] Twist: ${switchbladeCount} Switchblade(s) in the City and Escape Pile — ${cardsKoed} card(s) KO'd from the Hero Deck. Another card is played from the Villain Deck.`,
+    'threat',
+  );
+  // why: WP-764 / D-24596 — "No matter how many there were, play another card from the Villain
+  // Deck": the extra play ALWAYS happens, so this call is OUTSIDE the switchblade-count branch and
+  // runs even when count is 0 (playTopVillainDeckCards already guards an exhausted deck).
+  playTopVillainDeckCards(gameState, context, implementationMap, 1);
+}
+
+/**
  * Go Back in Time to Slay Heroes' Ancestors (WP-829 / D-24762): "Twist: Put a Hero from the HQ
  * next to the Scheme, 'Purged from the Timestream.'" Queues one owed Purge for the active
  * player; the play-phase onMove opener resolves it after the move (see timestreamPurge.logic.ts).
@@ -1255,5 +1340,6 @@ export const SCHEME_TWIST_RESOLVERS: Record<SchemeTwistResolverId, SchemeTwistRe
   'go-back-in-time': goBackInTime,
   'enigma-code': unbreakableEnigmaCode,
   'change-the-outcome-of-wwii': changeTheOutcomeOfWwii,
+  'midnight-massacre': midnightMassacre,
   'counter-only': counterOnly,
 };
