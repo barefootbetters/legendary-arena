@@ -66,6 +66,29 @@ export type EffectSnapshot = NonNullable<
 export type CardCatalog = z.infer<typeof lagnSchema>['card_catalog']
 export type Replay = z.infer<typeof lagnSchema>['replay']
 
+/**
+ * The re-executable replay block carried in `replay.execution` (1.7.0+, WP-808 /
+ * D-24714): `{ engine, engine_version, engine_build?, data_version, seed, moves,
+ * final_state_hash }`.
+ *
+ * why: ENGINE-BOUND and non-authoritative for competition — a divergence aid, not
+ * a scoring/credit input. Inferred from `lagnSchema` like every other type here,
+ * so a schema change cannot leave the exported type behind.
+ */
+export type ReplayExecution = NonNullable<
+  NonNullable<z.infer<typeof lagnSchema>['replay']>['execution']
+>
+
+/**
+ * One move in a re-executable replay (1.7.0+, WP-808): `{ seq, seat, move_name,
+ * args, turn?, phase? }`.
+ *
+ * why: `seat` mirrors `players[].seat`; the re-executor dispatches
+ * `playerID: String(seat)`. Inferred from `lagnSchema` like every other type
+ * here, so a schema change cannot leave the exported type behind.
+ */
+export type ReplayExecutionMove = ReplayExecution['moves'][number]
+
 export type Card = z.infer<typeof lagnSchema>['card_catalog'] extends {
   cards: (infer C)[]
 }

@@ -17,7 +17,8 @@ import {
   LAGN_VERSION_1_3_0,
   LAGN_VERSION_1_4_0,
   LAGN_VERSION_1_5_0,
-  LAGN_VERSION_1_6_0
+  LAGN_VERSION_1_6_0,
+  LAGN_VERSION_1_7_0
 } from './validator'
 import { migrateToCurrent } from './migrate'
 
@@ -931,7 +932,8 @@ describe('JSON Schema derivation', () => {
       LAGN_VERSION_1_3_0,
       LAGN_VERSION_1_4_0,
       LAGN_VERSION_1_5_0,
-      LAGN_VERSION_1_6_0
+      LAGN_VERSION_1_6_0,
+      LAGN_VERSION_1_7_0
     ])
     // why: the writer stamps 1.6.0 as of WP-698 — the loadout LAGN emitter carries
     // setup.final_blow, which the version gate requires. Readers still accept every
@@ -1002,7 +1004,8 @@ describe('published JSON Schema accepts the shipped fixtures', () => {
     'tier1-hero-alternates.lagn.json',
     'tier1-players.lagn.json',
     'tier1-battle-plan-report.lagn.json',
-    'tier1-final-blow.lagn.json'
+    'tier1-final-blow.lagn.json',
+    'tier3-execution.lagn.json'
   ]
 
   for (const fixture of fixtures) {
@@ -1658,5 +1661,292 @@ describe('LAGN 1.6.0 final blow', () => {
     assert.strictEqual(result.payload.lagn_version, LAGN_VERSION_1_6_0)
     assert.deepStrictEqual(result.applied, ['1.5.0->1.6.0'])
     assert.deepStrictEqual(result.payload.setup, original.setup)
+  })
+})
+
+// ============================================================================
+// LAGN 1.7.0 Re-Executable Replay (WP-808 / D-24714)
+// ============================================================================
+
+describe('LAGN 1.7.0 re-executable replay', () => {
+  /** A well-formed `replay.execution` block for a solo (player_count 1) match. */
+  const EXECUTION = {
+    engine: 'legendary-arena',
+    engine_version: '1.1.0',
+    data_version: 2,
+    seed: 'seed-abc-123',
+    moves: [
+      { seq: 0, seat: 0, move_name: 'setPlayerReady', args: [{ ready: true }], turn: 1, phase: 'lobby' },
+      { seq: 1, seat: 0, move_name: 'startMatchIfReady', args: [{}], turn: 1, phase: 'lobby' }
+    ],
+    final_state_hash: '1a2b3c4d'
+  }
+
+  /** A Tier-1 document at `version` with a `replay` block layered on the root. */
+  function buildExecutionDocument(version: string, replay: Record<string, unknown>) {
+    return { ...buildSetupDocument(version), replay }
+  }
+
+  test('AC-1: a 1.7.0 document carrying replay.execution validates', () => {
+    const result = validate(buildExecutionDocument(LAGN_VERSION_1_7_0, { execution: EXECUTION }))
+    assert.strictEqual(result.valid, true, JSON.stringify(result.errors))
+  })
+
+  test('AC-1: a 1.7.0 document WITHOUT replay.execution validates (the block is optional)', () => {
+    const result = validate(buildSetupDocument(LAGN_VERSION_1_7_0))
+    assert.strictEqual(result.valid, true, JSON.stringify(result.errors))
+  })
+
+  test('AC-1: a 1.7.0 document carrying both replay.turns and replay.execution validates', () => {
+    const result = validate(
+      buildExecutionDocument(LAGN_VERSION_1_7_0, {
+        execution: EXECUTION,
+        turns: [
+          {
+            turn_number: 1,
+            active_player_id: 'player-1',
+            player_actions: [
+              { seq: 0, action_type: 'hero_play' },
+              { seq: 1, action_type: 'hero_recruit' }
+            ]
+          }
+        ]
+      })
+    )
+    assert.strictEqual(result.valid, true, JSON.stringify(result.errors))
+  })
+
+  test('AC-1: a bad replay.turns seq is still rejected when replay.execution is also present', () => {
+    // why: the existing replay.turns seq refine stays byte-unchanged — adding
+    // execution must not loosen it. A turns seq gap in a both-blocks document is
+    // still a failure.
+    const result = validate(
+      buildExecutionDocument(LAGN_VERSION_1_7_0, {
+        execution: EXECUTION,
+        turns: [
+          {
+            turn_number: 1,
+            active_player_id: 'player-1',
+            player_actions: [
+              { seq: 0, action_type: 'hero_play' },
+              { seq: 2, action_type: 'hero_recruit' }
+            ]
+          }
+        ]
+      })
+    )
+    assert.strictEqual(result.valid, false)
+    assert.ok(
+      result.errors?.some((error) => error.includes('Replay action seq must be strictly increasing')),
+      `expected the turns seq message, got: ${JSON.stringify(result.errors)}`
+    )
+  })
+
+  for (const version of [
+    LAGN_VERSION_1_0_0,
+    LAGN_VERSION_1_1_0,
+    LAGN_VERSION_1_2_0,
+    LAGN_VERSION_1_3_0,
+    LAGN_VERSION_1_4_0,
+    LAGN_VERSION_1_5_0,
+    LAGN_VERSION_1_6_0
+  ]) {
+    test(`AC-2: replay.execution on a ${version} document is REJECTED, never stripped (Gate A)`, () => {
+      // why: lagnSchema is not .strict(), so an ungated execution block would
+      // vanish on parse and the document would look clean — the worst available
+      // failure. The ordinal gate turns that silent loss into a loud failure.
+      const result = validate(buildExecutionDocument(version, { execution: EXECUTION }))
+      assert.strictEqual(result.valid, false)
+      assert.ok(
+        result.errors?.some((error) =>
+          error.includes('replay.execution requires lagn_version 1.7.0 or later')
+        ),
+        `expected the Gate A message, got: ${JSON.stringify(result.errors)}`
+      )
+    })
+  }
+
+  test('AC-3: a seq gap is rejected (Gate B seq)', () => {
+    const result = validate(
+      buildExecutionDocument(LAGN_VERSION_1_7_0, {
+        execution: {
+          ...EXECUTION,
+          moves: [
+            { seq: 0, seat: 0, move_name: 'a', args: [] },
+            { seq: 2, seat: 0, move_name: 'b', args: [] }
+          ]
+        }
+      })
+    )
+    assert.strictEqual(result.valid, false)
+    assert.ok(
+      result.errors?.some((error) =>
+        error.includes('replay.execution.moves[1] has seq 2 but must have seq 1')
+      ),
+      `expected the Gate B seq message, got: ${JSON.stringify(result.errors)}`
+    )
+  })
+
+  test('AC-3: a duplicate seq is rejected (Gate B seq)', () => {
+    const result = validate(
+      buildExecutionDocument(LAGN_VERSION_1_7_0, {
+        execution: {
+          ...EXECUTION,
+          moves: [
+            { seq: 0, seat: 0, move_name: 'a', args: [] },
+            { seq: 0, seat: 0, move_name: 'b', args: [] }
+          ]
+        }
+      })
+    )
+    assert.strictEqual(result.valid, false)
+    assert.ok(
+      result.errors?.some((error) =>
+        error.includes('replay.execution.moves[1] has seq 0 but must have seq 1')
+      ),
+      `expected the Gate B seq message, got: ${JSON.stringify(result.errors)}`
+    )
+  })
+
+  test('AC-3: a first seq that is not 0 is rejected (Gate B seq)', () => {
+    const result = validate(
+      buildExecutionDocument(LAGN_VERSION_1_7_0, {
+        execution: {
+          ...EXECUTION,
+          moves: [
+            { seq: 1, seat: 0, move_name: 'a', args: [] },
+            { seq: 2, seat: 0, move_name: 'b', args: [] }
+          ]
+        }
+      })
+    )
+    assert.strictEqual(result.valid, false)
+    assert.ok(
+      result.errors?.some((error) =>
+        error.includes('replay.execution.moves[0] has seq 1 but must have seq 0')
+      ),
+      `expected the Gate B seq message, got: ${JSON.stringify(result.errors)}`
+    )
+  })
+
+  test('AC-4: a seat >= player_count is rejected (Gate B seat)', () => {
+    // why: player_count is 1, so seat 1 is out of range (0..0) even though it
+    // passes the absolute .max(4) schema cap — Gate B catches the per-document bound.
+    const result = validate(
+      buildExecutionDocument(LAGN_VERSION_1_7_0, {
+        execution: {
+          ...EXECUTION,
+          moves: [{ seq: 0, seat: 1, move_name: 'a', args: [] }]
+        }
+      })
+    )
+    assert.strictEqual(result.valid, false)
+    assert.ok(
+      result.errors?.some((error) =>
+        error.includes('replay.execution.moves[0] names seat 1 but player_count is 1 — seats run 0 to 0')
+      ),
+      `expected the Gate B seat message, got: ${JSON.stringify(result.errors)}`
+    )
+  })
+
+  test('AC-4: seat 5 fails the absolute max(4) schema bound', () => {
+    const result = validate(
+      buildExecutionDocument(LAGN_VERSION_1_7_0, {
+        execution: {
+          ...EXECUTION,
+          moves: [{ seq: 0, seat: 5, move_name: 'a', args: [] }]
+        }
+      })
+    )
+    assert.strictEqual(result.valid, false)
+  })
+
+  test('AC-5: engine other than legendary-arena is rejected', () => {
+    const result = validate(
+      buildExecutionDocument(LAGN_VERSION_1_7_0, {
+        execution: { ...EXECUTION, engine: 'some-other-engine' }
+      })
+    )
+    assert.strictEqual(result.valid, false)
+  })
+
+  test('AC-5: a non-semver engine_version is rejected', () => {
+    const result = validate(
+      buildExecutionDocument(LAGN_VERSION_1_7_0, {
+        execution: { ...EXECUTION, engine_version: '1.1' }
+      })
+    )
+    assert.strictEqual(result.valid, false)
+  })
+
+  test('AC-5: a data_version below 1 is rejected', () => {
+    const result = validate(
+      buildExecutionDocument(LAGN_VERSION_1_7_0, {
+        execution: { ...EXECUTION, data_version: 0 }
+      })
+    )
+    assert.strictEqual(result.valid, false)
+  })
+
+  test('AC-5: a non-hex final_state_hash is rejected', () => {
+    const result = validate(
+      buildExecutionDocument(LAGN_VERSION_1_7_0, {
+        execution: { ...EXECUTION, final_state_hash: 'xyz123' }
+      })
+    )
+    assert.strictEqual(result.valid, false)
+  })
+
+  test('AC-5: a final_state_hash longer than 8 characters is rejected', () => {
+    const result = validate(
+      buildExecutionDocument(LAGN_VERSION_1_7_0, {
+        execution: { ...EXECUTION, final_state_hash: '1a2b3c4d5' }
+      })
+    )
+    assert.strictEqual(result.valid, false)
+  })
+
+  test('AC-5: empty moves are rejected (min(1))', () => {
+    const result = validate(
+      buildExecutionDocument(LAGN_VERSION_1_7_0, {
+        execution: { ...EXECUTION, moves: [] }
+      })
+    )
+    assert.strictEqual(result.valid, false)
+  })
+
+  test('AC-8: EXPECTED_REFINEMENT_COUNT rose by exactly 2, to 14', () => {
+    // why: Gate A (one .refine) plus Gate B (one .superRefine) add two refinement
+    // nodes; each lands with its UNEXPRESSIBLE_CONSTRAINTS entry. A folded Gate B
+    // would read 13 — this pins the count to 14.
+    assert.strictEqual(EXPECTED_REFINEMENT_COUNT, 14)
+  })
+
+  test('AC-10/AC-11: LAGN_VERSION stays 1.6.0 — 1.7.0 is read-only, no writer flip', () => {
+    // why: WP-808 is the reader contract only. The writer stays 1.6.0 (the
+    // producer packet flips it). 1.7.0 is in the read set; nothing emits it yet.
+    assert.strictEqual(LAGN_VERSION, LAGN_VERSION_1_6_0)
+    assert.notStrictEqual(LAGN_VERSION, LAGN_VERSION_1_7_0)
+  })
+
+  test('migration: a 1.6.0 document is left unchanged (the writer is 1.6.0)', () => {
+    // why: migrateToCurrent targets LAGN_VERSION (1.6.0). A 1.6.0 document sits at
+    // the writer head — no hop runs, so the 1.6.0 -> 1.7.0 restamp is registered
+    // but unreachable.
+    const original = buildSetupDocument(LAGN_VERSION_1_6_0)
+    const result = migrateToCurrent(original)
+    assert.strictEqual(result.error, undefined)
+    assert.deepStrictEqual(result.applied, [])
+    assert.deepStrictEqual(result.payload, original)
+  })
+
+  test('migration: a 1.7.0 document is returned unchanged (already past the writer head)', () => {
+    // why: a 1.7.0 document sits AHEAD of the 1.6.0 writer, so the forward loop
+    // never runs — it is read but never re-stamped backward.
+    const original = buildExecutionDocument(LAGN_VERSION_1_7_0, { execution: EXECUTION })
+    const result = migrateToCurrent(original)
+    assert.strictEqual(result.error, undefined)
+    assert.deepStrictEqual(result.applied, [])
+    assert.deepStrictEqual(result.payload, original)
   })
 })

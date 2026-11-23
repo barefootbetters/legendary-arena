@@ -52049,4 +52049,36 @@ Unthrottled intake is accepted for v1: every item passes operator triage before 
 **Packet:** WP-813 / EC-850. **Reserved by:** #2795. Related: D-24414, D-24416, D-24026, D-6512.
 
 ---
+
+### D-24714 — LAGN 1.7.0 `replay.execution`: an opt-in, engine-bound re-executable replay (Active 2026-11-22 — WP-808 / EC-845)
+
+**Status:** Active 2026-11-22. Reserved 2026-10-13 (#2771). Landed by WP-808 / EC-845 (reader contract only).
+
+**Decision.** LAGN's replay tier gains an optional `replay.execution` block (seed, ordered `MAKE_MOVE`s, engine version/build, a `data_version` marker, and the expected final-state hash) at 1.7.0, gated ordinally. Re-execution targets the D-24119 server reducer, never the D-0205 determinism-only engine harness (which ignores the seed).
+
+- **Scoped exception.** The block is engine-bound (`engine: "legendary-arena"`). This is a deliberate, scoped exception to the declarative-LAGN principle: re-execution needs the engine's own moves. A third party can validate the block's shape, but only this engine can run it. The rest of LAGN stays declarative.
+- **Seed, not initial state.** `G` is never exported in a LAGN. The seed plus the Tier-1 `setup` plus `player_count` rebuild the initial state through the engine's own `InitializeGame`.
+- **Divergence is loud.** `final_state_hash` makes divergence (engine build, registry content, lossy setup) detectable.
+  - It is a non-cryptographic 32-bit `computeStateHash` integrity aid, not tamper-proofing.
+  - A matching `engine_version` does not imply re-executability, because that value is rarely bumped. Only the hash, and `engine_build` when present, decides.
+- **No blob-read carve-out.** This decision grants no read of the `bgio` blob. Exporting `initialState.plugins.random.data.seed` + `log` requires its own D-24095 carve-out entry (and a `.claude/rules/architecture.md` §Persistence Boundary update) in the producer packet.
+- **The args wire format is versioned.** `data_version` names the `moves[].args` shape (D-0801's data axis).
+  - A later data-axis bump lets a re-executor migrate exported args forward, using the engine's own migration. That migration never lives in lagn-spec, which cannot import the engine.
+  - The hash still decides re-executability.
+- **Seats, not ids.** A move names its acting `seat` (an integer that joins `players[].seat`). LAGN's `player_id` stays the public handle (00.2 §7d).
+- **Non-authoritative.** The block is never a scoring, credit, ranking, or verification input (D-5301 / D-24126).
+- **Producer discipline (binds the follow-on):**
+  - Emit only for completed, non-operator matches. A live match's seed reveals future shuffles; an operator match's `G` cannot be rebuilt from a Tier-1 `setup` (`isDebugMatch` is never carried, D-24689 §1). This completed-only rule is the protection boundary. It is now **defense in depth** on top of WP-809 / D-24715, which — landing after this decision was drafted — minted each match seed from `randomBytes(16)` and stopped sending `initialState` to clients; the seed is no longer the only guard, and the earlier "clock-derived, guessable from `createdAt`" framing is superseded.
+  - Never copy `metadata.players[].credentials`.
+  - Refuse or flag setup data that Tier-1 `setup` cannot reproduce.
+  - Stamp `data_version` from a per-match record. If none exists, refuse matches older than the last data-axis bump. Never stamp the export-time `CURRENT_DATA_VERSION` onto a match that was played under an earlier one.
+- **Reader-only at 1.7.0.** `LAGN_VERSION` and `package.json` stay 1.6.0; the writer flip is the follow-on producer packet (WP-810 / D-24716).
+
+**Scope.** Shared Tooling only (`packages/lagn-spec` contract + docs): the 1.7.0 constant + `LAGN_SUPPORTED_VERSIONS` entry, `ReplayExecutionSchema` / `ReplayExecutionMoveSchema`, Gate A (ordinal version) + Gate B (move `seq` / `seat`), two `UNEXPRESSIBLE_CONSTRAINTS` entries (`EXPECTED_REFINEMENT_COUNT` 12 → 14), the registered-but-unreachable 1.6.0 → 1.7.0 restamp, the `tier3-execution` fixture, the derived JSON Schema regeneration, and the lockstep docs (`wiki/lagn-v1.md`, `00.2` §7g, the whole `POST /api/me/loadouts` row). `packages/lagn-spec` imports only `zod` / `zod-to-json-schema`; no re-executor and no engine/registry/boardgame.io edge is added.
+
+**Hash / replay.** No engine, `G`, `ctx`, snapshot, or `computeStateHash` surface changes. The block names `computeStateHash` output as data (shape-validated hex), but computes nothing and runs no game — lagn-spec reads no clock and sources no RNG.
+
+**Packet:** WP-808 / EC-845. **Reserved by:** #2771. Related: D-24119, D-24124, D-24095, D-24517, D-24452, D-24211, D-24689, D-5301, D-24126, D-0205, D-0801, D-24715 (seed hardening), D-24716 (the producer follow-on).
+
+---
 Protect this file.
