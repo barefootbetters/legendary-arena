@@ -54,6 +54,7 @@ import type { HeroEffectResolvedEvent } from '../events/notableEvents.types.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { shuffleDeck } from '../setup/shuffle.js';
 import { moveCardFromZone, moveAllCards } from '../moves/zoneOps.js';
+import { recordCardDiscardedThisTurn } from '../moves/discardFromHand.js';
 import { HAND_SIZE, reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
 import { addResources, enableRecruitSpendableAsAttack, enableDrawLock, enrollExcessiveViolenceCard, enrollHeistCard, enablePlayBothSides, addRestrictedAttack, formatAttackTargets, addFightCostReduction, recordOutOfTimePlayed } from '../economy/economy.logic.js';
 import type { AttackTargetName } from '../economy/economy.types.js';
@@ -2489,6 +2490,10 @@ function heroEffectDiscardTopPrintedAttack(
     totalAttack += offPlayCardStats(G, topCardId)?.attack ?? 0;
   }
 
+  // why: D-24631 — each deck-top card discarded for +attack is "you discarded"; the batch
+  // count records every card the loop moved (a zero-card no-op never creates the map).
+  recordCardDiscardedThisTurn(G, playerID, discardedCardIds.length);
+
   if (G.turnEconomy && totalAttack > 0) {
     G.turnEconomy = addResources(G.turnEconomy, totalAttack, 0);
   }
@@ -3036,7 +3041,12 @@ function applyRevealAction(
     return applyRevealKo(G, playerZones, topCardId, playerID);
   }
   if (action.kind === 'discard') {
-    return applyRevealDiscard(playerZones, topCardId);
+    const moved = applyRevealDiscard(playerZones, topCardId);
+    // why: D-24631 — a deck-top discard is "you discarded"; count only after a successful move.
+    if (moved) {
+      recordCardDiscardedThisTurn(G, playerID);
+    }
+    return moved;
   }
   if (action.kind === 'attack-by-cost') {
     return applyRevealAttackByCost(G, cost);
@@ -6232,6 +6242,10 @@ function heroEffectStealAbilities(
     const moveResult = moveCardFromZone(ownerZones.deck, ownerZones.discard, topCardId);
     ownerZones.deck = moveResult.from;
     ownerZones.discard = moveResult.to;
+    // why: D-24631 — a deck-top discard is "you discarded", counted for each player whose
+    // deck top was discarded (not just the active player); deck[0] is guaranteed after the
+    // reshuffle above, so no found check is needed.
+    recordCardDiscardedThisTurn(G, ownerPlayerId);
     discardedCardIds.push(topCardId as CardExtId);
     pushLog(G,
       `Player ${ownerPlayerId} discarded ${formatCardRef(G.cardDisplayData, topCardId as CardExtId)} for ${formatCardRef(G.cardDisplayData, cardId)}.`,

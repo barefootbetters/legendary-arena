@@ -4762,6 +4762,25 @@ describe('executeHeroEffects steal-abilities discard phase (WP-592 / D-24401)', 
     assert.equal(gameState.turnEconomy.recruit, 3, 'player 1 discarded card grants +3 recruit to the steal player');
   });
 
+  it('counts the deck-top discard for EACH player, not just the active one (WP-784 / D-24631)', () => {
+    const gameState = makeTestState({
+      inPlay: ['steal'],
+      deck: ['p0-top', 'p0-bottom'],
+      // why: WP-784 / D-24631 — a hook reading cardsDiscardedThisTurnAtLeast opens the counter gate.
+      heroAbilityHooks: [
+        stealHook('steal'),
+        { cardId: 'bkwd/falcon-winter-soldier/new-wings#0', conditions: [{ type: 'cardsDiscardedThisTurnAtLeast', value: '1' }] } as unknown as HeroAbilityHook,
+      ],
+    });
+    gameState.playerZones['1'] = { ...makePlayerZones(), deck: ['p1-top', 'p1-bottom'] };
+
+    executeHeroEffects(gameState, mockCtx, '0', 'steal' as string);
+
+    // why: each player's own deck-top discard counts for that player (keyed by deck owner),
+    // so both seats appear — not just the active Steal Abilities player.
+    assert.deepEqual(gameState.cardsDiscardedThisTurn, { '0': 1, '1': 1 });
+  });
+
   it('reshuffles an empty deck before taking the top card (mock shuffle reverses)', () => {
     const gameState = makeTestState({
       inPlay: ['steal'],
@@ -5312,6 +5331,86 @@ describe('selectDefaultOptionalKoTarget tie-break (WP-248)', () => {
 // ---------------------------------------------------------------------------
 // Primitive-effect path (WP-256 / D-24031)
 // ---------------------------------------------------------------------------
+
+describe('deck-top discard counter — reveal-discard + New Wings end-to-end (WP-784 / D-24631)', () => {
+  const mockCtx = makeMockCtx();
+
+  // why: New Wings' "If you discarded any cards this turn, +4 Attack" — a wait-and-see hook
+  // reading cardsDiscardedThisTurnAtLeast, which also opens the deck-top discard counter gate.
+  const NEW_WINGS = 'bkwd/falcon-winter-soldier/new-wings#0';
+  function newWingsHook(): HeroAbilityHook {
+    return {
+      cardId: NEW_WINGS, timing: 'onPlay', keywords: ['attack'],
+      conditions: [{ type: 'cardsDiscardedThisTurnAtLeast', value: '1' }],
+      effects: [{ type: 'attack', magnitude: 4 }],
+    } as unknown as HeroAbilityHook;
+  }
+
+  // why: a hook firing a reveal whose rule discards a cost-0 deck-top card (D-24582, #1).
+  function revealDiscardHook(cardId: string): HeroAbilityHook {
+    return {
+      cardId, timing: 'onPlay', keywords: [],
+      effects: [{ type: 'reveal', revealCount: 1, revealRules: [{ predicate: { kind: 'cost-zero' }, actions: [{ kind: 'discard' }] }] }],
+    } as unknown as HeroAbilityHook;
+  }
+
+  // why: a hook firing the Berserk move-card composition (deck-top → discard, #3).
+  function berserkHook(cardId: string): HeroAbilityHook {
+    return {
+      cardId, timing: 'onPlay', keywords: [],
+      primitiveEffects: [HERO_COMPOSITION_MARKERS['berserk']!],
+    } as unknown as HeroAbilityHook;
+  }
+
+  const ZERO_COST = { attack: 0, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static' as const, fightCostBase: 0 };
+
+  it('#1 a reveal-rule discard counts the deck-top discard for the active player', () => {
+    const gameState = makeTestState({
+      deck: ['top', 'b'],
+      inPlay: ['reveal-hero'],
+      cardStats: { top: ZERO_COST },
+      heroAbilityHooks: [revealDiscardHook('reveal-hero'), newWingsHook()],
+    });
+    executeHeroEffects(gameState, mockCtx, '0', 'reveal-hero' as string);
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['top'], 'the revealed cost-0 card was discarded');
+    assert.deepEqual(gameState.cardsDiscardedThisTurn, { '0': 1 });
+  });
+
+  it('(b) a Berserk deck-top discard FIRST — New Wings then grants +4 immediately', () => {
+    const gameState = makeTestState({
+      deck: ['top', 'b'],
+      inPlay: ['berserk-hero', NEW_WINGS],
+      // why: no cardStats for 'top' → Berserk grants +0, isolating New Wings' +4 as the total.
+      heroAbilityHooks: [berserkHook('berserk-hero'), newWingsHook()],
+    });
+    executeHeroEffects(gameState, mockCtx, '0', 'berserk-hero' as string);
+    assert.deepEqual(gameState.cardsDiscardedThisTurn, { '0': 1 }, 'the Berserk deck-top discard counted');
+
+    const fired = executeHeroEffects(gameState, mockCtx, '0', NEW_WINGS);
+    assert.equal(fired, 1, 'New Wings fires its one attack effect immediately');
+    assert.equal(gameState.turnEconomy.attack, 4, 'New Wings grants +4 (Berserk granted +0)');
+  });
+
+  it('(a) New Wings played FIRST waits, then a Berserk deck-top discard makes it grant +4 once', () => {
+    const gameState = makeTestState({
+      deck: ['top', 'b'],
+      inPlay: [NEW_WINGS, 'berserk-hero'],
+      heroAbilityHooks: [newWingsHook(), berserkHook('berserk-hero')],
+    });
+    executeHeroEffects(gameState, mockCtx, '0', NEW_WINGS);
+    assert.equal(gameState.turnEconomy.attack, 0, 'below threshold at play — the grant waits');
+    assert.equal(gameState.deferredConditionalGrants?.length, 1, 'New Wings deferred');
+
+    executeHeroEffects(gameState, mockCtx, '0', 'berserk-hero' as string);
+    assert.deepEqual(gameState.cardsDiscardedThisTurn, { '0': 1 }, 'the Berserk deck-top discard counted');
+
+    resolveDeferredHeroGrants(gameState, mockCtx);
+    assert.equal(gameState.turnEconomy.attack, 4, 'the deck-top discard crossed the threshold; +4 fired');
+
+    resolveDeferredHeroGrants(gameState, mockCtx);
+    assert.equal(gameState.turnEconomy.attack, 4, 'the grant fires once (the entry was consumed)');
+  });
+});
 
 describe('executeHeroEffects primitiveEffects path (WP-256 / D-24031)', () => {
   const mockCtx = makeMockCtx();

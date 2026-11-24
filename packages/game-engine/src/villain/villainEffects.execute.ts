@@ -98,7 +98,7 @@ import { putVillainBesideMastermind } from '../board/besideMastermind.logic.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
 // why: WP-837 / D-24770 — Juggernaut's same-name discards go through the single
 // hand→discard chokepoint so return-on-discard / teleport reactions fire.
-import { discardFromHand } from '../moves/discardFromHand.js';
+import { discardFromHand, recordCardDiscardedThisTurn } from '../moves/discardFromHand.js';
 import { reshuffleDiscardIntoDeck, drawCardsIntoHand, HAND_SIZE } from '../moves/drawCards.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 // why: WP-838 / D-24771 — Baron Strucker's shuffle goes through the one engine shuffle helper,
@@ -6492,6 +6492,9 @@ function discardZeroCostLookedAtCards(
       lookedAtCardId,
     );
   }
+  // why: D-24631 — each cost-0 card discarded from the top of the defeating player's deck is
+  // "you discarded"; the batch count records all of them (a zero-card no-op never creates the map).
+  recordCardDiscardedThisTurn(G, currentPlayer, discardedCount);
   return discardedCount;
 }
 

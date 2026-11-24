@@ -35,6 +35,7 @@ import type {
   EffectExecutionContext,
 } from '../rules/effectPrimitive.types.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
+import { recordCardDiscardedThisTurn } from '../moves/discardFromHand.js';
 import { addResources } from '../economy/economy.logic.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
@@ -488,6 +489,12 @@ function interpretMoveCardNode(
   );
   setZoneArray(playerZones, moveNode.from.zone, moveResult.from);
   setZoneArray(playerZones, moveNode.to.zone, moveResult.to);
+  // why: D-24631 — a deck→discard move-card (Berserk's "discard the top card of your deck")
+  // is "you discarded"; count only a successful deck→discard move. A discard→deck move-card
+  // (the primitive's other direction) is not a discard and must NOT count.
+  if (moveResult.found && moveNode.from.zone === 'deck' && moveNode.to.zone === 'discard') {
+    recordCardDiscardedThisTurn(G, playerID);
+  }
   // why: bind the moved card id only when `bind` is present AND the move found a card —
   // an unbound ref then resolves to 0 (the empty-deck +0 path).
   if (moveNode.bind !== undefined && moveResult.found) {

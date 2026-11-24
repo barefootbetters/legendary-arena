@@ -335,6 +335,18 @@ describe('WP-870 Spin: discard the cost-0 cards of the top six, reorder the rest
     assert.equal(G.pendingReorderChoices, undefined, 'no reorder for one survivor');
   });
 
+  it('T7b: each cost-0 deck-top discard counts toward "you discarded this turn" (WP-784 / D-24631)', () => {
+    const G = makeState({ deck: [AGENT, HERO_A, WOUND, TROOPER, HERO_B, HERO_C, HERO_D, AGENT] });
+    // why: WP-784 / D-24631 — a hook reading cardsDiscardedThisTurnAtLeast opens the counter gate;
+    // Spin discards three cost-0 cards from the defeating player's deck, so the batch count is 3.
+    G.heroAbilityHooks = [
+      { cardId: 'bkwd/falcon-winter-soldier/new-wings#0', conditions: [{ type: 'cardsDiscardedThisTurnAtLeast', value: '1' }] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+    fight(G, SPIN);
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [AGENT, WOUND, TROOPER], 'three cost-0 cards discarded');
+    assert.deepEqual(G.cardsDiscardedThisTurn, { '0': 3 });
+  });
+
   it('T16: a reorder overtaken in the same move is dropped, never left blocking the turn', () => {
     const G = makeState({ deck: [HERO_A, AGENT, HERO_B, HERO_C, HERO_D, HERO_E, HERO_F] });
     fight(G, SPIN);

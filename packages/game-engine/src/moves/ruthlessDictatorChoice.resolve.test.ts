@@ -177,6 +177,16 @@ describe('resolveRuthlessDictatorChoice move (WP-695 / D-24512)', () => {
     assert.deepStrictEqual(G.playerZones['0']!.deck, [CARD_A, CARD_C], 'removed from deck');
   });
 
+  it('counts the deck-top discard for the active player when a hook reads the condition (WP-784 / D-24631)', () => {
+    const G = makeTestGameState({ deck: [CARD_A, CARD_B, CARD_C], pendingRuthlessDictatorChoices: [threeCardChoice()] });
+    // why: WP-784 / D-24631 — a hook reading cardsDiscardedThisTurnAtLeast opens the counter gate.
+    G.heroAbilityHooks = [
+      { cardId: 'bkwd/falcon-winter-soldier/new-wings#0', conditions: [{ type: 'cardsDiscardedThisTurnAtLeast', value: '1' }] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+    resolveRuthlessDictatorChoice(makeMoveContext(G), { cardId: CARD_B, disposition: 'discard' });
+    assert.deepEqual(G.cardsDiscardedThisTurn, { '0': 1 });
+  });
+
   it('leaves a "top" card on the deck (no mutation) and front-pops when all three resolved', () => {
     const G = makeTestGameState({ deck: [CARD_A, CARD_B, CARD_C], pendingRuthlessDictatorChoices: [threeCardChoice()] });
     const ctx = makeMoveContext(G);

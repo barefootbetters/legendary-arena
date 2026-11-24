@@ -33,6 +33,7 @@ import type { CardExtId } from '../state/zones.types.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { refreshStaleKoOrKeepFront } from '../hero/heroEffects.execute.js';
 import { moveCardFromZone } from './zoneOps.js';
+import { recordCardDiscardedThisTurn } from './discardFromHand.js';
 import { pushLog } from '../log/logPush.js';
 import { formatCardRef, resolveCardName } from '../log/logDisplay.js';
 import { isCullableDeckTopCard } from '../villain/villainEffects.execute.js';
@@ -219,6 +220,9 @@ export function resolveRevealTopDispose(
     if (moveResult.found) {
       ownerZones.deck = moveResult.from;
       ownerZones.discard = moveResult.to;
+      // why: D-24631 — a deck-top discard is "you discarded"; counts for the deck OWNER
+      // (args.ownerPlayerID), who may not be the chooser (Hypnotic Charm's others variant).
+      recordCardDiscardedThisTurn(G, args.ownerPlayerID);
       pushLog(
         G,
         `Player ${playerID} discarded ${cardName} (${args.cardId}) from the top of Player ${args.ownerPlayerID}'s deck (reveal-top).`,

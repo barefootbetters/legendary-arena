@@ -58,6 +58,7 @@ import { formatCardRef, resolveCardName } from '../log/logDisplay.js';
 import { seatsInTurnOrderFrom } from '../turn/seatOrder.logic.js';
 import { reshuffleDiscardIntoDeck } from './drawCards.logic.js';
 import { moveCardFromZone } from './zoneOps.js';
+import { recordCardDiscardedThisTurn } from './discardFromHand.js';
 import { heistRevealedVictoryPoints } from './attemptHeist.js';
 import { recordVillainDefeated } from '../economy/economy.logic.js';
 import { matchHasFightRestrictionKind } from './villainDefeatRequirement.logic.js';
@@ -940,6 +941,12 @@ function applyLiarDecide(G: LegendaryGameState, payload: VillainFightPickPayload
   const moved = moveCardFromZone(targetZones.deck, recipientZones.discard, lookedAtCardId);
   targetZones.deck = moved.from;
   recipientZones.discard = moved.to;
+  // why: D-24631 — The Liar forces the card out of the TARGET's deck, so the discard counts
+  // for the TARGET (the deck owner) whichever discard pile receives it — not the fighter.
+  // targetSeat is defined here (the deck[0] guard above returned when its zones were missing).
+  if (targetSeat !== undefined) {
+    recordCardDiscardedThisTurn(G, targetSeat);
+  }
   const card = formatCardRef(G.cardDisplayData, lookedAtCardId);
   let message = `Player ${targetSeat} put ${card} in their own discard pile (${source}).`;
   if (optionIndex === 0) {

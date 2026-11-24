@@ -175,6 +175,20 @@ describe('resolveRevealThreeAssign (WP-753 / D-24580)', () => {
     assert.equal(hasPendingRevealThreeAssign(G), false);
   });
 
+  it("'discard' counts the deck-top discard for the active player when a hook reads the condition (WP-784 / D-24631)", () => {
+    const discardGate = {
+      cardId: 'bkwd/falcon-winter-soldier/new-wings#0',
+      conditions: [{ type: 'cardsDiscardedThisTurnAtLeast', value: '1' }],
+    } as unknown as HeroAbilityHook;
+    const G = makeTestGameState({
+      deck: [CARD_A, CARD_B, CARD_C, CARD_D],
+      heroAbilityHooks: [discardGate],
+      pending: [makeEntry([CARD_A, CARD_B, CARD_C])],
+    });
+    resolveRevealThreeAssign(makeMoveContext(G), { cardId: CARD_A, disposition: 'discard' });
+    assert.deepEqual(G.cardsDiscardedThisTurn, { '0': 1 });
+  });
+
   it('a spent disposition is a silent no-op (each disposition usable once)', () => {
     const G = makeTestGameState({ deck: [CARD_A, CARD_B, CARD_C], pending: [makeEntry([CARD_A, CARD_B, CARD_C])] });
     resolveRevealThreeAssign(makeMoveContext(G), { cardId: CARD_A, disposition: 'ko' });

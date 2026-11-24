@@ -25,6 +25,7 @@ import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState, RuthlessDictatorDisposition } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { moveCardFromZone } from './zoneOps.js';
+import { recordCardDiscardedThisTurn } from './discardFromHand.js';
 import { koCard } from '../board/ko.logic.js';
 import { recordOwnedCardKoed } from '../hero/deferredConditionalGrants.js';
 import { pushLog } from '../log/logPush.js';
@@ -167,6 +168,8 @@ export function resolveRuthlessDictatorChoice(
     if (!moveResult.found) { return; }
     zones.deck = moveResult.from;
     zones.discard = moveResult.to;
+    // why: D-24631 — a deck-top discard is "you discarded"; count only after the found move.
+    recordCardDiscardedThisTurn(G, playerID);
     pushLog(G,
       `Player ${playerID} discarded ${cardName} (${args.cardId}) from the top of their deck (Ruthless Dictator).`,
       'applied',

@@ -391,12 +391,14 @@ export function evaluateCondition(
     }
 
     case CARDS_DISCARDED_THIS_TURN_CONDITION_TYPE: {
-      // why: WP-777 / D-24616 — "If you discarded any cards this turn" (New Wings,
-      // Pumpkin Bombs). Reads THIS player's entry of G.cardsDiscardedThisTurn, the
-      // per-player count of card-effect hand discards kept at the discardFromHand
-      // chokepoint. Per-player because a Master Strike or Covering Fire can make another
-      // player discard during this turn, and that discard is theirs, not yours. An
-      // absent map or entry means nothing was discarded (the counter is lazy).
+      // why: WP-777 / D-24616, extended by WP-784 / D-24631 — "If you discarded any cards
+      // this turn" (New Wings, Pumpkin Bombs). Reads THIS player's entry of
+      // G.cardsDiscardedThisTurn, the per-player count of card-effect hand discards and
+      // deck-top discards written by recordCardDiscardedThisTurn (from the discardFromHand
+      // chokepoint and the deck-top sites). Per-player because a Master Strike, Covering
+      // Fire, Steal Abilities or The Liar can make another player discard during this turn,
+      // and that discard is theirs, not yours. An absent map or entry means nothing was
+      // discarded (the counter is lazy).
       const discardThreshold = parseInt(condition.value, 10);
       // why: safe-skip malformed data (mirrors cardsDrawnThisTurnAtLeast's NaN guard).
       if (Number.isNaN(discardThreshold)) {
@@ -1352,8 +1354,9 @@ export function describeFailedCondition(
       return `it needs ${condition.value} or more cards drawn this turn — you have drawn ${G.turnEconomy.cardsDrawn}`;
 
     case CARDS_DISCARDED_THIS_TURN_CONDITION_TYPE: {
-      // why: WP-777 / D-24616 — quotes this player's per-turn hand-discard count, the
-      // value the gate compares (absent counter = nothing discarded yet).
+      // why: WP-777 / D-24616, extended by WP-784 / D-24631 — quotes this player's per-turn
+      // count of card-effect hand discards and deck-top discards, the value the gate compares
+      // (absent counter = nothing discarded yet).
       const discardedCount = G.cardsDiscardedThisTurn?.[playerID] ?? 0;
       return `it needs ${condition.value} or more cards discarded this turn — you have discarded ${discardedCount}`;
     }

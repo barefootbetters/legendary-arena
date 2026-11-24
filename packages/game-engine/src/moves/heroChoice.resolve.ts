@@ -9,6 +9,7 @@
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
 import { moveCardFromZone } from './zoneOps.js';
+import { recordCardDiscardedThisTurn } from './discardFromHand.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -56,6 +57,8 @@ export function resolveHeroChoice({ G, playerID }: MoveContext, args: ResolveHer
     if (moveResult.found) {
       playerZones.deck = moveResult.from;
       playerZones.discard = moveResult.to;
+      // why: D-24631 — a deck-top discard is "you discarded"; count only after the found move.
+      recordCardDiscardedThisTurn(G, playerID);
     }
   }
   // args.resolution === 'return': card already at deck[0]; no mutation needed.

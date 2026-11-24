@@ -392,6 +392,29 @@ describe('WP-872 Liar, The Mento-Intensifier (D-24817)', () => {
     assertLoggedOnce(toTarget, `Player 1 put ${HIDDEN_A_NAME} (${HIDDEN_A}) in their own discard pile (${LIAR_REF}).`, 'applied', HIDDEN_A);
   });
 
+  it('T7b: the discard counts for the TARGET (deck owner), whichever discard pile receives it (WP-784 / D-24631)', () => {
+    // why: WP-784 / D-24631 — The Liar forces the card out of the target's (seat 1's) deck, so it
+    // counts for seat 1 even when it lands in the fighter's (seat 0's) discard pile — never seat 0.
+    const DISCARD_GATE = {
+      cardId: 'bkwd/falcon-winter-soldier/new-wings#0',
+      conditions: [{ type: 'cardsDiscardedThisTurnAtLeast', value: '1' }],
+    } as unknown as LegendaryGameState['heroAbilityHooks'][number];
+
+    const toFighter = liarClaimState();
+    toFighter.heroAbilityHooks = [DISCARD_GATE];
+    answer(toFighter, '0', 1);
+    answer(toFighter, '1', 0); // card → the FIGHTER's (seat 0's) discard
+    assert.deepStrictEqual(toFighter.playerZones['0']!.discard, [HIDDEN_A]);
+    assert.deepEqual(toFighter.cardsDiscardedThisTurn, { '1': 1 }, 'counts for the target, not the fighter');
+
+    const toTarget = liarClaimState();
+    toTarget.heroAbilityHooks = [DISCARD_GATE];
+    answer(toTarget, '0', 0);
+    answer(toTarget, '1', 1); // card → the TARGET's own (seat 1's) discard
+    assert.deepStrictEqual(toTarget.playerZones['1']!.discard, [HIDDEN_A]);
+    assert.deepEqual(toTarget.cardsDiscardedThisTurn, { '1': 1 });
+  });
+
   it('T8: a changed deck top moves nothing and never names the card', () => {
     const G = liarClaimState();
     answer(G, '0', 0);
