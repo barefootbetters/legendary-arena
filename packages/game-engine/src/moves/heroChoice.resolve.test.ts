@@ -159,6 +159,23 @@ describe('resolveHeroChoice', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // WP-784 / D-24631: a deck-top discard counts toward "you discarded this turn"
+  // ---------------------------------------------------------------------------
+  it('counts the deck-top discard for the active player when a hook reads the condition (WP-784 / D-24631)', () => {
+    const pending: PendingHeroChoice = { choiceType: 'discard-or-return', cardId: 'hero-a', playerID: '0' };
+    const gameState = makeTestGameState({ deck: ['hero-a', 'hero-b'], pendingHeroChoice: pending });
+    // why: WP-784 / D-24631 — a hook reading cardsDiscardedThisTurnAtLeast opens the counter gate.
+    gameState.heroAbilityHooks = [
+      { cardId: 'bkwd/falcon-winter-soldier/new-wings#0', conditions: [{ type: 'cardsDiscardedThisTurnAtLeast', value: '1' }] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+    const { context } = makeMoveContext(gameState);
+
+    resolveHeroChoice(context, { resolution: 'discard' });
+
+    assert.deepEqual(gameState.cardsDiscardedThisTurn, { '0': 1 });
+  });
+
+  // ---------------------------------------------------------------------------
   // Test 2: return resolution — card stays at deck[0]; pending cleared
   // ---------------------------------------------------------------------------
   it('return resolution leaves card at deck[0] and clears pendingHeroChoice', () => {

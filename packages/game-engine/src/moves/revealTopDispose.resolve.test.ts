@@ -216,6 +216,20 @@ describe('resolveRevealTopDispose (WP-702 / D-24521)', () => {
     assert.deepStrictEqual(G.playerZones['0']!.discard, [], 'P0 discard untouched');
   });
 
+  it('counts the deck-top discard for the deck OWNER, not the chooser (WP-784 / D-24631)', () => {
+    // why: WP-784 / D-24631 §2 — Hypnotic Charm's "others" variant: player 0 chooses, but the
+    // card leaves player 1's deck, so the discard counts for player 1 (the owner).
+    const G = makeTestGameState({
+      decks: { '0': [HERO_A], '1': [AGENT, HERO_B] },
+      pendingRevealTopDispose: [revealChoice([{ ownerPlayerID: '1', cardId: AGENT }])],
+    });
+    G.heroAbilityHooks = [
+      { cardId: 'bkwd/falcon-winter-soldier/new-wings#0', conditions: [{ type: 'cardsDiscardedThisTurnAtLeast', value: '1' }] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+    resolveRevealTopDispose(makeMoveContext(G, '0'), { ownerPlayerID: '1', cardId: AGENT, disposition: 'discard' });
+    assert.deepEqual(G.cardsDiscardedThisTurn, { '1': 1 });
+  });
+
   it("discard on a card a co-effect already moved off the top clears the choice gracefully (no re-loop, no wrong removal)", () => {
     // why: a same-play sibling ability (e.g. Beast's Berserk) can move the revealed card off the
     // deck top before the player decides. The resolve re-confirms `cardId === deck[0]`: it is NOT,

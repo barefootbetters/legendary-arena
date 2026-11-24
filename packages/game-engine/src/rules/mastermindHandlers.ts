@@ -28,7 +28,7 @@ import {
 } from '../events/notableEvents.compose.js';
 import { pushLog } from '../log/logPush.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
-import { discardFromHand } from '../moves/discardFromHand.js';
+import { discardFromHand, recordCardDiscardedThisTurn } from '../moves/discardFromHand.js';
 import { koCard } from '../board/ko.logic.js';
 import { recordOwnedCardKoed } from '../hero/deferredConditionalGrants.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
@@ -1504,6 +1504,11 @@ function resolveDoctorOctopusReveal(
 
   playerZones.deck = [...returnedInOrder, ...untouchedTail];
   playerZones.discard = [...playerZones.discard, ...discardedCards];
+
+  // why: D-24631 — each non-grey Hero discarded from the struck player's deck is "you
+  // discarded"; the batch count records all of them (a zero-discard strike is a no-op and
+  // never creates the map).
+  recordCardDiscardedThisTurn(gameState, playerId, discardedCards.length);
 
   const orderNote = shuffleFunction ? '' : ' (revealed order — no shuffle available)';
   pushLog(gameState,

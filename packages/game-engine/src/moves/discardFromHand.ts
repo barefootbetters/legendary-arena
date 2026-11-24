@@ -29,28 +29,46 @@ import {
 } from '../hero/heroConditions.evaluate.js';
 
 /**
- * Counts one card-effect hand discard for a player this turn (WP-777 / D-24616).
+ * Counts card-effect hand discards AND deck-top discards for a player this turn
+ * (WP-777 / D-24616, extended by WP-784 / D-24631).
  *
- * // why: this chokepoint sees EVERY card-effect hand discard (the discardFromHand
- * drift test keeps it so; end-of-turn cleanup is deliberately not routed here), so one
- * increment covers Dodge, discard-to-play costs, Smash, Do-Over, Covering Fire, Master
- * Strikes and Scheme Twists for "If you discarded any cards this turn". Keyed by the
- * discarding player because a non-active player can be made to discard on another
- * player's turn. GATED on a hook in this match reading the condition and lazily created,
- * so a match without New Wings / Pumpkin Bombs keeps a byte-identical G (no sentinel
- * re-pin). The turn boundary deletes the map.
+ * // why: "If you discarded any cards this turn" (New Wings +4, Pumpkin Bombs +2) counts
+ * BOTH a card-effect hand discard and a deck-top discard (D-24631 revises D-24616 §4). The
+ * hand chokepoint (discardFromHand) calls this once per hand card; the eleven deck→discard
+ * sites each call it after a successful deck→discard move (a reveal-rule discard, Steal
+ * Abilities, the move-card primitive, a reveal choose-discard, reveal-top-dispose,
+ * reveal-three assign, Ruthless Dictator, Doctor Octopus, discard-top-for-attack, Spin's
+ * cost-0 discard, and The Liar). Keyed by the player whose DECK or HAND the card left
+ * (D-24631 §2: the deck owner, not necessarily the acting player — a non-active player can
+ * be made to discard on another player's turn). GATED on a hook in this match reading the
+ * condition and lazily created, so a match without New Wings / Pumpkin Bombs keeps a
+ * byte-identical G (no sentinel re-pin). The turn boundary deletes the map.
+ *
+ * `count` lets a batch site (Doctor Octopus, discard-top-for-attack, Spin) record every card
+ * it moved in one call. A `count <= 0` call returns BEFORE the lazy `= {}` init, so a
+ * zero-card strike never creates an empty map (keeping the gate's byte-identical-G promise).
  *
  * @param G - The game state, mutated in place (counter incremented).
- * @param playerID - The player whose hand card was just discarded.
+ * @param playerID - The player whose hand or deck-top card(s) were just discarded.
+ * @param count - How many cards were discarded (default 1); `<= 0` is a no-op.
  */
-function recordCardDiscardedThisTurn(G: LegendaryGameState, playerID: string): void {
+export function recordCardDiscardedThisTurn(
+  G: LegendaryGameState,
+  playerID: string,
+  count: number = 1,
+): void {
+  // why: D-24631 — a zero-card batch (an empty Doctor Octopus strike) must not create the
+  // map; return before both the gate read and the lazy init so G stays byte-identical.
+  if (count <= 0) {
+    return;
+  }
   if (!matchReadsConditionType(G, CARDS_DISCARDED_THIS_TURN_CONDITION_TYPE)) {
     return;
   }
   if (G.cardsDiscardedThisTurn === undefined) {
     G.cardsDiscardedThisTurn = {};
   }
-  G.cardsDiscardedThisTurn[playerID] = (G.cardsDiscardedThisTurn[playerID] ?? 0) + 1;
+  G.cardsDiscardedThisTurn[playerID] = (G.cardsDiscardedThisTurn[playerID] ?? 0) + count;
 }
 
 /**

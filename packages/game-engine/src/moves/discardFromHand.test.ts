@@ -13,6 +13,7 @@ import type { LegendaryGameState } from '../types.js';
 import type { HeroAbilityHook } from '../rules/heroAbility.types.js';
 import {
   discardFromHand,
+  recordCardDiscardedThisTurn,
   checkReturnOnDiscard,
   cardCarriesReturnOnDiscard,
   checkTeleportOnDiscard,
@@ -219,6 +220,38 @@ describe('per-turn discard count (WP-777 / D-24616)', () => {
   });
 });
 
+describe('recordCardDiscardedThisTurn count parameter (WP-784 / D-24631)', () => {
+  it('defaults to +1 per call', () => {
+    const G = makeDiscardCountState(true);
+    recordCardDiscardedThisTurn(G, '0');
+    recordCardDiscardedThisTurn(G, '0');
+    assert.deepEqual(G.cardsDiscardedThisTurn, { '0': 2 });
+  });
+
+  it('a batch count adds N in one call (Doctor Octopus / Spin / discard-top-for-attack)', () => {
+    const G = makeDiscardCountState(true);
+    recordCardDiscardedThisTurn(G, '0', 3);
+    recordCardDiscardedThisTurn(G, '0', 2);
+    recordCardDiscardedThisTurn(G, '1', 4);
+    assert.deepEqual(G.cardsDiscardedThisTurn, { '0': 5, '1': 4 });
+  });
+
+  it('count <= 0 is a no-op that never creates the map (a zero-card strike)', () => {
+    const G = makeDiscardCountState(true);
+    recordCardDiscardedThisTurn(G, '0', 0);
+    recordCardDiscardedThisTurn(G, '0', -3);
+    // why: D-24631 — the count <= 0 guard returns BEFORE the lazy init, so an empty batch
+    // leaves G byte-identical (no empty map that would move the sentinel oracles).
+    assert.equal('cardsDiscardedThisTurn' in G, false);
+  });
+
+  it('stays gated: no hook reads the condition → no counter even for a positive count', () => {
+    const G = makeDiscardCountState(false);
+    recordCardDiscardedThisTurn(G, '0', 5);
+    assert.equal('cardsDiscardedThisTurn' in G, false);
+  });
+});
+
 describe('hand→discard chokepoint drift-guard (WP-498 / D-24301)', () => {
   it('every hand→discard zoneOps idiom lives in an allowlisted file', () => {
     const offenders: string[] = [];
@@ -246,5 +279,135 @@ describe('hand→discard chokepoint drift-guard (WP-498 / D-24301)', () => {
     assert.match('moveCardFromZone(gameState.playerZones[playerId]!.hand, gameState.playerZones[playerId]!.discard, x)', HAND_TO_DISCARD_IDIOM);
     // a deck→discard move (heroChoice.resolve) must NOT match — the reaction is hand-only
     assert.doesNotMatch('moveCardFromZone(playerZones.deck, playerZones.discard, cardId)', HAND_TO_DISCARD_IDIOM);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Drift-guard: every deck→discard idiom site counts the discard (WP-784 / D-24631)
+// ---------------------------------------------------------------------------
+
+// why: WP-784 / D-24631 — "If you discarded any cards this turn" now counts deck-top
+// discards too, so a NEW deck→discard site that forgets to call recordCardDiscardedThisTurn
+// would silently drop a New Wings / Pumpkin Bombs grant. This guard scans the engine source
+// for the deck→discard zoneOps idiom and asserts (1) it appears in EXACTLY the locked file
+// set and (2) every such file has at least as many non-comment counter CALLS as idiom
+// matches. #3 (effectPrimitive.interpret — data-driven from.zone/to.zone) and #8
+// (mastermindHandlers — a hand-built discard array rebuild) do NOT match the literal idiom,
+// so they are pinned by their own site tests, not this file-level guard.
+const DECK_TO_DISCARD_IDIOM = /move(?:CardFromZone|AllCards)\([^,)]*\.deck[^,)]*,[^,)]*\.discard/;
+const RECORD_CALL_LITERAL = 'recordCardDiscardedThisTurn(';
+
+// The EXACT set of non-test source files that carry a literal deck→discard idiom at HEAD
+// (WP-784 / D-24631). If the real set differs, a deck→discard site was added or removed —
+// STOP and re-run the session protocol (re-confirm the owner before counting it).
+//   - heroEffects.execute.ts — hosts THREE idioms: #1 reveal-discard, #2 Steal Abilities,
+//     and the discard-top-for-attack batch (D-24786).
+//   - heroChoice.resolve.ts (#4), revealTopDispose.resolve.ts (#5),
+//     revealThreeAssign.resolve.ts (#6), ruthlessDictatorChoice.resolve.ts (#7).
+//   - villainEffects.execute.ts — Spin's cost-0 deck-top discard (WP-870 / D-24815).
+//   - villainFightPick.logic.ts — The Liar's "put the deck-top card in a discard pile".
+const DECK_DISCARD_IDIOM_FILES = new Set([
+  'heroEffects.execute.ts',
+  'heroChoice.resolve.ts',
+  'revealTopDispose.resolve.ts',
+  'revealThreeAssign.resolve.ts',
+  'ruthlessDictatorChoice.resolve.ts',
+  'villainEffects.execute.ts',
+  'villainFightPick.logic.ts',
+]);
+
+/** True when a source line is a comment line (JSDoc `*`, `//`, or `/*`). */
+function isCommentLine(line: string): boolean {
+  const trimmed = line.trimStart();
+  return trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*');
+}
+
+/**
+ * Per-file deck→discard counter audit: how many deck→discard idioms the source holds,
+ * how many NON-comment counter calls it holds, and whether any COMMENT line smuggles the
+ * call literal (which would fake the call count and defeat the guard).
+ */
+function auditDeckDiscardFile(source: string): {
+  idiomMatches: number;
+  calls: number;
+  commentHasCall: boolean;
+} {
+  const idiomMatches = source.match(new RegExp(DECK_TO_DISCARD_IDIOM, 'g'))?.length ?? 0;
+  let calls = 0;
+  let commentHasCall = false;
+  for (const line of source.split('\n')) {
+    if (isCommentLine(line)) {
+      if (line.includes(RECORD_CALL_LITERAL)) {
+        commentHasCall = true;
+      }
+      continue;
+    }
+    calls += line.split(RECORD_CALL_LITERAL).length - 1;
+  }
+  return { idiomMatches, calls, commentHasCall };
+}
+
+/** A file violates the guard when it smuggles the call in a comment or under-counts. */
+function deckDiscardViolation(audit: ReturnType<typeof auditDeckDiscardFile>): boolean {
+  return audit.commentHasCall || audit.calls < audit.idiomMatches;
+}
+
+describe('deck→discard counter drift-guard (WP-784 / D-24631)', () => {
+  it('the deck→discard idiom appears in EXACTLY the locked file set', () => {
+    const actual = new Set<string>();
+    for (const file of listSourceFiles(SRC_ROOT)) {
+      if (new RegExp(DECK_TO_DISCARD_IDIOM, 'g').test(readFileSync(file, 'utf8'))) {
+        actual.add(path.basename(file));
+      }
+    }
+    assert.deepEqual(
+      [...actual].sort(),
+      [...DECK_DISCARD_IDIOM_FILES].sort(),
+      `the deck→discard idiom file set changed. A site was added or removed — STOP and ` +
+        `re-run the WP-784 session protocol (re-confirm the deck OWNER before counting it).`,
+    );
+  });
+
+  it('every file has at least as many counter calls as deck→discard idioms (no comment smuggling)', () => {
+    const offenders: string[] = [];
+    for (const file of listSourceFiles(SRC_ROOT)) {
+      const audit = auditDeckDiscardFile(readFileSync(file, 'utf8'));
+      if (audit.idiomMatches === 0 && !audit.commentHasCall) {
+        continue;
+      }
+      if (deckDiscardViolation(audit)) {
+        offenders.push(
+          `${path.relative(SRC_ROOT, file)} (idioms=${audit.idiomMatches}, calls=${audit.calls}, commentHasCall=${audit.commentHasCall})`,
+        );
+      }
+    }
+    assert.deepEqual(
+      offenders,
+      [],
+      `each deck→discard idiom must be matched by a non-comment recordCardDiscardedThisTurn ` +
+        `call in the same file. Offenders: ${offenders.join('; ')}`,
+    );
+  });
+
+  it('is non-vacuous: the per-file checker reports a violation it can fail on (cheat-proof)', () => {
+    // why: an idiom with zero counter calls is a violation (the bug this WP prevents).
+    const idiomOnly = 'const moveResult = moveCardFromZone(zones.deck, zones.discard, cardId);';
+    assert.equal(deckDiscardViolation(auditDeckDiscardFile(idiomOnly)), true);
+
+    // why: smuggling the call into a COMMENT must not satisfy the guard.
+    const commentSmuggle =
+      'const moveResult = moveCardFromZone(zones.deck, zones.discard, cardId);\n' +
+      '// recordCardDiscardedThisTurn(G, playerID);';
+    assert.equal(deckDiscardViolation(auditDeckDiscardFile(commentSmuggle)), true);
+
+    // why: a real (non-comment) call for the idiom satisfies the guard.
+    const idiomAndCall =
+      'const moveResult = moveCardFromZone(zones.deck, zones.discard, cardId);\n' +
+      'recordCardDiscardedThisTurn(G, playerID);';
+    assert.equal(deckDiscardViolation(auditDeckDiscardFile(idiomAndCall)), false);
+
+    // why: the idiom matches a deck→discard sample and NOT a hand→discard one.
+    assert.match('moveCardFromZone(zones.deck, zones.discard, cardId)', DECK_TO_DISCARD_IDIOM);
+    assert.doesNotMatch('moveCardFromZone(zones.hand, zones.discard, cardId)', DECK_TO_DISCARD_IDIOM);
   });
 });

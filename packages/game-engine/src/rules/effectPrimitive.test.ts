@@ -191,6 +191,38 @@ describe('interpretHeroPrimitiveEffect — Berserk', () => {
     assert.equal(G.turnEconomy!.attack, 3, '+Attack equals the discarded card printed attack');
   });
 
+  it('counts the deck→discard move for the active player when a hook reads the condition (WP-784 / D-24631)', () => {
+    const G = makeState({ deck: ['top', 'second'], cardStats: { top: makeCardStat({ attack: 3 }) } });
+    // why: WP-784 / D-24631 — a hook reading cardsDiscardedThisTurnAtLeast opens the counter gate.
+    G.heroAbilityHooks = [
+      { cardId: 'bkwd/falcon-winter-soldier/new-wings#0', conditions: [{ type: 'cardsDiscardedThisTurnAtLeast', value: '1' }] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+
+    interpretHeroPrimitiveEffect(G, CTX, '0', HERO_COMPOSITION_MARKERS['berserk']!);
+
+    assert.deepEqual(G.cardsDiscardedThisTurn, { '0': 1 });
+  });
+
+  it('a discard→deck move-card does NOT count as a discard (WP-784 / D-24631 AC-3)', () => {
+    const G = makeState({ deck: [], discard: ['buried'] });
+    G.heroAbilityHooks = [
+      { cardId: 'bkwd/falcon-winter-soldier/new-wings#0', conditions: [{ type: 'cardsDiscardedThisTurnAtLeast', value: '1' }] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+    // why: WP-784 / D-24631 — only a deck→discard move is "you discarded"; the primitive can
+    // also move discard→deck, which must never increment the counter.
+    const discardToDeck: EffectNode = {
+      type: 'move-card',
+      from: { owner: 'current-player', zone: 'discard', position: 'top' },
+      to: { owner: 'current-player', zone: 'deck' },
+    };
+
+    interpretHeroPrimitiveEffect(G, CTX, '0', discardToDeck);
+
+    assert.deepStrictEqual(G.playerZones['0']!.deck, ['buried'], 'the card moved discard → deck');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [], 'discard emptied');
+    assert.equal('cardsDiscardedThisTurn' in G, false, 'a discard→deck move never counts');
+  });
+
   it('empty deck → no move, +0 (no reshuffle)', () => {
     const G = makeState({ deck: [], discard: ['already'] });
 

@@ -242,6 +242,31 @@ describe('discard-top-printed-attack edge cases (WP-850)', () => {
   });
 });
 
+describe('discard-top-printed-attack counts toward "you discarded this turn" (WP-784 / D-24631)', () => {
+  /** A hook reading cardsDiscardedThisTurnAtLeast opens the deck-top discard counter gate. */
+  const DISCARD_GATE = {
+    cardId: 'bkwd/falcon-winter-soldier/new-wings#0',
+    conditions: [{ type: 'cardsDiscardedThisTurnAtLeast', value: '1' }],
+  } as unknown as HeroAbilityHook;
+
+  it('records the whole batch for the active player (count = cards discarded, not 1)', () => {
+    // why: deck [two], discard [three, four] → the D-24285 reshuffle brings a card back, so FOUR
+    // cards are discarded in one play; the counter must record 4, proving it uses the batch size.
+    const gameState = makeState([HERO_TWO], [HERO_THREE, HERO_FOUR], false);
+    gameState.heroAbilityHooks.push(DISCARD_GATE);
+    executeSingleEffect(gameState, makeMockCtx(), '0', FIREPOWER, DISCARD_FOUR);
+    assert.deepEqual(gameState.lastDeckTopDiscard!.cardIds.length, 4, 'four cards discarded this play');
+    assert.deepEqual(gameState.cardsDiscardedThisTurn, { '0': 4 });
+  });
+
+  it('a zero-card discard (deck and discard both empty) never creates the counter map', () => {
+    const gameState = makeState([], [], false);
+    gameState.heroAbilityHooks.push(DISCARD_GATE);
+    executeSingleEffect(gameState, makeMockCtx(), '0', FIREPOWER, DISCARD_FOUR);
+    assert.equal('cardsDiscardedThisTurn' in gameState, false);
+  });
+});
+
 describe('ko-discarded-this-way edge cases (WP-850)', () => {
   it('an absent or mismatched record parks nothing and logs blocked', () => {
     const gameState = makeState([], [HERO_TWO], true);

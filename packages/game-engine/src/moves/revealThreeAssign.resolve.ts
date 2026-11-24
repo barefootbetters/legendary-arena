@@ -33,6 +33,7 @@ import type {
 import type { CardExtId } from '../state/zones.types.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { moveCardFromZone } from './zoneOps.js';
+import { recordCardDiscardedThisTurn } from './discardFromHand.js';
 import { reshuffleDiscardIntoDeck } from './drawCards.logic.js';
 import { koCard } from '../board/ko.logic.js';
 import { recordOwnedCardKoed } from '../hero/deferredConditionalGrants.js';
@@ -227,6 +228,8 @@ function applyRevealThreeDisposition(
     if (!moveResult.found) { return; }
     zones.deck = moveResult.from;
     zones.discard = moveResult.to;
+    // why: D-24631 — a deck-top discard is "you discarded"; count only after the found move.
+    recordCardDiscardedThisTurn(G, playerID);
     pushLog(G,
       `Player ${playerID} discarded ${cardName} (${cardId}) from the top of their deck (reveal three).`,
       'applied',

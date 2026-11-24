@@ -1774,6 +1774,22 @@ describe('mastermindStrikeHandler — Doctor Octopus reveal-eight (WP-397)', () 
     );
   });
 
+  it('counts every non-grey Hero it discards for the struck player (WP-784 / D-24631)', () => {
+    const gameState = makeOctopusRevealState(
+      ['hero-tech', WOUND_EXT_ID, 'hero-str', 'starter-no-entry'],
+      { 'hero-tech': TECH, 'hero-str': STRENGTH, [WOUND_EXT_ID]: { heroClass: null, team: null } },
+    );
+    // why: WP-784 / D-24631 — a hook reading cardsDiscardedThisTurnAtLeast opens the counter
+    // gate; the batch count must equal the number of non-grey Heroes discarded (here 2), not 1.
+    gameState.heroAbilityHooks = [
+      { cardId: 'bkwd/falcon-winter-soldier/new-wings#0', conditions: [{ type: 'cardsDiscardedThisTurnAtLeast', value: '1' }] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+
+    mastermindStrikeHandler(gameState, reversingShuffleContext(), { cardId: 's' }, {});
+
+    assert.deepEqual(gameState.cardsDiscardedThisTurn, { '0': 2 });
+  });
+
   it('orders the remainder with the supplied Shuffle (AC-5)', () => {
     const gameState = makeOctopusRevealState(['x', 'y', 'z'], {});
 
